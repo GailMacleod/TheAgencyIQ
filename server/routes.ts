@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertBrandPurposeSchema, insertPostSchema } from "@shared/schema";
@@ -723,6 +724,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Update profile error:', error);
       res.status(500).json({ message: "Error updating profile" });
+    }
+  });
+
+  // Stripe webhook endpoint - must be before other JSON middleware
+  app.use("/api/webhook", express.raw({ type: 'application/json' }));
+  
+  app.post("/api/webhook", async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!endpointSecret) {
+      console.error('Stripe webhook secret not configured');
+      return res.status(400).send('Webhook secret not configured');
+    }
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig!, endpointSecret);
+    } catch (err: any) {
+      console.error('Webhook signature verification failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed':
+          const session = event.data.object;
+          console.log('Payment successful for session:', session.id);
+          
+          // Handle successful subscription creation
+          if (session.mode === 'subscription') {
+            const customerId = session.customer as string;
+            const subscriptionId = session.subscription as string;
+            
+            // Update user with subscription details
+            // This would require implementing user lookup by Stripe customer ID
+            console.log('Subscription created:', { customerId, subscriptionId });
+          }
+          break;
+
+        case 'customer.subscription.updated':
+          const subscription = event.data.object;
+          console.log('Subscription updated:', subscription.id);
+          
+          // Handle subscription changes (plan changes, status updates)
+          const status = subscription.status;
+          const customerId = subscription.customer as string;
+          
+          console.log('Subscription status:', { customerId, status });
+          break;
+
+        case 'customer.subscription.deleted':
+          const deletedSubscription = event.data.object;
+          console.log('Subscription cancelled:', deletedSubscription.id);
+          
+          // Handle subscription cancellation
+          const cancelledCustomerId = deletedSubscription.customer as string;
+          console.log('Subscription cancelled for customer:', cancelledCustomerId);
+          break;
+
+        case 'invoice.payment_succeeded':
+          const invoice = event.data.object;
+          console.log('Payment succeeded for invoice:', invoice.id);
+          
+          // Handle successful recurring payments
+          const invoiceCustomerId = invoice.customer as string;
+          console.log('Recurring payment successful:', invoiceCustomerId);
+          break;
+
+        case 'invoice.payment_failed':
+          const failedInvoice = event.data.object;
+          console.log('Payment failed for invoice:', failedInvoice.id);
+          
+          // Handle failed payments
+          const failedCustomerId = failedInvoice.customer as string;
+          console.log('Payment failed for customer:', failedCustomerId);
+          break;
+
+        default:
+          console.log('Unhandled event type:', event.type);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Error processing webhook:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
 
