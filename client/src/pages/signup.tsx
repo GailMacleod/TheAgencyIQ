@@ -71,7 +71,7 @@ export default function Signup() {
         description: "Your account has been created successfully",
       });
       
-      setLocation("/brand-purpose");
+      setLocation("/subscription");
     } catch (error: any) {
       console.error("Signup error:", error);
       toast({

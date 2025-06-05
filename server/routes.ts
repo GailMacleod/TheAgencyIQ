@@ -543,12 +543,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create checkout session for subscription
-  app.post("/api/create-checkout-session", async (req: any, res) => {
+  app.post("/api/create-checkout-session", requireAuth, async (req: any, res) => {
     try {
       const { priceId } = req.body;
       
       if (!priceId) {
         return res.status(400).json({ message: "Price ID is required" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
 
       // Map actual Stripe price IDs to plan details
@@ -588,7 +593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             quantity: 1,
           },
         ],
-        success_url: `${req.protocol}://${req.get('host')}/api/payment-success?session_id={CHECKOUT_SESSION_ID}&plan=${planDetails.name}`,
+        success_url: `${req.protocol}://${req.get('host')}/brand-purpose?payment=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${req.protocol}://${req.get('host')}/subscription`,
         client_reference_id: req.session?.userId?.toString() || 'guest',
         metadata: {
