@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { CheckIcon, Star, ArrowLeft, Cpu, Zap } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/api";
@@ -9,11 +14,29 @@ import { useToast } from "@/hooks/use-toast";
 import GrokWidget from "@/components/grok-widget";
 import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
 
+const signupSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  phone: z.string().min(10, "Phone number must be at least 10 characters"),
+});
+
+type SignupForm = z.infer<typeof signupSchema>;
+
 export default function Subscription() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [showSignupForm, setShowSignupForm] = useState<string | null>(null);
+
+  const form = useForm<SignupForm>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      email: "",
+      password: "", 
+      phone: "",
+    },
+  });
 
   useEffect(() => {
     // Get plan from URL parameters if coming from splash page
@@ -60,30 +83,47 @@ export default function Subscription() {
     "platform connections",
   ];
 
-  const handlePayment = async (priceId: string, planId: string) => {
+  const handleSelectPlan = (planId: string) => {
+    setShowSignupForm(planId);
+  };
+
+  const handleSignupAndPayment = async (data: SignupForm, priceId: string, planId: string) => {
     try {
       setLoadingPlan(planId);
       
+      // First create the user account
+      await apiRequest("POST", "/api/auth/signup", data);
+      
+      // Then create checkout session with the new user
       const response = await apiRequest("POST", "/api/create-checkout-session", {
         priceId,
       });
       
-      const data = await response.json();
+      const checkoutData = await response.json();
       
-      if (data.url) {
-        window.location.href = data.url;
+      if (checkoutData.url) {
+        window.location.href = checkoutData.url;
       } else {
         throw new Error("No checkout URL received");
       }
     } catch (error: any) {
-      console.error("Payment error:", error);
+      console.error("Signup and payment error:", error);
       toast({
-        title: "Payment Failed",
-        description: "payment failed, please try again",
+        title: "Process Failed",
+        description: error.message || "Failed to create account and process payment",
         variant: "destructive",
       });
     } finally {
       setLoadingPlan(null);
+    }
+  };
+
+  const onSubmitSignup = (data: SignupForm) => {
+    if (!showSignupForm) return;
+    
+    const plan = plans.find(p => p.id === showSignupForm);
+    if (plan) {
+      handleSignupAndPayment(data, plan.priceId, plan.id);
     }
   };
 
@@ -163,26 +203,93 @@ export default function Subscription() {
                     ))}
                   </div>
 
-                  <Button 
-                    className={`w-full text-lg py-6 ${
-                      plan.popular 
-                        ? 'btn-atomiq-primary'
-                        : 'btn-atomiq-secondary'
-                    } ${
-                      loadingPlan === plan.id ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    onClick={() => handlePayment(plan.priceId, plan.id)}
-                    disabled={loadingPlan === plan.id}
-                  >
-                    {loadingPlan === plan.id ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Processing...</span>
-                      </div>
-                    ) : (
-                      'Subscribe Now'
-                    )}
-                  </Button>
+                  {showSignupForm === plan.id ? (
+                    <div className="space-y-4 mt-6">
+                      <form onSubmit={form.handleSubmit(onSubmitSignup)} className="space-y-4">
+                        <div>
+                          <Label htmlFor={`email-${plan.id}`} className="text-sm font-medium text-gray-700">Email</Label>
+                          <Input
+                            id={`email-${plan.id}`}
+                            type="email"
+                            {...form.register('email')}
+                            className="mt-1"
+                            placeholder="your@email.com"
+                          />
+                          {form.formState.errors.email && (
+                            <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor={`password-${plan.id}`} className="text-sm font-medium text-gray-700">Password</Label>
+                          <Input
+                            id={`password-${plan.id}`}
+                            type="password"
+                            {...form.register('password')}
+                            className="mt-1"
+                            placeholder="••••••••"
+                          />
+                          {form.formState.errors.password && (
+                            <p className="text-sm text-red-600 mt-1">{form.formState.errors.password.message}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor={`phone-${plan.id}`} className="text-sm font-medium text-gray-700">Phone</Label>
+                          <Input
+                            id={`phone-${plan.id}`}
+                            type="tel"
+                            {...form.register('phone')}
+                            className="mt-1"
+                            placeholder="+15005550006"
+                          />
+                          {form.formState.errors.phone && (
+                            <p className="text-sm text-red-600 mt-1">{form.formState.errors.phone.message}</p>
+                          )}
+                        </div>
+                        
+                        <Button 
+                          type="submit"
+                          className={`w-full text-lg py-6 ${
+                            plan.popular 
+                              ? 'btn-atomiq-primary'
+                              : 'btn-atomiq-secondary'
+                          } ${
+                            loadingPlan === plan.id ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                          disabled={loadingPlan === plan.id}
+                        >
+                          {loadingPlan === plan.id ? (
+                            <div className="flex items-center space-x-2">
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <span>Creating Account...</span>
+                            </div>
+                          ) : (
+                            `Sign Up & Pay ${plan.price}`
+                          )}
+                        </Button>
+                      </form>
+                      
+                      <Button 
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setShowSignupForm(null)}
+                      >
+                        Back to Plans
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button 
+                      className={`w-full text-lg py-6 ${
+                        plan.popular 
+                          ? 'btn-atomiq-primary'
+                          : 'btn-atomiq-secondary'
+                      }`}
+                      onClick={() => handleSelectPlan(plan.id)}
+                    >
+                      Select {plan.name}
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
