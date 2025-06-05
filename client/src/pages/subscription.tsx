@@ -85,12 +85,11 @@ export default function Subscription() {
             <div className="flex items-center">
               <Link href="/" className="flex items-center">
                 <ArrowLeft className="h-5 w-5 text-muted-foreground mr-3" />
-                <div className="w-10 h-10 bg-gradient-atomiq rounded-xl flex items-center justify-center">
-                  <Cpu className="h-6 w-6 text-white" />
-                </div>
-                <span className="ml-3 text-2xl font-bold bg-gradient-atomiq bg-clip-text text-transparent">
-                  AtomIQ
-                </span>
+                <img 
+                  src="/attached_assets/agency_logo_1749083054761.png" 
+                  alt="AiQ" 
+                  className="h-12 w-auto"
+                />
               </Link>
             </div>
             <div className="flex items-center space-x-6">
@@ -111,7 +110,7 @@ export default function Subscription() {
               Technology Intelligence Plans
             </div>
             <h1 className="text-4xl md:text-5xl font-bold">
-              Choose Your <span className="bg-gradient-atomiq bg-clip-text text-transparent">AtomIQ</span> Plan
+              Choose Your <span className="bg-gradient-atomiq bg-clip-text text-transparent">AiQ</span> Plan
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Select the perfect plan for your Queensland business. All plans include AI-powered content generation, smart scheduling, and platform connections.
@@ -209,12 +208,11 @@ export default function Subscription() {
           <div className="grid md:grid-cols-4 gap-8">
             <div className="space-y-4">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-gradient-atomiq rounded-xl flex items-center justify-center">
-                  <Cpu className="h-6 w-6 text-white" />
-                </div>
-                <span className="ml-3 text-2xl font-bold bg-gradient-atomiq bg-clip-text text-transparent">
-                  AtomIQ
-                </span>
+                <img 
+                  src="/attached_assets/agency_logo_1749083054761.png" 
+                  alt="AiQ" 
+                  className="h-10 w-auto"
+                />
               </div>
               <p className="text-muted-foreground leading-relaxed">
                 Smarter social media automation for Queensland businesses. Technology and intelligence working together.
@@ -248,7 +246,7 @@ export default function Subscription() {
           
           <div className="border-t border-border mt-12 pt-8 text-center">
             <p className="text-muted-foreground">
-              &copy; 2024 AtomIQ Technologies. All rights reserved.
+              &copy; 2024 AiQ Technologies. All rights reserved.
             </p>
           </div>
         </div>
