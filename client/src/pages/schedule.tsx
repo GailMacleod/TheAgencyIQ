@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Header from "@/components/header";
-import AnalyticsBar from "@/components/analytics-bar";
-import Footer from "@/components/footer";
-import GrokWidget from "@/components/grok-widget";
-import { Card, CardContent } from "@/components/ui/card";
+import { useLocation } from "wouter";
+import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play } from "lucide-react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "react-icons/si";
+import { Badge } from "@/components/ui/badge";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
+import GrokWidget from "@/components/grok-widget";
+import AnalyticsBar from "@/components/analytics-bar";
 
 interface Post {
   id: number;
@@ -18,6 +18,11 @@ interface Post {
   scheduledFor: string;
   publishedAt?: string;
   errorLog?: string;
+  analytics?: {
+    reach: number;
+    engagement: number;
+    impressions: number;
+  };
 }
 
 interface User {
@@ -30,277 +35,301 @@ interface User {
 }
 
 export default function Schedule() {
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [generatingContent, setGeneratingContent] = useState(false);
 
+  // Fetch user data
   const { data: user, isLoading: userLoading } = useQuery<User>({
-    queryKey: ["/api/auth/user"],
+    queryKey: ["/api/user"],
   });
 
-  const { data: posts = [], isLoading: postsLoading } = useQuery<Post[]>({
+  // Fetch posts
+  const { data: posts = [], isLoading: postsLoading, refetch: refetchPosts } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
   });
 
-  const approvePostMutation = useMutation({
-    mutationFn: (postId: number) => apiRequest("POST", "/api/schedule-post", { postId }),
+  // Auto-generate content calendar on page load if no posts exist
+  useEffect(() => {
+    if (!postsLoading && posts.length === 0 && user && !generatingContent) {
+      handleGenerateContent();
+    }
+  }, [posts, postsLoading, user]);
+
+  const generateContentMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/generate-content-calendar", {}),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
-        title: "Post Approved",
-        description: "Post has been scheduled successfully",
+        title: "Content Calendar Generated",
+        description: "Your personalized posts have been created successfully",
       });
+      refetchPosts();
+      setGeneratingContent(false);
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: "Failed to approve post",
+        title: "Generation Failed",
+        description: error.message || "Failed to generate content calendar",
+        variant: "destructive",
+      });
+      setGeneratingContent(false);
+    },
+  });
+
+  const approvePostMutation = useMutation({
+    mutationFn: (postId: number) => apiRequest("POST", `/api/posts/${postId}/approve`, {}),
+    onSuccess: () => {
+      toast({
+        title: "Post Approved",
+        description: "Post has been scheduled for publishing",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message || "Failed to approve post",
         variant: "destructive",
       });
     },
   });
 
   const replacePostMutation = useMutation({
-    mutationFn: (postId: number) => apiRequest("POST", "/api/replace-post", { postId }),
-    onSuccess: (response: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    mutationFn: (postId: number) => apiRequest("POST", `/api/posts/${postId}/replace`, {}),
+    onSuccess: () => {
       toast({
         title: "Post Replaced",
-        description: response.recommendation || "Post has been replaced with new content",
+        description: "A new post has been generated to replace the failed one",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: "Failed to replace post",
+        title: "Replace Failed",
+        description: error.message || "Failed to replace post",
         variant: "destructive",
       });
     },
   });
 
-  const getPlatformIcon = (platform: string) => {
-    const icons = {
-      facebook: SiFacebook,
-      instagram: SiInstagram,
-      linkedin: SiLinkedin,
-      youtube: SiYoutube,
-      tiktok: SiTiktok,
-      x: SiX,
-    };
-    return icons[platform as keyof typeof icons] || SiFacebook;
+  const handleGenerateContent = () => {
+    setGeneratingContent(true);
+    generateContentMutation.mutate();
   };
 
-  const getPlatformColor = (platform: string) => {
-    const colors = {
-      facebook: 'platform-facebook',
-      instagram: 'platform-instagram', 
-      linkedin: 'platform-linkedin',
-      youtube: 'platform-youtube',
-      tiktok: 'platform-tiktok',
-      x: 'platform-x',
-    };
-    return colors[platform as keyof typeof colors] || 'platform-facebook';
-  };
-
-  const getStatusStyles = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'scheduled':
-        return {
-          dot: 'status-dot-scheduled',
-          text: 'status-scheduled',
-          border: '',
-        };
-      case 'published':
-        return {
-          dot: 'status-dot-published',
-          text: 'status-published',
-          border: 'border-l-4 border-green-500',
-        };
-      case 'failed':
-        return {
-          dot: 'status-dot-failed',
-          text: 'status-failed',
-          border: 'border-l-4 border-red-500',
-        };
+      case "scheduled":
+        return <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">Scheduled</Badge>;
+      case "published":
+        return <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Published</Badge>;
+      case "failed":
+        return <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">Failed</Badge>;
       default:
-        return {
-          dot: 'status-dot-scheduled',
-          text: 'status-scheduled',
-          border: '',
-        };
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getPlatformIcon = (platform: string) => {
+    const iconClass = "h-5 w-5";
+    switch (platform.toLowerCase()) {
+      case "facebook":
+        return <div className={`${iconClass} bg-blue-600 rounded text-white flex items-center justify-center text-xs font-bold`}>f</div>;
+      case "instagram":
+        return <div className={`${iconClass} bg-gradient-to-br from-purple-500 to-pink-500 rounded text-white flex items-center justify-center text-xs font-bold`}>ig</div>;
+      case "linkedin":
+        return <div className={`${iconClass} bg-blue-700 rounded text-white flex items-center justify-center text-xs font-bold`}>in</div>;
+      default:
+        return <div className={`${iconClass} bg-gray-500 rounded text-white flex items-center justify-center text-xs font-bold`}>{platform[0]}</div>;
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-AU', {
-      month: 'long',
-      day: '2-digit',
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-AU', { 
+      day: 'numeric', 
+      month: 'short', 
       year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
-  if (userLoading || postsLoading) {
+  const successfulPosts = posts.filter(post => post.status === "published").length;
+  const remainingPosts = user?.remainingPosts || 0;
+
+  if (userLoading || (postsLoading && !generatingContent)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+        </div>
       </div>
     );
   }
 
-  const successfulPosts = posts.filter(p => p.status === 'published').length;
-  const failedPosts = posts.filter(p => p.status === 'failed').length;
-
   return (
-    <div className="min-h-screen bg-background">
-      <Header 
-        showBack="/platform-connections" 
-        showUserMenu 
-      />
-      
-      {/* Analytics Bar */}
-      <AnalyticsBar />
-      
-      {/* Banner */}
-      <div className="banner-gradient border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="grid md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-sm text-primary font-medium lowercase">plan status</div>
-              <div className="text-lg text-foreground lowercase">
-                {user?.subscriptionPlan} plan - active
-              </div>
+    <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border/40">
+        <div className="container-atomiq">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center">
+              <Link href="/brand-purpose" className="flex items-center">
+                <ArrowLeft className="h-5 w-5 text-muted-foreground mr-3" />
+                <img 
+                  src="/attached_assets/agency_logo_1749083054761.png" 
+                  alt="AiQ" 
+                  className="h-12 w-auto"
+                />
+              </Link>
             </div>
-            <div className="text-center">
-              <div className="text-sm text-primary font-medium lowercase">posts remaining</div>
-              <div className="text-lg text-foreground lowercase">
-                {user?.remainingPosts} posts remaining of {user?.totalPosts} total
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm text-primary font-medium lowercase">performance</div>
-              <div className="text-lg text-foreground lowercase">
-                {successfulPosts} successful, {failedPosts} failed this period
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm text-primary font-medium lowercase">cycle</div>
-              <div className="text-lg text-foreground lowercase">
-                day 1, june 05, 2025, 09:45 AM AEST
-              </div>
-            </div>
-          </div>
-          <div className="mt-4 text-center">
-            <p className="text-sm text-accent lowercase">
-              linkedin posts had 20% higher engagement last cycle
-            </p>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Post List */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-sections">
-          {posts.length === 0 ? (
-            <Card className="card-agencyiq">
-              <CardContent className="p-8 text-center">
-                <p className="text-foreground lowercase">no posts found. please complete the setup process.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            posts.map((post) => {
-              const Icon = getPlatformIcon(post.platform);
-              const platformColor = getPlatformColor(post.platform);
-              const statusStyles = getStatusStyles(post.status);
+      {/* Analytics Bar */}
+      <AnalyticsBar className="border-b" />
 
-              return (
-                <Card key={post.id} className={`card-agencyiq ${statusStyles.border}`}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-4 mb-4">
-                          <div className={`w-8 h-8 ${platformColor} rounded flex items-center justify-center`}>
-                            <Icon className="w-4 h-4 text-white" />
-                          </div>
-                          <div>
-                            <div className="font-medium text-foreground lowercase">{post.platform}</div>
-                            <div className="text-sm text-muted-foreground lowercase">
-                              {formatDate(post.scheduledFor)}
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className={statusStyles.dot}></div>
-                            <span className={`text-sm font-medium lowercase ${statusStyles.text}`}>
-                              {post.status}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="text-foreground mb-4 lowercase">
-                          {post.content}
-                        </div>
-                        
-                        {post.errorLog && (
-                          <div className="text-sm text-destructive mb-4 lowercase">
-                            failed: {post.errorLog}
-                          </div>
-                        )}
-                        
-                        {post.status === 'published' && (
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <span>12 likes</span>
-                            <span>3 comments</span>
-                            <span>2 shares</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="ml-6 flex flex-col space-y-2">
-                        {post.status === 'scheduled' && (
-                          <div className="relative group">
-                            <Button
-                              onClick={() => approvePostMutation.mutate(post.id)}
-                              className="btn-secondary text-sm"
-                              disabled={approvePostMutation.isPending}
-                            >
-                              {approvePostMutation.isPending ? 'approving...' : 'approve'}
-                            </Button>
-                            <div className="tooltip">
-                              this post will maximize engagement—last cycle's data shows {post.platform} performs best at this time
-                            </div>
-                          </div>
-                        )}
-                        
-                        {post.status === 'failed' && (
-                          <>
-                            <Button
-                              onClick={() => approvePostMutation.mutate(post.id)}
-                              className="bg-gray-500 text-white hover:bg-gray-600 text-sm"
-                            >
-                              retry
-                            </Button>
-                            <Button
-                              onClick={() => replacePostMutation.mutate(post.id)}
-                              className="bg-accent text-white hover:bg-purple-600 text-sm"
-                              disabled={replacePostMutation.isPending}
-                            >
-                              {replacePostMutation.isPending ? 'replacing...' : 'replace'}
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center mb-8">
+          <p className="text-sm text-gray-600">step 3 of 3</p>
+          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+            <div className="bg-blue-600 h-2 rounded-full w-full"></div>
+          </div>
+        </div>
+
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-normal" style={{ color: '#333333' }}>
+              Your Content Calendar
+            </h1>
+            <div className="flex items-center space-x-4 text-sm text-gray-600">
+              <span>Successful posts: {successfulPosts}</span>
+              <span>Remaining posts: {remainingPosts}</span>
+            </div>
+          </div>
+          
+          {generatingContent && (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center space-x-3">
+                <div className="animate-spin w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+                <p className="text-gray-600">Generating your personalized content calendar...</p>
+              </div>
+            </div>
+          )}
+
+          {posts.length === 0 && !generatingContent && (
+            <div className="text-center py-8">
+              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No posts generated yet</h3>
+              <p className="text-gray-600 mb-4">Generate your personalized content calendar to get started.</p>
+              <Button 
+                onClick={handleGenerateContent}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                style={{ backgroundColor: '#3250fa' }}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Generate Content Calendar
+              </Button>
+            </div>
           )}
         </div>
+
+        {/* Posts List */}
+        {posts.length > 0 && (
+          <div className="space-y-4">
+            {posts.map((post) => (
+              <div key={post.id} className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    {getPlatformIcon(post.platform)}
+                    <div>
+                      <h3 className="font-medium text-gray-900 capitalize">{post.platform}</h3>
+                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <Clock className="h-4 w-4" />
+                        <span>{formatDate(post.scheduledFor)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    {getStatusBadge(post.status)}
+                    
+                    {post.status === "scheduled" && (
+                      <Button 
+                        size="sm"
+                        onClick={() => approvePostMutation.mutate(post.id)}
+                        disabled={approvePostMutation.isPending}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Approve
+                      </Button>
+                    )}
+                    
+                    {post.status === "failed" && (
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => replacePostMutation.mutate(post.id)}
+                        disabled={replacePostMutation.isPending}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                        Replace
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <p className="text-gray-800 whitespace-pre-wrap">{post.content}</p>
+                </div>
+
+                {post.status === "failed" && post.errorLog && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                    <p className="text-red-600 text-sm font-medium">Error:</p>
+                    <p className="text-red-700 text-sm">{post.errorLog}</p>
+                  </div>
+                )}
+
+                {post.status === "published" && post.analytics && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-green-600 font-medium">Reach</p>
+                        <p className="text-green-800">{post.analytics.reach.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-green-600 font-medium">Engagement</p>
+                        <p className="text-green-800">{post.analytics.engagement.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-green-600 font-medium">Impressions</p>
+                        <p className="text-green-800">{post.analytics.impressions.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <Footer />
+      <div className="mt-8 text-center">
+        <p className="text-xs text-gray-500">
+          MacleodGlobal T/A The AgencyIQ
+        </p>
+        <div className="flex justify-center space-x-4 mt-2">
+          <a href="#" className="text-xs text-gray-500 hover:text-gray-700">Privacy Policy</a>
+          <a href="#" className="text-xs text-gray-500 hover:text-gray-700">Terms of Service</a>
+        </div>
+      </div>
+
       <GrokWidget />
     </div>
   );

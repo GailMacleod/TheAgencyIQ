@@ -282,13 +282,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Save brand purpose
+  // Logo upload endpoint
+  app.post("/api/upload-logo", requireAuth, async (req: any, res) => {
+    try {
+      // In a real implementation, you would upload to cloud storage
+      // For demo purposes, we'll return a mock URL
+      const logoUrl = `/uploads/logos/${req.session.userId}_${Date.now()}.png`;
+      
+      res.json({ logoUrl });
+    } catch (error: any) {
+      console.error('Logo upload error:', error);
+      res.status(500).json({ message: "Error uploading logo" });
+    }
+  });
+
+  // Save brand purpose with comprehensive Strategyzer data
   app.post("/api/brand-purpose", requireAuth, async (req: any, res) => {
     try {
-      const brandPurposeData = insertBrandPurposeSchema.parse({
-        ...req.body,
+      const brandPurposeData = {
         userId: req.session.userId,
-      });
+        brandName: req.body.brandName,
+        productsServices: req.body.productsServices,
+        corePurpose: req.body.corePurpose,
+        audience: req.body.audience,
+        jobToBeDone: req.body.jobToBeDone,
+        motivations: req.body.motivations,
+        painPoints: req.body.painPoints,
+        goals: req.body.goals,
+        logoUrl: req.body.logoUrl,
+        contactDetails: req.body.contactDetails,
+      };
 
       // Check if brand purpose already exists
       const existing = await storage.getBrandPurposeByUser(req.session.userId);
@@ -298,6 +321,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         brandPurposeRecord = await storage.updateBrandPurpose(existing.id, brandPurposeData);
       } else {
         brandPurposeRecord = await storage.createBrandPurpose(brandPurposeData);
+      }
+
+      // Auto-connect to predefined platforms for simplified flow
+      const platforms = ['facebook', 'instagram', 'linkedin'];
+      for (const platform of platforms) {
+        const existingConnection = await storage.getPlatformConnectionsByUser(req.session.userId);
+        const hasConnection = existingConnection.some(conn => conn.platform === platform);
+        
+        if (!hasConnection) {
+          await storage.createPlatformConnection({
+            userId: req.session.userId,
+            platform,
+            accessToken: `demo_token_${platform}_${Date.now()}`,
+            refreshToken: `demo_refresh_${platform}_${Date.now()}`,
+          });
+        }
       }
 
       res.json(brandPurposeRecord);

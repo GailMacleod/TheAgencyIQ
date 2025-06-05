@@ -32,21 +32,47 @@ export interface GeneratedPost {
 
 export async function generateContentCalendar(params: ContentGenerationParams): Promise<GeneratedPost[]> {
   try {
-    const prompt = `Generate ${params.totalPosts} social media posts for a Queensland business with the following brand purpose:
-    
-    Core Purpose: ${params.corePurpose}
-    Target Audience: ${params.audience}
-    Business Goals: ${params.goals}
-    
-    Connected platforms: ${params.platforms.join(', ')}
-    
-    Create engaging, brand-aligned content that speaks to Queensland small businesses. Each post should be relevant to the platform and support the business goals. 
-    
-    Distribute posts evenly across the connected platforms over 30 days starting June 6, 2025 at 9:00 AM AEST.
-    
-    Return as JSON object with "posts" array containing objects with fields: platform, content, scheduledFor (ISO date string).
-    
-    Ensure content is professional, engaging, and specifically tailored to Queensland business owners.`;
+    const goalsText = Object.entries(params.goals || {})
+      .filter(([key, value]) => value === true)
+      .map(([key]) => {
+        switch (key) {
+          case 'driveTraffic': return `Drive traffic to website: ${params.goals.websiteUrl || 'website'}`;
+          case 'buildBrand': return 'Build brand awareness';
+          case 'makeSales': return `Make sales: ${params.goals.salesUrl || 'shop'}`;
+          case 'informEducate': return `Inform/educate: ${params.goals.keyMessage || 'share knowledge'}`;
+          default: return key;
+        }
+      })
+      .join(', ');
+
+    const prompt = `Generate ${params.totalPosts} social media posts for a Queensland business using comprehensive Strategyzer framework data:
+
+Brand Identity:
+- Brand Name: ${params.brandName}
+- Products/Services: ${params.productsServices}
+- Core Purpose: ${params.corePurpose}
+
+Customer Understanding:
+- Target Audience: ${params.audience}
+- Job to Be Done: ${params.jobToBeDone}
+- Audience Motivations: ${params.motivations}
+- Pain Points: ${params.painPoints}
+
+Business Goals: ${goalsText}
+
+Contact Information:
+- Email: ${params.contactDetails?.email || 'contact email'}
+- Phone: ${params.contactDetails?.phone || 'contact phone'}
+
+Connected platforms: ${params.platforms.join(', ')}
+
+Create engaging, brand-aligned content that addresses audience motivations and pain points. Each post should include brand name naturally, reference products/services, and align with the job-to-be-done insights. Include appropriate URLs and contact details based on goals.
+
+Distribute posts evenly across the connected platforms over 30 days starting June 6, 2025 at 9:00 AM AEST.
+
+Return as JSON object with "posts" array containing objects with fields: platform, content, scheduledFor (ISO date string).
+
+Make content authentic to Queensland culture and specifically tailored to the target audience.`;
 
     const response = await grok.chat.completions.create({
       model: "grok-2-1212",
