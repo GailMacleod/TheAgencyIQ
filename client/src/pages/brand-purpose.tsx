@@ -12,8 +12,8 @@ import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import Header from "@/components/header";
-import Footer from "@/components/footer";
+import MasterHeader from "@/components/master-header";
+import MasterFooter from "@/components/master-footer";
 
 const brandPurposeSchema = z.object({
   brandName: z.string().min(1, "Brand name is required"),

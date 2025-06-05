@@ -7,8 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { TrendingUp, TrendingDown, Target, Users, MessageCircle, Eye, BarChart3 } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import Header from "@/components/header";
-import Footer from "@/components/footer";
+import MasterHeader from "@/components/master-header";
+import MasterFooter from "@/components/master-footer";
 
 interface AnalyticsData {
   totalPosts: number;
