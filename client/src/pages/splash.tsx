@@ -2,10 +2,17 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Zap, Target, Calendar, BarChart3, Users, Sparkles, CheckCircle, ArrowRight, Cpu, Lightbulb } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import GrokWidget from "@/components/grok-widget";
+import UserMenu from "@/components/user-menu";
 import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
 
 export default function Splash() {
+  const { data: user } = useQuery({
+    queryKey: ["/api/user"],
+    retry: false,
+  });
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -14,18 +21,24 @@ export default function Splash() {
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center">
               <img 
-                src="/attached_assets/agency_logo_1749083054761.png" 
-                alt="AiQ" 
+                src={agencyLogoPath} 
+                alt="The AgencyIQ" 
                 className="h-12 w-auto"
               />
             </div>
             <div className="flex items-center space-x-6">
-              <Link href="/login">
-                <Button variant="ghost" className="nav-link">Sign In</Button>
-              </Link>
-              <Link href="/subscription">
-                <Button className="btn-atomiq-primary">Get Started</Button>
-              </Link>
+              {user ? (
+                <UserMenu />
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="ghost" className="nav-link">Sign In</Button>
+                  </Link>
+                  <Link href="/subscription">
+                    <Button className="btn-atomiq-primary">Get Started</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
