@@ -56,6 +56,9 @@ export default function Schedule() {
   // Fetch user data
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 
   // Fetch posts with calendar data
