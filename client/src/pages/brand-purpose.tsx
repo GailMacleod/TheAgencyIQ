@@ -60,7 +60,7 @@ export default function BrandPurpose() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header showBack="/signup" />
+      <Header showBack="/subscription" />
       
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-8">

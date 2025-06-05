@@ -8,7 +8,6 @@ import SplashScreen from "@/components/splash-screen";
 import NotFound from "@/pages/not-found";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
-import Signup from "@/pages/signup";
 import BrandPurpose from "@/pages/brand-purpose";
 import PlatformConnections from "@/pages/platform-connections";
 import Schedule from "@/pages/schedule";
@@ -19,7 +18,6 @@ function Router() {
     <Switch>
       <Route path="/" component={Splash} />
       <Route path="/subscription" component={Subscription} />
-      <Route path="/signup" component={Signup} />
       <Route path="/brand-purpose" component={BrandPurpose} />
       <Route path="/platform-connections" component={PlatformConnections} />
       <Route path="/schedule" component={Schedule} />
