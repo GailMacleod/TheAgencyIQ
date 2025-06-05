@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Zap, Target, Calendar, BarChart3, Users, Sparkles, CheckCircle, ArrowRight, Cpu, Lightbulb } from "lucide-react";
 import GrokWidget from "@/components/grok-widget";
+import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
 
 export default function Splash() {
   return (
@@ -351,43 +352,17 @@ export default function Splash() {
       {/* Footer */}
       <footer className="bg-card border-t">
         <div className="container-atomiq py-16">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <img 
-                  src="/attached_assets/agency_logo_1749083054761.png" 
-                  alt="AiQ" 
-                  className="h-10 w-auto"
-                />
-              </div>
-              <p className="text-muted-foreground leading-relaxed">
-                Smarter social media automation for Queensland businesses. Technology and intelligence working together.
-              </p>
+          <div className="max-w-md mx-auto text-center space-y-6">
+            <div className="flex justify-center">
+              <img 
+                src={agencyLogoPath} 
+                alt="The AgencyIQ" 
+                className="h-12 w-auto"
+              />
             </div>
-            
-            <div className="space-y-4">
-              <h5 className="font-semibold">Product</h5>
-              <div className="space-y-2">
-                <Link href="/subscription" className="nav-link block">Pricing</Link>
-                <Link href="#features" className="nav-link block">Features</Link>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h5 className="font-semibold">Company</h5>
-              <div className="space-y-2">
-                <a href="#" className="nav-link block">About</a>
-                <a href="#" className="nav-link block">Contact</a>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h5 className="font-semibold">Support</h5>
-              <div className="space-y-2">
-                <a href="#" className="nav-link block">Help Center</a>
-                <a href="#" className="nav-link block">Documentation</a>
-              </div>
-            </div>
+            <p className="text-muted-foreground leading-relaxed">
+              Smarter social media automation for Queensland businesses. Technology and intelligence working together.
+            </p>
           </div>
           
           <div className="border-t border-border mt-12 pt-8 text-center space-y-4">
