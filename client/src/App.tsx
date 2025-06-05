@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import SplashScreen from "@/components/splash-screen";
+import GrokWidget from "@/components/grok-widget";
 import NotFound from "@/pages/not-found";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
@@ -37,7 +38,10 @@ function App() {
         {showSplash ? (
           <SplashScreen onComplete={() => setShowSplash(false)} />
         ) : (
-          <Router />
+          <>
+            <Router />
+            <GrokWidget />
+          </>
         )}
       </TooltipProvider>
     </QueryClientProvider>

@@ -13,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
-import GrokWidget from "@/components/grok-widget";
 
 const brandPurposeSchema = z.object({
   brandName: z.string().min(1, "Brand name is required"),
@@ -507,7 +506,6 @@ export default function BrandPurpose() {
       </div>
       
       <Footer />
-      <GrokWidget />
     </div>
   );
 }

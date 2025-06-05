@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
-import GrokWidget from "@/components/grok-widget";
 import AnalyticsBar from "@/components/analytics-bar";
 
 interface Post {
@@ -306,7 +305,6 @@ export default function Schedule() {
       </div>
 
       <Footer />
-      <GrokWidget />
     </div>
   );
 }
