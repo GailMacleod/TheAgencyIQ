@@ -325,20 +325,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate reach and engagement from Google Analytics data
       postsThisMonth.forEach(post => {
         // Use actual Google Analytics data if available, otherwise skip
-        if (post.analytics?.reach) {
-          const reach = post.analytics.reach;
-          const engagement = post.analytics.engagement || 0;
+        if (post.analytics && typeof post.analytics === 'object') {
+          const analytics = post.analytics as any;
+          const reach = analytics.reach || 0;
+          const engagement = analytics.engagement || 0;
           
-          totalReach += reach;
-          totalEngagement += engagement;
-          
-          if (reach > maxReach) {
-            maxReach = reach;
-            topPerformingPost = {
-              content: post.content.substring(0, 60) + "...",
-              reach: reach,
-              platform: post.platform
-            };
+          if (reach > 0) {
+            totalReach += reach;
+            totalEngagement += engagement;
+            
+            if (reach > maxReach) {
+              maxReach = reach;
+              topPerformingPost = {
+                content: post.content.substring(0, 60) + "...",
+                reach: reach,
+                platform: post.platform
+              };
+            }
           }
         }
       });

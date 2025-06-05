@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/header";
+import AnalyticsBar from "@/components/analytics-bar";
 import Footer from "@/components/footer";
 import GrokWidget from "@/components/grok-widget";
 import { Card, CardContent } from "@/components/ui/card";
@@ -158,6 +159,9 @@ export default function Schedule() {
         showBack="/platform-connections" 
         showUserMenu 
       />
+      
+      {/* Analytics Bar */}
+      <AnalyticsBar />
       
       {/* Banner */}
       <div className="banner-gradient border-b border-border">
