@@ -1,12 +1,13 @@
 import { useLocation } from "wouter";
-import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play } from "lucide-react";
-import { Link } from "wouter";
+import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
 import GrokWidget from "@/components/grok-widget";
 import AnalyticsBar from "@/components/analytics-bar";
 
@@ -172,23 +173,7 @@ export default function Schedule() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border/40">
-        <div className="container-atomiq">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center">
-              <Link href="/brand-purpose" className="flex items-center">
-                <ArrowLeft className="h-5 w-5 text-muted-foreground mr-3" />
-                <img 
-                  src="/attached_assets/agency_logo_1749083054761.png" 
-                  alt="AiQ" 
-                  className="h-12 w-auto"
-                />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header showBack="/brand-purpose" showUserMenu={true} />
 
       {/* Analytics Bar */}
       <AnalyticsBar className="border-b" />
