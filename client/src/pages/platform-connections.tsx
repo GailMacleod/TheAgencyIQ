@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import Header from "@/components/header";
-import Footer from "@/components/footer";
+import MasterHeader from "@/components/master-header";
+import MasterFooter from "@/components/master-footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckIcon } from "lucide-react";
