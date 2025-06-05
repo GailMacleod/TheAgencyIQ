@@ -173,7 +173,7 @@ export default function Schedule() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
-      <Header showBack="/brand-purpose" showUserMenu={true} />
+      <Header showUserMenu={true} />
 
       {/* Analytics Bar */}
       <AnalyticsBar className="border-b" />

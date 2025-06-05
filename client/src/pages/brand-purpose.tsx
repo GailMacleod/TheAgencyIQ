@@ -158,7 +158,7 @@ export default function BrandPurpose() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
-      <Header showBack="/subscription" />
+      <Header showUserMenu={true} />
       
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-8">
