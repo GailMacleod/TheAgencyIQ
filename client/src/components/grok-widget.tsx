@@ -77,7 +77,8 @@ export default function GrokWidget() {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-12 h-12 bg-accent rounded-full flex items-center justify-center text-white hover:bg-purple-600 transition-all duration-200 shadow-lg grok-widget-entrance"
+          className="w-12 h-12 rounded-full flex items-center justify-center text-white hover:opacity-80 transition-all duration-200 shadow-lg grok-widget-entrance"
+          style={{ backgroundColor: '#915fd7' }}
         >
           <MessageCircleIcon className="w-6 h-6" />
         </Button>
