@@ -20,27 +20,27 @@ export default function Header({
 }: HeaderProps) {
 
   return (
-    <header className="bg-card shadow-sm">
+    <header className="bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
+        <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
             {showBack && (
               <Link href={showBack}>
-                <Button variant="ghost" size="sm" className="link-primary p-0">
-                  <ChevronLeftIcon className="w-6 h-6" />
+                <Button variant="ghost" size="sm" className="p-2 hover:bg-gray-100">
+                  <ChevronLeftIcon className="w-5 h-5 text-gray-600" />
                 </Button>
               </Link>
             )}
             <Link href="/">
-              <img src={agencyLogoPath} alt="The AgencyIQ" className="h-12 w-auto cursor-pointer" />
+              <img src={agencyLogoPath} alt="The AgencyIQ" className="h-10 w-auto cursor-pointer" />
             </Link>
           </div>
           
           <div className="flex items-center space-x-4">
             {showLogin && (
               <Link href="/login">
-                <Button variant="ghost" className="link-primary lowercase">
-                  log in
+                <Button variant="ghost" className="text-gray-700 hover:text-gray-900">
+                  Sign In
                 </Button>
               </Link>
             )}
