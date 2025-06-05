@@ -542,7 +542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get Grok recommendation
+  // Get Grok recommendation with real-time brand purpose analysis
   app.post("/api/grok-query", requireAuth, async (req: any, res) => {
     try {
       const { query, context } = req.body;
@@ -551,7 +551,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Query is required" });
       }
 
-      const response = await getGrokResponse(query, context);
+      // Fetch brand purpose data for real-time analysis
+      const brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
+      
+      const response = await getGrokResponse(query, context, brandPurposeRecord);
       res.json({ response });
     } catch (error: any) {
       console.error('Grok query error:', error);

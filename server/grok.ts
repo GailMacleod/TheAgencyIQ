@@ -30,8 +30,80 @@ export interface GeneratedPost {
   scheduledFor: string;
 }
 
+export interface BrandAnalysis {
+  jtbdScore: number;
+  platformWeighting: { [platform: string]: number };
+  tone: string;
+  postTypeAllocation: { [type: string]: number };
+  suggestions: string[];
+}
+
+export async function analyzeBrandPurpose(params: ContentGenerationParams): Promise<BrandAnalysis> {
+  try {
+    const analysisPrompt = `Analyze this Queensland business brand purpose data and provide scoring/recommendations:
+
+Brand: ${params.brandName}
+Products/Services: ${params.productsServices}
+Core Purpose: ${params.corePurpose}
+Target Audience: ${params.audience}
+Job to be Done: ${params.jobToBeDone}
+Customer Motivations: ${params.motivations}
+Pain Points: ${params.painPoints}
+Business Goals: ${JSON.stringify(params.goals)}
+
+Provide analysis in this exact JSON format:
+{
+  "jtbdScore": [0-100 score based on specificity and measurability],
+  "platformWeighting": {
+    "instagram": [percentage based on business type and audience],
+    "linkedin": [percentage],
+    "facebook": [percentage],
+    "youtube": [percentage],
+    "tiktok": [percentage]
+  },
+  "tone": "[vibrant/professional/thoughtful/energetic based on business type]",
+  "postTypeAllocation": {
+    "sales": [percentage if makeSales goal selected],
+    "awareness": [percentage if buildBrand goal selected],
+    "educational": [percentage if informEducate goal selected],
+    "engagement": [percentage for community building]
+  },
+  "suggestions": [
+    "Specific actionable suggestions for improving JTBD clarity",
+    "Recommendations for better audience targeting",
+    "Content strategy improvements"
+  ]
+}
+
+Consider: Florists need vibrant tone, Instagram focus. Professional services need LinkedIn focus, professional tone. Book clubs need thoughtful tone, community focus.`;
+
+    const response = await grok.chat.completions.create({
+      model: "grok-2-1212",
+      messages: [{ role: "user", content: analysisPrompt }],
+      response_format: { type: "json_object" },
+    });
+
+    const analysis = JSON.parse(response.choices[0].message.content || "{}");
+    console.log(`JTBD Score: ${analysis.jtbdScore}/100`);
+    return analysis;
+  } catch (error) {
+    console.error("Brand analysis error:", error);
+    // Fallback analysis
+    return {
+      jtbdScore: 50,
+      platformWeighting: { instagram: 40, facebook: 30, linkedin: 20, youtube: 5, tiktok: 5 },
+      tone: "professional",
+      postTypeAllocation: { sales: 40, awareness: 30, educational: 20, engagement: 10 },
+      suggestions: ["Consider making your Job to be Done more specific and measurable"]
+    };
+  }
+}
+
 export async function generateContentCalendar(params: ContentGenerationParams): Promise<GeneratedPost[]> {
   try {
+    // First analyze the brand purpose
+    const analysis = await analyzeBrandPurpose(params);
+    
     const goalsText = Object.entries(params.goals || {})
       .filter(([key, value]) => value === true)
       .map(([key]) => {
@@ -46,7 +118,15 @@ export async function generateContentCalendar(params: ContentGenerationParams): 
       })
       .join(', ');
 
-    const prompt = `Generate ${params.totalPosts} social media posts for a Queensland business using comprehensive Strategyzer framework data:
+    const prompt = `Generate ${params.totalPosts} social media posts for a Queensland business using AI analysis results:
+
+BRAND ANALYSIS RESULTS:
+- JTBD Specificity Score: ${analysis.jtbdScore}/100
+- Recommended Tone: ${analysis.tone}
+- Platform Distribution: ${JSON.stringify(analysis.platformWeighting)}
+- Post Type Allocation: ${JSON.stringify(analysis.postTypeAllocation)}
+
+BUSINESS DATA:
 
 Brand Identity:
 - Brand Name: ${params.brandName}
@@ -129,9 +209,9 @@ export async function generateReplacementPost(
   }
 }
 
-export async function getGrokResponse(query: string, context?: string): Promise<string> {
+export async function getGrokResponse(query: string, context?: string, brandPurposeData?: any): Promise<string> {
   try {
-    const systemPrompt = `You are Grok, a Strategyzer-trained AI assistant specialized in value proposition design and brand purpose for Queensland small businesses. 
+    let systemPrompt = `You are Grok, a Strategyzer-trained AI assistant specialized in value proposition design and brand purpose for Queensland small businesses. 
 
 You help users apply Strategyzer methodology including:
 - Customer segments (demographics, behaviors, needs)
@@ -144,6 +224,38 @@ Always reference Strategyzer concepts when relevant. Provide practical advice in
 
 Context: ${context || 'Brand Purpose definition using Strategyzer framework'}`;
 
+    // If brand purpose data is provided, analyze it and provide specific suggestions
+    if (brandPurposeData) {
+      const analysisPrompt = `Analyze this Queensland business brand purpose data and provide real-time suggestions for improvement:
+
+Brand Name: ${brandPurposeData.brandName || 'Not specified'}
+Products/Services: ${brandPurposeData.productsServices || 'Not specified'}
+Core Purpose: ${brandPurposeData.corePurpose || 'Not specified'}
+Target Audience: ${brandPurposeData.audience || 'Not specified'}
+Job to be Done: ${brandPurposeData.jobToBeDone || 'Not specified'}
+Customer Motivations: ${brandPurposeData.motivations || 'Not specified'}
+Pain Points: ${brandPurposeData.painPoints || 'Not specified'}
+Goals: ${JSON.stringify(brandPurposeData.goals || {})}
+
+Provide specific suggestions for:
+1. Making the Job to be Done more specific and measurable (e.g., "helps Queensland locals celebrate special moments with stunning floral arrangements, making gifting easy and memorable")
+2. Improving audience targeting specificity
+3. Enhancing pain point identification
+4. Optimizing value proposition alignment
+
+Focus on practical improvements that will lead to better content generation and platform performance.
+
+User query: ${query}`;
+
+      const response = await grok.chat.completions.create({
+        model: "grok-2-1212",
+        messages: [{ role: "user", content: analysisPrompt }],
+      });
+
+      return response.choices[0].message.content || "i need more specific information about your brand purpose to provide targeted suggestions. try filling out more details in each section.";
+    }
+
+    // Regular Grok query without brand analysis
     const response = await grok.chat.completions.create({
       model: "grok-2-1212",
       messages: [
