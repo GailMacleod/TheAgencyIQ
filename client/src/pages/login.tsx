@@ -29,7 +29,7 @@ export default function Login() {
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "demo@atomiq.com",
+      email: "demo@aiq.com",
       password: "password123",
     },
   });
@@ -42,7 +42,7 @@ export default function Login() {
       
       toast({
         title: "Login Successful",
-        description: "Welcome back to AtomIQ",
+        description: "Welcome back to AiQ",
       });
       
       setLocation("/schedule");
