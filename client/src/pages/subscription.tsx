@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,11 +7,22 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import GrokWidget from "@/components/grok-widget";
+import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
 
 export default function Subscription() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get plan from URL parameters if coming from splash page
+    const urlParams = new URLSearchParams(window.location.search);
+    const planParam = urlParams.get('plan');
+    if (planParam) {
+      setSelectedPlan(planParam);
+    }
+  }, []);
 
   const plans = [
     {

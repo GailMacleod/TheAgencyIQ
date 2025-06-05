@@ -464,6 +464,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create checkout session for subscription
+  app.post("/api/create-checkout-session", async (req: any, res) => {
+    try {
+      const { priceId } = req.body;
+      
+      if (!priceId) {
+        return res.status(400).json({ message: "Price ID is required" });
+      }
+
+      // Map price IDs to plan details
+      const planMapping: { [key: string]: { name: string, posts: number, totalPosts: number } } = {
+        "STRIPE_PRICE_ID_STARTER": { name: "starter", posts: 10, totalPosts: 12 },
+        "STRIPE_PRICE_ID_GROWTH": { name: "growth", posts: 25, totalPosts: 27 },
+        "STRIPE_PRICE_ID_PROFESSIONAL": { name: "professional", posts: 50, totalPosts: 52 }
+      };
+
+      const planDetails = planMapping[priceId];
+      if (!planDetails) {
+        return res.status(400).json({ message: "Invalid price ID" });
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        success_url: `${req.protocol}://${req.get('host')}/signup?session_id={CHECKOUT_SESSION_ID}&plan=${planDetails.name}`,
+        cancel_url: `${req.protocol}://${req.get('host')}/subscription`,
+        metadata: {
+          plan: planDetails.name,
+          posts: planDetails.posts.toString(),
+          totalPosts: planDetails.totalPosts.toString()
+        }
+      });
+
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ message: "Failed to create checkout session" });
+    }
+  });
+
   // Replace failed post
   app.post("/api/replace-post", requireAuth, async (req: any, res) => {
     try {
