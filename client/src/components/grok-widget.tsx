@@ -19,7 +19,7 @@ export default function GrokWidget() {
     {
       id: '1',
       role: 'assistant',
-      content: 'how can i help you today? i can assist with content recommendations, platform insights, and optimization tips.',
+      content: 'hi! i\'m here to help you define your brand purpose. need suggestions for any field? ask me about your brand name, audience, goals, or what makes your Queensland business unique.',
       timestamp: new Date(),
     },
   ]);

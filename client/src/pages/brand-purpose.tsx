@@ -177,12 +177,18 @@ export default function BrandPurpose() {
             {/* Brand Name */}
             <div>
               <Label htmlFor="brandName" className="text-sm font-medium text-gray-700">What's your brand name?</Label>
-              <Input
-                id="brandName"
-                {...form.register('brandName')}
-                placeholder="try 'Queensland Artisans Co.'"
-                className="mt-1"
-              />
+              <div className="relative">
+                <Input
+                  id="brandName"
+                  {...form.register('brandName')}
+                  placeholder="try 'Queensland Artisans Co.'"
+                  className="mt-1"
+                />
+                <div className="text-xs text-purple-600 mt-1 flex items-center">
+                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                  Grok suggests: Your brand name should be memorable and reflect your location or specialty
+                </div>
+              </div>
               {form.formState.errors.brandName && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.brandName.message}</p>
               )}
@@ -198,6 +204,10 @@ export default function BrandPurpose() {
                 className="mt-1 resize-none"
                 rows={3}
               />
+              <div className="text-xs text-purple-600 mt-1 flex items-center">
+                <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                Grok suggests: Be specific about what makes your products/services unique to Queensland
+              </div>
               {form.formState.errors.productsServices && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.productsServices.message}</p>
               )}
@@ -213,6 +223,10 @@ export default function BrandPurpose() {
                 className="mt-1 resize-none"
                 rows={3}
               />
+              <div className="text-xs text-purple-600 mt-1 flex items-center">
+                <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                Grok suggests: Your core purpose could be 'support local Queensland artisans' to align with your products
+              </div>
               {form.formState.errors.corePurpose && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.corePurpose.message}</p>
               )}
@@ -228,6 +242,10 @@ export default function BrandPurpose() {
                 className="mt-1 resize-none"
                 rows={3}
               />
+              <div className="text-xs text-purple-600 mt-1 flex items-center">
+                <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                Grok suggests: Include age, location, interests, and values to help target your content
+              </div>
               {form.formState.errors.audience && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.audience.message}</p>
               )}
@@ -243,6 +261,10 @@ export default function BrandPurpose() {
                 className="mt-1 resize-none"
                 rows={3}
               />
+              <div className="text-xs text-purple-600 mt-1 flex items-center">
+                <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                Grok suggests: Think about the specific problem you solve or task you complete for customers
+              </div>
               {form.formState.errors.jobToBeDone && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.jobToBeDone.message}</p>
               )}
@@ -258,6 +280,10 @@ export default function BrandPurpose() {
                 className="mt-1 resize-none"
                 rows={3}
               />
+              <div className="text-xs text-purple-600 mt-1 flex items-center">
+                <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                Grok suggests: Focus on emotional drivers like community support, quality, or sustainability
+              </div>
               {form.formState.errors.motivations && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.motivations.message}</p>
               )}
@@ -273,6 +299,10 @@ export default function BrandPurpose() {
                 className="mt-1 resize-none"
                 rows={3}
               />
+              <div className="text-xs text-purple-600 mt-1 flex items-center">
+                <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                Grok suggests: Identify specific problems your audience faces that your brand can solve
+              </div>
               {form.formState.errors.painPoints && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.painPoints.message}</p>
               )}
