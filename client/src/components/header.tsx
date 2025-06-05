@@ -112,7 +112,7 @@ export default function Header({
             />
           </Link>
           
-          {showUserMenu && user && (
+          {showUserMenu && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="p-2">
@@ -120,13 +120,19 @@ export default function Header({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuItem className="flex flex-col items-start p-4 cursor-default">
-                  <div className="font-medium text-gray-900">{user.email}</div>
-                  <div className="text-sm text-gray-500 capitalize">{user.subscriptionPlan} Plan</div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    {user.remainingPosts} of {user.totalPosts} posts remaining
-                  </div>
-                </DropdownMenuItem>
+                {user ? (
+                  <DropdownMenuItem className="flex flex-col items-start p-4 cursor-default">
+                    <div className="font-medium text-gray-900">{user.email}</div>
+                    <div className="text-sm text-gray-500 capitalize">{user.subscriptionPlan} Plan</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {user.remainingPosts} of {user.totalPosts} posts remaining
+                    </div>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem className="flex flex-col items-start p-4 cursor-default">
+                    <div className="font-medium text-gray-900">Loading...</div>
+                  </DropdownMenuItem>
+                )}
                 
                 <DropdownMenuSeparator />
                 
