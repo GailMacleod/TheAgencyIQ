@@ -78,7 +78,7 @@ export default function Header({
               <img 
                 src="/attached_assets/agency_logo_1749083054761.png" 
                 alt="AiQ" 
-                className="h-10 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
               />
             </Link>
             
@@ -108,7 +108,7 @@ export default function Header({
             <img 
               src="/attached_assets/agency_logo_1749083054761.png" 
               alt="AiQ" 
-              className="h-10 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+              className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
             />
           </Link>
           
