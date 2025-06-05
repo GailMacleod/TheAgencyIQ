@@ -713,12 +713,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For demo purposes, use mock user ID if no session
       const userId = req.session.userId || 1;
 
+      // Ensure user exists first
+      let user = await storage.getUser(userId);
+      if (!user) {
+        user = await storage.createUser({
+          email: "demo@theagencyiq.ai",
+          password: "demo123",
+          phone: "+61400000000",
+          subscriptionPlan: "professional",
+          remainingPosts: 45,
+          totalPosts: 60
+        });
+      }
+
       // Get or create brand purpose data for demo
-      let brandData = await storage.getBrandPurposeByUser(userId);
+      let brandData = await storage.getBrandPurposeByUser(user.id);
       if (!brandData) {
         // Create authentic brand purpose for Queensland business
         brandData = await storage.createBrandPurpose({
-          userId: userId,
+          userId: user.id,
           brandName: "Queensland Business Solutions",
           productsServices: "Digital marketing and business automation services for Queensland SMEs",
           corePurpose: "Empowering Queensland small businesses to thrive in the digital economy",
