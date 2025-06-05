@@ -36,11 +36,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 // Twilio setup
-const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+import twilio from 'twilio';
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 // SendGrid setup
-const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+import sgMail from '@sendgrid/mail';
+sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
