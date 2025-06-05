@@ -346,32 +346,7 @@ export default function Splash() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="section-spacing bg-gradient-atomiq">
-        <div className="container-atomiq text-center text-white">
-          <div className="max-w-4xl mx-auto space-y-8">
-            <h2 className="text-4xl md:text-5xl font-bold">
-              Ready to grow your business?
-            </h2>
-            <p className="text-xl opacity-90 leading-relaxed">
-              Join Queensland businesses already using AiQ to automate their social media success with intelligent technology.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/subscription">
-                <Button size="lg" className="bg-white text-primary hover:bg-white/90 text-lg px-8 py-4">
-                  Choose Your Plan
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary text-lg px-8 py-4">
-                  Sign In
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* Footer */}
       <footer className="bg-card border-t">
