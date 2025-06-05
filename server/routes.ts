@@ -431,6 +431,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cancel subscription endpoint
+  app.post("/api/cancel-subscription", requireAuth, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (!user.stripeSubscriptionId) {
+        return res.status(400).json({ message: "No active subscription found" });
+      }
+
+      // Cancel the subscription in Stripe
+      const subscription = await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+      
+      // Update user subscription status
+      await storage.updateUser(req.session.userId!, {
+        subscriptionPlan: "cancelled",
+        stripeSubscriptionId: null,
+        remainingPosts: 0,
+        totalPosts: 0
+      });
+
+      res.json({ 
+        message: "Subscription cancelled successfully",
+        subscriptionId: subscription.id 
+      });
+    } catch (error: any) {
+      console.error("Error cancelling subscription:", error);
+      res.status(500).json({ message: "Failed to cancel subscription" });
+    }
+  });
+
   // Replace failed post
   app.post("/api/replace-post", requireAuth, async (req: any, res) => {
     try {
