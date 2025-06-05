@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Zap, Target, Calendar, BarChart3, Users, Sparkles, CheckCircle, ArrowRight, Cpu, Lightbulb } from "lucide-react";
+import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
 import GrokWidget from "@/components/grok-widget";
 import UserMenu from "@/components/user-menu";
@@ -68,37 +69,14 @@ export default function Splash() {
                 </p>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/subscription">
-                  <Button className="btn-atomiq-primary text-lg px-8 py-4">
-                    Get Started
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-                <Link href="#features">
-                  <Button variant="outline" className="btn-atomiq-secondary text-lg px-8 py-4">
-                    Learn More
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6 text-sm">
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Saves time: everything automated</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Improves results: brand-aligned content</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Plans starting from A$19.99/month</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Peace of mind: secure and compliant</span>
-                </div>
+              {/* Platform logos for education */}
+              <div className="flex justify-center items-center space-x-8">
+                <SiFacebook className="w-8 h-8" style={{ color: '#1877F2' }} />
+                <SiInstagram className="w-8 h-8" style={{ color: '#E4405F' }} />
+                <SiLinkedin className="w-8 h-8" style={{ color: '#0A66C2' }} />
+                <SiYoutube className="w-8 h-8" style={{ color: '#FF0000' }} />
+                <SiTiktok className="w-8 h-8" style={{ color: '#000000' }} />
+                <SiX className="w-8 h-8" style={{ color: '#000000' }} />
               </div>
             </div>
 
