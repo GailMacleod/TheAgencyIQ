@@ -707,6 +707,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Grok content generation with thinking process
+  app.post("/api/grok/generate-content", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Get brand purpose data
+      const brandData = await storage.getBrandPurposeByUser(req.session.userId);
+      if (!brandData) {
+        return res.status(400).json({ message: "Please complete your brand purpose first" });
+      }
+
+      // Generate content using Grok with brand purpose context
+      const contentParams = {
+        brandName: brandData.brandName || "Your Business",
+        productsServices: brandData.productsServices || "",
+        corePurpose: brandData.corePurpose || "",
+        audience: brandData.audience || "",
+        jobToBeDone: brandData.jobToBeDone || "",
+        motivations: brandData.motivations || "",
+        painPoints: brandData.painPoints || "",
+        goals: brandData.goals || {},
+        contactDetails: brandData.contactDetails || {},
+        platforms: ["linkedin", "instagram", "facebook"],
+        totalPosts: 10
+      };
+
+      const generatedPosts = await generateContentCalendar(contentParams);
+      res.json({ posts: generatedPosts });
+    } catch (error: any) {
+      console.error("Content generation error:", error);
+      res.status(500).json({ message: "Failed to generate content: " + error.message });
+    }
+  });
+
   // Forgot password
   app.post("/api/forgot-password", async (req, res) => {
     try {

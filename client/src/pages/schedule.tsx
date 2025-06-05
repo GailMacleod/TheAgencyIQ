@@ -194,42 +194,47 @@ export default function Schedule() {
     setShowGrokThinking(true);
     setGrokStep(0);
     
-    // Simulate Grok's thinking process
-    for (let i = 0; i < grokThinkingSteps.length; i++) {
-      setGrokStep(i + 1);
-      await new Promise(resolve => setTimeout(resolve, grokThinkingSteps[i].duration));
-    }
-    
-    // Generate sample posts after thinking process
-    const samplePosts = [
-      {
-        id: 1,
-        platform: "linkedin",
-        content: "🚀 Queensland small businesses are driving innovation! At [Your Business], we're committed to supporting local growth through [your service]. What challenges are you facing in 2025? Let's connect and explore solutions together. #Queensland #SmallBusiness #Innovation",
-        status: "scheduled",
-        scheduledFor: new Date(Date.now() + 86400000).toISOString(),
-        grokRecommendation: "LinkedIn post optimized for B2B networking and local Queensland business community engagement"
-      },
-      {
-        id: 2,
-        platform: "instagram", 
-        content: "Behind the scenes at [Your Business] 📸 From our Queensland headquarters, we're working hard to deliver exceptional [your service] to our amazing community. Tag a local business that inspires you! 💪 #QueenslandBusiness #BehindTheScenes #Community",
-        status: "scheduled",
-        scheduledFor: new Date(Date.now() + 172800000).toISOString(),
-        grokRecommendation: "Instagram post with visual storytelling focus, encouraging user engagement through tags"
-      },
-      {
-        id: 3,
-        platform: "facebook",
-        content: "📍 Proudly serving the Queensland community! We're celebrating our local roots and the incredible support from our neighbors. Share your favorite local Queensland business in the comments below - let's support each other! 🤝 #CommunitySupport #Queensland #LocalBusiness",
-        status: "scheduled", 
-        scheduledFor: new Date(Date.now() + 259200000).toISOString(),
-        grokRecommendation: "Facebook post designed for community building and local engagement"
+    try {
+      // Simulate Grok's thinking process
+      for (let i = 0; i < grokThinkingSteps.length; i++) {
+        setGrokStep(i + 1);
+        await new Promise(resolve => setTimeout(resolve, grokThinkingSteps[i].duration));
       }
-    ];
-    
-    setGeneratedPosts(samplePosts);
-    setShowGrokThinking(false);
+      
+      // Generate real content using Grok API
+      const response = await apiRequest("POST", "/api/grok/generate-content", {});
+      const grokPosts = response.posts.map((post: any, index: number) => ({
+        id: index + 1,
+        platform: post.platform,
+        content: post.content,
+        status: "scheduled",
+        scheduledFor: post.scheduledFor,
+        grokRecommendation: `Grok generated this ${post.platform} post based on your brand purpose analysis`
+      }));
+      
+      setGeneratedPosts(grokPosts);
+    } catch (error: any) {
+      toast({
+        title: "Content Generation Failed",
+        description: error.message || "Unable to generate content with Grok",
+        variant: "destructive",
+      });
+      
+      // Fallback to placeholder posts if API fails
+      const fallbackPosts = [
+        {
+          id: 1,
+          platform: "linkedin",
+          content: "Connect with Grok AI to generate personalized content based on your brand purpose and Queensland market insights.",
+          status: "scheduled",
+          scheduledFor: new Date(Date.now() + 86400000).toISOString(),
+          grokRecommendation: "Complete your brand purpose setup to unlock personalized content generation"
+        }
+      ];
+      setGeneratedPosts(fallbackPosts);
+    } finally {
+      setShowGrokThinking(false);
+    }
   };
 
   const approvePostMutation = useMutation({
