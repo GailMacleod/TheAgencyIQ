@@ -122,7 +122,7 @@ export default function Analytics() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header showBack="/schedule" title="Analytics Dashboard" />
+        <MasterHeader showBack="/schedule" title="Analytics Dashboard" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full"></div>
@@ -134,7 +134,7 @@ export default function Analytics() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header showBack="/schedule" title="Analytics Dashboard" />
+      <MasterHeader showBack="/schedule" title="Analytics Dashboard" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Progress Indicator */}
@@ -338,7 +338,7 @@ export default function Analytics() {
         </Card>
       </div>
 
-      <Footer />
+      <MasterFooter />
     </div>
   );
 }

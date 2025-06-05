@@ -7,8 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { TrendingUp, TrendingDown, Target, Users, MessageCircle, Eye, BarChart3, Calendar, Award } from "lucide-react";
 import { format, startOfYear, endOfYear, eachMonthOfInterval, startOfMonth, endOfMonth } from "date-fns";
-import Header from "@/components/header";
-import Footer from "@/components/footer";
+import MasterHeader from "@/components/master-header";
+import MasterFooter from "@/components/master-footer";
 
 interface MonthlyPerformance {
   month: string;
@@ -96,7 +96,7 @@ export default function YearlyAnalytics() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header showBack="/analytics" title="Year-to-Date Analytics" />
+        <MasterHeader showBack="/analytics" title="Year-to-Date Analytics" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full"></div>
@@ -108,7 +108,7 @@ export default function YearlyAnalytics() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header showBack="/analytics" title="Year-to-Date Analytics" />
+      <MasterHeader showBack="/analytics" title="Year-to-Date Analytics" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -442,7 +442,7 @@ export default function YearlyAnalytics() {
         </Card>
       </div>
 
-      <Footer />
+      <MasterFooter />
     </div>
   );
 }

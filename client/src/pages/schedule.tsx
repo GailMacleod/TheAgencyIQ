@@ -8,8 +8,8 @@ import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { format, addDays, startOfMonth, endOfMonth, isSameDay, isToday } from "date-fns";
-import Header from "@/components/header";
-import Footer from "@/components/footer";
+import MasterHeader from "@/components/master-header";
+import MasterFooter from "@/components/master-footer";
 
 interface Post {
   id: number;
