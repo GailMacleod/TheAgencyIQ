@@ -156,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Send SMS via Twilio
         await twilioClient.messages.create({
-          body: `Your AgencyIQ verification code is: ${code}`,
+          body: `Your AtomIQ verification code is: ${code}`,
           from: process.env.TWILIO_PHONE_NUMBER,
           to: phone
         });
