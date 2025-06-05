@@ -48,7 +48,6 @@ export default function MasterHeader({
                   <h1 className="text-lg font-semibold text-gray-900 lowercase">
                     {title || "the agencyiq"}
                   </h1>
-                  <p className="text-xs text-gray-500 lowercase">queensland social media automation</p>
                 </div>
               </div>
             </div>
