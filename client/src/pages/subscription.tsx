@@ -168,11 +168,11 @@ export default function Subscription() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {plans.map((plan, index) => (
               <div 
                 key={plan.id} 
-                className={`pricing-card p-8 ${
+                className={`pricing-card p-6 ${
                   plan.popular ? 'pricing-card-popular' : ''
                 }`}
               >
