@@ -52,6 +52,9 @@ export default function Schedule() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
+  const [showGrokThinking, setShowGrokThinking] = useState(false);
+  const [grokStep, setGrokStep] = useState(0);
+  const [generatedPosts, setGeneratedPosts] = useState<Post[]>([]);
 
   // Mock user data to prevent API loop
   const user = {
@@ -154,6 +157,81 @@ export default function Schedule() {
     return `Local event opportunity: ${events[0]} - tailor your content to this occasion`;
   };
 
+  const grokThinkingSteps = [
+    {
+      step: 1,
+      title: "Analyzing Brand Purpose & Goals",
+      content: "Reviewing your Strategyzer-based brand purpose to understand core messaging, target audience, and business objectives...",
+      duration: 2000
+    },
+    {
+      step: 2, 
+      title: "Platform Strategy Analysis",
+      content: "Evaluating which social media platforms best align with your goals: LinkedIn for B2B reach, Instagram for visual storytelling, Facebook for community building...",
+      duration: 3000
+    },
+    {
+      step: 3,
+      title: "Queensland Event Integration", 
+      content: "Cross-referencing local Queensland events, school holidays, and seasonal opportunities to optimize posting timing...",
+      duration: 2500
+    },
+    {
+      step: 4,
+      title: "Content Creation & Refinement",
+      content: "Generating platform-specific content that reflects your brand voice while maximizing engagement potential...",
+      duration: 4000
+    },
+    {
+      step: 5,
+      title: "Final Review & Optimization",
+      content: "Applying unpaid media best practices and ensuring each post meets your strategic objectives...",
+      duration: 2000
+    }
+  ];
+
+  const generateContentWithGrokThinking = async () => {
+    setShowGrokThinking(true);
+    setGrokStep(0);
+    
+    // Simulate Grok's thinking process
+    for (let i = 0; i < grokThinkingSteps.length; i++) {
+      setGrokStep(i + 1);
+      await new Promise(resolve => setTimeout(resolve, grokThinkingSteps[i].duration));
+    }
+    
+    // Generate sample posts after thinking process
+    const samplePosts = [
+      {
+        id: 1,
+        platform: "linkedin",
+        content: "🚀 Queensland small businesses are driving innovation! At [Your Business], we're committed to supporting local growth through [your service]. What challenges are you facing in 2025? Let's connect and explore solutions together. #Queensland #SmallBusiness #Innovation",
+        status: "scheduled",
+        scheduledFor: new Date(Date.now() + 86400000).toISOString(),
+        grokRecommendation: "LinkedIn post optimized for B2B networking and local Queensland business community engagement"
+      },
+      {
+        id: 2,
+        platform: "instagram", 
+        content: "Behind the scenes at [Your Business] 📸 From our Queensland headquarters, we're working hard to deliver exceptional [your service] to our amazing community. Tag a local business that inspires you! 💪 #QueenslandBusiness #BehindTheScenes #Community",
+        status: "scheduled",
+        scheduledFor: new Date(Date.now() + 172800000).toISOString(),
+        grokRecommendation: "Instagram post with visual storytelling focus, encouraging user engagement through tags"
+      },
+      {
+        id: 3,
+        platform: "facebook",
+        content: "📍 Proudly serving the Queensland community! We're celebrating our local roots and the incredible support from our neighbors. Share your favorite local Queensland business in the comments below - let's support each other! 🤝 #CommunitySupport #Queensland #LocalBusiness",
+        status: "scheduled", 
+        scheduledFor: new Date(Date.now() + 259200000).toISOString(),
+        grokRecommendation: "Facebook post designed for community building and local engagement"
+      }
+    ];
+    
+    setGeneratedPosts(samplePosts);
+    setShowGrokThinking(false);
+  };
+
   const approvePostMutation = useMutation({
     mutationFn: (postId: number) => apiRequest("PUT", `/api/posts/${postId}`, { status: "approved" }),
     onSuccess: () => {
@@ -165,7 +243,7 @@ export default function Schedule() {
     },
     onError: (error: any) => {
       toast({
-        title: "Approval Failed",
+        title: "Approval Failed", 
         description: error.message || "Failed to approve post",
         variant: "destructive",
       });
@@ -219,7 +297,123 @@ export default function Schedule() {
           <p className="text-gray-600 text-sm lowercase">
             grok has analyzed queensland events and optimal posting times to create your personalized content calendar
           </p>
+          
+          {/* Generate Content Button */}
+          <Button
+            onClick={generateContentWithGrokThinking}
+            className="mt-4 bg-purple-600 hover:bg-purple-700 text-white lowercase"
+            disabled={showGrokThinking}
+          >
+            {showGrokThinking ? 'grok is thinking...' : 'generate content with grok'}
+          </Button>
         </div>
+
+        {/* Grok Thinking Process Modal */}
+        {showGrokThinking && (
+          <Card className="fixed inset-0 z-50 bg-white bg-opacity-95 flex items-center justify-center">
+            <CardContent className="max-w-2xl p-8">
+              <div className="text-center">
+                <h2 className="text-2xl font-light text-purple-700 mb-6 lowercase">
+                  grok's strategic analysis
+                </h2>
+                
+                {/* Progress Steps */}
+                <div className="space-y-6">
+                  {grokThinkingSteps.map((step, index) => (
+                    <div 
+                      key={index}
+                      className={`flex items-start space-x-4 p-4 rounded-lg transition-all duration-500 ${
+                        grokStep > index ? 'bg-green-50 border-green-200' :
+                        grokStep === index + 1 ? 'bg-purple-50 border-purple-200 shadow-md' :
+                        'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                        grokStep > index ? 'bg-green-500 text-white' :
+                        grokStep === index + 1 ? 'bg-purple-500 text-white animate-pulse' :
+                        'bg-gray-300 text-gray-600'
+                      }`}>
+                        {grokStep > index ? '✓' : step.step}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <h3 className="font-medium text-gray-900 lowercase">{step.title}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{step.content}</p>
+                      </div>
+                      {grokStep === index + 1 && (
+                        <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Generated Posts Preview */}
+        {generatedPosts.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-light text-gray-900 mb-4 lowercase">
+              grok's content recommendations
+            </h2>
+            <div className="grid gap-6">
+              {generatedPosts.map((post) => (
+                <Card key={post.id} className="p-6">
+                  <CardContent className="p-0">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        {getPlatformIcon(post.platform)}
+                        <div>
+                          <h3 className="font-medium text-gray-900 lowercase">{post.platform}</h3>
+                          <p className="text-sm text-gray-500">
+                            scheduled for {format(new Date(post.scheduledFor), 'MMM d, h:mm a')}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="lowercase">
+                        {post.status}
+                      </Badge>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <p className="text-gray-800 whitespace-pre-wrap">{post.content}</p>
+                    </div>
+                    
+                    {post.grokRecommendation && (
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
+                        <p className="text-purple-700 text-sm font-medium lowercase">grok's strategy:</p>
+                        <p className="text-purple-800 text-sm">{post.grokRecommendation}</p>
+                      </div>
+                    )}
+                    
+                    <div className="flex space-x-3">
+                      <Button
+                        onClick={() => approvePostMutation.mutate(post.id)}
+                        className="bg-green-600 hover:bg-green-700 text-white lowercase"
+                        disabled={approvePostMutation.isPending}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        approve & schedule
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="lowercase"
+                      >
+                        edit post
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="text-red-600 border-red-200 hover:bg-red-50 lowercase"
+                      >
+                        reject
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 30-Day Calendar Grid */}
         <div className="grid grid-cols-7 gap-2 mb-8">
