@@ -126,15 +126,12 @@ export default function AnalyticsBar({ className }: AnalyticsBarProps) {
             </div>
             
             {analytics.connectedPlatforms && analytics.connectedPlatforms.length > 0 && (
-              <div className="flex items-center text-sm">
-                <span className="text-gray-600 mr-2">Connected:</span>
-                <div className="flex items-center space-x-1">
-                  {analytics.connectedPlatforms.map((platform, index) => (
-                    <div key={index} className="p-1">
-                      {getPlatformIcon(platform)}
-                    </div>
-                  ))}
-                </div>
+              <div className="flex items-center space-x-2">
+                {analytics.connectedPlatforms.map((platform, index) => (
+                  <div key={index} className="p-1">
+                    {getPlatformIcon(platform)}
+                  </div>
+                ))}
               </div>
             )}
           </div>
