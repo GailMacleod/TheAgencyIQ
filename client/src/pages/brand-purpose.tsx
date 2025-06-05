@@ -311,6 +311,10 @@ export default function BrandPurpose() {
             {/* Goals with Measurable Metrics */}
             <div>
               <Label className="text-sm font-medium text-gray-700">What are your specific goals with measurable targets?</Label>
+              <div className="text-xs text-purple-600 mt-1 mb-3 flex items-center">
+                <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                Grok suggests: If you want to drive traffic, I'll include your website URL in posts. Select goals that align with your business priorities.
+              </div>
               <div className="mt-3 space-y-4">
                 <div className="flex items-start space-x-3">
                   <Checkbox
