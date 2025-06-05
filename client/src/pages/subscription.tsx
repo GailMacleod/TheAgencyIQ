@@ -104,6 +104,9 @@ export default function Subscription() {
               </Link>
             </div>
             <div className="flex items-center space-x-6">
+              <Link href="/signup">
+                <Button variant="ghost" className="nav-link">Sign Up</Button>
+              </Link>
               <Link href="/login">
                 <Button variant="ghost" className="nav-link">Sign In</Button>
               </Link>
