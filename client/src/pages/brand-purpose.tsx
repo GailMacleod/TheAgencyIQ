@@ -186,7 +186,7 @@ export default function BrandPurpose() {
                 />
                 <div className="text-xs text-purple-600 mt-1 flex items-center">
                   <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                  Grok suggests: Your brand name should be memorable and reflect your location or specialty
+                  Grok Strategyzer tip: Your brand name should connect to your value proposition and target customer segment
                 </div>
               </div>
               {form.formState.errors.brandName && (
@@ -206,7 +206,7 @@ export default function BrandPurpose() {
               />
               <div className="text-xs text-purple-600 mt-1 flex items-center">
                 <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok suggests: Be specific about what makes your products/services unique to Queensland
+                Grok Strategyzer tip: Define your value proposition - what specific gain do you create or pain do you relieve?
               </div>
               {form.formState.errors.productsServices && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.productsServices.message}</p>
@@ -225,7 +225,7 @@ export default function BrandPurpose() {
               />
               <div className="text-xs text-purple-600 mt-1 flex items-center">
                 <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok suggests: Your core purpose could be 'support local Queensland artisans' to align with your products
+                Grok Strategyzer tip: Your core purpose defines your mission - focus on the customer jobs you help complete
               </div>
               {form.formState.errors.corePurpose && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.corePurpose.message}</p>
@@ -244,7 +244,7 @@ export default function BrandPurpose() {
               />
               <div className="text-xs text-purple-600 mt-1 flex items-center">
                 <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok suggests: Include age, location, interests, and values to help target your content
+                Grok Strategyzer tip: Define your customer segment - demographics, behaviors, and needs they share
               </div>
               {form.formState.errors.audience && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.audience.message}</p>
@@ -263,7 +263,7 @@ export default function BrandPurpose() {
               />
               <div className="text-xs text-purple-600 mt-1 flex items-center">
                 <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok suggests: Think about the specific problem you solve or task you complete for customers
+                Grok Strategyzer tip: Customer job-to-be-done - what functional, emotional, or social job do customers hire you for?
               </div>
               {form.formState.errors.jobToBeDone && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.jobToBeDone.message}</p>
@@ -282,7 +282,7 @@ export default function BrandPurpose() {
               />
               <div className="text-xs text-purple-600 mt-1 flex items-center">
                 <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok suggests: Focus on emotional drivers like community support, quality, or sustainability
+                Grok Strategyzer tip: Customer gains - what benefits, outcomes, and characteristics your customers want
               </div>
               {form.formState.errors.motivations && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.motivations.message}</p>
@@ -301,7 +301,7 @@ export default function BrandPurpose() {
               />
               <div className="text-xs text-purple-600 mt-1 flex items-center">
                 <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok suggests: Identify specific problems your audience faces that your brand can solve
+                Grok Strategyzer tip: Customer pains - frustrations, obstacles, and risks your customers experience
               </div>
               {form.formState.errors.painPoints && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.painPoints.message}</p>
@@ -313,7 +313,7 @@ export default function BrandPurpose() {
               <Label className="text-sm font-medium text-gray-700">What are your specific goals with measurable targets?</Label>
               <div className="text-xs text-purple-600 mt-1 mb-3 flex items-center">
                 <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok suggests: If you want to drive traffic, I'll include your website URL in posts. Select goals that align with your business priorities.
+                Grok Strategyzer tip: Your value proposition must align with customer jobs, pains, and gains. Select measurable goals.
               </div>
               <div className="mt-3 space-y-4">
                 <div className="flex items-start space-x-3">

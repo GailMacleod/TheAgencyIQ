@@ -19,7 +19,7 @@ export default function GrokWidget() {
     {
       id: '1',
       role: 'assistant',
-      content: 'hi! i\'m here to help you define your brand purpose. need suggestions for any field? ask me about your brand name, audience, goals, or what makes your Queensland business unique.',
+      content: 'hi! i\'m grok, your strategyzer-trained ai assistant. i\'ll help you define your brand purpose using proven value proposition methodology. ask me about customer segments, jobs-to-be-done, pains, gains, or your queensland business strategy.',
       timestamp: new Date(),
     },
   ]);
