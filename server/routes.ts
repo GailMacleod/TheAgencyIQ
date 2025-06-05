@@ -122,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quantity: 1,
         }],
         mode: 'subscription',
-        success_url: `https://${domain}/signup?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `https://${domain}/api/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `https://${domain}/subscription`,
       });
 
