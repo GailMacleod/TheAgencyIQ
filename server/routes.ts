@@ -595,12 +595,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ],
         success_url: `${req.protocol}://${req.get('host')}/brand-purpose?payment=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${req.protocol}://${req.get('host')}/subscription`,
-        client_reference_id: req.session?.userId?.toString() || 'guest',
+        client_reference_id: user.id.toString(),
+        customer_email: user.email,
         metadata: {
           plan: planDetails.name,
           posts: planDetails.posts.toString(),
           totalPosts: planDetails.totalPosts.toString(),
-          userId: req.session?.userId?.toString() || 'guest'
+          userId: user.id.toString()
         }
       });
 
