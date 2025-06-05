@@ -2,20 +2,39 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import Header from "@/components/header";
-import Footer from "@/components/footer";
-import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, Upload } from "lucide-react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import GrokWidget from "@/components/grok-widget";
 
 const brandPurposeSchema = z.object({
+  brandName: z.string().min(1, "Brand name is required"),
+  productsServices: z.string().min(10, "Products/services description must be at least 10 characters"),
   corePurpose: z.string().min(10, "Core purpose must be at least 10 characters"),
   audience: z.string().min(10, "Ideal audience must be at least 10 characters"),
-  goals: z.string().min(10, "Business goals must be at least 10 characters"),
+  jobToBeDone: z.string().min(10, "Job to be done must be at least 10 characters"),
+  motivations: z.string().min(10, "Audience motivations must be at least 10 characters"),
+  painPoints: z.string().min(10, "Pain points must be at least 10 characters"),
+  goals: z.object({
+    driveTraffic: z.boolean().default(false),
+    websiteUrl: z.string().optional(),
+    buildBrand: z.boolean().default(false),
+    makeSales: z.boolean().default(false),
+    salesUrl: z.string().optional(),
+    informEducate: z.boolean().default(false),
+    keyMessage: z.string().optional(),
+  }),
+  contactDetails: z.object({
+    email: z.string().email("Invalid email").optional().or(z.literal("")),
+    phone: z.string().optional(),
+  }),
 });
 
 type BrandPurposeForm = z.infer<typeof brandPurposeSchema>;
@@ -24,13 +43,31 @@ export default function BrandPurpose() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   const form = useForm<BrandPurposeForm>({
     resolver: zodResolver(brandPurposeSchema),
     defaultValues: {
-      corePurpose: "Help local Queensland businesses grow their online presence through strategic social media marketing and automation.",
-      audience: "Small to medium business owners in Queensland who want to improve their social media presence but lack the time or expertise to manage it themselves.",
-      goals: "Increase brand awareness, generate quality leads, build customer relationships, and establish thought leadership in the local market.",
+      brandName: "Queensland Artisans Co.",
+      productsServices: "Handcrafted pottery, local art prints, and unique Queensland-made gifts that celebrate local artistry and craftsmanship.",
+      corePurpose: "Support local Queensland artisans by connecting them with customers who value authentic, handmade products and local craftsmanship.",
+      audience: "Queensland locals aged 25-45 who appreciate unique, locally-made products and want to support their community's artists and craftspeople.",
+      jobToBeDone: "Help customers find unique, authentic local gifts that tell a story and support Queensland's creative community.",
+      motivations: "They value supporting local artists, want unique products that aren't mass-produced, and appreciate the story behind handmade items.",
+      painPoints: "Hard to find authentic local products, uncertainty about quality, lack of connection to the artists, limited time to search for unique gifts.",
+      goals: {
+        driveTraffic: true,
+        websiteUrl: "https://queenslandartisans.com",
+        buildBrand: true,
+        makeSales: true,
+        salesUrl: "https://queenslandartisans.com/shop",
+        informEducate: false,
+        keyMessage: "",
+      },
+      contactDetails: {
+        email: "info@queenslandartisans.com",
+        phone: "+61 7 1234 5678",
+      },
     },
   });
 
@@ -38,19 +75,35 @@ export default function BrandPurpose() {
     try {
       setLoading(true);
       
-      await apiRequest("POST", "/api/brand-purpose", data);
+      // Upload logo if provided
+      let logoUrl = "";
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append('logo', logoFile);
+        
+        const logoResponse = await apiRequest("POST", "/api/upload-logo", formData);
+        const logoData = await logoResponse.json();
+        logoUrl = logoData.logoUrl;
+      }
+      
+      const brandData = {
+        ...data,
+        logoUrl,
+      };
+      
+      await apiRequest("POST", "/api/brand-purpose", brandData);
       
       toast({
         title: "Brand Purpose Saved",
         description: "Your brand purpose has been saved successfully",
       });
       
-      setLocation("/platform-connections");
+      setLocation("/schedule");
     } catch (error: any) {
       console.error("Brand purpose error:", error);
       toast({
-        title: "Error",
-        description: "Failed to save brand purpose",
+        title: "Brand Purpose Failed",
+        description: error.message || "Failed to save brand purpose",
         variant: "destructive",
       });
     } finally {
@@ -58,77 +111,318 @@ export default function BrandPurpose() {
     }
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size and type
+      if (file.size > 500000) { // 500KB
+        toast({
+          title: "File Too Large",
+          description: "Logo must be under 500KB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please upload a PNG or JPG image",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setLogoFile(file);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <Header showBack="/subscription" />
+    <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border/40">
+        <div className="container-atomiq">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center">
+              <Link href="/subscription" className="flex items-center">
+                <ArrowLeft className="h-5 w-5 text-muted-foreground mr-3" />
+                <img 
+                  src="/attached_assets/agency_logo_1749083054761.png" 
+                  alt="AiQ" 
+                  className="h-12 w-auto"
+                />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
       
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-8">
-          <p className="text-sm text-foreground lowercase">step 2 of 3</p>
-          <div className="w-full bg-muted rounded-full h-2 mt-2">
-            <div className="bg-primary h-2 rounded-full w-2/3"></div>
+          <p className="text-sm text-gray-600">step 2 of 3</p>
+          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+            <div className="bg-blue-600 h-2 rounded-full w-2/3"></div>
           </div>
         </div>
 
-        <Card className="card-agencyiq">
-          <CardContent className="p-8">
-            <h2 className="text-heading font-light text-foreground text-center mb-8 lowercase">
-              define your brand purpose
-            </h2>
-            
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-sections">
-              <div>
-                <Label className="text-sm font-medium text-foreground mb-2 lowercase">core purpose</Label>
-                <Textarea
-                  rows={4}
-                  placeholder="what is the core purpose of your business?"
-                  {...form.register('corePurpose')}
-                  className="mt-2"
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <h2 className="text-2xl font-normal text-center mb-8" style={{ color: '#333333' }}>
+            define your brand purpose
+          </h2>
+
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Brand Name */}
+            <div>
+              <Label htmlFor="brandName" className="text-sm font-medium text-gray-700">What's your brand name?</Label>
+              <Input
+                id="brandName"
+                {...form.register('brandName')}
+                placeholder="try 'Queensland Artisans Co.'"
+                className="mt-1"
+              />
+              {form.formState.errors.brandName && (
+                <p className="text-sm text-red-600 mt-1">{form.formState.errors.brandName.message}</p>
+              )}
+            </div>
+
+            {/* Products/Services */}
+            <div>
+              <Label htmlFor="productsServices" className="text-sm font-medium text-gray-700">What products or services does your brand offer?</Label>
+              <Textarea
+                id="productsServices"
+                {...form.register('productsServices')}
+                placeholder="e.g., handcrafted pottery, local art prints"
+                className="mt-1 resize-none"
+                rows={3}
+              />
+              {form.formState.errors.productsServices && (
+                <p className="text-sm text-red-600 mt-1">{form.formState.errors.productsServices.message}</p>
+              )}
+            </div>
+
+            {/* Core Purpose */}
+            <div>
+              <Label htmlFor="corePurpose" className="text-sm font-medium text-gray-700">What's your brand's core purpose?</Label>
+              <Textarea
+                id="corePurpose"
+                {...form.register('corePurpose')}
+                placeholder="e.g., support local queensland artisans"
+                className="mt-1 resize-none"
+                rows={3}
+              />
+              {form.formState.errors.corePurpose && (
+                <p className="text-sm text-red-600 mt-1">{form.formState.errors.corePurpose.message}</p>
+              )}
+            </div>
+
+            {/* Ideal Audience */}
+            <div>
+              <Label htmlFor="audience" className="text-sm font-medium text-gray-700">Who's your ideal audience?</Label>
+              <Textarea
+                id="audience"
+                {...form.register('audience')}
+                placeholder="e.g., queensland locals aged 25-45"
+                className="mt-1 resize-none"
+                rows={3}
+              />
+              {form.formState.errors.audience && (
+                <p className="text-sm text-red-600 mt-1">{form.formState.errors.audience.message}</p>
+              )}
+            </div>
+
+            {/* Job to Be Done */}
+            <div>
+              <Label htmlFor="jobToBeDone" className="text-sm font-medium text-gray-700">What job does your brand do for customers?</Label>
+              <Textarea
+                id="jobToBeDone"
+                {...form.register('jobToBeDone')}
+                placeholder="e.g., help customers find unique, local gifts"
+                className="mt-1 resize-none"
+                rows={3}
+              />
+              {form.formState.errors.jobToBeDone && (
+                <p className="text-sm text-red-600 mt-1">{form.formState.errors.jobToBeDone.message}</p>
+              )}
+            </div>
+
+            {/* Motivations */}
+            <div>
+              <Label htmlFor="motivations" className="text-sm font-medium text-gray-700">What motivates your audience?</Label>
+              <Textarea
+                id="motivations"
+                {...form.register('motivations')}
+                placeholder="e.g., they value supporting local artists"
+                className="mt-1 resize-none"
+                rows={3}
+              />
+              {form.formState.errors.motivations && (
+                <p className="text-sm text-red-600 mt-1">{form.formState.errors.motivations.message}</p>
+              )}
+            </div>
+
+            {/* Pain Points */}
+            <div>
+              <Label htmlFor="painPoints" className="text-sm font-medium text-gray-700">What are their pain points?</Label>
+              <Textarea
+                id="painPoints"
+                {...form.register('painPoints')}
+                placeholder="e.g., hard to find authentic local products"
+                className="mt-1 resize-none"
+                rows={3}
+              />
+              {form.formState.errors.painPoints && (
+                <p className="text-sm text-red-600 mt-1">{form.formState.errors.painPoints.message}</p>
+              )}
+            </div>
+
+            {/* Goals */}
+            <div>
+              <Label className="text-sm font-medium text-gray-700">What are your specific goals?</Label>
+              <div className="mt-3 space-y-4">
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="driveTraffic"
+                    checked={form.watch('goals.driveTraffic')}
+                    onCheckedChange={(checked) => form.setValue('goals.driveTraffic', !!checked)}
+                  />
+                  <div className="flex-1">
+                    <Label htmlFor="driveTraffic" className="text-sm text-gray-700">Drive traffic to website</Label>
+                    {form.watch('goals.driveTraffic') && (
+                      <Input
+                        {...form.register('goals.websiteUrl')}
+                        placeholder="Enter website URL (e.g., https://queenslandartisans.com)"
+                        className="mt-2"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="buildBrand"
+                    checked={form.watch('goals.buildBrand')}
+                    onCheckedChange={(checked) => form.setValue('goals.buildBrand', !!checked)}
+                  />
+                  <Label htmlFor="buildBrand" className="text-sm text-gray-700">Build brand awareness</Label>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="makeSales"
+                    checked={form.watch('goals.makeSales')}
+                    onCheckedChange={(checked) => form.setValue('goals.makeSales', !!checked)}
+                  />
+                  <div className="flex-1">
+                    <Label htmlFor="makeSales" className="text-sm text-gray-700">Make sales</Label>
+                    {form.watch('goals.makeSales') && (
+                      <Input
+                        {...form.register('goals.salesUrl')}
+                        placeholder="Enter sales URL (e.g., https://queenslandartisans.com/shop)"
+                        className="mt-2"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="informEducate"
+                    checked={form.watch('goals.informEducate')}
+                    onCheckedChange={(checked) => form.setValue('goals.informEducate', !!checked)}
+                  />
+                  <div className="flex-1">
+                    <Label htmlFor="informEducate" className="text-sm text-gray-700">Inform or educate</Label>
+                    {form.watch('goals.informEducate') && (
+                      <Textarea
+                        {...form.register('goals.keyMessage')}
+                        placeholder="What's your key message? (e.g., promote sustainability in art)"
+                        className="mt-2 resize-none"
+                        rows={2}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Logo Upload */}
+            <div>
+              <Label htmlFor="logo" className="text-sm font-medium text-gray-700">Upload your brand logo</Label>
+              <div className="mt-2 flex items-center space-x-3">
+                <Input
+                  id="logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
                 />
-                {form.formState.errors.corePurpose && (
-                  <p className="text-sm text-destructive mt-1">{form.formState.errors.corePurpose.message}</p>
+                <Label
+                  htmlFor="logo"
+                  className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Choose File
+                </Label>
+                {logoFile && (
+                  <span className="text-sm text-gray-600">{logoFile.name}</span>
                 )}
               </div>
-              
-              <div>
-                <Label className="text-sm font-medium text-foreground mb-2 lowercase">ideal audience</Label>
-                <Textarea
-                  rows={4}
-                  placeholder="who is your ideal customer?"
-                  {...form.register('audience')}
-                  className="mt-2"
-                />
-                {form.formState.errors.audience && (
-                  <p className="text-sm text-destructive mt-1">{form.formState.errors.audience.message}</p>
-                )}
+              <p className="text-xs text-gray-500 mt-1">Max 500KB, 300x300px recommended, PNG/JPG</p>
+            </div>
+
+            {/* Contact Details */}
+            <div>
+              <Label className="text-sm font-medium text-gray-700">Contact Details</Label>
+              <div className="mt-3 space-y-4">
+                <div>
+                  <Label htmlFor="email" className="text-sm text-gray-600">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    {...form.register('contactDetails.email')}
+                    placeholder="info@queenslandartisans.com"
+                    className="mt-1"
+                  />
+                  {form.formState.errors.contactDetails?.email && (
+                    <p className="text-sm text-red-600 mt-1">{form.formState.errors.contactDetails.email.message}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="phone" className="text-sm text-gray-600">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    {...form.register('contactDetails.phone')}
+                    placeholder="+61 7 1234 5678"
+                    className="mt-1"
+                  />
+                </div>
               </div>
-              
-              <div>
-                <Label className="text-sm font-medium text-foreground mb-2 lowercase">business goals</Label>
-                <Textarea
-                  rows={4}
-                  placeholder="what are your main business objectives?"
-                  {...form.register('goals')}
-                  className="mt-2"
-                />
-                {form.formState.errors.goals && (
-                  <p className="text-sm text-destructive mt-1">{form.formState.errors.goals.message}</p>
-                )}
-              </div>
-              
-              <Button
-                type="submit"
-                className="w-full btn-secondary"
-                disabled={loading}
-              >
-                {loading ? 'saving...' : 'next'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-medium"
+              disabled={loading}
+              style={{ backgroundColor: '#3250fa' }}
+            >
+              {loading ? "Saving..." : "Next"}
+            </Button>
+          </form>
+        </div>
+      </div>
+      
+      <div className="mt-8 text-center">
+        <p className="text-xs text-gray-500">
+          MacleodGlobal T/A The AgencyIQ
+        </p>
+        <div className="flex justify-center space-x-4 mt-2">
+          <a href="#" className="text-xs text-gray-500 hover:text-gray-700">Privacy Policy</a>
+          <a href="#" className="text-xs text-gray-500 hover:text-gray-700">Terms of Service</a>
+        </div>
       </div>
 
-      <Footer />
+      <GrokWidget />
     </div>
   );
 }

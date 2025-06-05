@@ -427,11 +427,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No platform connections found. Please connect at least one platform." });
       }
 
-      // Generate posts using Grok
+      // Generate posts using Grok with comprehensive brand data
       const generatedPosts = await generateContentCalendar({
+        brandName: brandPurposeRecord.brandName,
+        productsServices: brandPurposeRecord.productsServices,
         corePurpose: brandPurposeRecord.corePurpose,
         audience: brandPurposeRecord.audience,
+        jobToBeDone: brandPurposeRecord.jobToBeDone,
+        motivations: brandPurposeRecord.motivations,
+        painPoints: brandPurposeRecord.painPoints,
         goals: brandPurposeRecord.goals,
+        logoUrl: brandPurposeRecord.logoUrl,
+        contactDetails: brandPurposeRecord.contactDetails,
         platforms: connections.map(c => c.platform),
         totalPosts: user.totalPosts || 12,
       });

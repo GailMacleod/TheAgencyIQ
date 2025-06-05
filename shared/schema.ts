@@ -57,9 +57,16 @@ export const platformConnections = pgTable("platform_connections", {
 export const brandPurpose = pgTable("brand_purpose", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
+  brandName: text("brand_name").notNull(),
+  productsServices: text("products_services").notNull(),
   corePurpose: text("core_purpose").notNull(),
   audience: text("audience").notNull(),
-  goals: text("goals").notNull(),
+  jobToBeDone: text("job_to_be_done").notNull(),
+  motivations: text("motivations").notNull(),
+  painPoints: text("pain_points").notNull(),
+  goals: jsonb("goals").notNull(), // { driveTraffic: boolean, websiteUrl?: string, buildBrand: boolean, makeSales: boolean, salesUrl?: string, informEducate: boolean, keyMessage?: string }
+  logoUrl: text("logo_url"),
+  contactDetails: jsonb("contact_details").notNull(), // { email?: string, phone?: string }
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

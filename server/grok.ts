@@ -10,9 +10,16 @@ const grok = new OpenAI({
 });
 
 export interface ContentGenerationParams {
+  brandName: string;
+  productsServices: string;
   corePurpose: string;
   audience: string;
-  goals: string;
+  jobToBeDone: string;
+  motivations: string;
+  painPoints: string;
+  goals: any; // JSON object with goal flags and URLs
+  logoUrl?: string;
+  contactDetails: any; // JSON object with email and phone
   platforms: string[];
   totalPosts: number;
 }
