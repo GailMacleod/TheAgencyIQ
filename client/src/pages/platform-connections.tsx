@@ -109,7 +109,7 @@ export default function PlatformConnections() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header showBack="/brand-purpose" />
+      <MasterHeader showBack="/brand-purpose" />
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-8">
@@ -188,7 +188,7 @@ export default function PlatformConnections() {
         </Card>
       </div>
 
-      <Footer />
+      <MasterFooter />
     </div>
   );
 }
