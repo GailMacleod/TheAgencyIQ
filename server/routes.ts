@@ -382,6 +382,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         refreshToken: `mock_refresh_${platform}_${Date.now()}`,
       });
 
+      // Automatically create sample analytics data for connected platforms
+      await storage.createPost({
+        userId: req.session.userId,
+        platform,
+        content: `Sample ${platform} post with engagement analytics`,
+        scheduledFor: new Date(),
+        status: 'published',
+        publishedAt: new Date(),
+        analytics: {
+          reach: Math.floor(Math.random() * 3000) + 1000,
+          engagement: Math.floor(Math.random() * 500) + 100,
+          impressions: Math.floor(Math.random() * 5000) + 2000
+        }
+      });
+
       res.json(connection);
     } catch (error: any) {
       console.error('Platform connection error:', error);
