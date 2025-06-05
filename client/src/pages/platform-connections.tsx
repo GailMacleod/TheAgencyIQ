@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,10 +11,42 @@ import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 export default function PlatformConnections() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
-  const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>(['linkedin']);
   const [loading, setLoading] = useState<string | null>(null);
+
+  // Fetch existing platform connections
+  const { data: connections = [], isLoading: connectionsLoading } = useQuery({
+    queryKey: ["/api/platform-connections"],
+  });
+
+  const connectedPlatforms = connections.map((conn: any) => conn.platform);
+
+  // Handle OAuth callback messages
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const connected = urlParams.get('connected');
+    const error = urlParams.get('error');
+    
+    if (connected) {
+      toast({
+        title: "Platform Connected",
+        description: `${connected} has been connected successfully`,
+      });
+      // Clear URL parameters
+      window.history.replaceState({}, '', '/platform-connections');
+    }
+    
+    if (error) {
+      toast({
+        title: "Connection Failed",
+        description: `Failed to connect platform: ${error.replace(/_/g, ' ')}`,
+        variant: "destructive",
+      });
+      // Clear URL parameters
+      window.history.replaceState({}, '', '/platform-connections');
+    }
+  }, [toast]);
 
   const platforms = [
     { id: 'facebook', name: 'facebook', icon: SiFacebook, color: 'platform-facebook' },
@@ -28,14 +61,9 @@ export default function PlatformConnections() {
     try {
       setLoading(platformId);
       
-      await apiRequest("POST", "/api/connect-platform", { platform: platformId });
+      // Redirect to OAuth endpoint for the platform
+      window.location.href = `/api/auth/${platformId}`;
       
-      setConnectedPlatforms(prev => [...prev, platformId]);
-      
-      toast({
-        title: "Platform Connected",
-        description: `${platformId} has been connected successfully`,
-      });
     } catch (error: any) {
       console.error("Platform connection error:", error);
       toast({
@@ -43,7 +71,6 @@ export default function PlatformConnections() {
         description: `Failed to connect ${platformId}`,
         variant: "destructive",
       });
-    } finally {
       setLoading(null);
     }
   };

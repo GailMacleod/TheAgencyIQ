@@ -842,6 +842,281 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OAuth routes for social media platforms
+  app.get("/api/auth/facebook", (req, res) => {
+    const clientId = process.env.FACEBOOK_APP_ID;
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/facebook/callback`;
+    const scope = 'pages_manage_posts,pages_read_engagement,pages_show_list';
+    
+    if (!clientId) {
+      return res.status(500).json({ message: "Facebook App ID not configured" });
+    }
+    
+    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
+    res.redirect(authUrl);
+  });
+
+  app.get("/api/auth/facebook/callback", async (req, res) => {
+    try {
+      const { code } = req.query;
+      const clientId = process.env.FACEBOOK_APP_ID;
+      const clientSecret = process.env.FACEBOOK_APP_SECRET;
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/facebook/callback`;
+
+      if (!code || !clientId || !clientSecret) {
+        return res.redirect('/platform-connections?error=facebook_auth_failed');
+      }
+
+      // Exchange code for access token
+      const tokenResponse = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${clientSecret}&code=${code}`);
+      const tokenData = await tokenResponse.json();
+
+      if (!tokenData.access_token) {
+        return res.redirect('/platform-connections?error=facebook_token_failed');
+      }
+
+      // Get user info
+      const userResponse = await fetch(`https://graph.facebook.com/me?access_token=${tokenData.access_token}&fields=id,name,email`);
+      const userData = await userResponse.json();
+
+      // Store connection in database
+      if (req.session.userId) {
+        await storage.createPlatformConnection({
+          userId: req.session.userId,
+          platform: 'facebook',
+          platformUserId: userData.id,
+          platformUsername: userData.name,
+          accessToken: tokenData.access_token,
+          refreshToken: null,
+          expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+          isActive: true
+        });
+      }
+
+      res.redirect('/platform-connections?connected=facebook');
+    } catch (error) {
+      console.error('Facebook OAuth error:', error);
+      res.redirect('/platform-connections?error=facebook_callback_failed');
+    }
+  });
+
+  app.get("/api/auth/instagram", (req, res) => {
+    const clientId = process.env.INSTAGRAM_CLIENT_ID;
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/instagram/callback`;
+    const scope = 'user_profile,user_media';
+    
+    if (!clientId) {
+      return res.status(500).json({ message: "Instagram Client ID not configured" });
+    }
+    
+    const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
+    res.redirect(authUrl);
+  });
+
+  app.get("/api/auth/instagram/callback", async (req, res) => {
+    try {
+      const { code } = req.query;
+      const clientId = process.env.INSTAGRAM_CLIENT_ID;
+      const clientSecret = process.env.INSTAGRAM_CLIENT_SECRET;
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/instagram/callback`;
+
+      if (!code || !clientId || !clientSecret) {
+        return res.redirect('/platform-connections?error=instagram_auth_failed');
+      }
+
+      // Exchange code for access token
+      const tokenResponse = await fetch('https://api.instagram.com/oauth/access_token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          grant_type: 'authorization_code',
+          redirect_uri: redirectUri,
+          code: code as string
+        })
+      });
+      const tokenData = await tokenResponse.json();
+
+      if (!tokenData.access_token) {
+        return res.redirect('/platform-connections?error=instagram_token_failed');
+      }
+
+      // Store connection in database
+      if (req.session.userId) {
+        await storage.createPlatformConnection({
+          userId: req.session.userId,
+          platform: 'instagram',
+          platformUserId: tokenData.user_id,
+          platformUsername: tokenData.user_id,
+          accessToken: tokenData.access_token,
+          refreshToken: null,
+          expiresAt: null,
+          isActive: true
+        });
+      }
+
+      res.redirect('/platform-connections?connected=instagram');
+    } catch (error) {
+      console.error('Instagram OAuth error:', error);
+      res.redirect('/platform-connections?error=instagram_callback_failed');
+    }
+  });
+
+  app.get("/api/auth/linkedin", (req, res) => {
+    const clientId = process.env.LINKEDIN_CLIENT_ID;
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/linkedin/callback`;
+    const scope = 'w_member_social,r_liteprofile,r_emailaddress';
+    
+    if (!clientId) {
+      return res.status(500).json({ message: "LinkedIn Client ID not configured" });
+    }
+    
+    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+    res.redirect(authUrl);
+  });
+
+  app.get("/api/auth/linkedin/callback", async (req, res) => {
+    try {
+      const { code } = req.query;
+      const clientId = process.env.LINKEDIN_CLIENT_ID;
+      const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/linkedin/callback`;
+
+      if (!code || !clientId || !clientSecret) {
+        return res.redirect('/platform-connections?error=linkedin_auth_failed');
+      }
+
+      // Exchange code for access token
+      const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code: code as string,
+          redirect_uri: redirectUri,
+          client_id: clientId,
+          client_secret: clientSecret
+        })
+      });
+      const tokenData = await tokenResponse.json();
+
+      if (!tokenData.access_token) {
+        return res.redirect('/platform-connections?error=linkedin_token_failed');
+      }
+
+      // Get user profile
+      const profileResponse = await fetch('https://api.linkedin.com/v2/people/~', {
+        headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+      });
+      const profileData = await profileResponse.json();
+
+      // Store connection in database
+      if (req.session.userId) {
+        await storage.createPlatformConnection({
+          userId: req.session.userId,
+          platform: 'linkedin',
+          platformUserId: profileData.id,
+          platformUsername: `${profileData.firstName?.localized?.en_US || ''} ${profileData.lastName?.localized?.en_US || ''}`.trim(),
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token || null,
+          expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+          isActive: true
+        });
+      }
+
+      res.redirect('/platform-connections?connected=linkedin');
+    } catch (error) {
+      console.error('LinkedIn OAuth error:', error);
+      res.redirect('/platform-connections?error=linkedin_callback_failed');
+    }
+  });
+
+  app.get("/api/auth/x", (req, res) => {
+    const clientId = process.env.TWITTER_CLIENT_ID;
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/x/callback`;
+    const scope = 'tweet.read tweet.write users.read';
+    
+    if (!clientId) {
+      return res.status(500).json({ message: "Twitter/X Client ID not configured" });
+    }
+    
+    // Generate code challenge for PKCE (simplified version)
+    const codeChallenge = Buffer.from(Math.random().toString()).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 43);
+    
+    const authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=state&code_challenge=${codeChallenge}&code_challenge_method=plain`;
+    res.redirect(authUrl);
+  });
+
+  app.get("/api/auth/x/callback", async (req, res) => {
+    try {
+      const { code } = req.query;
+      const clientId = process.env.TWITTER_CLIENT_ID;
+      const clientSecret = process.env.TWITTER_CLIENT_SECRET;
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/x/callback`;
+
+      if (!code || !clientId || !clientSecret) {
+        return res.redirect('/platform-connections?error=x_auth_failed');
+      }
+
+      // Exchange code for access token
+      const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code: code as string,
+          redirect_uri: redirectUri,
+          code_verifier: 'challenge'
+        })
+      });
+      const tokenData = await tokenResponse.json();
+
+      if (!tokenData.access_token) {
+        return res.redirect('/platform-connections?error=x_token_failed');
+      }
+
+      // Get user info
+      const userResponse = await fetch('https://api.twitter.com/2/users/me', {
+        headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+      });
+      const userData = await userResponse.json();
+
+      // Store connection in database
+      if (req.session.userId && userData.data) {
+        await storage.createPlatformConnection({
+          userId: req.session.userId,
+          platform: 'x',
+          platformUserId: userData.data.id,
+          platformUsername: userData.data.username,
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token || null,
+          expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+          isActive: true
+        });
+      }
+
+      res.redirect('/platform-connections?connected=x');
+    } catch (error) {
+      console.error('X/Twitter OAuth error:', error);
+      res.redirect('/platform-connections?error=x_callback_failed');
+    }
+  });
+
+  // Get connected platforms for current user
+  app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
+    try {
+      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      res.json(connections);
+    } catch (error: any) {
+      console.error('Get platform connections error:', error);
+      res.status(500).json({ message: "Error fetching platform connections: " + error.message });
+    }
+  });
+
   // Stripe webhook endpoint - must be before other JSON middleware
   app.use("/api/webhook", express.raw({ type: 'application/json' }));
   
