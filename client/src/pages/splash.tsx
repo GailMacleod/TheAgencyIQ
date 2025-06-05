@@ -44,7 +44,6 @@ export default function Splash() {
           </div>
         </div>
       </nav>
-
       {/* Hero Section */}
       <section className="hero-gradient section-spacing">
         <div className="container-atomiq">
@@ -116,7 +115,6 @@ export default function Splash() {
           </div>
         </div>
       </section>
-
       {/* Call to Action Section */}
       <section className="py-20 bg-muted/30" id="pricing">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -124,9 +122,7 @@ export default function Splash() {
             <h2 className="text-4xl md:text-5xl font-bold">
               Ready to Automate Your Social Media?
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Join thousands of Queensland businesses already using AI-powered automation to grow their social media presence.
-            </p>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">BETA </p>
             <Link href="/subscription">
               <Button size="lg" className="bg-gradient-atomiq hover:opacity-90 text-white px-8 py-4 text-lg">
                 Choose Your Plan
@@ -135,7 +131,6 @@ export default function Splash() {
           </div>
         </div>
       </section>
-
       {/* Features Section */}
       <section id="features" className="section-spacing bg-white">
         <div className="container-atomiq">
@@ -214,9 +209,6 @@ export default function Splash() {
           </div>
         </div>
       </section>
-
-
-
       {/* Footer */}
       <footer className="bg-card border-t">
         <div className="container-atomiq py-16">
@@ -249,7 +241,6 @@ export default function Splash() {
           </div>
         </div>
       </footer>
-
       <GrokWidget />
     </div>
   );
