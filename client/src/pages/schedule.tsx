@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import GrokWidget from "@/components/grok-widget";
-import ProfileModal from "@/components/profile-modal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "react-icons/si";
@@ -32,7 +31,6 @@ interface User {
 export default function Schedule() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/auth/user"],
@@ -159,8 +157,6 @@ export default function Schedule() {
       <Header 
         showBack="/platform-connections" 
         showUserMenu 
-        userEmail={user?.email || "demo@agencyiq.com"}
-        onProfileClick={() => setShowProfileModal(true)}
       />
       
       {/* Banner */}
@@ -302,11 +298,6 @@ export default function Schedule() {
 
       <Footer />
       <GrokWidget />
-      <ProfileModal 
-        isOpen={showProfileModal} 
-        onClose={() => setShowProfileModal(false)}
-        user={user}
-      />
     </div>
   );
 }
