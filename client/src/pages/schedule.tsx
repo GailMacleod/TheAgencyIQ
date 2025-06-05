@@ -303,14 +303,22 @@ export default function Schedule() {
             grok has analyzed queensland events and optimal posting times to create your personalized content calendar
           </p>
           
-          {/* Generate Content Button */}
-          <Button
-            onClick={generateContentWithGrokThinking}
-            className="mt-4 bg-purple-600 hover:bg-purple-700 text-white lowercase"
-            disabled={showGrokThinking}
-          >
-            {showGrokThinking ? 'grok is thinking...' : 'generate content with grok'}
-          </Button>
+          {/* Action Buttons */}
+          <div className="flex justify-center space-x-3 mt-4">
+            <Button
+              onClick={() => window.location.href = '/analytics'}
+              variant="outline"
+              className="lowercase"
+            >
+              view analytics
+            </Button>
+            <Button
+              onClick={generateContentWithGrokThinking}
+              className="bg-purple-600 hover:bg-purple-700 text-white lowercase"
+              disabled={showGrokThinking}
+            >
+              {showGrokThinking ? 'grok is thinking...' : 'generate content with grok'}
+            </Button>
         </div>
 
         {/* Grok Thinking Process Modal */}
@@ -553,6 +561,7 @@ export default function Schedule() {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
 
       <Footer />
