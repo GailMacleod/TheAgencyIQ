@@ -244,9 +244,18 @@ export default function Subscription() {
             </div>
           </div>
           
-          <div className="border-t border-border mt-12 pt-8 text-center">
+          <div className="border-t border-border mt-12 pt-8 text-center space-y-4">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-sm text-muted-foreground">
+              <a href="https://theagencyiq.com/terms" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                Terms of Service
+              </a>
+              <span className="hidden sm:block">•</span>
+              <a href="https://theagencyiq.com/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                Privacy Policy
+              </a>
+            </div>
             <p className="text-muted-foreground">
-              &copy; 2024 AiQ Technologies. All rights reserved.
+              &copy; 2024 MacleodGlobal trading as The AgencyIQ. All rights reserved.
             </p>
           </div>
         </div>

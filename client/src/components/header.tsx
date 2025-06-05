@@ -1,46 +1,23 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ChevronLeftIcon, ChevronDownIcon } from "lucide-react";
+import { ChevronLeftIcon, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import UserMenu from "./user-menu";
+import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
 
 interface HeaderProps {
   showBack?: string;
   showLogin?: boolean;
   showUserMenu?: boolean;
-  userEmail?: string;
-  onProfileClick?: () => void;
 }
 
 export default function Header({ 
   showBack, 
   showLogin, 
-  showUserMenu, 
-  userEmail,
-  onProfileClick 
+  showUserMenu
 }: HeaderProps) {
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const [showMenu, setShowMenu] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      await apiRequest("POST", "/api/auth/logout", {});
-      toast({
-        title: "Logged Out",
-        description: "You have been logged out successfully",
-      });
-      setLocation("/");
-    } catch (error: any) {
-      console.error("Logout error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to log out",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <header className="bg-card shadow-sm">
@@ -55,13 +32,11 @@ export default function Header({
               </Link>
             )}
             <Link href="/">
-              <div className="w-[150px] h-12 logo-gradient rounded-lg flex items-center justify-center text-white font-semibold text-lg cursor-pointer lowercase">
-                agencyiq
-              </div>
+              <img src={agencyLogoPath} alt="The AgencyIQ" className="h-12 w-auto cursor-pointer" />
             </Link>
           </div>
           
-          <div className="relative">
+          <div className="flex items-center space-x-4">
             {showLogin && (
               <Link href="/login">
                 <Button variant="ghost" className="link-primary lowercase">
@@ -70,49 +45,7 @@ export default function Header({
               </Link>
             )}
             
-            {showUserMenu && (
-              <>
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowMenu(!showMenu)}
-                  className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors duration-200"
-                >
-                  <span className="hidden md:block lowercase">{userEmail}</span>
-                  <ChevronDownIcon className="w-5 h-5" />
-                </Button>
-                
-                {showMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-card rounded-lg shadow-lg border border-border z-10">
-                    <Link href="/schedule">
-                      <button className="block w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted lowercase">
-                        dashboard
-                      </button>
-                    </Link>
-                    <button 
-                      onClick={() => {
-                        onProfileClick?.();
-                        setShowMenu(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted lowercase"
-                    >
-                      edit profile
-                    </button>
-                    <a href="#" className="block px-4 py-2 text-sm text-foreground hover:bg-muted lowercase">
-                      billing
-                    </a>
-                    <a href="#" className="block px-4 py-2 text-sm text-foreground hover:bg-muted lowercase">
-                      cancel subscription
-                    </a>
-                    <button 
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted border-t border-border lowercase"
-                    >
-                      log out
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+            {showUserMenu && <UserMenu />}
           </div>
         </div>
       </div>
