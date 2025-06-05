@@ -15,6 +15,7 @@ import Schedule from "@/pages/schedule";
 import Login from "@/pages/login";
 import GrokTest from "@/pages/grok-test";
 import Analytics from "@/pages/analytics";
+import YearlyAnalytics from "@/pages/yearly-analytics";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/platform-connections" component={PlatformConnections} />
       <Route path="/schedule" component={Schedule} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/yearly-analytics" component={YearlyAnalytics} />
       <Route path="/grok-test" component={GrokTest} />
       <Route path="/login" component={Login} />
       <Route component={NotFound} />

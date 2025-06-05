@@ -283,6 +283,16 @@ export default function Analytics() {
           </Card>
         )}
 
+        {/* Navigation to Yearly Analytics */}
+        <div className="text-center mb-8">
+          <Button
+            onClick={() => window.location.href = '/yearly-analytics'}
+            className="bg-purple-600 hover:bg-purple-700 text-white lowercase"
+          >
+            view year-to-date performance
+          </Button>
+        </div>
+
         {/* Action Items */}
         <Card>
           <CardHeader>
