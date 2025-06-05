@@ -8,6 +8,15 @@ import { z } from "zod";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { generateContentCalendar, generateReplacementPost, getGrokResponse, generateEngagementInsight } from "./grok";
+import twilio from 'twilio';
+import sgMail from '@sendgrid/mail';
+
+// Session type declaration
+declare module 'express-session' {
+  interface SessionData {
+    userId?: number;
+  }
+}
 
 // Environment validation
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -31,16 +40,11 @@ if (!process.env.SESSION_SECRET) {
 }
 
 // Initialize services
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2023-10-16",
 });
 
-// Twilio setup
-import twilio from 'twilio';
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
-// SendGrid setup
-import sgMail from '@sendgrid/mail';
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
 sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -56,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.use(session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET!,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
@@ -151,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Verification code for ${phone}: ${code}`);
       } else {
         // Send SMS via Twilio
-        await twilio.messages.create({
+        await twilioClient.messages.create({
           body: `Your AgencyIQ verification code is: ${code}`,
           from: process.env.TWILIO_PHONE_NUMBER,
           to: phone
