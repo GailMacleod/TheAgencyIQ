@@ -2,8 +2,7 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Upload } from "lucide-react";
-import { Link } from "wouter";
+import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
 import GrokWidget from "@/components/grok-widget";
 
 const brandPurposeSchema = z.object({
@@ -157,23 +158,7 @@ export default function BrandPurpose() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border/40">
-        <div className="container-atomiq">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center">
-              <Link href="/subscription" className="flex items-center">
-                <ArrowLeft className="h-5 w-5 text-muted-foreground mr-3" />
-                <img 
-                  src="/attached_assets/agency_logo_1749083054761.png" 
-                  alt="AiQ" 
-                  className="h-12 w-auto"
-                />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header showBack="/subscription" />
       
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-8">
@@ -487,16 +472,7 @@ export default function BrandPurpose() {
         </div>
       </div>
       
-      <div className="mt-8 text-center">
-        <p className="text-xs text-gray-500">
-          MacleodGlobal T/A The AgencyIQ
-        </p>
-        <div className="flex justify-center space-x-4 mt-2">
-          <a href="#" className="text-xs text-gray-500 hover:text-gray-700">Privacy Policy</a>
-          <a href="#" className="text-xs text-gray-500 hover:text-gray-700">Terms of Service</a>
-        </div>
-      </div>
-
+      <Footer />
       <GrokWidget />
     </div>
   );
