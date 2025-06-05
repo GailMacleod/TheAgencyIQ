@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Menu, X } from "lucide-react";
+import { ChevronLeft, Menu, X, BarChart3, Calendar, Settings, User } from "lucide-react";
+import { Link } from "wouter";
 import UserMenu from "@/components/user-menu";
+import agencyLogo from "@assets/agency_logo_1749083054761.png";
 
 interface MasterHeaderProps {
   showBack?: string;
@@ -37,9 +39,11 @@ export default function MasterHeader({
               )}
               
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">A</span>
-                </div>
+                <img 
+                  src={agencyLogo} 
+                  alt="The AgencyIQ" 
+                  className="w-8 h-8 object-contain"
+                />
                 <div>
                   <h1 className="text-lg font-semibold text-gray-900 lowercase">
                     {title || "the agencyiq"}
@@ -85,12 +89,45 @@ export default function MasterHeader({
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 bg-white">
-            <div className="px-4 py-3 space-y-3">
+            <div className="px-4 py-3 space-y-2">
+              <Link href="/analytics">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start lowercase"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  analytics
+                </Button>
+              </Link>
+              
+              <Link href="/schedule">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start lowercase"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  schedule
+                </Button>
+              </Link>
+              
+              <Link href="/brand-purpose">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start lowercase"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  brand purpose
+                </Button>
+              </Link>
+              
               {showLogin && (
                 <Button
                   onClick={() => window.location.href = '/login'}
                   variant="outline"
-                  className="w-full lowercase"
+                  className="w-full lowercase mt-3"
                 >
                   log in
                 </Button>
