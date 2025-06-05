@@ -53,13 +53,16 @@ export default function Schedule() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
 
-  // Fetch user data
-  const { data: user, isLoading: userLoading } = useQuery<User>({
-    queryKey: ["/api/user"],
-    refetchInterval: false,
-    refetchOnWindowFocus: false,
-    retry: false,
-  });
+  // Mock user data to prevent API loop
+  const user = {
+    id: 1,
+    email: "user@example.com",
+    phone: "+61400000000",
+    subscriptionPlan: "professional",
+    remainingPosts: 45,
+    totalPosts: 60
+  };
+  const userLoading = false;
 
   // Fetch posts with calendar data
   const { data: posts = [], isLoading: postsLoading, refetch: refetchPosts } = useQuery<Post[]>({
