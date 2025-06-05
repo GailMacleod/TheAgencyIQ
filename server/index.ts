@@ -1,11 +1,79 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { ALLOWED_ORIGINS, SECURITY_HEADERS, validateDomain, isSecureContext } from "./ssl-config";
 
 const app = express();
 
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
+
+// Domain validation middleware
+app.use((req, res, next) => {
+  const hostname = req.hostname || req.header('host') || '';
+  
+  if (process.env.NODE_ENV === 'production' && !validateDomain(hostname)) {
+    return res.status(400).json({ message: 'Invalid domain' });
+  }
+  
+  next();
+});
+
+// HTTPS redirect middleware for production
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && !isSecureContext(req)) {
+    return res.redirect(301, `https://${req.header('host')}${req.url}`);
+  }
+  next();
+});
+
+// Security headers and CORS configuration
+app.use((req, res, next) => {
+  // Apply security headers
+  Object.entries(SECURITY_HEADERS).forEach(([header, value]) => {
+    res.setHeader(header, value);
+  });
+  
+  // CORS configuration for app.theagencyiq.ai
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
+// Health check endpoint for SSL/domain validation
+app.get('/health', (req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const hostname = req.hostname || req.header('host') || '';
+  const isValidDomain = validateDomain(hostname);
+  const isSecure = isSecureContext(req);
+  
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    domain: hostname,
+    secure: isSecure,
+    validDomain: isValidDomain,
+    ready: !isProduction || (isValidDomain && isSecure)
+  });
+});
+
+// SSL certificate validation endpoint
+app.get('/.well-known/health', (req, res) => {
+  res.json({ status: 'ok', domain: 'app.theagencyiq.ai' });
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
