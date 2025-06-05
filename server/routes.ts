@@ -302,6 +302,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analytics endpoint
+  app.get("/api/analytics/monthly", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const posts = await storage.getPostsByUser(userId);
+      
+      // Filter posts from this month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const postsThisMonth = posts.filter(post => 
+        post.publishedAt && new Date(post.publishedAt) >= startOfMonth
+      );
+      
+      // Calculate analytics from published posts
+      const totalPosts = postsThisMonth.length;
+      let totalReach = 0;
+      let totalEngagement = 0;
+      let topPerformingPost = null;
+      let maxReach = 0;
+      
+      // Calculate reach and engagement from Google Analytics data
+      postsThisMonth.forEach(post => {
+        // Use actual Google Analytics data if available, otherwise skip
+        if (post.analytics?.reach) {
+          const reach = post.analytics.reach;
+          const engagement = post.analytics.engagement || 0;
+          
+          totalReach += reach;
+          totalEngagement += engagement;
+          
+          if (reach > maxReach) {
+            maxReach = reach;
+            topPerformingPost = {
+              content: post.content.substring(0, 60) + "...",
+              reach: reach,
+              platform: post.platform
+            };
+          }
+        }
+      });
+      
+      const averageReach = totalPosts > 0 ? Math.floor(totalReach / totalPosts) : 0;
+      
+      res.json({
+        totalPosts,
+        totalReach,
+        totalEngagement,
+        averageReach,
+        topPerformingPost
+      });
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
   // Connect platform (OAuth placeholder)
   app.post("/api/connect-platform", requireAuth, async (req: any, res) => {
     try {

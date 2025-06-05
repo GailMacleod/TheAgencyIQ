@@ -1,0 +1,121 @@
+import { useEffect, useState } from "react";
+import { TrendingUp, Eye, Users, Target } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface AnalyticsData {
+  totalPosts: number;
+  totalReach: number;
+  totalEngagement: number;
+  averageReach: number;
+  topPerformingPost: {
+    content: string;
+    reach: number;
+    platform: string;
+  };
+}
+
+interface AnalyticsBarProps {
+  className?: string;
+}
+
+export default function AnalyticsBar({ className }: AnalyticsBarProps) {
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const response = await fetch('/api/analytics/monthly');
+        if (response.ok) {
+          const data = await response.json();
+          setAnalytics(data);
+        }
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+    
+    // Update every 5 minutes
+    const interval = setInterval(fetchAnalytics, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className={cn("bg-gradient-to-r from-blue-50 to-purple-50 border-b border-border", className)}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-center">
+            <div className="animate-pulse flex space-x-8">
+              <div className="h-4 bg-gray-300 rounded w-32"></div>
+              <div className="h-4 bg-gray-300 rounded w-24"></div>
+              <div className="h-4 bg-gray-300 rounded w-28"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!analytics) {
+    return (
+      <div className={cn("bg-gradient-to-r from-blue-50 to-purple-50 border-b border-border", className)}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-center text-sm text-gray-600">
+            <Target className="w-4 h-4 mr-2" />
+            Analytics data will appear once posts are published
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("bg-gradient-to-r from-blue-50 to-purple-50 border-b border-border", className)}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-8">
+            <div className="flex items-center text-sm">
+              <TrendingUp className="w-4 h-4 text-green-600 mr-2" />
+              <span className="font-semibold text-gray-900">{analytics.totalPosts}</span>
+              <span className="text-gray-600 ml-1">posts this month</span>
+            </div>
+            
+            <div className="flex items-center text-sm">
+              <Eye className="w-4 h-4 text-blue-600 mr-2" />
+              <span className="font-semibold text-gray-900">{analytics.totalReach.toLocaleString()}</span>
+              <span className="text-gray-600 ml-1">total reach</span>
+            </div>
+            
+            <div className="flex items-center text-sm">
+              <Users className="w-4 h-4 text-purple-600 mr-2" />
+              <span className="font-semibold text-gray-900">{analytics.totalEngagement.toLocaleString()}</span>
+              <span className="text-gray-600 ml-1">engagements</span>
+            </div>
+            
+            <div className="flex items-center text-sm">
+              <Target className="w-4 h-4 text-orange-600 mr-2" />
+              <span className="font-semibold text-gray-900">{analytics.averageReach.toLocaleString()}</span>
+              <span className="text-gray-600 ml-1">avg reach</span>
+            </div>
+          </div>
+          
+          {analytics.topPerformingPost && (
+            <div className="hidden md:flex items-center text-sm bg-white/60 rounded-lg px-3 py-1.5">
+              <span className="text-gray-600">Top post:</span>
+              <span className="font-medium text-gray-900 ml-1 max-w-48 truncate">
+                {analytics.topPerformingPost.content}
+              </span>
+              <span className="text-green-600 ml-2 font-semibold">
+                {analytics.topPerformingPost.reach.toLocaleString()} reach
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

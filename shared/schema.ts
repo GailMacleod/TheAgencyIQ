@@ -38,6 +38,7 @@ export const posts = pgTable("posts", {
   status: text("status").notNull().default("scheduled"), // 'scheduled', 'published', 'failed'
   publishedAt: timestamp("published_at"),
   errorLog: text("error_log"),
+  analytics: jsonb("analytics"), // Store Google Analytics data: { reach: number, engagement: number, impressions: number }
   scheduledFor: timestamp("scheduled_for"),
   createdAt: timestamp("created_at").defaultNow(),
 });
