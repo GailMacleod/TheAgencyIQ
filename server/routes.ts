@@ -41,7 +41,7 @@ if (!process.env.SESSION_SECRET) {
 
 // Initialize services
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16",
+  apiVersion: "2024-06-20",
 });
 
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
@@ -550,16 +550,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Price ID is required" });
       }
 
-      // Map price IDs to plan details
+      // Map actual Stripe price IDs to plan details
       const planMapping: { [key: string]: { name: string, posts: number, totalPosts: number } } = {
-        "STRIPE_PRICE_ID_STARTER": { name: "starter", posts: 10, totalPosts: 12 },
-        "STRIPE_PRICE_ID_GROWTH": { name: "growth", posts: 25, totalPosts: 27 },
-        "STRIPE_PRICE_ID_PROFESSIONAL": { name: "professional", posts: 50, totalPosts: 52 }
+        "price_starter": { name: "starter", posts: 10, totalPosts: 12 },
+        "price_growth": { name: "growth", posts: 25, totalPosts: 27 },
+        "price_professional": { name: "professional", posts: 50, totalPosts: 52 }
       };
 
-      const planDetails = planMapping[priceId];
+      // Use the priceId directly for Stripe API
+      let planDetails = planMapping[priceId];
+      
+      // If not found in mapping, treat as valid Stripe price ID and extract plan from metadata
       if (!planDetails) {
-        return res.status(400).json({ message: "Invalid price ID" });
+        // For actual Stripe price IDs, we'll get plan details from Stripe
+        try {
+          const price = await stripe.prices.retrieve(priceId);
+          const product = await stripe.products.retrieve(price.product as string);
+          
+          // Extract plan details from product metadata
+          const plan = product.metadata?.plan || 'starter';
+          const posts = parseInt(product.metadata?.posts || '10');
+          const totalPosts = parseInt(product.metadata?.totalPosts || '12');
+          
+          planDetails = { name: plan, posts, totalPosts };
+        } catch (error) {
+          return res.status(400).json({ message: "Invalid price ID" });
+        }
       }
 
       const session = await stripe.checkout.sessions.create({

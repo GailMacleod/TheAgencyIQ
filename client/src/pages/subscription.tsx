@@ -30,14 +30,14 @@ export default function Subscription() {
       name: "starter",
       price: "A$19.99/month",
       posts: "12 posts (10 + 2 free)",
-      priceId: "STRIPE_PRICE_ID_STARTER",
+      priceId: process.env.VITE_STRIPE_PRICE_ID_STARTER || "price_1234567890starter",
     },
     {
       id: "growth",
       name: "growth",
       price: "A$41.99/month", 
       posts: "27 posts (25 + 2 free)",
-      priceId: "STRIPE_PRICE_ID_GROWTH",
+      priceId: process.env.VITE_STRIPE_PRICE_ID_GROWTH || "price_1234567890growth",
       popular: true,
     },
     {
@@ -45,7 +45,7 @@ export default function Subscription() {
       name: "professional",
       price: "A$99.99/month",
       posts: "52 posts (50 + 2 free)",
-      priceId: "STRIPE_PRICE_ID_PROFESSIONAL",
+      priceId: process.env.VITE_STRIPE_PRICE_ID_PROFESSIONAL || "price_1234567890professional",
     },
   ];
 
