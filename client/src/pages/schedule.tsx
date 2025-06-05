@@ -305,16 +305,7 @@ export default function Schedule() {
         )}
       </div>
 
-      <div className="mt-8 text-center">
-        <p className="text-xs text-gray-500">
-          MacleodGlobal T/A The AgencyIQ
-        </p>
-        <div className="flex justify-center space-x-4 mt-2">
-          <a href="#" className="text-xs text-gray-500 hover:text-gray-700">Privacy Policy</a>
-          <a href="#" className="text-xs text-gray-500 hover:text-gray-700">Terms of Service</a>
-        </div>
-      </div>
-
+      <Footer />
       <GrokWidget />
     </div>
   );
