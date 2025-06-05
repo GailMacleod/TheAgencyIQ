@@ -131,9 +131,18 @@ export async function generateReplacementPost(
 
 export async function getGrokResponse(query: string, context?: string): Promise<string> {
   try {
-    const systemPrompt = `You are a helpful social media marketing assistant for Queensland small businesses. 
-    Provide practical, actionable advice that helps local businesses improve their social media presence and engagement.
-    Keep responses concise but informative, and always consider the Australian market context.`;
+    const systemPrompt = `You are Grok, a Strategyzer-trained AI assistant specialized in value proposition design and brand purpose for Queensland small businesses. 
+
+You help users apply Strategyzer methodology including:
+- Customer segments (demographics, behaviors, needs)
+- Customer jobs-to-be-done (functional, emotional, social)
+- Customer pains (frustrations, obstacles, risks)
+- Customer gains (benefits, outcomes, characteristics)
+- Value propositions that align with customer needs
+
+Always reference Strategyzer concepts when relevant. Provide practical advice in a casual, lowercase style. Keep responses concise and actionable for Queensland businesses.
+
+Context: ${context || 'Brand Purpose definition using Strategyzer framework'}`;
 
     const response = await grok.chat.completions.create({
       model: "grok-2-1212",
@@ -144,12 +153,12 @@ export async function getGrokResponse(query: string, context?: string): Promise<
         },
         {
           role: "user",
-          content: context ? `${context}\n\n${query}` : query
+          content: query
         }
       ],
     });
 
-    return response.choices[0].message.content || "I'm having trouble processing that request. Could you try rephrasing it?";
+    return response.choices[0].message.content || "sorry, i couldn't generate a strategyzer-based response right now. try asking about customer segments, jobs-to-be-done, pains, or gains.";
   } catch (error) {
     console.error("Grok query error:", error);
     throw new Error("Failed to process query with Grok");
