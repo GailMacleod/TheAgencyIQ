@@ -1107,8 +1107,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get connected platforms for current user
-  app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
+  app.get("/api/platform-connections", async (req: any, res) => {
     try {
+      if (!req.session?.userId) {
+        return res.json([]); // Return empty array if not authenticated
+      }
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
       res.json(connections);
     } catch (error: any) {
