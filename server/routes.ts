@@ -588,12 +588,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             quantity: 1,
           },
         ],
-        success_url: `${req.protocol}://${req.get('host')}/signup?session_id={CHECKOUT_SESSION_ID}&plan=${planDetails.name}`,
+        success_url: `${req.protocol}://${req.get('host')}/api/payment-success?session_id={CHECKOUT_SESSION_ID}&plan=${planDetails.name}`,
         cancel_url: `${req.protocol}://${req.get('host')}/subscription`,
+        client_reference_id: req.session?.userId?.toString() || 'guest',
         metadata: {
           plan: planDetails.name,
           posts: planDetails.posts.toString(),
-          totalPosts: planDetails.totalPosts.toString()
+          totalPosts: planDetails.totalPosts.toString(),
+          userId: req.session?.userId?.toString() || 'guest'
         }
       });
 
@@ -724,6 +726,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Update profile error:', error);
       res.status(500).json({ message: "Error updating profile" });
+    }
+  });
+
+  // Handle payment success and create user session
+  app.get("/api/payment-success", async (req: any, res) => {
+    try {
+      const { session_id, plan } = req.query;
+      
+      if (!session_id) {
+        return res.redirect('/subscription?error=missing_session');
+      }
+
+      // Retrieve the checkout session from Stripe
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      
+      if (session.payment_status === 'paid') {
+        // Extract customer email from session
+        const customerEmail = session.customer_details?.email;
+        
+        if (customerEmail) {
+          // Find or create user with this email
+          let user = await storage.getUserByEmail(customerEmail);
+          
+          if (!user) {
+            // Create a new user account with the subscription
+            const hashedPassword = await bcrypt.hash('temp' + Date.now(), 10);
+            user = await storage.createUser({
+              email: customerEmail,
+              password: hashedPassword,
+              phone: '',
+              subscriptionPlan: plan || 'starter',
+              stripeCustomerId: session.customer as string,
+              stripeSubscriptionId: session.subscription as string,
+              remainingPosts: plan === 'professional' ? 50 : plan === 'growth' ? 25 : 10,
+              totalPosts: plan === 'professional' ? 52 : plan === 'growth' ? 27 : 12
+            });
+          } else {
+            // Update existing user with subscription details
+            user = await storage.updateUserStripeInfo(
+              user.id,
+              session.customer as string,
+              session.subscription as string
+            );
+          }
+          
+          // Log the user in
+          req.session.userId = user.id;
+          
+          // Redirect to brand purpose setup
+          return res.redirect('/brand-purpose?payment=success');
+        }
+      }
+      
+      res.redirect('/subscription?error=payment_failed');
+    } catch (error: any) {
+      console.error('Payment success handling error:', error);
+      res.redirect('/subscription?error=processing_failed');
     }
   });
 
