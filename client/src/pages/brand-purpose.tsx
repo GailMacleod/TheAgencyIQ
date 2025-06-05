@@ -25,11 +25,20 @@ const brandPurposeSchema = z.object({
   goals: z.object({
     driveTraffic: z.boolean().default(false),
     websiteUrl: z.string().optional(),
+    trafficTarget: z.string().optional(),
     buildBrand: z.boolean().default(false),
+    followerTarget: z.string().optional(),
+    reachTarget: z.string().optional(),
     makeSales: z.boolean().default(false),
     salesUrl: z.string().optional(),
+    salesTarget: z.string().optional(),
+    conversionTarget: z.string().optional(),
+    generateLeads: z.boolean().default(false),
+    leadTarget: z.string().optional(),
+    engagementTarget: z.string().optional(),
     informEducate: z.boolean().default(false),
     keyMessage: z.string().optional(),
+    educationTarget: z.string().optional(),
   }),
   contactDetails: z.object({
     email: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -58,11 +67,20 @@ export default function BrandPurpose() {
       goals: {
         driveTraffic: true,
         websiteUrl: "https://queenslandartisans.com",
+        trafficTarget: "500 visitors per month",
         buildBrand: true,
+        followerTarget: "200 new followers per month",
+        reachTarget: "5,000 people reached monthly",
         makeSales: true,
         salesUrl: "https://queenslandartisans.com/shop",
+        salesTarget: "$2,000 revenue per month",
+        conversionTarget: "3% of visitors make purchase",
+        generateLeads: true,
+        leadTarget: "50 qualified leads per month",
+        engagementTarget: "4% average engagement rate",
         informEducate: false,
         keyMessage: "",
+        educationTarget: "",
       },
       contactDetails: {
         email: "info@queenslandartisans.com",
@@ -275,9 +293,9 @@ export default function BrandPurpose() {
               )}
             </div>
 
-            {/* Goals */}
+            {/* Goals with Measurable Metrics */}
             <div>
-              <Label className="text-sm font-medium text-gray-700">What are your specific goals?</Label>
+              <Label className="text-sm font-medium text-gray-700">What are your specific goals with measurable targets?</Label>
               <div className="mt-3 space-y-4">
                 <div className="flex items-start space-x-3">
                   <Checkbox
@@ -288,22 +306,41 @@ export default function BrandPurpose() {
                   <div className="flex-1">
                     <Label htmlFor="driveTraffic" className="text-sm text-gray-700">Drive traffic to website</Label>
                     {form.watch('goals.driveTraffic') && (
-                      <Input
-                        {...form.register('goals.websiteUrl')}
-                        placeholder="Enter website URL (e.g., https://queenslandartisans.com)"
-                        className="mt-2"
-                      />
+                      <div className="mt-2 space-y-2">
+                        <Input
+                          {...form.register('goals.websiteUrl')}
+                          placeholder="Enter website URL (e.g., https://queenslandartisans.com)"
+                        />
+                        <Input
+                          {...form.register('goals.trafficTarget')}
+                          placeholder="Monthly traffic target (e.g., 500 visitors per month)"
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3">
+                <div className="flex items-start space-x-3">
                   <Checkbox
                     id="buildBrand"
                     checked={form.watch('goals.buildBrand')}
                     onCheckedChange={(checked) => form.setValue('goals.buildBrand', !!checked)}
                   />
-                  <Label htmlFor="buildBrand" className="text-sm text-gray-700">Build brand awareness</Label>
+                  <div className="flex-1">
+                    <Label htmlFor="buildBrand" className="text-sm text-gray-700">Build brand awareness</Label>
+                    {form.watch('goals.buildBrand') && (
+                      <div className="mt-2 space-y-2">
+                        <Input
+                          {...form.register('goals.followerTarget')}
+                          placeholder="Follower growth target (e.g., 200 new followers per month)"
+                        />
+                        <Input
+                          {...form.register('goals.reachTarget')}
+                          placeholder="Monthly reach target (e.g., 5,000 people reached)"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-start space-x-3">
@@ -313,13 +350,45 @@ export default function BrandPurpose() {
                     onCheckedChange={(checked) => form.setValue('goals.makeSales', !!checked)}
                   />
                   <div className="flex-1">
-                    <Label htmlFor="makeSales" className="text-sm text-gray-700">Make sales</Label>
+                    <Label htmlFor="makeSales" className="text-sm text-gray-700">Generate sales</Label>
                     {form.watch('goals.makeSales') && (
-                      <Input
-                        {...form.register('goals.salesUrl')}
-                        placeholder="Enter sales URL (e.g., https://queenslandartisans.com/shop)"
-                        className="mt-2"
-                      />
+                      <div className="mt-2 space-y-2">
+                        <Input
+                          {...form.register('goals.salesUrl')}
+                          placeholder="Enter sales URL (e.g., https://queenslandartisans.com/shop)"
+                        />
+                        <Input
+                          {...form.register('goals.salesTarget')}
+                          placeholder="Monthly sales target (e.g., $2,000 revenue per month)"
+                        />
+                        <Input
+                          {...form.register('goals.conversionTarget')}
+                          placeholder="Conversion rate target (e.g., 3% of visitors make purchase)"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="generateLeads"
+                    checked={form.watch('goals.generateLeads')}
+                    onCheckedChange={(checked) => form.setValue('goals.generateLeads', !!checked)}
+                  />
+                  <div className="flex-1">
+                    <Label htmlFor="generateLeads" className="text-sm text-gray-700">Generate leads</Label>
+                    {form.watch('goals.generateLeads') && (
+                      <div className="mt-2 space-y-2">
+                        <Input
+                          {...form.register('goals.leadTarget')}
+                          placeholder="Monthly lead target (e.g., 50 qualified leads per month)"
+                        />
+                        <Input
+                          {...form.register('goals.engagementTarget')}
+                          placeholder="Engagement rate target (e.g., 4% average engagement rate)"
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -333,12 +402,18 @@ export default function BrandPurpose() {
                   <div className="flex-1">
                     <Label htmlFor="informEducate" className="text-sm text-gray-700">Inform or educate</Label>
                     {form.watch('goals.informEducate') && (
-                      <Textarea
-                        {...form.register('goals.keyMessage')}
-                        placeholder="What's your key message? (e.g., promote sustainability in art)"
-                        className="mt-2 resize-none"
-                        rows={2}
-                      />
+                      <div className="mt-2 space-y-2">
+                        <Textarea
+                          {...form.register('goals.keyMessage')}
+                          placeholder="What's your key message? (e.g., promote sustainability in art)"
+                          className="resize-none"
+                          rows={2}
+                        />
+                        <Input
+                          {...form.register('goals.educationTarget')}
+                          placeholder="Education goal (e.g., 1,000 people educated about sustainability monthly)"
+                        />
+                      </div>
                     )}
                   </div>
                 </div>

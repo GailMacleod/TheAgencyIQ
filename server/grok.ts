@@ -36,10 +36,11 @@ export async function generateContentCalendar(params: ContentGenerationParams): 
       .filter(([key, value]) => value === true)
       .map(([key]) => {
         switch (key) {
-          case 'driveTraffic': return `Drive traffic to website: ${params.goals.websiteUrl || 'website'}`;
-          case 'buildBrand': return 'Build brand awareness';
-          case 'makeSales': return `Make sales: ${params.goals.salesUrl || 'shop'}`;
-          case 'informEducate': return `Inform/educate: ${params.goals.keyMessage || 'share knowledge'}`;
+          case 'driveTraffic': return `Drive traffic to website: ${params.goals.websiteUrl || 'website'} (Target: ${params.goals.trafficTarget || 'increase monthly visitors'})`;
+          case 'buildBrand': return `Build brand awareness (Targets: ${params.goals.followerTarget || 'grow followers'}, ${params.goals.reachTarget || 'increase reach'})`;
+          case 'makeSales': return `Generate sales: ${params.goals.salesUrl || 'shop'} (Targets: ${params.goals.salesTarget || 'increase revenue'}, ${params.goals.conversionTarget || 'improve conversion rate'})`;
+          case 'generateLeads': return `Generate leads (Targets: ${params.goals.leadTarget || 'qualified leads'}, ${params.goals.engagementTarget || 'engagement rate'})`;
+          case 'informEducate': return `Inform/educate: ${params.goals.keyMessage || 'share knowledge'} (Target: ${params.goals.educationTarget || 'reach more people'})`;
           default: return key;
         }
       })
@@ -68,11 +69,24 @@ Connected platforms: ${params.platforms.join(', ')}
 
 Create engaging, brand-aligned content that addresses audience motivations and pain points. Each post should include brand name naturally, reference products/services, and align with the job-to-be-done insights. Include appropriate URLs and contact details based on goals.
 
+UNPAID MEDIA BEST PRACTICES - Include measurable elements:
+- Clear calls-to-action that align with specific targets (traffic, followers, sales, leads, education)
+- Content designed to drive measurable engagement (comments, shares, saves, clicks)
+- Educational content that can be tracked for reach and engagement
+- Community-building posts that encourage user-generated content
+- Behind-the-scenes content that builds authentic connections
+- Local Queensland references to increase regional engagement
+- Seasonal and timely content for higher organic reach
+- Hashtag strategies for discoverability without paid promotion
+- Content formats proven for organic reach (carousels, videos, stories)
+
+Each post should be optimized for organic reach and designed to achieve the specific measurable targets outlined in the goals.
+
 Distribute posts evenly across the connected platforms over 30 days starting June 6, 2025 at 9:00 AM AEST.
 
 Return as JSON object with "posts" array containing objects with fields: platform, content, scheduledFor (ISO date string).
 
-Make content authentic to Queensland culture and specifically tailored to the target audience.`;
+Make content authentic to Queensland culture and specifically tailored to achieve the measurable targets for unpaid media success.`;
 
     const response = await grok.chat.completions.create({
       model: "grok-2-1212",
