@@ -58,7 +58,7 @@ export default function Splash() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/subscription">
                   <Button className="btn-atomiq-primary text-lg px-8 py-4">
-                    Start Free Trial
+                    Get Started
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
@@ -80,7 +80,7 @@ export default function Splash() {
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Affordable: plans for all budgets</span>
+                  <span>Plans starting from A$19.99/month</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
@@ -218,7 +218,7 @@ export default function Splash() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/subscription">
                 <Button size="lg" className="bg-white text-primary hover:bg-white/90 text-lg px-8 py-4">
-                  Start Free Trial
+                  Choose Your Plan
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
