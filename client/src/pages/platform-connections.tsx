@@ -125,7 +125,7 @@ export default function PlatformConnections() {
               connect your platforms
             </h2>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {platforms.map((platform) => {
                 const isConnected = connectedPlatforms.includes(platform.id);
                 const isLoading = loading === platform.id;
@@ -134,35 +134,40 @@ export default function PlatformConnections() {
                 return (
                   <div
                     key={platform.id}
-                    className={`border rounded-lg p-6 text-center ${
-                      isConnected ? 'border-green-200 bg-green-50' : 'border-border'
+                    className={`relative border rounded-xl p-4 text-center transition-all duration-200 ${
+                      isConnected 
+                        ? 'border-green-300 bg-green-50 shadow-sm' 
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                     }`}
                   >
-                    <div className={`w-12 h-12 ${platform.color} rounded-lg flex items-center justify-center mx-auto mb-4`}>
-                      <Icon className="w-6 h-6 text-white" />
+                    {/* Success tick overlay */}
+                    {isConnected && (
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-md">
+                        <CheckIcon className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                    
+                    <div className={`w-10 h-10 ${platform.color} rounded-lg flex items-center justify-center mx-auto mb-3`}>
+                      <Icon className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="font-medium text-foreground mb-2 lowercase">{platform.name}</h3>
+                    <h3 className="font-medium text-foreground mb-3 text-sm lowercase">{platform.name}</h3>
                     
                     {isConnected ? (
-                      <>
-                        <div className="flex items-center justify-center space-x-2 mb-2">
-                          <CheckIcon className="w-4 h-4 text-green-600" />
-                          <span className="text-sm text-green-600 font-medium lowercase">connected</span>
-                        </div>
-                        <Button
-                          disabled
-                          className="w-full bg-muted text-muted-foreground cursor-not-allowed"
-                        >
-                          connected
-                        </Button>
-                      </>
+                      <Button
+                        disabled
+                        className="w-full bg-green-100 text-green-700 cursor-not-allowed text-xs py-2 h-8 border border-green-200"
+                        variant="outline"
+                      >
+                        connected
+                      </Button>
                     ) : (
                       <Button
                         onClick={() => connectPlatform(platform.id)}
-                        className="w-full btn-primary text-sm"
+                        className="w-full text-xs py-2 h-8"
+                        variant="outline"
                         disabled={isLoading}
                       >
-                        {isLoading ? 'connecting...' : `connect ${platform.name.split(' ')[0]}`}
+                        {isLoading ? 'connecting...' : 'connect'}
                       </Button>
                     )}
                   </div>
