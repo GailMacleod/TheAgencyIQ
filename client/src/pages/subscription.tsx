@@ -161,7 +161,7 @@ export default function Subscription() {
               Technology Intelligence Plans
             </div>
             <h1 className="text-4xl md:text-5xl font-bold">
-              Choose Your <span className="bg-gradient-atomiq bg-clip-text text-transparent">AiQ</span> Plan
+              Choose Your <img src={agencyLogoPath} alt="AiQ" className="inline h-12 w-auto mx-2" /> Plan
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Select the perfect plan for your Queensland business. All plans include AI-powered content generation, smart scheduling, and platform connections.
