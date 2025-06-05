@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { TrendingUp, Eye, Users, Target } from "lucide-react";
+import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "react-icons/si";
 import { cn } from "@/lib/utils";
 
 interface AnalyticsData {
@@ -7,6 +8,7 @@ interface AnalyticsData {
   totalReach: number;
   totalEngagement: number;
   averageReach: number;
+  connectedPlatforms: string[];
   topPerformingPost: {
     content: string;
     reach: number;
@@ -17,6 +19,27 @@ interface AnalyticsData {
 interface AnalyticsBarProps {
   className?: string;
 }
+
+const getPlatformIcon = (platform: string) => {
+  const iconProps = { className: "w-4 h-4" };
+  
+  switch (platform.toLowerCase()) {
+    case 'facebook':
+      return <SiFacebook {...iconProps} style={{ color: '#1877F2' }} />;
+    case 'instagram':
+      return <SiInstagram {...iconProps} style={{ color: '#E4405F' }} />;
+    case 'linkedin':
+      return <SiLinkedin {...iconProps} style={{ color: '#0A66C2' }} />;
+    case 'youtube':
+      return <SiYoutube {...iconProps} style={{ color: '#FF0000' }} />;
+    case 'tiktok':
+      return <SiTiktok {...iconProps} style={{ color: '#000000' }} />;
+    case 'x':
+      return <SiX {...iconProps} style={{ color: '#000000' }} />;
+    default:
+      return null;
+  }
+};
 
 export default function AnalyticsBar({ className }: AnalyticsBarProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -101,6 +124,19 @@ export default function AnalyticsBar({ className }: AnalyticsBarProps) {
               <span className="font-semibold text-gray-900">{analytics.averageReach.toLocaleString()}</span>
               <span className="text-gray-600 ml-1">avg reach</span>
             </div>
+            
+            {analytics.connectedPlatforms && analytics.connectedPlatforms.length > 0 && (
+              <div className="flex items-center text-sm">
+                <span className="text-gray-600 mr-2">Connected:</span>
+                <div className="flex items-center space-x-1">
+                  {analytics.connectedPlatforms.map((platform, index) => (
+                    <div key={index} className="p-1">
+                      {getPlatformIcon(platform)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
           {analytics.topPerformingPost && (

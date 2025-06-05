@@ -307,6 +307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.session.userId;
       const posts = await storage.getPostsByUser(userId);
+      const connections = await storage.getPlatformConnectionsByUser(userId);
       
       // Filter posts from this month
       const now = new Date();
@@ -347,12 +348,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const averageReach = totalPosts > 0 ? Math.floor(totalReach / totalPosts) : 0;
+      const connectedPlatforms = connections.map(conn => conn.platform);
       
       res.json({
         totalPosts,
         totalReach,
         totalEngagement,
         averageReach,
+        connectedPlatforms,
         topPerformingPost
       });
     } catch (error) {
