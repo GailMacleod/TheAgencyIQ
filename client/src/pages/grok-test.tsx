@@ -2,17 +2,20 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Check } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import Header from "@/components/header";
 
 export default function GrokTest() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showGrokThinking, setShowGrokThinking] = useState(false);
   const [grokStep, setGrokStep] = useState(0);
   const [generatedPosts, setGeneratedPosts] = useState<any[]>([]);
+  const [approvedPosts, setApprovedPosts] = useState<Set<number>>(new Set());
 
   const grokThinkingSteps = [
     {
@@ -81,6 +84,27 @@ export default function GrokTest() {
       setShowGrokThinking(false);
     }
   };
+
+  const approvePostMutation = useMutation({
+    mutationFn: async (postId: number) => {
+      const response = await apiRequest("POST", "/api/posts/approve", { postId });
+      return await response.json();
+    },
+    onSuccess: (data, postId) => {
+      setApprovedPosts(prev => new Set(Array.from(prev).concat(postId)));
+      toast({
+        title: "Post Approved",
+        description: `Post scheduled for publishing. Remaining posts: ${data.remainingPosts}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message || "Failed to approve post",
+        variant: "destructive",
+      });
+    },
+  });
 
   const getPlatformIcon = (platform: string) => {
     switch (platform) {
@@ -198,21 +222,34 @@ export default function GrokTest() {
                     )}
                     
                     <div className="flex space-x-3">
-                      <Button
-                        className="bg-green-600 hover:bg-green-700 text-white lowercase"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        approve & schedule
-                      </Button>
+                      {approvedPosts.has(post.id) ? (
+                        <div className="flex items-center space-x-2 px-4 py-2 bg-green-100 border border-green-300 rounded-md">
+                          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
+                          <span className="text-green-700 font-medium lowercase">approved & scheduled</span>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={() => approvePostMutation.mutate(post.id)}
+                          className="bg-green-600 hover:bg-green-700 text-white lowercase"
+                          disabled={approvePostMutation.isPending}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          {approvePostMutation.isPending ? 'approving...' : 'approve & schedule'}
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         className="lowercase"
+                        disabled={approvedPosts.has(post.id)}
                       >
                         edit post
                       </Button>
                       <Button
                         variant="outline"
                         className="text-red-600 border-red-200 hover:bg-red-50 lowercase"
+                        disabled={approvedPosts.has(post.id)}
                       >
                         reject
                       </Button>

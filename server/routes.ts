@@ -743,6 +743,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Post approval with subscription tracking
+  app.post("/api/posts/approve", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { postId } = req.body;
+      
+      // Get user to check remaining posts
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if user has remaining posts
+      if (user.remainingPosts <= 0) {
+        return res.status(400).json({ message: "No remaining posts in your subscription plan" });
+      }
+
+      // Create the approved post in database
+      const newPost = await storage.createPost({
+        userId: req.session.userId,
+        platform: "multi-platform",
+        content: "Approved Grok-generated content",
+        status: "approved",
+        scheduledFor: new Date(),
+      });
+
+      // Decrement remaining posts
+      const updatedUser = await storage.updateUser(req.session.userId, {
+        remainingPosts: user.remainingPosts - 1
+      });
+
+      res.json({ 
+        post: newPost,
+        remainingPosts: updatedUser.remainingPosts,
+        message: "Post approved and scheduled for publishing"
+      });
+    } catch (error: any) {
+      console.error("Post approval error:", error);
+      res.status(500).json({ message: "Failed to approve post: " + error.message });
+    }
+  });
+
   // Forgot password
   app.post("/api/forgot-password", async (req, res) => {
     try {
