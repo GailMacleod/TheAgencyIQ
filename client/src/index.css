@@ -1,179 +1,337 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* AgencyIQ Brand Colors */
-  --atomic-blue: 215 100% 60%; /* #3250fa */
-  --atomic-cyan: 186 100% 50%; /* #00f0ff */
-  --atomic-purple: 263 66% 70%; /* #915fd7 */
-  --soft-gray: 0 0% 20%; /* #333333 */
-  --light-bg: 0 0% 96%; /* #f5f5f5 */
-  
-  /* Updated shadcn colors to match design */
-  --background: 0 0% 96%; /* #f5f5f5 */
-  --foreground: 0 0% 20%; /* #333333 */
-  --muted: 0 0% 90%; /* #e6e6e6 */
-  --muted-foreground: 0 0% 45%; /* #737373 */
-  --popover: 0 0% 100%; /* #ffffff */
-  --popover-foreground: 0 0% 20%; /* #333333 */
-  --card: 0 0% 100%; /* #ffffff */
-  --card-foreground: 0 0% 20%; /* #333333 */
-  --border: 0 0% 80%; /* #cccccc */
-  --input: 0 0% 80%; /* #cccccc */
-  --primary: 215 100% 60%; /* #3250fa - Atomic Blue */
-  --primary-foreground: 0 0% 100%; /* #ffffff */
-  --secondary: 0 0% 96%; /* #f5f5f5 */
-  --secondary-foreground: 0 0% 20%; /* #333333 */
-  --accent: 263 66% 70%; /* #915fd7 - Atomic Purple */
-  --accent-foreground: 0 0% 100%; /* #ffffff */
-  --destructive: 0 84% 60%; /* #f56565 */
-  --destructive-foreground: 0 0% 100%; /* #ffffff */
-  --ring: 215 100% 60%; /* #3250fa */
-  --radius: 0.5rem;
-  
-  /* Chart colors */
-  --chart-1: 215 100% 60%; /* #3250fa */
-  --chart-2: 186 100% 50%; /* #00f0ff */
-  --chart-3: 263 66% 70%; /* #915fd7 */
-  --chart-4: 0 0% 20%; /* #333333 */
-  --chart-5: 0 0% 45%; /* #737373 */
-}
+@layer base {
+  :root {
+    /* AtomIQ Brand Colors */
+    --atomiq-blue: 230 84% 59%; /* #3250fa */
+    --atomiq-cyan: 184 100% 50%; /* #00f0ff */
+    --purple: 252 56% 64%; /* #915fd7 */
+    --pink: 336 100% 66%; /* #ff538f */
+    --orange: 22 100% 60%; /* #ff8235 */
+    --yellow: 45 100% 50%; /* #ffbe00 */
+    
+    /* Elegant neutral palette inspired by Airbnb */
+    --background: 0 0% 99%; /* #fcfcfc */
+    --foreground: 220 13% 9%; /* #161a1d */
+    --card: 0 0% 100%; /* #ffffff */
+    --card-foreground: 220 13% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 9%;
+    --primary: 230 84% 59%; /* AtomIQ Blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%; /* #f5f5f6 */
+    --secondary-foreground: 220 13% 9%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%; /* #6f7287 */
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 13% 9%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 91%; /* #e0e2e7 */
+    --input: 220 13% 91%;
+    --ring: 230 84% 59%;
+    --radius: 0.75rem;
+    --chart-1: 230 84% 59%;
+    --chart-2: 184 100% 50%;
+    --chart-3: 252 56% 64%;
+    --chart-4: 336 100% 66%;
+    --chart-5: 22 100% 60%;
+  }
 
-.dark {
-  --background: 0 0% 4%; /* #0a0a0a */
-  --foreground: 0 0% 98%; /* #fafafa */
-  --muted: 0 0% 15%; /* #262626 */
-  --muted-foreground: 0 0% 64%; /* #a3a3a3 */
-  --popover: 0 0% 4%; /* #0a0a0a */
-  --popover-foreground: 0 0% 98%; /* #fafafa */
-  --card: 0 0% 4%; /* #0a0a0a */
-  --card-foreground: 0 0% 98%; /* #fafafa */
-  --border: 0 0% 15%; /* #262626 */
-  --input: 0 0% 15%; /* #262626 */
-  --primary: 215 100% 60%; /* #3250fa */
-  --primary-foreground: 0 0% 100%; /* #ffffff */
-  --secondary: 0 0% 15%; /* #262626 */
-  --secondary-foreground: 0 0% 98%; /* #fafafa */
-  --accent: 263 66% 70%; /* #915fd7 */
-  --accent-foreground: 0 0% 100%; /* #ffffff */
-  --destructive: 0 62% 31%; /* #7f1d1d */
-  --destructive-foreground: 0 0% 98%; /* #fafafa */
-  --ring: 215 100% 60%; /* #3250fa */
+  .dark {
+    --background: 220 13% 9%; /* #161a1d */
+    --foreground: 0 0% 98%; /* #fafafa */
+    --card: 220 13% 11%; /* #1c2025 */
+    --card-foreground: 0 0% 98%;
+    --popover: 220 13% 11%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 184 100% 50%; /* AtomIQ Cyan for dark mode */
+    --primary-foreground: 220 13% 9%;
+    --secondary: 220 13% 16%; /* #282c34 */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 220 13% 16%;
+    --muted-foreground: 220 9% 64%; /* #9ca0ab */
+    --accent: 220 13% 16%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 16%;
+    --input: 220 13% 16%;
+    --ring: 184 100% 50%;
+  }
 }
 
 @layer base {
   * {
     @apply border-border;
   }
-
+  
   body {
-    @apply font-sans antialiased bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-
+  
+  /* Typography hierarchy following AtomIQ brand */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-light lowercase;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
   }
-
-  /* Base typography */
-  .text-body {
-    @apply text-base; /* 16px */
+  
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl;
+    font-weight: 700;
   }
-
-  .text-heading {
-    @apply text-2xl; /* 24px */
+  
+  h2 {
+    @apply text-3xl md:text-4xl lg:text-5xl;
+    font-weight: 600;
   }
-
-  .text-large-heading {
-    @apply text-4xl; /* 36px */
+  
+  h3 {
+    @apply text-2xl md:text-3xl;
+    font-weight: 600;
   }
-
-  /* Button styles matching design */
-  .btn-primary {
-    @apply bg-white border border-primary text-primary hover:bg-[hsl(var(--atomic-cyan))] hover:border-[hsl(var(--atomic-cyan))] hover:text-white px-6 py-3 rounded font-medium transition-all duration-200;
+  
+  h4 {
+    @apply text-xl md:text-2xl;
+    font-weight: 500;
   }
-
-  .btn-secondary {
-    @apply bg-primary text-white hover:bg-[hsl(var(--atomic-cyan))] px-6 py-3 rounded font-medium transition-all duration-200;
+  
+  p {
+    @apply text-base leading-relaxed;
+    font-weight: 400;
   }
-
-  /* Custom link styles */
-  .link-primary {
-    @apply text-primary hover:text-[hsl(var(--atomic-cyan))] transition-colors duration-200;
+  
+  /* Elegant shadows inspired by Airbnb */
+  .shadow-elegant {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.02);
   }
-
-  /* Card styles matching design */
-  .card-agencyiq {
-    @apply bg-card rounded-lg shadow-sm;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  
+  .shadow-elegant-md {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.08);
   }
-
-  /* Logo gradient */
-  .logo-gradient {
-    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--accent)));
+  
+  .shadow-elegant-lg {
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.05);
   }
+  
+  .shadow-elegant-xl {
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.08), 0 10px 10px rgba(0, 0, 0, 0.04);
+  }
+  
+  /* Smooth transitions */
+  .transition-elegant {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Gradient backgrounds using AtomIQ colors */
+  .bg-gradient-atomiq {
+    background: linear-gradient(135deg, hsl(var(--atomiq-blue)) 0%, hsl(var(--atomiq-cyan)) 100%);
+  }
+  
+  .bg-gradient-secondary {
+    background: linear-gradient(135deg, hsl(var(--purple)) 0%, hsl(var(--pink)) 100%);
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground));
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary));
+  }
+}
 
+@layer components {
+  /* AtomIQ Button Styles */
+  .btn-atomiq-primary {
+    @apply bg-gradient-atomiq text-white hover:shadow-elegant-md transform hover:-translate-y-0.5 transition-elegant rounded-xl px-8 py-4 font-medium text-base;
+  }
+  
+  .btn-atomiq-secondary {
+    @apply bg-white text-primary border-2 border-primary hover:bg-primary hover:text-white transition-elegant rounded-xl px-8 py-4 font-medium text-base shadow-elegant;
+  }
+  
+  .btn-atomiq-ghost {
+    @apply text-primary hover:bg-primary/10 transition-elegant rounded-xl px-6 py-3 font-medium;
+  }
+  
+  /* Card styles with Airbnb elegance */
+  .card-atomiq {
+    @apply bg-white rounded-2xl shadow-elegant hover:shadow-elegant-md transition-elegant border border-border/50;
+  }
+  
+  .card-atomiq-feature {
+    @apply card-atomiq p-8 text-center hover:border-primary/20 cursor-pointer;
+  }
+  
+  /* Input styles */
+  .input-atomiq {
+    @apply w-full px-4 py-3 rounded-xl border border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-elegant;
+  }
+  
   /* Status indicators */
   .status-scheduled {
-    @apply text-yellow-600;
+    @apply text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full text-sm font-medium;
   }
-
+  
   .status-published {
-    @apply text-green-600;
+    @apply text-green-600 bg-green-50 px-3 py-1 rounded-full text-sm font-medium;
   }
-
+  
   .status-failed {
-    @apply text-red-600;
+    @apply text-red-600 bg-red-50 px-3 py-1 rounded-full text-sm font-medium;
   }
-
-  .status-dot-scheduled {
-    @apply w-2 h-2 bg-yellow-500 rounded-full;
+  
+  /* Platform styles */
+  .platform-facebook {
+    @apply bg-blue-600 text-white;
   }
-
-  .status-dot-published {
-    @apply w-2 h-2 bg-green-500 rounded-full;
+  
+  .platform-instagram {
+    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+    @apply text-white;
   }
-
-  .status-dot-failed {
-    @apply w-2 h-2 bg-red-500 rounded-full;
+  
+  .platform-linkedin {
+    @apply bg-blue-700 text-white;
   }
-
-  /* Banner gradient */
-  .banner-gradient {
-    background: linear-gradient(to right, #e6f0ff, #f0faff);
+  
+  .platform-youtube {
+    @apply bg-red-600 text-white;
   }
-
-  /* Spacing utilities matching design */
-  .space-items {
-    @apply space-y-3; /* 12px between list items */
+  
+  .platform-tiktok {
+    @apply bg-black text-white;
   }
-
-  .space-sections {
-    @apply space-y-6; /* 24px between sections */
+  
+  .platform-x {
+    @apply bg-black text-white;
+  }
+  
+  /* Airbnb-inspired section spacing */
+  .section-spacing {
+    @apply py-16 md:py-24;
+  }
+  
+  .container-atomiq {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Hero section styles */
+  .hero-gradient {
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+  }
+  
+  /* Navigation styles */
+  .nav-link {
+    @apply text-foreground/80 hover:text-primary transition-elegant font-medium;
+  }
+  
+  /* Feature grid */
+  .feature-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
+  }
+  
+  /* Pricing card enhancements */
+  .pricing-card {
+    @apply card-atomiq relative overflow-hidden;
+  }
+  
+  .pricing-card-popular {
+    @apply ring-2 ring-primary scale-105 z-10;
+  }
+  
+  .pricing-card-popular::before {
+    content: "Most Popular";
+    @apply absolute top-0 left-1/2 transform -translate-x-1/2 bg-gradient-atomiq text-white px-4 py-1 rounded-b-lg text-sm font-medium;
+  }
+  
+  /* Form enhancements */
+  .form-group {
+    @apply space-y-2;
+  }
+  
+  .form-label {
+    @apply text-sm font-medium text-foreground;
+  }
+  
+  .form-error {
+    @apply text-red-500 text-sm mt-1;
+  }
+  
+  /* Loading states */
+  .loading-skeleton {
+    @apply animate-pulse bg-muted rounded;
+  }
+  
+  /* Chat widget styles */
+  .chat-bubble-user {
+    @apply bg-gradient-atomiq text-white rounded-2xl rounded-br-md px-4 py-3 max-w-xs ml-auto;
+  }
+  
+  .chat-bubble-assistant {
+    @apply bg-muted text-foreground rounded-2xl rounded-bl-md px-4 py-3 max-w-xs;
+  }
+  
+  /* Notification styles */
+  .notification-success {
+    @apply bg-green-50 border border-green-200 text-green-800 rounded-xl p-4;
+  }
+  
+  .notification-error {
+    @apply bg-red-50 border border-red-200 text-red-800 rounded-xl p-4;
+  }
+  
+  .notification-warning {
+    @apply bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl p-4;
+  }
+  
+  .notification-info {
+    @apply bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-4;
   }
 }
 
-/* Custom scrollbar for chat */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+/* Custom animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
-  border-radius: 2px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
-}
-
-/* Animation for Grok widget */
 @keyframes bounce-in {
   0% {
     transform: scale(0.3);
@@ -189,36 +347,38 @@
   }
 }
 
-.grok-widget-entrance {
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.6s ease-out;
+}
+
+.animate-bounce-in {
   animation: bounce-in 0.5s ease-out;
 }
 
-/* Tooltip styles */
-.tooltip {
-  @apply absolute bottom-full right-0 mb-2 w-64 bg-gray-900 text-white text-xs rounded p-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200;
+/* Staggered animations for lists */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* Dark mode adjustments */
+.dark .shadow-elegant {
+  box-shadow: 0 1px 3px rgba(255, 255, 255, 0.08), 0 1px 2px rgba(255, 255, 255, 0.02);
 }
 
-/* Platform icon backgrounds */
-.platform-facebook {
-  @apply bg-blue-600;
+.dark .shadow-elegant-md {
+  box-shadow: 0 4px 6px rgba(255, 255, 255, 0.05), 0 2px 4px rgba(255, 255, 255, 0.08);
 }
 
-.platform-instagram {
-  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+.dark .shadow-elegant-lg {
+  box-shadow: 0 10px 15px rgba(255, 255, 255, 0.08), 0 4px 6px rgba(255, 255, 255, 0.05);
 }
 
-.platform-linkedin {
-  @apply bg-blue-700;
-}
-
-.platform-youtube {
-  @apply bg-red-600;
-}
-
-.platform-tiktok {
-  @apply bg-black;
-}
-
-.platform-x {
-  @apply bg-black;
+.dark .shadow-elegant-xl {
+  box-shadow: 0 20px 25px rgba(255, 255, 255, 0.08), 0 10px 10px rgba(255, 255, 255, 0.04);
 }

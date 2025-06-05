@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import Header from "@/components/header";
-import Footer from "@/components/footer";
-import GrokWidget from "@/components/grok-widget";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, Star, ArrowLeft, Cpu, Zap } from "lucide-react";
+import { Link } from "wouter";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import GrokWidget from "@/components/grok-widget";
 
 export default function Subscription() {
   const [, setLocation] = useLocation();
@@ -78,63 +78,182 @@ export default function Subscription() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header showBack="/"/>
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border/40">
+        <div className="container-atomiq">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center">
+              <Link href="/" className="flex items-center">
+                <ArrowLeft className="h-5 w-5 text-muted-foreground mr-3" />
+                <div className="w-10 h-10 bg-gradient-atomiq rounded-xl flex items-center justify-center">
+                  <Cpu className="h-6 w-6 text-white" />
+                </div>
+                <span className="ml-3 text-2xl font-bold bg-gradient-atomiq bg-clip-text text-transparent">
+                  AtomIQ
+                </span>
+              </Link>
+            </div>
+            <div className="flex items-center space-x-6">
+              <Link href="/login">
+                <Button variant="ghost" className="nav-link">Sign In</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
       
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-heading font-light text-foreground lowercase">choose your plan</h1>
-        </div>
+      {/* Hero Section */}
+      <section className="section-spacing bg-white">
+        <div className="container-atomiq text-center">
+          <div className="space-y-6 mb-16">
+            <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium">
+              <Zap className="h-4 w-4 mr-2" />
+              Technology Intelligence Plans
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold">
+              Choose Your <span className="bg-gradient-atomiq bg-clip-text text-transparent">AtomIQ</span> Plan
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Select the perfect plan for your Queensland business. All plans include AI-powered content generation, smart scheduling, and platform connections.
+            </p>
+          </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {plans.map((plan) => (
-            <Card 
-              key={plan.id} 
-              className={`card-agencyiq text-center relative ${
-                plan.popular ? 'border-2 border-primary' : ''
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary text-white px-4 py-1 rounded-full text-sm lowercase">
-                  most popular
-                </div>
-              )}
-              
-              <CardContent className="p-8">
-                <h3 className="text-xl font-medium text-foreground mb-2 lowercase">{plan.name}</h3>
-                <div className="text-2xl font-semibold text-primary mb-4 lowercase">{plan.price}</div>
-                <div className="text-foreground mb-6 lowercase">{plan.posts}</div>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {plans.map((plan, index) => (
+              <div 
+                key={plan.id} 
+                className={`pricing-card p-8 ${
+                  plan.popular ? 'pricing-card-popular' : ''
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-gradient-atomiq text-white px-4 py-1 rounded-b-lg text-sm font-medium">
+                    Most Popular
+                  </div>
+                )}
                 
-                <div className="space-items mb-8">
-                  {features.map((feature, index) => (
-                    <div key={index} className="flex items-center space-x-3">
-                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                        <CheckIcon className="w-3 h-3 text-white" />
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-bold capitalize">{plan.name}</h3>
+                    <div className="text-4xl font-bold text-primary">{plan.price}</div>
+                    <p className="text-muted-foreground">{plan.posts}</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {features.map((feature, featureIndex) => (
+                      <div key={featureIndex} className="flex items-center space-x-3">
+                        <div className="w-5 h-5 bg-gradient-atomiq rounded-full flex items-center justify-center flex-shrink-0">
+                          <CheckIcon className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="text-sm text-left capitalize">{feature}</span>
                       </div>
-                      <span className="text-sm text-foreground lowercase">{feature}</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+
+                  <Button 
+                    className={`w-full text-lg py-6 ${
+                      plan.popular 
+                        ? 'btn-atomiq-primary'
+                        : 'btn-atomiq-secondary'
+                    } ${
+                      loadingPlan === plan.id ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    onClick={() => handlePayment(plan.priceId, plan.id)}
+                    disabled={loadingPlan === plan.id}
+                  >
+                    {loadingPlan === plan.id ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Processing...</span>
+                      </div>
+                    ) : (
+                      'Subscribe Now'
+                    )}
+                  </Button>
                 </div>
+              </div>
+            ))}
+          </div>
 
-                <button 
-                  className={`w-full font-medium transition-all duration-200 px-6 py-3 rounded lowercase ${
-                    plan.popular 
-                      ? 'bg-primary text-white hover:bg-[hsl(var(--atomic-cyan))]'
-                      : 'btn-primary'
-                  } ${
-                    loadingPlan === plan.id ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  onClick={() => handlePayment(plan.priceId, plan.id)}
-                  disabled={loadingPlan === plan.id}
-                >
-                  {loadingPlan === plan.id ? 'processing...' : 'subscribe now'}
-                </button>
-              </CardContent>
-            </Card>
-          ))}
+          <div className="mt-16 space-y-8">
+            <div className="grid md:grid-cols-3 gap-8 text-center">
+              <div className="space-y-2">
+                <div className="w-12 h-12 bg-gradient-atomiq rounded-xl flex items-center justify-center mx-auto">
+                  <CheckIcon className="h-6 w-6 text-white" />
+                </div>
+                <h4 className="font-semibold">No Setup Fees</h4>
+                <p className="text-sm text-muted-foreground">Start immediately with no hidden costs</p>
+              </div>
+              <div className="space-y-2">
+                <div className="w-12 h-12 bg-gradient-atomiq rounded-xl flex items-center justify-center mx-auto">
+                  <Star className="h-6 w-6 text-white" />
+                </div>
+                <h4 className="font-semibold">Cancel Anytime</h4>
+                <p className="text-sm text-muted-foreground">Flexible subscription with no long-term commitment</p>
+              </div>
+              <div className="space-y-2">
+                <div className="w-12 h-12 bg-gradient-atomiq rounded-xl flex items-center justify-center mx-auto">
+                  <Zap className="h-6 w-6 text-white" />
+                </div>
+                <h4 className="font-semibold">AI-Powered</h4>
+                <p className="text-sm text-muted-foreground">Advanced technology for intelligent automation</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <Footer />
+      {/* Footer */}
+      <footer className="bg-card border-t">
+        <div className="container-atomiq py-16">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div className="space-y-4">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gradient-atomiq rounded-xl flex items-center justify-center">
+                  <Cpu className="h-6 w-6 text-white" />
+                </div>
+                <span className="ml-3 text-2xl font-bold bg-gradient-atomiq bg-clip-text text-transparent">
+                  AtomIQ
+                </span>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                Smarter social media automation for Queensland businesses. Technology and intelligence working together.
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <h5 className="font-semibold">Product</h5>
+              <div className="space-y-2">
+                <Link href="/subscription" className="nav-link block">Pricing</Link>
+                <Link href="/#features" className="nav-link block">Features</Link>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h5 className="font-semibold">Company</h5>
+              <div className="space-y-2">
+                <a href="#" className="nav-link block">About</a>
+                <a href="#" className="nav-link block">Contact</a>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h5 className="font-semibold">Support</h5>
+              <div className="space-y-2">
+                <a href="#" className="nav-link block">Help Center</a>
+                <a href="#" className="nav-link block">Documentation</a>
+              </div>
+            </div>
+          </div>
+          
+          <div className="border-t border-border mt-12 pt-8 text-center">
+            <p className="text-muted-foreground">
+              &copy; 2024 AtomIQ Technologies. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
+
       <GrokWidget />
     </div>
   );
