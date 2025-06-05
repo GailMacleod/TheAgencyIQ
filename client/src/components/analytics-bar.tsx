@@ -48,6 +48,9 @@ export default function AnalyticsBar({ className }: AnalyticsBarProps) {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
+        // Temporarily disable analytics API calls to prevent auth loop
+        setLoading(false);
+        return;
         const response = await fetch('/api/analytics/monthly');
         if (response.ok) {
           const data = await response.json();

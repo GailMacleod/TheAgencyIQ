@@ -10,7 +10,6 @@ import { useState, useEffect } from "react";
 import { format, addDays, startOfMonth, endOfMonth, isSameDay, isToday } from "date-fns";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
-import AnalyticsBar from "@/components/analytics-bar";
 
 interface Post {
   id: number;
@@ -62,6 +61,8 @@ export default function Schedule() {
   // Fetch posts with calendar data
   const { data: posts = [], isLoading: postsLoading, refetch: refetchPosts } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
+    retry: false,
+    enabled: false, // Disable until authentication is fixed
   });
 
   // Generate 30-day calendar view
@@ -196,7 +197,6 @@ export default function Schedule() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
       <Header showUserMenu={true} />
-      <AnalyticsBar className="border-b" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-8">
