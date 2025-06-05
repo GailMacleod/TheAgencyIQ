@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 
@@ -183,9 +184,26 @@ export default function BrandPurpose() {
                   placeholder="try 'Queensland Artisans Co.'"
                   className="mt-1"
                 />
-                <div className="text-xs text-purple-600 mt-1 flex items-center">
-                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                  Grok Strategyzer tip: Your brand name should connect to your value proposition and target customer segment
+                <div className="flex items-center justify-between mt-1">
+                  <div className="text-xs text-purple-600 flex items-center">
+                    <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                    Grok Strategyzer tip: Your brand name should connect to your value proposition and target customer segment
+                  </div>
+                  {form.watch('brandName') && form.watch('brandName').length > 2 && (
+                    <div className="flex items-center">
+                      {form.watch('brandName').length > 10 ? (
+                        <div className="flex items-center text-xs text-green-600">
+                          <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                          Strong
+                        </div>
+                      ) : (
+                        <div className="flex items-center text-xs text-orange-600">
+                          <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
+                          Weak
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               {form.formState.errors.brandName && (
@@ -203,9 +221,26 @@ export default function BrandPurpose() {
                 className="mt-1 resize-none"
                 rows={3}
               />
-              <div className="text-xs text-purple-600 mt-1 flex items-center">
-                <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok Strategyzer tip: Define your value proposition - what specific gain do you create or pain do you relieve?
+              <div className="flex items-center justify-between mt-1">
+                <div className="text-xs text-purple-600 flex items-center">
+                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                  Grok Strategyzer tip: Define your value proposition - what specific gain do you create or pain do you relieve?
+                </div>
+                {form.watch('productsServices') && form.watch('productsServices').length > 20 && (
+                  <div className="flex items-center">
+                    {form.watch('productsServices').length > 50 && form.watch('productsServices').includes('queensland') ? (
+                      <div className="flex items-center text-xs text-green-600">
+                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                        Strong
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-xs text-orange-600">
+                        <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
+                        Weak
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               {form.formState.errors.productsServices && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.productsServices.message}</p>
@@ -222,9 +257,26 @@ export default function BrandPurpose() {
                 className="mt-1 resize-none"
                 rows={3}
               />
-              <div className="text-xs text-purple-600 mt-1 flex items-center">
-                <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok Strategyzer tip: Your core purpose defines your mission - focus on the customer jobs you help complete
+              <div className="flex items-center justify-between mt-1">
+                <div className="text-xs text-purple-600 flex items-center">
+                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                  Grok Strategyzer tip: Your core purpose defines your mission - focus on the customer jobs you help complete
+                </div>
+                {form.watch('corePurpose') && form.watch('corePurpose').length > 15 && (
+                  <div className="flex items-center">
+                    {form.watch('corePurpose').length > 40 && (form.watch('corePurpose').includes('help') || form.watch('corePurpose').includes('support') || form.watch('corePurpose').includes('enable')) ? (
+                      <div className="flex items-center text-xs text-green-600">
+                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                        Strong
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-xs text-orange-600">
+                        <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
+                        Weak
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               {form.formState.errors.corePurpose && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.corePurpose.message}</p>
@@ -241,9 +293,26 @@ export default function BrandPurpose() {
                 className="mt-1 resize-none"
                 rows={3}
               />
-              <div className="text-xs text-purple-600 mt-1 flex items-center">
-                <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok Strategyzer tip: Define your customer segment - demographics, behaviors, and needs they share
+              <div className="flex items-center justify-between mt-1">
+                <div className="text-xs text-purple-600 flex items-center">
+                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                  Grok Strategyzer tip: Define your customer segment - demographics, behaviors, and needs they share
+                </div>
+                {form.watch('audience') && form.watch('audience').length > 10 && (
+                  <div className="flex items-center">
+                    {form.watch('audience').length > 30 && (form.watch('audience').includes('queensland') || form.watch('audience').includes('age') || form.watch('audience').includes('business') || form.watch('audience').includes('small')) ? (
+                      <div className="flex items-center text-xs text-green-600">
+                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                        Strong
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-xs text-orange-600">
+                        <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
+                        Weak
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               {form.formState.errors.audience && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.audience.message}</p>
@@ -260,9 +329,26 @@ export default function BrandPurpose() {
                 className="mt-1 resize-none"
                 rows={3}
               />
-              <div className="text-xs text-purple-600 mt-1 flex items-center">
-                <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok Strategyzer tip: Customer job-to-be-done - what functional, emotional, or social job do customers hire you for?
+              <div className="flex items-center justify-between mt-1">
+                <div className="text-xs text-purple-600 flex items-center">
+                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
+                  Grok Strategyzer tip: Customer job-to-be-done - what functional, emotional, or social job do customers hire you for?
+                </div>
+                {form.watch('jobToBeDone') && form.watch('jobToBeDone').length > 15 && (
+                  <div className="flex items-center">
+                    {form.watch('jobToBeDone').length > 35 && (form.watch('jobToBeDone').includes('help') || form.watch('jobToBeDone').includes('find') || form.watch('jobToBeDone').includes('solve') || form.watch('jobToBeDone').includes('enable')) ? (
+                      <div className="flex items-center text-xs text-green-600">
+                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                        Strong
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-xs text-orange-600">
+                        <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
+                        Weak
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               {form.formState.errors.jobToBeDone && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.jobToBeDone.message}</p>
