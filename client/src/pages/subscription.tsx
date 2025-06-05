@@ -185,7 +185,10 @@ export default function Subscription() {
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <h3 className="text-2xl font-bold capitalize">{plan.name}</h3>
-                    <div className="text-4xl font-bold text-primary">{plan.price}</div>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-primary">{plan.price.split('/')[0]}</div>
+                      <div className="text-sm text-muted-foreground">/month</div>
+                    </div>
                     <p className="text-muted-foreground">{plan.posts}</p>
                   </div>
                   
