@@ -256,9 +256,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Get current user
-  app.get("/api/auth/user", requireAuth, async (req: any, res) => {
+  // Get current user (public endpoint for checking auth status)
+  app.get("/api/auth/user", async (req: any, res) => {
     try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
       const user = await storage.getUser(req.session.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -823,10 +827,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (session.mode === 'subscription') {
             const customerId = session.customer as string;
             const subscriptionId = session.subscription as string;
+            const userIdFromMetadata = session.metadata?.userId;
             
-            // Update user with subscription details
-            // This would require implementing user lookup by Stripe customer ID
-            console.log('Subscription created:', { customerId, subscriptionId });
+            if (userIdFromMetadata && userIdFromMetadata !== 'guest') {
+              // Update existing user with subscription details
+              await storage.updateUserStripeInfo(
+                parseInt(userIdFromMetadata),
+                customerId,
+                subscriptionId
+              );
+              
+              // Update subscription plan based on metadata
+              const plan = session.metadata?.plan || 'starter';
+              const posts = parseInt(session.metadata?.posts || '10');
+              const totalPosts = parseInt(session.metadata?.totalPosts || '12');
+              
+              await storage.updateUser(parseInt(userIdFromMetadata), {
+                subscriptionPlan: plan,
+                remainingPosts: posts,
+                totalPosts: totalPosts
+              });
+              
+              console.log('User subscription updated:', { userId: userIdFromMetadata, plan, subscriptionId });
+            }
           }
           break;
 
