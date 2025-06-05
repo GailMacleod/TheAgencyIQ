@@ -1,19 +1,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Menu, X, BarChart3, Calendar, Settings, User } from "lucide-react";
+import { Menu, X, BarChart3, Calendar, Settings, User } from "lucide-react";
 import { Link } from "wouter";
 import UserMenu from "@/components/user-menu";
 import agencyLogo from "@assets/agency_logo_1749083054761.png";
 
 interface MasterHeaderProps {
-  showBack?: string;
   showLogin?: boolean;
   showUserMenu?: boolean;
   title?: string;
 }
 
 export default function MasterHeader({ 
-  showBack, 
   showLogin = false, 
   showUserMenu = false,
   title 
@@ -27,29 +25,20 @@ export default function MasterHeader({
           <div className="flex justify-between items-center h-16">
             {/* Left side */}
             <div className="flex items-center space-x-4">
-              {showBack && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.location.href = showBack}
-                  className="p-2"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </Button>
-              )}
-              
-              <div className="flex items-center space-x-2">
-                <img 
-                  src={agencyLogo} 
-                  alt="The AgencyIQ" 
-                  className="w-8 h-8 object-contain"
-                />
-                <div>
-                  <h1 className="text-lg font-semibold text-gray-900 lowercase">
-                    {title || "the agencyiq"}
-                  </h1>
+              <Link href="/">
+                <div className="flex items-center space-x-2 cursor-pointer">
+                  <img 
+                    src={agencyLogo} 
+                    alt="The AgencyIQ" 
+                    className="w-8 h-8 object-contain"
+                  />
+                  <div>
+                    <h1 className="text-lg font-semibold text-gray-900 lowercase">
+                      {title || "the agencyiq"}
+                    </h1>
+                  </div>
                 </div>
-              </div>
+              </Link>
             </div>
 
             {/* Right side - Desktop */}
