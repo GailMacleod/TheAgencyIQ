@@ -26,13 +26,20 @@ export default function GrokWidget() {
   const [input, setInput] = useState('');
 
   const sendMessageMutation = useMutation({
-    mutationFn: (query: string) => apiRequest("POST", "/api/grok-query", { query }),
-    onSuccess: async (response) => {
-      const data = await response.json();
+    mutationFn: async (query: string) => {
+      try {
+        const response = await apiRequest("POST", "/api/grok-query", { query });
+        return await response.json();
+      } catch (error) {
+        console.error('Grok query error:', error);
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
       const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: data.response,
+        content: data.response || 'i received your message but had trouble generating a response. please try again.',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMessage]);

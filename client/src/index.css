@@ -311,22 +311,22 @@
 
 /* Custom animations */
 @keyframes fadeInUp {
-  from {
+  0% {
     opacity: 0;
     transform: translateY(30px);
   }
-  to {
+  100% {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
 @keyframes slideInRight {
-  from {
+  0% {
     opacity: 0;
     transform: translateX(30px);
   }
-  to {
+  100% {
     opacity: 1;
     transform: translateX(0);
   }
@@ -347,6 +347,20 @@
   }
 }
 
+@keyframes grok-entrance {
+  0% {
+    transform: scale(0.8) rotate(-10deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.6s ease-out;
 }
@@ -357,6 +371,10 @@
 
 .animate-bounce-in {
   animation: bounce-in 0.5s ease-out;
+}
+
+.grok-widget-entrance {
+  animation: grok-entrance 0.6s ease-out;
 }
 
 /* Staggered animations for lists */

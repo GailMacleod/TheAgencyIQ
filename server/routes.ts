@@ -256,8 +256,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Get current user (public endpoint for checking auth status)
-  app.get("/api/auth/user", async (req: any, res) => {
+  // Get current user - simplified for consistency
+  app.get("/api/user", async (req: any, res) => {
     try {
       if (!req.session?.userId) {
         return res.status(401).json({ message: "Not authenticated" });
@@ -543,7 +543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get Grok recommendation with real-time brand purpose analysis
-  app.post("/api/grok-query", requireAuth, async (req: any, res) => {
+  app.post("/api/grok-query", async (req: any, res) => {
     try {
       const { query, context } = req.body;
       
@@ -551,14 +551,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Query is required" });
       }
 
-      // Fetch brand purpose data for real-time analysis
-      const brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
+      // Check if XAI API key is configured
+      if (!process.env.XAI_API_KEY) {
+        return res.status(503).json({ 
+          response: "I'm currently unable to process your request. The AI service needs to be configured with valid API credentials."
+        });
+      }
+
+      // Fetch brand purpose data for authenticated users
+      let brandPurposeRecord = null;
+      if (req.session?.userId) {
+        try {
+          brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
+        } catch (error) {
+          console.log('Brand purpose fetch failed:', error);
+        }
+      }
       
       const response = await getGrokResponse(query, context, brandPurposeRecord);
       res.json({ response });
     } catch (error: any) {
       console.error('Grok query error:', error);
-      res.status(500).json({ message: "Error processing query: " + error.message });
+      res.status(500).json({ 
+        response: "I encountered an error processing your request. Please try again or contact support if the issue persists."
+      });
     }
   });
 
