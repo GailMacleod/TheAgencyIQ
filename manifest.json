@@ -1,0 +1,6 @@
+{
+  "name": "The AgencyIQ",
+  "short_name": "AgencyIQ",
+  "start_url": "/",
+  "display": "standalone"
+}
