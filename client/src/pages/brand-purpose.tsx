@@ -108,7 +108,38 @@ export default function BrandPurpose() {
   useEffect(() => {
     if (existingBrandPurpose && typeof existingBrandPurpose === 'object') {
       setIsExistingData(true);
-      // Don't auto-populate fields to show placeholder text
+      // Clear form to show placeholder text and enable indicators
+      form.reset({
+        brandName: "",
+        productsServices: "",
+        corePurpose: "",
+        audience: "",
+        jobToBeDone: "",
+        motivations: "",
+        painPoints: "",
+        goals: {
+          driveTraffic: false,
+          websiteUrl: "",
+          trafficTarget: "",
+          buildBrand: false,
+          followerTarget: "",
+          reachTarget: "",
+          makeSales: false,
+          salesUrl: "",
+          salesTarget: "",
+          conversionTarget: "",
+          generateLeads: false,
+          leadTarget: "",
+          engagementTarget: "",
+          informEducate: false,
+          keyMessage: "",
+          educationTarget: "",
+        },
+        contactDetails: {
+          email: "",
+          phone: "",
+        },
+      });
     }
   }, [existingBrandPurpose, form]);
 
