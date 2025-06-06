@@ -19,7 +19,7 @@ import { Bot, Lightbulb } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const brandPurposeSchema = z.object({
-  brandName: z.string().min(1, "Brand name is required").max(200, "Brand name must be 200 characters or less"),
+  brandName: z.string().min(2, "Brand name must be at least 2 characters").max(200, "Brand name must be 200 characters or less"),
   productsServices: z.string().min(10, "Products/services description must be at least 10 characters").max(200, "Products/services description must be 200 characters or less"),
   corePurpose: z.string().min(10, "Core purpose must be at least 10 characters").max(200, "Core purpose must be 200 characters or less"),
   audience: z.string().min(10, "Ideal audience must be at least 10 characters").max(200, "Ideal audience must be 200 characters or less"),
