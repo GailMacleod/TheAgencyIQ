@@ -685,12 +685,16 @@ export default function BrandPurpose() {
                     {form.watch('goals.driveTraffic') && (
                       <div className="mt-2 space-y-2">
                         <Input
+                          id="websiteUrl"
                           {...form.register('goals.websiteUrl')}
                           placeholder="Enter website URL (e.g., https://queenslandartisans.com)"
+                          autoComplete="url"
                         />
                         <Input
+                          id="trafficTarget"
                           {...form.register('goals.trafficTarget')}
                           placeholder="Monthly traffic target (e.g., 500 visitors per month)"
+                          autoComplete="off"
                         />
                       </div>
                     )}
@@ -708,12 +712,16 @@ export default function BrandPurpose() {
                     {form.watch('goals.buildBrand') && (
                       <div className="mt-2 space-y-2">
                         <Input
+                          id="followerTarget"
                           {...form.register('goals.followerTarget')}
                           placeholder="Follower growth target (e.g., 200 new followers per month)"
+                          autoComplete="off"
                         />
                         <Input
+                          id="reachTarget"
                           {...form.register('goals.reachTarget')}
                           placeholder="Monthly reach target (e.g., 5,000 people reached)"
+                          autoComplete="off"
                         />
                       </div>
                     )}
@@ -731,16 +739,22 @@ export default function BrandPurpose() {
                     {form.watch('goals.makeSales') && (
                       <div className="mt-2 space-y-2">
                         <Input
+                          id="salesUrl"
                           {...form.register('goals.salesUrl')}
                           placeholder="Enter sales URL (e.g., https://queenslandartisans.com/shop)"
+                          autoComplete="url"
                         />
                         <Input
+                          id="salesTarget"
                           {...form.register('goals.salesTarget')}
                           placeholder="Monthly sales target (e.g., $2,000 revenue per month)"
+                          autoComplete="off"
                         />
                         <Input
+                          id="conversionTarget"
                           {...form.register('goals.conversionTarget')}
                           placeholder="Conversion rate target (e.g., 3% of visitors make purchase)"
+                          autoComplete="off"
                         />
                       </div>
                     )}
@@ -758,12 +772,16 @@ export default function BrandPurpose() {
                     {form.watch('goals.generateLeads') && (
                       <div className="mt-2 space-y-2">
                         <Input
+                          id="leadTarget"
                           {...form.register('goals.leadTarget')}
                           placeholder="Monthly lead target (e.g., 50 qualified leads per month)"
+                          autoComplete="off"
                         />
                         <Input
+                          id="engagementTarget"
                           {...form.register('goals.engagementTarget')}
                           placeholder="Engagement rate target (e.g., 4% average engagement rate)"
+                          autoComplete="off"
                         />
                       </div>
                     )}
