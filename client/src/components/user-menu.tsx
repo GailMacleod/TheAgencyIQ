@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, User, CreditCard, LogOut, Building2 } from "lucide-react";
+import { Menu, X, User, CreditCard, LogOut, Building2, Calendar, Share2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -142,6 +142,30 @@ export default function UserMenu() {
             >
               <Building2 className="mr-2 h-4 w-4" />
               Brand Purpose
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => setLocation("/schedule")}
+              className="cursor-pointer"
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              Social Schedule
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => setLocation("/platform-connections")}
+              className="cursor-pointer"
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              Platform Connect
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => setLocation("/analytics")}
+              className="cursor-pointer"
+            >
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Analytics
             </DropdownMenuItem>
             
             <DropdownMenuItem
