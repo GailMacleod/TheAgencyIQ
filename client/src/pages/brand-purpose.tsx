@@ -293,64 +293,27 @@ export default function BrandPurpose() {
             </div>
           )}
 
-          {/* Live Guidance Widget */}
-          {showGuidance && (
-            <Card className="mb-6 border-purple-200 bg-purple-50">
-              <CardContent className="p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    <Bot className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-purple-900 mb-2 flex items-center">
-                      <Lightbulb className="w-4 h-4 mr-1" />
-                      AgencyIQ Strategic Guidance
-                    </h4>
-                    {isGeneratingGuidance ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full"></div>
-                        <span className="text-sm text-purple-700">Analyzing your brand purpose...</span>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-purple-800 leading-relaxed">{guidance}</p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Brand Name */}
             <div>
               <Label htmlFor="brandName" className="text-sm font-medium text-gray-700">What's your brand name?</Label>
-              <div className="relative">
+              <div className="relative group">
                 <Input
                   id="brandName"
                   {...form.register('brandName')}
-                  placeholder="try 'Queensland Artisans Co.'"
+                  placeholder="Queensland Business Solutions"
                   className="mt-1"
                 />
-                <div className="flex items-center justify-between mt-1">
-                  <div className="text-xs text-purple-600 flex items-center">
-                    <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                    Grok Strategyzer tip: Your brand name should connect to your value proposition and target customer segment
-                  </div>
-                  {form.watch('brandName') && form.watch('brandName').length > 2 && (
-                    <div className="flex items-center">
-                      {form.watch('brandName').length > 10 ? (
-                        <div className="flex items-center text-xs text-green-600">
-                          <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
-                          Strong
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-xs text-orange-600">
-                          <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
-                          Weak
-                        </div>
-                      )}
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Your brand name should connect to your value proposition and target customer segment</p>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
               {form.formState.errors.brandName && (
@@ -361,33 +324,23 @@ export default function BrandPurpose() {
             {/* Products/Services */}
             <div>
               <Label htmlFor="productsServices" className="text-sm font-medium text-gray-700">What products or services does your brand offer?</Label>
-              <Textarea
-                id="productsServices"
-                {...form.register('productsServices')}
-                placeholder="e.g., handcrafted pottery, local art prints"
-                className="mt-1 resize-none"
-                rows={3}
-              />
-              <div className="flex items-center justify-between mt-1">
-                <div className="text-xs text-purple-600 flex items-center">
-                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                  Grok Strategyzer tip: Define your value proposition - what specific gain do you create or pain do you relieve?
-                </div>
-                {form.watch('productsServices') && form.watch('productsServices').length > 20 && (
-                  <div className="flex items-center">
-                    {form.watch('productsServices').length > 50 && form.watch('productsServices').includes('queensland') ? (
-                      <div className="flex items-center text-xs text-green-600">
-                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
-                        Strong
-                      </div>
-                    ) : (
-                      <div className="flex items-center text-xs text-orange-600">
-                        <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
-                        Weak
-                      </div>
-                    )}
+              <div className="relative group">
+                <Textarea
+                  id="productsServices"
+                  {...form.register('productsServices')}
+                  placeholder="Digital marketing and automation services"
+                  className="mt-1 resize-none"
+                  rows={3}
+                />
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Define your value proposition - what specific gain do you create or pain do you relieve?</p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
               {form.formState.errors.productsServices && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.productsServices.message}</p>
@@ -397,33 +350,23 @@ export default function BrandPurpose() {
             {/* Core Purpose */}
             <div>
               <Label htmlFor="corePurpose" className="text-sm font-medium text-gray-700">What's your brand's core purpose?</Label>
-              <Textarea
-                id="corePurpose"
-                {...form.register('corePurpose')}
-                placeholder="e.g., support local queensland artisans"
-                className="mt-1 resize-none"
-                rows={3}
-              />
-              <div className="flex items-center justify-between mt-1">
-                <div className="text-xs text-purple-600 flex items-center">
-                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                  Grok Strategyzer tip: Your core purpose defines your mission - focus on the customer jobs you help complete
-                </div>
-                {form.watch('corePurpose') && form.watch('corePurpose').length > 15 && (
-                  <div className="flex items-center">
-                    {form.watch('corePurpose').length > 40 && (form.watch('corePurpose').includes('help') || form.watch('corePurpose').includes('support') || form.watch('corePurpose').includes('enable')) ? (
-                      <div className="flex items-center text-xs text-green-600">
-                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
-                        Strong
-                      </div>
-                    ) : (
-                      <div className="flex items-center text-xs text-orange-600">
-                        <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
-                        Weak
-                      </div>
-                    )}
+              <div className="relative group">
+                <Textarea
+                  id="corePurpose"
+                  {...form.register('corePurpose')}
+                  placeholder="Seeking digital transformation, open to adapting new technologies"
+                  className="mt-1 resize-none"
+                  rows={3}
+                />
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Your core purpose defines your mission - focus on the customer jobs you help complete</p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
               {form.formState.errors.corePurpose && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.corePurpose.message}</p>
@@ -433,33 +376,23 @@ export default function BrandPurpose() {
             {/* Ideal Audience */}
             <div>
               <Label htmlFor="audience" className="text-sm font-medium text-gray-700">Who's your ideal audience?</Label>
-              <Textarea
-                id="audience"
-                {...form.register('audience')}
-                placeholder="e.g., queensland locals aged 25-45"
-                className="mt-1 resize-none"
-                rows={3}
-              />
-              <div className="flex items-center justify-between mt-1">
-                <div className="text-xs text-purple-600 flex items-center">
-                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                  Grok Strategyzer tip: Define your customer segment - demographics, behaviors, and needs they share
-                </div>
-                {form.watch('audience') && form.watch('audience').length > 10 && (
-                  <div className="flex items-center">
-                    {form.watch('audience').length > 30 && (form.watch('audience').includes('queensland') || form.watch('audience').includes('age') || form.watch('audience').includes('business') || form.watch('audience').includes('small')) ? (
-                      <div className="flex items-center text-xs text-green-600">
-                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
-                        Strong
-                      </div>
-                    ) : (
-                      <div className="flex items-center text-xs text-orange-600">
-                        <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
-                        Weak
-                      </div>
-                    )}
+              <div className="relative group">
+                <Textarea
+                  id="audience"
+                  {...form.register('audience')}
+                  placeholder="Queensland SMEs, primarily businesses with 1-50 employees"
+                  className="mt-1 resize-none"
+                  rows={3}
+                />
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Define your customer segment - demographics, behaviors, and needs they share</p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
               {form.formState.errors.audience && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.audience.message}</p>
@@ -469,33 +402,23 @@ export default function BrandPurpose() {
             {/* Job to Be Done */}
             <div>
               <Label htmlFor="jobToBeDone" className="text-sm font-medium text-gray-700">What job does your brand do for customers?</Label>
-              <Textarea
-                id="jobToBeDone"
-                {...form.register('jobToBeDone')}
-                placeholder="e.g., help customers find unique, local gifts"
-                className="mt-1 resize-none"
-                rows={3}
-              />
-              <div className="flex items-center justify-between mt-1">
-                <div className="text-xs text-purple-600 flex items-center">
-                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                  Grok Strategyzer tip: Customer job-to-be-done - what functional, emotional, or social job do customers hire you for?
-                </div>
-                {form.watch('jobToBeDone') && form.watch('jobToBeDone').length > 15 && (
-                  <div className="flex items-center">
-                    {form.watch('jobToBeDone').length > 35 && (form.watch('jobToBeDone').includes('help') || form.watch('jobToBeDone').includes('find') || form.watch('jobToBeDone').includes('solve') || form.watch('jobToBeDone').includes('enable')) ? (
-                      <div className="flex items-center text-xs text-green-600">
-                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
-                        Strong
-                      </div>
-                    ) : (
-                      <div className="flex items-center text-xs text-orange-600">
-                        <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
-                        Weak
-                      </div>
-                    )}
+              <div className="relative group">
+                <Textarea
+                  id="jobToBeDone"
+                  {...form.register('jobToBeDone')}
+                  placeholder="Streamline operations and automate business processes"
+                  className="mt-1 resize-none"
+                  rows={3}
+                />
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Customer job-to-be-done - what functional, emotional, or social job do customers hire you for?</p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
               {form.formState.errors.jobToBeDone && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.jobToBeDone.message}</p>
