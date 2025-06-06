@@ -122,7 +122,7 @@ export default function Splash() {
             <h2 className="text-4xl md:text-5xl font-bold">Take Control, Be Online 24/7</h2>
             <p className="tracking-wider uppercase font-extrabold text-[20px] text-[#3b5cff]">BETA</p>
             <Link href="/subscription">
-              <Button size="lg" className="hover:opacity-90 text-white px-8 py-4 text-lg bg-[#31f0ff]">
+              <Button size="lg" className="bg-gradient-atomiq hover:opacity-90 text-white px-8 py-4 text-lg">
                 Choose Your Plan
               </Button>
             </Link>
