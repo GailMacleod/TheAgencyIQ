@@ -119,7 +119,7 @@ export default function Splash() {
       <section className="py-20 bg-muted/30" id="pricing">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-6">
-            <h2 className="text-4xl md:text-5xl font-bold">Simple!  Social Media Automation</h2>
+            <h2 className="text-4xl md:text-5xl font-bold">Take Control, Be Online 24/7</h2>
             <p className="text-lg font-bold text-muted-foreground tracking-wider uppercase">BETA</p>
             <Link href="/subscription">
               <Button size="lg" className="bg-gradient-atomiq hover:opacity-90 text-white px-8 py-4 text-lg">
