@@ -282,6 +282,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get brand purpose data for a user
+  app.get("/api/brand-purpose", requireAuth, async (req: any, res) => {
+    try {
+      const brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
+      
+      if (!brandPurposeRecord) {
+        return res.status(404).json({ message: "Brand purpose not found" });
+      }
+
+      res.json(brandPurposeRecord);
+    } catch (error: any) {
+      console.error('Get brand purpose error:', error);
+      res.status(500).json({ message: "Error fetching brand purpose" });
+    }
+  });
+
   // Logo upload endpoint
   app.post("/api/upload-logo", requireAuth, async (req: any, res) => {
     try {

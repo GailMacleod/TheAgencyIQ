@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 
@@ -54,41 +54,88 @@ export default function BrandPurpose() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [isExistingData, setIsExistingData] = useState(false);
+
+  // Load existing brand purpose data
+  const { data: existingBrandPurpose, isLoading: isLoadingBrandPurpose } = useQuery({
+    queryKey: ["/api/brand-purpose"],
+    retry: false,
+    staleTime: 0,
+  });
 
   const form = useForm<BrandPurposeForm>({
     resolver: zodResolver(brandPurposeSchema),
     defaultValues: {
-      brandName: "Queensland Artisans Co.",
-      productsServices: "Handcrafted pottery, local art prints, and unique Queensland-made gifts that celebrate local artistry and craftsmanship.",
-      corePurpose: "Support local Queensland artisans by connecting them with customers who value authentic, handmade products and local craftsmanship.",
-      audience: "Queensland locals aged 25-45 who appreciate unique, locally-made products and want to support their community's artists and craftspeople.",
-      jobToBeDone: "Help customers find unique, authentic local gifts that tell a story and support Queensland's creative community.",
-      motivations: "They value supporting local artists, want unique products that aren't mass-produced, and appreciate the story behind handmade items.",
-      painPoints: "Hard to find authentic local products, uncertainty about quality, lack of connection to the artists, limited time to search for unique gifts.",
+      brandName: "",
+      productsServices: "",
+      corePurpose: "",
+      audience: "",
+      jobToBeDone: "",
+      motivations: "",
+      painPoints: "",
       goals: {
-        driveTraffic: true,
-        websiteUrl: "https://queenslandartisans.com",
-        trafficTarget: "500 visitors per month",
-        buildBrand: true,
-        followerTarget: "200 new followers per month",
-        reachTarget: "5,000 people reached monthly",
-        makeSales: true,
-        salesUrl: "https://queenslandartisans.com/shop",
-        salesTarget: "$2,000 revenue per month",
-        conversionTarget: "3% of visitors make purchase",
-        generateLeads: true,
-        leadTarget: "50 qualified leads per month",
-        engagementTarget: "4% average engagement rate",
+        driveTraffic: false,
+        websiteUrl: "",
+        trafficTarget: "",
+        buildBrand: false,
+        followerTarget: "",
+        reachTarget: "",
+        makeSales: false,
+        salesUrl: "",
+        salesTarget: "",
+        conversionTarget: "",
+        generateLeads: false,
+        leadTarget: "",
+        engagementTarget: "",
         informEducate: false,
         keyMessage: "",
         educationTarget: "",
       },
       contactDetails: {
-        email: "info@queenslandartisans.com",
-        phone: "+61 7 1234 5678",
+        email: "",
+        phone: "",
       },
     },
   });
+
+  // Load existing data into form when available
+  useEffect(() => {
+    if (existingBrandPurpose && typeof existingBrandPurpose === 'object') {
+      setIsExistingData(true);
+      const brandData = existingBrandPurpose as any;
+      form.reset({
+        brandName: brandData.brandName || "",
+        productsServices: brandData.productsServices || "",
+        corePurpose: brandData.corePurpose || "",
+        audience: brandData.audience || "",
+        jobToBeDone: brandData.jobToBeDone || "",
+        motivations: brandData.motivations || "",
+        painPoints: brandData.painPoints || "",
+        goals: brandData.goals || {
+          driveTraffic: false,
+          websiteUrl: "",
+          trafficTarget: "",
+          buildBrand: false,
+          followerTarget: "",
+          reachTarget: "",
+          makeSales: false,
+          salesUrl: "",
+          salesTarget: "",
+          conversionTarget: "",
+          generateLeads: false,
+          leadTarget: "",
+          engagementTarget: "",
+          informEducate: false,
+          keyMessage: "",
+          educationTarget: "",
+        },
+        contactDetails: brandData.contactDetails || {
+          email: "",
+          phone: "",
+        },
+      });
+    }
+  }, [existingBrandPurpose, form]);
 
   const onSubmit = async (data: BrandPurposeForm) => {
     try {
@@ -113,8 +160,8 @@ export default function BrandPurpose() {
       await apiRequest("POST", "/api/brand-purpose", brandData);
       
       toast({
-        title: "Brand Purpose Saved",
-        description: "Your brand purpose has been saved successfully",
+        title: isExistingData ? "Brand Purpose Updated" : "Brand Purpose Saved",
+        description: isExistingData ? "Your brand purpose has been updated successfully" : "Your brand purpose has been saved to your profile successfully",
       });
       
       setLocation("/schedule");
@@ -170,8 +217,19 @@ export default function BrandPurpose() {
 
         <div className="bg-white rounded-lg shadow-md p-8">
           <h2 className="text-2xl font-normal text-center mb-8" style={{ color: '#333333' }}>
-            define your brand purpose
+            {isExistingData ? 'update your brand purpose' : 'define your brand purpose'}
           </h2>
+          
+          {isExistingData && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                <p className="text-sm text-blue-800">
+                  Your brand purpose is already saved to your profile. You can update any information below.
+                </p>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Brand Name */}
