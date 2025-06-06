@@ -372,6 +372,7 @@ export default function BrandPurpose() {
                   {...form.register('brandName')}
                   placeholder="The AgencyIQ"
                   className="mt-1"
+                  autoComplete="organization"
                 />
                 <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                   <div className="flex items-start space-x-2">
@@ -427,6 +428,7 @@ export default function BrandPurpose() {
                   placeholder="Value proposition: You're invisible, that sucks. AgencyIQ gives you a beacon that's always on. The pain: You're invisible, and silence is killing your growth. The gain: You show up. Week in, week out. Professionally. Strategically. Automatically. Starter Subscription, 10 posts + 2 Free: $19.99/30 days Growth Subscription, 25 posts + 2 Free: $41.99/30 days Professional Subscription, 45 posts + 2 Free: $99.99/30 days"
                   className="mt-1 resize-none"
                   rows={3}
+                  autoComplete="off"
                 />
                 <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                   <div className="flex items-start space-x-2">
@@ -482,6 +484,7 @@ export default function BrandPurpose() {
                   placeholder="To stop good local businesses from dying quietly, to 'Keep me visible even when I am too busy to show up, not just visibility, but validation. For those who want what the big brands have: presence, polish, and power, without the army it takes to get there.'"
                   className="mt-1 resize-none"
                   rows={3}
+                  autoComplete="off"
                 />
                 <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                   <div className="flex items-start space-x-2">
@@ -537,6 +540,7 @@ export default function BrandPurpose() {
                   placeholder="Queensland SMEs, primarily businesses with 1-50 employees"
                   className="mt-1 resize-none"
                   rows={3}
+                  autoComplete="off"
                 />
                 <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                   <div className="flex items-start space-x-2">
@@ -570,6 +574,7 @@ export default function BrandPurpose() {
                   placeholder="Streamline operations and automate business processes"
                   className="mt-1 resize-none"
                   rows={3}
+                  autoComplete="off"
                 />
                 <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                   <div className="flex items-start space-x-2">
@@ -603,6 +608,7 @@ export default function BrandPurpose() {
                   placeholder="Feel confident and competitive in the digital landscape"
                   className="mt-1 resize-none"
                   rows={3}
+                  autoComplete="off"
                 />
                 <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                   <div className="flex items-start space-x-2">
