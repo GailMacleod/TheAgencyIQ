@@ -13,7 +13,7 @@ interface MasterHeaderProps {
 
 export default function MasterHeader({ 
   showLogin = false, 
-  showUserMenu = false,
+  showUserMenu = true,
   title 
 }: MasterHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
