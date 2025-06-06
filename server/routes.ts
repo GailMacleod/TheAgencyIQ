@@ -42,7 +42,7 @@ if (!process.env.SESSION_SECRET) {
 
 // Initialize services
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
+  apiVersion: "2025-05-28.basil",
 });
 
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
@@ -333,6 +333,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.createPlatformConnection({
             userId: req.session.userId,
             platform,
+            platformUserId: `demo_user_${platform}_${req.session.userId}`,
+            platformUsername: `demo_username_${platform}`,
             accessToken: `demo_token_${platform}_${Date.now()}`,
             refreshToken: `demo_refresh_${platform}_${Date.now()}`,
           });
@@ -422,6 +424,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const connection = await storage.createPlatformConnection({
         userId: req.session.userId,
         platform,
+        platformUserId: `mock_user_${platform}_${req.session.userId}`,
+        platformUsername: `mock_username_${platform}`,
         accessToken: `mock_token_${platform}_${Date.now()}`,
         refreshToken: `mock_refresh_${platform}_${Date.now()}`,
       });
@@ -476,7 +480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         motivations: brandPurposeRecord.motivations,
         painPoints: brandPurposeRecord.painPoints,
         goals: brandPurposeRecord.goals,
-        logoUrl: brandPurposeRecord.logoUrl,
+        logoUrl: brandPurposeRecord.logoUrl || undefined,
         contactDetails: brandPurposeRecord.contactDetails,
         platforms: connections.map(c => c.platform),
         totalPosts: user.totalPosts || 12,
@@ -529,7 +533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Decrement remaining posts
       const user = await storage.getUser(req.session.userId);
-      if (user && user.remainingPosts > 0) {
+      if (user && user.remainingPosts && user.remainingPosts > 0) {
         await storage.updateUser(req.session.userId, {
           remainingPosts: user.remainingPosts - 1,
         });
@@ -707,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentPost.platform,
         brandPurposeRecord.corePurpose,
         brandPurposeRecord.audience,
-        brandPurposeRecord.goals
+        typeof brandPurposeRecord.goals === 'object' ? JSON.stringify(brandPurposeRecord.goals) : String(brandPurposeRecord.goals || '{}')
       );
 
       const updatedPost = await storage.updatePost(postId, {
