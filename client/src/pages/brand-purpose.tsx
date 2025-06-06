@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Upload } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -306,6 +306,19 @@ export default function BrandPurpose() {
       };
       
       img.src = url;
+    }
+  };
+
+  const handleDeleteLogo = () => {
+    setLogoFile(null);
+    if (logoPreview) {
+      URL.revokeObjectURL(logoPreview);
+      setLogoPreview(null);
+    }
+    // Clear the file input
+    const fileInput = document.getElementById('logo') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
     }
   };
 
@@ -797,14 +810,30 @@ export default function BrandPurpose() {
                 </div>
                 {logoPreview && (
                   <div className="flex-shrink-0">
-                    <div className="w-20 h-20 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                    <div className="relative w-20 h-20 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
                       <img 
                         src={logoPreview} 
                         alt="Logo preview" 
                         className="max-w-full max-h-full object-contain"
                       />
+                      <button
+                        type="button"
+                        onClick={handleDeleteLogo}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors"
+                        title="Delete logo"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
                     <p className="text-xs text-green-600 text-center mt-1">Preview</p>
+                    <div className="flex justify-center mt-1">
+                      <Label
+                        htmlFor="logo"
+                        className="cursor-pointer text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        Change Logo
+                      </Label>
+                    </div>
                   </div>
                 )}
               </div>

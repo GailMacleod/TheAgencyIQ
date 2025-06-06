@@ -1,0 +1,29 @@
+I’m working on AgencyIQ, an app for Queensland small businesses to simplify social media. The app uses a Strategyzer waterfall approach: users input brand purpose data (e.g., audience, pain points, motivations), then a 30-day social media schedule is generated for LinkedIn. The inputs are:
+
+- Brand Name: AgencyIQ – Simplifying social media for Queensland SMBs
+- Products/Services: AI-driven content creation, scheduling, analytics for local posts
+- Core Purpose: Empower Queensland SMBs to grow online with easy, local tools
+- Ideal Audience: Time-poor Queensland owners, 30–55, $100k–$2m turnover, seeking simple marketing
+- Customer Job: Build consistent, engaging social media to attract locals
+- Motivations: Grow sales, win local fame, save time
+- Pain Points: No time, content confusion, costly marketing, fear of fading
+- Goals: 500 website visitors, 200 new followers, $2,000 sales/month, 50 leads, 4% engagement
+
+**Issue**: The `/api/content-plan` endpoint fails with “CONTENT GENERATION FAILED (reading map?)” when generating the 30-day schedule. The brand purpose data is stored in `db.ts` as a `brandPurpose` object, passed to `grok.ts` for content generation, but it’s erroring.
+
+**Task**:  
+1. Debug the “reading map?” error in `/api/content-plan` (`routes.ts`). Ensure `brandPurpose` is parsed correctly from `db.ts` and passed to `generateContent` in `grok.ts`.  
+2. Generate a 30-day LinkedIn schedule (10 posts, 1 every 3 days, starting Jul 6, 2025, at 8:19 PM AEST) using the brand purpose data. Posts must address pain points (e.g., no time), motivations (e.g., grow sales), and goals (e.g., 200 followers). Example post: “Jul 6, 8:19 PM: ‘Overwhelmed by social media? AgencyIQ automates your posts, saving you time to shine in Queensland! #GrowLocal’”.  
+3. Update `index.ts` to display posts in the calendar, showing a modal on date click with post details (e.g., text, time, approve/edit/reject buttons).  
+
+**Files**:  
+- `db.ts`: Stores `brandPurpose` as `{ audience: string, purpose: string, painPoints: string, motivations: string, goals: string }`.  
+- `grok.ts`: Has `generateContent(brandPurpose)` to return post objects.  
+- `routes.ts`: Has `/api/content-plan` to generate the schedule.  
+- `index.ts`: React frontend for the calendar UI.  
+
+**Constraints**:  
+- Only fix the content generation error and implement the schedule. No other changes.  
+- Keep API latency <500ms (`vite.ts` optimizations).  
+- Use TypeScript types for `brandPurpose` and posts.  
+- Posts must align with Strategyzer inputs (e.g., solve “no time” with automation).  
