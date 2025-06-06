@@ -19,13 +19,13 @@ import { Bot, Lightbulb } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const brandPurposeSchema = z.object({
-  brandName: z.string().min(1, "Brand name is required"),
-  productsServices: z.string().min(10, "Products/services description must be at least 10 characters"),
-  corePurpose: z.string().min(10, "Core purpose must be at least 10 characters"),
-  audience: z.string().min(10, "Ideal audience must be at least 10 characters"),
-  jobToBeDone: z.string().min(10, "Job to be done must be at least 10 characters"),
-  motivations: z.string().min(10, "Audience motivations must be at least 10 characters"),
-  painPoints: z.string().min(10, "Pain points must be at least 10 characters"),
+  brandName: z.string().min(1, "Brand name is required").max(200, "Brand name must be 200 characters or less"),
+  productsServices: z.string().min(10, "Products/services description must be at least 10 characters").max(200, "Products/services description must be 200 characters or less"),
+  corePurpose: z.string().min(10, "Core purpose must be at least 10 characters").max(200, "Core purpose must be 200 characters or less"),
+  audience: z.string().min(10, "Ideal audience must be at least 10 characters").max(200, "Ideal audience must be 200 characters or less"),
+  jobToBeDone: z.string().min(10, "Job to be done must be at least 10 characters").max(200, "Job to be done must be 200 characters or less"),
+  motivations: z.string().min(10, "Audience motivations must be at least 10 characters").max(200, "Audience motivations must be 200 characters or less"),
+  painPoints: z.string().min(10, "Pain points must be at least 10 characters").max(200, "Pain points must be 200 characters or less"),
   goals: z.object({
     driveTraffic: z.boolean().default(false),
     websiteUrl: z.string().optional(),
@@ -364,26 +364,35 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
-              {form.watch('brandName') && form.watch('brandName').length > 2 && (
-                <div className="flex items-center justify-end mt-2">
-                  {form.watch('brandName').length > 8 && (form.watch('brandName').toLowerCase().includes('agency') || form.watch('brandName').toLowerCase().includes('solutions') || form.watch('brandName').toLowerCase().includes('group') || form.watch('brandName').toLowerCase().includes('co')) ? (
-                    <div className="flex items-center text-xs text-green-600">
-                      <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
-                      Strong
-                    </div>
-                  ) : form.watch('brandName').length > 5 ? (
-                    <div className="flex items-center text-xs text-yellow-600">
-                      <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
-                      Moderate
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-xs text-red-600">
-                      <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
-                      Weak
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center">
+                  {form.watch('brandName') && form.watch('brandName').length > 2 && (
+                    <div className="flex items-center">
+                      {form.watch('brandName').length > 8 && (form.watch('brandName').toLowerCase().includes('agency') || form.watch('brandName').toLowerCase().includes('solutions') || form.watch('brandName').toLowerCase().includes('group') || form.watch('brandName').toLowerCase().includes('co')) ? (
+                        <div className="flex items-center text-xs text-green-600">
+                          <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                          Strong
+                        </div>
+                      ) : form.watch('brandName').length > 5 ? (
+                        <div className="flex items-center text-xs text-yellow-600">
+                          <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
+                          Moderate
+                        </div>
+                      ) : (
+                        <div className="flex items-center text-xs text-red-600">
+                          <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
+                          Weak
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
+                {form.watch('brandName') && (
+                  <div className={`text-xs ${form.watch('brandName').length > 200 ? 'text-red-600 font-medium' : form.watch('brandName').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('brandName').length}/200
+                  </div>
+                )}
+              </div>
               {form.formState.errors.brandName && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.brandName.message}</p>
               )}
@@ -410,26 +419,35 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
-              {form.watch('productsServices') && form.watch('productsServices').length > 20 && (
-                <div className="flex items-center justify-end mt-2">
-                  {form.watch('productsServices').length > 100 && (form.watch('productsServices').toLowerCase().includes('pain') || form.watch('productsServices').toLowerCase().includes('gain') || form.watch('productsServices').toLowerCase().includes('value') || form.watch('productsServices').toLowerCase().includes('$')) ? (
-                    <div className="flex items-center text-xs text-green-600">
-                      <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
-                      Strong
-                    </div>
-                  ) : form.watch('productsServices').length > 50 ? (
-                    <div className="flex items-center text-xs text-yellow-600">
-                      <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
-                      Moderate
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-xs text-red-600">
-                      <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
-                      Weak
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center">
+                  {form.watch('productsServices') && form.watch('productsServices').length > 20 && (
+                    <div className="flex items-center">
+                      {form.watch('productsServices').length > 100 && (form.watch('productsServices').toLowerCase().includes('pain') || form.watch('productsServices').toLowerCase().includes('gain') || form.watch('productsServices').toLowerCase().includes('value') || form.watch('productsServices').toLowerCase().includes('$')) ? (
+                        <div className="flex items-center text-xs text-green-600">
+                          <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                          Strong
+                        </div>
+                      ) : form.watch('productsServices').length > 50 ? (
+                        <div className="flex items-center text-xs text-yellow-600">
+                          <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
+                          Moderate
+                        </div>
+                      ) : (
+                        <div className="flex items-center text-xs text-red-600">
+                          <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
+                          Weak
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
+                {form.watch('productsServices') && (
+                  <div className={`text-xs ${form.watch('productsServices').length > 200 ? 'text-red-600 font-medium' : form.watch('productsServices').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('productsServices').length}/200
+                  </div>
+                )}
+              </div>
               {form.formState.errors.productsServices && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.productsServices.message}</p>
               )}
@@ -456,26 +474,35 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
-              {form.watch('corePurpose') && form.watch('corePurpose').length > 20 && (
-                <div className="flex items-center justify-end mt-2">
-                  {form.watch('corePurpose').length > 80 && (form.watch('corePurpose').toLowerCase().includes('help') || form.watch('corePurpose').toLowerCase().includes('stop') || form.watch('corePurpose').toLowerCase().includes('enable') || form.watch('corePurpose').toLowerCase().includes('empower')) ? (
-                    <div className="flex items-center text-xs text-green-600">
-                      <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
-                      Strong
-                    </div>
-                  ) : form.watch('corePurpose').length > 40 ? (
-                    <div className="flex items-center text-xs text-yellow-600">
-                      <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
-                      Moderate
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-xs text-red-600">
-                      <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
-                      Weak
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center">
+                  {form.watch('corePurpose') && form.watch('corePurpose').length > 20 && (
+                    <div className="flex items-center">
+                      {form.watch('corePurpose').length > 80 && (form.watch('corePurpose').toLowerCase().includes('help') || form.watch('corePurpose').toLowerCase().includes('stop') || form.watch('corePurpose').toLowerCase().includes('enable') || form.watch('corePurpose').toLowerCase().includes('empower')) ? (
+                        <div className="flex items-center text-xs text-green-600">
+                          <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                          Strong
+                        </div>
+                      ) : form.watch('corePurpose').length > 40 ? (
+                        <div className="flex items-center text-xs text-yellow-600">
+                          <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
+                          Moderate
+                        </div>
+                      ) : (
+                        <div className="flex items-center text-xs text-red-600">
+                          <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
+                          Weak
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
+                {form.watch('corePurpose') && (
+                  <div className={`text-xs ${form.watch('corePurpose').length > 200 ? 'text-red-600 font-medium' : form.watch('corePurpose').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('corePurpose').length}/200
+                  </div>
+                )}
+              </div>
               {form.formState.errors.corePurpose && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.corePurpose.message}</p>
               )}
@@ -502,6 +529,13 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
+              {form.watch('audience') && (
+                <div className="flex items-center justify-end mt-2">
+                  <div className={`text-xs ${form.watch('audience').length > 200 ? 'text-red-600 font-medium' : form.watch('audience').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('audience').length}/200
+                  </div>
+                </div>
+              )}
               {form.formState.errors.audience && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.audience.message}</p>
               )}
@@ -528,6 +562,13 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
+              {form.watch('jobToBeDone') && (
+                <div className="flex items-center justify-end mt-2">
+                  <div className={`text-xs ${form.watch('jobToBeDone').length > 200 ? 'text-red-600 font-medium' : form.watch('jobToBeDone').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('jobToBeDone').length}/200
+                  </div>
+                </div>
+              )}
               {form.formState.errors.jobToBeDone && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.jobToBeDone.message}</p>
               )}
@@ -554,6 +595,13 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
+              {form.watch('motivations') && (
+                <div className="flex items-center justify-end mt-2">
+                  <div className={`text-xs ${form.watch('motivations').length > 200 ? 'text-red-600 font-medium' : form.watch('motivations').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('motivations').length}/200
+                  </div>
+                </div>
+              )}
               {form.formState.errors.motivations && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.motivations.message}</p>
               )}
