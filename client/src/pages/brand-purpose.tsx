@@ -19,13 +19,13 @@ import { Bot, Lightbulb } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const brandPurposeSchema = z.object({
-  brandName: z.string().min(2, "Brand name must be at least 2 characters").max(200, "Brand name must be 200 characters or less"),
-  productsServices: z.string().min(10, "Products/services description must be at least 10 characters").max(200, "Products/services description must be 200 characters or less"),
-  corePurpose: z.string().min(10, "Core purpose must be at least 10 characters").max(200, "Core purpose must be 200 characters or less"),
-  audience: z.string().min(10, "Ideal audience must be at least 10 characters").max(200, "Ideal audience must be 200 characters or less"),
-  jobToBeDone: z.string().min(10, "Job to be done must be at least 10 characters").max(200, "Job to be done must be 200 characters or less"),
-  motivations: z.string().min(10, "Audience motivations must be at least 10 characters").max(200, "Audience motivations must be 200 characters or less"),
-  painPoints: z.string().min(10, "Pain points must be at least 10 characters").max(200, "Pain points must be 200 characters or less"),
+  brandName: z.string().min(2, "Brand name must be at least 2 characters").max(600, "Brand name must be 600 characters or less"),
+  productsServices: z.string().min(10, "Products/services description must be at least 10 characters").max(600, "Products/services description must be 600 characters or less"),
+  corePurpose: z.string().min(10, "Core purpose must be at least 10 characters").max(600, "Core purpose must be 600 characters or less"),
+  audience: z.string().min(10, "Ideal audience must be at least 10 characters").max(600, "Ideal audience must be 600 characters or less"),
+  jobToBeDone: z.string().min(10, "Job to be done must be at least 10 characters").max(600, "Job to be done must be 600 characters or less"),
+  motivations: z.string().min(10, "Audience motivations must be at least 10 characters").max(600, "Audience motivations must be 600 characters or less"),
+  painPoints: z.string().min(10, "Pain points must be at least 10 characters").max(600, "Pain points must be 600 characters or less"),
   goals: z.object({
     driveTraffic: z.boolean().default(false),
     websiteUrl: z.string().optional(),
@@ -388,8 +388,8 @@ export default function BrandPurpose() {
                   )}
                 </div>
                 {form.watch('brandName') && (
-                  <div className={`text-xs ${form.watch('brandName').length > 200 ? 'text-red-600 font-medium' : form.watch('brandName').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('brandName').length}/200
+                  <div className={`text-xs ${form.watch('brandName').length > 600 ? 'text-red-600 font-medium' : form.watch('brandName').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('brandName').length}/600
                   </div>
                 )}
               </div>
@@ -443,8 +443,8 @@ export default function BrandPurpose() {
                   )}
                 </div>
                 {form.watch('productsServices') && (
-                  <div className={`text-xs ${form.watch('productsServices').length > 200 ? 'text-red-600 font-medium' : form.watch('productsServices').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('productsServices').length}/200
+                  <div className={`text-xs ${form.watch('productsServices').length > 600 ? 'text-red-600 font-medium' : form.watch('productsServices').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('productsServices').length}/600
                   </div>
                 )}
               </div>
@@ -498,8 +498,8 @@ export default function BrandPurpose() {
                   )}
                 </div>
                 {form.watch('corePurpose') && (
-                  <div className={`text-xs ${form.watch('corePurpose').length > 200 ? 'text-red-600 font-medium' : form.watch('corePurpose').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('corePurpose').length}/200
+                  <div className={`text-xs ${form.watch('corePurpose').length > 600 ? 'text-red-600 font-medium' : form.watch('corePurpose').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('corePurpose').length}/600
                   </div>
                 )}
               </div>
@@ -531,8 +531,8 @@ export default function BrandPurpose() {
               </div>
               {form.watch('audience') && (
                 <div className="flex items-center justify-end mt-2">
-                  <div className={`text-xs ${form.watch('audience').length > 200 ? 'text-red-600 font-medium' : form.watch('audience').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('audience').length}/200
+                  <div className={`text-xs ${form.watch('audience').length > 600 ? 'text-red-600 font-medium' : form.watch('audience').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('audience').length}/600
                   </div>
                 </div>
               )}
@@ -564,8 +564,8 @@ export default function BrandPurpose() {
               </div>
               {form.watch('jobToBeDone') && (
                 <div className="flex items-center justify-end mt-2">
-                  <div className={`text-xs ${form.watch('jobToBeDone').length > 200 ? 'text-red-600 font-medium' : form.watch('jobToBeDone').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('jobToBeDone').length}/200
+                  <div className={`text-xs ${form.watch('jobToBeDone').length > 600 ? 'text-red-600 font-medium' : form.watch('jobToBeDone').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('jobToBeDone').length}/600
                   </div>
                 </div>
               )}
@@ -597,8 +597,8 @@ export default function BrandPurpose() {
               </div>
               {form.watch('motivations') && (
                 <div className="flex items-center justify-end mt-2">
-                  <div className={`text-xs ${form.watch('motivations').length > 200 ? 'text-red-600 font-medium' : form.watch('motivations').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('motivations').length}/200
+                  <div className={`text-xs ${form.watch('motivations').length > 600 ? 'text-red-600 font-medium' : form.watch('motivations').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('motivations').length}/600
                   </div>
                 </div>
               )}
@@ -630,8 +630,8 @@ export default function BrandPurpose() {
               </div>
               {form.watch('painPoints') && (
                 <div className="flex items-center justify-end mt-2">
-                  <div className={`text-xs ${form.watch('painPoints').length > 200 ? 'text-red-600 font-medium' : form.watch('painPoints').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('painPoints').length}/200
+                  <div className={`text-xs ${form.watch('painPoints').length > 600 ? 'text-red-600 font-medium' : form.watch('painPoints').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('painPoints').length}/600
                   </div>
                 </div>
               )}
