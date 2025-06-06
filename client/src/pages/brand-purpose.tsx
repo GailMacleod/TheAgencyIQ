@@ -799,14 +799,18 @@ export default function BrandPurpose() {
                     {form.watch('goals.informEducate') && (
                       <div className="mt-2 space-y-2">
                         <Textarea
+                          id="keyMessage"
                           {...form.register('goals.keyMessage')}
                           placeholder="What's your key message? (e.g., promote sustainability in art)"
                           className="resize-none"
                           rows={2}
+                          autoComplete="off"
                         />
                         <Input
+                          id="educationTarget"
                           {...form.register('goals.educationTarget')}
                           placeholder="Education goal (e.g., 1,000 people educated about sustainability monthly)"
+                          autoComplete="off"
                         />
                       </div>
                     )}
@@ -882,6 +886,7 @@ export default function BrandPurpose() {
                     {...form.register('contactDetails.email')}
                     placeholder="info@queenslandartisans.com"
                     className="mt-1"
+                    autoComplete="email"
                   />
                   {form.formState.errors.contactDetails?.email && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.contactDetails.email.message}</p>
@@ -895,6 +900,7 @@ export default function BrandPurpose() {
                     {...form.register('contactDetails.phone')}
                     placeholder="+61 7 1234 5678"
                     className="mt-1"
+                    autoComplete="tel"
                   />
                 </div>
               </div>
