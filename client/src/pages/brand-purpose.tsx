@@ -428,33 +428,23 @@ export default function BrandPurpose() {
             {/* Motivations */}
             <div>
               <Label htmlFor="motivations" className="text-sm font-medium text-gray-700">What motivates your audience?</Label>
-              <Textarea
-                id="motivations"
-                {...form.register('motivations')}
-                placeholder="e.g., they value supporting local artists"
-                className="mt-1 resize-none"
-                rows={3}
-              />
-              <div className="flex items-center justify-between mt-1">
-                <div className="text-xs text-purple-600 flex items-center">
-                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                  Grok Strategyzer tip: Customer gains - what benefits, outcomes, and characteristics your customers want
-                </div>
-                {form.watch('motivations') && form.watch('motivations').length > 10 && (
-                  <div className="flex items-center">
-                    {form.watch('motivations').length > 25 && (form.watch('motivations').includes('value') || form.watch('motivations').includes('support') || form.watch('motivations').includes('quality') || form.watch('motivations').includes('local')) ? (
-                      <div className="flex items-center text-xs text-green-600">
-                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
-                        Strong
-                      </div>
-                    ) : (
-                      <div className="flex items-center text-xs text-orange-600">
-                        <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
-                        Weak
-                      </div>
-                    )}
+              <div className="relative group">
+                <Textarea
+                  id="motivations"
+                  {...form.register('motivations')}
+                  placeholder="Feel confident and competitive in the digital landscape"
+                  className="mt-1 resize-none"
+                  rows={3}
+                />
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Customer gains - what benefits, outcomes, and characteristics your customers want</p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
               {form.formState.errors.motivations && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.motivations.message}</p>
@@ -464,33 +454,23 @@ export default function BrandPurpose() {
             {/* Pain Points */}
             <div>
               <Label htmlFor="painPoints" className="text-sm font-medium text-gray-700">What are their pain points?</Label>
-              <Textarea
-                id="painPoints"
-                {...form.register('painPoints')}
-                placeholder="e.g., hard to find authentic local products"
-                className="mt-1 resize-none"
-                rows={3}
-              />
-              <div className="flex items-center justify-between mt-1">
-                <div className="text-xs text-purple-600 flex items-center">
-                  <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                  Grok Strategyzer tip: Customer pains - frustrations, obstacles, and risks your customers experience
-                </div>
-                {form.watch('painPoints') && form.watch('painPoints').length > 10 && (
-                  <div className="flex items-center">
-                    {form.watch('painPoints').length > 25 && (form.watch('painPoints').includes('hard') || form.watch('painPoints').includes('difficult') || form.watch('painPoints').includes('struggle') || form.watch('painPoints').includes('lack')) ? (
-                      <div className="flex items-center text-xs text-green-600">
-                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
-                        Strong
-                      </div>
-                    ) : (
-                      <div className="flex items-center text-xs text-orange-600">
-                        <div className="w-2 h-2 bg-orange-600 rounded-full mr-1"></div>
-                        Weak
-                      </div>
-                    )}
+              <div className="relative group">
+                <Textarea
+                  id="painPoints"
+                  {...form.register('painPoints')}
+                  placeholder="Fear of being left behind in the digital economy"
+                  className="mt-1 resize-none"
+                  rows={3}
+                />
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Customer pains - frustrations, obstacles, and risks your customers experience</p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
               {form.formState.errors.painPoints && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.painPoints.message}</p>
