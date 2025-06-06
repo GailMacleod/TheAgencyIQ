@@ -364,6 +364,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auto-save brand purpose progress
+  app.post("/api/brand-purpose/auto-save", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const existingBrandPurpose = await storage.getBrandPurposeByUser(userId);
+      
+      const partialData = {
+        userId,
+        brandName: req.body.brandName || "",
+        productsServices: req.body.productsServices || "",
+        corePurpose: req.body.corePurpose || "",
+        audience: req.body.audience || "",
+        jobToBeDone: req.body.jobToBeDone || "",
+        motivations: req.body.motivations || "",
+        painPoints: req.body.painPoints || "",
+        goals: req.body.goals || {},
+        logoUrl: req.body.logoUrl || "",
+        contactDetails: req.body.contactDetails || {},
+      };
+
+      if (existingBrandPurpose) {
+        await storage.updateBrandPurpose(existingBrandPurpose.id, partialData);
+      } else {
+        await storage.createBrandPurpose(partialData);
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Auto-save error:', error);
+      res.status(500).json({ message: "Error auto-saving progress" });
+    }
+  });
+
+  // Generate strategic guidance using Grok
+  app.post("/api/generate-guidance", requireAuth, async (req: any, res) => {
+    try {
+      const { brandName, productsServices, corePurpose, audience, jobToBeDone, motivations, painPoints } = req.body;
+      
+      // Create contextual guidance based on AgencyIQ prompts
+      let guidance = "";
+      
+      if (brandName && productsServices && corePurpose) {
+        // Generate strategic guidance using Grok AI
+        const context = `
+Brand: ${brandName}
+Products/Services: ${productsServices}  
+Core Purpose: ${corePurpose}
+Audience: ${audience || "Not specified"}
+Job to be Done: ${jobToBeDone || "Not specified"}
+Motivations: ${motivations || "Not specified"}
+Pain Points: ${painPoints || "Not specified"}`;
+
+        guidance = await getGrokResponse(
+          "Based on this brand information, provide strategic guidance for completing their brand purpose definition. Focus on Strategyzer methodology - help them understand their value proposition, customer segments, and how to improve their remaining answers. Be specific and actionable.",
+          context
+        );
+      }
+
+      res.json({ guidance });
+    } catch (error: any) {
+      console.error('Guidance generation error:', error);
+      res.status(500).json({ message: "Error generating guidance" });
+    }
+  });
+
   // Analytics endpoint
   app.get("/api/analytics/monthly", requireAuth, async (req: any, res) => {
     try {

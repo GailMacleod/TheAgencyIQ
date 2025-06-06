@@ -15,6 +15,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
+import { Bot, Lightbulb } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 const brandPurposeSchema = z.object({
   brandName: z.string().min(1, "Brand name is required"),
@@ -56,6 +58,9 @@ export default function BrandPurpose() {
   const [loading, setLoading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [isExistingData, setIsExistingData] = useState(false);
+  const [guidance, setGuidance] = useState<string>("");
+  const [showGuidance, setShowGuidance] = useState(false);
+  const [isGeneratingGuidance, setIsGeneratingGuidance] = useState(false);
 
   // Load existing brand purpose data
   const { data: existingBrandPurpose, isLoading: isLoadingBrandPurpose } = useQuery({
@@ -137,6 +142,58 @@ export default function BrandPurpose() {
       });
     }
   }, [existingBrandPurpose, form]);
+
+  // Watch form values to trigger guidance after first three questions
+  const watchedValues = form.watch();
+
+  // Generate real-time guidance based on AgencyIQ prompts
+  const generateGuidance = async (formData: Partial<BrandPurposeForm>) => {
+    setIsGeneratingGuidance(true);
+    try {
+      const response = await apiRequest("POST", "/api/generate-guidance", {
+        brandName: formData.brandName,
+        productsServices: formData.productsServices,
+        corePurpose: formData.corePurpose,
+        audience: formData.audience,
+        jobToBeDone: formData.jobToBeDone,
+        motivations: formData.motivations,
+        painPoints: formData.painPoints
+      });
+      
+      const result = await response.json();
+      setGuidance(result.guidance);
+      setShowGuidance(true);
+    } catch (error) {
+      console.error("Failed to generate guidance:", error);
+    } finally {
+      setIsGeneratingGuidance(false);
+    }
+  };
+
+  // Auto-save progress when first three fields are filled
+  const autoSaveProgress = async (formData: Partial<BrandPurposeForm>) => {
+    try {
+      await apiRequest("POST", "/api/brand-purpose/auto-save", formData);
+    } catch (error) {
+      console.error("Auto-save failed:", error);
+    }
+  };
+
+  // Watch for changes and trigger guidance/auto-save
+  useEffect(() => {
+    const { brandName, productsServices, corePurpose, audience } = watchedValues;
+    
+    // Check if first three questions are filled (waterfall trigger)
+    if (brandName?.length > 0 && productsServices?.length > 10 && corePurpose?.length > 10) {
+      // Auto-save current progress
+      autoSaveProgress(watchedValues);
+      
+      // Generate guidance if we have audience info too
+      if (audience?.length > 10 && !showGuidance) {
+        generateGuidance(watchedValues);
+      }
+    }
+  }, [watchedValues.brandName, watchedValues.productsServices, watchedValues.corePurpose, watchedValues.audience]);
 
   const onSubmit = async (data: BrandPurposeForm) => {
     try {
@@ -234,6 +291,33 @@ export default function BrandPurpose() {
                 </p>
               </div>
             </div>
+          )}
+
+          {/* Live Guidance Widget */}
+          {showGuidance && (
+            <Card className="mb-6 border-purple-200 bg-purple-50">
+              <CardContent className="p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <Bot className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-purple-900 mb-2 flex items-center">
+                      <Lightbulb className="w-4 h-4 mr-1" />
+                      AgencyIQ Strategic Guidance
+                    </h4>
+                    {isGeneratingGuidance ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                        <span className="text-sm text-purple-700">Analyzing your brand purpose...</span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-purple-800 leading-relaxed">{guidance}</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
