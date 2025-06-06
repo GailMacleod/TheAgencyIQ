@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
+import BackButton from "@/components/back-button";
 
 interface BrandPurposeData {
   id: number;
@@ -60,6 +61,10 @@ export default function Profile() {
       <MasterHeader showUserMenu={true} />
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="mb-6">
+          <BackButton to="/schedule" label="Back to Schedule" />
+        </div>
+        
         <div className="mb-8">
           <h1 className="text-3xl font-light text-gray-900 mb-4">Your Profile</h1>
           <p className="text-gray-600">Manage your account information and brand purpose</p>

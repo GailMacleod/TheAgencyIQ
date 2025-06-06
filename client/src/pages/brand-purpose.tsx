@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
+import BackButton from "@/components/back-button";
 
 const brandPurposeSchema = z.object({
   brandName: z.string().min(1, "Brand name is required"),
@@ -208,6 +209,10 @@ export default function BrandPurpose() {
       <MasterHeader showUserMenu={true} />
       
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="mb-6">
+          <BackButton to="/schedule" label="Back to Schedule" />
+        </div>
+        
         <div className="text-center mb-8">
           <p className="text-sm text-gray-600">step 2 of 3</p>
           <div className="w-full bg-gray-200 rounded-full h-2 mt-2">

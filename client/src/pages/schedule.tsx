@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { format, addDays, startOfMonth, endOfMonth, isSameDay, isToday } from "date-fns";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
+import BackButton from "@/components/back-button";
 
 interface Post {
   id: number;
@@ -288,6 +289,10 @@ export default function Schedule() {
       <MasterHeader showUserMenu={true} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6">
+          <BackButton to="/brand-purpose" label="Back to Brand Purpose" />
+        </div>
+        
         <div className="text-center mb-8">
           <p className="text-sm text-gray-600 lowercase">step 3 of 3</p>
           <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
