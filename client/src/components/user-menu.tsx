@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, User, CreditCard, LogOut } from "lucide-react";
+import { Menu, X, User, CreditCard, LogOut, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -128,6 +128,22 @@ export default function UserMenu() {
 
           {/* Actions */}
           <div className="space-y-1">
+            <DropdownMenuItem
+              onClick={() => setLocation("/profile")}
+              className="cursor-pointer"
+            >
+              <User className="mr-2 h-4 w-4" />
+              View Profile
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem
+              onClick={() => setLocation("/brand-purpose")}
+              className="cursor-pointer"
+            >
+              <Building2 className="mr-2 h-4 w-4" />
+              Brand Purpose
+            </DropdownMenuItem>
+            
             <DropdownMenuItem
               onClick={handleCancelSubscription}
               disabled={cancelSubscriptionMutation.isPending}
