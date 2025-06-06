@@ -57,6 +57,7 @@ export default function BrandPurpose() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isExistingData, setIsExistingData] = useState(false);
   const [guidance, setGuidance] = useState<string>("");
   const [showGuidance, setShowGuidance] = useState(false);
@@ -238,8 +239,8 @@ export default function BrandPurpose() {
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size and type
-      if (file.size > 500000) { // 500KB
+      // Check file size (max 500KB)
+      if (file.size > 500000) {
         toast({
           title: "File Too Large",
           description: "Logo must be under 500KB",
@@ -248,7 +249,8 @@ export default function BrandPurpose() {
         return;
       }
       
-      if (!file.type.startsWith('image/')) {
+      // Check file type
+      if (!file.type.match(/^image\/(png|jpeg|jpg)$/)) {
         toast({
           title: "Invalid File Type",
           description: "Please upload a PNG or JPG image",
@@ -257,7 +259,53 @@ export default function BrandPurpose() {
         return;
       }
       
-      setLogoFile(file);
+      // Check image dimensions
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      
+      img.onload = function() {
+        // Check minimum dimensions (at least 100x100)
+        if (img.width < 100 || img.height < 100) {
+          toast({
+            title: "Image Too Small",
+            description: "Logo must be at least 100x100 pixels",
+            variant: "destructive",
+          });
+          URL.revokeObjectURL(url);
+          return;
+        }
+        
+        // Check maximum dimensions (max 1000x1000)
+        if (img.width > 1000 || img.height > 1000) {
+          toast({
+            title: "Image Too Large",
+            description: "Logo must be no larger than 1000x1000 pixels",
+            variant: "destructive",
+          });
+          URL.revokeObjectURL(url);
+          return;
+        }
+        
+        // If all checks pass, set the file and preview
+        setLogoFile(file);
+        setLogoPreview(url);
+        
+        toast({
+          title: "Logo Uploaded",
+          description: `Logo uploaded successfully (${img.width}x${img.height}px)`,
+        });
+      };
+      
+      img.onerror = function() {
+        toast({
+          title: "Invalid Image",
+          description: "The selected file is not a valid image",
+          variant: "destructive",
+        });
+        URL.revokeObjectURL(url);
+      };
+      
+      img.src = url;
     }
   };
 
@@ -671,26 +719,40 @@ export default function BrandPurpose() {
             {/* Logo Upload */}
             <div>
               <Label htmlFor="logo" className="text-sm font-medium text-gray-700">Upload your brand logo</Label>
-              <div className="mt-2 flex items-center space-x-3">
-                <Input
-                  id="logo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  className="hidden"
-                />
-                <Label
-                  htmlFor="logo"
-                  className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Choose File
-                </Label>
-                {logoFile && (
-                  <span className="text-sm text-gray-600">{logoFile.name}</span>
+              <div className="mt-2 flex items-start space-x-4">
+                <div className="flex-1">
+                  <Input
+                    id="logo"
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                  <Label
+                    htmlFor="logo"
+                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Choose File
+                  </Label>
+                  {logoFile && (
+                    <span className="text-sm text-gray-600 ml-3">{logoFile.name}</span>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">Max 500KB, 100x100px minimum, 1000x1000px maximum, PNG/JPG only</p>
+                </div>
+                {logoPreview && (
+                  <div className="flex-shrink-0">
+                    <div className="w-20 h-20 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                      <img 
+                        src={logoPreview} 
+                        alt="Logo preview" 
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                    <p className="text-xs text-green-600 text-center mt-1">Preview</p>
+                  </div>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Max 500KB, 300x300px recommended, PNG/JPG</p>
             </div>
 
             {/* Contact Details */}
@@ -725,11 +787,11 @@ export default function BrandPurpose() {
 
             <Button 
               type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-medium"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 text-lg font-medium mt-6"
               disabled={loading}
               style={{ backgroundColor: '#3250fa' }}
             >
-              {loading ? "Saving..." : "Next"}
+              {loading ? "Saving Brand Purpose..." : "Save Brand Purpose & Continue"}
             </Button>
           </form>
         </div>
