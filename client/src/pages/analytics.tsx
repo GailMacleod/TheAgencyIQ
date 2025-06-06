@@ -9,6 +9,7 @@ import { TrendingUp, TrendingDown, Target, Users, MessageCircle, Eye, BarChart3 
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
+import BackButton from "@/components/back-button";
 
 interface AnalyticsData {
   totalPosts: number;
@@ -122,7 +123,7 @@ export default function Analytics() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <MasterHeader showBack="/schedule" title="Analytics Dashboard" />
+        <MasterHeader showUserMenu={true} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full"></div>
@@ -134,9 +135,13 @@ export default function Analytics() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <MasterHeader showBack="/schedule" title="Analytics Dashboard" />
+      <MasterHeader showUserMenu={true} />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6">
+          <BackButton to="/schedule" label="Back to Schedule" />
+        </div>
+        
         {/* Progress Indicator */}
         <div className="text-center mb-8">
           <p className="text-sm text-gray-600 lowercase">step 4 of 4</p>
