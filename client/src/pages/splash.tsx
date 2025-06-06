@@ -136,9 +136,7 @@ export default function Splash() {
             <h2 className="text-base font-semibold text-primary tracking-wide uppercase">
               Technology Intelligence
             </h2>
-            <h3 className="text-4xl md:text-5xl font-bold">
-              Everything you need for social media success
-            </h3>
+            <h3 className="text-4xl md:text-5xl font-bold text-[#3b5cff]">6 Simple Steps </h3>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Our AI-powered platform handles your entire social media workflow with modern technology and intelligent automation
             </p>
