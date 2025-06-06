@@ -108,38 +108,7 @@ export default function BrandPurpose() {
   useEffect(() => {
     if (existingBrandPurpose && typeof existingBrandPurpose === 'object') {
       setIsExistingData(true);
-      const brandData = existingBrandPurpose as any;
-      form.reset({
-        brandName: brandData.brandName || "",
-        productsServices: brandData.productsServices || "",
-        corePurpose: brandData.corePurpose || "",
-        audience: brandData.audience || "",
-        jobToBeDone: brandData.jobToBeDone || "",
-        motivations: brandData.motivations || "",
-        painPoints: brandData.painPoints || "",
-        goals: brandData.goals || {
-          driveTraffic: false,
-          websiteUrl: "",
-          trafficTarget: "",
-          buildBrand: false,
-          followerTarget: "",
-          reachTarget: "",
-          makeSales: false,
-          salesUrl: "",
-          salesTarget: "",
-          conversionTarget: "",
-          generateLeads: false,
-          leadTarget: "",
-          engagementTarget: "",
-          informEducate: false,
-          keyMessage: "",
-          educationTarget: "",
-        },
-        contactDetails: brandData.contactDetails || {
-          email: "",
-          phone: "",
-        },
-      });
+      // Don't auto-populate fields to show placeholder text
     }
   }, [existingBrandPurpose, form]);
 
