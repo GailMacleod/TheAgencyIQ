@@ -72,12 +72,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   }));
 
-  // Auth middleware
-  const requireAuth = (req: any, res: any, next: any) => {
+  // Auth middleware with session refresh
+  const requireAuth = async (req: any, res: any, next: any) => {
     if (!req.session?.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ message: "Please log in again." });
     }
-    next();
+    
+    // Verify user still exists in database
+    try {
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "Please log in again." });
+      }
+      
+      // Refresh session expiry
+      req.session.touch();
+      next();
+    } catch (error) {
+      console.error('Session validation error:', error);
+      return res.status(401).json({ message: "Please log in again." });
+    }
   };
 
   // Stripe webhook endpoint (must be before JSON middleware)
@@ -101,6 +116,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     res.json({ received: true });
+  });
+
+  // Manifest.json route with public access
+  app.get('/manifest.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.status(200).json({
+      name: "The AgencyIQ",
+      short_name: "AgencyIQ",
+      description: "AI-powered social media automation platform for Queensland small businesses",
+      start_url: "/",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#3250fa",
+      icons: [
+        {
+          src: "/icon-192.png",
+          sizes: "192x192",
+          type: "image/png"
+        },
+        {
+          src: "/icon-512.png",
+          sizes: "512x512",
+          type: "image/png"
+        }
+      ]
+    });
   });
 
   // Create Stripe checkout session

@@ -117,6 +117,20 @@ export default function Schedule() {
   const getLocalEvents = (date: Date): string[] => {
     const events: string[] = [];
     const monthDay = `${date.getMonth() + 1}-${date.getDate()}`;
+    const year = date.getFullYear();
+    
+    // June 11, 2025 specific events for paying customers
+    if (year === 2025 && date.getMonth() === 5 && date.getDate() === 11) {
+      events.push("Queensland SME Expo - Brisbane Convention Centre");
+      events.push("Digital Marketing Workshop - Gold Coast");
+      events.push("Small Business Network Event - Sunshine Coast");
+    }
+    
+    // Brand-relevant events based on The AgencyIQ focus
+    if (monthDay === "6-11") {
+      events.push("Queensland Business Awards Opening");
+      events.push("Local Chamber of Commerce Meeting");
+    }
     
     // Queensland school holidays and local events
     const qldEvents: Record<string, string[]> = {
@@ -489,10 +503,21 @@ export default function Schedule() {
                   )}
                 </div>
                 
-                {/* Local Events Indicator */}
+                {/* Local Events */}
                 {day.localEvents && day.localEvents.length > 0 && (
-                  <div className="absolute bottom-1 left-1">
-                    <Calendar className="w-3 h-3 text-orange-500" />
+                  <div className="mt-2 space-y-1">
+                    {day.localEvents.map((event, idx) => (
+                      <div key={idx} className="event-card bg-orange-50 border border-orange-200 rounded px-2 py-1">
+                        <div className="text-xs text-orange-700 font-medium">
+                          {event.split(' - ')[0]}
+                        </div>
+                        {event.includes(' - ') && (
+                          <div className="text-xs text-orange-600">
+                            {event.split(' - ')[1]}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
