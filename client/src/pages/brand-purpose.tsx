@@ -280,10 +280,30 @@ export default function BrandPurpose() {
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
-                      <p className="text-xs text-purple-800">Your brand name should connect to your value proposition and target customer segment</p>
+                      <p className="text-xs text-purple-800">Your brand name should connect to your value proposition and target customer segment. Strong names communicate what you do and who you serve.</p>
                     </div>
                   </div>
                 </div>
+                {form.watch('brandName') && form.watch('brandName').length > 2 && (
+                  <div className="flex items-center justify-end mt-2">
+                    {form.watch('brandName').length > 8 && (form.watch('brandName').toLowerCase().includes('agency') || form.watch('brandName').toLowerCase().includes('solutions') || form.watch('brandName').toLowerCase().includes('group') || form.watch('brandName').toLowerCase().includes('co')) ? (
+                      <div className="flex items-center text-xs text-green-600">
+                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                        Strong
+                      </div>
+                    ) : form.watch('brandName').length > 5 ? (
+                      <div className="flex items-center text-xs text-yellow-600">
+                        <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
+                        Moderate
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-xs text-red-600">
+                        <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
+                        Weak
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               {form.formState.errors.brandName && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.brandName.message}</p>
@@ -306,10 +326,30 @@ export default function BrandPurpose() {
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
-                      <p className="text-xs text-purple-800">Define your value proposition - what specific gain do you create or pain do you relieve?</p>
+                      <p className="text-xs text-purple-800">Define your value proposition - what specific gain do you create or pain do you relieve? Include pricing and packages for clarity.</p>
                     </div>
                   </div>
                 </div>
+                {form.watch('productsServices') && form.watch('productsServices').length > 20 && (
+                  <div className="flex items-center justify-end mt-2">
+                    {form.watch('productsServices').length > 100 && (form.watch('productsServices').toLowerCase().includes('pain') || form.watch('productsServices').toLowerCase().includes('gain') || form.watch('productsServices').toLowerCase().includes('value') || form.watch('productsServices').toLowerCase().includes('$')) ? (
+                      <div className="flex items-center text-xs text-green-600">
+                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                        Strong
+                      </div>
+                    ) : form.watch('productsServices').length > 50 ? (
+                      <div className="flex items-center text-xs text-yellow-600">
+                        <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
+                        Moderate
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-xs text-red-600">
+                        <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
+                        Weak
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               {form.formState.errors.productsServices && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.productsServices.message}</p>
@@ -332,10 +372,30 @@ export default function BrandPurpose() {
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
-                      <p className="text-xs text-purple-800">Your core purpose defines your mission - focus on the customer jobs you help complete</p>
+                      <p className="text-xs text-purple-800">Your core purpose defines your mission - focus on the customer jobs you help complete. Strong purposes connect emotionally to customer outcomes.</p>
                     </div>
                   </div>
                 </div>
+                {form.watch('corePurpose') && form.watch('corePurpose').length > 20 && (
+                  <div className="flex items-center justify-end mt-2">
+                    {form.watch('corePurpose').length > 80 && (form.watch('corePurpose').toLowerCase().includes('help') || form.watch('corePurpose').toLowerCase().includes('stop') || form.watch('corePurpose').toLowerCase().includes('enable') || form.watch('corePurpose').toLowerCase().includes('empower')) ? (
+                      <div className="flex items-center text-xs text-green-600">
+                        <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                        Strong
+                      </div>
+                    ) : form.watch('corePurpose').length > 40 ? (
+                      <div className="flex items-center text-xs text-yellow-600">
+                        <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
+                        Moderate
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-xs text-red-600">
+                        <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
+                        Weak
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               {form.formState.errors.corePurpose && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.corePurpose.message}</p>
