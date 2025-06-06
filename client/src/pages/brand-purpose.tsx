@@ -303,7 +303,7 @@ export default function BrandPurpose() {
                 <Input
                   id="brandName"
                   {...form.register('brandName')}
-                  placeholder="Queensland Business Solutions"
+                  placeholder="The AgencyIQ"
                   className="mt-1"
                 />
                 <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
@@ -328,7 +328,7 @@ export default function BrandPurpose() {
                 <Textarea
                   id="productsServices"
                   {...form.register('productsServices')}
-                  placeholder="Digital marketing and automation services"
+                  placeholder="Value proposition: You're invisible, that sucks. AgencyIQ gives you a beacon that's always on. The pain: You're invisible, and silence is killing your growth. The gain: You show up. Week in, week out. Professionally. Strategically. Automatically. Starter Subscription, 10 posts + 2 Free: $19.99/30 days Growth Subscription, 25 posts + 2 Free: $41.99/30 days Professional Subscription, 45 posts + 2 Free: $99.99/30 days"
                   className="mt-1 resize-none"
                   rows={3}
                 />
@@ -354,7 +354,7 @@ export default function BrandPurpose() {
                 <Textarea
                   id="corePurpose"
                   {...form.register('corePurpose')}
-                  placeholder="Seeking digital transformation, open to adapting new technologies"
+                  placeholder="To stop good local businesses from dying quietly, to 'Keep me visible even when I am too busy to show up, not just visibility, but validation. For those who want what the big brands have: presence, polish, and power, without the army it takes to get there.'"
                   className="mt-1 resize-none"
                   rows={3}
                 />
