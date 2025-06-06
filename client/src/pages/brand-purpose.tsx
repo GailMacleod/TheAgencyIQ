@@ -642,6 +642,7 @@ export default function BrandPurpose() {
                   placeholder="Fear of being left behind in the digital economy"
                   className="mt-1 resize-none"
                   rows={3}
+                  autoComplete="off"
                 />
                 <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                   <div className="flex items-start space-x-2">
