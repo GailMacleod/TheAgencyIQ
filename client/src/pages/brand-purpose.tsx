@@ -109,38 +109,44 @@ export default function BrandPurpose() {
   useEffect(() => {
     if (existingBrandPurpose && typeof existingBrandPurpose === 'object') {
       setIsExistingData(true);
-      // Clear form to show placeholder text and enable indicators
+      // Populate form with existing data for editing
+      const brandData = existingBrandPurpose as any;
       form.reset({
-        brandName: "",
-        productsServices: "",
-        corePurpose: "",
-        audience: "",
-        jobToBeDone: "",
-        motivations: "",
-        painPoints: "",
+        brandName: brandData.brandName || "",
+        productsServices: brandData.productsServices || "",
+        corePurpose: brandData.corePurpose || "",
+        audience: brandData.audience || "",
+        jobToBeDone: brandData.jobToBeDone || "",
+        motivations: brandData.motivations || "",
+        painPoints: brandData.painPoints || "",
         goals: {
-          driveTraffic: false,
-          websiteUrl: "",
-          trafficTarget: "",
-          buildBrand: false,
-          followerTarget: "",
-          reachTarget: "",
-          makeSales: false,
-          salesUrl: "",
-          salesTarget: "",
-          conversionTarget: "",
-          generateLeads: false,
-          leadTarget: "",
-          engagementTarget: "",
-          informEducate: false,
-          keyMessage: "",
-          educationTarget: "",
+          driveTraffic: brandData.goals?.driveTraffic || false,
+          websiteUrl: brandData.goals?.websiteUrl || "",
+          trafficTarget: brandData.goals?.trafficTarget || "",
+          buildBrand: brandData.goals?.buildBrand || false,
+          followerTarget: brandData.goals?.followerTarget || "",
+          reachTarget: brandData.goals?.reachTarget || "",
+          makeSales: brandData.goals?.makeSales || false,
+          salesUrl: brandData.goals?.salesUrl || "",
+          salesTarget: brandData.goals?.salesTarget || "",
+          conversionTarget: brandData.goals?.conversionTarget || "",
+          generateLeads: brandData.goals?.generateLeads || false,
+          leadTarget: brandData.goals?.leadTarget || "",
+          engagementTarget: brandData.goals?.engagementTarget || "",
+          informEducate: brandData.goals?.informEducate || false,
+          keyMessage: brandData.goals?.keyMessage || "",
+          educationTarget: brandData.goals?.educationTarget || "",
         },
         contactDetails: {
-          email: "",
-          phone: "",
+          email: brandData.contactDetails?.email || "",
+          phone: brandData.contactDetails?.phone || "",
         },
       });
+      
+      // Set logo preview if exists
+      if (brandData.logoUrl) {
+        setLogoPreview(brandData.logoUrl);
+      }
     }
   }, [existingBrandPurpose, form]);
 
@@ -382,18 +388,18 @@ export default function BrandPurpose() {
                   {form.watch('brandName') && form.watch('brandName').length > 2 && (
                     <div className="flex items-center">
                       {form.watch('brandName').length > 8 && (form.watch('brandName').toLowerCase().includes('agency') || form.watch('brandName').toLowerCase().includes('solutions') || form.watch('brandName').toLowerCase().includes('group') || form.watch('brandName').toLowerCase().includes('co')) ? (
-                        <div className="flex items-center text-xs text-green-600">
-                          <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                        <div className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
+                          <div className="w-3 h-3 bg-green-600 rounded-full mr-2"></div>
                           Strong
                         </div>
                       ) : form.watch('brandName').length > 5 ? (
-                        <div className="flex items-center text-xs text-yellow-600">
-                          <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
+                        <div className="flex items-center text-sm font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-200">
+                          <div className="w-3 h-3 bg-yellow-600 rounded-full mr-2"></div>
                           Moderate
                         </div>
                       ) : (
-                        <div className="flex items-center text-xs text-red-600">
-                          <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
+                        <div className="flex items-center text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
+                          <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
                           Weak
                         </div>
                       )}
@@ -437,18 +443,18 @@ export default function BrandPurpose() {
                   {form.watch('productsServices') && form.watch('productsServices').length > 20 && (
                     <div className="flex items-center">
                       {form.watch('productsServices').length > 100 && (form.watch('productsServices').toLowerCase().includes('pain') || form.watch('productsServices').toLowerCase().includes('gain') || form.watch('productsServices').toLowerCase().includes('value') || form.watch('productsServices').toLowerCase().includes('$')) ? (
-                        <div className="flex items-center text-xs text-green-600">
-                          <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                        <div className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
+                          <div className="w-3 h-3 bg-green-600 rounded-full mr-2"></div>
                           Strong
                         </div>
                       ) : form.watch('productsServices').length > 50 ? (
-                        <div className="flex items-center text-xs text-yellow-600">
-                          <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
+                        <div className="flex items-center text-sm font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-200">
+                          <div className="w-3 h-3 bg-yellow-600 rounded-full mr-2"></div>
                           Moderate
                         </div>
                       ) : (
-                        <div className="flex items-center text-xs text-red-600">
-                          <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
+                        <div className="flex items-center text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
+                          <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
                           Weak
                         </div>
                       )}
@@ -492,18 +498,18 @@ export default function BrandPurpose() {
                   {form.watch('corePurpose') && form.watch('corePurpose').length > 20 && (
                     <div className="flex items-center">
                       {form.watch('corePurpose').length > 80 && (form.watch('corePurpose').toLowerCase().includes('help') || form.watch('corePurpose').toLowerCase().includes('stop') || form.watch('corePurpose').toLowerCase().includes('enable') || form.watch('corePurpose').toLowerCase().includes('empower')) ? (
-                        <div className="flex items-center text-xs text-green-600">
-                          <div className="w-2 h-2 bg-green-600 rounded-full mr-1"></div>
+                        <div className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
+                          <div className="w-3 h-3 bg-green-600 rounded-full mr-2"></div>
                           Strong
                         </div>
                       ) : form.watch('corePurpose').length > 40 ? (
-                        <div className="flex items-center text-xs text-yellow-600">
-                          <div className="w-2 h-2 bg-yellow-600 rounded-full mr-1"></div>
+                        <div className="flex items-center text-sm font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-200">
+                          <div className="w-3 h-3 bg-yellow-600 rounded-full mr-2"></div>
                           Moderate
                         </div>
                       ) : (
-                        <div className="flex items-center text-xs text-red-600">
-                          <div className="w-2 h-2 bg-red-600 rounded-full mr-1"></div>
+                        <div className="flex items-center text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
+                          <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
                           Weak
                         </div>
                       )}
