@@ -628,6 +628,13 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
+              {form.watch('painPoints') && (
+                <div className="flex items-center justify-end mt-2">
+                  <div className={`text-xs ${form.watch('painPoints').length > 200 ? 'text-red-600 font-medium' : form.watch('painPoints').length > 180 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {form.watch('painPoints').length}/200
+                  </div>
+                </div>
+              )}
               {form.formState.errors.painPoints && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.painPoints.message}</p>
               )}
