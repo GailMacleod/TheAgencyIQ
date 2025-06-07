@@ -54,9 +54,7 @@ export default function MasterFooter() {
                 macleodglobal trading as the agencyiq
               </p>
               <p className="text-sm text-gray-600">
-                <a href="https://app.theagencyiq.ai" className="hover:text-purple-600 lowercase">
-                  app.theagencyiq.ai
-                </a>
+                <a href="https://app.theagencyiq.ai" className="hover:text-purple-600 lowercase">support@theagencyiq.ai</a>
               </p>
               <p className="text-sm text-gray-600 lowercase">
                 queensland, australia
