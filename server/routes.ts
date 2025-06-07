@@ -121,7 +121,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Manifest.json route with public access
   app.get('/manifest.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.status(200).json({
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.json({
       name: "The AgencyIQ",
       short_name: "AgencyIQ",
       description: "AI-powered social media automation platform for Queensland small businesses",
