@@ -5,6 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <link rel="icon" type="image/png" href="/attached_assets/agency_logo_1749083054761.png" />
     <title>The AgencyIQ</title>
+    <script>
+      // Filter console warnings for known Replit framework issues
+      (function() {
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        
+        const frameworkFilters = [
+          'Error while parsing the \'sandbox\' attribute',
+          'allow-downloads-without-user-activation',
+          'Unrecognized feature:',
+          'ambient-light-sensor',
+          'battery',
+          'execution-while-not-rendered',
+          'execution-while-out-of-viewport',
+          'layout-animations',
+          'legacy-image-formats',
+          'navigation-override',
+          'oversized-images',
+          'publickey-credentials',
+          'speaker-selection',
+          'unoptimized-images',
+          'unsized-media',
+          'pointer-lock',
+          'Allow attribute will take precedence'
+        ];
+        
+        function shouldFilter(message) {
+          if (typeof message !== 'string') return false;
+          return frameworkFilters.some(filter => message.includes(filter));
+        }
+        
+        console.warn = function(...args) {
+          if (!shouldFilter(args[0])) {
+            originalWarn.apply(console, args);
+          }
+        };
+        
+        console.error = function(...args) {
+          if (!shouldFilter(args[0])) {
+            originalError.apply(console, args);
+          }
+        };
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
