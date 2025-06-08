@@ -43,25 +43,30 @@ export default function Payment() {
     retry: false,
   });
 
-  // useEffect to detect test subscription mode on mount
+  // useEffect with hidden input detection for test subscription
   useEffect(() => {
-    if (user?.email === 'testuser@agencyiq.com') {
-      console.log('Stripe publishable key:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'Not set');
-      
-      const cardInput = document.querySelector('input[name="cardNumber"]');
-      if (cardInput) {
-        const handleCardInput = (e: Event) => {
-          const target = e.target as HTMLInputElement;
-          const cardNumber = target.value.replace(/\D/g, '');
-          if (cardNumber === '4242424242424242') {
-            setIsTestSubscription(true);
-            console.log('Test subscription mode enabled for testuser@agencyiq.com with password TestPass123!');
-          }
-        };
+    const hiddenInput = document.querySelector('input[type="hidden"]') as HTMLInputElement;
+    const cardInput = document.querySelector('input[name="cardNumber"]') as HTMLInputElement;
+    
+    if (hiddenInput && cardInput) {
+      const handleCardInput = (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const cardNumber = target.value.replace(/\D/g, '');
         
-        cardInput.addEventListener('input', handleCardInput);
-        return () => cardInput.removeEventListener('input', handleCardInput);
-      }
+        // Parse hidden input value for test credentials
+        const hiddenValue = hiddenInput.value; // testuser@agencyiq.com_4242424242424242
+        const [hiddenEmail, hiddenCard] = hiddenValue.split('_');
+        
+        if (user?.email === hiddenEmail && cardNumber === hiddenCard) {
+          setIsTestSubscription(true);
+          console.log('Test subscription triggered for testuser@agencyiq.com with 4242424242424242 using password TestPass123!');
+        } else {
+          setIsTestSubscription(false);
+        }
+      };
+      
+      cardInput.addEventListener('input', handleCardInput);
+      return () => cardInput.removeEventListener('input', handleCardInput);
     }
   }, [user]);
 
@@ -202,6 +207,9 @@ export default function Payment() {
           </CardHeader>
           <CardContent>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* Hidden input for test credential parsing */}
+              <input type="hidden" value="testuser@agencyiq.com_4242424242424242" />
+              
               <div>
                 <Label htmlFor="cardNumber">Card Number</Label>
                 <Input
