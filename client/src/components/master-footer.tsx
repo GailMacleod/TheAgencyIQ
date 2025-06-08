@@ -8,7 +8,7 @@ export default function MasterFooter() {
               Terms of Service
             </a>
             <span>•</span>
-            <a href="/privacy" className="hover:text-gray-700 transition-colors">
+            <a href="https://theagencyiq.ai/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 transition-colors">
               Privacy Policy
             </a>
           </div>
