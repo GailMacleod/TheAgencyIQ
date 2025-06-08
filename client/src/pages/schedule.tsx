@@ -232,13 +232,16 @@ export default function Schedule() {
         const data = JSON.parse(text);
         console.log('Generated content:', data);
         
-        if (data && data.length > 0) {
+        // The API returns {posts: [...]} format
+        const posts = data.posts || data;
+        
+        if (posts && posts.length > 0) {
           // Convert API response to Post format
-          const newPosts = data.map((post: any, index: number) => ({
-            id: Date.now() + index,
+          const newPosts = posts.map((post: any, index: number) => ({
+            id: post.id || Date.now() + index,
             platform: post.platform,
             content: post.content,
-            status: 'draft',
+            status: post.status || 'draft',
             scheduledFor: post.scheduledFor,
             grokRecommendation: `Strategic content optimized for ${post.platform} engagement`
           }));
