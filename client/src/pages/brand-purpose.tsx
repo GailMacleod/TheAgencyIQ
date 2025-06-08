@@ -166,6 +166,29 @@ export default function BrandPurpose() {
     }
   }, [existingBrandPurpose, form]);
 
+  // Initialize Grok autofill functionality
+  useEffect(() => {
+    const initializeGrokAutofill = () => {
+      const corePurposeElement = document.getElementById('corePurpose');
+      if (corePurposeElement) {
+        console.log('Grok autofill listener attached to corePurpose field');
+        let timeout: NodeJS.Timeout;
+        const handleInput = () => {
+          clearTimeout(timeout);
+          timeout = setTimeout(grokAutofillWithFeedback, 500);
+        };
+        corePurposeElement.addEventListener('input', handleInput);
+        return () => {
+          corePurposeElement.removeEventListener('input', handleInput);
+          clearTimeout(timeout);
+        };
+      }
+    };
+
+    const cleanup = initializeGrokAutofill();
+    return cleanup;
+  }, []);
+
   // Watch form values to trigger guidance after first three questions
   const watchedValues = (() => {
     try {
@@ -1140,31 +1163,3 @@ const grokAutofillWithFeedback = async () => {
   }
 };
 
-// Attach enhanced event listener when DOM is ready
-if (typeof window !== 'undefined') {
-  const initializeGrokAutofill = () => {
-    const corePurposeElement = document.getElementById('corePurpose');
-    if (corePurposeElement) {
-      console.log('Grok autofill listener attached to corePurpose field');
-      // Add enhanced listener with debouncing
-      let timeout: NodeJS.Timeout;
-      corePurposeElement.addEventListener('input', () => {
-        clearTimeout(timeout);
-        timeout = setTimeout(grokAutofillWithFeedback, 500);
-      });
-    } else {
-      console.log('corePurpose element not found, retrying...');
-      setTimeout(initializeGrokAutofill, 500);
-    }
-  };
-  
-  // Try multiple initialization methods
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeGrokAutofill);
-  } else {
-    initializeGrokAutofill();
-  }
-  
-  // Also try after a delay as backup
-  setTimeout(initializeGrokAutofill, 1500);
-}

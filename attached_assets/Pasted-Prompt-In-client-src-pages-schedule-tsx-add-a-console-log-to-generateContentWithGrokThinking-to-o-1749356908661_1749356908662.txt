@@ -1,0 +1,115 @@
+Prompt: "In client/src/pages/schedule.tsx, add a console log to generateContentWithGrokThinking to output the full fetch response body before processing. Do not modify any other files, code, or settings. Apply in preview mode only, and ensure Replit makes no unauthorized changes (e.g., auto-formatting, unused imports, or external file edits)."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const generateContentWithGrokThinking = async () => {
+  const response = await fetch('/schedule', {
+    method: 'GET',
+    credentials: 'include'
+  });
+  const text = await response.text(); // Log raw response
+  console.log('Raw response:', text);
+  if (response.ok) {
+    const data = await response.json();
+    console.log('Generated content:', data);
+  } else {
+    console.error('Schedule generation failed:', await response.text());
+  }
+};
+// Existing listener
+document.querySelector('button:contains("generate content with grok")')?.addEventListener('click', generateContentWithGrokThinking);
+Instructions:
+Open client/src/pages/schedule.tsx in Replit preview mode.
+Replace the generateContentWithGrokThinking function (if present) with this code.
+Save in preview mode only.
+Reload https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/schedule.
+Click "generate content with grok", check console for "Raw response:" and "Generated content:" at 2:28 PM AEST.
+Report the output and any Replit overreach.
+Step 2: Fix Rendering Logic
+Prompt: "In client/src/pages/schedule.tsx, update generateContentWithGrokThinking to display the first post from the generated content array in the calendar grid using a <div class='event-card'><p>${content}</p></div> with a .calendar-grid selector. Do not modify any other files, code, or settings. Apply in preview mode only, and ensure Replit makes no unauthorized changes."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const generateContentWithGrokThinking = async () => {
+  const response = await fetch('/schedule', {
+    method: 'GET',
+    credentials: 'include'
+  });
+  const text = await response.text();
+  console.log('Raw response:', text);
+  if (response.ok) {
+    const data = await response.json();
+    console.log('Generated content:', data);
+    const calendar = document.querySelector('.calendar-grid');
+    if (calendar && data.length > 0) {
+      calendar.innerHTML = `<div class='event-card'><p>${data[0].content}</p></div>`;
+    }
+  } else {
+    console.error('Schedule generation failed:', await response.text());
+  }
+};
+// Existing listener
+document.querySelector('button:contains("generate content with grok")')?.addEventListener('click', generateContentWithGrokThinking);
+Instructions:
+Open client/src/pages/schedule.tsx in Replit preview mode.
+Replace the generateContentWithGrokThinking function from Step 1 with this code.
+Save in preview mode only.
+Reload, click "generate content with grok", check the calendar grid for a post at 2:29 PM AEST.
+Report any issues or console output.
+Step 3: Debug corePurpose Error (If Relevant)
+Prompt: "In client/src/pages/schedule.tsx, add a console log to generateContentWithGrokThinking to check if corePurpose is referenced incorrectly, logging 'No corePurpose reference' if not needed. Do not modify any other files, code, or settings. Apply in preview mode only, and ensure Replit makes no unauthorized changes."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const generateContentWithGrokThinking = async () => {
+  const response = await fetch('/schedule', {
+    method: 'GET',
+    credentials: 'include'
+  });
+  const text = await response.text();
+  console.log('Raw response:', text);
+  if (response.ok) {
+    const data = await response.json();
+    console.log('Generated content:', data);
+    const calendar = document.querySelector('.calendar-grid');
+    if (calendar && data.length > 0) {
+      calendar.innerHTML = `<div class='event-card'><p>${data[0].content}</p></div>`;
+    }
+    console.log('No corePurpose reference in schedule');
+  } else {
+    console.error('Schedule generation failed:', await response.text());
+  }
+};
+// Existing listener
+document.querySelector('button:contains("generate content with grok")')?.addEventListener('click', generateContentWithGrokThinking);
+Instructions:
+Open client/src/pages/schedule.tsx in Replit preview mode.
+Replace the generateContentWithGrokThinking function from Step 2 with this code.
+Save in preview mode only.
+Reload, click "generate content with grok", check console for "No corePurpose reference" and post display at 2:30 PM AEST.
+Report any issues.
+Validation:
+If no post appears, ensure .calendar-grid matches your HTML (e.g., .schedule-container), adjust selector.
+If corePurpose errors persist, they might be from brand-purpose.tsx; ignore unless they impact schedule.
+Confirm each step, report Replit overreach.

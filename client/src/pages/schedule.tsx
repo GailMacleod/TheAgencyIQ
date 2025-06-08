@@ -210,11 +210,13 @@ export default function Schedule() {
       method: 'GET',
       credentials: 'include'
     });
+    const text = await response.text(); // Log raw response
+    console.log('Raw response:', text);
     if (response.ok) {
-      const data = await response.json();
+      const data = JSON.parse(text);
       console.log('Generated content:', data);
     } else {
-      console.error('Content generation failed:', await response.text());
+      console.error('Schedule generation failed:', text);
     }
   };
 
