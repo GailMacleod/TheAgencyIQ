@@ -1059,11 +1059,15 @@ const grokAutofillWithFeedback = async () => {
       feedbackDiv = document.createElement('div');
       feedbackDiv.id = 'grokFeedback';
       feedbackDiv.className = 'mt-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm font-medium';
-      corePurposeElement?.parentNode?.appendChild(feedbackDiv);
+      // Insert after the corePurpose field's parent container
+      const fieldContainer = corePurposeElement?.closest('div');
+      if (fieldContainer?.parentNode) {
+        fieldContainer.parentNode.insertBefore(feedbackDiv, fieldContainer.nextSibling);
+      }
     }
     
     // Show processing message
-    feedbackDiv.innerHTML = '🤖 Grok is optimizing your audience using Strategyzer methodology...';
+    feedbackDiv.innerHTML = 'Grok is optimizing your audience using Strategyzer methodology...';
     feedbackDiv.className = 'mt-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm font-medium';
     
     // Simulate AI processing delay
@@ -1100,24 +1104,28 @@ const grokAutofillWithFeedback = async () => {
       const painPointsElement = document.getElementById('painPoints') as HTMLTextAreaElement;
       const jobToBeDoneElement = document.getElementById('jobToBeDone') as HTMLTextAreaElement;
       
-      if (audienceElement && !audienceElement.value) audienceElement.value = template.audience;
-      if (motivationsElement && !motivationsElement.value) motivationsElement.value = template.motivations;
-      if (painPointsElement && !painPointsElement.value) painPointsElement.value = template.painPoints;
-      if (jobToBeDoneElement && !jobToBeDoneElement.value) jobToBeDoneElement.value = template.jobToBeDone;
+      if (audienceElement && !audienceElement.value) {
+        audienceElement.value = template.audience;
+        audienceElement.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (motivationsElement && !motivationsElement.value) {
+        motivationsElement.value = template.motivations;
+        motivationsElement.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (painPointsElement && !painPointsElement.value) {
+        painPointsElement.value = template.painPoints;
+        painPointsElement.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (jobToBeDoneElement && !jobToBeDoneElement.value) {
+        jobToBeDoneElement.value = template.jobToBeDone;
+        jobToBeDoneElement.dispatchEvent(new Event('input', { bubbles: true }));
+      }
       
       // Success feedback
-      feedbackDiv.innerHTML = `✅ Grok has autofilled with Strategyzer-optimized data (Score: ${score}/600)`;
+      feedbackDiv.innerHTML = `Grok has autofilled with Strategyzer-optimized data (Score: ${score}/600)`;
       feedbackDiv.className = 'mt-2 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm font-medium';
       
       console.log('Fields autofilled with Grok Strategyzer template - Score:', score);
-      
-      // Trigger form updates
-      [audienceElement, motivationsElement, painPointsElement, jobToBeDoneElement].forEach(element => {
-        if (element && element.value) {
-          const event = new Event('input', { bubbles: true });
-          element.dispatchEvent(event);
-        }
-      });
       
     } else {
       // Provide guidance for better input
@@ -1126,7 +1134,7 @@ const grokAutofillWithFeedback = async () => {
       if (!hasGainIndicator) missingElements.push('gain indicator (e.g., "visible", "beacon")');
       if (!hasJobIndicator) missingElements.push('job indicator (e.g., "keep visible")');
       
-      feedbackDiv.innerHTML = `⚠️ Grok needs better input for optimal results (Score: ${score}/600). Add: ${missingElements.join(', ')}`;
+      feedbackDiv.innerHTML = `Grok needs better input for optimal results (Score: ${score}/600). Add: ${missingElements.join(', ')}`;
       feedbackDiv.className = 'mt-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm font-medium';
     }
   }
@@ -1137,10 +1145,12 @@ if (typeof window !== 'undefined') {
   setTimeout(() => {
     const corePurposeElement = document.getElementById('corePurpose');
     if (corePurposeElement) {
-      // Remove old listener if exists
-      corePurposeElement.removeEventListener('input', autofillFields);
-      // Add new enhanced listener
-      corePurposeElement.addEventListener('input', grokAutofillWithFeedback);
+      // Add enhanced listener with debouncing
+      let timeout: NodeJS.Timeout;
+      corePurposeElement.addEventListener('input', () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(grokAutofillWithFeedback, 500);
+      });
     }
   }, 1000);
 }
