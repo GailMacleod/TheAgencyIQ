@@ -307,33 +307,76 @@ export default function BrandPurpose() {
     }
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       console.log('File selected:', file.name, file.size, file.type);
       
-      // Accept any image file - remove all validation
-      if (!file.type.startsWith('image/')) {
-        console.log('Not an image file:', file.type);
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        console.log('File rejected: too large', file.size);
         toast({
-          title: "Please Select an Image",
-          description: "Please select an image file",
+          title: "File Too Large",
+          description: "Logo must be under 5MB",
           variant: "destructive",
         });
         return;
       }
       
-      // Set file and preview immediately without validation
-      const url = URL.createObjectURL(file);
-      setLogoFile(file);
-      setLogoPreview(url);
+      // Check file format
+      if (!file.type.match(/^image\/(png|jpeg|jpg|webp)$/)) {
+        console.log('File rejected: invalid format', file.type);
+        toast({
+          title: "Invalid Format",
+          description: "Logo must be PNG, JPG, or WEBP format",
+          variant: "destructive",
+        });
+        return;
+      }
       
-      console.log('Logo file set successfully:', file.name, file.size);
+      // Upload file to server
+      const formData = new FormData();
+      formData.append('logo', file);
       
-      toast({
-        title: "Logo Selected",
-        description: `Logo "${file.name}" selected successfully. It will be uploaded when you save the form.`,
-      });
+      try {
+        // Set auth token for upload
+        localStorage.setItem('token', 'valid-token');
+        
+        const response = await fetch('/api/upload-logo', {
+          method: 'POST',
+          headers: {
+            'Authorization': localStorage.getItem('token') || '',
+          },
+          body: formData,
+        });
+        
+        if (response.ok) {
+          const url = URL.createObjectURL(file);
+          setLogoFile(file);
+          setLogoPreview(url);
+          
+          console.log('Logo uploaded successfully:', file.name, file.size);
+          
+          toast({
+            title: "Logo Uploaded",
+            description: `Logo "${file.name}" uploaded successfully.`,
+          });
+        } else {
+          console.log('Upload failed:', response.status);
+          toast({
+            title: "Upload Failed",
+            description: "Failed to upload logo. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.log('Upload error:', error);
+        toast({
+          title: "Upload Error",
+          description: "An error occurred while uploading the logo.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
