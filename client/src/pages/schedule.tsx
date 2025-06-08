@@ -357,13 +357,16 @@ export default function Schedule() {
         console.log('Button approved');
         const target = e.target as HTMLElement;
         const originalBg = target.style.backgroundColor;
+        const originalText = target.textContent;
         const originalClass = target.className;
         
-        target.style.backgroundColor = 'green';
+        target.style.backgroundColor = '#3250fa';
+        target.textContent = 'Approved!';
         target.setAttribute('disabled', 'true');
         
         setTimeout(() => {
           target.style.backgroundColor = originalBg;
+          target.textContent = originalText;
           target.removeAttribute('disabled');
         }, 2000);
       };
