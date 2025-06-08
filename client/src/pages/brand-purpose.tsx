@@ -219,7 +219,7 @@ export default function BrandPurpose() {
       productsServices = "",
       corePurpose = "",
       audience = ""
-    } = watchedValues;
+    } = watchedValues as any;
     
     // Generate guidance if we have sufficient info
     if (brandName.length > 0 && productsServices.length > 10 && corePurpose.length > 10 && audience.length > 10 && !showGuidance && !isGeneratingGuidance) {
@@ -310,8 +310,11 @@ export default function BrandPurpose() {
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log('File selected:', file.name, file.size, file.type);
+      
       // Check file size (max 500KB)
       if (file.size > 500000) {
+        console.log('File too large:', file.size);
         toast({
           title: "File Too Large",
           description: "Logo must be under 500KB",
@@ -322,6 +325,7 @@ export default function BrandPurpose() {
       
       // Check file type
       if (!file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+        console.log('Invalid file type:', file.type);
         toast({
           title: "Invalid File Type",
           description: "Please upload a PNG or JPG image",
@@ -335,8 +339,11 @@ export default function BrandPurpose() {
       const url = URL.createObjectURL(file);
       
       img.onload = function() {
+        console.log('Image dimensions loaded:', img.width, img.height);
+        
         // Check minimum dimensions (at least 100x100)
         if (img.width < 100 || img.height < 100) {
+          console.log('Image too small:', img.width, img.height);
           toast({
             title: "Image Too Small",
             description: "Logo must be at least 100x100 pixels",
@@ -348,6 +355,7 @@ export default function BrandPurpose() {
         
         // Check maximum dimensions (max 1000x1000)
         if (img.width > 1000 || img.height > 1000) {
+          console.log('Image too large:', img.width, img.height);
           toast({
             title: "Image Too Large",
             description: "Logo must be no larger than 1000x1000 pixels",
@@ -361,9 +369,11 @@ export default function BrandPurpose() {
         setLogoFile(file);
         setLogoPreview(url);
         
+        console.log('Logo file set successfully:', file.name, file.size, `${img.width}x${img.height}px`);
+        
         toast({
-          title: "Logo Uploaded",
-          description: `Logo uploaded successfully (${img.width}x${img.height}px)`,
+          title: "Logo Selected",
+          description: `Logo selected successfully (${img.width}x${img.height}px). It will be uploaded when you save the form.`,
         });
       };
       
