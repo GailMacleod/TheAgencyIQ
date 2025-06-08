@@ -557,7 +557,7 @@ Pain Points: ${painPoints || "Not specified"}`;
             context
           );
           
-          guidance = await Promise.race([grokPromise, timeoutPromise]);
+          guidance = await Promise.race([grokPromise, timeoutPromise]) as string;
           console.log('Grok guidance generated successfully');
           
         } catch (grokError: any) {
