@@ -402,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "File too large" });
         }
 
-        // Save file as logo.png
+        // Save file as logo.png and update preview
         const uploadsDir = './uploads';
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
@@ -411,7 +411,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const targetPath = path.join(uploadsDir, 'logo.png');
         fs.renameSync(req.file.path, targetPath);
 
-        res.status(200).json({ message: "Logo uploaded successfully" });
+        const logoUrl = '/uploads/logo.png';
+
+        res.status(200).json({ message: "Logo uploaded successfully", logoUrl });
       });
     } catch (error: any) {
       console.error('Logo upload error:', error);

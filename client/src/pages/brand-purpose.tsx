@@ -70,6 +70,22 @@ export default function BrandPurpose() {
     staleTime: 0,
   });
 
+  // Check if logo exists and set preview
+  useEffect(() => {
+    const checkLogo = async () => {
+      try {
+        const response = await fetch('/uploads/logo.png');
+        if (response.ok) {
+          setLogoPreview('/uploads/logo.png');
+          console.log('Existing logo loaded from server');
+        }
+      } catch (error) {
+        console.log('No existing logo found');
+      }
+    };
+    checkLogo();
+  }, []);
+
   const form = useForm<BrandPurposeForm>({
     resolver: zodResolver(brandPurposeSchema),
     defaultValues: {
@@ -351,15 +367,23 @@ export default function BrandPurpose() {
         });
         
         if (response.ok) {
+          const responseData = await response.json();
           const url = URL.createObjectURL(file);
           setLogoFile(file);
           setLogoPreview(url);
           
           console.log('Logo uploaded successfully:', file.name, file.size);
+          console.log('Server response:', responseData);
+          console.log('Preview URL set:', url);
+          
+          // Force re-render
+          setTimeout(() => {
+            setLogoPreview(url);
+          }, 100);
           
           toast({
             title: "Logo Uploaded",
-            description: `Logo "${file.name}" uploaded successfully.`,
+            description: `Logo "${file.name}" uploaded successfully and preview updated.`,
           });
         } else {
           console.log('Upload failed:', response.status);
