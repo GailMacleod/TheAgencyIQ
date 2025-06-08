@@ -43,32 +43,26 @@ export default function Payment() {
     retry: false,
   });
 
-  // useEffect with hidden input detection for test subscription
+  // useEffect for automatic test subscription enablement on mount
   useEffect(() => {
-    const hiddenInput = document.querySelector('input[type="hidden"]') as HTMLInputElement;
-    const cardInput = document.querySelector('input[name="cardNumber"]') as HTMLInputElement;
-    
-    if (hiddenInput && cardInput) {
-      const handleCardInput = (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        const cardNumber = target.value.replace(/\D/g, '');
-        
-        // Parse hidden input value for test credentials
-        const hiddenValue = hiddenInput.value; // testuser@agencyiq.com_4242424242424242
-        const [hiddenEmail, hiddenCard] = hiddenValue.split('_');
-        
-        if (user?.email === hiddenEmail && cardNumber === hiddenCard) {
-          setIsTestSubscription(true);
-          console.log('Test subscription triggered for testuser@agencyiq.com with 4242424242424242 using password TestPass123!');
-        } else {
-          setIsTestSubscription(false);
-        }
-      };
+    if (user?.email === 'testuser@agencyiq.com') {
+      setIsTestSubscription(true);
+      console.log('Test subscription enabled for testuser@agencyiq.com with password TestPass123!');
       
-      cardInput.addEventListener('input', handleCardInput);
-      return () => cardInput.removeEventListener('input', handleCardInput);
+      // Update user state directly via query cache
+      queryClient.setQueryData(["/api/user"], (oldData: any) => ({
+        ...oldData,
+        subscriptions: {
+          starter: true,
+          growth: true,
+          professional: true
+        },
+        subscriptionPlan: 'professional',
+        remainingPosts: 45,
+        totalPosts: 45
+      }));
     }
-  }, [user]);
+  }, [user?.email, queryClient]);
 
   const form = useForm<PaymentForm>({
     resolver: zodResolver(paymentSchema),
@@ -141,18 +135,11 @@ export default function Payment() {
     if (isTestSubscription) {
       console.log('Test subscription successful for testuser@agencyiq.com');
       
-      // Update user state directly via query invalidation
-      queryClient.setQueryData(["/api/user"], (oldData: any) => ({
-        ...oldData,
-        subscriptions: {
-          starter: true,
-          growth: true,
-          professional: true
-        },
-        subscriptionPlan: 'professional',
-        remainingPosts: 45,
-        totalPosts: 45
-      }));
+      // Show success message in the payment success div
+      const successDiv = document.getElementById('payment-success');
+      if (successDiv) {
+        successDiv.innerText = 'Subscription activated!';
+      }
       
       toast({
         title: "Test Subscription Successful",
@@ -206,6 +193,9 @@ export default function Payment() {
             </p>
           </CardHeader>
           <CardContent>
+            {/* Payment success message div */}
+            <div id="payment-success" className="text-green-600 text-center mb-4 font-semibold"></div>
+            
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {/* Hidden input for test credential parsing */}
               <input type="hidden" value="testuser@agencyiq.com_4242424242424242" />
