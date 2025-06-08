@@ -1,0 +1,19 @@
+"In Replit, open server/index.ts, add a function createTestUser to manually create a test user with email 'testuser@agencyiq.com', password 'TestPass123!' hashed with bcrypt, and a pre-verified Twilio test phone number '+15005550006' using your existing user management system, setting a 'verified' flag to true. Use your Twilio test credentials (TestAccountSid and TestAuthToken from your Twilio Console) to simulate verification without external calls, logging 'Test user created: testuser@agencyiq.com with credentials Username: testuser@agencyiq.com, Password: TestPass123!' on success. Ensure the function is isolated, does not affect other users or global app state, and commit with message 'add-test-user-safe' without deploying. Ensure no unauthorized changes beyond this addition."
+Instructions:
+Open server/index.ts in Replit.
+Apply the prompt as written.
+Add the createTestUser function, integrating with your user management (e.g., database insert or in-memory store). Hash TestPass123! with bcrypt.hashSync('TestPass123!', 10) if available, set phone: '+15005550006', and verified: true. Use Twilio test credentials (e.g., TestAccountSid and TestAuthToken from your Twilio Console) to mock verification (e.g., a no-op check or flag).
+Include console.log('Test user created: testuser@agencyiq.com with credentials Username: testuser@agencyiq.com, Password: TestPass123!'); on successful creation.
+Ensure the function operates independently (e.g., no global variable overwrites, no Replit auth calls).
+Save the file.
+Go to the Git tab, commit with "add-test-user-safe" (do not deploy).
+Visit https://agency-iq-social-GailMac.replit.app, attempt login with Username: testuser@agencyiq.com and Password: TestPass123!, check console for the log and app stability at 08:07 AM AEST.
+Report the outcome (e.g., log present, app functional) and any issues.
+Validation:
+If the app crashes, undo the commit, share the error, and we’ll mock the user in a separate module or localStorage.
+If login fails, verify Twilio test integration or add a bypass flag for test users (e.g., isTestUser: true).
+Confirm, report Replit overreach.
+Guidance Notes
+Twilio Test Number: +15005550006 is a Twilio magic number simulating successful verification. Your app should recognize this without an API call.
+Bypassing Replit Auth: The prompt avoids Replit’s authentication system, using your custom user management to prevent conflicts.
+Scalability: The isolated function ensures no impact on other users or app state, making it safe for production.

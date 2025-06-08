@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ALLOWED_ORIGINS, SECURITY_HEADERS, validateDomain, isSecureContext } from "./ssl-config";
+import bcrypt from "bcrypt";
+import { storage } from "./storage";
 
 const app = express();
 
@@ -74,6 +76,43 @@ app.get('/health', (req, res) => {
 app.get('/.well-known/health', (req, res) => {
   res.json({ status: 'ok', domain: 'app.theagencyiq.ai' });
 });
+
+// Create test user function
+async function createTestUser() {
+  try {
+    // Check if test user already exists
+    const existingUser = await storage.getUserByEmail('testuser@agencyiq.com');
+    if (existingUser) {
+      console.log('Test user already exists: testuser@agencyiq.com');
+      return;
+    }
+
+    // Hash password with bcrypt
+    const hashedPassword = bcrypt.hashSync('TestPass123!', 10);
+
+    // Create test user with Twilio test phone number
+    const testUser = await storage.createUser({
+      email: 'testuser@agencyiq.com',
+      password: hashedPassword,
+      phone: '+15005550006', // Twilio magic test number
+      verified: true,
+      subscriptionPlan: 'starter',
+      stripeCustomerId: '',
+      stripeSubscriptionId: '',
+      remainingPosts: 12,
+      totalPosts: 12
+    });
+
+    console.log('Test user created: testuser@agencyiq.com with credentials Username: testuser@agencyiq.com, Password: TestPass123!');
+    
+    return testUser;
+  } catch (error) {
+    console.error('Error creating test user:', error);
+  }
+}
+
+// Call createTestUser on server startup
+createTestUser();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
