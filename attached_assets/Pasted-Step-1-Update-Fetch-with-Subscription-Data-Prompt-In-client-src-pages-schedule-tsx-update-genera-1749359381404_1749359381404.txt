@@ -1,0 +1,126 @@
+Step 1: Update Fetch with Subscription Data
+Prompt: "In client/src/pages/schedule.tsx, update generateContentWithGrokThinking to use POST /api/generate-content-calendar with credentials: 'include', including productsServices from localStorage in the request body, and log the full response text and status. Do not modify any other files, code, or settings. Apply in preview mode only, and ensure Replit makes no unauthorized changes (e.g., auto-formatting, unused imports, or external file edits)."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const generateContentWithGrokThinking = async () => {
+  const productsServices = localStorage.getItem('productsServices') || '';
+  const response = await fetch('/api/generate-content-calendar', {
+    method: 'POST',
+    credentials: 'include',
+    body: JSON.stringify({ productsServices }),
+    headers: { 'Content-Type': 'application/json' }
+  });
+  const text = await response.text();
+  console.log('Schedule response - Status:', response.status, 'Body:', text);
+  if (response.ok) {
+    const data = await response.json();
+    console.log('Generated content:', data);
+  } else {
+    console.error('Schedule generation failed:', text);
+  }
+};
+// Existing listener
+document.querySelector('button:contains("generate content with grok")')?.addEventListener('click', generateContentWithGrokThinking);
+Instructions:
+Open client/src/pages/schedule.tsx in Replit preview mode.
+Replace the generateContentWithGrokThinking function (if present) with this code.
+Save in preview mode only.
+Reload https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/schedule.
+Ensure localStorage has productsServices (e.g., "Starter Subscription, 10 posts + 2 Free: $19.99/30 days..."), click "generate content with grok", check console for "Schedule response" at 3:09 PM AEST.
+Report the output and any Replit overreach.
+Step 2: Parse and Render Posts by Subscription
+Prompt: "In client/src/pages/schedule.tsx, update generateContentWithGrokThinking to parse the posts array from /api/generate-content-calendar response, determine post count from productsServices (10 for Starter, 25 for Growth, 45 for Professional), and display that many posts in the calendar grid using <div class='event-card'><p>${content}</p></div> with a .calendar-grid selector. Do not modify any other files, code, or settings. Apply in preview mode only, and ensure Replit makes no unauthorized changes."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const generateContentWithGrokThinking = async () => {
+  const productsServices = localStorage.getItem('productsServices') || '';
+  const response = await fetch('/api/generate-content-calendar', {
+    method: 'POST',
+    credentials: 'include',
+    body: JSON.stringify({ productsServices }),
+    headers: { 'Content-Type': 'application/json' }
+  });
+  const text = await response.text();
+  console.log('Schedule response - Status:', response.status, 'Body:', text);
+  if (response.ok) {
+    const data = await response.json();
+    console.log('Generated content:', data);
+    const calendar = document.querySelector('.calendar-grid');
+    let postCount = 10; // Default to Starter
+    if (productsServices.includes('Growth')) postCount = 25;
+    if (productsServices.includes('Professional')) postCount = 45;
+    if (calendar && data.posts && data.posts.length > 0) {
+      const postsToShow = data.posts.slice(0, postCount);
+      calendar.innerHTML = postsToShow.map(post => `<div class='event-card'><p>${post.content}</p></div>`).join('');
+    }
+  } else {
+    console.error('Schedule generation failed:', text);
+  }
+};
+// Existing listener
+document.querySelector('button:contains("generate content with grok")')?.addEventListener('click', generateContentWithGrokThinking);
+Instructions:
+Open client/src/pages/schedule.tsx in Replit preview mode.
+Replace the generateContentWithGrokThinking function from Step 1 with this code.
+Save in preview mode only.
+Reload, ensure localStorage has productsServices (e.g., "Growth Subscription..."), click "generate content with grok", check calendar for the correct post count (e.g., 25 for Growth) at 3:10 PM AEST.
+Report any issues or console output.
+Step 3: Debug DOM Selector
+Prompt: "In client/src/pages/schedule.tsx, update generateContentWithGrokThinking to log the .calendar-grid element or 'Calendar grid not found' if null, before rendering posts. Do not modify any other files, code, or settings. Apply in preview mode only, and ensure Replit makes no unauthorized changes."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const generateContentWithGrokThinking = async () => {
+  const productsServices = localStorage.getItem('productsServices') || '';
+  const response = await fetch('/api/generate-content-calendar', {
+    method: 'POST',
+    credentials: 'include',
+    body: JSON.stringify({ productsServices }),
+    headers: { 'Content-Type': 'application/json' }
+  });
+  const text = await response.text();
+  console.log('Schedule response - Status:', response.status, 'Body:', text);
+  if (response.ok) {
+    const data = await response.json();
+    console.log('Generated content:', data);
+    const calendar = document.querySelector('.calendar-grid');
+    console.log('Calendar grid:', calendar ? 'Found' : 'Calendar grid not found');
+    let postCount = 10; // Default to Starter
+    if (productsServices.includes('Growth')) postCount = 25;
+    if (productsServices.includes('Professional')) postCount = 45;
+    if (calendar && data.posts && data.posts.length > 0) {
+      const postsToShow = data.posts.slice(0, postCount);
+      calendar.innerHTML = postsToShow.map(post => `<div class='event-card'><p>${post.content}</p></div>`).join('');
+    }
+  } else {
+    console.error('Schedule generation failed:', text);
+  }
+};
+// Existing listener
+document.querySelector('button:contains("generate content with grok")')?.addEventListener('click', generateContentWithGrokThinking);
+Instructions:
+Open client/src/pages/schedule.tsx in Replit preview mode.
+Replace the generateContentWithGrokThinking function from

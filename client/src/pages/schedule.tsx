@@ -220,12 +220,16 @@ export default function Schedule() {
     });
 
     try {
+      // Get subscription info from user data or localStorage
+      const productsServices = localStorage.getItem('productsServices') || user?.subscriptionPlan || '';
+      
       const response = await fetch('/api/generate-content-calendar', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include'
+        credentials: 'include',
+        body: JSON.stringify({ productsServices })
       });
 
       const text = await response.text();
@@ -235,12 +239,26 @@ export default function Schedule() {
         const data = JSON.parse(text);
         console.log('Generated content:', data);
         
+        // Check calendar grid element
+        const calendar = document.querySelector('.calendar-grid');
+        console.log('Calendar grid:', calendar ? 'Found' : 'Calendar grid not found');
+        
         // The API returns {posts: [...]} format
         const posts = data.posts || data;
         
         if (posts && posts.length > 0) {
+          // Determine post count based on subscription
+          let postCount = 10; // Default to Starter
+          if (productsServices.includes('Growth') || productsServices.includes('growth')) postCount = 25;
+          if (productsServices.includes('Professional') || productsServices.includes('professional')) postCount = 45;
+          
+          console.log('Subscription detected:', productsServices, 'Post limit:', postCount);
+          
+          // Limit posts based on subscription
+          const limitedPosts = posts.slice(0, postCount);
+          
           // Convert API response to Post format
-          const newPosts = posts.map((post: any, index: number) => ({
+          const newPosts = limitedPosts.map((post: any, index: number) => ({
             id: post.id || Date.now() + index,
             platform: post.platform,
             content: post.content,
@@ -252,10 +270,27 @@ export default function Schedule() {
           setGeneratedPosts(newPosts);
           console.log('Generated posts set to state:', newPosts);
           
+          // Also render directly to calendar grid if available
+          if (calendar && newPosts.length > 0) {
+            const eventCards = newPosts.map(post => 
+              `<div class='event-card bg-blue-50 border border-blue-200 rounded p-2 mb-1'>
+                <p class='text-xs text-blue-800'>${post.content.substring(0, 50)}...</p>
+                <span class='text-xs text-blue-600'>${post.platform}</span>
+              </div>`
+            ).join('');
+            
+            // Add to first calendar day cell
+            const firstDayCell = calendar.querySelector('.relative.min-h-24');
+            if (firstDayCell) {
+              const existingContent = firstDayCell.innerHTML;
+              firstDayCell.innerHTML = existingContent + eventCards;
+            }
+          }
+          
           // Show success message
           toast({
             title: "Content Generated Successfully",
-            description: `Generated ${newPosts.length} posts for your 30-day schedule`,
+            description: `Generated ${newPosts.length} posts for your ${productsServices || 'subscription'} plan`,
           });
         }
       } else {
@@ -482,7 +517,7 @@ export default function Schedule() {
         )}
 
         {/* 30-Day Calendar Grid */}
-        <div className="grid grid-cols-7 gap-2 mb-8">
+        <div className="calendar-grid grid grid-cols-7 gap-2 mb-8">
           {/* Calendar Headers */}
           {['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map(day => (
             <div key={day} className="text-center text-sm font-medium text-gray-500 p-2 lowercase">
