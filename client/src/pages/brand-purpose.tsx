@@ -312,23 +312,23 @@ export default function BrandPurpose() {
     if (file) {
       console.log('File selected:', file.name, file.size, file.type);
       
-      // Check file size (max 500KB)
-      if (file.size > 500000) {
+      // Check file size (max 5MB)
+      if (file.size > 5000000) {
         console.log('File too large:', file.size);
         toast({
           title: "File Too Large",
-          description: "Logo must be under 500KB",
+          description: "Logo must be under 5MB",
           variant: "destructive",
         });
         return;
       }
       
-      // Check file type
-      if (!file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+      // Check file type - accept more formats
+      if (!file.type.match(/^image\/(png|jpeg|jpg|webp|gif)$/)) {
         console.log('Invalid file type:', file.type);
         toast({
           title: "Invalid File Type",
-          description: "Please upload a PNG or JPG image",
+          description: "Please upload a PNG, JPG, WEBP, or GIF image",
           variant: "destructive",
         });
         return;
@@ -341,12 +341,12 @@ export default function BrandPurpose() {
       img.onload = function() {
         console.log('Image dimensions loaded:', img.width, img.height);
         
-        // Check minimum dimensions (at least 100x100)
-        if (img.width < 100 || img.height < 100) {
+        // Check minimum dimensions (at least 50x50)
+        if (img.width < 50 || img.height < 50) {
           console.log('Image too small:', img.width, img.height);
           toast({
             title: "Image Too Small",
-            description: "Logo must be at least 100x100 pixels",
+            description: "Logo must be at least 50x50 pixels",
             variant: "destructive",
           });
           URL.revokeObjectURL(url);
