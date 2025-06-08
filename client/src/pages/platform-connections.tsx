@@ -59,6 +59,7 @@ export default function PlatformConnections() {
 
   const connectPlatform = async (platformId: string) => {
     setLoading(platformId);
+    console.log(`Connecting platform: ${platformId}`);
     
     // Get platform-specific credentials from user
     const platform = platforms.find(p => p.id === platformId);
@@ -88,11 +89,19 @@ export default function PlatformConnections() {
     }
     
     try {
-      await apiRequest("POST", "/api/connect-platform", {
+      const response = await apiRequest("POST", "/api/connect-platform", {
         platform: platformId,
         username,
         password
       });
+      
+      // Log successful connection and store token in localStorage
+      if (response && response.accessToken) {
+        console.log(`token_${platformId}: ${response.accessToken}`);
+        localStorage.setItem(`token_${platformId}`, response.accessToken);
+      } else {
+        console.log(`token_${platformId}: success but no token returned`);
+      }
       
       toast({
         title: "Platform Connected",
@@ -103,6 +112,7 @@ export default function PlatformConnections() {
       window.location.reload();
       
     } catch (error: any) {
+      console.log(`token_${platformId}: error - ${error.message || 'connection failed'}`);
       toast({
         title: "Connection Failed",
         description: error.message || `Failed to connect ${platform?.name}`,
