@@ -1,0 +1,73 @@
+To ensure the form is correctly filled and informs the media schedule, validate data and integrate it with the backend.
+
+Solution:
+
+Validate Form Data (client/src/pages/brand-purpose.tsx):
+
+Add validation before manual save.
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const validateForm = (data: any) => {
+  return data.name && data.valueProp && data.corePurpose && data.audience && data.motivation;
+};
+
+const handleSave = () => {
+  const formData = { name, valueProp, corePurpose, audience, motivation };
+  if (validateForm(formData)) {
+    fetch('/save-brand', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    }).then(res => res.json()).then(data => console.log('Saved:', data.success));
+  } else {
+    console.error('Incomplete form');
+  }
+};
+Update Backend (server/routes.ts):
+
+Link saved data to schedule generation.
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+let brandData = {};
+
+serve(async (req) => {
+  const url = new URL(req.url);
+  if (url.pathname === '/save-brand' && req.method === 'POST') {
+    brandData = await req.json();
+    return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+  }
+  if (url.pathname === '/schedule') {
+    return new Response(JSON.stringify(generateKickAssSchedule(brandData)), { headers: { 'Content-Type': 'application/json' } });
+  }
+  return new Response('Backend active', { status: 200 });
+});
+
+function generateKickAssSchedule(data: any) {
+  if (!data.audience) return [];
+  const events = ['Queensland SME Expo'];
+  return events.map(event => ({
+    date: new Date().toISOString().split('T')[0],
+    content: `🔥 ${data.valueProp || 'Get visible'} at ${event}! Boost growth.`,
+    audience: data.audience
+  }));
+}
+Steps:
+
+Deploy updated server/routes.ts.
+Update brand-purpose.tsx with validation.
+Fill form, save manually, fetch /schedule, and confirm schedule reflects data.
+This ensures correct form data informs the media schedule. Confirm functionality.

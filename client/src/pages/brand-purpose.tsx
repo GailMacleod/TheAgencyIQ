@@ -233,9 +233,43 @@ export default function BrandPurpose() {
     }
   }, [watchedValues, showGuidance, isGeneratingGuidance]);
 
+  // Form validation helper
+  const validateFormData = (data: BrandPurposeForm) => {
+    const requiredFields = [
+      { field: 'brandName', name: 'Brand Name' },
+      { field: 'productsServices', name: 'Products/Services' },
+      { field: 'corePurpose', name: 'Core Purpose' },
+      { field: 'audience', name: 'Ideal Audience' },
+      { field: 'jobToBeDone', name: 'Job to be Done' },
+      { field: 'motivations', name: 'Audience Motivations' },
+      { field: 'painPoints', name: 'Pain Points' }
+    ];
+
+    const missingFields = requiredFields.filter(
+      ({ field }) => !data[field as keyof BrandPurposeForm] || 
+      (data[field as keyof BrandPurposeForm] as string).length < 10
+    );
+
+    return {
+      isValid: missingFields.length === 0,
+      missingFields: missingFields.map(f => f.name)
+    };
+  };
+
   const onSubmit = async (data: BrandPurposeForm) => {
     try {
       setLoading(true);
+      
+      // Validate form completeness
+      const validation = validateFormData(data);
+      if (!validation.isValid) {
+        toast({
+          title: "Incomplete Form",
+          description: `Please complete: ${validation.missingFields.join(', ')}`,
+          variant: "destructive",
+        });
+        return;
+      }
       
       // Upload logo if provided
       let logoUrl = "";
@@ -257,7 +291,7 @@ export default function BrandPurpose() {
       
       toast({
         title: isExistingData ? "Brand Purpose Updated" : "Brand Purpose Saved",
-        description: isExistingData ? "Your brand purpose has been updated successfully" : "Your brand purpose has been saved to your profile successfully",
+        description: isExistingData ? "Your brand purpose has been updated and will inform your content schedule" : "Your brand purpose has been saved and will inform your content schedule",
       });
       
       setLocation("/schedule");
