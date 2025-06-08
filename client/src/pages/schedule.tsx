@@ -355,6 +355,7 @@ export default function Schedule() {
     approveButtonsFiltered.forEach(button => {
       const handleApproveClick = (e: Event) => {
         console.log('Button approved');
+        console.log('Post approved and updated');
         const target = e.target as HTMLElement;
         
         target.style.backgroundColor = '#3250fa';
@@ -393,6 +394,7 @@ export default function Schedule() {
           input.focus();
           
           const handleBlur = () => {
+            console.log('Post content updated to:', input.value);
             contentElement.textContent = input.value;
             contentElement.style.display = 'block';
             input.remove();
