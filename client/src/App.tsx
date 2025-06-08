@@ -67,6 +67,7 @@ function TestUserHandler() {
         totalPosts: 45
       }));
       console.log('Test user subscription granted for testuser@agencyiq.com with password TestPass123!');
+      console.log('Test user full access granted for testuser@agencyiq.com with password TestPass123!');
     }
   }, [user?.email]);
 
