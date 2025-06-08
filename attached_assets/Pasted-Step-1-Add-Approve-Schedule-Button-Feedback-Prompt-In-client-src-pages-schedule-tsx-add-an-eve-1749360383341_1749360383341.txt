@@ -1,0 +1,39 @@
+Step 1: Add Approve & Schedule Button Feedback
+Prompt: "In client/src/pages/schedule.tsx, add an event listener to each 'approve & schedule' button to change its background color to green, disable it for 2 seconds on click, and log 'Button approved'. Do not modify any other files, code, or settings. Apply in preview mode only, and ensure Replit makes no unauthorized changes."
+Instructions:
+Open client/src/pages/schedule.tsx in Replit preview mode.
+Append the prompt as written (no code).
+Save in preview mode only.
+Reload https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/schedule.
+Click an "approve & schedule" button, verify it turns green, disables for 2 seconds, and logs "Button approved" at 3:27 PM AEST.
+Report any issues or Replit overreach.
+Step 2: Add Persistent Approval Message
+Prompt: "In client/src/pages/schedule.tsx, add a <div id='scheduleMessage'> below each post card, setting its text to 'Schedule approved!' on 'approve & schedule' button click, and fade it out after 3 seconds using setTimeout. Do not modify any other files, code, or settings. Apply in preview mode only, and ensure Replit makes no unauthorized changes."
+Instructions:
+Open client/src/pages/schedule.tsx in Replit preview mode.
+Append the prompt as written (no code).
+Save in preview mode only.
+Reload, click an "approve & schedule" button, verify a "Schedule approved!" message appears below the post and fades after 3 seconds at 3:28 PM AEST.
+Report any issues or Replit overreach.
+Step 3: Add Edit Post Functionality
+Prompt: "In client/src/pages/schedule.tsx, add an event listener to each 'edit post' button to toggle a text input below the post with the current content, and a 'Save Edit' button to update the post content in the calendar grid. Do not modify any other files, code, or settings. Apply in preview mode only, and ensure Replit makes no unauthorized changes."
+Instructions:
+Open client/src/pages/schedule.tsx in Replit preview mode.
+Append the prompt as written (no code).
+Save in preview mode only.
+Reload, click an "edit post" button, verify a text input with the post content and a "Save Edit" button appear, test editing at 3:29 PM AEST.
+Report any issues or Replit overreach.
+Step 4: Add Reject and Regenerate Logic
+Prompt: "In client/src/pages/schedule.tsx, add an event listener to each 'reject' button to remove the post from the calendar grid, decrease a 'remainingPosts' count in localStorage (initialize to total posts from productsServices if null), and display a 'Generate New Post' button to create a replacement up to the original total. Do not modify any other files, code, or settings. Apply in preview mode only, and ensure Replit makes no unauthorized changes."
+Instructions:
+Open client/src/pages/schedule.tsx in Replit preview mode.
+Append the prompt as written (no code).
+Save in preview mode only.
+Reload, click a "reject" button, verify the post is removed, a "Generate New Post" button appears, and localStorage updates at 3:30 PM AEST.
+Report any issues or Replit overreach.
+Validation:
+If "approve & schedule" doesn’t change, ensure the button class matches (e.g., .approve-button).
+If the message doesn’t persist, check the post card structure (e.g., add id='scheduleMessage').
+If "edit post" fails, verify the button selector and post DOM.
+If "reject" doesn’t regenerate, ensure productsServices in localStorage defines the total (e.g., "Starter Subscription, 10 posts...").
+Confirm each step, report results.

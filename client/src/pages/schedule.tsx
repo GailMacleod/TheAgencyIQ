@@ -344,6 +344,40 @@ export default function Schedule() {
   console.log('Generated posts in state:', generatedPosts.length);
   console.log('Posts with scheduled dates:', calendarDays.filter(day => day.posts.length > 0));
 
+  // Add event listeners for button interactions
+  useEffect(() => {
+    // Approve & Schedule button feedback
+    const approveButtons = document.querySelectorAll('button');
+    const approveButtonsFiltered = Array.from(approveButtons).filter(button => 
+      button.textContent?.includes('approve & schedule')
+    );
+    
+    approveButtonsFiltered.forEach(button => {
+      const handleApproveClick = (e: Event) => {
+        console.log('Button approved');
+        const target = e.target as HTMLElement;
+        const originalBg = target.style.backgroundColor;
+        const originalClass = target.className;
+        
+        target.style.backgroundColor = 'green';
+        target.setAttribute('disabled', 'true');
+        
+        setTimeout(() => {
+          target.style.backgroundColor = originalBg;
+          target.removeAttribute('disabled');
+        }, 2000);
+      };
+      
+      button.addEventListener('click', handleApproveClick);
+    });
+
+    return () => {
+      approveButtonsFiltered.forEach(button => {
+        button.removeEventListener('click', () => {});
+      });
+    };
+  }, [generatedPosts]);
+
   const getPlatformIcon = (platform: string) => {
     const iconClass = "w-4 h-4";
     switch (platform.toLowerCase()) {
