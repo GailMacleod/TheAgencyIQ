@@ -4,7 +4,7 @@ export default function MasterFooter() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center space-y-4">
           <div className="flex justify-center items-center space-x-6 text-sm text-gray-500">
-            <a href="/terms" className="hover:text-gray-700 transition-colors">
+            <a href="https://theagencyiq.ai/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 transition-colors">
               Terms of Service
             </a>
             <span>•</span>
