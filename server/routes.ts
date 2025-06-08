@@ -11,6 +11,9 @@ import connectPg from "connect-pg-simple";
 import { generateContentCalendar, generateReplacementPost, getGrokResponse, generateEngagementInsight } from "./grok";
 import twilio from 'twilio';
 import sgMail from '@sendgrid/mail';
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 // Session type declaration
 declare module 'express-session' {
@@ -72,6 +75,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   }));
 
+  // Configure multer for file uploads
+  const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  const storage_multer = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (req: any, file, cb) => {
+      const ext = path.extname(file.originalname);
+      const filename = `${req.session.userId}_${Date.now()}${ext}`;
+      cb(null, filename);
+    }
+  });
+
+  const upload = multer({
+    storage: storage_multer,
+    limits: {
+      fileSize: 500000, // 500KB
+    },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.match(/^image\/(png|jpeg|jpg)$/)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only PNG and JPG images are allowed'));
+      }
+    }
+  });
+
   // Auth middleware with session refresh
   const requireAuth = async (req: any, res: any, next: any) => {
     if (!req.session?.userId) {
@@ -117,6 +151,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     res.json({ received: true });
   });
+
+  // Serve uploaded files
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
   // Manifest.json route with public access
   app.get('/manifest.json', (req, res) => {
@@ -341,17 +378,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logo upload endpoint
-  app.post("/api/upload-logo", requireAuth, async (req: any, res) => {
+  // Logo upload endpoint with multer
+  app.post("/api/upload-logo", requireAuth, upload.single('logo'), async (req: any, res) => {
     try {
-      // In a real implementation, you would upload to cloud storage
-      // For demo purposes, we'll return a mock URL
-      const logoUrl = `/uploads/logos/${req.session.userId}_${Date.now()}.png`;
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const logoUrl = `/uploads/logos/${req.file.filename}`;
       
       res.json({ logoUrl });
     } catch (error: any) {
       console.error('Logo upload error:', error);
-      res.status(500).json({ message: "Error uploading logo" });
+      if (error.message.includes('File too large')) {
+        res.status(400).json({ message: "File too large. Maximum size is 500KB." });
+      } else if (error.message.includes('Only PNG and JPG')) {
+        res.status(400).json({ message: "Invalid file type. Only PNG and JPG images are allowed." });
+      } else {
+        res.status(500).json({ message: "Error uploading logo" });
+      }
     }
   });
 
