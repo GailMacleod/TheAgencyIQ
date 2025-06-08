@@ -27,7 +27,7 @@ export default function Payment() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [isTestPayment, setIsTestPayment] = useState(false);
+  const [isTestSubscription, setIsTestSubscription] = useState(false);
   const queryClient = useQueryClient();
 
   // Get current user data
@@ -55,25 +55,10 @@ export default function Payment() {
 
   const paymentMutation = useMutation({
     mutationFn: async (paymentData: PaymentForm) => {
-      // Early intercept for test payment to prevent Stripe processing
-      if (isTestPayment) {
-        console.log('Mock payment successful for testuser@agencyiq.com with 4242424242424242 using password TestPass123!');
-        
-        // Update test user subscription state with 45 posts limit
-        const response = await apiRequest("PUT", "/api/user/subscription", {
-          subscriptionPlan: 'professional',
-          subscriptions: {
-            starter: true,
-            growth: true,
-            professional: true
-          },
-          remainingPosts: 45,
-          totalPosts: 45,
-          isTestMode: true
-        });
-        
-        // Return early with mock success to completely bypass Stripe
-        return { success: true, mock: true, ...(await response.json()) };
+      // Check for test subscription - return early to prevent Stripe
+      if (isTestSubscription) {
+        console.log('Test subscription successful for testuser@agencyiq.com');
+        return { success: true, test: true };
       }
       
       // Live payment flow for all other users/cards
@@ -91,16 +76,23 @@ export default function Payment() {
       return { success: true };
     },
     onSuccess: (data) => {
-      if (user?.email === 'testuser@agencyiq.com') {
+      if (isTestSubscription) {
         // Invalidate user query to refresh subscription state
         queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         
         toast({
-          title: "Payment Successful",
-          description: "Your subscription has been activated with full access to all tiers.",
+          title: "Test Subscription Successful",
+          description: "Your test subscription has been activated with 45 posts.",
         });
         
-        setLocation("/subscription?success=true");
+        // Reset form and redirect
+        form.reset();
+        setTimeout(() => setLocation("/brand-purpose"), 1500);
+      } else {
+        toast({
+          title: "Payment Successful",
+          description: "Your subscription is being processed. You'll be redirected shortly.",
+        });
       }
     },
     onError: (error: any) => {
@@ -174,12 +166,38 @@ export default function Payment() {
                     const cleanCardNumber = value.replace(/\s/g, '');
                     form.setValue('cardNumber', cleanCardNumber);
                     
-                    // Check for test payment conditions and set flag
+                    // Check for test subscription conditions
                     if (user?.email === 'testuser@agencyiq.com' && cleanCardNumber === '4242424242424242') {
-                      console.log('Mock payment initiated for testuser@agencyiq.com with 4242424242424242 using password TestPass123!');
-                      setIsTestPayment(true);
+                      setIsTestSubscription(true);
+                      console.log('Test subscription initiated for testuser@agencyiq.com with 4242424242424242 using password TestPass123!');
+                      
+                      // Make mock PUT request to update subscription
+                      fetch('/api/user/subscription', {
+                        method: 'PUT',
+                        credentials: 'include',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          subscriptions: {
+                            starter: true,
+                            growth: true,
+                            professional: true
+                          },
+                          subscriptionPlan: 'professional',
+                          remainingPosts: 45,
+                          totalPosts: 45,
+                          isTest: true
+                        })
+                      }).then(response => {
+                        if (response.ok) {
+                          console.log('Test subscription updated successfully');
+                        }
+                      }).catch(error => {
+                        console.error('Test subscription update failed:', error);
+                      });
                     } else {
-                      setIsTestPayment(false);
+                      setIsTestSubscription(false);
                     }
                   }}
                 />
