@@ -206,17 +206,71 @@ export default function Schedule() {
   ];
 
   const generateContentWithGrokThinking = async () => {
-    const response = await fetch('/schedule', {
-      method: 'GET',
-      credentials: 'include'
+    setShowGrokThinking(true);
+    setGrokStep(0);
+    
+    // Start the thinking animation
+    grokThinkingSteps.forEach((step, index) => {
+      setTimeout(() => {
+        setGrokStep(index + 1);
+      }, step.duration * index);
     });
-    const text = await response.text(); // Log raw response
-    console.log('Raw response:', text);
-    if (response.ok) {
-      const data = JSON.parse(text);
-      console.log('Generated content:', data);
-    } else {
-      console.error('Schedule generation failed:', text);
+
+    try {
+      const response = await fetch('/api/generate-content-calendar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      const text = await response.text();
+      console.log('Schedule response - Status:', response.status, 'Body:', text);
+      
+      if (response.ok) {
+        const data = JSON.parse(text);
+        console.log('Generated content:', data);
+        
+        if (data && data.length > 0) {
+          // Convert API response to Post format
+          const newPosts = data.map((post: any, index: number) => ({
+            id: Date.now() + index,
+            platform: post.platform,
+            content: post.content,
+            status: 'draft',
+            scheduledFor: post.scheduledFor,
+            grokRecommendation: `Strategic content optimized for ${post.platform} engagement`
+          }));
+          
+          setGeneratedPosts(newPosts);
+          
+          // Show success message
+          toast({
+            title: "Content Generated Successfully",
+            description: `Generated ${newPosts.length} posts for your 30-day schedule`,
+          });
+        }
+      } else {
+        console.error('Schedule generation failed:', text);
+        toast({
+          title: "Generation Failed",
+          description: "Unable to generate content. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Network error:', error);
+      toast({
+        title: "Network Error",
+        description: "Failed to connect to content generation service",
+        variant: "destructive",
+      });
+    } finally {
+      setTimeout(() => {
+        setShowGrokThinking(false);
+        setGrokStep(0);
+      }, 1000);
     }
   };
 

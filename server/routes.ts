@@ -108,24 +108,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth middleware with session refresh
   const requireAuth = async (req: any, res: any, next: any) => {
+    console.log('Auth check - Session ID:', req.session?.userId, 'Cookie:', req.headers.cookie);
+    
     if (!req.session?.userId) {
-      return res.status(401).json({ message: "Please log in again." });
+      console.log('No session found, returning 401');
+      return res.status(401).json({ message: "Not authenticated" });
     }
     
     // Verify user still exists in database
     try {
       const user = await storage.getUser(req.session.userId);
       if (!user) {
+        console.log('User not found in database, destroying session');
         req.session.destroy(() => {});
-        return res.status(401).json({ message: "Please log in again." });
+        return res.status(401).json({ message: "Not authenticated" });
       }
       
+      console.log('Auth successful for user:', user.email);
       // Refresh session expiry
       req.session.touch();
       next();
     } catch (error) {
       console.error('Session validation error:', error);
-      return res.status(401).json({ message: "Please log in again." });
+      return res.status(401).json({ message: "Not authenticated" });
     }
   };
 
