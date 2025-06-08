@@ -312,81 +312,28 @@ export default function BrandPurpose() {
     if (file) {
       console.log('File selected:', file.name, file.size, file.type);
       
-      // Check file size (max 5MB)
-      if (file.size > 5000000) {
-        console.log('File too large:', file.size);
+      // Accept any image file - remove all validation
+      if (!file.type.startsWith('image/')) {
+        console.log('Not an image file:', file.type);
         toast({
-          title: "File Too Large",
-          description: "Logo must be under 5MB",
+          title: "Please Select an Image",
+          description: "Please select an image file",
           variant: "destructive",
         });
         return;
       }
       
-      // Check file type - accept more formats
-      if (!file.type.match(/^image\/(png|jpeg|jpg|webp|gif)$/)) {
-        console.log('Invalid file type:', file.type);
-        toast({
-          title: "Invalid File Type",
-          description: "Please upload a PNG, JPG, WEBP, or GIF image",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Check image dimensions
-      const img = new Image();
+      // Set file and preview immediately without validation
       const url = URL.createObjectURL(file);
+      setLogoFile(file);
+      setLogoPreview(url);
       
-      img.onload = function() {
-        console.log('Image dimensions loaded:', img.width, img.height);
-        
-        // Check minimum dimensions (at least 50x50)
-        if (img.width < 50 || img.height < 50) {
-          console.log('Image too small:', img.width, img.height);
-          toast({
-            title: "Image Too Small",
-            description: "Logo must be at least 50x50 pixels",
-            variant: "destructive",
-          });
-          URL.revokeObjectURL(url);
-          return;
-        }
-        
-        // Check maximum dimensions (max 1000x1000)
-        if (img.width > 1000 || img.height > 1000) {
-          console.log('Image too large:', img.width, img.height);
-          toast({
-            title: "Image Too Large",
-            description: "Logo must be no larger than 1000x1000 pixels",
-            variant: "destructive",
-          });
-          URL.revokeObjectURL(url);
-          return;
-        }
-        
-        // If all checks pass, set the file and preview
-        setLogoFile(file);
-        setLogoPreview(url);
-        
-        console.log('Logo file set successfully:', file.name, file.size, `${img.width}x${img.height}px`);
-        
-        toast({
-          title: "Logo Selected",
-          description: `Logo selected successfully (${img.width}x${img.height}px). It will be uploaded when you save the form.`,
-        });
-      };
+      console.log('Logo file set successfully:', file.name, file.size);
       
-      img.onerror = function() {
-        toast({
-          title: "Invalid Image",
-          description: "The selected file is not a valid image",
-          variant: "destructive",
-        });
-        URL.revokeObjectURL(url);
-      };
-      
-      img.src = url;
+      toast({
+        title: "Logo Selected",
+        description: `Logo "${file.name}" selected successfully. It will be uploaded when you save the form.`,
+      });
     }
   };
 
