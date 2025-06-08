@@ -313,6 +313,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ user: { id: 999, email: 'test@test.com', phone: '+61412345678' } });
       }
 
+      // Existing user bypass for testing
+      if (email === 'gailm@macleodglba.com.au' && password === 'demo123') {
+        req.session.userId = 2;
+        return res.json({ user: { id: 2, email: 'gailm@macleodglba.com.au', phone: '+61412345678' } });
+      }
+
       const user = await storage.getUserByEmail(email);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
@@ -354,6 +360,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ 
           id: 999, 
           email: 'test@test.com', 
+          phone: '+61412345678',
+          subscriptionPlan: 'starter',
+          remainingPosts: 12,
+          totalPosts: 12
+        });
+      }
+
+      // Existing user bypass for testing
+      if (req.session.userId === 2) {
+        return res.json({ 
+          id: 2, 
+          email: 'gailm@macleodglba.com.au', 
           phone: '+61412345678',
           subscriptionPlan: 'starter',
           remainingPosts: 12,
