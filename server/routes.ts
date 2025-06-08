@@ -408,7 +408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user subscription for test user mock payments
   app.put("/api/user/subscription", requireAuth, async (req: any, res) => {
     try {
-      const { subscriptionPlan, subscriptions, isTestMode } = req.body;
+      const { subscriptionPlan, subscriptions, remainingPosts, totalPosts, isTestMode } = req.body;
       
       // Only allow test user mock subscription updates
       const user = await storage.getUser(req.session.userId);
@@ -420,18 +420,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Not authorized for subscription updates" });
       }
 
-      console.log(`Mock subscription update for test user: ${user.email}`);
+      console.log(`Mock subscription update for test user: ${user.email} with ${remainingPosts || 45} posts`);
       
-      // Update test user subscription
+      // Update test user subscription with specified post limits
       const updatedUser = await storage.updateUser(req.session.userId, {
         subscriptionPlan,
-        remainingPosts: 999,
-        totalPosts: 999
+        remainingPosts: remainingPosts || 45,
+        totalPosts: totalPosts || 45
       });
 
       res.json({ 
         success: true, 
         subscriptionPlan: updatedUser.subscriptionPlan,
+        remainingPosts: updatedUser.remainingPosts,
+        totalPosts: updatedUser.totalPosts,
         subscriptions,
         isTestMode
       });

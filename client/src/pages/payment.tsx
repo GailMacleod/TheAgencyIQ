@@ -56,9 +56,9 @@ export default function Payment() {
     mutationFn: async (paymentData: PaymentForm) => {
       // Mock payment check for test user
       if (user?.email === 'testuser@agencyiq.com' && paymentData.cardNumber === '4545454545454545') {
-        console.log('Mock payment successful for testuser@agencyiq.com with 4545454545454545');
+        console.log('Mock payment successful for testuser@agencyiq.com with 4545454545454545, 45 posts granted');
         
-        // Update test user subscription state
+        // Update test user subscription state with 45 posts limit
         const response = await apiRequest("PUT", "/api/user/subscription", {
           subscriptionPlan: 'professional',
           subscriptions: {
@@ -66,6 +66,8 @@ export default function Payment() {
             growth: true,
             professional: true
           },
+          remainingPosts: 45,
+          totalPosts: 45,
           isTestMode: true
         });
         
