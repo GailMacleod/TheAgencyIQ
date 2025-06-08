@@ -166,28 +166,8 @@ export default function BrandPurpose() {
     }
   }, [existingBrandPurpose, form]);
 
-  // Initialize Grok autofill functionality
-  useEffect(() => {
-    const initializeGrokAutofill = () => {
-      const corePurposeElement = document.getElementById('corePurpose');
-      if (corePurposeElement) {
-        console.log('Grok autofill listener attached to corePurpose field');
-        let timeout: NodeJS.Timeout;
-        const handleInput = () => {
-          clearTimeout(timeout);
-          timeout = setTimeout(grokAutofillWithFeedback, 500);
-        };
-        corePurposeElement.addEventListener('input', handleInput);
-        return () => {
-          corePurposeElement.removeEventListener('input', handleInput);
-          clearTimeout(timeout);
-        };
-      }
-    };
-
-    const cleanup = initializeGrokAutofill();
-    return cleanup;
-  }, []);
+  // GROK AUTOFILL DISABLED TO PREVENT INFINITE API LOOPS
+  // Autofill functionality temporarily disabled for production stability
 
   // Watch form values to trigger guidance after first three questions
   const watchedValues = (() => {
@@ -247,30 +227,8 @@ export default function BrandPurpose() {
     },
   });
 
-  // Generate guidance when form conditions are met
-  useEffect(() => {
-    if (!watchedValues || typeof watchedValues !== 'object') {
-      return;
-    }
-
-    const {
-      brandName = "",
-      productsServices = "",
-      corePurpose = "",
-      audience = ""
-    } = watchedValues as any;
-    
-    // Generate guidance if we have sufficient info
-    if (brandName.length > 0 && productsServices.length > 10 && corePurpose.length > 10 && audience.length > 10 && !showGuidance && !isGeneratingGuidance) {
-      setIsGeneratingGuidance(true);
-      try {
-        guidanceMutation.mutate(watchedValues);
-      } catch (error) {
-        console.error("Guidance mutation trigger failed:", error);
-        setIsGeneratingGuidance(false);
-      }
-    }
-  }, [watchedValues, showGuidance, isGeneratingGuidance]);
+  // AUTOMATIC GUIDANCE GENERATION DISABLED TO PREVENT INFINITE LOOP
+  // Users can manually request guidance using the guidance button in the UI
 
   // Form validation helper
   const validateFormData = (data: BrandPurposeForm) => {
@@ -1066,100 +1024,5 @@ export default function BrandPurpose() {
 }
 
 // Enhanced Grok autofill with visible feedback and Strategyzer methodology
-const grokAutofillWithFeedback = async () => {
-  const corePurposeElement = document.getElementById('corePurpose') as HTMLTextAreaElement;
-  const brandNameElement = document.getElementById('brandName') as HTMLInputElement;
-  const productsServicesElement = document.getElementById('productsServices') as HTMLTextAreaElement;
-  
-  const corePurpose = corePurposeElement?.value || '';
-  const brandName = brandNameElement?.value || '';
-  const productsServices = productsServicesElement?.value || '';
-  
-  if (brandName && productsServices && corePurpose) {
-    // Create or update feedback div
-    let feedbackDiv = document.getElementById('grokFeedback') as HTMLDivElement;
-    if (!feedbackDiv) {
-      feedbackDiv = document.createElement('div');
-      feedbackDiv.id = 'grokFeedback';
-      feedbackDiv.className = 'mt-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm font-medium';
-      // Insert after the corePurpose field's parent container
-      const fieldContainer = corePurposeElement?.closest('div');
-      if (fieldContainer?.parentNode) {
-        fieldContainer.parentNode.insertBefore(feedbackDiv, fieldContainer.nextSibling);
-      }
-    }
-    
-    // Show processing message
-    feedbackDiv.innerHTML = 'Grok is optimizing your audience using Strategyzer methodology...';
-    feedbackDiv.className = 'mt-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm font-medium';
-    
-    // Simulate AI processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Analyze input using Strategyzer benchmarks
-    const hasPainIndicator = productsServices.toLowerCase().includes('invisible') || 
-                            productsServices.toLowerCase().includes('unseen') ||
-                            productsServices.toLowerCase().includes('hidden');
-    const hasGainIndicator = productsServices.toLowerCase().includes('visible') || 
-                            productsServices.toLowerCase().includes('beacon') ||
-                            productsServices.toLowerCase().includes('standout');
-    const hasJobIndicator = corePurpose.toLowerCase().includes('keep visible') || 
-                           corePurpose.toLowerCase().includes('stay visible') ||
-                           corePurpose.toLowerCase().includes('remain visible');
-    
-    // Calculate Strategyzer score
-    let score = 100;
-    if (hasPainIndicator) score += 150;
-    if (hasGainIndicator) score += 150;
-    if (hasJobIndicator) score += 150;
-    
-    if (score >= 400) {
-      // High-quality autofill with Strategyzer-optimized data
-      const template = {
-        audience: "Queensland SMEs, 30-55, $100K-$2M revenue, time-poor, job: keep visible, pain: invisible online, gain: stay seen",
-        motivations: "20% sales growth, 10 hours/week saved, standout digital presence",
-        painPoints: "Invisible online, time scarcity, skill gaps, low engagement",
-        jobToBeDone: "500 visitors/month (https://theagencyiq.ai), 15% engagement increase, 10 leads/week"
-      };
-      
-      const audienceElement = document.getElementById('audience') as HTMLTextAreaElement;
-      const motivationsElement = document.getElementById('motivations') as HTMLTextAreaElement;
-      const painPointsElement = document.getElementById('painPoints') as HTMLTextAreaElement;
-      const jobToBeDoneElement = document.getElementById('jobToBeDone') as HTMLTextAreaElement;
-      
-      if (audienceElement && !audienceElement.value) {
-        audienceElement.value = template.audience;
-        audienceElement.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      if (motivationsElement && !motivationsElement.value) {
-        motivationsElement.value = template.motivations;
-        motivationsElement.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      if (painPointsElement && !painPointsElement.value) {
-        painPointsElement.value = template.painPoints;
-        painPointsElement.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      if (jobToBeDoneElement && !jobToBeDoneElement.value) {
-        jobToBeDoneElement.value = template.jobToBeDone;
-        jobToBeDoneElement.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      
-      // Success feedback
-      feedbackDiv.innerHTML = `Grok has autofilled with Strategyzer-optimized data (Score: ${score}/600)`;
-      feedbackDiv.className = 'mt-2 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm font-medium';
-      
-      console.log('Fields autofilled with Grok Strategyzer template - Score:', score);
-      
-    } else {
-      // Provide guidance for better input
-      const missingElements = [];
-      if (!hasPainIndicator) missingElements.push('pain indicator (e.g., "invisible")');
-      if (!hasGainIndicator) missingElements.push('gain indicator (e.g., "visible", "beacon")');
-      if (!hasJobIndicator) missingElements.push('job indicator (e.g., "keep visible")');
-      
-      feedbackDiv.innerHTML = `Grok needs better input for optimal results (Score: ${score}/600). Add: ${missingElements.join(', ')}`;
-      feedbackDiv.className = 'mt-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm font-medium';
-    }
-  }
-};
+// GROK AUTOFILL FUNCTION REMOVED TO PREVENT INFINITE API LOOPS
 

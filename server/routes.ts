@@ -527,12 +527,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { brandName, productsServices, corePurpose, audience, jobToBeDone, motivations, painPoints } = req.body;
       
+      console.log('Guidance request received for user:', req.session.userId);
+      console.log('Request data:', { brandName, productsServices, corePurpose });
+      
       // Create contextual guidance based on AgencyIQ prompts
       let guidance = "";
       
       if (brandName && productsServices && corePurpose) {
-        // Generate strategic guidance using Grok AI
-        const context = `
+        try {
+          // Generate strategic guidance using Grok AI with timeout
+          const context = `
 Brand: ${brandName}
 Products/Services: ${productsServices}  
 Core Purpose: ${corePurpose}
@@ -541,16 +545,54 @@ Job to be Done: ${jobToBeDone || "Not specified"}
 Motivations: ${motivations || "Not specified"}
 Pain Points: ${painPoints || "Not specified"}`;
 
-        guidance = await getGrokResponse(
-          "Based on this brand information, provide strategic guidance for completing their brand purpose definition. Focus on Strategyzer methodology - help them understand their value proposition, customer segments, and how to improve their remaining answers. Be specific and actionable.",
-          context
-        );
+          console.log('Calling Grok API for guidance generation...');
+          
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Grok API timeout')), 15000)
+          );
+          
+          const grokPromise = getGrokResponse(
+            "Based on this brand information, provide strategic guidance for completing their brand purpose definition. Focus on Strategyzer methodology - help them understand their value proposition, customer segments, and how to improve their remaining answers. Be specific and actionable.",
+            context
+          );
+          
+          guidance = await Promise.race([grokPromise, timeoutPromise]);
+          console.log('Grok guidance generated successfully');
+          
+        } catch (grokError: any) {
+          console.error('Grok API error:', grokError);
+          
+          // Provide fallback guidance instead of failing
+          guidance = `Based on your brand information for ${brandName}, here are some strategic recommendations:
+
+**Value Proposition Focus:**
+- Your core purpose "${corePurpose}" shows promise. Consider how this directly solves customer problems.
+- Ensure your products/services (${productsServices}) clearly deliver on this purpose.
+
+**Customer Understanding:**
+${audience ? `- Your target audience "${audience}" needs deeper analysis. What specific jobs do they hire your business to do?` : '- Define your target audience more specifically. Who exactly benefits from your core purpose?'}
+${jobToBeDone ? `- Job-to-be-done "${jobToBeDone}" is a good start. Expand on the functional, emotional, and social aspects.` : '- Identify the specific job your customers hire you to do - both functional and emotional needs.'}
+
+**Strategic Next Steps:**
+1. Validate your value proposition with real customer feedback
+2. Map customer pain points to your solutions
+3. Test your messaging with your target audience
+4. Measure success through customer outcomes
+
+Continue refining these elements to build a stronger brand foundation.`;
+        }
+      } else {
+        guidance = "Please complete the Brand Name, Products/Services, and Core Purpose fields to receive strategic guidance.";
       }
 
       res.json({ guidance });
     } catch (error: any) {
       console.error('Guidance generation error:', error);
-      res.status(500).json({ message: "Error generating guidance" });
+      // Return a user-friendly message instead of generic error
+      res.json({ 
+        guidance: "Strategic guidance is temporarily unavailable. Please continue completing your brand purpose form and try again later." 
+      });
     }
   });
 
