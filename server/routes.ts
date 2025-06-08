@@ -48,8 +48,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-05-28.basil",
 });
 
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
+// Configure SendGrid
 sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -1432,34 +1434,74 @@ Pain Points: ${painPoints || "Not specified"}`;
         return res.status(400).json({ message: "Email is required" });
       }
 
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
       const user = await storage.getUserByEmail(email);
       if (!user) {
-        // Don't reveal if user exists
+        // Don't reveal if user exists for security
         return res.json({ message: "If an account exists, a reset link has been sent" });
       }
 
-      // Generate reset token (in production, store this in database)
-      const resetToken = Math.random().toString(36).substring(2, 15);
+      // Generate secure reset token
+      const resetToken = require('crypto').randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 3600000); // 1 hour expiry
+      
+      // Store reset token in verification codes table
+      await storage.createVerificationCode({
+        phone: email, // Using phone field for email temporarily
+        code: resetToken,
+        verified: false,
+        expiresAt: expiresAt
+      });
+
       const domains = process.env.REPLIT_DOMAINS?.split(',') || [`localhost:5000`];
       const domain = domains[0];
-      const resetUrl = `https://${domain}/reset-password?token=${resetToken}`;
+      const resetUrl = `https://${domain}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-      // For demo, just log the reset link
       console.log(`Password reset link for ${email}: ${resetUrl}`);
 
-      // In production, send email via SendGrid
+      // Send email via SendGrid
       try {
         const msg = {
           to: email,
-          from: 'noreply@agencyiq.com',
-          subject: 'Reset Your Password - AgencyIQ',
-          html: `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`,
+          from: 'support@theagencyiq.ai',
+          subject: 'Reset Your Password - The AgencyIQ',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #3250fa;">Reset Your Password</h2>
+              <p>Hello,</p>
+              <p>You requested a password reset for your AgencyIQ account. Click the button below to reset your password:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetUrl}" style="background-color: #3250fa; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a>
+              </div>
+              <p>If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="word-break: break-all; color: #666;">${resetUrl}</p>
+              <p style="color: #999; font-size: 14px;">This link will expire in 1 hour. If you didn't request this reset, please ignore this email.</p>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+              <p style="color: #999; font-size: 12px;">The AgencyIQ Team</p>
+            </div>
+          `,
         };
+        
         await sgMail.send(msg);
-      } catch (emailError) {
+        console.log(`Password reset email sent successfully to ${email}`);
+        
+      } catch (emailError: any) {
         console.error('SendGrid email error:', emailError);
-        // Still log to console for development
-        console.log(`Email would have been sent to ${email} with reset link: ${resetUrl}`);
+        
+        // Check if it's an authentication error
+        if (emailError.code === 401) {
+          console.error('SendGrid authentication failed - check API key');
+          return res.status(500).json({ message: "Email service authentication failed" });
+        }
+        
+        // Log detailed error for debugging
+        console.log(`Email sending failed for ${email}. Error: ${emailError.message}`);
+        console.log(`Reset link (for testing): ${resetUrl}`);
       }
 
       res.json({ message: "If an account exists, a reset link has been sent" });
