@@ -369,8 +369,52 @@ export default function Schedule() {
       button.addEventListener('click', handleApproveClick);
     });
 
+    // Edit Post button functionality
+    const editButtons = document.querySelectorAll('button');
+    const editButtonsFiltered = Array.from(editButtons).filter(button => 
+      button.textContent?.includes('edit post')
+    );
+    
+    editButtonsFiltered.forEach(button => {
+      const handleEditClick = (e: Event) => {
+        const target = e.target as HTMLElement;
+        const postCard = target.closest('.p-6') as HTMLElement;
+        const contentElement = postCard?.querySelector('.text-gray-800') as HTMLElement;
+        
+        if (contentElement && !postCard.querySelector('input[type="text"]')) {
+          const originalContent = contentElement.textContent || '';
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = originalContent;
+          input.className = 'w-full p-2 border border-gray-300 rounded text-gray-800';
+          
+          contentElement.style.display = 'none';
+          contentElement.parentNode?.insertBefore(input, contentElement.nextSibling);
+          input.focus();
+          
+          const handleBlur = () => {
+            contentElement.textContent = input.value;
+            contentElement.style.display = 'block';
+            input.remove();
+          };
+          
+          input.addEventListener('blur', handleBlur);
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              input.blur();
+            }
+          });
+        }
+      };
+      
+      button.addEventListener('click', handleEditClick);
+    });
+
     return () => {
       approveButtonsFiltered.forEach(button => {
+        button.removeEventListener('click', () => {});
+      });
+      editButtonsFiltered.forEach(button => {
         button.removeEventListener('click', () => {});
       });
     };
@@ -536,12 +580,6 @@ export default function Schedule() {
                         className="lowercase"
                       >
                         edit post
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="text-red-600 border-red-200 hover:bg-red-50 lowercase"
-                      >
-                        reject
                       </Button>
                     </div>
                   </CardContent>
