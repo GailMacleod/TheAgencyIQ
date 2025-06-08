@@ -1,0 +1,17 @@
+open client/src/pages/payment.tsx, update the mock payment logic to check if the logged-in user’s email is 'testuser@agencyiq.com' and the card number is '4242424242424242'. If true, prevent the real Stripe submission by returning early with a mock success, log 'Mock payment successful for testuser@agencyiq.com with 4242424242424242 using password TestPass123!"', update only this user’s state to include subscriptions { starter: true, growth: true, professional: true } with a 45-post limit, and set a flag 'isTestMode' to true, bypassing Stripe.js entirely for this case. If false, proceed with normal Stripe submission and log 'Live payment attempted with password TestPass123!"'. Ensure the mock overrides Stripe’s client-side validation. Commit with message 'fix-mock-payment-stripe-bypass' without deploying. Ensure no unauthorized changes beyond this update."
+Instructions:
+Open client/src/pages/payment.tsx in Replit (ensure it exists from prior implementation).
+Apply the updated prompt as written.
+Modify the existing mock logic to check if (currentUser.email === 'testuser@agencyiq.com' && cardNumber === '4242424242424242'), where currentUser.email is from your app’s auth state (e.g., Redux, Context).
+If true, return early (e.g., return { success: true }; or equivalent in your Stripe handler), log console.log('Mock payment successful for testuser@agencyiq.com with 4242424242424242 using password TestPass123!"');, set isTestMode: true, and update subscriptions: { starter: true, growth: true, professional: true } with a 45-post limit (e.g., via state or a mock API call to PUT /api/user/subscription for this user only).
+If false, log console.log('Live payment attempted with password TestPass123!"'); and proceed with Stripe’s normal flow.
+Ensure the mock overrides Stripe.js (e.g., wrap the Stripe payment method call in the if condition and return before it executes).
+Save the file.
+Go to the Git tab, commit with "fix-mock-payment-stripe-bypass" (do not deploy).
+Visit https://agency-iq-social-GailMac.replit.app/payment (or navigate via the app), log in as Username: testuser@agencyiq.com and Password: TestPass123!", enter 4242424242424242 with any future date and CVC (e.g., 12/30, 123), submit, check console for the mock log and verify 45-post access at 09:07 AM AEST.
+Report the outcome (e.g., mock log present, no decline error, subscriptions active) and any issues.
+Validation:
+If the decline error persists, ensure the return early logic fully stops Stripe.js (e.g., check for stripe.createPaymentMethod or stripe.confirmCardPayment and return before it).
+If subscriptions don’t update, verify the state update targets testuser@agencyiq.com and integrates with your app’s state management.
+If live users are affected, tighten the email and card check logic.
+Confirm, report Replit overreach.

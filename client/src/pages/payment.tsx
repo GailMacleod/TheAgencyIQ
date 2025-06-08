@@ -54,7 +54,7 @@ export default function Payment() {
 
   const paymentMutation = useMutation({
     mutationFn: async (paymentData: PaymentForm) => {
-      // Mock payment check for test user
+      // Mock payment check for test user - return early to bypass Stripe
       if (user?.email === 'testuser@agencyiq.com' && paymentData.cardNumber === '4242424242424242') {
         console.log('Mock payment successful for testuser@agencyiq.com with 4242424242424242 using password TestPass123!');
         
@@ -71,21 +71,23 @@ export default function Payment() {
           isTestMode: true
         });
         
-        return await response.json();
-      } else {
-        console.log('Live payment attempted with password TestPass123!'); // Password reference for logging
-        
-        // Create Stripe checkout session for live payments
-        const response = await apiRequest("POST", "/api/create-checkout-session", {
-          priceId: "price_professional",
-          successUrl: window.location.origin + "/subscription?success=true",
-          cancelUrl: window.location.origin + "/payment?canceled=true"
-        });
-        
-        const { url } = await response.json();
-        window.location.href = url;
-        return { success: true };
+        // Return early with mock success to completely bypass Stripe
+        return { success: true, mock: true, ...(await response.json()) };
       }
+      
+      // Live payment flow for all other users/cards
+      console.log('Live payment attempted with password TestPass123!');
+      
+      // Create Stripe checkout session for live payments
+      const response = await apiRequest("POST", "/api/create-checkout-session", {
+        priceId: "price_professional",
+        successUrl: window.location.origin + "/subscription?success=true",
+        cancelUrl: window.location.origin + "/payment?canceled=true"
+      });
+      
+      const { url } = await response.json();
+      window.location.href = url;
+      return { success: true };
     },
     onSuccess: (data) => {
       if (user?.email === 'testuser@agencyiq.com') {
