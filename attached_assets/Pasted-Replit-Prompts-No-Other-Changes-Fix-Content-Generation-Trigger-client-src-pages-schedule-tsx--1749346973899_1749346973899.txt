@@ -1,0 +1,59 @@
+Replit Prompts (No Other Changes):
+
+Fix Content Generation Trigger (client/src/pages/schedule.tsx):
+Prompt: "In client/src/pages/schedule.tsx, ensure the 'generate content with grok' button fetch to /schedule includes Authorization: Bearer ${localStorage.getItem('token')} and logs response. If failed, log error details. Do not modify other code."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const generateContent = async () => {
+  const token = localStorage.getItem('token');
+  const response = await fetch('/schedule', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (response.ok) {
+    const data = await response.json();
+    console.log('Generated content:', data);
+  } else {
+    console.error('Content generation failed:', await response.text());
+  }
+};
+// Ensure button exists or add: <button onclick="generateContent()">generate content with grok</button>
+Steps: Open file, apply edit, click button, check console at 11:45 AM AEST.
+Ensure Data in Schedule Generation (server/routes.ts):
+Prompt: "In server/routes.ts, update /schedule GET endpoint to use existing brandData (name, valueProp, corePurpose, audience) for content generation if present, return 200 with schedule, 400 if data missing. Do not modify other code."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+if (url.pathname === '/schedule') {
+  const token = req.headers.get('Authorization')?.split(' ')[1];
+  if (token !== 'valid-token') return new Response('Unauthorized', { status: 401 });
+  if (!brandData.name || !brandData.valueProp || !brandData.corePurpose || !brandData.audience) {
+    return new Response('Missing brand data', { status: 400 });
+  }
+  const schedule = generateKickAssSchedule(brandData);
+  return new Response(JSON.stringify(schedule), { headers: { 'Content-Type': 'application/json' } });
+}
+
+function generateKickAssSchedule(data: any) {
+  const events = ['Queensland SME Expo'];
+  return events.map(event => ({
+    date: new Date().toISOString().split('T')[0],
+    content: `🔥 ${data.valueProp} at ${event}!`,
+    audience: data.audience
+  }));
+}

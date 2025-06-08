@@ -206,49 +206,15 @@ export default function Schedule() {
   ];
 
   const generateContentWithGrokThinking = async () => {
-    setShowGrokThinking(true);
-    setGrokStep(0);
-    
-    try {
-      // Simulate Grok's thinking process
-      for (let i = 0; i < grokThinkingSteps.length; i++) {
-        setGrokStep(i + 1);
-        await new Promise(resolve => setTimeout(resolve, grokThinkingSteps[i].duration));
-      }
-      
-      // Generate real content using Grok API
-      const response = await apiRequest("POST", "/api/grok/generate-content", {});
-      const grokPosts = response.posts.map((post: any, index: number) => ({
-        id: index + 1,
-        platform: post.platform,
-        content: post.content,
-        status: "scheduled",
-        scheduledFor: post.scheduledFor,
-        grokRecommendation: `Grok generated this ${post.platform} post based on your brand purpose analysis`
-      }));
-      
-      setGeneratedPosts(grokPosts);
-    } catch (error: any) {
-      toast({
-        title: "Content Generation Failed",
-        description: error.message || "Unable to generate content with Grok",
-        variant: "destructive",
-      });
-      
-      // Fallback to placeholder posts if API fails
-      const fallbackPosts = [
-        {
-          id: 1,
-          platform: "linkedin",
-          content: "Connect with Grok AI to generate personalized content based on your brand purpose and Queensland market insights.",
-          status: "scheduled",
-          scheduledFor: new Date(Date.now() + 86400000).toISOString(),
-          grokRecommendation: "Complete your brand purpose setup to unlock personalized content generation"
-        }
-      ];
-      setGeneratedPosts(fallbackPosts);
-    } finally {
-      setShowGrokThinking(false);
+    const response = await fetch('/schedule', {
+      method: 'GET',
+      credentials: 'include'
+    });
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Generated content:', data);
+    } else {
+      console.error('Content generation failed:', await response.text());
     }
   };
 
