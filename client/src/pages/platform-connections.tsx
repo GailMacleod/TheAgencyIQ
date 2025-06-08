@@ -22,6 +22,16 @@ export default function PlatformConnections() {
 
   const connectedPlatforms = Array.isArray(connections) ? connections.map((conn: any) => conn.platform) : [];
 
+  // Check localStorage tokens on page load
+  useEffect(() => {
+    console.log('Checking disconnect status');
+    const tokenKeys = Object.keys(localStorage).filter(key => key.startsWith('token_'));
+    console.log('LocalStorage tokens found:', tokenKeys);
+    tokenKeys.forEach(key => {
+      console.log(`${key}: ${localStorage.getItem(key)}`);
+    });
+  }, []);
+
   // Handle OAuth callback messages
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -126,6 +136,7 @@ export default function PlatformConnections() {
   const disconnectPlatform = async (platformId: string) => {
     setLoading(platformId);
     console.log(`Disconnecting platform: ${platformId}`);
+    console.log(`Disconnect API called for ${platformId}`);
     
     try {
       await apiRequest("DELETE", `/api/platform-connections/${platformId}`, {});
