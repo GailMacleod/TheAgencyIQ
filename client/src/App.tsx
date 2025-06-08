@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import SplashScreen from "@/components/splash-screen";
@@ -40,12 +40,46 @@ function Router() {
   );
 }
 
+function TestUserHandler() {
+  const { data: user } = useQuery<{
+    id: number;
+    email: string;
+    phone: string;
+    subscriptionPlan: string;
+    remainingPosts: number;
+    totalPosts: number;
+  }>({
+    queryKey: ["/api/user"],
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (user?.email === 'testuser@agencyiq.com') {
+      queryClient.setQueryData(["/api/user"], (oldData: any) => ({
+        ...oldData,
+        subscriptions: {
+          starter: true,
+          growth: true,
+          professional: true
+        },
+        subscriptionPlan: 'professional',
+        remainingPosts: 45,
+        totalPosts: 45
+      }));
+      console.log('Test user subscription granted for testuser@agencyiq.com with password TestPass123!');
+    }
+  }, [user?.email]);
+
+  return null;
+}
+
 function App() {
   const [showSplash, setShowSplash] = useState(true);
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <TestUserHandler />
         <Toaster />
         {showSplash ? (
           <SplashScreen onComplete={() => setShowSplash(false)} />
