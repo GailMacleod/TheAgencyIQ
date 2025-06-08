@@ -1,0 +1,41 @@
+Prompt: "In client/src/pages/brand-purpose.tsx, add logic to autofill remaining fields (ideal audience, motivation, pain points, goals) after the third field (core purpose) is filled, using The AgencyIQ data as a template. Trigger on input event of core purpose field. Log autofill action. Apply in preview only."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const autofillFields = () => {
+  const corePurpose = document.getElementById('corePurpose')?.value;
+  if (corePurpose && document.getElementById('brandName')?.value && document.getElementById('valueProp')?.value) {
+    const template = {
+      audience: "Queensland small business owners, 30-55, $100K-$2M revenue, solo/lean teams. Time-poor, crave visibility.",
+      motivation: "20% sales growth, 10 hours/week saved, standout digital presence.",
+      painPoints: "Invisible online, time scarcity, skill gaps, low engagement.",
+      goals: "500 visitors/month (https://theagencyiq.ai), 15% engagement increase, 10 leads/week."
+    };
+    document.getElementById('audience')!.value = template.audience;
+    document.getElementById('motivation')!.value = template.motivation;
+    document.getElementById('painPoints')!.value = template.painPoints;
+    document.getElementById('goals')!.value = template.goals;
+    console.log('Fields autofilled with AgencyIQ template');
+  }
+};
+
+document.getElementById('corePurpose')?.addEventListener('input', autofillFields);
+Assumptions: Field IDs match (brandName, valueProp, corePurpose, audience, motivation, painPoints, goals). Adjust IDs if different.
+Steps:
+Open client/src/pages/brand-purpose.tsx in preview.
+Apply the code snippet at the end of the file.
+Fill "What’s your brand name?" (e.g., "The AgencyIQ"), "What products or services does your brand offer?" (e.g., value prop text), and "What’s your brand’s core purpose?" (e.g., AgencyIQ purpose).
+Type in the core purpose field and watch for autofill.
+Check console for "Fields autofilled" log at 11:57 AM AEST.
+Precision Notes:
+
+This targets only the autofill trigger after the third field, using a static AgencyIQ template as a starting point.
+No server changes or deployment, preserving your live setup.
+Confirm autofill works without errors at 11:57 AM AEST.

@@ -1041,3 +1041,49 @@ export default function BrandPurpose() {
     </div>
   );
 }
+
+// Autofill functionality for brand purpose fields
+const autofillFields = () => {
+  const corePurposeElement = document.getElementById('corePurpose') as HTMLTextAreaElement;
+  const brandNameElement = document.getElementById('brandName') as HTMLInputElement;
+  const productsServicesElement = document.getElementById('productsServices') as HTMLTextAreaElement;
+  
+  if (corePurposeElement?.value && brandNameElement?.value && productsServicesElement?.value) {
+    const template = {
+      audience: "Queensland small business owners, 30-55, $100K-$2M revenue, solo/lean teams. Time-poor, crave visibility.",
+      motivations: "20% sales growth, 10 hours/week saved, standout digital presence.",
+      painPoints: "Invisible online, time scarcity, skill gaps, low engagement.",
+      jobToBeDone: "500 visitors/month (https://theagencyiq.ai), 15% engagement increase, 10 leads/week."
+    };
+    
+    const audienceElement = document.getElementById('audience') as HTMLTextAreaElement;
+    const motivationsElement = document.getElementById('motivations') as HTMLTextAreaElement;
+    const painPointsElement = document.getElementById('painPoints') as HTMLTextAreaElement;
+    const jobToBeDoneElement = document.getElementById('jobToBeDone') as HTMLTextAreaElement;
+    
+    if (audienceElement && !audienceElement.value) audienceElement.value = template.audience;
+    if (motivationsElement && !motivationsElement.value) motivationsElement.value = template.motivations;
+    if (painPointsElement && !painPointsElement.value) painPointsElement.value = template.painPoints;
+    if (jobToBeDoneElement && !jobToBeDoneElement.value) jobToBeDoneElement.value = template.jobToBeDone;
+    
+    console.log('Fields autofilled with AgencyIQ template');
+    
+    // Trigger change events to update form state
+    [audienceElement, motivationsElement, painPointsElement, jobToBeDoneElement].forEach(element => {
+      if (element && element.value) {
+        const event = new Event('input', { bubbles: true });
+        element.dispatchEvent(event);
+      }
+    });
+  }
+};
+
+// Attach event listener when DOM is ready
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    const corePurposeElement = document.getElementById('corePurpose');
+    if (corePurposeElement) {
+      corePurposeElement.addEventListener('input', autofillFields);
+    }
+  }, 1000);
+}
