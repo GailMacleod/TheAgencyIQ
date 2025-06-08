@@ -20,7 +20,7 @@ export default function PlatformConnections() {
     queryKey: ["/api/platform-connections"],
   });
 
-  const connectedPlatforms = connections.map((conn: any) => conn.platform);
+  const connectedPlatforms = Array.isArray(connections) ? connections.map((conn: any) => conn.platform) : [];
 
   // Handle OAuth callback messages
   useEffect(() => {
@@ -58,30 +58,57 @@ export default function PlatformConnections() {
   ];
 
   const connectPlatform = async (platformId: string) => {
+    setLoading(platformId);
+    
+    // Get platform-specific credentials from user
+    const platform = platforms.find(p => p.id === platformId);
+    let username = '';
+    let password = '';
+    
+    if (platformId === 'facebook' || platformId === 'instagram') {
+      username = window.prompt(`Enter your ${platform?.name} email or phone:`) || '';
+      password = window.prompt(`Enter your ${platform?.name} password:`) || '';
+    } else if (platformId === 'linkedin') {
+      username = window.prompt(`Enter your LinkedIn email:`) || '';
+      password = window.prompt(`Enter your LinkedIn password:`) || '';
+    } else if (platformId === 'youtube') {
+      username = window.prompt(`Enter your Google email (for YouTube):`) || '';
+      password = window.prompt(`Enter your Google password:`) || '';
+    } else if (platformId === 'tiktok') {
+      username = window.prompt(`Enter your TikTok username or email:`) || '';
+      password = window.prompt(`Enter your TikTok password:`) || '';
+    } else if (platformId === 'x') {
+      username = window.prompt(`Enter your X (Twitter) username or email:`) || '';
+      password = window.prompt(`Enter your X (Twitter) password:`) || '';
+    }
+    
+    if (!username || !password) {
+      setLoading(null);
+      return;
+    }
+    
     try {
-      setLoading(platformId);
+      await apiRequest("POST", "/api/connect-platform", {
+        platform: platformId,
+        username,
+        password
+      });
       
-      // For platforms with configured OAuth credentials, redirect to OAuth endpoint
-      if (['facebook', 'instagram', 'linkedin', 'x'].includes(platformId)) {
-        window.location.href = `/api/auth/${platformId}`;
-      } else {
-        // For demo purposes, simulate connection for other platforms
-        setTimeout(() => {
-          toast({
-            title: "Platform Connected",
-            description: `${platformId} has been connected successfully (demo)`,
-          });
-          setLoading(null);
-        }, 2000);
-      }
+      toast({
+        title: "Platform Connected",
+        description: `${platform?.name} has been connected successfully`,
+      });
+      
+      // Refresh the page to show updated connections
+      window.location.reload();
       
     } catch (error: any) {
-      console.error("Platform connection error:", error);
       toast({
         title: "Connection Failed",
-        description: `Failed to connect ${platformId}`,
+        description: error.message || `Failed to connect ${platform?.name}`,
         variant: "destructive",
       });
+    } finally {
       setLoading(null);
     }
   };
@@ -109,7 +136,7 @@ export default function PlatformConnections() {
 
   return (
     <div className="min-h-screen bg-background">
-      <MasterHeader showBack="/brand-purpose" />
+      <MasterHeader />
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-8">

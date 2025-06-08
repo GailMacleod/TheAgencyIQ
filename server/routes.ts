@@ -1790,6 +1790,56 @@ Pain Points: ${painPoints || "Not specified"}`;
     }
   });
 
+  // Simple platform connection with username/password
+  app.post("/api/connect-platform", requireAuth, async (req: any, res) => {
+    try {
+      const { platform, username, password } = req.body;
+      
+      if (!platform || !username || !password) {
+        return res.status(400).json({ message: "Platform, username, and password are required" });
+      }
+
+      // Validate platform is supported
+      const supportedPlatforms = ['facebook', 'instagram', 'linkedin', 'youtube', 'tiktok', 'x'];
+      if (!supportedPlatforms.includes(platform)) {
+        return res.status(400).json({ message: "Unsupported platform" });
+      }
+
+      // Check if platform already connected
+      const existingConnections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      const existingConnection = existingConnections.find(conn => conn.platform === platform);
+      
+      if (existingConnection) {
+        return res.status(400).json({ message: `${platform} is already connected` });
+      }
+
+      // Store connection with encrypted credentials
+      const bcrypt = require('bcrypt');
+      const encryptedPassword = await bcrypt.hash(password, 10);
+      
+      await storage.createPlatformConnection({
+        userId: req.session.userId,
+        platform: platform,
+        platformUserId: username, // Using username as platform user ID for simplicity
+        platformUsername: username,
+        accessToken: encryptedPassword, // Store encrypted password as access token
+        refreshToken: null,
+        expiresAt: null,
+        isActive: true
+      });
+
+      res.json({ 
+        message: `${platform} connected successfully`,
+        platform: platform,
+        username: username
+      });
+
+    } catch (error: any) {
+      console.error('Platform connection error:', error);
+      res.status(500).json({ message: "Error connecting platform: " + error.message });
+    }
+  });
+
   // Get connected platforms for current user
   app.get("/api/platform-connections", async (req: any, res) => {
     try {
