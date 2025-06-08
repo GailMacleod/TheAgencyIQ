@@ -285,6 +285,9 @@ export default function Schedule() {
               const existingContent = firstDayCell.innerHTML;
               firstDayCell.innerHTML = existingContent + eventCards;
             }
+            
+            // Count and log rendered posts against subscription limit
+            console.log(`Rendered posts: ${newPosts.length} (Subscription: ${productsServices || 'Unknown'}, Limit: ${postCount})`);
           }
           
           // Show success message
