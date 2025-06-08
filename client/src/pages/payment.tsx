@@ -55,8 +55,8 @@ export default function Payment() {
   const paymentMutation = useMutation({
     mutationFn: async (paymentData: PaymentForm) => {
       // Mock payment check for test user
-      if (user?.email === 'testuser@agencyiq.com' && paymentData.cardNumber === '4545454545454545') {
-        console.log('Mock payment successful for testuser@agencyiq.com with 4545454545454545, 45 posts granted');
+      if (user?.email === 'testuser@agencyiq.com' && paymentData.cardNumber === '4242424242424242') {
+        console.log('Mock payment successful for testuser@agencyiq.com with 4242424242424242 using password TestPass123!');
         
         // Update test user subscription state with 45 posts limit
         const response = await apiRequest("PUT", "/api/user/subscription", {
@@ -73,7 +73,7 @@ export default function Payment() {
         
         return await response.json();
       } else {
-        console.log('Live payment attempted');
+        console.log('Live payment attempted with password TestPass123!'); // Password reference for logging
         
         // Create Stripe checkout session for live payments
         const response = await apiRequest("POST", "/api/create-checkout-session", {
@@ -252,7 +252,7 @@ export default function Payment() {
             {user?.email === 'testuser@agencyiq.com' && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-xs text-blue-800">
-                  Test Mode: Use card number 4545454545454545 for mock payment
+                  Test Mode: Use card number 4242424242424242 for mock payment
                 </p>
               </div>
             )}
