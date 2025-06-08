@@ -1,0 +1,14 @@
+Open client/src/pages/payment.tsx in Replit (ensure it exists or create it with your payment form).
+Apply the prompt as written.
+Add const [isTestSubscription, setIsTestSubscription] = useState(false); at the component top.
+Add an onChange event to the card input (e.g., <input type="text" onChange={(e) => { const cardNumber = e.target.value.replace(/\D/g, ''); if (currentUser.email === 'testuser@agencyiq.com' && cardNumber === '4242424242424242') { setIsTestSubscription(true); console.log('Test subscription triggered for testuser@agencyiq.com with 4242424242424242 using password TestPass123!"'); } }} />), where currentUser.email is from your auth state.
+On form submission (e.g., <form onSubmit={(e) => { e.preventDefault(); if (isTestSubscription) { console.log('Test subscription successful for testuser@agencyiq.com'); setUserState({ subscriptions: { starter: true, growth: true, professional: true }, postLimit: 45 }); e.target.reset(); return false; } console.log('Live payment attempted with password TestPass123!"'); // Stripe logic }}>), use setUserState (adjust to your state management, e.g., setState or context dispatch) to update the user state.
+Save the file.
+Go to the Git tab, commit with "minimal-mock-payment-fix" (do not deploy).
+Visit https://agency-iq-social-GailMac.replit.app/payment (or navigate via the app), log in as Username: testuser@agencyiq.com and Password: TestPass123!", enter 4242424242424242 with any future date and CVC (e.g., 12/30, 123), submit, check console for the logs and verify 45-post access at 09:27 AM AEST.
+Report the outcome (e.g., mock logs present, no 404/decline error, subscriptions active) and any issues.
+Validation:
+If the decline/404 persists, ensure the onSubmit return false is before any Stripe code and the state update is correct (e.g., use your app’s setUser function).
+If subscriptions don’t update, verify setUserState matches your state management (e.g., Redux dispatch, Context setValue).
+If live users are affected, confirm the email check is strict in onChange.
+Confirm, report Replit overreach.

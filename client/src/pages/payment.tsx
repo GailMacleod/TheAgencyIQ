@@ -136,36 +136,25 @@ export default function Payment() {
     if (isTestSubscription) {
       console.log('Test subscription successful for testuser@agencyiq.com');
       
-      // Make direct API call for test subscription
-      fetch('/api/user/subscription', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
+      // Update user state directly via query invalidation
+      queryClient.setQueryData(["/api/user"], (oldData: any) => ({
+        ...oldData,
+        subscriptions: {
+          starter: true,
+          growth: true,
+          professional: true
         },
-        body: JSON.stringify({
-          subscriptions: {
-            starter: true,
-            growth: true,
-            professional: true
-          },
-          postLimit: 45,
-          isTest: true
-        })
-      }).then(response => {
-        if (response.ok) {
-          toast({
-            title: "Test Subscription Successful",
-            description: "Your test subscription has been activated with 45 posts.",
-          });
-          form.reset();
-          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-          setTimeout(() => setLocation("/brand-purpose"), 1500);
-        }
-      }).catch(error => {
-        console.error('Test subscription failed:', error);
+        subscriptionPlan: 'professional',
+        remainingPosts: 45,
+        totalPosts: 45
+      }));
+      
+      toast({
+        title: "Test Subscription Successful",
+        description: "Your test subscription has been activated with 45 posts.",
       });
       
+      form.reset();
       return false;
     }
     
@@ -227,36 +216,10 @@ export default function Payment() {
                     const cleanCardNumber = value.replace(/\s/g, '');
                     form.setValue('cardNumber', cleanCardNumber);
                     
-                    // Check for test subscription conditions
+                    // Simple test subscription trigger
                     if (user?.email === 'testuser@agencyiq.com' && cleanCardNumber === '4242424242424242') {
                       setIsTestSubscription(true);
-                      console.log('Test subscription initiated for testuser@agencyiq.com with 4242424242424242 using password TestPass123!');
-                      
-                      // Make mock PUT request to update subscription
-                      fetch('/api/user/subscription', {
-                        method: 'PUT',
-                        credentials: 'include',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          subscriptions: {
-                            starter: true,
-                            growth: true,
-                            professional: true
-                          },
-                          subscriptionPlan: 'professional',
-                          remainingPosts: 45,
-                          totalPosts: 45,
-                          isTest: true
-                        })
-                      }).then(response => {
-                        if (response.ok) {
-                          console.log('Test subscription updated successfully');
-                        }
-                      }).catch(error => {
-                        console.error('Test subscription update failed:', error);
-                      });
+                      console.log('Test subscription triggered for testuser@agencyiq.com with 4242424242424242 using password TestPass123!');
                     } else {
                       setIsTestSubscription(false);
                     }
