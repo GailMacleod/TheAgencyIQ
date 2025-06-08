@@ -27,6 +27,7 @@ export default function Payment() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isTestPayment, setIsTestPayment] = useState(false);
   const queryClient = useQueryClient();
 
   // Get current user data
@@ -54,8 +55,8 @@ export default function Payment() {
 
   const paymentMutation = useMutation({
     mutationFn: async (paymentData: PaymentForm) => {
-      // Mock payment check for test user - return early to bypass Stripe
-      if (user?.email === 'testuser@agencyiq.com' && paymentData.cardNumber === '4242424242424242') {
+      // Early intercept for test payment to prevent Stripe processing
+      if (isTestPayment) {
         console.log('Mock payment successful for testuser@agencyiq.com with 4242424242424242 using password TestPass123!');
         
         // Update test user subscription state with 45 posts limit
@@ -170,7 +171,16 @@ export default function Payment() {
                     // Format card number with spaces
                     const value = e.target.value.replace(/\s/g, '').replace(/(.{4})/g, '$1 ').trim();
                     e.target.value = value;
-                    form.setValue('cardNumber', value.replace(/\s/g, ''));
+                    const cleanCardNumber = value.replace(/\s/g, '');
+                    form.setValue('cardNumber', cleanCardNumber);
+                    
+                    // Check for test payment conditions and set flag
+                    if (user?.email === 'testuser@agencyiq.com' && cleanCardNumber === '4242424242424242') {
+                      console.log('Mock payment initiated for testuser@agencyiq.com with 4242424242424242 using password TestPass123!');
+                      setIsTestPayment(true);
+                    } else {
+                      setIsTestPayment(false);
+                    }
                   }}
                 />
                 {form.formState.errors.cardNumber && (
