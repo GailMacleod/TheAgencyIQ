@@ -1511,6 +1511,80 @@ Pain Points: ${painPoints || "Not specified"}`;
     }
   });
 
+  // Validate reset token
+  app.post("/api/validate-reset-token", async (req, res) => {
+    try {
+      const { token, email } = req.body;
+      
+      if (!token || !email) {
+        return res.status(400).json({ message: "Token and email are required" });
+      }
+
+      const resetCode = await storage.getVerificationCode(email, token);
+      if (!resetCode || resetCode.verified) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      // Check if token is expired
+      if (resetCode.expiresAt && new Date() > resetCode.expiresAt) {
+        return res.status(400).json({ message: "Reset token has expired" });
+      }
+
+      res.json({ message: "Token is valid" });
+    } catch (error: any) {
+      console.error('Token validation error:', error);
+      res.status(500).json({ message: "Error validating token" });
+    }
+  });
+
+  // Reset password
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { token, email, password } = req.body;
+      
+      if (!token || !email || !password) {
+        return res.status(400).json({ message: "Token, email, and password are required" });
+      }
+
+      // Validate password length
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+
+      // Find and validate reset token
+      const resetCode = await storage.getVerificationCode(email, token);
+      if (!resetCode || resetCode.verified) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      // Check if token is expired
+      if (resetCode.expiresAt && new Date() > resetCode.expiresAt) {
+        return res.status(400).json({ message: "Reset token has expired" });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Update user password
+      await storage.updateUser(user.id, { password: hashedPassword });
+
+      // Mark reset token as used
+      await storage.markVerificationCodeUsed(resetCode.id);
+
+      console.log(`Password reset successful for user: ${email}`);
+      res.json({ message: "Password reset successful" });
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      res.status(500).json({ message: "Error resetting password" });
+    }
+  });
+
   // Update profile
   app.put("/api/profile", requireAuth, async (req: any, res) => {
     try {
