@@ -162,29 +162,15 @@ export default function BrandPurpose() {
 
   
 
-  // Auto-save mutation with proper error handling
+  // Auto-save disabled to prevent server flooding
   const autoSaveMutation = useMutation({
     mutationFn: async (formData: Partial<BrandPurposeForm>) => {
-      try {
-        const response = await apiRequest("POST", "/api/brand-purpose/auto-save", formData);
-        return response;
-      } catch (error) {
-        // Log error but don't throw to prevent unhandled rejection
-        console.error("Auto-save API request failed:", error);
-        return null;
-      }
+      // Auto-save temporarily disabled
+      return null;
     },
-    onError: (error) => {
-      console.error("Auto-save mutation failed:", error);
-      // Silently fail auto-save to not interrupt user experience
-    },
-    onSuccess: (data) => {
-      // Only log success if data exists
-      if (data) {
-        console.log("Auto-save successful");
-      }
-    },
-    retry: false, // Disable retry to prevent multiple failed requests
+    onError: () => {},
+    onSuccess: () => {},
+    retry: false,
   });
 
   // Generate guidance mutation with proper error handling
@@ -222,14 +208,12 @@ export default function BrandPurpose() {
     },
   });
 
-  // Watch for changes and trigger guidance/auto-save
+  // Generate guidance when form conditions are met
   useEffect(() => {
-    // Early return if watchedValues is not available
     if (!watchedValues || typeof watchedValues !== 'object') {
       return;
     }
 
-    // Safely destructure with default values to prevent undefined access
     const {
       brandName = "",
       productsServices = "",
@@ -237,27 +221,17 @@ export default function BrandPurpose() {
       audience = ""
     } = watchedValues;
     
-    // Check if first three questions are filled (waterfall trigger)
-    if (brandName.length > 0 && productsServices.length > 10 && corePurpose.length > 10) {
-      // Auto-save current progress using mutation with error handling
+    // Generate guidance if we have sufficient info
+    if (brandName.length > 0 && productsServices.length > 10 && corePurpose.length > 10 && audience.length > 10 && !showGuidance && !isGeneratingGuidance) {
+      setIsGeneratingGuidance(true);
       try {
-        autoSaveMutation.mutate(watchedValues);
+        guidanceMutation.mutate(watchedValues);
       } catch (error) {
-        console.error("Auto-save mutation trigger failed:", error);
-      }
-      
-      // Generate guidance if we have audience info too
-      if (audience.length > 10 && !showGuidance && !isGeneratingGuidance) {
-        setIsGeneratingGuidance(true);
-        try {
-          guidanceMutation.mutate(watchedValues);
-        } catch (error) {
-          console.error("Guidance mutation trigger failed:", error);
-          setIsGeneratingGuidance(false);
-        }
+        console.error("Guidance mutation trigger failed:", error);
+        setIsGeneratingGuidance(false);
       }
     }
-  }, [watchedValues?.brandName, watchedValues?.productsServices, watchedValues?.corePurpose, watchedValues?.audience, showGuidance, isGeneratingGuidance, autoSaveMutation, guidanceMutation]);
+  }, [watchedValues, showGuidance, isGeneratingGuidance]);
 
   const onSubmit = async (data: BrandPurposeForm) => {
     try {

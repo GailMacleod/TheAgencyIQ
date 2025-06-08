@@ -1,0 +1,82 @@
+The "brand purpose failed to fetch" error indicates a backend issue preventing data retrieval. Likely cause: Replit server not handling the save request or endpoint mismatch.
+
+Solution:
+
+Update Backend (server/index.ts):
+
+Add a /save-brand endpoint to handle brand purpose data.
+Ensure fetch compatibility.
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
+
+let brandData = {
+  name: 'The AgencyIQ',
+  valueProp: "You're invisible, that’s not cool. AgencyIQ gives you a beacon that’s always on.",
+  corePurpose: "To stop good local businesses from dying quietly, to 'keep me visible even when I am too busy to show up, not just visibility, but validation.'",
+  audience: 'Queensland small business owners, 30-55, $100K-$2M revenue, solo/lean teams. Time-poor, crave visibility/validation.',
+  motivation: 'Growth and Sales: pack shops, boost revenue; Time Freedom: tools save time.',
+  jobs: 'Gain visibility, save time, compete digitally.',
+  pains: 'Invisible online, time scarcity, skill gaps.',
+  gains: '20% sales growth, 10 hours/week saved, standout presence.'
+};
+
+serve(async (req) => {
+  const url = new URL(req.url);
+  if (url.pathname === '/save-brand' && req.method === 'POST') {
+    const data = await req.json();
+    brandData = { ...brandData, ...data };
+    return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+  }
+  if (url.pathname === '/schedule') {
+    return new Response(JSON.stringify(generateKickAssSchedule(brandData)), { headers: { 'Content-Type': 'application/json' } });
+  }
+  return new Response('Backend active', { status: 200 });
+});
+
+function generateKickAssSchedule(data: any) {
+  const events = ['Queensland SME Expo'];
+  return events.map(event => ({
+    date: new Date().toISOString().split('T')[0],
+    content: `🔥 ${data.valueProp} Crush ${data.pains[0]} at ${event}! Boost ${data.gains[0]}.`,
+    audience: data.audience
+  }));
+}
+Update Client (client/index.html):
+
+Modify save action to POST to /save-brand.
+html
+
+Collapse
+
+Wrap
+
+Copy
+<script>
+  document.getElementById('saveButton').addEventListener('click', () => {
+    fetch('/save-brand', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        audience: document.getElementById('audience').value,
+        motivation: document.getElementById('motivation').value
+      })
+    })
+    .then(res => res.json())
+    .then(data => console.log(data.success ? 'Saved' : 'Failed'))
+    .catch(err => console.error('Fetch failed:', err));
+  });
+</script>
+Steps:
+
+Deploy updated server/index.ts in Replit.
+Update client/index.html with save logic.
+Test save action, check console for "Saved" or errors.
+This fixes the fetch failure, aligning with your brand purpose data. Confirm success.

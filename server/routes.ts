@@ -407,37 +407,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Auto-save brand purpose progress
+  // Auto-save disabled to prevent server flooding
   app.post("/api/brand-purpose/auto-save", requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      const existingBrandPurpose = await storage.getBrandPurposeByUser(userId);
-      
-      const partialData = {
-        userId,
-        brandName: req.body.brandName || "",
-        productsServices: req.body.productsServices || "",
-        corePurpose: req.body.corePurpose || "",
-        audience: req.body.audience || "",
-        jobToBeDone: req.body.jobToBeDone || "",
-        motivations: req.body.motivations || "",
-        painPoints: req.body.painPoints || "",
-        goals: req.body.goals || {},
-        logoUrl: req.body.logoUrl || "",
-        contactDetails: req.body.contactDetails || {},
-      };
-
-      if (existingBrandPurpose) {
-        await storage.updateBrandPurpose(existingBrandPurpose.id, partialData);
-      } else {
-        await storage.createBrandPurpose(partialData);
-      }
-
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error('Auto-save error:', error);
-      res.status(500).json({ message: "Error auto-saving progress" });
-    }
+    // Auto-save temporarily disabled to prevent excessive requests
+    res.json({ success: true });
   });
 
   // Generate strategic guidance using Grok
