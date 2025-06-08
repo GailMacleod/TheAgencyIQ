@@ -403,9 +403,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Save file as logo.png
-        const fs = require('fs');
-        const path = require('path');
-        
         const uploadsDir = './uploads';
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });

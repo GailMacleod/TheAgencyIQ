@@ -1,0 +1,87 @@
+Fix Form Save (client/src/pages/brand-purpose.tsx):
+Prompt: "In client/src/pages/brand-purpose.tsx, add a fetch to POST form data to /api/brand-purpose with Authorization: Bearer ${localStorage.getItem('token')} header when the save button is clicked. Return success/error to console. Do not modify any other code."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const handleSave = async () => {
+  const formData = { name: document.getElementById('brandName').value, valueProp: document.getElementById('valueProp').value, corePurpose: document.getElementById('corePurpose').value };
+  const token = localStorage.getItem('token');
+  const response = await fetch('/api/brand-purpose', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(formData)
+  });
+  if (response.ok) console.log('Form saved');
+  else console.error('Save failed:', await response.text());
+};
+// Ensure save button exists or add: <button onclick="handleSave()">Save</button>
+Steps: Open file, apply edit, test save at 11:40 AM AEST.
+Fix Logo Upload (client/src/pages/brand-purpose.tsx):
+Prompt: "In client/src/pages/brand-purpose.tsx, add a logo upload handler to POST file to /api/upload-logo with Authorization: Bearer ${localStorage.getItem('token')} header, rejecting >5MB or non-PNG/JPG/WEBP, log rejection. Do not modify other code."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const handleLogoUpload = async (event: any) => {
+  const file = event.target.files[0];
+  if (file.size > 5 * 1024 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+    console.error('Invalid logo: Max 5MB, PNG/JPG/WEBP only');
+    return;
+  }
+  const formData = new FormData();
+  formData.append('logo', file);
+  const token = localStorage.getItem('token');
+  const response = await fetch('/api/upload-logo', {
+    method: 'POST',
+    body: formData,
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (response.ok) console.log('Logo uploaded');
+  else console.error('Upload failed:', await response.text());
+};
+// Ensure input exists or add: <input type="file" onchange="handleLogoUpload(event)">
+Steps: Open file, apply edit, test upload at 11:40 AM AEST.
+Backend Support (server/routes.ts):
+Prompt: "In server/routes.ts, add /api/brand-purpose POST to save form data (name, valueProp, corePurpose) if Authorization token is 'valid-token', return 200, 401 otherwise. Add /api/upload-logo POST to save file to ./uploads/logo.png if token is 'valid-token' and <=5MB, return 200, 401/400 otherwise. No other changes."
+Code:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+if (url.pathname === '/api/brand-purpose' && req.method === 'POST') {
+  const token = req.headers.get('Authorization')?.split(' ')[1];
+  if (token === 'valid-token') {
+    const data = await req.json();
+    // Save data (e.g., to memory or DB)
+    return new Response(JSON.stringify({ success: true }), { status: 200 });
+  }
+  return new Response('Unauthorized', { status: 401 });
+}
+if (url.pathname === '/api/upload-logo' && req.method === 'POST') {
+  const token = req.headers.get('Authorization')?.split(' ')[1];
+  const buffer = new Uint8Array(await req.arrayBuffer());
+  if (token === 'valid-token' && buffer.byteLength <= 5 * 1024 * 1024) {
+    await Deno.writeFile('./uploads/logo.png', buffer);
+    return new Response('Logo uploaded', { status: 200 });
+  }
+  return new Response('Invalid token or size', { status: token ? 400 : 401 });
+}
+Steps: Open file, apply edit, deploy at 11:40 AM AEST.
