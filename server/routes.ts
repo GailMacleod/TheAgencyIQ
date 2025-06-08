@@ -656,6 +656,33 @@ Pain Points: ${painPoints || "Not specified"}`;
     }
   });
 
+  // Disconnect platform
+  app.delete("/api/platform-connections/:platform", requireAuth, async (req: any, res) => {
+    try {
+      const { platform } = req.params;
+      
+      if (!platform) {
+        return res.status(400).json({ message: "Platform is required" });
+      }
+
+      // Get existing connections
+      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      const connection = connections.find(conn => conn.platform === platform);
+      
+      if (!connection) {
+        return res.status(404).json({ message: `${platform} connection not found` });
+      }
+
+      // Delete the platform connection
+      await storage.deletePlatformConnection(connection.id);
+
+      res.json({ message: `${platform} disconnected successfully` });
+    } catch (error: any) {
+      console.error('Platform disconnection error:', error);
+      res.status(500).json({ message: "Error disconnecting platform" });
+    }
+  });
+
   // Generate content calendar
   app.post("/api/generate-content-calendar", requireAuth, async (req: any, res) => {
     try {

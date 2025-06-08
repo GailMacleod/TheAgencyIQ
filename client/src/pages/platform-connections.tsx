@@ -123,6 +123,37 @@ export default function PlatformConnections() {
     }
   };
 
+  const disconnectPlatform = async (platformId: string) => {
+    setLoading(platformId);
+    console.log(`Disconnecting platform: ${platformId}`);
+    
+    try {
+      await apiRequest("DELETE", `/api/platform-connections/${platformId}`, {});
+      
+      // Remove token from localStorage
+      localStorage.removeItem(`token_${platformId}`);
+      console.log(`token_${platformId}: removed from localStorage`);
+      
+      toast({
+        title: "Platform Disconnected",
+        description: `${platformId} has been disconnected successfully`,
+      });
+      
+      // Refresh the page to show updated connections
+      window.location.reload();
+      
+    } catch (error: any) {
+      console.log(`disconnect_${platformId}: error - ${error.message || 'disconnection failed'}`);
+      toast({
+        title: "Disconnection Failed",
+        description: error.message || `Failed to disconnect ${platformId}`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const handleNext = async () => {
     try {
       // Generate content calendar
@@ -190,13 +221,23 @@ export default function PlatformConnections() {
                     <h3 className="font-medium text-foreground mb-3 text-sm lowercase">{platform.name}</h3>
                     
                     {isConnected ? (
-                      <Button
-                        disabled
-                        className="w-full bg-green-100 text-green-700 cursor-not-allowed text-xs py-2 h-8 border border-green-200"
-                        variant="outline"
-                      >
-                        connected
-                      </Button>
+                      <div className="space-y-2">
+                        <Button
+                          disabled
+                          className="w-full bg-green-100 text-green-700 cursor-not-allowed text-xs py-2 h-8 border border-green-200"
+                          variant="outline"
+                        >
+                          connected
+                        </Button>
+                        <Button
+                          onClick={() => disconnectPlatform(platform.id)}
+                          className="w-full text-xs py-2 h-8 text-red-600 border-red-200 hover:bg-red-50"
+                          variant="outline"
+                          disabled={isLoading}
+                        >
+                          {isLoading ? 'disconnecting...' : 'disconnect'}
+                        </Button>
+                      </div>
                     ) : (
                       <Button
                         onClick={() => connectPlatform(platform.id)}

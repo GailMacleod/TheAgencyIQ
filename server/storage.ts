@@ -36,6 +36,7 @@ export interface IStorage {
   getPlatformConnectionsByUser(userId: number): Promise<PlatformConnection[]>;
   createPlatformConnection(connection: InsertPlatformConnection): Promise<PlatformConnection>;
   updatePlatformConnection(id: number, updates: Partial<InsertPlatformConnection>): Promise<PlatformConnection>;
+  deletePlatformConnection(id: number): Promise<void>;
 
   // Brand purpose operations
   getBrandPurposeByUser(userId: number): Promise<BrandPurpose | undefined>;
@@ -143,6 +144,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(platformConnections.id, id))
       .returning();
     return platformConnection;
+  }
+
+  async deletePlatformConnection(id: number): Promise<void> {
+    await db.delete(platformConnections).where(eq(platformConnections.id, id));
   }
 
   // Brand purpose operations
