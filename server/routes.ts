@@ -405,6 +405,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user subscription for test user mock payments
+  app.put("/api/user/subscription", requireAuth, async (req: any, res) => {
+    try {
+      const { subscriptionPlan, subscriptions, isTestMode } = req.body;
+      
+      // Only allow test user mock subscription updates
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (user.email !== 'testuser@agencyiq.com') {
+        return res.status(403).json({ message: "Not authorized for subscription updates" });
+      }
+
+      console.log(`Mock subscription update for test user: ${user.email}`);
+      
+      // Update test user subscription
+      const updatedUser = await storage.updateUser(req.session.userId, {
+        subscriptionPlan,
+        remainingPosts: 999,
+        totalPosts: 999
+      });
+
+      res.json({ 
+        success: true, 
+        subscriptionPlan: updatedUser.subscriptionPlan,
+        subscriptions,
+        isTestMode
+      });
+    } catch (error: any) {
+      console.error('Subscription update error:', error);
+      res.status(500).json({ message: "Error updating subscription" });
+    }
+  });
+
   // Get brand purpose data for a user
   app.get("/api/brand-purpose", requireAuth, async (req: any, res) => {
     try {
