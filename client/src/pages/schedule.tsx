@@ -80,9 +80,12 @@ export default function Schedule() {
     const startDate = new Date();
     const days: CalendarDay[] = [];
     
+    // Combine both fetched posts and generated posts
+    const allPosts = [...posts, ...generatedPosts];
+    
     for (let i = 0; i < 30; i++) {
       const date = addDays(startDate, i);
-      const dayPosts = posts.filter(post => 
+      const dayPosts = allPosts.filter(post => 
         isSameDay(new Date(post.scheduledFor), date)
       );
       
@@ -247,6 +250,7 @@ export default function Schedule() {
           }));
           
           setGeneratedPosts(newPosts);
+          console.log('Generated posts set to state:', newPosts);
           
           // Show success message
           toast({
@@ -296,6 +300,11 @@ export default function Schedule() {
   });
 
   const calendarDays = generateCalendarDays();
+  
+  // Debug calendar generation
+  console.log('Calendar days generated:', calendarDays.length);
+  console.log('Generated posts in state:', generatedPosts.length);
+  console.log('Posts with scheduled dates:', calendarDays.filter(day => day.posts.length > 0));
 
   const getPlatformIcon = (platform: string) => {
     const iconClass = "w-4 h-4";
