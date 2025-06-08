@@ -77,6 +77,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   }));
 
+  // Test mode detection middleware for payment processing
+  app.use(async (req: any, res, next) => {
+    if (req.session?.userId) {
+      try {
+        const user = await storage.getUser(req.session.userId);
+        if (user && user.email === 'testuser@agencyiq.com') {
+          // Set test mode for Stripe
+          process.env.STRIPE_SECRET_KEY = 'sk_test_51QdLF2P6M8xOPm7PZy6KGV6bB8xPmClDpYfLrVBYtGKh8jVvzc8EqRYJXYVGpQKhCkVqHKJZYXOZ6KJVqQ6KJ';
+          console.log('Test mode enabled for testuser@agencyiq.com with 4242424242424242');
+          req.isTestMode = true;
+        } else {
+          console.log('Live mode for ' + (user ? user.email : 'anonymous'));
+          req.isTestMode = false;
+        }
+      } catch (error) {
+        console.log('Live mode for anonymous (user fetch failed)');
+        req.isTestMode = false;
+      }
+    } else {
+      console.log('Live mode for anonymous');
+      req.isTestMode = false;
+    }
+    next();
+  });
+
   // Configure multer for file uploads
   const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
   if (!fs.existsSync(uploadsDir)) {
