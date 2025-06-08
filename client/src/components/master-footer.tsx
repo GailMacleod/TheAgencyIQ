@@ -6,9 +6,6 @@ export default function MasterFooter() {
           {/* Company Info */}
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">A</span>
-              </div>
               <div>
                 <h3 className="font-semibold text-gray-900 lowercase">the agencyiq</h3>
                 <p className="text-xs text-gray-500 lowercase">queensland social media automation</p>

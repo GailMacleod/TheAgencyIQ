@@ -151,56 +151,113 @@ export default function BrandPurpose() {
   }, [existingBrandPurpose, form]);
 
   // Watch form values to trigger guidance after first three questions
-  const watchedValues = form.watch();
-
-  // Generate real-time guidance based on AgencyIQ prompts
-  const generateGuidance = async (formData: Partial<BrandPurposeForm>) => {
-    setIsGeneratingGuidance(true);
+  const watchedValues = (() => {
     try {
-      const response = await apiRequest("POST", "/api/generate-guidance", {
-        brandName: formData.brandName,
-        productsServices: formData.productsServices,
-        corePurpose: formData.corePurpose,
-        audience: formData.audience,
-        jobToBeDone: formData.jobToBeDone,
-        motivations: formData.motivations,
-        painPoints: formData.painPoints
-      });
-      
-      const result = await response.json();
-      setGuidance(result.guidance);
-      setShowGuidance(true);
+      return form.watch();
     } catch (error) {
+      console.error("Form watch failed:", error);
+      return {};
+    }
+  })();
+
+  
+
+  // Auto-save mutation with proper error handling
+  const autoSaveMutation = useMutation({
+    mutationFn: async (formData: Partial<BrandPurposeForm>) => {
+      try {
+        const response = await apiRequest("POST", "/api/brand-purpose/auto-save", formData);
+        return response;
+      } catch (error) {
+        // Log error but don't throw to prevent unhandled rejection
+        console.error("Auto-save API request failed:", error);
+        return null;
+      }
+    },
+    onError: (error) => {
+      console.error("Auto-save mutation failed:", error);
+      // Silently fail auto-save to not interrupt user experience
+    },
+    onSuccess: (data) => {
+      // Only log success if data exists
+      if (data) {
+        console.log("Auto-save successful");
+      }
+    },
+    retry: false, // Disable retry to prevent multiple failed requests
+  });
+
+  // Generate guidance mutation with proper error handling
+  const guidanceMutation = useMutation({
+    mutationFn: async (formData: Partial<BrandPurposeForm>) => {
+      try {
+        const response = await apiRequest("POST", "/api/generate-guidance", {
+          brandName: formData.brandName,
+          productsServices: formData.productsServices,
+          corePurpose: formData.corePurpose,
+          audience: formData.audience,
+          jobToBeDone: formData.jobToBeDone,
+          motivations: formData.motivations,
+          painPoints: formData.painPoints
+        });
+        const result = await response.json();
+        return result.guidance;
+      } catch (error) {
+        console.error("Guidance API request failed:", error);
+        return null;
+      }
+    },
+    onSuccess: (guidance) => {
+      if (guidance) {
+        setGuidance(guidance);
+        setShowGuidance(true);
+      }
+    },
+    onError: (error) => {
       console.error("Failed to generate guidance:", error);
-    } finally {
+      // Silently fail guidance generation
+    },
+    onSettled: () => {
       setIsGeneratingGuidance(false);
-    }
-  };
-
-  // Auto-save progress when first three fields are filled
-  const autoSaveProgress = async (formData: Partial<BrandPurposeForm>) => {
-    try {
-      await apiRequest("POST", "/api/brand-purpose/auto-save", formData);
-    } catch (error) {
-      console.error("Auto-save failed:", error);
-    }
-  };
+    },
+  });
 
   // Watch for changes and trigger guidance/auto-save
   useEffect(() => {
-    const { brandName, productsServices, corePurpose, audience } = watchedValues;
+    // Early return if watchedValues is not available
+    if (!watchedValues || typeof watchedValues !== 'object') {
+      return;
+    }
+
+    // Safely destructure with default values to prevent undefined access
+    const {
+      brandName = "",
+      productsServices = "",
+      corePurpose = "",
+      audience = ""
+    } = watchedValues;
     
     // Check if first three questions are filled (waterfall trigger)
-    if (brandName?.length > 0 && productsServices?.length > 10 && corePurpose?.length > 10) {
-      // Auto-save current progress
-      autoSaveProgress(watchedValues);
+    if (brandName.length > 0 && productsServices.length > 10 && corePurpose.length > 10) {
+      // Auto-save current progress using mutation with error handling
+      try {
+        autoSaveMutation.mutate(watchedValues);
+      } catch (error) {
+        console.error("Auto-save mutation trigger failed:", error);
+      }
       
       // Generate guidance if we have audience info too
-      if (audience?.length > 10 && !showGuidance) {
-        generateGuidance(watchedValues);
+      if (audience.length > 10 && !showGuidance && !isGeneratingGuidance) {
+        setIsGeneratingGuidance(true);
+        try {
+          guidanceMutation.mutate(watchedValues);
+        } catch (error) {
+          console.error("Guidance mutation trigger failed:", error);
+          setIsGeneratingGuidance(false);
+        }
       }
     }
-  }, [watchedValues.brandName, watchedValues.productsServices, watchedValues.corePurpose, watchedValues.audience]);
+  }, [watchedValues?.brandName, watchedValues?.productsServices, watchedValues?.corePurpose, watchedValues?.audience, showGuidance, isGeneratingGuidance, autoSaveMutation, guidanceMutation]);
 
   const onSubmit = async (data: BrandPurposeForm) => {
     try {
@@ -386,32 +443,38 @@ export default function BrandPurpose() {
               </div>
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center">
-                  {form.watch('brandName') && form.watch('brandName').length > 2 && (
-                    <div className="flex items-center">
-                      {form.watch('brandName').length > 8 && (form.watch('brandName').toLowerCase().includes('agency') || form.watch('brandName').toLowerCase().includes('solutions') || form.watch('brandName').toLowerCase().includes('group') || form.watch('brandName').toLowerCase().includes('co')) ? (
-                        <div className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
-                          <div className="w-3 h-3 bg-green-600 rounded-full mr-2"></div>
-                          Strong
-                        </div>
-                      ) : form.watch('brandName').length > 5 ? (
-                        <div className="flex items-center text-sm font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-200">
-                          <div className="w-3 h-3 bg-yellow-600 rounded-full mr-2"></div>
-                          Moderate
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
-                          <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
-                          Weak
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {(() => {
+                    const brandName = form.watch('brandName') || '';
+                    return brandName && brandName.length > 2 && (
+                      <div className="flex items-center">
+                        {brandName.length > 8 && (brandName.toLowerCase().includes('agency') || brandName.toLowerCase().includes('solutions') || brandName.toLowerCase().includes('group') || brandName.toLowerCase().includes('co')) ? (
+                          <div className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
+                            <div className="w-3 h-3 bg-green-600 rounded-full mr-2"></div>
+                            Strong
+                          </div>
+                        ) : brandName.length > 5 ? (
+                          <div className="flex items-center text-sm font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-200">
+                            <div className="w-3 h-3 bg-yellow-600 rounded-full mr-2"></div>
+                            Moderate
+                          </div>
+                        ) : (
+                          <div className="flex items-center text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
+                            <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
+                            Weak
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
-                {form.watch('brandName') && (
-                  <div className={`text-xs ${form.watch('brandName').length > 600 ? 'text-red-600 font-medium' : form.watch('brandName').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('brandName').length}/600
-                  </div>
-                )}
+                {(() => {
+                  const brandName = form.watch('brandName') || '';
+                  return brandName && (
+                    <div className={`text-xs ${brandName.length > 600 ? 'text-red-600 font-medium' : brandName.length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                      {brandName.length || 0}/600
+                    </div>
+                  );
+                })()}
               </div>
               {form.formState.errors.brandName && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.brandName.message}</p>
@@ -442,32 +505,38 @@ export default function BrandPurpose() {
               </div>
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center">
-                  {form.watch('productsServices') && form.watch('productsServices').length > 20 && (
-                    <div className="flex items-center">
-                      {form.watch('productsServices').length > 100 && (form.watch('productsServices').toLowerCase().includes('pain') || form.watch('productsServices').toLowerCase().includes('gain') || form.watch('productsServices').toLowerCase().includes('value') || form.watch('productsServices').toLowerCase().includes('$')) ? (
-                        <div className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
-                          <div className="w-3 h-3 bg-green-600 rounded-full mr-2"></div>
-                          Strong
-                        </div>
-                      ) : form.watch('productsServices').length > 50 ? (
-                        <div className="flex items-center text-sm font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-200">
-                          <div className="w-3 h-3 bg-yellow-600 rounded-full mr-2"></div>
-                          Moderate
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
-                          <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
-                          Weak
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {(() => {
+                    const productsServices = form.watch('productsServices') || '';
+                    return productsServices && productsServices.length > 20 && (
+                      <div className="flex items-center">
+                        {productsServices.length > 100 && (productsServices.toLowerCase().includes('pain') || productsServices.toLowerCase().includes('gain') || productsServices.toLowerCase().includes('value') || productsServices.toLowerCase().includes('$')) ? (
+                          <div className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
+                            <div className="w-3 h-3 bg-green-600 rounded-full mr-2"></div>
+                            Strong
+                          </div>
+                        ) : productsServices.length > 50 ? (
+                          <div className="flex items-center text-sm font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-200">
+                            <div className="w-3 h-3 bg-yellow-600 rounded-full mr-2"></div>
+                            Moderate
+                          </div>
+                        ) : (
+                          <div className="flex items-center text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
+                            <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
+                            Weak
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
-                {form.watch('productsServices') && (
-                  <div className={`text-xs ${form.watch('productsServices').length > 600 ? 'text-red-600 font-medium' : form.watch('productsServices').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('productsServices').length}/600
-                  </div>
-                )}
+                {(() => {
+                  const productsServices = form.watch('productsServices') || '';
+                  return productsServices && (
+                    <div className={`text-xs ${productsServices.length > 600 ? 'text-red-600 font-medium' : productsServices.length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                      {productsServices.length || 0}/600
+                    </div>
+                  );
+                })()}
               </div>
               {form.formState.errors.productsServices && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.productsServices.message}</p>
@@ -498,32 +567,38 @@ export default function BrandPurpose() {
               </div>
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center">
-                  {form.watch('corePurpose') && form.watch('corePurpose').length > 20 && (
-                    <div className="flex items-center">
-                      {form.watch('corePurpose').length > 80 && (form.watch('corePurpose').toLowerCase().includes('help') || form.watch('corePurpose').toLowerCase().includes('stop') || form.watch('corePurpose').toLowerCase().includes('enable') || form.watch('corePurpose').toLowerCase().includes('empower')) ? (
-                        <div className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
-                          <div className="w-3 h-3 bg-green-600 rounded-full mr-2"></div>
-                          Strong
-                        </div>
-                      ) : form.watch('corePurpose').length > 40 ? (
-                        <div className="flex items-center text-sm font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-200">
-                          <div className="w-3 h-3 bg-yellow-600 rounded-full mr-2"></div>
-                          Moderate
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
-                          <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
-                          Weak
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {(() => {
+                    const corePurpose = form.watch('corePurpose') || '';
+                    return corePurpose && corePurpose.length > 20 && (
+                      <div className="flex items-center">
+                        {corePurpose.length > 80 && (corePurpose.toLowerCase().includes('help') || corePurpose.toLowerCase().includes('stop') || corePurpose.toLowerCase().includes('enable') || corePurpose.toLowerCase().includes('empower')) ? (
+                          <div className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-200">
+                            <div className="w-3 h-3 bg-green-600 rounded-full mr-2"></div>
+                            Strong
+                          </div>
+                        ) : corePurpose.length > 40 ? (
+                          <div className="flex items-center text-sm font-medium text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-200">
+                            <div className="w-3 h-3 bg-yellow-600 rounded-full mr-2"></div>
+                            Moderate
+                          </div>
+                        ) : (
+                          <div className="flex items-center text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
+                            <div className="w-3 h-3 bg-red-600 rounded-full mr-2"></div>
+                            Weak
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
-                {form.watch('corePurpose') && (
-                  <div className={`text-xs ${form.watch('corePurpose').length > 600 ? 'text-red-600 font-medium' : form.watch('corePurpose').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('corePurpose').length}/600
-                  </div>
-                )}
+                {(() => {
+                  const corePurpose = form.watch('corePurpose') || '';
+                  return corePurpose && (
+                    <div className={`text-xs ${corePurpose.length > 600 ? 'text-red-600 font-medium' : corePurpose.length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                      {corePurpose.length || 0}/600
+                    </div>
+                  );
+                })()}
               </div>
               {form.formState.errors.corePurpose && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.corePurpose.message}</p>
@@ -552,13 +627,16 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
-              {form.watch('audience') && (
-                <div className="flex items-center justify-end mt-2">
-                  <div className={`text-xs ${form.watch('audience').length > 600 ? 'text-red-600 font-medium' : form.watch('audience').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('audience').length}/600
+              {(() => {
+                const audience = form.watch('audience') || '';
+                return audience && (
+                  <div className="flex items-center justify-end mt-2">
+                    <div className={`text-xs ${audience.length > 600 ? 'text-red-600 font-medium' : audience.length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                      {audience.length}/600
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               {form.formState.errors.audience && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.audience.message}</p>
               )}
@@ -586,13 +664,16 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
-              {form.watch('jobToBeDone') && (
-                <div className="flex items-center justify-end mt-2">
-                  <div className={`text-xs ${form.watch('jobToBeDone').length > 600 ? 'text-red-600 font-medium' : form.watch('jobToBeDone').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('jobToBeDone').length}/600
+              {(() => {
+                const jobToBeDone = form.watch('jobToBeDone') || '';
+                return jobToBeDone && (
+                  <div className="flex items-center justify-end mt-2">
+                    <div className={`text-xs ${jobToBeDone.length > 600 ? 'text-red-600 font-medium' : jobToBeDone.length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                      {jobToBeDone.length}/600
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               {form.formState.errors.jobToBeDone && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.jobToBeDone.message}</p>
               )}
@@ -620,13 +701,16 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
-              {form.watch('motivations') && (
-                <div className="flex items-center justify-end mt-2">
-                  <div className={`text-xs ${form.watch('motivations').length > 600 ? 'text-red-600 font-medium' : form.watch('motivations').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('motivations').length}/600
+              {(() => {
+                const motivations = form.watch('motivations') || '';
+                return motivations && (
+                  <div className="flex items-center justify-end mt-2">
+                    <div className={`text-xs ${motivations.length > 600 ? 'text-red-600 font-medium' : motivations.length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                      {motivations.length}/600
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               {form.formState.errors.motivations && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.motivations.message}</p>
               )}
@@ -654,13 +738,16 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
-              {form.watch('painPoints') && (
-                <div className="flex items-center justify-end mt-2">
-                  <div className={`text-xs ${form.watch('painPoints').length > 600 ? 'text-red-600 font-medium' : form.watch('painPoints').length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                    {form.watch('painPoints').length}/600
+              {(() => {
+                const painPoints = form.watch('painPoints') || '';
+                return painPoints && (
+                  <div className="flex items-center justify-end mt-2">
+                    <div className={`text-xs ${painPoints.length > 600 ? 'text-red-600 font-medium' : painPoints.length > 540 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                      {painPoints.length}/600
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               {form.formState.errors.painPoints && (
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.painPoints.message}</p>
               )}
