@@ -1739,13 +1739,17 @@ Continue refining these elements to build a stronger brand foundation.`;
           req.session.save((err: any) => {
             if (err) {
               console.error('Session save error:', err);
+              return res.redirect('/subscription?error=session_failed');
             }
             // Redirect to brand purpose setup with success indicator
+            console.log(`Payment successful - redirecting user ${user.id} to brand purpose setup`);
             return res.redirect('/brand-purpose?payment=success&setup=required');
           });
+          return; // Prevent falling through to error redirect
         }
       }
       
+      console.log('Payment validation failed - redirecting to subscription with error');
       res.redirect('/subscription?error=payment_failed');
     } catch (error: any) {
       console.error('Payment success handling error:', error);
