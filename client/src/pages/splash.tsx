@@ -92,9 +92,37 @@ export default function Splash() {
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                         <span className="text-sm">Brand Purpose Defined</span>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <span className="text-sm">Platforms Connected</span>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          <span className="text-sm">The AgencyIQ automates posts to your social media accounts (have your login details ready).</span>
+                        </div>
+                        <div className="pl-6 space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span className="text-xs">Facebook</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                            <span className="text-xs">Instagram</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-black rounded-full"></div>
+                            <span className="text-xs">TikTok</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <span className="text-xs">YouTube</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-blue-700 rounded-full"></div>
+                            <span className="text-xs">LinkedIn</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-black rounded-full"></div>
+                            <span className="text-xs">X</span>
+                          </div>
+                        </div>
                       </div>
                       <div className="flex items-center space-x-3">
                         <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
