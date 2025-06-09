@@ -385,15 +385,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
 
-      // Find and remove platform connections for this Facebook user
-      const connections = await storage.getPlatformConnectionsByUser(data.user_id);
-      const facebookConnections = connections.filter(conn => 
+      // Find platform connections by Facebook user ID
+      const facebookConnections = await storage.getPlatformConnectionsByPlatformUserId(data.user_id);
+      const socialConnections = facebookConnections.filter(conn => 
         conn.platform === 'facebook' || conn.platform === 'instagram'
       );
 
-      for (const connection of facebookConnections) {
+      for (const connection of socialConnections) {
         await storage.deletePlatformConnection(connection.id);
-        console.log(`Deleted ${connection.platform} connection for user ${data.user_id}`);
+        console.log(`Deleted ${connection.platform} connection for Facebook user ${data.user_id}`);
       }
 
       // Return required response format for Facebook
@@ -417,9 +417,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing user ID parameter" });
       }
 
-      // Check if user still has Facebook/Instagram connections
-      const connections = await storage.getPlatformConnectionsByUser(Number(id));
-      const socialConnections = connections.filter(conn => 
+      // Check if Facebook user still has connections by platform user ID
+      const allConnections = await storage.getPlatformConnectionsByPlatformUserId(id as string);
+      const socialConnections = allConnections.filter(conn => 
         conn.platform === 'facebook' || conn.platform === 'instagram'
       );
 
