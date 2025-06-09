@@ -9,6 +9,7 @@ import { CheckIcon } from "lucide-react";
 import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "react-icons/si";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { trackMilestone } from "@/lib/analytics";
 
 export default function PlatformConnections() {
   const [location, setLocation] = useLocation();
@@ -118,6 +119,9 @@ export default function PlatformConnections() {
         description: `${platform?.name} has been connected successfully`,
       });
       
+      // Track platform connection milestone
+      trackMilestone(`platform_connected_${platformId}`);
+      
       // Refresh the page to show updated connections
       window.location.reload();
       
@@ -166,6 +170,8 @@ export default function PlatformConnections() {
   };
 
   const handleNext = () => {
+    // Track analytics milestone when navigating to analytics
+    trackMilestone('platforms_connected_analytics_viewed');
     setLocation("/analytics");
   };
 
