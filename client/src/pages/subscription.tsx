@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckIcon, Star, ArrowLeft, Cpu, Zap } from "lucide-react";
+import { CheckIcon, Star, ArrowLeft, Cpu, Zap, Gift } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
