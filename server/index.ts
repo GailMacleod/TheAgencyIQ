@@ -8,20 +8,34 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
-// Domain validation middleware
+// Domain validation middleware with enhanced Replit support
 app.use((req, res, next) => {
   const hostname = req.hostname || req.header('host') || '';
   
-  if (process.env.NODE_ENV === 'production' && !validateDomain(hostname)) {
+  // Skip domain validation for Replit deployments
+  const isReplitDeployment = hostname.includes('.replit.app') || 
+                            process.env.REPLIT_DEPLOYMENT === 'true' ||
+                            process.env.REPL_ID;
+  
+  console.log(`Domain validation - hostname: ${hostname}, isReplit: ${isReplitDeployment}, env: ${process.env.NODE_ENV}`);
+  
+  if (process.env.NODE_ENV === 'production' && !isReplitDeployment && !validateDomain(hostname)) {
+    console.log(`Domain validation failed for: ${hostname}`);
     return res.status(400).json({ message: 'Invalid domain' });
   }
   
   next();
 });
 
-// HTTPS redirect middleware for production
+// HTTPS redirect middleware for production (skip for Replit)
 app.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && !isSecureContext(req)) {
+  const hostname = req.hostname || req.header('host') || '';
+  const isReplitDeployment = hostname.includes('.replit.app') || 
+                            process.env.REPLIT_DEPLOYMENT === 'true' ||
+                            process.env.REPL_ID;
+  
+  // Skip HTTPS redirect for Replit deployments as they handle SSL automatically
+  if (process.env.NODE_ENV === 'production' && !isReplitDeployment && !isSecureContext(req)) {
     return res.redirect(301, `https://${req.header('host')}${req.url}`);
   }
   next();
@@ -34,9 +48,14 @@ app.use((req, res, next) => {
     res.setHeader(header, value);
   });
   
-  // CORS configuration for app.theagencyiq.ai
+  // CORS configuration with Replit domain support
   const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+  const isAllowedOrigin = origin && (
+    ALLOWED_ORIGINS.includes(origin) || 
+    origin.endsWith('.replit.app')
+  );
+  
+  if (isAllowedOrigin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   

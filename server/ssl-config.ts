@@ -21,6 +21,8 @@ export const ALLOWED_ORIGINS = [
   'https://app.theagencyiq.ai',
   'https://theagencyiq.ai',
   'https://www.theagencyiq.ai',
+  'https://agency-iq-social-GailMac.replit.app',
+  'https://*.replit.app',
   'http://localhost:5000',
   'http://localhost:3000'
 ];
@@ -31,7 +33,7 @@ export const SECURITY_HEADERS = {
   'X-Frame-Options': 'DENY',
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://replit.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com https://api.x.ai https://checkout.stripe.com wss://app.theagencyiq.ai; frame-src https://checkout.stripe.com https://js.stripe.com;",
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://replit.com https://*.replit.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com https://api.x.ai https://checkout.stripe.com https://*.replit.app wss://app.theagencyiq.ai wss://*.replit.app; frame-src https://checkout.stripe.com https://js.stripe.com;",
   'Permissions-Policy': 'camera=(), fullscreen=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), sync-xhr=(), usb=(), screen-wake-lock=(), web-share=()'
 };
 
@@ -40,10 +42,14 @@ export function validateDomain(hostname: string): boolean {
     'app.theagencyiq.ai',
     'theagencyiq.ai',
     'www.theagencyiq.ai',
+    'agency-iq-social-GailMac.replit.app',
     'localhost'
   ];
   
-  return allowedDomains.includes(hostname);
+  // Allow any .replit.app subdomain
+  const isReplitDomain = hostname.endsWith('.replit.app');
+  
+  return allowedDomains.includes(hostname) || isReplitDomain;
 }
 
 export function isSecureContext(req: any): boolean {
