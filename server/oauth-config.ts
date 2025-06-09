@@ -119,7 +119,7 @@ passport.use(new TwitterStrategy({
       platformUsername: profile.username,
       accessToken: token,
       refreshToken: tokenSecret,
-      isConnected: true
+      isActive: true
     });
 
     return done(null, { platform: 'x', success: true });
