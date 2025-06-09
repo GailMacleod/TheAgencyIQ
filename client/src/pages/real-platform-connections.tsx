@@ -67,8 +67,8 @@ const platforms = [
     name: 'YouTube',
     icon: Youtube,
     color: 'bg-red-600',
-    approved: false,
-    description: 'Upload videos to your YouTube channel (OAuth pending)'
+    approved: true,
+    description: 'Upload videos and manage your YouTube channel'
   },
   {
     id: 'tiktok',
@@ -267,16 +267,7 @@ export default function RealPlatformConnections() {
                       </div>
                     )}
 
-                    {platform.id === 'youtube' && (
-                      <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <p className="text-sm text-blue-800 font-medium">
-                          📹 Manual Upload Required
-                        </p>
-                        <p className="text-xs text-blue-600 mt-1">
-                          Create a 30s video yourself and add it to your YouTube channel
-                        </p>
-                      </div>
-                    )}
+
 
                     <div className="flex space-x-2">
                       {connected ? (
@@ -327,7 +318,8 @@ export default function RealPlatformConnections() {
                   <p>✓ Facebook & Instagram: Business API access for posts and analytics</p>
                   <p>✓ LinkedIn: Professional content publishing and engagement metrics</p>
                   <p>✓ X (Twitter): Tweet publishing and audience analytics</p>
-                  <p>⏳ YouTube & TikTok: OAuth applications under platform review</p>
+                  <p>✓ YouTube: Video management and channel analytics</p>
+                  <p>⏳ TikTok: OAuth application under platform review</p>
                 </div>
               </div>
             </div>
