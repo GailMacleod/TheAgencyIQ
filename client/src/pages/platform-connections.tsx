@@ -231,6 +231,13 @@ export default function PlatformConnections() {
                     </div>
                     <h3 className="font-medium text-foreground mb-3 text-sm lowercase">{platform.name}</h3>
                     
+                    {/* YouTube video creation reminder */}
+                    {platform.id === 'youtube' && (
+                      <p className="text-xs text-gray-500 mb-3">
+                        *Create a 30s video yourself and add it to your YouTube.
+                      </p>
+                    )}
+                    
                     {isConnected ? (
                       <div className="space-y-2">
                         <Button

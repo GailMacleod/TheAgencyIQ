@@ -637,14 +637,7 @@ export default function Schedule() {
                     </div>
                   ))}
                   
-                  {/* YouTube video creation reminder */}
-                  {day.posts.some(post => post.platform === 'youtube') && (
-                    <div className="bg-red-50 border border-red-200 rounded px-2 py-1 mt-1">
-                      <div className="text-xs text-red-700 font-medium">
-                        *Create a 30s video yourself and add it to your YouTube.
-                      </div>
-                    </div>
-                  )}
+
                   
                   {day.posts.length > 2 && (
                     <div className="text-xs text-gray-500 text-center">
