@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, User, CreditCard, LogOut, Building2, Calendar, Share2, BarChart3 } from "lucide-react";
+import { Menu, X, User, CreditCard, LogOut, Building2, Calendar, Share2, BarChart3, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -71,9 +71,59 @@ export default function UserMenu() {
     },
   });
 
+  const deleteFacebookMutation = useMutation({
+    mutationFn: () => apiRequest("DELETE", "/api/platform-connections/facebook"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/platform-connections"] });
+      toast({
+        title: "Facebook Data Deleted",
+        description: "All Facebook data and connections have been removed from your account.",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Delete Facebook data error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete Facebook data. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteInstagramMutation = useMutation({
+    mutationFn: () => apiRequest("DELETE", "/api/platform-connections/instagram"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/platform-connections"] });
+      toast({
+        title: "Instagram Data Deleted",
+        description: "All Instagram data and connections have been removed from your account.",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Delete Instagram data error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete Instagram data. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCancelSubscription = () => {
     if (window.confirm("Are you sure you want to cancel your subscription? This action cannot be undone.")) {
       cancelSubscriptionMutation.mutate();
+    }
+  };
+
+  const handleDeleteFacebookData = () => {
+    if (window.confirm("Are you sure you want to delete all Facebook data? This will remove all Facebook connections and cannot be undone.")) {
+      deleteFacebookMutation.mutate();
+    }
+  };
+
+  const handleDeleteInstagramData = () => {
+    if (window.confirm("Are you sure you want to delete all Instagram data? This will remove all Instagram connections and cannot be undone.")) {
+      deleteInstagramMutation.mutate();
     }
   };
 
@@ -167,6 +217,33 @@ export default function UserMenu() {
               <BarChart3 className="mr-2 h-4 w-4" />
               Analytics
             </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            {/* Data Deletion Section */}
+            <div className="px-2 py-1">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Data Management</p>
+            </div>
+            
+            <DropdownMenuItem
+              onClick={handleDeleteFacebookData}
+              disabled={deleteFacebookMutation.isPending}
+              className="cursor-pointer text-orange-600 focus:text-orange-600"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {deleteFacebookMutation.isPending ? "Deleting..." : "Delete Facebook Data"}
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={handleDeleteInstagramData}
+              disabled={deleteInstagramMutation.isPending}
+              className="cursor-pointer text-orange-600 focus:text-orange-600"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {deleteInstagramMutation.isPending ? "Deleting..." : "Delete Instagram Data"}
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
             
             <DropdownMenuItem
               onClick={handleCancelSubscription}
