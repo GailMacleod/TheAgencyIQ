@@ -45,13 +45,17 @@ export function validateDomain(hostname: string): boolean {
   ];
   
   const normalizedHostname = hostname.toLowerCase();
+  console.log('validateDomain called with:', normalizedHostname);
   
   // Allow all replit.app domains
   if (normalizedHostname.endsWith('.replit.app')) {
+    console.log('Allowing replit.app domain:', normalizedHostname);
     return true;
   }
   
-  return allowedDomains.includes(normalizedHostname);
+  const isAllowed = allowedDomains.includes(normalizedHostname);
+  console.log('Domain validation result:', { hostname: normalizedHostname, isAllowed });
+  return isAllowed;
 }
 
 export function isSecureContext(req: any): boolean {

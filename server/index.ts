@@ -8,9 +8,15 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
-// Domain validation middleware
+// Domain validation middleware - DISABLED FOR REPLIT DEPLOYMENTS
 app.use((req, res, next) => {
   const hostname = req.hostname || req.header('host') || '';
+  
+  // Skip domain validation for .replit.app domains
+  if (hostname.toLowerCase().includes('replit.app')) {
+    next();
+    return;
+  }
   
   if (process.env.NODE_ENV === 'production' && !validateDomain(hostname)) {
     return res.status(400).json({ message: 'Invalid domain' });
