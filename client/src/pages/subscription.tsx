@@ -11,7 +11,7 @@ import { CheckIcon, Star, ArrowLeft, Cpu, Zap, Gift } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import GrokWidget from "@/components/grok-widget";
+import AIWidget from "@/components/grok-widget";
 import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
 
 const signupSchema = z.object({
@@ -388,7 +388,7 @@ export default function Subscription() {
         </div>
       </footer>
 
-      <GrokWidget />
+      <AIWidget />
     </div>
   );
 }

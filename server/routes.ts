@@ -1238,8 +1238,8 @@ Continue refining these elements to build a stronger brand foundation.`;
     }
   });
 
-  // Grok content generation with thinking process
-  app.post("/api/grok/generate-content", async (req, res) => {
+  // AI content generation with thinking process
+  app.post("/api/ai/generate-content", async (req, res) => {
     try {
       // For demo purposes, use mock user ID if no session
       const userId = req.session.userId || 1;

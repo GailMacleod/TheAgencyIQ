@@ -463,7 +463,7 @@ export default function Schedule() {
             your 30-day social media schedule
           </h1>
           <p className="text-gray-600 text-sm lowercase">
-            grok has analyzed queensland events and optimal posting times to create your personalized content calendar
+            ai has analyzed queensland events and optimal posting times to create your personalized content calendar
           </p>
           
           {/* Action Buttons */}
@@ -484,38 +484,38 @@ export default function Schedule() {
             </Button>
         </div>
 
-        {/* Grok Thinking Process Modal */}
-        {showGrokThinking && (
+        {/* AI Thinking Process Modal */}
+        {showAIThinking && (
           <Card className="fixed inset-0 z-50 bg-white bg-opacity-95 flex items-center justify-center">
             <CardContent className="max-w-2xl p-8">
               <div className="text-center">
                 <h2 className="text-2xl font-light text-purple-700 mb-6 lowercase">
-                  grok's strategic analysis
+                  ai strategic analysis
                 </h2>
                 
                 {/* Progress Steps */}
                 <div className="space-y-6">
-                  {grokThinkingSteps.map((step, index) => (
+                  {aiThinkingSteps.map((step, index) => (
                     <div 
                       key={index}
                       className={`flex items-start space-x-4 p-4 rounded-lg transition-all duration-500 ${
-                        grokStep > index ? 'bg-green-50 border-green-200' :
-                        grokStep === index + 1 ? 'bg-purple-50 border-purple-200 shadow-md' :
+                        aiStep > index ? 'bg-green-50 border-green-200' :
+                        aiStep === index + 1 ? 'bg-purple-50 border-purple-200 shadow-md' :
                         'bg-gray-50 border-gray-200'
                       }`}
                     >
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                        grokStep > index ? 'bg-green-500 text-white' :
-                        grokStep === index + 1 ? 'bg-purple-500 text-white animate-pulse' :
+                        aiStep > index ? 'bg-green-500 text-white' :
+                        aiStep === index + 1 ? 'bg-purple-500 text-white animate-pulse' :
                         'bg-gray-300 text-gray-600'
                       }`}>
-                        {grokStep > index ? '✓' : step.step}
+                        {aiStep > index ? '✓' : step.step}
                       </div>
                       <div className="flex-1 text-left">
                         <h3 className="font-medium text-gray-900 lowercase">{step.title}</h3>
                         <p className="text-sm text-gray-600 mt-1">{step.content}</p>
                       </div>
-                      {grokStep === index + 1 && (
+                      {aiStep === index + 1 && (
                         <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full"></div>
                       )}
                     </div>
@@ -555,10 +555,10 @@ export default function Schedule() {
                       <p className="text-gray-800 whitespace-pre-wrap">{post.content}</p>
                     </div>
                     
-                    {post.grokRecommendation && (
+                    {post.aiRecommendation && (
                       <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
-                        <p className="text-purple-700 text-sm font-medium lowercase">grok's strategy:</p>
-                        <p className="text-purple-800 text-sm">{post.grokRecommendation}</p>
+                        <p className="text-purple-700 text-sm font-medium lowercase">ai strategy:</p>
+                        <p className="text-purple-800 text-sm">{post.aiRecommendation}</p>
                       </div>
                     )}
                     
@@ -672,11 +672,11 @@ export default function Schedule() {
           }}>
             <CardContent className="p-0">
               <h3 className="font-medium text-purple-700 mb-2 lowercase">
-                grok insights for {format(hoveredDay, 'MMM d')}
+                ai insights for {format(hoveredDay, 'MMM d')}
               </h3>
-              {calendarDays.find(day => isSameDay(day.date, hoveredDay))?.grokInsight && (
+              {calendarDays.find(day => isSameDay(day.date, hoveredDay))?.aiInsight && (
                 <p className="text-sm text-gray-600 mb-3">
-                  {calendarDays.find(day => isSameDay(day.date, hoveredDay))?.grokInsight}
+                  {calendarDays.find(day => isSameDay(day.date, hoveredDay))?.aiInsight}
                 </p>
               )}
               
