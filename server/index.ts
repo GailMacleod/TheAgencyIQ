@@ -13,35 +13,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// HTTPS redirect middleware for production - DISABLED FOR REPLIT
+// Skip HTTPS enforcement completely for Replit
 app.use((req, res, next) => {
-  const hostname = req.hostname || req.header('host') || '';
-  
-  // Skip HTTPS redirect for Replit domains
-  if (hostname.toLowerCase().includes('replit.app')) {
-    next();
-    return;
-  }
-  
-  if (process.env.NODE_ENV === 'production' && !isSecureContext(req)) {
-    return res.redirect(301, `https://${req.header('host')}${req.url}`);
-  }
   next();
 });
 
-// Security headers and CORS configuration
+// Minimal security headers and CORS for Replit
 app.use((req, res, next) => {
-  // Apply security headers
+  // Apply minimal security headers
   Object.entries(SECURITY_HEADERS).forEach(([header, value]) => {
     res.setHeader(header, value);
   });
   
-  // CORS configuration for app.theagencyiq.ai
-  const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  
+  // Allow all origins for Replit deployment
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
