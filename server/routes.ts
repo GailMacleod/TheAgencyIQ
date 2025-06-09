@@ -15,6 +15,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
+import { passport } from "./oauth-config";
+import axios from "axios";
 
 // Session type declaration
 declare module 'express-session' {
