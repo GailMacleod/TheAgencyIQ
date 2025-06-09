@@ -12,14 +12,13 @@ import {
   Facebook, 
   Instagram, 
   Linkedin, 
-  Twitter, 
   Youtube, 
   Loader2,
   CheckCircle,
   AlertCircle,
   Clock
 } from "lucide-react";
-import { SiTiktok } from "react-icons/si";
+import { SiTiktok, SiX } from "react-icons/si";
 
 interface PlatformConnection {
   id: number;
@@ -57,7 +56,7 @@ const platforms = [
   {
     id: 'x',
     name: 'X (Twitter)',
-    icon: Twitter,
+    icon: SiX,
     color: 'bg-black',
     approved: true,
     description: 'Tweet and engage with your Twitter audience'
