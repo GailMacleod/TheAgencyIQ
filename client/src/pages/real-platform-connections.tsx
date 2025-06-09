@@ -272,11 +272,10 @@ export default function RealPlatformConnections() {
                     <div className="flex space-x-2">
                       {connected ? (
                         <Button
-                          variant="destructive"
                           size="sm"
                           onClick={() => disconnectPlatform(platform.id)}
                           disabled={isLoading}
-                          className="flex-1"
+                          className="flex-1 text-white bg-[#ff538f] hover:bg-[#e04880] border-[#ff538f]"
                         >
                           {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                           Disconnect

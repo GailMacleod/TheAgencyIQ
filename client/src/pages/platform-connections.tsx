@@ -238,7 +238,7 @@ export default function PlatformConnections() {
                         </Button>
                         <Button
                           onClick={() => disconnectPlatform(platform.id)}
-                          className="w-full text-xs py-2 h-8 text-red-600 border-red-200 hover:bg-red-50"
+                          className="w-full text-xs py-2 h-8 text-white bg-[#ff538f] hover:bg-[#e04880] border-[#ff538f]"
                           variant="outline"
                           disabled={isLoading}
                         >
