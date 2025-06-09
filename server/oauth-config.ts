@@ -4,8 +4,8 @@ import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
 import { Strategy as TwitterStrategy } from 'passport-twitter';
 import { storage } from './storage';
 
-const OAUTH_REDIRECT_BASE = process.env.NODE_ENV === 'production' 
-  ? 'https://your-domain.replit.app' 
+const OAUTH_REDIRECT_BASE = process.env.REPLIT_DOMAINS 
+  ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
   : 'http://localhost:5000';
 
 // Facebook OAuth Strategy
