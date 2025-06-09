@@ -8,7 +8,7 @@ import Stripe from "stripe";
 import { z } from "zod";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { generateContentCalendar, generateReplacementPost, getGrokResponse, generateEngagementInsight } from "./grok";
+import { generateContentCalendar, generateReplacementPost, getAIResponse, generateEngagementInsight } from "./grok";
 import twilio from 'twilio';
 import sgMail from '@sendgrid/mail';
 import multer from "multer";
@@ -747,7 +747,7 @@ Pain Points: ${painPoints || "Not specified"}`;
             setTimeout(() => reject(new Error('Grok API timeout')), 15000)
           );
           
-          const grokPromise = getGrokResponse(
+          const aiPromise = getAIResponse(
             "Based on this brand information, provide strategic guidance for completing their brand purpose definition. Focus on Strategyzer methodology - help them understand their value proposition, customer segments, and how to improve their remaining answers. Be specific and actionable.",
             context
           );
@@ -1080,7 +1080,7 @@ Continue refining these elements to build a stronger brand foundation.`;
         }
       }
       
-      const response = await getGrokResponse(query, context, brandPurposeRecord);
+      const response = await getAIResponse(query, context, brandPurposeRecord);
       res.json({ response });
     } catch (error: any) {
       console.error('Grok query error:', error);

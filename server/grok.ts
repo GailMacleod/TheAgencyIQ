@@ -4,7 +4,7 @@ if (!process.env.XAI_API_KEY) {
   throw new Error("XAI_API_KEY environment variable must be set");
 }
 
-const grok = new OpenAI({ 
+const aiClient = new OpenAI({ 
   baseURL: "https://api.x.ai/v1", 
   apiKey: process.env.XAI_API_KEY 
 });
@@ -77,7 +77,7 @@ Provide analysis in this exact JSON format:
 
 Consider: Florists need vibrant tone, Instagram focus. Professional services need LinkedIn focus, professional tone. Book clubs need thoughtful tone, community focus.`;
 
-    const response = await grok.chat.completions.create({
+    const response = await aiClient.chat.completions.create({
       model: "grok-2-1212",
       messages: [{ role: "user", content: analysisPrompt }],
       response_format: { type: "json_object" },
@@ -168,7 +168,7 @@ Return as JSON object with "posts" array containing objects with fields: platfor
 
 Make content authentic to Queensland culture and specifically tailored to achieve the measurable targets for unpaid media success.`;
 
-    const response = await grok.chat.completions.create({
+    const response = await aiClient.chat.completions.create({
       model: "grok-2-1212",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
@@ -177,7 +177,7 @@ Make content authentic to Queensland culture and specifically tailored to achiev
     const result = JSON.parse(response.choices[0].message.content || "{}");
     return result.posts || [];
   } catch (error) {
-    console.error("Grok content generation error:", error);
+    console.error("Content generation error:", error);
     throw new Error("Failed to generate content calendar");
   }
 }
@@ -197,21 +197,21 @@ export async function generateReplacementPost(
     
     Create engaging content that targets the audience to support the business goals. Make it platform-specific and relevant to Queensland small businesses.`;
 
-    const response = await grok.chat.completions.create({
+    const response = await aiClient.chat.completions.create({
       model: "grok-2-1212",
       messages: [{ role: "user", content: prompt }],
     });
 
     return response.choices[0].message.content || "New content generated for your Queensland business.";
   } catch (error) {
-    console.error("Grok replacement post error:", error);
+    console.error("Replacement post error:", error);
     throw new Error("Failed to generate replacement post");
   }
 }
 
-export async function getGrokResponse(query: string, context?: string, brandPurposeData?: any): Promise<string> {
+export async function getAIResponse(query: string, context?: string, brandPurposeData?: any): Promise<string> {
   try {
-    let systemPrompt = `You are Grok, a Strategyzer-trained AI assistant specialized in value proposition design and brand purpose for Queensland small businesses. 
+    let systemPrompt = `You are an AI assistant specialized in value proposition design and brand purpose for Queensland small businesses. 
 
 You help users apply Strategyzer methodology including:
 - Customer segments (demographics, behaviors, needs)
@@ -247,7 +247,7 @@ Focus on practical improvements that will lead to better content generation and 
 
 User query: ${query}`;
 
-      const response = await grok.chat.completions.create({
+      const response = await aiClient.chat.completions.create({
         model: "grok-2-1212",
         messages: [{ role: "user", content: analysisPrompt }],
       });
@@ -255,8 +255,8 @@ User query: ${query}`;
       return response.choices[0].message.content || "i need more specific information about your brand purpose to provide targeted suggestions. try filling out more details in each section.";
     }
 
-    // Regular Grok query without brand analysis
-    const response = await grok.chat.completions.create({
+    // Regular AI query without brand analysis
+    const response = await aiClient.chat.completions.create({
       model: "grok-2-1212",
       messages: [
         {
@@ -272,8 +272,8 @@ User query: ${query}`;
 
     return response.choices[0].message.content || "sorry, i couldn't generate a strategyzer-based response right now. try asking about customer segments, jobs-to-be-done, pains, or gains.";
   } catch (error) {
-    console.error("Grok query error:", error);
-    throw new Error("Failed to process query with Grok");
+    console.error("AI query error:", error);
+    throw new Error("Failed to process query with AI");
   }
 }
 
@@ -282,14 +282,14 @@ export async function generateEngagementInsight(platform: string, timeSlot: stri
     const prompt = `Generate a brief engagement insight tip for ${platform} posts scheduled at ${timeSlot} for Queensland small businesses. 
     Focus on why this timing works well and provide a specific, actionable recommendation.`;
 
-    const response = await grok.chat.completions.create({
+    const response = await aiClient.chat.completions.create({
       model: "grok-2-1212",
       messages: [{ role: "user", content: prompt }],
     });
 
     return response.choices[0].message.content || `${platform} performs well at ${timeSlot} for Queensland businesses.`;
   } catch (error) {
-    console.error("Grok insight generation error:", error);
+    console.error("Insight generation error:", error);
     return `This post will maximize engagement—last cycle's data shows ${platform} performs best at ${timeSlot}`;
   }
 }
