@@ -273,6 +273,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Verify code and create user
+  // Generate gift certificates endpoint (admin only - based on actual purchase)
+  app.post("/api/generate-gift-certificates", async (req, res) => {
+    try {
+      const { count = 10, plan = 'professional', createdFor = 'Testing Program' } = req.body;
+      
+      // Generate unique certificate codes
+      const certificates = [];
+      for (let i = 0; i < count; i++) {
+        const code = `PROF-TEST-${Math.random().toString(36).substring(2, 8).toUpperCase()}${Math.random().toString(36).substring(2, 4).toUpperCase()}`;
+        
+        const certificate = await storage.createGiftCertificate({
+          code,
+          plan,
+          isUsed: false,
+          createdFor
+        });
+        
+        certificates.push(certificate.code);
+      }
+
+      console.log(`Generated ${count} gift certificates for ${plan} plan`);
+      res.json({ 
+        message: `Generated ${count} gift certificates`,
+        certificates,
+        plan,
+        instructions: "Users can redeem these at /api/redeem-gift-certificate after logging in"
+      });
+
+    } catch (error: any) {
+      console.error('Gift certificate generation error:', error);
+      res.status(500).json({ message: "Certificate generation failed" });
+    }
+  });
+
+  // Gift certificate redemption endpoint
+  app.post("/api/redeem-gift-certificate", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { code } = req.body;
+      if (!code || typeof code !== 'string') {
+        return res.status(400).json({ message: "Certificate code is required" });
+      }
+
+      // Get the certificate
+      const certificate = await storage.getGiftCertificate(code);
+      if (!certificate) {
+        return res.status(404).json({ message: "Invalid certificate code" });
+      }
+
+      if (certificate.isUsed) {
+        return res.status(400).json({ message: "Certificate has already been redeemed" });
+      }
+
+      // Redeem the certificate
+      await storage.redeemGiftCertificate(code, req.session.userId);
+
+      // Upgrade user to the certificate plan
+      const planPostLimits = {
+        'professional': { remaining: 50, total: 52 },
+        'growth': { remaining: 25, total: 27 },
+        'starter': { remaining: 10, total: 12 }
+      };
+
+      const limits = planPostLimits[certificate.plan as keyof typeof planPostLimits] || planPostLimits.starter;
+
+      const updatedUser = await storage.updateUser(req.session.userId, {
+        subscriptionPlan: certificate.plan,
+        remainingPosts: limits.remaining,
+        totalPosts: limits.total
+      });
+
+      console.log(`Gift certificate ${code} redeemed by user ${req.session.userId} for ${certificate.plan} plan`);
+
+      res.json({ 
+        message: "Certificate redeemed successfully",
+        plan: certificate.plan,
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          subscriptionPlan: updatedUser.subscriptionPlan,
+          remainingPosts: updatedUser.remainingPosts,
+          totalPosts: updatedUser.totalPosts
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Gift certificate redemption error:', error);
+      res.status(500).json({ message: "Certificate redemption failed" });
+    }
+  });
+
   app.post("/api/verify-and-signup", async (req, res) => {
     try {
       const { email, password, phone, code } = req.body;
