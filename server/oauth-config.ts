@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
 import { Strategy as TwitterStrategy } from 'passport-twitter';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from './storage';
 
 const OAUTH_REDIRECT_BASE = process.env.REPLIT_DOMAINS 
@@ -123,6 +124,36 @@ passport.use(new TwitterStrategy({
     });
 
     return done(null, { platform: 'x', success: true });
+  } catch (error) {
+    return done(error);
+  }
+}));
+
+// YouTube (Google) OAuth Strategy
+passport.use('youtube', new GoogleStrategy({
+  clientID: process.env.YOUTUBE_CLIENT_ID!,
+  clientSecret: process.env.YOUTUBE_CLIENT_SECRET!,
+  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/youtube/callback`,
+  scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload'],
+  passReqToCallback: true
+}, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) {
+      return done(new Error('User not authenticated'));
+    }
+
+    await storage.createPlatformConnection({
+      userId,
+      platform: 'youtube',
+      platformUserId: profile.id,
+      platformUsername: profile.displayName,
+      accessToken,
+      refreshToken,
+      isActive: true
+    });
+
+    return done(null, { platform: 'youtube', success: true });
   } catch (error) {
     return done(error);
   }

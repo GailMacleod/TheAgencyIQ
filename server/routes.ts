@@ -2464,6 +2464,16 @@ Continue refining these elements to build a stronger brand foundation.`;
     }
   );
 
+  // YouTube OAuth
+  app.get('/auth/youtube', requireAuth, passport.authenticate('youtube', { scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload'] }));
+  
+  app.get('/auth/youtube/callback',
+    passport.authenticate('youtube', { failureRedirect: '/platform-connections?error=youtube_failed' }),
+    (req, res) => {
+      res.redirect('/platform-connections?success=youtube_connected');
+    }
+  );
+
   // Real platform connection endpoint
   app.post("/api/platform-connections/connect", requireAuth, async (req: any, res) => {
     try {
@@ -2474,7 +2484,7 @@ Continue refining these elements to build a stronger brand foundation.`;
       }
 
       // Redirect to OAuth flow for approved platforms
-      const approvedPlatforms = ['facebook', 'instagram', 'linkedin', 'x'];
+      const approvedPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
       
       if (approvedPlatforms.includes(platform)) {
         // Return OAuth URL for frontend to redirect
@@ -2482,10 +2492,10 @@ Continue refining these elements to build a stronger brand foundation.`;
         return res.json({ redirectUrl: oauthUrl });
       }
 
-      // For pending platforms (YouTube, TikTok)
-      if (platform === 'youtube' || platform === 'tiktok') {
+      // For pending platforms (TikTok only)
+      if (platform === 'tiktok') {
         return res.status(202).json({ 
-          message: `${platform.charAt(0).toUpperCase() + platform.slice(1)} OAuth approval pending. Manual connection available.`,
+          message: `TikTok OAuth approval pending. Manual connection available.`,
           pending: true 
         });
       }
@@ -2523,6 +2533,9 @@ Continue refining these elements to build a stronger brand foundation.`;
           break;
         case 'x':
           analyticsData = await fetchTwitterAnalytics(connection.accessToken, connection.refreshToken || '');
+          break;
+        case 'youtube':
+          analyticsData = await fetchYouTubeAnalytics(connection.accessToken);
           break;
         default:
           return res.status(400).json({ message: "Analytics not available for this platform" });
@@ -2672,5 +2685,54 @@ async function fetchTwitterAnalytics(accessToken: string, refreshToken: string) 
   } catch (error) {
     console.error('Twitter API error:', error);
     throw new Error('Failed to fetch Twitter analytics');
+  }
+}
+
+async function fetchYouTubeAnalytics(accessToken: string) {
+  try {
+    // Get channel information
+    const channelResponse = await axios.get(
+      'https://www.googleapis.com/youtube/v3/channels?part=statistics&mine=true',
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    // Get recent videos
+    const videosResponse = await axios.get(
+      'https://www.googleapis.com/youtube/v3/search?part=snippet&forMine=true&type=video&order=date&maxResults=50',
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    const channel = channelResponse.data.items[0];
+    const videos = videosResponse.data.items || [];
+
+    // Calculate analytics from channel statistics
+    const totalViews = parseInt(channel?.statistics?.viewCount || '0');
+    const totalVideos = parseInt(channel?.statistics?.videoCount || '0');
+    const subscriberCount = parseInt(channel?.statistics?.subscriberCount || '0');
+    
+    // Estimate engagement based on subscriber to view ratio
+    const estimatedEngagement = subscriberCount > 0 ? Math.round((totalViews / subscriberCount) * 0.1) : 0;
+
+    return {
+      platform: 'youtube',
+      totalPosts: totalVideos,
+      totalReach: totalViews,
+      totalEngagement: estimatedEngagement,
+      engagementRate: totalViews > 0 ? ((estimatedEngagement / totalViews) * 100).toFixed(2) : '0',
+      subscriberCount
+    };
+  } catch (error) {
+    console.error('YouTube API error:', error);
+    throw new Error('Failed to fetch YouTube analytics');
   }
 }
