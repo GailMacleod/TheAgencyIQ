@@ -105,7 +105,7 @@ export default function AnalyticsBar({ className }: AnalyticsBarProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <div className="flex items-center text-sm">
-              <TrendingUp className="w-4 h-4 text-green-600 mr-2" />
+              <TrendingUp className="w-4 h-4 text-[#3250fa] mr-2" />
               <span className="font-semibold text-gray-900">{analytics.totalPosts}</span>
               <span className="text-gray-600 ml-1">posts this month</span>
             </div>
@@ -145,7 +145,7 @@ export default function AnalyticsBar({ className }: AnalyticsBarProps) {
               <span className="font-medium text-gray-900 ml-1 max-w-48 truncate">
                 {analytics.topPerformingPost.content}
               </span>
-              <span className="text-green-600 ml-2 font-semibold">
+              <span className="text-[#3250fa] ml-2 font-semibold">
                 {analytics.topPerformingPost.reach.toLocaleString()} reach
               </span>
             </div>

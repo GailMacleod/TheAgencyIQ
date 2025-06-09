@@ -227,7 +227,7 @@ export default function RealPlatformConnections() {
                           <CardTitle className="text-lg">{platform.name}</CardTitle>
                           <div className="flex items-center space-x-2 mt-1">
                             {platform.approved ? (
-                              <Badge variant="default" className="bg-green-100 text-green-800">
+                              <Badge variant="default" className="bg-[#3250fa]/10 text-[#3250fa]">
                                 <CheckCircle className="h-3 w-3 mr-1" />
                                 OAuth Approved
                               </Badge>

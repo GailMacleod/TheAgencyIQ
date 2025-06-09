@@ -74,7 +74,7 @@ export default function Analytics() {
   // Calculate performance metrics
   const getPerformanceColor = (current: number, target: number) => {
     const percentage = (current / target) * 100;
-    if (percentage >= 90) return "text-green-600";
+    if (percentage >= 90) return "text-[#3250fa]";
     if (percentage >= 70) return "text-yellow-600";
     return "text-red-600";
   };
@@ -181,11 +181,11 @@ export default function Analytics() {
                   </div>
                   <div className="flex items-center space-x-1">
                     {metric.trend === "up" ? (
-                      <TrendingUp className="w-4 h-4 text-green-600" />
+                      <TrendingUp className="w-4 h-4 text-[#3250fa]" />
                     ) : (
                       <TrendingDown className="w-4 h-4 text-red-600" />
                     )}
-                    <span className={`text-xs ${metric.trend === "up" ? "text-green-600" : "text-red-600"}`}>
+                    <span className={`text-xs ${metric.trend === "up" ? "text-[#3250fa]" : "text-red-600"}`}>
                       {metric.trendValue > 0 ? "+" : ""}{metric.trendValue.toFixed(1)}%
                     </span>
                   </div>
