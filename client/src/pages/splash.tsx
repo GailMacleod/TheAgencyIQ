@@ -59,13 +59,9 @@ export default function Splash() {
                   <span className="block bg-gradient-atomiq bg-clip-text text-transparent">
                     Automation
                   </span>
-                  <span className="block text-3xl md:text-4xl lg:text-5xl text-muted-foreground font-medium">
-                    Powered by AiQ
-                  </span>
+                  
                 </h1>
-                <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">
-                  Complete waterfall workflow for Queensland small businesses. From brand purpose to automated posting with AI-powered content generation.
-                </p>
+                <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">Streamlined waterfall workflow and Brand Purpose to boost small business online social presence.</p>
               </div>
               
               {/* Platform logos for education */}
