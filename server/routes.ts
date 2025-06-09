@@ -1370,97 +1370,99 @@ Continue refining these elements to build a stronger brand foundation.`;
     try {
       const userId = req.session.userId || 1;
 
-      // Get user and brand purpose data
+      // Get user and connected platforms
       const user = await storage.getUser(userId);
-      const brandPurpose = await storage.getBrandPurposeByUser(userId);
-      const posts = await storage.getPostsByUser(userId);
       const connections = await storage.getPlatformConnectionsByUser(userId);
 
       if (!user) {
         return res.status(400).json({ message: "User not found" });
       }
 
-      // Filter for published posts only (real data)
-      const publishedPosts = posts.filter(post => 
-        post.status === 'published' && 
-        post.publishedAt && 
-        post.analytics
-      );
+      // Get real analytics from connected platforms
+      const connectedPlatforms = connections.filter(conn => conn.isActive);
+      
+      let totalPosts = 0;
+      let totalReach = 0;
+      let totalEngagement = 0;
+      const realPlatformStats: any[] = [];
 
-      // Calculate actual metrics from published posts with real analytics
-      const currentMonth = new Date();
-      const monthlyPublishedPosts = publishedPosts.filter(post => {
-        if (!post.publishedAt) return false;
-        const postDate = new Date(post.publishedAt);
-        return postDate.getMonth() === currentMonth.getMonth() && 
-               postDate.getFullYear() === currentMonth.getFullYear();
-      });
+      // Fetch real analytics from each connected platform
+      for (const connection of connectedPlatforms) {
+        try {
+          let platformAnalytics;
+          
+          switch (connection.platform) {
+            case 'facebook':
+              platformAnalytics = await fetchFacebookAnalytics(connection.accessToken);
+              break;
+            case 'instagram':
+              platformAnalytics = await fetchInstagramAnalytics(connection.accessToken);
+              break;
+            case 'linkedin':
+              platformAnalytics = await fetchLinkedInAnalytics(connection.accessToken);
+              break;
+            case 'x':
+              platformAnalytics = await fetchTwitterAnalytics(connection.accessToken, connection.refreshToken || '');
+              break;
+            case 'youtube':
+              platformAnalytics = await fetchYouTubeAnalytics(connection.accessToken);
+              break;
+            default:
+              continue;
+          }
 
-      // Determine if we have real published data or need placeholders
-      const hasRealData = monthlyPublishedPosts.length > 0;
+          if (platformAnalytics) {
+            totalPosts += platformAnalytics.totalPosts;
+            totalReach += platformAnalytics.totalReach;
+            totalEngagement += platformAnalytics.totalEngagement;
 
-      // Calculate platform breakdown with real analytics data
-      const platformStats = ['linkedin', 'instagram', 'facebook', 'youtube', 'tiktok', 'x'].map(platform => {
-        const platformPosts = monthlyPublishedPosts.filter(p => p.platform === platform);
-        
-        if (platformPosts.length === 0) {
-          // Return placeholder data for unconnected or unused platforms
-          return {
+            realPlatformStats.push({
+              platform: connection.platform,
+              posts: platformAnalytics.totalPosts,
+              reach: platformAnalytics.totalReach,
+              engagement: parseFloat(platformAnalytics.engagementRate),
+              performance: Math.min(100, Math.round((platformAnalytics.totalPosts * 10) + (parseFloat(platformAnalytics.engagementRate) * 5))),
+              isPlaceholder: false
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to fetch analytics for ${connection.platform}:`, error);
+          // Add platform with zero data if API call fails
+          realPlatformStats.push({
+            platform: connection.platform,
+            posts: 0,
+            reach: 0,
+            engagement: 0,
+            performance: 0,
+            isPlaceholder: true
+          });
+        }
+      }
+
+      const hasRealData = totalPosts > 0;
+
+      // Add platforms without connections to show complete overview
+      const allPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube', 'tiktok'];
+      for (const platform of allPlatforms) {
+        if (!realPlatformStats.find(stat => stat.platform === platform)) {
+          realPlatformStats.push({
             platform,
             posts: 0,
             reach: 0,
             engagement: 0,
             performance: 0,
             isPlaceholder: true
-          };
+          });
         }
+      }
 
-        // Calculate real metrics from published posts
-        const totalReach = platformPosts.reduce((sum, p) => {
-          const analytics = p.analytics as any;
-          return sum + (analytics?.reach || 0);
-        }, 0);
-        
-        const totalEngagement = platformPosts.reduce((sum, p) => {
-          const analytics = p.analytics as any;
-          return sum + (analytics?.engagement || 0);
-        }, 0);
-        
-        const avgReach = Math.round(totalReach / platformPosts.length);
-        // Calculate engagement rate as percentage: (total engagement / total reach) * 100
-        const engagementRate = totalReach > 0 ? Math.round((totalEngagement / totalReach) * 10000) / 100 : 0;
-        
-        return {
-          platform,
-          posts: platformPosts.length,
-          reach: avgReach,
-          engagement: engagementRate,
-          performance: Math.min(100, Math.round((platformPosts.length / 10) * 30 + engagementRate * 10)),
-          isPlaceholder: false
-        };
-      });
-
-      // Calculate totals from actual published posts
-      const realPlatformStats = platformStats.filter(p => !p.isPlaceholder);
-      
-      // Get actual total reach and engagement from all published posts
-      const actualTotalReach = monthlyPublishedPosts.reduce((sum, post) => {
-        const analytics = post.analytics as any;
-        return sum + (analytics?.reach || 0);
-      }, 0);
-      
-      const actualTotalEngagement = monthlyPublishedPosts.reduce((sum, post) => {
-        const analytics = post.analytics as any;
-        return sum + (analytics?.engagement || 0);
-      }, 0);
-      
       // Calculate overall engagement rate as percentage: (total engagement / total reach) * 100
-      const avgEngagement = actualTotalReach > 0 ? 
-        Math.round((actualTotalEngagement / actualTotalReach) * 10000) / 100 : 0;
+      const avgEngagement = totalReach > 0 ? 
+        Math.round((totalEngagement / totalReach) * 10000) / 100 : 0;
       
       // Calculate conversions from real engagement data
       const conversions = hasRealData ? 
-        Math.round(actualTotalReach * (avgEngagement / 100) * 0.02) : 0;
+        Math.round(totalReach * (avgEngagement / 100) * 0.02) : 0;
 
       // Set targets based on subscription plan
       const baseTargets = {
@@ -1474,9 +1476,9 @@ Continue refining these elements to build a stronger brand foundation.`;
       // Goal progress based on real data
       const goalProgress = {
         growth: {
-          current: hasRealData ? Math.round(actualTotalReach / 1000) : 0,
+          current: hasRealData ? Math.round(totalReach / 1000) : 0,
           target: Math.round(targets.reach / 1000),
-          percentage: hasRealData ? Math.min(100, Math.round((actualTotalReach / targets.reach) * 100)) : 0
+          percentage: hasRealData ? Math.min(100, Math.round((totalReach / targets.reach) * 100)) : 0
         },
         efficiency: {
           current: hasRealData ? avgEngagement : 0,
@@ -1484,9 +1486,9 @@ Continue refining these elements to build a stronger brand foundation.`;
           percentage: hasRealData ? Math.min(100, Math.round((avgEngagement / targets.engagement) * 100)) : 0
         },
         reach: {
-          current: hasRealData ? actualTotalReach : 0,
+          current: hasRealData ? totalReach : 0,
           target: targets.reach,
-          percentage: hasRealData ? Math.min(100, Math.round((actualTotalReach / targets.reach) * 100)) : 0
+          percentage: hasRealData ? Math.min(100, Math.round((totalReach / targets.reach) * 100)) : 0
         },
         engagement: {
           current: hasRealData ? avgEngagement : 0,
@@ -1496,28 +1498,28 @@ Continue refining these elements to build a stronger brand foundation.`;
       };
 
       const analyticsData = {
-        totalPosts: monthlyPublishedPosts.length,
+        totalPosts: totalPosts,
         targetPosts: targets.posts,
-        reach: actualTotalReach,
+        reach: totalReach,
         targetReach: targets.reach,
         engagement: avgEngagement,
         targetEngagement: targets.engagement,
         conversions,
         targetConversions: targets.conversions,
-        brandAwareness: hasRealData ? Math.min(100, Math.round((actualTotalReach / targets.reach) * 100)) : 0,
+        brandAwareness: hasRealData ? Math.min(100, Math.round((totalReach / targets.reach) * 100)) : 0,
         targetBrandAwareness: 100,
-        platformBreakdown: platformStats,
+        platformBreakdown: realPlatformStats,
         monthlyTrends: hasRealData ? [
           {
             month: "May 2025",
-            posts: Math.max(0, monthlyPublishedPosts.length - 2),
-            reach: Math.max(0, actualTotalReach - Math.round(actualTotalReach * 0.3)),
+            posts: Math.max(0, totalPosts - 2),
+            reach: Math.max(0, totalReach - Math.round(totalReach * 0.3)),
             engagement: Math.max(0, avgEngagement - 0.5)
           },
           {
             month: "June 2025",
-            posts: monthlyPublishedPosts.length,
-            reach: actualTotalReach,
+            posts: totalPosts,
+            reach: totalReach,
             engagement: avgEngagement
           }
         ] : [
