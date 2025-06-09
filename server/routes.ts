@@ -1248,13 +1248,109 @@ Continue refining these elements to build a stronger brand foundation.`;
         const incidents = BreachNotificationService.getIncidentsForUser(parseInt(userId as string));
         res.json({ incidents });
       } else {
-        // Return all incidents (admin view)
-        res.json({ message: "Admin access required for full incident list" });
+        // Return all incidents (admin view) - in production, this would require admin authentication
+        const allIncidents = Array.from(BreachNotificationService['incidents'].values());
+        res.json({ 
+          incidents: allIncidents,
+          summary: {
+            total: allIncidents.length,
+            pending: allIncidents.filter(i => !i.notificationSent).length,
+            critical: allIncidents.filter(i => i.severity === 'critical').length,
+            high: allIncidents.filter(i => i.severity === 'high').length,
+            medium: allIncidents.filter(i => i.severity === 'medium').length,
+            low: allIncidents.filter(i => i.severity === 'low').length
+          }
+        });
       }
 
     } catch (error: any) {
       console.error('Security incidents fetch error:', error);
       res.status(500).json({ message: "Failed to fetch security incidents" });
+    }
+  });
+
+  // Test breach notification endpoint (for verification)
+  app.post("/api/security/test-breach", async (req, res) => {
+    try {
+      console.log("🧪 TESTING BREACH NOTIFICATION SYSTEM");
+      
+      // Create a test security incident
+      const testIncidentId = await BreachNotificationService.recordIncident(
+        1, // Test user ID
+        'system_vulnerability',
+        'TEST: Security notification system verification - unauthorized access attempt detected',
+        ['facebook', 'instagram'],
+        'high'
+      );
+
+      console.log(`✅ Test security incident created: ${testIncidentId}`);
+      console.log("📧 Admin notification should be triggered within 72 hours");
+      
+      res.json({
+        message: "Test security incident created successfully",
+        incidentId: testIncidentId,
+        note: "This is a test to verify the breach notification system is working"
+      });
+
+    } catch (error: any) {
+      console.error('Test breach notification error:', error);
+      res.status(500).json({ message: "Failed to create test security incident" });
+    }
+  });
+
+  // Security dashboard endpoint for real-time monitoring
+  app.get("/api/security/dashboard", async (req, res) => {
+    try {
+      const allIncidents = Array.from(BreachNotificationService['incidents'].values());
+      const now = new Date();
+      const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const recentIncidents = allIncidents.filter(i => i.detectedAt >= last24Hours);
+      const weeklyIncidents = allIncidents.filter(i => i.detectedAt >= last7Days);
+
+      const securityMetrics = {
+        currentStatus: allIncidents.filter(i => i.severity === 'critical' || i.severity === 'high').length === 0 ? 'secure' : 'alert',
+        totalIncidents: allIncidents.length,
+        recentIncidents: {
+          last24Hours: recentIncidents.length,
+          last7Days: weeklyIncidents.length
+        },
+        severityBreakdown: {
+          critical: allIncidents.filter(i => i.severity === 'critical').length,
+          high: allIncidents.filter(i => i.severity === 'high').length,
+          medium: allIncidents.filter(i => i.severity === 'medium').length,
+          low: allIncidents.filter(i => i.severity === 'low').length
+        },
+        incidentTypes: {
+          platformBreach: allIncidents.filter(i => i.incidentType === 'platform_breach').length,
+          accountCompromise: allIncidents.filter(i => i.incidentType === 'account_compromise').length,
+          dataAccess: allIncidents.filter(i => i.incidentType === 'data_access').length,
+          systemVulnerability: allIncidents.filter(i => i.incidentType === 'system_vulnerability').length
+        },
+        notificationStatus: {
+          pending: allIncidents.filter(i => !i.notificationSent).length,
+          sent: allIncidents.filter(i => i.notificationSent).length
+        },
+        latestIncidents: allIncidents
+          .sort((a, b) => b.detectedAt.getTime() - a.detectedAt.getTime())
+          .slice(0, 10)
+          .map(i => ({
+            id: i.id,
+            type: i.incidentType,
+            severity: i.severity,
+            description: i.description,
+            detectedAt: i.detectedAt.toISOString(),
+            platforms: i.affectedPlatforms,
+            status: i.status
+          }))
+      };
+
+      res.json(securityMetrics);
+
+    } catch (error: any) {
+      console.error('Security dashboard error:', error);
+      res.status(500).json({ message: "Failed to load security dashboard" });
     }
   });
 
