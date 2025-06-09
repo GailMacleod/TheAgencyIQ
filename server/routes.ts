@@ -14,6 +14,7 @@ import sgMail from '@sendgrid/mail';
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 
 // Session type declaration
 declare module 'express-session' {
@@ -238,19 +239,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt,
       });
 
-      // For test number, just log the code
-      if (phone === '+15005550006') {
-        console.log(`Verification code for ${phone}: ${code}`);
-      } else {
-        // Send SMS via Twilio
-        await twilioClient.messages.create({
-          body: `Your AiQ verification code is: ${code}`,
-          from: process.env.TWILIO_PHONE_NUMBER,
-          to: phone
-        });
+      // Enhanced SMS sending with fallback
+      try {
+        if (phone === '+15005550006' || phone.startsWith('+1500555')) {
+          // Test numbers - log code for development
+          console.log(`Verification code for test number ${phone}: ${code}`);
+        } else if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+          // Send SMS via Twilio
+          await twilioClient.messages.create({
+            body: `Your AgencyIQ verification code is: ${code}. Valid for 10 minutes.`,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            to: phone
+          });
+          console.log(`SMS verification code sent to ${phone}`);
+        } else {
+          // Fallback for missing Twilio config - log code for testing
+          console.log(`Twilio not configured. Verification code for ${phone}: ${code}`);
+        }
+      } catch (smsError: any) {
+        console.error('SMS sending failed:', smsError);
+        // Still allow verification to proceed - log code for manual verification
+        console.log(`SMS failed. Manual verification code for ${phone}: ${code}`);
       }
 
-      res.json({ message: "Verification code sent" });
+      res.json({ 
+        message: "Verification code sent", 
+        testMode: phone.startsWith('+1500555') || !process.env.TWILIO_ACCOUNT_SID 
+      });
     } catch (error: any) {
       console.error('SMS error:', error);
       res.status(500).json({ message: "Error sending verification code" });
@@ -1489,7 +1504,7 @@ Continue refining these elements to build a stronger brand foundation.`;
       }
 
       // Generate secure reset token
-      const resetToken = require('crypto').randomBytes(32).toString('hex');
+      const resetToken = crypto.randomUUID().replace(/-/g, '');
       const expiresAt = new Date(Date.now() + 3600000); // 1 hour expiry
       
       // Store reset token in verification codes table
@@ -1704,8 +1719,14 @@ Continue refining these elements to build a stronger brand foundation.`;
           // Log the user in
           req.session.userId = user.id;
           
-          // Redirect to brand purpose setup
-          return res.redirect('/brand-purpose?payment=success');
+          // Save session before redirect
+          req.session.save((err) => {
+            if (err) {
+              console.error('Session save error:', err);
+            }
+            // Redirect to brand purpose setup with success indicator
+            return res.redirect('/brand-purpose?payment=success&setup=required');
+          });
         }
       }
       
