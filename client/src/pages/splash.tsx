@@ -142,7 +142,7 @@ export default function Splash() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-6">
             
-            <p className="tracking-wider uppercase font-extrabold text-[20px] text-[#3b5cff]">BETA</p>
+            <p className="tracking-wider uppercase font-extrabold text-[20px] text-[#3b5cff]">BETA - LIMITED USERS</p>
             <Link href="/subscription">
               <Button size="lg" className="bg-gradient-atomiq hover:opacity-90 text-white px-8 py-4 text-lg">
                 Choose Your Plan
