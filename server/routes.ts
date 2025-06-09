@@ -1298,6 +1298,49 @@ Continue refining these elements to build a stronger brand foundation.`;
     }
   });
 
+  // Data cleanup status endpoint
+  app.get("/api/admin/data-cleanup/status", async (req, res) => {
+    try {
+      const { DataCleanupService } = await import("./data-cleanup");
+      const status = DataCleanupService.getCleanupStatus();
+      
+      res.json({
+        status: "scheduled",
+        nextScheduledRun: status.nextRun.toISOString(),
+        retentionPolicies: status.retentionPolicies,
+        description: "Automated data cleanup runs daily at 2 AM"
+      });
+
+    } catch (error: any) {
+      console.error('Data cleanup status error:', error);
+      res.status(500).json({ message: "Failed to fetch data cleanup status" });
+    }
+  });
+
+  // Manual data cleanup trigger (admin only)
+  app.post("/api/admin/data-cleanup/trigger", async (req, res) => {
+    try {
+      const { DataCleanupService } = await import("./data-cleanup");
+      
+      console.log("🧹 Manual data cleanup triggered by admin");
+      const report = await DataCleanupService.performScheduledCleanup();
+      
+      res.json({
+        message: "Data cleanup completed successfully",
+        report: {
+          timestamp: report.timestamp,
+          deletedItems: report.deletedItems,
+          retainedItems: report.retainedItems,
+          errors: report.errors
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Manual data cleanup error:', error);
+      res.status(500).json({ message: "Failed to perform data cleanup" });
+    }
+  });
+
   // Security dashboard endpoint for real-time monitoring
   app.get("/api/security/dashboard", async (req, res) => {
     try {

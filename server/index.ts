@@ -177,8 +177,9 @@ app.post('/api/cancel-subscription', async (req, res) => {
   }
 });
 
-// Import breach notification service
+// Import security and data management services
 import BreachNotificationService from "./breach-notification";
+import { DataCleanupService } from "./data-cleanup";
 
 (async () => {
   const server = await registerRoutes(app);
@@ -187,6 +188,38 @@ import BreachNotificationService from "./breach-notification";
   setInterval(() => {
     BreachNotificationService.checkPendingNotifications();
   }, 60 * 60 * 1000); // Check every hour for pending notifications
+  
+  // Start daily data cleanup at 2 AM
+  const scheduleDaily = () => {
+    const now = new Date();
+    const next2AM = new Date();
+    next2AM.setHours(2, 0, 0, 0);
+    
+    // If it's already past 2 AM today, schedule for tomorrow
+    if (now.getTime() > next2AM.getTime()) {
+      next2AM.setDate(next2AM.getDate() + 1);
+    }
+    
+    const timeUntil2AM = next2AM.getTime() - now.getTime();
+    
+    console.log(`📅 Data cleanup scheduled for: ${next2AM.toISOString()}`);
+    
+    setTimeout(() => {
+      // Run cleanup
+      DataCleanupService.performScheduledCleanup().then(report => {
+        console.log("✅ Daily data cleanup completed");
+      }).catch(error => {
+        console.error("❌ Daily data cleanup failed:", error);
+      });
+      
+      // Schedule next cleanup in 24 hours
+      setInterval(() => {
+        DataCleanupService.performScheduledCleanup();
+      }, 24 * 60 * 60 * 1000);
+    }, timeUntil2AM);
+  };
+  
+  scheduleDaily();
 
   // Global error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
