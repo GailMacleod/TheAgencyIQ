@@ -144,6 +144,12 @@ export default function Subscription() {
               </Link>
             </div>
             <div className="flex items-center space-x-6">
+              <Link href="/redeem-certificate">
+                <Button variant="outline" className="nav-link">
+                  <Gift className="h-4 w-4 mr-2" />
+                  Redeem Certificate
+                </Button>
+              </Link>
               <Link href="/login">
                 <Button variant="ghost" className="nav-link">Sign In</Button>
               </Link>

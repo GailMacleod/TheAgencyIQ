@@ -18,6 +18,7 @@ import Analytics from "@/pages/analytics";
 import YearlyAnalytics from "@/pages/yearly-analytics";
 import Profile from "@/pages/profile";
 import ResetPassword from "@/pages/reset-password";
+import RedeemCertificate from "@/pages/redeem-certificate";
 
 function Router() {
   return (
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/grok-test" component={GrokTest} />
       <Route path="/login" component={Login} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/redeem-certificate" component={RedeemCertificate} />
       <Route component={NotFound} />
     </Switch>
   );
