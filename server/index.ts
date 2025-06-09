@@ -177,8 +177,16 @@ app.post('/api/cancel-subscription', async (req, res) => {
   }
 });
 
+// Import breach notification service
+import BreachNotificationService from "./breach-notification";
+
 (async () => {
   const server = await registerRoutes(app);
+  
+  // Start periodic breach notification monitoring
+  setInterval(() => {
+    BreachNotificationService.checkPendingNotifications();
+  }, 60 * 60 * 1000); // Check every hour for pending notifications
 
   // Global error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

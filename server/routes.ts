@@ -18,6 +18,7 @@ import crypto from "crypto";
 import { passport } from "./oauth-config";
 import axios from "axios";
 import PostPublisher from "./post-publisher";
+import BreachNotificationService from "./breach-notification";
 
 // Session type declaration
 declare module 'express-session' {
@@ -1207,6 +1208,93 @@ Continue refining these elements to build a stronger brand foundation.`;
       console.error('Subscription usage error:', error);
       res.status(500).json({ message: "Error fetching subscription usage" });
     }
+  });
+
+  // Security breach reporting endpoint
+  app.post("/api/security/report-breach", requireAuth, async (req: any, res) => {
+    try {
+      const { incidentType, description, affectedPlatforms = [], severity = 'medium' } = req.body;
+      
+      if (!incidentType || !description) {
+        return res.status(400).json({ message: "Incident type and description are required" });
+      }
+
+      const incidentId = await BreachNotificationService.recordIncident(
+        req.session.userId,
+        incidentType,
+        description,
+        affectedPlatforms,
+        severity
+      );
+
+      res.json({
+        message: "Security incident reported",
+        incidentId,
+        notificationScheduled: "72 hours from detection"
+      });
+
+    } catch (error: any) {
+      console.error('Breach reporting error:', error);
+      res.status(500).json({ message: "Failed to report security incident" });
+    }
+  });
+
+  // Get security incidents for admin
+  app.get("/api/security/incidents", async (req, res) => {
+    try {
+      const { userId } = req.query;
+      
+      if (userId) {
+        const incidents = BreachNotificationService.getIncidentsForUser(parseInt(userId as string));
+        res.json({ incidents });
+      } else {
+        // Return all incidents (admin view)
+        res.json({ message: "Admin access required for full incident list" });
+      }
+
+    } catch (error: any) {
+      console.error('Security incidents fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch security incidents" });
+    }
+  });
+
+  // Monitor for unauthorized access attempts
+  app.use((req, res, next) => {
+    // Monitor for suspicious activity patterns
+    const suspiciousPatterns = [
+      '/admin',
+      '/.env',
+      '/wp-admin',
+      '/phpmyadmin',
+      '/../',
+      '/etc/passwd'
+    ];
+
+    const hasSuspiciousPattern = suspiciousPatterns.some(pattern => 
+      req.path.toLowerCase().includes(pattern.toLowerCase())
+    );
+
+    if (hasSuspiciousPattern) {
+      console.log(`🚨 SUSPICIOUS ACCESS ATTEMPT DETECTED 🚨`);
+      console.log(`Path: ${req.path}`);
+      console.log(`IP: ${req.ip}`);
+      console.log(`User-Agent: ${req.get('User-Agent')}`);
+      console.log(`Method: ${req.method}`);
+      console.log(`Timestamp: ${new Date().toISOString()}`);
+      
+      // Record security incident for suspicious access
+      if (req.session?.userId) {
+        BreachNotificationService.recordIncident(
+          req.session.userId,
+          'system_vulnerability',
+          `Suspicious access attempt to ${req.path} from IP ${req.ip}`,
+          [],
+          'high'
+        );
+      }
+    }
+
+    next();
   });
 
   // Get AI recommendation with real-time brand purpose analysis
