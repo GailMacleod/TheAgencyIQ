@@ -165,25 +165,8 @@ export default function PlatformConnections() {
     }
   };
 
-  const handleNext = async () => {
-    try {
-      // Generate content calendar
-      await apiRequest("POST", "/api/generate-content-calendar", {});
-      
-      toast({
-        title: "Content Calendar Generated",
-        description: "Your content calendar has been created",
-      });
-      
-      setLocation("/schedule");
-    } catch (error: any) {
-      console.error("Content generation error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate content calendar",
-        variant: "destructive",
-      });
-    }
+  const handleNext = () => {
+    setLocation("/analytics");
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -7,6 +7,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import SplashScreen from "@/components/splash-screen";
 import GrokWidget from "@/components/grok-widget";
 import NotFound from "@/pages/not-found";
+import { initGA } from "./lib/analytics";
+import { useAnalytics } from "./hooks/use-analytics";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
@@ -21,6 +23,9 @@ import ResetPassword from "@/pages/reset-password";
 import RedeemCertificate from "@/pages/redeem-certificate";
 
 function Router() {
+  // Track page views when routes change
+  useAnalytics();
+  
   return (
     <Switch>
       <Route path="/" component={Splash} />
@@ -42,6 +47,16 @@ function Router() {
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
+
+  // Initialize Google Analytics when app loads
+  useEffect(() => {
+    // Verify required environment variable is present
+    if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
+      console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
+    } else {
+      initGA();
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
