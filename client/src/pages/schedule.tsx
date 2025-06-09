@@ -67,6 +67,7 @@ export default function Schedule() {
   const { data: posts = [], isLoading: postsLoading, refetch: refetchPosts } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
     retry: false,
+    enabled: !!user, // Only fetch when user is authenticated
   });
 
   // Generate 30-day calendar view
@@ -74,8 +75,10 @@ export default function Schedule() {
     const startDate = new Date();
     const days: CalendarDay[] = [];
     
-    // Combine both fetched posts and generated posts
-    const allPosts = [...posts, ...generatedPosts];
+    // Combine both fetched posts and generated posts - ensure arrays exist
+    const safePosts = Array.isArray(posts) ? posts : [];
+    const safeGeneratedPosts = Array.isArray(generatedPosts) ? generatedPosts : [];
+    const allPosts = [...safePosts, ...safeGeneratedPosts];
     
     for (let i = 0; i < 30; i++) {
       const date = addDays(startDate, i);
@@ -215,7 +218,7 @@ export default function Schedule() {
 
     try {
       // Get subscription info from user data or localStorage
-      const productsServices = localStorage.getItem('productsServices') || user?.subscriptionPlan || '';
+      const productsServices = localStorage.getItem('productsServices') || (user as any)?.subscriptionPlan || '';
       
       const response = await fetch('/api/generate-content-calendar', {
         method: 'POST',
@@ -252,7 +255,7 @@ export default function Schedule() {
           const limitedPosts = posts.slice(0, postCount);
           
           // Convert API response to Post format
-          const newPosts = limitedPosts.map((post: any, index: number) => ({
+          const newPosts = limitedPosts.map((post: any, index: number): Post => ({
             id: post.id || Date.now() + index,
             platform: post.platform,
             content: post.content,
@@ -266,7 +269,7 @@ export default function Schedule() {
           
           // Also render directly to calendar grid if available
           if (calendar && newPosts.length > 0) {
-            const eventCards = newPosts.map(post => 
+            const eventCards = newPosts.map((post: Post) => 
               `<div class='event-card bg-blue-50 border border-blue-200 rounded p-2 mb-1'>
                 <p class='text-xs text-blue-800'>${post.content.substring(0, 50)}...</p>
                 <span class='text-xs text-blue-600'>${post.platform}</span>
