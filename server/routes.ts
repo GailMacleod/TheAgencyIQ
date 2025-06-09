@@ -1425,16 +1425,26 @@ Continue refining these elements to build a stronger brand foundation.`;
         };
       });
 
-      // Calculate totals from real data only
+      // Calculate totals from actual published posts
       const realPlatformStats = platformStats.filter(p => !p.isPlaceholder);
-      const totalReach = realPlatformStats.reduce((sum, p) => sum + (p.reach * p.posts), 0);
-      const totalEngagement = realPlatformStats.reduce((sum, p) => sum + p.engagement, 0);
-      const avgEngagement = realPlatformStats.length > 0 ? 
-        Math.round((totalEngagement / realPlatformStats.length) * 100) / 100 : 0;
+      
+      // Get actual total reach and engagement from all published posts
+      const actualTotalReach = monthlyPublishedPosts.reduce((sum, post) => {
+        const analytics = post.analytics as any;
+        return sum + (analytics?.reach || 0);
+      }, 0);
+      
+      const actualTotalEngagement = monthlyPublishedPosts.reduce((sum, post) => {
+        const analytics = post.analytics as any;
+        return sum + (analytics?.engagement || 0);
+      }, 0);
+      
+      const avgEngagement = monthlyPublishedPosts.length > 0 ? 
+        Math.round((actualTotalEngagement / monthlyPublishedPosts.length) * 100) / 100 : 0;
       
       // Calculate conversions from real engagement data
       const conversions = hasRealData ? 
-        Math.round(totalReach * (avgEngagement / 100) * 0.02) : 0;
+        Math.round(actualTotalReach * (avgEngagement / 100) * 0.02) : 0;
 
       // Set targets based on subscription plan
       const baseTargets = {
@@ -1448,9 +1458,9 @@ Continue refining these elements to build a stronger brand foundation.`;
       // Goal progress based on real data
       const goalProgress = {
         growth: {
-          current: hasRealData ? Math.round(totalReach / 1000) : 0,
+          current: hasRealData ? Math.round(actualTotalReach / 1000) : 0,
           target: Math.round(targets.reach / 1000),
-          percentage: hasRealData ? Math.min(100, Math.round((totalReach / targets.reach) * 100)) : 0
+          percentage: hasRealData ? Math.min(100, Math.round((actualTotalReach / targets.reach) * 100)) : 0
         },
         efficiency: {
           current: hasRealData ? avgEngagement : 0,
@@ -1458,9 +1468,9 @@ Continue refining these elements to build a stronger brand foundation.`;
           percentage: hasRealData ? Math.min(100, Math.round((avgEngagement / targets.engagement) * 100)) : 0
         },
         reach: {
-          current: hasRealData ? totalReach : 0,
+          current: hasRealData ? actualTotalReach : 0,
           target: targets.reach,
-          percentage: hasRealData ? Math.min(100, Math.round((totalReach / targets.reach) * 100)) : 0
+          percentage: hasRealData ? Math.min(100, Math.round((actualTotalReach / targets.reach) * 100)) : 0
         },
         engagement: {
           current: hasRealData ? avgEngagement : 0,
@@ -1472,26 +1482,26 @@ Continue refining these elements to build a stronger brand foundation.`;
       const analyticsData = {
         totalPosts: monthlyPublishedPosts.length,
         targetPosts: targets.posts,
-        reach: totalReach,
+        reach: actualTotalReach,
         targetReach: targets.reach,
         engagement: avgEngagement,
         targetEngagement: targets.engagement,
         conversions,
         targetConversions: targets.conversions,
-        brandAwareness: hasRealData ? Math.min(100, Math.round((totalReach / targets.reach) * 100)) : 0,
+        brandAwareness: hasRealData ? Math.min(100, Math.round((actualTotalReach / targets.reach) * 100)) : 0,
         targetBrandAwareness: 100,
         platformBreakdown: platformStats,
         monthlyTrends: hasRealData ? [
           {
             month: "May 2025",
             posts: Math.max(0, monthlyPublishedPosts.length - 2),
-            reach: Math.max(0, totalReach - Math.round(totalReach * 0.3)),
+            reach: Math.max(0, actualTotalReach - Math.round(actualTotalReach * 0.3)),
             engagement: Math.max(0, avgEngagement - 0.5)
           },
           {
             month: "June 2025",
             posts: monthlyPublishedPosts.length,
-            reach: totalReach,
+            reach: actualTotalReach,
             engagement: avgEngagement
           }
         ] : [
