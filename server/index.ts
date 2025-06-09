@@ -8,25 +8,60 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
-// Domain validation completely disabled for Replit
+// Smart domain validation for Replit vs production
 app.use((req, res, next) => {
+  const hostname = req.hostname || req.header('host') || '';
+  
+  // Allow all Replit domains automatically
+  if (hostname.toLowerCase().includes('replit.app')) {
+    next();
+    return;
+  }
+  
+  // Only validate production domains
+  if (process.env.NODE_ENV === 'production' && !validateDomain(hostname)) {
+    return res.status(400).json({ message: 'Invalid domain' });
+  }
+  
   next();
 });
 
-// Skip HTTPS enforcement completely for Replit
+// Smart HTTPS handling - let Replit handle SSL termination
 app.use((req, res, next) => {
+  const hostname = req.hostname || req.header('host') || '';
+  
+  // Skip HTTPS redirect for Replit (they handle SSL termination)
+  if (hostname.toLowerCase().includes('replit.app')) {
+    next();
+    return;
+  }
+  
+  // Only enforce HTTPS for custom domains
+  if (process.env.NODE_ENV === 'production' && !isSecureContext(req)) {
+    return res.redirect(301, `https://${req.header('host')}${req.url}`);
+  }
   next();
 });
 
-// Minimal security headers and CORS for Replit
+// Proper SSL security headers with Replit support
 app.use((req, res, next) => {
-  // Apply minimal security headers
+  const hostname = req.hostname || req.header('host') || '';
+  const isReplit = hostname.toLowerCase().includes('replit.app');
+  
+  // Apply security headers (skip HSTS for Replit)
   Object.entries(SECURITY_HEADERS).forEach(([header, value]) => {
+    if (header === 'Strict-Transport-Security' && isReplit) {
+      return; // Skip HSTS for Replit domains
+    }
     res.setHeader(header, value);
   });
   
-  // Allow all origins for Replit deployment
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS configuration
+  const origin = req.headers.origin;
+  if (origin && (ALLOWED_ORIGINS.includes(origin) || origin.includes('replit.app'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
   res.setHeader('Access-Control-Allow-Credentials', 'true');

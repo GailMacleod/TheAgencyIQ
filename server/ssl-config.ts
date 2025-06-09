@@ -9,6 +9,15 @@ export const SSL_CONFIG = {
     hstsIncludeSubdomains: true,
     hstsPreload: true
   },
+  replit: {
+    domain: '*.replit.app',
+    protocol: 'https',
+    port: 443,
+    enforceHttps: false, // Replit handles SSL termination
+    hstsMaxAge: 0,
+    hstsIncludeSubdomains: false,
+    hstsPreload: false
+  },
   development: {
     domain: 'localhost',
     protocol: 'http',
@@ -27,10 +36,12 @@ export const ALLOWED_ORIGINS = [
 ];
 
 export const SECURITY_HEADERS = {
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'SAMEORIGIN',
   'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin'
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://replit.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com https://api.x.ai https://checkout.stripe.com wss://*.replit.app; frame-src https://checkout.stripe.com https://js.stripe.com;"
 };
 
 export function validateDomain(hostname: string): boolean {
