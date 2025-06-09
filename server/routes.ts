@@ -17,6 +17,7 @@ import fs from "fs";
 import crypto from "crypto";
 import { passport } from "./oauth-config";
 import axios from "axios";
+import PostPublisher from "./post-publisher";
 
 // Session type declaration
 declare module 'express-session' {
@@ -1039,32 +1040,172 @@ Continue refining these elements to build a stronger brand foundation.`;
     }
   });
 
-  // Approve post
+  // Approve and publish post with proper allocation tracking
   app.post("/api/schedule-post", requireAuth, async (req: any, res) => {
     try {
-      const { postId } = req.body;
+      const { postId, platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'] } = req.body;
       
       if (!postId) {
         return res.status(400).json({ message: "Post ID is required" });
       }
 
-      const post = await storage.updatePost(postId, {
-        status: "published",
-        publishedAt: new Date(),
-      });
-
-      // Decrement remaining posts
+      // Get user and check subscription limits
       const user = await storage.getUser(req.session.userId);
-      if (user && user.remainingPosts && user.remainingPosts > 0) {
-        await storage.updateUser(req.session.userId, {
-          remainingPosts: user.remainingPosts - 1,
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check remaining posts allocation
+      const remainingPosts = user.remainingPosts || 0;
+      if (remainingPosts <= 0) {
+        return res.status(400).json({ 
+          message: "No remaining posts in your subscription plan",
+          remainingPosts: 0,
+          subscriptionPlan: user.subscriptionPlan
         });
       }
 
-      res.json(post);
+      try {
+        // Use PostPublisher to handle multi-platform publishing
+        const publishResult = await PostPublisher.publishPost(
+          req.session.userId,
+          parseInt(postId),
+          platforms
+        );
+
+        if (publishResult.success) {
+          res.json({
+            message: "Post published successfully",
+            remainingPosts: publishResult.remainingPosts,
+            results: publishResult.results,
+            postId: postId
+          });
+        } else {
+          // All platforms failed - allocation preserved
+          res.status(500).json({
+            message: "Post publishing failed on all platforms - allocation preserved",
+            remainingPosts: user.remainingPosts,
+            results: publishResult.results,
+            error: "All platform publications failed"
+          });
+        }
+
+      } catch (publishError: any) {
+        console.error('Post publishing error:', publishError);
+        
+        res.status(500).json({ 
+          message: "Error during post publishing - allocation preserved",
+          remainingPosts: remainingPosts,
+          error: publishError.message
+        });
+      }
+
     } catch (error: any) {
       console.error('Schedule post error:', error);
-      res.status(500).json({ message: "Error scheduling post" });
+      res.status(500).json({ message: "Error processing post scheduling" });
+    }
+  });
+
+  // Retry failed post publication
+  app.post("/api/retry-post", requireAuth, async (req: any, res) => {
+    try {
+      const { postId, platforms } = req.body;
+      
+      if (!postId) {
+        return res.status(400).json({ message: "Post ID is required" });
+      }
+
+      // Get user and check subscription limits
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check remaining posts allocation
+      const remainingPosts = user.remainingPosts || 0;
+      if (remainingPosts <= 0) {
+        return res.status(400).json({ 
+          message: "No remaining posts in your subscription plan",
+          remainingPosts: 0,
+          subscriptionPlan: user.subscriptionPlan
+        });
+      }
+
+      // Get the failed post
+      const posts = await storage.getPostsByUser(req.session.userId);
+      const post = posts.find(p => p.id === parseInt(postId));
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      if (post.status !== 'failed' && post.status !== 'partial') {
+        return res.status(400).json({ message: "Post is not in a failed state" });
+      }
+
+      // Retry publishing
+      const publishResult = await PostPublisher.publishPost(
+        req.session.userId,
+        parseInt(postId),
+        platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
+      );
+
+      res.json({
+        message: publishResult.success ? "Post retry successful" : "Post retry failed",
+        remainingPosts: publishResult.remainingPosts,
+        results: publishResult.results,
+        postId: postId
+      });
+
+    } catch (error: any) {
+      console.error('Post retry error:', error);
+      res.status(500).json({ message: "Error retrying post publication" });
+    }
+  });
+
+  // Get subscription usage statistics
+  app.get("/api/subscription-usage", requireAuth, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const posts = await storage.getPostsByUser(req.session.userId);
+      
+      // Calculate usage statistics
+      const publishedPosts = posts.filter(p => p.status === 'published').length;
+      const failedPosts = posts.filter(p => p.status === 'failed').length;
+      const partialPosts = posts.filter(p => p.status === 'partial').length;
+      
+      const totalPosts = user.totalPosts || 0;
+      const remainingPosts = user.remainingPosts || 0;
+      const usedPosts = totalPosts - remainingPosts;
+
+      // Calculate subscription limits based on plan
+      const subscriptionLimits = {
+        starter: { posts: 15, reach: 5000, engagement: 3.5 },
+        professional: { posts: 30, reach: 15000, engagement: 4.5 },
+        growth: { posts: 60, reach: 30000, engagement: 5.5 }
+      };
+
+      const planLimits = subscriptionLimits[user.subscriptionPlan as keyof typeof subscriptionLimits] || subscriptionLimits.starter;
+
+      res.json({
+        subscriptionPlan: user.subscriptionPlan,
+        totalAllocation: totalPosts,
+        remainingPosts: remainingPosts,
+        usedPosts: usedPosts,
+        publishedPosts: publishedPosts,
+        failedPosts: failedPosts,
+        partialPosts: partialPosts,
+        planLimits: planLimits,
+        usagePercentage: totalPosts > 0 ? Math.round((usedPosts / totalPosts) * 100) : 0
+      });
+
+    } catch (error: any) {
+      console.error('Subscription usage error:', error);
+      res.status(500).json({ message: "Error fetching subscription usage" });
     }
   });
 
