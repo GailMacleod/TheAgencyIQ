@@ -19,7 +19,7 @@ export default function GrokWidget() {
     {
       id: '1',
       role: 'assistant',
-      content: 'hi! i\'m grok, your strategyzer-trained ai assistant. i\'ll help you define your brand purpose using proven value proposition methodology. ask me about customer segments, jobs-to-be-done, pains, gains, or your queensland business strategy.',
+      content: 'hi! i\'m your strategyzer-trained ai assistant. i\'ll help you define your brand purpose using proven value proposition methodology. ask me about customer segments, jobs-to-be-done, pains, gains, or your queensland business strategy.',
       timestamp: new Date(),
     },
   ]);
@@ -28,10 +28,10 @@ export default function GrokWidget() {
   const sendMessageMutation = useMutation({
     mutationFn: async (query: string) => {
       try {
-        const response = await apiRequest("POST", "/api/grok-query", { query });
+        const response = await apiRequest("POST", "/api/ai-query", { query });
         return await response.json();
       } catch (error) {
-        console.error('Grok query error:', error);
+        console.error('AI query error:', error);
         throw error;
       }
     },
@@ -45,7 +45,7 @@ export default function GrokWidget() {
       setMessages(prev => [...prev, assistantMessage]);
     },
     onError: (error) => {
-      console.error('Grok query error:', error);
+      console.error('AI query error:', error);
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant', 

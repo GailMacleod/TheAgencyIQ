@@ -740,11 +740,11 @@ Job to be Done: ${jobToBeDone || "Not specified"}
 Motivations: ${motivations || "Not specified"}
 Pain Points: ${painPoints || "Not specified"}`;
 
-          console.log('Calling Grok API for guidance generation...');
+          console.log('Calling AI API for guidance generation...');
           
           // Add timeout to prevent hanging
           const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Grok API timeout')), 15000)
+            setTimeout(() => reject(new Error('AI API timeout')), 15000)
           );
           
           const aiPromise = getAIResponse(
@@ -752,11 +752,11 @@ Pain Points: ${painPoints || "Not specified"}`;
             context
           );
           
-          guidance = await Promise.race([grokPromise, timeoutPromise]) as string;
-          console.log('Grok guidance generated successfully');
+          guidance = await Promise.race([aiPromise, timeoutPromise]) as string;
+          console.log('AI guidance generated successfully');
           
-        } catch (grokError: any) {
-          console.error('Grok API error:', grokError);
+        } catch (aiError: any) {
+          console.error('AI API error:', aiError);
           
           // Provide fallback guidance instead of failing
           guidance = `Based on your brand information for ${brandName}, here are some strategic recommendations:
@@ -1054,8 +1054,8 @@ Continue refining these elements to build a stronger brand foundation.`;
     }
   });
 
-  // Get Grok recommendation with real-time brand purpose analysis
-  app.post("/api/grok-query", async (req: any, res) => {
+  // Get AI recommendation with real-time brand purpose analysis
+  app.post("/api/ai-query", async (req: any, res) => {
     try {
       const { query, context } = req.body;
       
@@ -1083,7 +1083,7 @@ Continue refining these elements to build a stronger brand foundation.`;
       const response = await getAIResponse(query, context, brandPurposeRecord);
       res.json({ response });
     } catch (error: any) {
-      console.error('Grok query error:', error);
+      console.error('AI query error:', error);
       res.status(500).json({ 
         response: "I encountered an error processing your request. Please try again or contact support if the issue persists."
       });
