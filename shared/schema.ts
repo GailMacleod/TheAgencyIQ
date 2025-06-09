@@ -85,6 +85,17 @@ export const verificationCodes = pgTable("verification_codes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const giftCertificates = pgTable("gift_certificates", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  plan: varchar("plan", { length: 20 }).notNull(),
+  isUsed: boolean("is_used").default(false),
+  createdFor: varchar("created_for", { length: 100 }).notNull(),
+  redeemedBy: integer("redeemed_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  redeemedAt: timestamp("redeemed_at"),
+});
+
 // Create insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -113,6 +124,12 @@ export const insertVerificationCodeSchema = createInsertSchema(verificationCodes
   createdAt: true,
 });
 
+export const insertGiftCertificateSchema = createInsertSchema(giftCertificates).omit({
+  id: true,
+  createdAt: true,
+  redeemedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -124,3 +141,5 @@ export type BrandPurpose = typeof brandPurpose.$inferSelect;
 export type InsertBrandPurpose = z.infer<typeof insertBrandPurposeSchema>;
 export type VerificationCode = typeof verificationCodes.$inferSelect;
 export type InsertVerificationCode = z.infer<typeof insertVerificationCodeSchema>;
+export type GiftCertificate = typeof giftCertificates.$inferSelect;
+export type InsertGiftCertificate = z.infer<typeof insertGiftCertificateSchema>;

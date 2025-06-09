@@ -4,6 +4,7 @@ import {
   platformConnections,
   brandPurpose,
   verificationCodes,
+  giftCertificates,
   type User,
   type InsertUser,
   type Post,
@@ -14,6 +15,8 @@ import {
   type InsertBrandPurpose,
   type VerificationCode,
   type InsertVerificationCode,
+  type GiftCertificate,
+  type InsertGiftCertificate,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -47,6 +50,11 @@ export interface IStorage {
   createVerificationCode(code: InsertVerificationCode): Promise<VerificationCode>;
   getVerificationCode(phone: string, code: string): Promise<VerificationCode | undefined>;
   markVerificationCodeUsed(id: number): Promise<void>;
+
+  // Gift certificate operations
+  createGiftCertificate(certificate: InsertGiftCertificate): Promise<GiftCertificate>;
+  getGiftCertificate(code: string): Promise<GiftCertificate | undefined>;
+  redeemGiftCertificate(code: string, userId: number): Promise<GiftCertificate>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -204,6 +212,36 @@ export class DatabaseStorage implements IStorage {
       .update(verificationCodes)
       .set({ verified: true })
       .where(eq(verificationCodes.id, id));
+  }
+
+  // Gift certificate operations
+  async createGiftCertificate(insertCertificate: InsertGiftCertificate): Promise<GiftCertificate> {
+    const [certificate] = await db
+      .insert(giftCertificates)
+      .values(insertCertificate)
+      .returning();
+    return certificate;
+  }
+
+  async getGiftCertificate(code: string): Promise<GiftCertificate | undefined> {
+    const [certificate] = await db
+      .select()
+      .from(giftCertificates)
+      .where(eq(giftCertificates.code, code));
+    return certificate || undefined;
+  }
+
+  async redeemGiftCertificate(code: string, userId: number): Promise<GiftCertificate> {
+    const [certificate] = await db
+      .update(giftCertificates)
+      .set({ 
+        isUsed: true, 
+        redeemedBy: userId,
+        redeemedAt: new Date()
+      })
+      .where(eq(giftCertificates.code, code))
+      .returning();
+    return certificate;
   }
 }
 
