@@ -8,17 +8,30 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
-// Domain validation middleware with enhanced Replit support
+// Domain validation middleware - BYPASSED for Replit deployments
 app.use((req, res, next) => {
   const hostname = req.hostname || req.header('host') || '';
   
-  // Skip domain validation for Replit deployments
-  const isReplitDeployment = hostname.includes('.replit.app') || 
-                            hostname.includes('.replit.dev') ||
-                            process.env.REPLIT_DEPLOYMENT === 'true' ||
-                            !!process.env.REPL_ID;
+  // Multiple methods to detect Replit environment using actual env vars
+  const isReplitEnvironment = 
+    process.env.REPL_ID ||
+    process.env.REPL_OWNER ||
+    process.env.REPLIT_USER ||
+    process.env.REPLIT_ENVIRONMENT ||
+    process.env.REPLIT_DOMAINS ||
+    process.env.REPLIT_DEV_DOMAIN ||
+    process.env.REPL_SLUG ||
+    hostname.includes('.replit.app') ||
+    hostname.includes('.replit.dev') ||
+    hostname.includes('replit');
   
-  if (process.env.NODE_ENV === 'production' && !isReplitDeployment && !validateDomain(hostname)) {
+  // Completely skip domain validation for Replit
+  if (isReplitEnvironment) {
+    return next();
+  }
+  
+  // Only validate for non-Replit production environments
+  if (process.env.NODE_ENV === 'production' && !validateDomain(hostname)) {
     return res.status(400).json({ message: 'Invalid domain' });
   }
   
