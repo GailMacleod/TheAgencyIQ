@@ -2241,6 +2241,16 @@ Continue refining these elements to build a stronger brand foundation.`;
       const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/facebook/callback`;
 
       if (!code || !clientId || !clientSecret) {
+        // Record potential breach attempt for missing OAuth parameters
+        if (req.session?.userId) {
+          await BreachNotificationService.recordIncident(
+            req.session.userId,
+            'platform_breach',
+            `Facebook OAuth authentication failed - missing parameters from IP ${req.ip}`,
+            ['facebook'],
+            'medium'
+          );
+        }
         return res.redirect('/platform-connections?error=facebook_auth_failed');
       }
 
@@ -2249,6 +2259,16 @@ Continue refining these elements to build a stronger brand foundation.`;
       const tokenData = await tokenResponse.json();
 
       if (!tokenData.access_token) {
+        // Record OAuth token exchange failure
+        if (req.session?.userId) {
+          await BreachNotificationService.recordIncident(
+            req.session.userId,
+            'platform_breach',
+            `Facebook OAuth token exchange failed for user from IP ${req.ip}`,
+            ['facebook'],
+            'medium'
+          );
+        }
         return res.redirect('/platform-connections?error=facebook_token_failed');
       }
 
@@ -2268,11 +2288,25 @@ Continue refining these elements to build a stronger brand foundation.`;
           expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
           isActive: true
         });
+        
+        console.log(`✅ Successful Facebook connection for user ${req.session.userId}`);
       }
 
       res.redirect('/platform-connections?connected=facebook');
     } catch (error) {
       console.error('Facebook OAuth error:', error);
+      
+      // Record OAuth callback failure as potential security incident
+      if (req.session?.userId) {
+        await BreachNotificationService.recordIncident(
+          req.session.userId,
+          'platform_breach',
+          `Facebook OAuth callback error: ${error instanceof Error ? error.message : 'Unknown error'} from IP ${req.ip}`,
+          ['facebook'],
+          'high'
+        );
+      }
+      
       res.redirect('/platform-connections?error=facebook_callback_failed');
     }
   });
@@ -2298,6 +2332,16 @@ Continue refining these elements to build a stronger brand foundation.`;
       const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/instagram/callback`;
 
       if (!code || !clientId || !clientSecret) {
+        // Record potential breach attempt for missing OAuth parameters
+        if (req.session?.userId) {
+          await BreachNotificationService.recordIncident(
+            req.session.userId,
+            'platform_breach',
+            `Instagram OAuth authentication failed - missing parameters from IP ${req.ip}`,
+            ['instagram'],
+            'medium'
+          );
+        }
         return res.redirect('/platform-connections?error=instagram_auth_failed');
       }
 
@@ -2316,6 +2360,16 @@ Continue refining these elements to build a stronger brand foundation.`;
       const tokenData = await tokenResponse.json();
 
       if (!tokenData.access_token) {
+        // Record OAuth token exchange failure
+        if (req.session?.userId) {
+          await BreachNotificationService.recordIncident(
+            req.session.userId,
+            'platform_breach',
+            `Instagram OAuth token exchange failed for user from IP ${req.ip}`,
+            ['instagram'],
+            'medium'
+          );
+        }
         return res.redirect('/platform-connections?error=instagram_token_failed');
       }
 
@@ -2331,11 +2385,25 @@ Continue refining these elements to build a stronger brand foundation.`;
           expiresAt: null,
           isActive: true
         });
+        
+        console.log(`✅ Successful Instagram connection for user ${req.session.userId}`);
       }
 
       res.redirect('/platform-connections?connected=instagram');
     } catch (error) {
       console.error('Instagram OAuth error:', error);
+      
+      // Record OAuth callback failure as potential security incident
+      if (req.session?.userId) {
+        await BreachNotificationService.recordIncident(
+          req.session.userId,
+          'platform_breach',
+          `Instagram OAuth callback error: ${error instanceof Error ? error.message : 'Unknown error'} from IP ${req.ip}`,
+          ['instagram'],
+          'high'
+        );
+      }
+      
       res.redirect('/platform-connections?error=instagram_callback_failed');
     }
   });
@@ -2361,6 +2429,16 @@ Continue refining these elements to build a stronger brand foundation.`;
       const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/linkedin/callback`;
 
       if (!code || !clientId || !clientSecret) {
+        // Record potential breach attempt for missing OAuth parameters
+        if (req.session?.userId) {
+          await BreachNotificationService.recordIncident(
+            req.session.userId,
+            'platform_breach',
+            `LinkedIn OAuth authentication failed - missing parameters from IP ${req.ip}`,
+            ['linkedin'],
+            'medium'
+          );
+        }
         return res.redirect('/platform-connections?error=linkedin_auth_failed');
       }
 
@@ -2379,6 +2457,16 @@ Continue refining these elements to build a stronger brand foundation.`;
       const tokenData = await tokenResponse.json();
 
       if (!tokenData.access_token) {
+        // Record OAuth token exchange failure
+        if (req.session?.userId) {
+          await BreachNotificationService.recordIncident(
+            req.session.userId,
+            'platform_breach',
+            `LinkedIn OAuth token exchange failed for user from IP ${req.ip}`,
+            ['linkedin'],
+            'medium'
+          );
+        }
         return res.redirect('/platform-connections?error=linkedin_token_failed');
       }
 
@@ -2400,11 +2488,25 @@ Continue refining these elements to build a stronger brand foundation.`;
           expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
           isActive: true
         });
+        
+        console.log(`✅ Successful LinkedIn connection for user ${req.session.userId}`);
       }
 
       res.redirect('/platform-connections?connected=linkedin');
     } catch (error) {
       console.error('LinkedIn OAuth error:', error);
+      
+      // Record OAuth callback failure as potential security incident
+      if (req.session?.userId) {
+        await BreachNotificationService.recordIncident(
+          req.session.userId,
+          'platform_breach',
+          `LinkedIn OAuth callback error: ${error instanceof Error ? error.message : 'Unknown error'} from IP ${req.ip}`,
+          ['linkedin'],
+          'high'
+        );
+      }
+      
       res.redirect('/platform-connections?error=linkedin_callback_failed');
     }
   });

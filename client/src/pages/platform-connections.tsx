@@ -106,13 +106,11 @@ export default function PlatformConnections() {
         password
       });
       
-      // Log successful connection and store token in localStorage
-      if (response && response.accessToken) {
-        console.log(`token_${platformId}: ${response.accessToken}`);
-        localStorage.setItem(`token_${platformId}`, response.accessToken);
-      } else {
-        console.log(`token_${platformId}: success but no token returned`);
-      }
+      // Log successful connection
+      console.log(`✅ Successfully connected to ${platformId}`);
+      
+      // The connection is handled server-side via OAuth
+      // No client-side token storage needed
       
       toast({
         title: "Platform Connected",
