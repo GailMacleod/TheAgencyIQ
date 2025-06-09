@@ -1442,7 +1442,7 @@ Continue refining these elements to build a stronger brand foundation.`;
       
       // Calculate overall engagement rate as percentage: (total engagement / total reach) * 100
       const avgEngagement = actualTotalReach > 0 ? 
-        Math.round((actualTotalEngagement / actualTotalReach) * 100 * 100) / 100 : 0;
+        Math.round((actualTotalEngagement / actualTotalReach) * 10000) / 100 : 0;
       
       // Calculate conversions from real engagement data
       const conversions = hasRealData ? 
