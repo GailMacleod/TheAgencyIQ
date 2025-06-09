@@ -367,6 +367,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Facebook/Instagram data deletion callback endpoint
+  app.post("/api/facebook/data-deletion", async (req, res) => {
+    try {
+      const { signed_request } = req.body;
+      
+      if (!signed_request) {
+        return res.status(400).json({ error: "Missing signed_request parameter" });
+      }
+
+      // Parse the signed request from Facebook
+      const [encodedSig, payload] = signed_request.split('.');
+      const data = JSON.parse(Buffer.from(payload, 'base64').toString());
+      
+      console.log('Facebook data deletion request received:', {
+        userId: data.user_id,
+        timestamp: new Date().toISOString()
+      });
+
+      // Find and remove platform connections for this Facebook user
+      const connections = await storage.getPlatformConnectionsByUser(data.user_id);
+      const facebookConnections = connections.filter(conn => 
+        conn.platform === 'facebook' || conn.platform === 'instagram'
+      );
+
+      for (const connection of facebookConnections) {
+        await storage.deletePlatformConnection(connection.id);
+        console.log(`Deleted ${connection.platform} connection for user ${data.user_id}`);
+      }
+
+      // Return required response format for Facebook
+      res.json({
+        url: `${req.protocol}://${req.get('host')}/api/facebook/data-deletion-status?id=${data.user_id}`,
+        confirmation_code: `DEL_${data.user_id}_${Date.now()}`
+      });
+
+    } catch (error: any) {
+      console.error('Facebook data deletion error:', error);
+      res.status(500).json({ error: "Data deletion processing failed" });
+    }
+  });
+
+  // Facebook data deletion status endpoint
+  app.get("/api/facebook/data-deletion-status", async (req, res) => {
+    try {
+      const { id } = req.query;
+      
+      if (!id) {
+        return res.status(400).json({ error: "Missing user ID parameter" });
+      }
+
+      // Check if user still has Facebook/Instagram connections
+      const connections = await storage.getPlatformConnectionsByUser(Number(id));
+      const socialConnections = connections.filter(conn => 
+        conn.platform === 'facebook' || conn.platform === 'instagram'
+      );
+
+      res.json({
+        status: socialConnections.length === 0 ? "completed" : "in_progress",
+        message: socialConnections.length === 0 
+          ? "All Facebook and Instagram data has been deleted" 
+          : "Data deletion in progress",
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error: any) {
+      console.error('Facebook data deletion status error:', error);
+      res.status(500).json({ error: "Status check failed" });
+    }
+  });
+
   app.post("/api/verify-and-signup", async (req, res) => {
     try {
       const { email, password, phone, code } = req.body;
