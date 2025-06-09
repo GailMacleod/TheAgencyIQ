@@ -56,7 +56,7 @@ export default function Splash() {
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
                   <span className="block">Take Control</span>
-                  <span className="block bg-gradient-atomiq bg-clip-text text-transparent">with 24/7 online social media posts</span>
+                  <span className="block bg-gradient-atomiq bg-clip-text text-transparent">with 24/7 social media posts</span>
                   
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">Streamlined waterfall workflow and Brand Purpose to boost small business online social presence.</p>
@@ -141,7 +141,7 @@ export default function Splash() {
       <section className="py-20 bg-muted/30" id="pricing">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-6">
-            <h2 className="text-4xl md:text-5xl font-bold">Take Control, Be Online 24/7</h2>
+            
             <p className="tracking-wider uppercase font-extrabold text-[20px] text-[#3b5cff]">BETA</p>
             <Link href="/subscription">
               <Button size="lg" className="bg-gradient-atomiq hover:opacity-90 text-white px-8 py-4 text-lg">
@@ -155,9 +155,7 @@ export default function Splash() {
       <section id="features" className="section-spacing bg-white">
         <div className="container-atomiq">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-base font-semibold text-primary tracking-wide uppercase">
-              Technology Intelligence
-            </h2>
+            
             <h3 className="text-4xl md:text-5xl font-bold text-[#3b5cff]">6 Simple Steps </h3>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Our AI-powered platform handles your entire social media workflow with modern technology and intelligent automation
