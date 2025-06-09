@@ -204,13 +204,13 @@ export default function PlatformConnections() {
                     key={platform.id}
                     className={`relative border rounded-xl p-4 text-center transition-all duration-200 ${
                       isConnected 
-                        ? 'border-green-300 bg-green-50 shadow-sm' 
+                        ? 'border-[#3250fa]/30 bg-[#3250fa]/10 shadow-sm' 
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                     }`}
                   >
                     {/* Success tick overlay */}
                     {isConnected && (
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-md">
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#3250fa] rounded-full flex items-center justify-center shadow-md">
                         <CheckIcon className="w-4 h-4 text-white" />
                       </div>
                     )}
@@ -231,7 +231,7 @@ export default function PlatformConnections() {
                       <div className="space-y-2">
                         <Button
                           disabled
-                          className="w-full bg-green-100 text-green-700 cursor-not-allowed text-xs py-2 h-8 border border-green-200"
+                          className="w-full bg-[#3250fa]/10 text-[#3250fa] cursor-not-allowed text-xs py-2 h-8 border border-[#3250fa]/20"
                           variant="outline"
                         >
                           connected

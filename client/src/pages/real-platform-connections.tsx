@@ -243,8 +243,8 @@ export default function RealPlatformConnections() {
 
                       {connected && (
                         <div className="flex items-center space-x-1">
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                          <span className="text-sm font-medium text-green-600">Connected</span>
+                          <CheckCircle className="h-5 w-5 text-[#3250fa]" />
+                          <span className="text-sm font-medium text-[#3250fa]">Connected</span>
                         </div>
                       )}
                     </div>
@@ -256,11 +256,11 @@ export default function RealPlatformConnections() {
                     </CardDescription>
 
                     {connected && connectionInfo && (
-                      <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                        <p className="text-sm text-green-800">
+                      <div className="mb-4 p-3 bg-[#3250fa]/10 rounded-lg border border-[#3250fa]/20">
+                        <p className="text-sm text-[#3250fa]">
                           <strong>Account:</strong> {connectionInfo.platformUsername}
                         </p>
-                        <p className="text-xs text-green-600 mt-1">
+                        <p className="text-xs text-[#3250fa]/80 mt-1">
                           Connected {new Date(connectionInfo.createdAt).toLocaleDateString()}
                         </p>
                       </div>
