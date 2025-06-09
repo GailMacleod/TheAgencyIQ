@@ -41,7 +41,7 @@ interface User {
 interface CalendarDay {
   date: Date;
   posts: Post[];
-  grokInsight?: string;
+  aiInsight?: string;
   localEvents?: string[];
   isOptimalDay: boolean;
 }
@@ -53,26 +53,20 @@ export default function Schedule() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
-  const [showGrokThinking, setShowGrokThinking] = useState(false);
-  const [grokStep, setGrokStep] = useState(0);
+  const [showAIThinking, setShowAIThinking] = useState(false);
+  const [aiStep, setAIStep] = useState(0);
   const [generatedPosts, setGeneratedPosts] = useState<Post[]>([]);
 
-  // Mock user data to prevent API loop
-  const user = {
-    id: 1,
-    email: "user@example.com",
-    phone: "+61400000000",
-    subscriptionPlan: "professional",
-    remainingPosts: 45,
-    totalPosts: 60
-  };
-  const userLoading = false;
+  // Fetch user data
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ["/api/user"],
+    retry: false,
+  });
 
   // Fetch posts with calendar data
   const { data: posts = [], isLoading: postsLoading, refetch: refetchPosts } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
     retry: false,
-    enabled: false, // Disable until authentication is fixed
   });
 
   // Generate 30-day calendar view
@@ -89,15 +83,15 @@ export default function Schedule() {
         isSameDay(new Date(post.scheduledFor), date)
       );
       
-      // Grok's optimal posting insights based on Queensland events
+      // AI optimal posting insights based on Queensland events
       const isOptimalDay = getOptimalPostingDay(date);
       const localEvents = getLocalEvents(date);
-      const grokInsight = getGrokInsight(date, localEvents);
+      const aiInsight = getAIInsight(date, localEvents);
       
       days.push({
         date,
         posts: dayPosts,
-        grokInsight,
+        aiInsight,
         localEvents,
         isOptimalDay
       });
@@ -155,7 +149,7 @@ export default function Schedule() {
     return events.concat(qldEvents[monthDay] || []);
   };
 
-  const getGrokInsight = (date: Date, events: string[]): string => {
+  const getAIInsight = (date: Date, events: string[]): string => {
     if (events.length === 0) {
       return "Standard posting day - focus on your core business messaging";
     }
@@ -175,7 +169,7 @@ export default function Schedule() {
     return `Local event opportunity: ${events[0]} - tailor your content to this occasion`;
   };
 
-  const grokThinkingSteps = [
+  const aiThinkingSteps = [
     {
       step: 1,
       title: "Analyzing Brand Purpose & Goals",
@@ -208,14 +202,14 @@ export default function Schedule() {
     }
   ];
 
-  const generateContentWithGrokThinking = async () => {
-    setShowGrokThinking(true);
-    setGrokStep(0);
+  const generateContentWithAIThinking = async () => {
+    setShowAIThinking(true);
+    setAIStep(0);
     
     // Start the thinking animation
-    grokThinkingSteps.forEach((step, index) => {
+    aiThinkingSteps.forEach((step, index) => {
       setTimeout(() => {
-        setGrokStep(index + 1);
+        setAIStep(index + 1);
       }, step.duration * index);
     });
 
@@ -264,7 +258,7 @@ export default function Schedule() {
             content: post.content,
             status: post.status || 'draft',
             scheduledFor: post.scheduledFor,
-            grokRecommendation: `Strategic content optimized for ${post.platform} engagement`
+            aiRecommendation: `Strategic content optimized for ${post.platform} engagement`
           }));
           
           setGeneratedPosts(newPosts);
@@ -313,8 +307,8 @@ export default function Schedule() {
       });
     } finally {
       setTimeout(() => {
-        setShowGrokThinking(false);
-        setGrokStep(0);
+        setShowAIThinking(false);
+        setAIStep(0);
       }, 1000);
     }
   };
@@ -482,11 +476,11 @@ export default function Schedule() {
               view analytics
             </Button>
             <Button
-              onClick={generateContentWithGrokThinking}
+              onClick={generateContentWithAIThinking}
               className="bg-purple-600 hover:bg-purple-700 text-white lowercase"
-              disabled={showGrokThinking}
+              disabled={showAIThinking}
             >
-              {showGrokThinking ? 'grok is thinking...' : 'generate content with grok'}
+              {showAIThinking ? 'ai is thinking...' : 'generate content with ai'}
             </Button>
         </div>
 
