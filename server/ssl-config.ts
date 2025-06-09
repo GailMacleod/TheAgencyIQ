@@ -67,5 +67,12 @@ export function validateDomain(hostname: string): boolean {
 }
 
 export function isSecureContext(req: any): boolean {
+  const hostname = req.hostname || req.header('host') || '';
+  
+  // Always consider Replit domains secure (they handle SSL termination)
+  if (hostname.toLowerCase().includes('replit.app')) {
+    return true;
+  }
+  
   return req.secure || req.header('x-forwarded-proto') === 'https';
 }
