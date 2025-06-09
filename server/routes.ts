@@ -310,10 +310,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Mark verification code as used
       await storage.markVerificationCodeUsed(verificationRecord.id);
 
-      // Set session
+      // Set session and save
       req.session.userId = user.id;
-
-      res.json({ user: { id: user.id, email: user.email, phone: user.phone } });
+      
+      req.session.save((err: any) => {
+        if (err) {
+          console.error('Session save error during signup:', err);
+        }
+        
+        console.log(`New user created: ${user.email} (ID: ${user.id})`);
+        res.json({ 
+          user: { 
+            id: user.id, 
+            email: user.email, 
+            phone: user.phone,
+            subscriptionPlan: user.subscriptionPlan,
+            remainingPosts: user.remainingPosts
+          },
+          message: "Account created successfully"
+        });
+      });
     } catch (error: any) {
       console.error('Signup error:', error);
       res.status(500).json({ message: "Error creating account" });
@@ -1720,7 +1736,7 @@ Continue refining these elements to build a stronger brand foundation.`;
           req.session.userId = user.id;
           
           // Save session before redirect
-          req.session.save((err) => {
+          req.session.save((err: any) => {
             if (err) {
               console.error('Session save error:', err);
             }
