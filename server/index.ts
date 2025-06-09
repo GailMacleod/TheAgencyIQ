@@ -8,25 +8,21 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
-// Domain validation middleware - DISABLED FOR REPLIT DEPLOYMENTS
+// Domain validation completely disabled for Replit
+app.use((req, res, next) => {
+  next();
+});
+
+// HTTPS redirect middleware for production - DISABLED FOR REPLIT
 app.use((req, res, next) => {
   const hostname = req.hostname || req.header('host') || '';
   
-  // Skip domain validation for .replit.app domains
+  // Skip HTTPS redirect for Replit domains
   if (hostname.toLowerCase().includes('replit.app')) {
     next();
     return;
   }
   
-  if (process.env.NODE_ENV === 'production' && !validateDomain(hostname)) {
-    return res.status(400).json({ message: 'Invalid domain' });
-  }
-  
-  next();
-});
-
-// HTTPS redirect middleware for production
-app.use((req, res, next) => {
   if (process.env.NODE_ENV === 'production' && !isSecureContext(req)) {
     return res.redirect(301, `https://${req.header('host')}${req.url}`);
   }
