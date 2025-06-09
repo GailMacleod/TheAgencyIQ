@@ -86,7 +86,13 @@ export default function RealPlatformConnections() {
 
   const { data: connections = [], refetch } = useQuery({
     queryKey: ["/api/platform-connections"],
-    queryFn: () => apiRequest("GET", "/api/platform-connections")
+    queryFn: async (): Promise<PlatformConnection[]> => {
+      const response = await fetch("/api/platform-connections", {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch connections');
+      return response.json();
+    }
   });
 
   // Check for OAuth callback success/error messages
@@ -135,7 +141,7 @@ export default function RealPlatformConnections() {
     try {
       const response = await apiRequest("POST", "/api/platform-connections/connect", {
         platform: platformId
-      });
+      }) as { redirectUrl?: string };
 
       if (response.redirectUrl) {
         // Redirect to OAuth flow

@@ -2522,7 +2522,7 @@ Continue refining these elements to build a stronger brand foundation.`;
           analyticsData = await fetchLinkedInAnalytics(connection.accessToken);
           break;
         case 'x':
-          analyticsData = await fetchTwitterAnalytics(connection.accessToken, connection.refreshToken);
+          analyticsData = await fetchTwitterAnalytics(connection.accessToken, connection.refreshToken || '');
           break;
         default:
           return res.status(400).json({ message: "Analytics not available for this platform" });

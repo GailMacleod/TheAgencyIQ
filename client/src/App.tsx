@@ -12,7 +12,7 @@ import { useAnalytics } from "./hooks/use-analytics";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
-import PlatformConnections from "@/pages/platform-connections";
+import PlatformConnections from "@/pages/real-platform-connections";
 import Schedule from "@/pages/schedule";
 import Login from "@/pages/login";
 import GrokTest from "@/pages/grok-test";
