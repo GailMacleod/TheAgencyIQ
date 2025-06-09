@@ -28,6 +28,7 @@ interface AnalyticsData {
     reach: number;
     engagement: number;
     performance: number;
+    isPlaceholder?: boolean;
   }[];
   monthlyTrends: {
     month: string;
@@ -41,6 +42,8 @@ interface AnalyticsData {
     reach: { current: number; target: number; percentage: number };
     engagement: { current: number; target: number; percentage: number };
   };
+  hasRealData?: boolean;
+  connectedPlatforms?: string[];
 }
 
 interface MetricCard {
@@ -64,6 +67,9 @@ export default function Analytics() {
   const { data: brandPurpose } = useQuery({
     queryKey: ["/api/brand-purpose"],
   });
+
+  // Check if we have real published data
+  const hasRealData = analytics?.hasRealData || false;
 
   // Calculate performance metrics
   const getPerformanceColor = (current: number, target: number) => {
