@@ -9,15 +9,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import Header from "@/components/header";
 
-export default function GrokTest() {
+export default function AITest() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [showGrokThinking, setShowGrokThinking] = useState(false);
-  const [grokStep, setGrokStep] = useState(0);
+  const [showAIThinking, setShowAIThinking] = useState(false);
+  const [aiStep, setAIStep] = useState(0);
   const [generatedPosts, setGeneratedPosts] = useState<any[]>([]);
   const [approvedPosts, setApprovedPosts] = useState<Set<number>>(new Set());
 
-  const grokThinkingSteps = [
+  const aiThinkingSteps = [
     {
       step: 1,
       title: "Analyzing Brand Purpose & Goals",
@@ -50,38 +50,38 @@ export default function GrokTest() {
     }
   ];
 
-  const generateContentWithGrokThinking = async () => {
-    setShowGrokThinking(true);
-    setGrokStep(0);
+  const generateContentWithAIThinking = async () => {
+    setShowAIThinking(true);
+    setAIStep(0);
     
     try {
-      // Simulate Grok's thinking process
-      for (let i = 0; i < grokThinkingSteps.length; i++) {
-        setGrokStep(i + 1);
-        await new Promise(resolve => setTimeout(resolve, grokThinkingSteps[i].duration));
+      // Simulate AI's thinking process
+      for (let i = 0; i < aiThinkingSteps.length; i++) {
+        setAIStep(i + 1);
+        await new Promise(resolve => setTimeout(resolve, aiThinkingSteps[i].duration));
       }
       
-      // Generate real content using Grok API
-      const response = await apiRequest("POST", "/api/grok/generate-content", {});
+      // Generate real content using AI API
+      const response = await apiRequest("POST", "/api/ai/generate-content", {});
       const data = await response.json();
-      const grokPosts = data.posts.map((post: any, index: number) => ({
+      const aiPosts = data.posts.map((post: any, index: number) => ({
         id: index + 1,
         platform: post.platform,
         content: post.content,
         status: "scheduled",
         scheduledFor: post.scheduledFor,
-        grokRecommendation: `Grok generated this ${post.platform} post based on your brand purpose analysis`
+        aiRecommendation: `AI generated this ${post.platform} post based on your brand purpose analysis`
       }));
       
-      setGeneratedPosts(grokPosts);
+      setGeneratedPosts(aiPosts);
     } catch (error: any) {
       toast({
         title: "Content Generation Failed",
-        description: error.message || "Unable to generate content with Grok",
+        description: error.message || "Unable to generate content with AI",
         variant: "destructive",
       });
     } finally {
-      setShowGrokThinking(false);
+      setShowAIThinking(false);
     }
   };
 
@@ -121,59 +121,59 @@ export default function GrokTest() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header showBack="/" title="Grok Content Generation Test" />
+      <Header showBack="/" title="AI Content Generation Test" />
       
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-light text-gray-900 lowercase mb-4">
-            grok content generation workflow
+            ai content generation workflow
           </h1>
           <p className="text-gray-600 text-sm lowercase">
-            watch grok analyze your brand purpose and create strategic social media content
+            watch ai analyze your brand purpose and create strategic social media content
           </p>
           
           <Button
-            onClick={generateContentWithGrokThinking}
+            onClick={generateContentWithAIThinking}
             className="mt-6 bg-purple-600 hover:bg-purple-700 text-white lowercase px-8 py-3"
-            disabled={showGrokThinking}
+            disabled={showAIThinking}
           >
-            {showGrokThinking ? 'grok is thinking...' : 'generate content with grok'}
+            {showAIThinking ? 'ai is thinking...' : 'generate content with ai'}
           </Button>
         </div>
 
-        {/* Grok Thinking Process Modal */}
-        {showGrokThinking && (
+        {/* AI Thinking Process Modal */}
+        {showAIThinking && (
           <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
             <Card className="max-w-2xl w-full bg-white">
               <CardContent className="p-8">
                 <div className="text-center">
                   <h2 className="text-2xl font-light text-purple-700 mb-6 lowercase">
-                    grok's strategic analysis
+                    ai strategic analysis
                   </h2>
                   
                   {/* Progress Steps */}
                   <div className="space-y-6">
-                    {grokThinkingSteps.map((step, index) => (
+                    {aiThinkingSteps.map((step, index) => (
                       <div 
                         key={index}
                         className={`flex items-start space-x-4 p-4 rounded-lg transition-all duration-500 border ${
-                          grokStep > index ? 'bg-green-50 border-green-200' :
-                          grokStep === index + 1 ? 'bg-purple-50 border-purple-200 shadow-md' :
+                          aiStep > index ? 'bg-green-50 border-green-200' :
+                          aiStep === index + 1 ? 'bg-purple-50 border-purple-200 shadow-md' :
                           'bg-gray-50 border-gray-200'
                         }`}
                       >
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                          grokStep > index ? 'bg-green-500 text-white' :
-                          grokStep === index + 1 ? 'bg-purple-500 text-white animate-pulse' :
+                          aiStep > index ? 'bg-green-500 text-white' :
+                          aiStep === index + 1 ? 'bg-purple-500 text-white animate-pulse' :
                           'bg-gray-300 text-gray-600'
                         }`}>
-                          {grokStep > index ? '✓' : step.step}
+                          {aiStep > index ? '✓' : step.step}
                         </div>
                         <div className="flex-1 text-left">
                           <h3 className="font-medium text-gray-900 lowercase">{step.title}</h3>
                           <p className="text-sm text-gray-600 mt-1">{step.content}</p>
                         </div>
-                        {grokStep === index + 1 && (
+                        {aiStep === index + 1 && (
                           <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full"></div>
                         )}
                       </div>

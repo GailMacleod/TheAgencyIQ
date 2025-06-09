@@ -13,7 +13,7 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-export default function GrokWidget() {
+export default function AIWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {

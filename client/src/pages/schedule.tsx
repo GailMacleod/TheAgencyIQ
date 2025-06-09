@@ -20,7 +20,7 @@ interface Post {
   scheduledFor: string;
   publishedAt?: string;
   errorLog?: string;
-  grokRecommendation?: string;
+  aiRecommendation?: string;
   localEvent?: string;
   analytics?: {
     reach: number;
