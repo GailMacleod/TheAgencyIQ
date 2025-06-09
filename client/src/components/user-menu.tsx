@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, User, CreditCard, LogOut, Building2, Calendar, Share2, BarChart3, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -127,6 +127,16 @@ export default function UserMenu() {
     }
   };
 
+  // Check if subscription is cancelled to show delete options
+  const isSubscriptionCancelled = user?.subscriptionPlan === 'cancelled';
+  
+  // Log when delete data options are enabled
+  useEffect(() => {
+    if (user && isSubscriptionCancelled) {
+      console.log(`Delete data options enabled for ${user.email}`);
+    }
+  }, [user, isSubscriptionCancelled]);
+
   if (!user) {
     return null;
   }
@@ -220,30 +230,34 @@ export default function UserMenu() {
 
             <DropdownMenuSeparator />
 
-            {/* Data Deletion Section */}
-            <div className="px-2 py-1">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Data Management</p>
-            </div>
-            
-            <DropdownMenuItem
-              onClick={handleDeleteFacebookData}
-              disabled={deleteFacebookMutation.isPending}
-              className="cursor-pointer text-orange-600 focus:text-orange-600"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {deleteFacebookMutation.isPending ? "Deleting..." : "Delete Facebook Data"}
-            </DropdownMenuItem>
+            {/* Data Deletion Section - Only show if subscription is cancelled */}
+            {isSubscriptionCancelled && (
+              <>
+                <div className="px-2 py-1">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Data Management</p>
+                </div>
+                
+                <DropdownMenuItem
+                  onClick={handleDeleteFacebookData}
+                  disabled={deleteFacebookMutation.isPending}
+                  className="cursor-pointer text-orange-600 focus:text-orange-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {deleteFacebookMutation.isPending ? "Deleting..." : "Delete Facebook Data"}
+                </DropdownMenuItem>
 
-            <DropdownMenuItem
-              onClick={handleDeleteInstagramData}
-              disabled={deleteInstagramMutation.isPending}
-              className="cursor-pointer text-orange-600 focus:text-orange-600"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {deleteInstagramMutation.isPending ? "Deleting..." : "Delete Instagram Data"}
-            </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleDeleteInstagramData}
+                  disabled={deleteInstagramMutation.isPending}
+                  className="cursor-pointer text-orange-600 focus:text-orange-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {deleteInstagramMutation.isPending ? "Deleting..." : "Delete Instagram Data"}
+                </DropdownMenuItem>
 
-            <DropdownMenuSeparator />
+                <DropdownMenuSeparator />
+              </>
+            )}
             
             <DropdownMenuItem
               onClick={handleCancelSubscription}

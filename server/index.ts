@@ -139,6 +139,44 @@ app.use((req, res, next) => {
   next();
 });
 
+// Cancel subscription endpoint
+app.post('/api/cancel-subscription', async (req, res) => {
+  try {
+    const { storage } = await import('./storage');
+    const userId = req.session?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Set subscription status to cancelled
+    await storage.updateUser(userId, { subscriptionPlan: 'cancelled' });
+    
+    console.log(`Subscription cancelled for ${user.email}`);
+    
+    // Trigger data deletion for all connected platforms
+    const connections = await storage.getPlatformConnectionsByUser(userId);
+    for (const connection of connections) {
+      console.log(`Triggering data deletion for ${connection.platform} for user ${user.email}`);
+      // Mark platform connection as inactive to trigger deletion
+      await storage.updatePlatformConnection(connection.id, { isActive: false });
+    }
+
+    res.status(200).json({ 
+      message: 'Subscription cancelled successfully',
+      dataWarning: 'Platform data deletion has been initiated'
+    });
+  } catch (error: any) {
+    console.error('Cancel subscription error:', error);
+    res.status(500).json({ message: 'Failed to cancel subscription' });
+  }
+});
+
 (async () => {
   const server = await registerRoutes(app);
 
