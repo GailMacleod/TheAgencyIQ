@@ -2,8 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ALLOWED_ORIGINS, SECURITY_HEADERS, validateDomain, isSecureContext } from "./ssl-config";
-import bcrypt from "bcrypt";
-import { storage } from "./storage";
 
 const app = express();
 
@@ -77,52 +75,8 @@ app.get('/.well-known/health', (req, res) => {
   res.json({ status: 'ok', domain: 'app.theagencyiq.ai' });
 });
 
-// Create test user function with full subscription access
-async function createTestUser() {
-  try {
-    // Check if test user already exists
-    const existingUser = await storage.getUserByEmail('testuser@agencyiq.com');
-    if (existingUser) {
-      // Update existing user with full access
-      const updatedUser = await storage.updateUser(existingUser.id, {
-        subscriptionPlan: 'professional',
-        remainingPosts: 999,
-        totalPosts: 999
-      });
-      console.log('Test user updated: testuser@agencyiq.com with credentials Username: testuser@agencyiq.com, Password: TestPass123! with full access confirmed');
-      return updatedUser;
-    }
-
-    // Hash password with bcrypt
-    const hashedPassword = bcrypt.hashSync('TestPass123!', 10);
-
-    // Create test user with Twilio test phone number and full subscription access
-    const testUser = await storage.createUser({
-      email: 'testuser@agencyiq.com',
-      password: hashedPassword,
-      phone: '+15005550006', // Twilio magic test number
-      subscriptionPlan: 'professional', // Full access tier
-      stripeCustomerId: 'test_customer_id',
-      stripeSubscriptionId: 'test_subscription_id',
-      remainingPosts: 999, // Unlimited posts for testing
-      totalPosts: 999
-    });
-
-    console.log('Test user updated: testuser@agencyiq.com with credentials Username: testuser@agencyiq.com, Password: TestPass123! with full access confirmed');
-    
-    return testUser;
-  } catch (error) {
-    console.error('Error creating test user:', error);
-  }
-}
-
-// Call createTestUser on server startup
-createTestUser();
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-
 
 app.use((req, res, next) => {
   const start = Date.now();

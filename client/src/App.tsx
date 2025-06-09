@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import SplashScreen from "@/components/splash-screen";
@@ -18,7 +18,6 @@ import Analytics from "@/pages/analytics";
 import YearlyAnalytics from "@/pages/yearly-analytics";
 import Profile from "@/pages/profile";
 import ResetPassword from "@/pages/reset-password";
-import Payment from "@/pages/payment";
 
 function Router() {
   return (
@@ -34,48 +33,9 @@ function Router() {
       <Route path="/grok-test" component={GrokTest} />
       <Route path="/login" component={Login} />
       <Route path="/reset-password" component={ResetPassword} />
-      <Route path="/payment" component={Payment} />
       <Route component={NotFound} />
     </Switch>
   );
-}
-
-function TestUserHandler() {
-  const { data: user } = useQuery<{
-    id: number;
-    email: string;
-    phone: string;
-    subscriptionPlan: string;
-    remainingPosts: number;
-    totalPosts: number;
-  }>({
-    queryKey: ["/api/user"],
-    retry: false,
-  });
-
-  useEffect(() => {
-    if (user?.email === 'testuser@agencyiq.com') {
-      queryClient.setQueryData(["/api/user"], (oldData: any) => ({
-        ...oldData,
-        subscriptions: {
-          starter: true,
-          growth: true,
-          professional: true
-        },
-        postLimits: {
-          starter: 14,
-          growth: 29,
-          professional: 54
-        },
-        subscriptionPlan: 'professional',
-        remainingPosts: 54,
-        totalPosts: 54
-      }));
-      console.log('Test user full access granted for testuser@agencyiq.com with password TestPass123!" to verify post limits match tiers (14, 29, 54)');
-    }
-  }, [user?.email]);
-
-  return null;
 }
 
 function App() {
@@ -84,7 +44,6 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <TestUserHandler />
         <Toaster />
         {showSplash ? (
           <SplashScreen onComplete={() => setShowSplash(false)} />

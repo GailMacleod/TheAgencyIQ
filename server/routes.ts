@@ -77,31 +77,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   }));
 
-  // Test mode detection middleware for payment processing
-  app.use(async (req: any, res, next) => {
-    if (req.session?.userId) {
-      try {
-        const user = await storage.getUser(req.session.userId);
-        if (user && user.email === 'testuser@agencyiq.com') {
-          // Set test mode for Stripe
-          process.env.STRIPE_SECRET_KEY = 'sk_test_51QdLF2P6M8xOPm7PZy6KGV6bB8xPmClDpYfLrVBYtGKh8jVvzc8EqRYJXYVGpQKhCkVqHKJZYXOZ6KJVqQ6KJ';
-          console.log('Test mode enabled for testuser@agencyiq.com with 4242424242424242');
-          req.isTestMode = true;
-        } else {
-          console.log('Live mode for ' + (user ? user.email : 'anonymous'));
-          req.isTestMode = false;
-        }
-      } catch (error) {
-        console.log('Live mode for anonymous (user fetch failed)');
-        req.isTestMode = false;
-      }
-    } else {
-      console.log('Live mode for anonymous');
-      req.isTestMode = false;
-    }
-    next();
-  });
-
   // Configure multer for file uploads
   const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
   if (!fs.existsSync(uploadsDir)) {
@@ -427,44 +402,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Get user error:', error);
       res.status(500).json({ message: "Error fetching user" });
-    }
-  });
-
-  // Update user subscription for test user mock payments
-  app.put("/api/user/subscription", requireAuth, async (req: any, res) => {
-    try {
-      const { subscriptionPlan, subscriptions, remainingPosts, totalPosts, isTestMode } = req.body;
-      
-      // Only allow test user mock subscription updates
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      if (user.email !== 'testuser@agencyiq.com') {
-        return res.status(403).json({ message: "Not authorized for subscription updates" });
-      }
-
-      console.log(`Mock subscription update for test user: ${user.email} with ${remainingPosts || 45} posts`);
-      
-      // Update test user subscription with specified post limits
-      const updatedUser = await storage.updateUser(req.session.userId, {
-        subscriptionPlan,
-        remainingPosts: remainingPosts || 45,
-        totalPosts: totalPosts || 45
-      });
-
-      res.json({ 
-        success: true, 
-        subscriptionPlan: updatedUser.subscriptionPlan,
-        remainingPosts: updatedUser.remainingPosts,
-        totalPosts: updatedUser.totalPosts,
-        subscriptions,
-        isTestMode
-      });
-    } catch (error: any) {
-      console.error('Subscription update error:', error);
-      res.status(500).json({ message: "Error updating subscription" });
     }
   });
 
