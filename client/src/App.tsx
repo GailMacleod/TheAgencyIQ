@@ -62,12 +62,16 @@ function TestUserHandler() {
           growth: true,
           professional: true
         },
+        postLimits: {
+          starter: 14,
+          growth: 29,
+          professional: 54
+        },
         subscriptionPlan: 'professional',
-        remainingPosts: 45,
-        totalPosts: 45
+        remainingPosts: 54,
+        totalPosts: 54
       }));
-      console.log('Test user subscription granted for testuser@agencyiq.com with password TestPass123!');
-      console.log('Test user full access granted for testuser@agencyiq.com with password TestPass123!');
+      console.log('Test user full access granted for testuser@agencyiq.com with password TestPass123!" to verify post limits match tiers (14, 29, 54)');
     }
   }, [user?.email]);
 
