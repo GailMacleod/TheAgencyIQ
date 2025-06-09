@@ -14,13 +14,11 @@ app.use((req, res, next) => {
   
   // Skip domain validation for Replit deployments
   const isReplitDeployment = hostname.includes('.replit.app') || 
+                            hostname.includes('.replit.dev') ||
                             process.env.REPLIT_DEPLOYMENT === 'true' ||
-                            process.env.REPL_ID;
-  
-  console.log(`Domain validation - hostname: ${hostname}, isReplit: ${isReplitDeployment}, env: ${process.env.NODE_ENV}`);
+                            !!process.env.REPL_ID;
   
   if (process.env.NODE_ENV === 'production' && !isReplitDeployment && !validateDomain(hostname)) {
-    console.log(`Domain validation failed for: ${hostname}`);
     return res.status(400).json({ message: 'Invalid domain' });
   }
   
@@ -31,8 +29,9 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const hostname = req.hostname || req.header('host') || '';
   const isReplitDeployment = hostname.includes('.replit.app') || 
+                            hostname.includes('.replit.dev') ||
                             process.env.REPLIT_DEPLOYMENT === 'true' ||
-                            process.env.REPL_ID;
+                            !!process.env.REPL_ID;
   
   // Skip HTTPS redirect for Replit deployments as they handle SSL automatically
   if (process.env.NODE_ENV === 'production' && !isReplitDeployment && !isSecureContext(req)) {
