@@ -1413,14 +1413,15 @@ Continue refining these elements to build a stronger brand foundation.`;
         }, 0);
         
         const avgReach = Math.round(totalReach / platformPosts.length);
-        const avgEngagement = Math.round((totalEngagement / platformPosts.length) * 100) / 100;
+        // Calculate engagement rate as percentage: (total engagement / total reach) * 100
+        const engagementRate = totalReach > 0 ? Math.round((totalEngagement / totalReach) * 10000) / 100 : 0;
         
         return {
           platform,
           posts: platformPosts.length,
           reach: avgReach,
-          engagement: avgEngagement,
-          performance: Math.min(100, Math.round((platformPosts.length / 10) * 30 + avgEngagement * 10)),
+          engagement: engagementRate,
+          performance: Math.min(100, Math.round((platformPosts.length / 10) * 30 + engagementRate * 10)),
           isPlaceholder: false
         };
       });
@@ -1439,8 +1440,9 @@ Continue refining these elements to build a stronger brand foundation.`;
         return sum + (analytics?.engagement || 0);
       }, 0);
       
-      const avgEngagement = monthlyPublishedPosts.length > 0 ? 
-        Math.round((actualTotalEngagement / monthlyPublishedPosts.length) * 100) / 100 : 0;
+      // Calculate overall engagement rate as percentage: (total engagement / total reach) * 100
+      const avgEngagement = actualTotalReach > 0 ? 
+        Math.round((actualTotalEngagement / actualTotalReach) * 100 * 100) / 100 : 0;
       
       // Calculate conversions from real engagement data
       const conversions = hasRealData ? 
