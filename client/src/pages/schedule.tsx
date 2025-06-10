@@ -563,7 +563,7 @@ export default function Schedule() {
 
         {/* Generated Posts Preview */}
         {generatedPosts.length > 0 && (
-          <div className="mb-8">
+          <div className="generated-posts-container mb-8">
             <h2 className="text-xl font-light text-gray-900 mb-4 lowercase">
               grok's content recommendations
             </h2>
@@ -572,12 +572,6 @@ export default function Schedule() {
                 <Card 
                   key={post.id} 
                   className="auto-post p-6"
-                  onMouseOver={(e) => {
-                    if (e.target.classList.contains('auto-post')) {
-                      e.stopPropagation();
-                      console.log('Auto-post hover stabilized on post', post.id);
-                    }
-                  }}
                 >
                   <CardContent className="p-0">
                     <div className="flex items-start justify-between mb-4">

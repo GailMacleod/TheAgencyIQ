@@ -166,16 +166,65 @@
   /* Auto-post hover stability fixes */
   .auto-post {
     position: relative;
-    z-index: 1;
+    z-index: 100;
   }
 
   .auto-post-tooltip {
-    z-index: 10;
+    z-index: 110;
     pointer-events: none;
   }
 
   .approve-button {
-    z-index: 20;
+    z-index: 150;
+    position: relative;
+    pointer-events: auto !important;
+  }
+
+  .calendar-day-card {
+    z-index: 1;
+  }
+
+  .generated-posts-container {
+    z-index: 200;
+    position: relative;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(2px);
+  }
+
+  /* Prevent calendar hover from interfering with posts */
+  .calendar-grid:hover ~ .generated-posts-container {
+    pointer-events: auto !important;
+  }
+
+  /* Ensure buttons are always clickable */
+  button[class*="approve-button"] {
+    z-index: 1000 !important;
+    position: relative !important;
+    pointer-events: auto !important;
+  }
+
+  /* Prevent card flickering */
+  .auto-post:hover {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  /* Isolate generated posts from calendar interactions */
+  .generated-posts-container * {
+    pointer-events: auto !important;
+  }
+
+  /* Force button stability */
+  .generated-posts-container button {
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+    position: relative !important;
+    isolation: isolate;
+  }
+
+  /* Prevent any parent hover states from affecting buttons */
+  .calendar-grid {
+    isolation: isolate;
   }
 }
 
