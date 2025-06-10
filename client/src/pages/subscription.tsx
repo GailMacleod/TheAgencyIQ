@@ -335,7 +335,7 @@ export default function Subscription() {
           <div className="text-center space-y-4">
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-sm">
               <a 
-                href="https://app.theagencyiq.ai/privacy-policy" 
+                href="https://theagencyiq.ai/privacy-policy" 
                 className="text-muted-foreground hover:text-primary transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -344,12 +344,12 @@ export default function Subscription() {
               </a>
               <span className="hidden sm:block text-muted-foreground">•</span>
               <a 
-                href="https://app.theagencyiq.ai/terms-of-service" 
+                href="https://theagencyiq.ai/terms-of-service" 
                 className="text-muted-foreground hover:text-primary transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Terms of Service
+                Terms and Conditions
               </a>
             </div>
             <p className="text-muted-foreground text-sm">

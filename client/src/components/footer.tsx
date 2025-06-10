@@ -5,7 +5,7 @@ export default function Footer() {
         <div className="text-center space-y-4">
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-sm">
             <a 
-              href="https://app.theagencyiq.ai/privacy-policy" 
+              href="https://theagencyiq.ai/privacy-policy" 
               className="text-gray-600 hover:text-gray-900 transition-colors"
               target="_blank"
               rel="noopener noreferrer"
@@ -14,12 +14,12 @@ export default function Footer() {
             </a>
             <span className="hidden sm:block text-gray-300">•</span>
             <a 
-              href="https://app.theagencyiq.ai/terms-of-service" 
+              href="https://theagencyiq.ai/terms-of-service" 
               className="text-gray-600 hover:text-gray-900 transition-colors"
               target="_blank"
               rel="noopener noreferrer"
             >
-              Terms of Service
+              Terms and Conditions
             </a>
           </div>
           <p className="text-sm text-gray-500">
