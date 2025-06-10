@@ -385,6 +385,42 @@ export function ScheduleManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Platform Connection Modal */}
+      <Dialog open={showConnectionModal} onOpenChange={setShowConnectionModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Connect Your Social Media Account</DialogTitle>
+            <DialogDescription>
+              You need to connect your social media accounts to post content. Connect at least one platform to continue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm">
+              <p>Available platforms to connect:</p>
+              <ul className="mt-2 space-y-1">
+                <li>• Facebook - Connect your Facebook page</li>
+                <li>• Instagram - Connect your Instagram business account</li>
+                <li>• LinkedIn - Connect your LinkedIn profile</li>
+                <li>• X (Twitter) - Connect your X account</li>
+                <li>• YouTube - Connect your YouTube channel</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button onClick={() => setShowConnectionModal(false)} variant="outline">
+                Cancel
+              </Button>
+              <Button onClick={() => {
+                setShowConnectionModal(false);
+                window.location.href = '/platform-connections';
+              }}>
+                Connect Platforms
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
