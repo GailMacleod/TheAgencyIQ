@@ -449,7 +449,7 @@ export default function Schedule() {
     <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
       <MasterHeader showUserMenu={true} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="schedule-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <BackButton to="/brand-purpose" label="Back to Brand Purpose" />
         </div>
@@ -480,7 +480,7 @@ export default function Schedule() {
             </Button>
             <Button
               onClick={generateContentWithAIThinking}
-              className="bg-purple-600 hover:bg-purple-700 text-white lowercase"
+              className="generate-button bg-purple-600 hover:bg-purple-700 text-white lowercase"
               disabled={showAIThinking}
             >
               {showAIThinking ? 'ai is thinking...' : 'generate content with ai'}

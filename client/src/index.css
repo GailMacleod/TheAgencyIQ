@@ -483,4 +483,22 @@
   .platform-logos svg {
     @apply w-6 h-6;
   }
+  
+  /* Schedule page mobile layout fixes */
+  .schedule-container {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+    padding: 10px;
+  }
+  
+  .calendar-grid {
+    flex: 1;
+    flex-basis: 100%;
+  }
+  
+  .generate-button {
+    margin-top: 10px;
+    width: 100%;
+  }
 }
