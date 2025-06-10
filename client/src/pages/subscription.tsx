@@ -332,7 +332,26 @@ export default function Subscription() {
       {/* Simple Footer */}
       <footer className="bg-card border-t">
         <div className="container-atomiq py-8">
-          <div className="text-center">
+          <div className="text-center space-y-4">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-sm">
+              <a 
+                href="https://app.theagencyiq.ai/privacy-policy" 
+                className="text-muted-foreground hover:text-primary transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Privacy Policy
+              </a>
+              <span className="hidden sm:block text-muted-foreground">•</span>
+              <a 
+                href="https://app.theagencyiq.ai/terms-of-service" 
+                className="text-muted-foreground hover:text-primary transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Terms of Service
+              </a>
+            </div>
             <p className="text-muted-foreground text-sm">
               &copy; 2024 MacleodGlobal trading as The AgencyIQ. All rights reserved.
             </p>
