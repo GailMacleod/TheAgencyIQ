@@ -389,6 +389,72 @@ export default function Profile() {
         )}
       </div>
       
+      {/* Phone Update Modal */}
+      <Dialog open={showPhoneModal} onOpenChange={setShowPhoneModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Update Phone Number</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPhone">New Phone Number</Label>
+              <Input
+                id="newPhone"
+                type="tel"
+                placeholder="+61424835189"
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+                disabled={codeSent}
+              />
+            </div>
+            
+            {!codeSent ? (
+              <Button 
+                onClick={handleSendCode}
+                disabled={sendCodeMutation.isPending || !newPhone.trim()}
+                className="w-full"
+              >
+                {sendCodeMutation.isPending ? "Sending..." : "Send Verification Code"}
+              </Button>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="verificationCode">Verification Code</Label>
+                  <Input
+                    id="verificationCode"
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    maxLength={6}
+                  />
+                </div>
+                
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setCodeSent(false);
+                      setVerificationCode("");
+                    }}
+                    className="flex-1"
+                  >
+                    Resend Code
+                  </Button>
+                  <Button 
+                    onClick={handleUpdatePhone}
+                    disabled={updatePhoneMutation.isPending || !verificationCode.trim()}
+                    className="flex-1"
+                  >
+                    {updatePhoneMutation.isPending ? "Updating..." : "Update Phone"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      
       <MasterFooter />
     </div>
   );

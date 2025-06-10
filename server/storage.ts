@@ -206,10 +206,11 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(verificationCodes.phone, phone),
-          eq(verificationCodes.code, code),
-          eq(verificationCodes.verified, false)
+          eq(verificationCodes.code, code)
         )
-      );
+      )
+      .orderBy(desc(verificationCodes.createdAt))
+      .limit(1);
     return verificationCode;
   }
 
