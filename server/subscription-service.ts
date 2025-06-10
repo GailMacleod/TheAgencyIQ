@@ -5,7 +5,8 @@ import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
 export interface SubscriptionPlan {
   name: string;
   postsPerMonth: number;
-  freeBonus: number; // 2 free posts
+  freeBonus: number;
+  price: number; // Monthly price in USD
 }
 
 export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
