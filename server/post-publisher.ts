@@ -12,70 +12,120 @@ export class PostPublisher {
   
   static async publishToFacebook(accessToken: string, content: string): Promise<PublishResult> {
     try {
-      // Validate the authenticated token format
-      if (!accessToken.startsWith('facebook_') && !accessToken.startsWith('EAABw')) {
-        throw new Error('Invalid Facebook access token format');
-      }
+      // Get a real Facebook app access token for posting
+      const appTokenResponse = await axios.post('https://graph.facebook.com/oauth/access_token', new URLSearchParams({
+        client_id: process.env.FACEBOOK_APP_ID!,
+        client_secret: process.env.FACEBOOK_APP_SECRET!,
+        grant_type: 'client_credentials'
+      }));
 
-      // Simulate successful Facebook posting with realistic analytics
-      const postId = `fb_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      const reach = Math.floor(Math.random() * 2000) + 500;
-      const engagement = Math.floor(reach * 0.15); // 15% engagement rate
+      const realAccessToken = appTokenResponse.data.access_token;
+
+      // Post to Facebook Pages API
+      const response = await axios.post(
+        `https://graph.facebook.com/v18.0/me/feed`,
+        {
+          message: content,
+          access_token: realAccessToken
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       
-      // Log the successful post simulation
-      console.log(`Facebook post simulated successfully: ${postId}`);
-      console.log(`Content: "${content.substring(0, 50)}..."`);
-      console.log(`Estimated reach: ${reach}, engagement: ${engagement}`);
+      console.log(`Facebook post published successfully: ${response.data.id}`);
       
       return {
         success: true,
-        platformPostId: postId,
-        analytics: { reach, engagement, impressions: reach * 2 }
+        platformPostId: response.data.id,
+        analytics: { reach: 0, engagement: 0, impressions: 0 }
       };
     } catch (error: any) {
-      console.error('Facebook publish error:', error.message);
+      console.error('Facebook publish error:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.message
+        error: error.response?.data?.error?.message || error.message
       };
     }
   }
 
   static async publishToInstagram(accessToken: string, content: string, imageUrl?: string): Promise<PublishResult> {
     try {
-      // Validate the authenticated token format
-      if (!accessToken.startsWith('IGQVJ')) {
-        throw new Error('Invalid Instagram access token format');
+      // Get Facebook app access token for Instagram Business API
+      const appTokenResponse = await axios.post('https://graph.facebook.com/oauth/access_token', new URLSearchParams({
+        client_id: process.env.FACEBOOK_APP_ID!,
+        client_secret: process.env.FACEBOOK_APP_SECRET!,
+        grant_type: 'client_credentials'
+      }));
+
+      const realAccessToken = appTokenResponse.data.access_token;
+
+      // Create Instagram media container
+      const mediaData: any = {
+        caption: content,
+        access_token: realAccessToken
+      };
+
+      if (imageUrl) {
+        mediaData.image_url = imageUrl;
+      } else {
+        // Default to text post
+        mediaData.media_type = 'CAROUSEL_ALBUM';
       }
 
-      // Simulate successful Instagram posting with realistic analytics
-      const postId = `ig_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      const reach = Math.floor(Math.random() * 1500) + 300;
-      const engagement = Math.floor(reach * 0.20); // 20% engagement rate for Instagram
+      const response = await axios.post(
+        'https://graph.facebook.com/v18.0/me/media',
+        mediaData
+      );
       
-      console.log(`Instagram post simulated successfully: ${postId}`);
-      console.log(`Content: "${content.substring(0, 50)}..."`);
-      console.log(`Estimated reach: ${reach}, engagement: ${engagement}`);
+      // Publish the media
+      const publishResponse = await axios.post(
+        'https://graph.facebook.com/v18.0/me/media_publish',
+        {
+          creation_id: response.data.id,
+          access_token: realAccessToken
+        }
+      );
+
+      console.log(`Instagram post published successfully: ${publishResponse.data.id}`);
       
       return {
         success: true,
-        platformPostId: postId,
-        analytics: { reach, engagement, impressions: reach * 1.8 }
+        platformPostId: publishResponse.data.id,
+        analytics: { reach: 0, engagement: 0, impressions: 0 }
       };
     } catch (error: any) {
+      console.error('Instagram publish error:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.message
+        error: error.response?.data?.error?.message || error.message
       };
     }
   }
 
   static async publishToLinkedIn(accessToken: string, content: string): Promise<PublishResult> {
     try {
+      // Get LinkedIn client credentials access token
+      const tokenResponse = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: process.env.LINKEDIN_CLIENT_ID!,
+        client_secret: process.env.LINKEDIN_CLIENT_SECRET!,
+        scope: 'w_member_social'
+      }), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+
+      const realAccessToken = tokenResponse.data.access_token;
+
+      // Post to LinkedIn using ugcPosts API
       const response = await axios.post(
         'https://api.linkedin.com/v2/ugcPosts',
         {
-          author: 'urn:li:person:CURRENT',
+          author: 'urn:li:organization:YOUR_ORG_ID',
           lifecycleState: 'PUBLISHED',
           specificContent: {
             'com.linkedin.ugc.ShareContent': {
@@ -91,12 +141,14 @@ export class PostPublisher {
         },
         {
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${realAccessToken}`,
             'Content-Type': 'application/json',
             'X-Restli-Protocol-Version': '2.0.0'
           }
         }
       );
+
+      console.log(`LinkedIn post published successfully: ${response.data.id}`);
       
       return {
         success: true,
@@ -104,6 +156,7 @@ export class PostPublisher {
         analytics: { reach: 0, engagement: 0, impressions: 0 }
       };
     } catch (error: any) {
+      console.error('LinkedIn publish error:', error.response?.data || error.message);
       return {
         success: false,
         error: error.response?.data?.message || error.message
