@@ -1635,67 +1635,30 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      // Clear existing posts for this cycle before generating new ones
-      const cycleExistingPosts = await storage.getPostsByUser(req.session.userId);
-      const postsInCurrentCycle = cycleExistingPosts.filter(p => p.subscriptionCycle === subscriptionStatus.subscriptionCycle);
-      
-      for (const post of postsInCurrentCycle) {
-        await storage.deletePost(post.id);
-      }
-      
-      console.log(`Cleared ${postsInCurrentCycle.length} existing posts for fresh ${userPlan.name} plan generation`);
-
-      // Enforce exact plan allocation for 30-day cycle
+      // Users get their full subscription allocation and can regenerate schedule unlimited times
+      // Only actual posting/publishing counts against their limit
       const planPostLimit = userPlan.postsPerMonth;
       
-      if (subscriptionStatus.postsRemaining <= 0) {
-        return res.status(400).json({ 
-          message: `You've used all ${planPostLimit} posts for this billing cycle (${userPlan.name} plan). Upgrade your plan or wait for next cycle.`,
-          subscriptionLimitReached: true
-        });
-      }
-
-      // Create content hash to detect if brand purpose changed
-      const crypto = require('crypto');
-      const contentString = JSON.stringify({
-        brandName: brandPurpose.brandName,
-        productsServices: brandPurpose.productsServices,
-        corePurpose: brandPurpose.corePurpose,
-        audience: brandPurpose.audience,
-        jobToBeDone: brandPurpose.jobToBeDone,
-        motivations: brandPurpose.motivations,
-        painPoints: brandPurpose.painPoints
-      });
-      const currentHash = crypto.createHash('sha256').update(contentString).digest('hex');
-      
-      // Check if posts already exist with same content hash
+      // Clear any existing draft posts to regenerate fresh schedule
       const existingPosts = await storage.getPostsByUser(req.session.userId);
-      const hasMatchingContent = existingPosts.some(post => post.aiRecommendation === currentHash);
+      const draftPosts = existingPosts.filter(p => 
+        p.subscriptionCycle === subscriptionStatus.subscriptionCycle && 
+        p.status === 'draft'
+      );
       
-      if (hasMatchingContent && existingPosts.length === planPostLimit) {
-        console.log(`Using existing ${existingPosts.length} posts - brand purpose unchanged`);
-        return res.json({ 
-          success: true, 
-          message: `Using existing ${planPostLimit} posts for ${userPlan.name} plan`,
-          posts: existingPosts,
-          fromCache: true
-        });
-      }
-
-      console.log(`Generating AI schedule for ${brandPurpose.brandName}: ${userPlan.name} plan = ${planPostLimit} posts for 30-day cycle`);
-
-      // Clear existing posts only when content actually changed
-      if (existingPosts.length > 0) {
-        console.log(`Brand purpose changed - clearing ${existingPosts.length} existing posts`);
-        for (const post of existingPosts) {
+      if (draftPosts.length > 0) {
+        console.log(`Clearing ${draftPosts.length} draft posts to regenerate fresh schedule`);
+        for (const post of draftPosts) {
           await storage.deletePost(post.id);
         }
       }
 
+      console.log(`Generating fresh ${planPostLimit} posts for ${brandPurpose.brandName}: ${userPlan.name} plan - unlimited regenerations allowed`)
+
       // Import xAI functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
       
-      // Prepare content generation parameters with subscription limit
+      // Prepare content generation parameters with full subscription allocation
       const contentParams = {
         brandName: brandPurpose.brandName,
         productsServices: brandPurpose.productsServices,
@@ -1707,7 +1670,7 @@ Continue building your Value Proposition Canvas systematically.`;
         goals: brandPurpose.goals || {},
         contactDetails: brandPurpose.contactDetails || {},
         platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-        totalPosts: planPostLimit // Use exact subscription plan allocation
+        totalPosts: planPostLimit // Generate full subscription allocation
       };
 
       // Generate brand analysis
@@ -1733,7 +1696,7 @@ Continue building your Value Proposition Canvas systematically.`;
             status: 'draft',
             scheduledFor: new Date(post.scheduledFor),
             subscriptionCycle: subscriptionStatus.subscriptionCycle,
-            aiRecommendation: currentHash
+            aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience}. JTBD alignment: ${analysis.jtbdScore}/100`
           };
 
           const savedPost = await storage.createPost(postData);
