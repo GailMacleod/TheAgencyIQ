@@ -924,13 +924,23 @@ export default function Schedule() {
 
         {/* Stable Day Dropdown for Approve & Post */}
         {selectedDay && (
-          <Card className="fixed z-50 bg-white border-2 border-blue-500 shadow-xl p-6 max-w-md" style={{
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 1000
-          }}>
-            <CardContent className="p-0">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50" 
+            style={{ zIndex: 9998 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setSelectedDay(null);
+              }
+            }}
+          >
+            <Card className="fixed bg-white border-2 border-blue-500 shadow-xl p-6 max-w-md" style={{
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 9999,
+              pointerEvents: 'auto'
+            }}>
+              <CardContent className="p-0">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 lowercase">
                   {format(selectedDay, 'MMMM d, yyyy')}
@@ -1069,7 +1079,8 @@ export default function Schedule() {
                 click outside to close
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </div>
         )}
 
         {/* Hover Tooltip - Grok Insights */}
@@ -1135,10 +1146,46 @@ export default function Schedule() {
                   </div>
                 </div>
               )}
+
+              <div className="text-xs text-gray-500 text-center lowercase">
+                click outside to close
+              </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Hover Tooltip - Grok Insights */}
+        {hoveredDay && (
+          <Card className="fixed z-50 bg-white border shadow-lg p-4 max-w-sm" style={{
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}>
+            <CardContent className="p-0">
+              <h3 className="font-medium text-purple-700 mb-2 lowercase">
+                ai insights for {format(hoveredDay, 'MMM d')}
+              </h3>
+              {calendarDays.find(day => isSameDay(day.date, hoveredDay))?.aiInsight && (
+                <p className="text-sm text-gray-600 mb-3">
+                  {calendarDays.find(day => isSameDay(day.date, hoveredDay))?.aiInsight}
+                </p>
+              )}
+              
+              {/* Local Events */}
+              {calendarDays.find(day => isSameDay(day.date, hoveredDay))?.localEvents?.length! > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-gray-700 mb-1 lowercase">local events:</p>
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    {calendarDays.find(day => isSameDay(day.date, hoveredDay))?.localEvents?.map((event, idx) => (
+                      <li key={idx} className="lowercase">• {event}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
-        </div>
       </div>
 
       <MasterFooter />
