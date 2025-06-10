@@ -149,6 +149,42 @@ Connected platforms: ${params.platforms.join(', ')}
 
 Create engaging, brand-aligned content that addresses audience motivations and pain points. Each post should include brand name naturally, reference products/services, and align with the job-to-be-done insights. Include appropriate URLs and contact details based on goals.
 
+QUEENSLAND MARKET CONTEXT:
+- Focus on Queensland small business challenges and opportunities
+- Include local events, networking opportunities, and market trends
+- Address specific pain points of Queensland SMEs
+- Leverage local community connections and business ecosystem
+
+CONTENT STRATEGY REQUIREMENTS:
+- Each post must directly address a specific pain point from: ${params.painPoints}
+- Content should help audience achieve their job-to-be-done: ${params.jobToBeDone}
+- Motivate action by connecting to audience motivations: ${params.motivations}
+- Include clear calls-to-action based on business goals
+
+PLATFORM-SPECIFIC OPTIMIZATION:
+Distribute content across platforms based on AI analysis weighting:
+${JSON.stringify(analysis.platformWeighting)}
+
+Use recommended tone: ${analysis.tone}
+
+POST TYPE DISTRIBUTION (follow percentages):
+${JSON.stringify(analysis.postTypeAllocation)}
+
+Generate exactly ${params.totalPosts} posts. Return as JSON array with format:
+[
+  {
+    "platform": "platform_name",
+    "content": "full_post_content_with_hashtags_and_urls",
+    "scheduledFor": "2025-06-DD 14:00:00",
+    "postType": "sales|awareness|educational|engagement",
+    "aiScore": number_0_to_100,
+    "targetPainPoint": "specific_pain_point_addressed",
+    "jtbdAlignment": "how_this_helps_job_to_be_done"
+  }
+]
+
+Ensure posts are scheduled across the next 30 days with optimal timing for each platform. Include relevant Queensland business hashtags and contact information where appropriate.
+
 UNPAID MEDIA BEST PRACTICES - Include measurable elements:
 - Clear calls-to-action that align with specific targets (traffic, followers, sales, leads, education)
 - Content designed to drive measurable engagement (comments, shares, saves, clicks)
