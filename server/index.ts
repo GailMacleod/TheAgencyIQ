@@ -111,6 +111,79 @@ app.get('/.well-known/health', (req, res) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Brand Posts endpoint with full Strategyzer integration
+app.post('/api/brand-posts', async (req, res) => {
+  try {
+    const { goals, targets, text, brandPurpose } = req.body;
+    const userId = req.session?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const { storage } = await import('./storage');
+    const user = await storage.getUser(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Parse the entire Brand Purpose into Strategyzer components
+    const strategyzerComponents = {
+      goals: goals || {},
+      targets: targets || {},
+      text: text || '',
+      brandName: brandPurpose?.brandName || '',
+      productsServices: brandPurpose?.productsServices || '',
+      corePurpose: brandPurpose?.corePurpose || '',
+      audience: brandPurpose?.audience || '',
+      jobToBeDone: brandPurpose?.jobToBeDone || '',
+      motivations: brandPurpose?.motivations || '',
+      painPoints: brandPurpose?.painPoints || ''
+    };
+
+    console.log(`Full Brand Purpose parsed for ${user.email}: [goals: ${JSON.stringify(goals)}, targets: ${JSON.stringify(targets)}, text: ${text}]`);
+
+    // Send to xAI API with Think mode
+    const { getAIResponse } = await import('./grok');
+    
+    const strategyzerPrompt = `
+    Analyze this complete Brand Purpose using Strategyzer methodology:
+    
+    Goals: ${JSON.stringify(strategyzerComponents.goals)}
+    Targets: ${JSON.stringify(strategyzerComponents.targets)}
+    Text Content: ${strategyzerComponents.text}
+    
+    Brand Context:
+    - Brand Name: ${strategyzerComponents.brandName}
+    - Products/Services: ${strategyzerComponents.productsServices}
+    - Core Purpose: ${strategyzerComponents.corePurpose}
+    - Audience: ${strategyzerComponents.audience}
+    - Job to be Done: ${strategyzerComponents.jobToBeDone}
+    - Motivations: ${strategyzerComponents.motivations}
+    - Pain Points: ${strategyzerComponents.painPoints}
+    
+    Using Think mode, provide strategic insights and content recommendations.
+    `;
+
+    const aiInsights = await getAIResponse(strategyzerPrompt, 'strategyzer-analysis', strategyzerComponents);
+
+    // Get existing posts for this user
+    const posts = await storage.getPostsByUser(userId);
+
+    res.json({
+      success: true,
+      posts: posts,
+      strategyzerInsights: aiInsights,
+      components: strategyzerComponents
+    });
+
+  } catch (error) {
+    console.error('Brand posts error:', error);
+    res.status(500).json({ message: 'Failed to process brand posts' });
+  }
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
