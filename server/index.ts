@@ -651,6 +651,17 @@ app.get('/api/quota-status', async (req, res) => {
 
 // Update phone number with SMS verification and data migration
 app.post('/api/update-phone', async (req, res) => {
+  // Set JSON response headers immediately
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-cache');
+  
+  console.log('Phone update request received:', {
+    hasBody: !!req.body,
+    contentType: req.headers['content-type'],
+    userAgent: req.headers['user-agent'],
+    referer: req.headers.referer
+  });
+  
   try {
     const { storage } = await import('./storage');
     let userId = req.session?.userId;
@@ -820,12 +831,25 @@ app.post('/api/update-phone', async (req, res) => {
 
   } catch (error) {
     console.error('Update phone error:', error);
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(500).json({ 
-      success: false,
-      message: 'Failed to update phone number',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    
+    // Ensure we always respond with JSON, even in catastrophic failures
+    try {
+      if (!res.headersSent) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(500).json({ 
+          success: false,
+          message: 'Failed to update phone number',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    } catch (responseError) {
+      console.error('Failed to send error response:', responseError);
+      // Last resort - try to send minimal JSON response
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end('{"success":false,"message":"Server error"}');
+      }
+    }
   }
 });
 
@@ -1127,6 +1151,30 @@ async function restoreSubscribers() {
   // Handle uncaught exceptions
   process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
+  });
+
+  // API route protection middleware - prevents HTML responses for API calls
+  app.use('/api/*', (req, res, next) => {
+    // Override response methods to ensure JSON responses only
+    const originalSend = res.send;
+    const originalSendFile = res.sendFile;
+    
+    res.send = function(data: any) {
+      res.setHeader('Content-Type', 'application/json');
+      return originalSend.call(this, data);
+    };
+    
+    res.sendFile = function() {
+      // Never serve files for API routes
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(404).json({ 
+        success: false,
+        message: 'API endpoint not found',
+        path: req.originalUrl 
+      });
+    };
+    
+    next();
   });
 
   // importantly only setup vite in development and after
