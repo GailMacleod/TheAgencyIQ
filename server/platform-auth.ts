@@ -69,27 +69,39 @@ export async function authenticateFacebook(username: string, password: string): 
       `response_type=code&` +
       `state=${state}`;
 
-    // Simulate OAuth flow with user credentials
-    const authResponse = await axios.post('https://graph.facebook.com/v18.0/oauth/access_token', {
-      client_id: process.env.FACEBOOK_APP_ID,
-      client_secret: process.env.FACEBOOK_APP_SECRET,
-      grant_type: 'client_credentials',
-      scope: 'pages_manage_posts,pages_read_engagement'
+    // Get app access token first
+    const appTokenResponse = await axios.post('https://graph.facebook.com/v18.0/oauth/access_token', new URLSearchParams({
+      client_id: process.env.FACEBOOK_APP_ID!,
+      client_secret: process.env.FACEBOOK_APP_SECRET!,
+      grant_type: 'client_credentials'
+    }));
+
+    const appAccessToken = appTokenResponse.data.access_token;
+
+    // For testing purposes, generate a long-lived user access token
+    // In production, this would go through proper OAuth flow
+    const longLivedTokenResponse = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+      params: {
+        grant_type: 'fb_exchange_token',
+        client_id: process.env.FACEBOOK_APP_ID,
+        client_secret: process.env.FACEBOOK_APP_SECRET,
+        fb_exchange_token: appAccessToken
+      }
     });
 
-    const accessToken = authResponse.data.access_token;
+    const userAccessToken = longLivedTokenResponse.data.access_token || appAccessToken;
 
     // Get user profile using the access token
     const profileResponse = await axios.get('https://graph.facebook.com/me', {
       params: {
         fields: 'id,name,email',
-        access_token: accessToken
+        access_token: userAccessToken
       }
     });
 
     return {
-      accessToken: accessToken,
-      refreshToken: authResponse.data.refresh_token || '',
+      accessToken: userAccessToken,
+      refreshToken: longLivedTokenResponse.data.refresh_token || '',
       platformUserId: profileResponse.data.id,
       platformUsername: profileResponse.data.name
     };
