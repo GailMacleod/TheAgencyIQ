@@ -238,12 +238,12 @@ export default function ConnectPlatforms() {
                       {(config as PlatformConfig).pending ? (
                         <Badge className="bg-orange-100 text-orange-800 text-xs">
                           <AlertCircle className="w-3 h-3 mr-1" />
-                          Pending Approval
+                          Coming Soon
                         </Badge>
                       ) : (
-                        <Badge className="bg-blue-100 text-blue-800 text-xs">
+                        <Badge className="bg-green-100 text-green-800 text-xs">
                           <CheckCircle className="w-3 h-3 mr-1" />
-                          OAuth Approved
+                          Available
                         </Badge>
                       )}
                       {connected ? (
@@ -288,10 +288,10 @@ export default function ConnectPlatforms() {
                       {(config as PlatformConfig).pending ? (
                         <div className="text-center py-4">
                           <p className="text-sm text-gray-600 mb-2">
-                            OAuth Pending
+                            Coming Soon
                           </p>
                           <p className="text-xs text-gray-500">
-                            Awaiting TikTok OAuth API approval
+                            TikTok connection available soon
                           </p>
                         </div>
                       ) : (
@@ -338,7 +338,7 @@ export default function ConnectPlatforms() {
                             className="w-full"
                             disabled={connecting[platform] || connectMutation.isPending}
                           >
-                            {connecting[platform] ? 'Connecting...' : `Connect ${config.name}`}
+                            {connecting[platform] ? 'Connecting...' : 'CONNECT'}
                           </Button>
                         </>
                       )}
@@ -368,15 +368,15 @@ export default function ConnectPlatforms() {
               <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">OAuth Security Notice</h3>
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">Secure Connection</h3>
               <p className="text-blue-800 text-sm mb-3">
-                We use official OAuth 2.0 authentication to securely connect your social media accounts. Your credentials are never 
-                stored and your posts will be published directly to your actual accounts using real API credentials.
+                We securely connect to your social media accounts. Your login details are protected and 
+                your posts will be published directly to your real accounts.
               </p>
               <div className="text-xs text-blue-700">
-                <p>• All connections use approved OAuth applications</p>
-                <p>• Your account data remains secure and private</p>
-                <p>• Posts are published using authentic platform APIs</p>
+                <p>• Your account information stays private and secure</p>
+                <p>• Posts publish directly to your actual social media</p>
+                <p>• All connections use official platform security</p>
               </div>
             </div>
           </div>
