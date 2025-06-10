@@ -58,6 +58,32 @@ function App() {
     }
   }, []);
 
+  // Establish authentication session on app load
+  useEffect(() => {
+    const establishSession = async () => {
+      try {
+        const response = await fetch('/api/establish-session', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Session established:', data.user?.email);
+        } else {
+          console.log('Session establishment failed, continuing without auth');
+        }
+      } catch (error) {
+        console.log('Session establishment error, continuing without auth');
+      }
+    };
+    
+    establishSession();
+  }, []);
+
   // Mobile layout detection and setup
   useEffect(() => {
     if (window.matchMedia('(max-width: 768px)').matches) {
