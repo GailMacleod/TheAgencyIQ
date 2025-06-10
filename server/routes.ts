@@ -1626,7 +1626,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Publish post to social media platforms
+  // Publish post to social media platforms with subscription tracking
   app.post("/api/publish-post", requireAuth, async (req: any, res) => {
     try {
       const { postId, platform } = req.body;
@@ -1635,20 +1635,21 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Post ID and platform are required" });
       }
 
-      // Get user and check subscription limits
+      // Check subscription limits using SubscriptionService
+      const { SubscriptionService } = await import('./subscription-service');
+      const limitCheck = await SubscriptionService.canCreatePost(req.session.userId);
+      
+      if (!limitCheck.allowed) {
+        return res.status(400).json({ 
+          message: limitCheck.reason,
+          subscriptionLimitReached: true
+        });
+      }
+
+      // Get user
       const user = await storage.getUser(req.session.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-
-      // Check remaining posts allocation
-      const remainingPosts = user.remainingPosts || 0;
-      if (remainingPosts <= 0) {
-        return res.status(400).json({ 
-          message: "No remaining posts in your subscription plan",
-          remainingPosts: 0,
-          subscriptionPlan: user.subscriptionPlan
-        });
       }
 
       // Get platform connections for the user
@@ -1684,11 +1685,20 @@ Continue building your Value Proposition Canvas systematically.`;
           // Update post status to published
           await storage.updatePost(parseInt(postId), { 
             status: 'published',
-            publishedAt: new Date()
+            publishedAt: new Date(),
+            analytics: publishResult.results?.[platform]?.analytics || {}
           });
 
+          // Track successful post against subscription
+          await SubscriptionService.trackSuccessfulPost(
+            req.session.userId, 
+            parseInt(postId), 
+            publishResult.results?.[platform]?.analytics || {}
+          );
+
           res.json({
-            message: "Post published successfully",
+            success: true,
+            message: "Post published successfully and counted against your subscription",
             platform,
             postId,
             remainingPosts: publishResult.remainingPosts,
@@ -1696,9 +1706,10 @@ Continue building your Value Proposition Canvas systematically.`;
           });
         } else {
           res.status(500).json({
+            success: false,
             message: `Failed to publish to ${platform}`,
             platform,
-            error: publishResult.results?.[0]?.error || "Unknown error"
+            error: publishResult.results?.[platform]?.error || "Unknown error"
           });
         }
 

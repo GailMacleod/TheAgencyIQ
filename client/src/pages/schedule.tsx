@@ -282,7 +282,7 @@ export default function Schedule() {
     }
   };
 
-  // Publish post to social media platform
+  // Publish post to social media platform with subscription tracking
   const publishPost = async (postId: number, platform: string) => {
     try {
       const response = await fetch('/api/publish-post', {
@@ -299,17 +299,28 @@ export default function Schedule() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Post published:', result);
-        refetchPosts();
-        return result;
+        
+        // Update UI based on publish result
+        if (result.success) {
+          toast({
+            title: "Post Published Successfully",
+            description: `Your post has been published to ${platform} and counted against your subscription.`,
+          });
+          
+          // Refresh posts to show updated status
+          refetchPosts();
+        } else {
+          throw new Error(result.error || 'Publication failed');
+        }
       } else {
-        throw new Error('Failed to publish post');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to publish post');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error publishing post:', error);
       toast({
-        title: "Publishing Error",
-        description: "Failed to publish to platform. Check your connection settings.",
+        title: "Publication Failed",
+        description: error.message || "Failed to publish post to social media platform.",
         variant: "destructive",
       });
     }
