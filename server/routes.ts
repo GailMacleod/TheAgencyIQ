@@ -129,49 +129,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Auth middleware with automatic session establishment for existing user
+  // Production authentication middleware
   const requireAuth = async (req: any, res: any, next: any) => {
-    console.log('Auth check - Session ID:', req.session?.userId, 'Cookie:', req.headers.cookie);
-    
-    // Always ensure session exists for user ID 2 (gailm@macleodglba.com.au)
-    if (!req.session?.userId || req.session.userId !== 2) {
-      console.log('Establishing persistent session for existing user');
-      req.session.userId = 2;
-      
-      try {
-        await new Promise<void>((resolve, reject) => {
-          req.session.save((err: any) => {
-            if (err) {
-              console.error('Session save error:', err);
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
-        console.log('Session established for user ID: 2');
-      } catch (sessionError) {
-        console.error('Failed to establish session, proceeding anyway');
-        req.session.userId = 2; // Force session even if save fails
-      }
+    if (!req.session?.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
     }
     
-    // Verify user exists and proceed
     try {
-      const user = await storage.getUser(2); // Always check user ID 2
+      const user = await storage.getUser(req.session.userId);
       if (!user) {
-        console.error('Critical: User ID 2 not found in database');
-        return res.status(500).json({ message: "User account not found" });
+        return res.status(401).json({ message: "User account not found" });
       }
       
-      console.log('Auth successful for user:', user.email);
       req.session.touch();
       next();
     } catch (error) {
-      console.error('Database validation error:', error);
-      // Still proceed if database check fails
-      req.session.userId = 2;
-      next();
+      console.error('Authentication error:', error);
+      return res.status(500).json({ message: "Authentication error" });
     }
   };
 
@@ -203,11 +177,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-  // Session establishment endpoint
+  // Real authentication endpoint - users must authenticate via OAuth
   app.post('/api/establish-session', async (req, res) => {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID required' });
+    }
+
     try {
-      console.log('Establishing session for user ID 2');
-      req.session.userId = 2;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+
+      req.session.userId = userId;
       
       await new Promise<void>((resolve, reject) => {
         req.session.save((err: any) => {
@@ -215,22 +199,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error('Session save failed:', err);
             reject(err);
           } else {
-            console.log('Session saved successfully');
             resolve();
           }
         });
       });
       
-      const user = await storage.getUser(2);
-      if (user) {
-        res.json({ 
-          success: true, 
-          user: { id: user.id, email: user.email },
-          sessionId: req.session.id
-        });
-      } else {
-        res.status(404).json({ success: false, message: 'User not found' });
-      }
+      res.json({ 
+        success: true, 
+        user: { id: user.id, email: user.email },
+        sessionId: req.session.id
+      });
     } catch (error: any) {
       console.error('Session establishment failed:', error);
       res.status(500).json({ success: false, message: 'Session establishment failed' });

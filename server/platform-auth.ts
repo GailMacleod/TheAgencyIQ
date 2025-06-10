@@ -8,35 +8,48 @@ interface AuthTokens {
   platformUsername: string;
 }
 
-// LinkedIn authentication using real API
+// LinkedIn OAuth authentication using real API
 export async function authenticateLinkedIn(username: string, password: string): Promise<AuthTokens> {
   try {
-    // Validate credentials format
-    if (!username || username.trim().length === 0) {
-      throw new Error('Username or email is required');
-    }
-    
-    if (!password || password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
+    if (!process.env.LINKEDIN_CLIENT_ID || !process.env.LINKEDIN_CLIENT_SECRET) {
+      throw new Error('LinkedIn OAuth credentials not configured');
     }
 
-    // Generate authenticated token using your LinkedIn app credentials
-    const timestamp = Date.now();
-    const userHash = crypto.createHash('sha256')
-      .update(`${username}_${process.env.LINKEDIN_CLIENT_ID}_${timestamp}`)
-      .digest('hex');
+    // Real LinkedIn OAuth flow would redirect to LinkedIn for authorization
+    // This is a simplified implementation for direct credential exchange
+    const response = await axios.post('https://api.linkedin.com/oauth/v2/accessToken', {
+      grant_type: 'client_credentials',
+      client_id: process.env.LINKEDIN_CLIENT_ID,
+      client_secret: process.env.LINKEDIN_CLIENT_SECRET,
+      username: username,
+      password: password
+    }, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
 
-    const accessToken = `linkedin_${userHash.substring(0, 32)}_${timestamp}`;
-    const platformUsername = username.includes('@') ? username.split('@')[0] : username;
-    const platformUserId = `li_${crypto.createHash('md5').update(username).digest('hex').substring(0, 16)}`;
+    if (response.data.access_token) {
+      // Get user profile
+      const profileResponse = await axios.get('https://api.linkedin.com/v2/people/~', {
+        headers: {
+          'Authorization': `Bearer ${response.data.access_token}`
+        }
+      });
 
-    return {
-      accessToken: accessToken,
-      refreshToken: `refresh_${userHash.substring(32, 64)}`,
-      platformUserId: platformUserId,
-      platformUsername: platformUsername
-    };
+      return {
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token || '',
+        platformUserId: profileResponse.data.id,
+        platformUsername: profileResponse.data.localizedFirstName || username
+      };
+    }
+
+    throw new Error('Invalid LinkedIn credentials');
   } catch (error: any) {
+    if (error.response) {
+      throw new Error(`LinkedIn authentication failed: ${error.response.data.error_description || 'Invalid credentials'}`);
+    }
     throw new Error(`LinkedIn authentication failed: ${error.message}`);
   }
 }
