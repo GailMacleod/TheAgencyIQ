@@ -1636,8 +1636,8 @@ Continue building your Value Proposition Canvas systematically.`;
       }
 
       // Clear existing posts for this cycle before generating new ones
-      const existingPosts = await storage.getPostsByUser(req.session.userId);
-      const postsInCurrentCycle = existingPosts.filter(p => p.subscriptionCycle === subscriptionStatus.subscriptionCycle);
+      const cycleExistingPosts = await storage.getPostsByUser(req.session.userId);
+      const postsInCurrentCycle = cycleExistingPosts.filter(p => p.subscriptionCycle === subscriptionStatus.subscriptionCycle);
       
       for (const post of postsInCurrentCycle) {
         await storage.deletePost(post.id);
@@ -1655,7 +1655,42 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
+      // Create content hash to detect if brand purpose changed
+      const crypto = require('crypto');
+      const contentString = JSON.stringify({
+        brandName: brandPurpose.brandName,
+        productsServices: brandPurpose.productsServices,
+        corePurpose: brandPurpose.corePurpose,
+        audience: brandPurpose.audience,
+        jobToBeDone: brandPurpose.jobToBeDone,
+        motivations: brandPurpose.motivations,
+        painPoints: brandPurpose.painPoints
+      });
+      const currentHash = crypto.createHash('sha256').update(contentString).digest('hex');
+      
+      // Check if posts already exist with same content hash
+      const existingPosts = await storage.getPostsByUser(req.session.userId);
+      const hasMatchingContent = existingPosts.some(post => post.aiRecommendation === currentHash);
+      
+      if (hasMatchingContent && existingPosts.length === planPostLimit) {
+        console.log(`Using existing ${existingPosts.length} posts - brand purpose unchanged`);
+        return res.json({ 
+          success: true, 
+          message: `Using existing ${planPostLimit} posts for ${userPlan.name} plan`,
+          posts: existingPosts,
+          fromCache: true
+        });
+      }
+
       console.log(`Generating AI schedule for ${brandPurpose.brandName}: ${userPlan.name} plan = ${planPostLimit} posts for 30-day cycle`);
+
+      // Clear existing posts only when content actually changed
+      if (existingPosts.length > 0) {
+        console.log(`Brand purpose changed - clearing ${existingPosts.length} existing posts`);
+        for (const post of existingPosts) {
+          await storage.deletePost(post.id);
+        }
+      }
 
       // Import xAI functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
@@ -1698,7 +1733,7 @@ Continue building your Value Proposition Canvas systematically.`;
             status: 'draft',
             scheduledFor: new Date(post.scheduledFor),
             subscriptionCycle: subscriptionStatus.subscriptionCycle,
-            aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience}. JTBD alignment: ${analysis.jtbdScore}/100`
+            aiRecommendation: currentHash
           };
 
           const savedPost = await storage.createPost(postData);
