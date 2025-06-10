@@ -1001,24 +1001,36 @@ export default function Schedule() {
           </div>
         )}
 
-        {/* Navigation to Analytics - Inside Main Container */}
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg py-8 mt-12 mb-8">
+        {/* Visible Navigation Section */}
+        <div className="w-full bg-white border-2 border-purple-300 rounded-xl shadow-xl p-8 mt-8 mb-8">
           <div className="text-center">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Ready to track your results?</h3>
             <Button
               onClick={() => setLocation("/analytics")}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-4 text-lg rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 uppercase tracking-wide"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-16 py-6 text-xl rounded-xl font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105"
               size="lg"
             >
-              NEXT: VIEW ANALYTICS →
+              🚀 VIEW ANALYTICS NOW →
             </Button>
-            <p className="text-gray-600 mt-3 font-medium">
-              Track your post performance and engagement metrics
+            <p className="text-gray-700 mt-4 text-lg font-medium">
+              See how your posts are performing across all platforms
             </p>
           </div>
         </div>
       </div>
 
       <MasterFooter />
+      
+      {/* Fixed Floating Analytics Button */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button
+          onClick={() => setLocation("/analytics")}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 text-lg rounded-full font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 border-4 border-white"
+          size="lg"
+        >
+          📊 ANALYTICS →
+        </Button>
+      </div>
     </div>
   );
 }
