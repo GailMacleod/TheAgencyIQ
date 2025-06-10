@@ -1004,43 +1004,7 @@ Continue refining these elements to build a stronger brand foundation.`;
     }
   });
 
-  // Schedule endpoint for content generation
-  app.get("/schedule", requireAuth, async (req: any, res) => {
-    try {
-      // Get brand data from database using existing session
-      const brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
-      
-      if (!brandPurposeRecord) {
-        return res.status(400).json({ message: 'Missing brand data - please complete brand purpose setup' });
-      }
-
-      const brandData = {
-        name: brandPurposeRecord.brandName,
-        valueProp: brandPurposeRecord.productsServices,
-        corePurpose: brandPurposeRecord.corePurpose,
-        audience: brandPurposeRecord.audience
-      };
-
-      if (!brandData.name || !brandData.valueProp || !brandData.corePurpose || !brandData.audience) {
-        return res.status(400).json({ message: 'Missing brand data' });
-      }
-
-      const schedule = generateKickAssSchedule(brandData);
-      res.status(200).json(schedule);
-    } catch (error: any) {
-      console.error('Schedule generation error:', error);
-      res.status(400).json({ message: "Schedule generation failed" });
-    }
-  });
-
-  function generateKickAssSchedule(data: any) {
-    const events = ['Queensland SME Expo'];
-    return events.map(event => ({
-      date: new Date().toISOString().split('T')[0],
-      content: `🔥 ${data.valueProp} at ${event}!`,
-      audience: data.audience
-    }));
-  }
+  // Removed conflicting /schedule route to allow React component to render
 
   // Get posts for schedule screen
   app.get("/api/posts", requireAuth, async (req: any, res) => {
