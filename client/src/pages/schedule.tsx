@@ -620,8 +620,8 @@ export default function Schedule() {
               </Button>
             </div>
 
-            {/* Scrollable Posts Container */}
-            <div className="max-h-96 overflow-y-auto space-y-4 pr-2">
+            {/* Scrollable Posts Container - Show all 30 days of posts */}
+            <div className="max-h-screen overflow-y-auto space-y-4 pr-2">
               {filteredPosts.length > 0 ? (
                 filteredPosts.map((post: Post) => (
                   <Card key={post.id} className="overflow-hidden">
