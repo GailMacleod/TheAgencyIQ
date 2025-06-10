@@ -366,9 +366,12 @@ export default function Schedule() {
     queryKey: ["/api/user"],
   });
 
-  // Fetch posts
+  // Fetch posts only after user is authenticated
   const { data: posts, isLoading: postsLoading, refetch: refetchPosts } = useQuery({
     queryKey: ["/api/posts"],
+    enabled: !!user && !userLoading,
+    retry: 2,
+    staleTime: 30000,
   });
 
   // Type-safe posts array
@@ -449,12 +452,33 @@ export default function Schedule() {
     });
   }
 
-  if (userLoading || postsLoading) {
+  if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-gray-600 lowercase">loading your personalized schedule...</p>
+          <p className="mt-4 text-gray-600 lowercase">loading your account...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 lowercase">please log in to view your schedule</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (postsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-gray-600 lowercase">loading your posts...</p>
         </div>
       </div>
     );
