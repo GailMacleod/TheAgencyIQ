@@ -40,6 +40,28 @@ interface User {
   totalPosts: number;
 }
 
+interface SubscriptionStatus {
+  plan: {
+    name: string;
+    postsPerMonth: number;
+    freeBonus: number;
+  };
+  totalAllowed: number;
+  used: number;
+  remaining: number;
+  cycle: {
+    name: string;
+    start: string;
+    end: string;
+  };
+  analytics: {
+    successfulPosts: number;
+    totalReach: number;
+    totalEngagement: number;
+    totalImpressions: number;
+  };
+}
+
 interface BrandPurpose {
   id: number;
   brandName: string;
@@ -100,6 +122,12 @@ export default function IntelligentSchedule() {
     enabled: !!user && !userLoading,
     retry: 2,
     staleTime: 30000,
+  });
+
+  // Fetch subscription status for post limits
+  const { data: subscriptionUsage } = useQuery({
+    queryKey: ["/api/subscription-usage"],
+    enabled: !!user && !userLoading,
   });
 
   // Type-safe posts array

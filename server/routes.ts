@@ -1530,6 +1530,7 @@ Continue building your Value Proposition Canvas systematically.`;
             content: post.content,
             status: 'draft',
             scheduledFor: new Date(post.scheduledFor),
+            subscriptionCycle: subscriptionStatus.subscriptionCycle,
             aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience}. JTBD alignment: ${analysis.jtbdScore}/100`
           };
 
@@ -1543,9 +1544,17 @@ Continue building your Value Proposition Canvas systematically.`;
         }
       }
 
-      // Prepare schedule insights
+      // Prepare schedule insights with subscription information
       const scheduleData = {
         posts: savedPosts,
+        subscription: {
+          plan: subscriptionStatus.plan.name,
+          totalAllowed: subscriptionStatus.totalPostsAllowed,
+          used: subscriptionStatus.postsUsed + savedPosts.length, // Include newly created posts
+          remaining: subscriptionStatus.postsRemaining - savedPosts.length,
+          cycleStart: subscriptionStatus.cycleInfo.cycleStart,
+          cycleEnd: subscriptionStatus.cycleInfo.cycleEnd
+        },
         analysis: {
           jtbdScore: analysis.jtbdScore,
           platformWeighting: analysis.platformWeighting,
