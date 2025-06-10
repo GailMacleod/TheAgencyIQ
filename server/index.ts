@@ -281,33 +281,64 @@ app.get("/api/brand-posts", async (req: any, res) => {
         setTimeout(() => reject(new Error('API timeout')), 3000);
       });
       
-      // Simulate xAI API call (replace with actual xAI integration)
-      const apiCall = new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            posts: [
-              {
-                id: Date.now() + Math.random(),
-                platform: 'facebook',
-                content: 'AI-generated brand purpose content for Queensland SMEs',
-                scheduledFor: new Date().toISOString(),
-                status: 'draft',
-                aiRecommendation: 'Optimized for Queensland business engagement'
-              },
-              {
-                id: Date.now() + Math.random() + 1,
-                platform: 'instagram',
-                content: 'Visual storytelling for Queensland small business success',
-                scheduledFor: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-                status: 'draft',
-                aiRecommendation: 'Perfect for visual brand narrative'
-              }
-            ]
-          });
-        }, 1000);
-      });
+      // Actual xAI API integration
+      const { getAIResponse, generateContentCalendar } = await import('./grok');
       
-      const result = await Promise.race([apiCall, timeoutPromise]);
+      console.log(`xAI API call attempt ${attempts} for ${currentDate}`);
+      
+      const apiCall = async () => {
+        try {
+          // Get user's brand purpose data for context
+          const userId = (req as any).session?.userId;
+          if (!userId) {
+            throw new Error('User not authenticated for brand posts');
+          }
+
+          const { storage } = await import('./storage');
+          const brandPurpose = await storage.getBrandPurposeByUser(userId);
+          
+          if (!brandPurpose) {
+            console.log(`No brand purpose found for user ${userId}, using fallback content`);
+            throw new Error('No brand purpose data available');
+          }
+
+          console.log(`Generating content for brand: ${brandPurpose.brandName}`);
+          
+          const contentParams = {
+            brandName: brandPurpose.brandName,
+            productsServices: brandPurpose.productsServices,
+            corePurpose: brandPurpose.corePurpose,
+            audience: brandPurpose.audience,
+            jobToBeDone: brandPurpose.jobToBeDone,
+            motivations: brandPurpose.motivations,
+            painPoints: brandPurpose.painPoints,
+            goals: brandPurpose.goals || {},
+            contactDetails: brandPurpose.contactDetails || {},
+            platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
+            totalPosts: 5
+          };
+
+          const generatedPosts = await generateContentCalendar(contentParams);
+          
+          console.log(`xAI generated ${generatedPosts.length} posts for ${brandPurpose.brandName}`);
+          
+          return {
+            posts: generatedPosts.map(post => ({
+              id: Date.now() + Math.random(),
+              platform: post.platform,
+              content: post.content,
+              scheduledFor: post.scheduledFor,
+              status: 'draft',
+              aiRecommendation: `Generated for ${brandPurpose.brandName} targeting ${brandPurpose.audience}`
+            }))
+          };
+        } catch (error: any) {
+          console.error(`xAI API error on attempt ${attempts}:`, error.message);
+          throw error;
+        }
+      };
+      
+      const result = await Promise.race([apiCall(), timeoutPromise]);
       console.log(`Brand posts fetched for ${currentDate} with status success`);
       
       res.json(result);
