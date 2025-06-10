@@ -46,7 +46,7 @@ const Schedule = () => {
   });
 
   // Optimized sync with caching and detailed logging
-  const syncBrandPosts = useCallback((postsData: BrandPost[], userEmail: string) => {
+  const syncBrandPosts = useCallback((postsData: BrandPost[], userEmail: string, expectedCount?: number) => {
     const currentDate = new Date().toISOString().split('T')[0];
     
     // Reset postsRef on each fetch to prevent doubling
@@ -55,6 +55,13 @@ const Schedule = () => {
     
     try {
       console.log(`Schedule refreshed for ${userEmail}: ${postsData.length} posts`);
+      
+      // Verify postsRef matches the logged count
+      if (expectedCount && postsData.length !== expectedCount) {
+        console.warn(`Post count mismatch for ${userEmail}: expected ${expectedCount}, got ${postsData.length}`);
+      } else if (expectedCount) {
+        console.log(`Schedule verified for ${userEmail}: ${postsData.length} posts`);
+      }
       
       setBrandPosts(postsData);
       setSyncStatus('success');
@@ -76,7 +83,8 @@ const Schedule = () => {
   // Sync brand posts with schedule
   useEffect(() => {
     if (brandPostsData?.posts) {
-      syncBrandPosts(brandPostsData.posts, 'gailm@macleodglba.com.au');
+      const expectedCount = brandPostsData.postCount || 52; // Default to professional plan
+      syncBrandPosts(brandPostsData.posts, 'gailm@macleodglba.com.au', expectedCount);
     } else if (error) {
       const currentDate = new Date().toISOString().split('T')[0];
       console.error(`Brand posts fetch failed for ${currentDate}:`, error);

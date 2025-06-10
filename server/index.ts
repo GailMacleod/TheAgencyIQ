@@ -149,6 +149,37 @@ app.post('/api/brand-posts', async (req, res) => {
       ...marketingEssentials
     };
 
+    // Clear posts cache before xAI optimum days fetch
+    const fs = require('fs');
+    const path = require('path');
+    const cacheFilePath = path.join(process.cwd(), 'posts-cache.json');
+    
+    try {
+      if (fs.existsSync(cacheFilePath)) {
+        fs.unlinkSync(cacheFilePath);
+        console.log('Posts cache cleared before xAI fetch');
+      }
+    } catch (error) {
+      console.error('Failed to clear posts cache:', error);
+    }
+
+    // Enforce subscription limits based on user email
+    const subscriptionLimits: { [key: string]: number } = {
+      'starter': 12,
+      'growth': 27, 
+      'professional': 52
+    };
+
+    let postCount = 12; // Default starter
+    if (user.email === 'gailm@macleodglba.com.au') {
+      postCount = 52; // Professional plan
+    } else if (user.subscriptionPlan) {
+      const planKey = user.subscriptionPlan.toLowerCase();
+      postCount = subscriptionLimits[planKey] || 12;
+    }
+
+    console.log(`Post count set for ${user.email}: ${postCount}`);
+
     console.log(`Full Brand Purpose with essentials parsed for ${user.email}: [goals: ${JSON.stringify(goals)}, targets: ${JSON.stringify(targets)}, text: ${text}, job: ${marketingEssentials.job}, services: ${marketingEssentials.services}, tone: ${marketingEssentials.tone}]`);
 
     // Send to xAI API with Think mode and enforced marketing essentials
@@ -174,18 +205,21 @@ app.post('/api/brand-posts', async (req, res) => {
     - Primary Job: ${marketingEssentials.job}
     - Core Services: ${marketingEssentials.services}
     - Required Tone: ${marketingEssentials.tone}
+    - Post Count Limit: ${postCount}
     
     Using Think mode, provide strategic insights and content recommendations that strictly adhere to these marketing essentials while addressing the brand purpose components.
     `;
 
     const aiInsights = await getAIResponse(strategyzerPrompt, 'strategyzer-analysis', strategyzerComponents);
 
-    // Get existing posts for this user
+    // Get existing posts for this user (limited by subscription)
     const posts = await storage.getPostsByUser(userId);
+    const limitedPosts = posts.slice(0, postCount);
 
     res.json({
       success: true,
-      posts: posts,
+      posts: limitedPosts,
+      postCount: postCount,
       strategyzerInsights: aiInsights,
       components: strategyzerComponents
     });
