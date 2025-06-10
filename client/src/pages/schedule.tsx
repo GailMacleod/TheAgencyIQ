@@ -89,10 +89,30 @@ export default function Schedule() {
     }
   };
 
-  // Edit post content
+  // Edit post content with proper error handling and state updates
   const saveEditedPost = async (postId: number, newContent: string) => {
     try {
-      // Update local state
+      console.log(`Saving edited post ${postId} with new content:`, newContent);
+      
+      // Update database first
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ content: newContent })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update post');
+      }
+
+      const updatedPost = await response.json();
+      console.log('Post updated successfully:', updatedPost);
+
+      // Update local state after successful API call
       setGeneratedPosts(prev => 
         prev.map(post => 
           post.id === postId 
@@ -101,33 +121,19 @@ export default function Schedule() {
         )
       );
 
-      // Update database if post exists there
-      const existingPost = postsArray.find((p: Post) => p.id === postId);
-      if (existingPost) {
-        const response = await fetch(`/api/posts/${postId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ content: newContent })
-        });
-
-        if (response.ok) {
-          refetchPosts();
-        }
-      }
+      // Refresh posts data to ensure consistency
+      await refetchPosts();
 
       setEditingPost(null);
       toast({
         title: "Post Updated",
         description: "Content has been saved successfully.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving edited post:', error);
       toast({
         title: "Error",
-        description: "Failed to save changes.",
+        description: error.message || "Failed to save changes.",
         variant: "destructive",
       });
     }
