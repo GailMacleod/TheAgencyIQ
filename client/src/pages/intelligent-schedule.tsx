@@ -1,5 +1,6 @@
 import { useLocation } from "wouter";
-import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play, Eye, ThumbsUp, X, Sparkles, Brain, Target, Users } from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play, Eye, ThumbsUp, X, Sparkles, Brain, Target, Users, MapPin } from "lucide-react";
+import CalendarCard from "@/components/calendar-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,6 +78,8 @@ export default function IntelligentSchedule() {
   const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
   const [scheduleGenerated, setScheduleGenerated] = useState(false);
   const [aiInsights, setAiInsights] = useState<any>(null);
+  const [calendarView, setCalendarView] = useState(true);
+  const [queenslandEvents, setQueenslandEvents] = useState<any[]>([]);
 
   const queryClient = useQueryClient();
 
@@ -101,6 +104,54 @@ export default function IntelligentSchedule() {
 
   // Type-safe posts array
   const postsArray: Post[] = Array.isArray(posts) ? posts : [];
+
+  // Fetch Queensland events for calendar optimization
+  useEffect(() => {
+    const fetchQueenslandEvents = async () => {
+      try {
+        const response = await fetch('/api/queensland-events');
+        if (response.ok) {
+          const events = await response.json();
+          setQueenslandEvents(events);
+        }
+      } catch (error) {
+        console.log('Queensland events unavailable, using basic calendar');
+      }
+    };
+    
+    fetchQueenslandEvents();
+  }, []);
+
+  // Generate calendar dates for next 30 days
+  const generateCalendarDates = () => {
+    const dates = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      dates.push(date);
+    }
+    
+    return dates;
+  };
+
+  const calendarDates = generateCalendarDates();
+
+  // Group posts by date
+  const getPostsForDate = (date: Date): Post[] => {
+    const dateStr = date.toISOString().split('T')[0];
+    return postsArray.filter(post => {
+      const postDate = new Date(post.scheduledFor).toISOString().split('T')[0];
+      return postDate === dateStr;
+    });
+  };
+
+  // Get Queensland events for a specific date
+  const getEventsForDate = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return queenslandEvents.filter(event => event.date === dateStr);
+  };
 
   // Generate AI-powered content schedule
   const generateIntelligentSchedule = async () => {

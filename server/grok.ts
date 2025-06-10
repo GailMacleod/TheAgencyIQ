@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { getEventsForDateRange, getOptimalPostingTimes, getEventImpactScore, getContentSuggestionsForDate, getHashtagsForDate } from "./queensland-events";
 
 if (!process.env.XAI_API_KEY) {
   throw new Error("XAI_API_KEY environment variable must be set");

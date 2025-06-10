@@ -789,6 +789,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  // Queensland events endpoint for calendar optimization
+  app.get("/api/queensland-events", (req, res) => {
+    try {
+      const { getEventsForDateRange } = require('./queensland-events');
+      const startDate = new Date().toISOString().split('T')[0];
+      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
+      const events = getEventsForDateRange(startDate, endDate);
+      res.json(events);
+    } catch (error) {
+      console.error('Queensland events fetch error:', error);
+      res.json([]);
+    }
+  });
+
   // Supercharged Strategyzer-based guidance using Grok
   app.post("/api/generate-guidance", requireAuth, async (req: any, res) => {
     try {
