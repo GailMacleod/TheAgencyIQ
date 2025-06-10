@@ -235,7 +235,7 @@ export default function ConnectPlatforms() {
                       <CardTitle className="text-lg">{config.name}</CardTitle>
                     </div>
                     <div className="flex flex-col items-end space-y-1">
-                      {config.pending ? (
+                      {(config as PlatformConfig).pending ? (
                         <Badge className="bg-orange-100 text-orange-800 text-xs">
                           <AlertCircle className="w-3 h-3 mr-1" />
                           Pending Approval
@@ -285,7 +285,7 @@ export default function ConnectPlatforms() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {config.pending ? (
+                      {(config as PlatformConfig).pending ? (
                         <div className="text-center py-4">
                           <p className="text-sm text-gray-600 mb-2">
                             OAuth Pending
@@ -363,11 +363,23 @@ export default function ConnectPlatforms() {
         )}
 
         <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">Real API Credentials Required</h3>
-          <p className="text-blue-800 text-sm">
-            All platform connections use authentic OAuth credentials and real API access. 
-            Your posts will be published directly to your actual social media accounts.
-          </p>
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">OAuth Security Notice</h3>
+              <p className="text-blue-800 text-sm mb-3">
+                We use official OAuth 2.0 authentication to securely connect your social media accounts. Your credentials are never 
+                stored and your posts will be published directly to your actual accounts using real API credentials.
+              </p>
+              <div className="text-xs text-blue-700">
+                <p>• All connections use approved OAuth applications</p>
+                <p>• Your account data remains secure and private</p>
+                <p>• Posts are published using authentic platform APIs</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
