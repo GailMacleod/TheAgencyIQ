@@ -199,7 +199,7 @@ UNPAID MEDIA BEST PRACTICES - Include measurable elements:
 
 Each post should be optimized for organic reach and designed to achieve the specific measurable targets outlined in the goals.
 
-Distribute posts evenly across the connected platforms over 30 days starting June 6, 2025 at 9:00 AM AEST.
+Distribute posts evenly across the connected platforms over 30 days starting June 10, 2025 at 9:00 AM AEST (Brisbane timezone).
 
 Return as JSON object with "posts" array containing objects with fields: platform, content, scheduledFor (ISO date string).
 

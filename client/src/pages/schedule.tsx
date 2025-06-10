@@ -285,6 +285,12 @@ export default function Schedule() {
   // Publish post to social media platform with subscription tracking
   const publishPost = async (postId: number, platform: string) => {
     try {
+      // Show publishing progress
+      toast({
+        title: "Publishing Post",
+        description: `Publishing to ${platform}...`,
+      });
+
       const response = await fetch('/api/publish-post', {
         method: 'POST',
         headers: {
@@ -297,30 +303,46 @@ export default function Schedule() {
         })
       });
 
-      if (response.ok) {
-        const result = await response.json();
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast({
+          title: "Post Published Successfully",
+          description: `Your post has been published to ${platform} and counted against your subscription.`,
+        });
         
-        // Update UI based on publish result
-        if (result.success) {
-          toast({
-            title: "Post Published Successfully",
-            description: `Your post has been published to ${platform} and counted against your subscription.`,
-          });
-          
-          // Refresh posts to show updated status
-          refetchPosts();
-        } else {
-          throw new Error(result.error || 'Publication failed');
-        }
+        // Update local state to show published status
+        setGeneratedPosts(prev => 
+          prev.map(post => 
+            post.id === postId 
+              ? { ...post, status: 'published' }
+              : post
+          )
+        );
+        
+        // Refresh posts to show updated status
+        refetchPosts();
       } else {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to publish post');
+        // Handle subscription limit reached
+        if (result.subscriptionLimitReached) {
+          toast({
+            title: "Subscription Limit Reached",
+            description: result.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Publication Failed",
+            description: result.message || result.error || 'Failed to publish post',
+            variant: "destructive",
+          });
+        }
       }
     } catch (error: any) {
       console.error('Error publishing post:', error);
       toast({
-        title: "Publication Failed",
-        description: error.message || "Failed to publish post to social media platform.",
+        title: "Publication Error",
+        description: "Network error occurred while publishing. Please check your connection and try again.",
         variant: "destructive",
       });
     }
@@ -840,14 +862,29 @@ export default function Schedule() {
                                       </Button>
                                     </>
                                   ) : (
-                                    <Button
-                                      onClick={() => publishPost(post.id, post.platform)}
-                                      className="approve-button bg-blue-600 hover:bg-blue-700 text-white text-sm lowercase"
-                                      size="sm"
-                                    >
-                                      <Play className="w-4 h-4 mr-2" />
-                                      publish now
-                                    </Button>
+                                    <div className="flex space-x-2">
+                                      <Button
+                                        onClick={() => publishPost(post.id, post.platform)}
+                                        className="approve-button bg-green-600 hover:bg-green-700 text-white text-sm lowercase"
+                                        size="sm"
+                                      >
+                                        <Play className="w-4 h-4 mr-2" />
+                                        approve & auto-post
+                                      </Button>
+                                      <Button
+                                        onClick={() => {
+                                          toast({
+                                            title: "Post Status",
+                                            description: "This post is approved but not yet published to social media platform.",
+                                          });
+                                        }}
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-xs"
+                                      >
+                                        status: approved only
+                                      </Button>
+                                    </div>
                                   )}
                                 </div>
                               )}
