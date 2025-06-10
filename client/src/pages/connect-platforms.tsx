@@ -20,7 +20,15 @@ interface PlatformConnection {
   connectedAt: string;
 }
 
-const platformConfig = {
+interface PlatformConfig {
+  name: string;
+  icon: any;
+  color: string;
+  description: string;
+  pending?: boolean;
+}
+
+const platformConfig: Record<string, PlatformConfig> = {
   facebook: {
     name: "Facebook",
     icon: Facebook,
@@ -50,6 +58,17 @@ const platformConfig = {
     icon: Youtube,
     color: "bg-red-600", 
     description: "Upload videos and grow your YouTube channel"
+  },
+  tiktok: {
+    name: "TikTok",
+    icon: () => (
+      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+        <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 015.2-2.88V11.2a6.59 6.59 0 00-1.49-.17 6.8 6.8 0 106.8 6.8V8.77a8.14 8.14 0 004.16 1.13V6.69z"/>
+      </svg>
+    ),
+    color: "bg-black",
+    description: "Share short videos on TikTok",
+    pending: true
   }
 };
 
@@ -215,17 +234,30 @@ export default function ConnectPlatforms() {
                       </div>
                       <CardTitle className="text-lg">{config.name}</CardTitle>
                     </div>
-                    {connected ? (
-                      <Badge className="bg-green-100 text-green-800">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Connected
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">
-                        <AlertCircle className="w-3 h-3 mr-1" />
-                        Not Connected
-                      </Badge>
-                    )}
+                    <div className="flex flex-col items-end space-y-1">
+                      {config.pending ? (
+                        <Badge className="bg-orange-100 text-orange-800 text-xs">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Pending Approval
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-blue-100 text-blue-800 text-xs">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          OAuth Approved
+                        </Badge>
+                      )}
+                      {connected ? (
+                        <Badge className="bg-green-100 text-green-800 text-xs">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Connected
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Not Connected
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
 
@@ -253,50 +285,63 @@ export default function ConnectPlatforms() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label htmlFor={`${platform}-username`}>Username/Email</Label>
-                        <Input
-                          id={`${platform}-username`}
-                          type="text"
-                          placeholder="Enter your username or email"
-                          value={credentials[platform]?.username || ''}
-                          onChange={(e) => updateCredentials(platform, 'username', e.target.value)}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor={`${platform}-password`}>Password</Label>
-                        <div className="relative">
-                          <Input
-                            id={`${platform}-password`}
-                            type={showPassword[platform] ? "text" : "password"}
-                            placeholder="Enter your password"
-                            value={credentials[platform]?.password || ''}
-                            onChange={(e) => updateCredentials(platform, 'password', e.target.value)}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowPassword(prev => ({ ...prev, [platform]: !prev[platform] }))}
-                          >
-                            {showPassword[platform] ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </Button>
+                      {config.pending ? (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-gray-600 mb-2">
+                            OAuth Pending
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Awaiting TikTok OAuth API approval
+                          </p>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor={`${platform}-username`}>Username/Email</Label>
+                            <Input
+                              id={`${platform}-username`}
+                              type="text"
+                              placeholder="Enter your username or email"
+                              value={credentials[platform]?.username || ''}
+                              onChange={(e) => updateCredentials(platform, 'username', e.target.value)}
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor={`${platform}-password`}>Password</Label>
+                            <div className="relative">
+                              <Input
+                                id={`${platform}-password`}
+                                type={showPassword[platform] ? "text" : "password"}
+                                placeholder="Enter your password"
+                                value={credentials[platform]?.password || ''}
+                                onChange={(e) => updateCredentials(platform, 'password', e.target.value)}
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                onClick={() => setShowPassword(prev => ({ ...prev, [platform]: !prev[platform] }))}
+                              >
+                                {showPassword[platform] ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
 
-                      <Button
-                        onClick={() => handleConnect(platform)}
-                        className="w-full"
-                        disabled={connecting[platform] || connectMutation.isPending}
-                      >
-                        {connecting[platform] ? 'Connecting...' : `Connect ${config.name}`}
-                      </Button>
+                          <Button
+                            onClick={() => handleConnect(platform)}
+                            className="w-full"
+                            disabled={connecting[platform] || connectMutation.isPending}
+                          >
+                            {connecting[platform] ? 'Connecting...' : `Connect ${config.name}`}
+                          </Button>
+                        </>
+                      )}
                     </div>
                   )}
                 </CardContent>
