@@ -779,14 +779,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logout
-  app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: "Error logging out" });
+  // Logout with complete session cleanup
+  app.post("/api/auth/logout", async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      
+      if (userId) {
+        // Clear cached data and reset post ledger for clean start
+        const user = await storage.getUser(userId);
+        if (user && user.phone) {
+          const { db } = await import('./db');
+          const { postLedger, postSchedule } = await import('../shared/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          // Clear all draft posts to prevent retention
+          await db.delete(postSchedule).where(eq(postSchedule.userId, user.phone));
+          
+          // Reset post ledger for fresh start
+          await db.delete(postLedger).where(eq(postLedger.userId, user.phone));
+          
+          console.log(`Cleared session data and reset post ledger for user ${user.email}`);
+        }
       }
-      res.json({ message: "Logged out successfully" });
-    });
+      
+      // Clear session cookies and data
+      req.session.destroy((err: any) => {
+        if (err) {
+          console.error('Session destruction error:', err);
+          return res.status(500).json({ message: "Error logging out" });
+        }
+        
+        // Clear session cookie
+        res.clearCookie('connect.sid');
+        
+        console.log('User logged out successfully with complete session cleanup');
+        res.json({ message: "Logged out successfully" });
+      });
+      
+    } catch (error: any) {
+      console.error('Logout cleanup error:', error);
+      // Still destroy session even if cleanup fails
+      req.session.destroy((err: any) => {
+        if (err) {
+          return res.status(500).json({ message: "Error logging out" });
+        }
+        res.clearCookie('connect.sid');
+        res.json({ message: "Logged out successfully" });
+      });
+    }
   });
 
   // Get current user - simplified for consistency
