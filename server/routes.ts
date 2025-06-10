@@ -1389,7 +1389,17 @@ Continue building your Value Proposition Canvas systematically.`;
     res.setHeader('Content-Security-Policy', 'connect-src self https://www.google-analytics.com https://api.xai.com https://api.stripe.com https://checkout.stripe.com;');
     
     try {
+      // Clear existing posts cache before fetching new data
+      const cacheFile = path.join(process.cwd(), 'posts-cache.json');
+      if (fs.existsSync(cacheFile)) {
+        fs.unlinkSync(cacheFile);
+      }
+      
+      const user = await storage.getUser(req.session.userId);
       const posts = await storage.getPostsByUser(req.session.userId);
+      
+      console.log(`Cache cleared, new posts for ${user?.email}: ${posts.length}`);
+      
       res.json(posts);
     } catch (error) {
       console.error('Error fetching brand posts:', error);

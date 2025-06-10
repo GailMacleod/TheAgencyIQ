@@ -46,23 +46,18 @@ const Schedule = () => {
   });
 
   // Optimized sync with caching and detailed logging
-  const syncBrandPosts = useCallback((postsData: BrandPost[]) => {
+  const syncBrandPosts = useCallback((postsData: BrandPost[], userEmail: string) => {
     const currentDate = new Date().toISOString().split('T')[0];
-    const cacheKey = `${currentDate}-${JSON.stringify(postsData)}`;
     
-    // Check cache first to prevent unnecessary re-renders
-    if (cacheRef.current.has(cacheKey) && lastSyncRef.current === cacheKey) {
-      console.log(`Using cached brand posts for ${currentDate}`);
-      return;
-    }
+    // Reset postsRef on each fetch to prevent doubling
+    cacheRef.current.clear();
+    lastSyncRef.current = null;
     
     try {
-      console.log(`Processing ${postsData.length} brand posts for ${currentDate}`);
+      console.log(`Schedule refreshed for ${userEmail}: ${postsData.length} posts`);
       
       setBrandPosts(postsData);
       setSyncStatus('success');
-      cacheRef.current.set(cacheKey, postsData);
-      lastSyncRef.current = cacheKey;
       
       console.log(`Schedule synced with Brand Purpose for ${currentDate} - ${postsData.length} posts loaded`);
     } catch (error: any) {
@@ -81,7 +76,7 @@ const Schedule = () => {
   // Sync brand posts with schedule
   useEffect(() => {
     if (brandPostsData?.posts) {
-      syncBrandPosts(brandPostsData.posts);
+      syncBrandPosts(brandPostsData.posts, 'gailm@macleodglba.com.au');
     } else if (error) {
       const currentDate = new Date().toISOString().split('T')[0];
       console.error(`Brand posts fetch failed for ${currentDate}:`, error);
