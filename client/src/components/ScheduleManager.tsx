@@ -57,6 +57,7 @@ const platformColors: Record<string, string> = {
 
 export function ScheduleManager() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -92,8 +93,10 @@ export function ScheduleManager() {
       queryClient.invalidateQueries({ queryKey: ['/api/schedule'] });
     },
     onError: (error: any) => {
-      if (error.message.includes('quota')) {
+      if (error.message.includes('quota') || error.message.includes('limit')) {
         setShowUpgradeModal(true);
+      } else if (error.message.includes('Connect your social media accounts') || error.message.includes('requiresConnection')) {
+        setShowConnectionModal(true);
       } else {
         toast({
           title: "Generation Failed",
@@ -112,15 +115,17 @@ export function ScheduleManager() {
     onSuccess: (data: any, postId) => {
       toast({
         title: "Post Published",
-        description: `Successfully posted to ${data.post.platform}!`,
+        description: `Successfully posted to ${data.platform || 'platform'}!`,
       });
       
       queryClient.invalidateQueries({ queryKey: ['/api/quota-status'] });
       queryClient.invalidateQueries({ queryKey: ['/api/schedule'] });
     },
     onError: (error: any, postId) => {
-      if (error.message.includes('quota') || error.message.includes('limit')) {
+      if (error.message.includes('quota') || error.message.includes('limit') || error.message.includes('Post limit reached')) {
         setShowUpgradeModal(true);
+      } else if (error.message.includes('not connected') || error.message.includes('Connect your')) {
+        setShowConnectionModal(true);
       } else {
         toast({
           title: "Posting Failed",
