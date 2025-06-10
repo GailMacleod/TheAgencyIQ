@@ -1481,18 +1481,10 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      // Get current subscription status to determine actual post limit
+      // Get current subscription status for reference but generate full 30-day schedule
       const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
-      const actualPostLimit = Math.min(totalPosts, subscriptionStatus.postsRemaining);
-
-      if (actualPostLimit <= 0) {
-        return res.status(400).json({ 
-          message: `You've used all ${subscriptionStatus.totalPostsAllowed} posts for this billing cycle. Upgrade your plan or wait for next cycle.`,
-          subscriptionLimitReached: true
-        });
-      }
-
-      console.log(`Generating AI schedule for ${brandPurpose.brandName} with ${actualPostLimit}/${totalPosts} posts (subscription limit applied)`);
+      
+      console.log(`Generating full 30-day AI schedule for ${brandPurpose.brandName} (${totalPosts} posts). Subscription allows ${subscriptionStatus.postsRemaining} to be published.`);
 
       // Import xAI functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
@@ -1509,7 +1501,7 @@ Continue building your Value Proposition Canvas systematically.`;
         goals: brandPurpose.goals || {},
         contactDetails: brandPurpose.contactDetails || {},
         platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-        totalPosts: actualPostLimit // Use subscription-limited count
+        totalPosts: totalPosts // Generate full 30-day schedule
       };
 
       // Generate brand analysis
@@ -1551,7 +1543,7 @@ Continue building your Value Proposition Canvas systematically.`;
           plan: subscriptionStatus.plan.name,
           totalAllowed: subscriptionStatus.totalPostsAllowed,
           used: subscriptionStatus.postsUsed + savedPosts.length, // Include newly created posts
-          remaining: subscriptionStatus.postsRemaining - savedPosts.length,
+          remaining: Math.max(0, subscriptionStatus.postsRemaining - savedPosts.length),
           cycleStart: subscriptionStatus.cycleInfo.cycleStart,
           cycleEnd: subscriptionStatus.cycleInfo.cycleEnd
         },
