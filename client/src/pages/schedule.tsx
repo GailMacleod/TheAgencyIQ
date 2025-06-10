@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play, Eye, ThumbsUp } from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play, Eye, ThumbsUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,10 +53,70 @@ export default function Schedule() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [showAIThinking, setShowAIThinking] = useState(false);
   const [aiStep, setAIStep] = useState(0);
   const [generatedPosts, setGeneratedPosts] = useState<Post[]>([]);
   const [approvedPosts, setApprovedPosts] = useState<Set<number>>(new Set());
+
+  // Handle day selection for dropdown
+  const handleDayClick = (date: Date) => {
+    if (selectedDay && isSameDay(selectedDay, date)) {
+      setSelectedDay(null); // Close dropdown if same day clicked
+    } else {
+      setSelectedDay(date); // Open dropdown for selected day
+    }
+  };
+
+  // Approve post for specific day
+  const approvePostForDay = async (dayDate: Date, postId?: number) => {
+    try {
+      // Find posts for this day or create a new one
+      const dayPosts = generatedPosts.filter(post => 
+        isSameDay(new Date(post.scheduledFor), dayDate)
+      );
+
+      if (dayPosts.length > 0) {
+        // Approve existing post
+        const postToApprove = postId ? 
+          dayPosts.find(p => p.id === postId) : 
+          dayPosts[0];
+        
+        if (postToApprove) {
+          await approvePost(postToApprove.id);
+        }
+      } else {
+        // Create and approve a new post for this day
+        const newPost: Post = {
+          id: Date.now() + Math.random(),
+          platform: 'facebook',
+          content: `Auto-generated content for ${format(dayDate, 'MMMM d, yyyy')}`,
+          status: 'approved',
+          scheduledFor: dayDate.toISOString(),
+          aiRecommendation: 'Optimized for daily engagement'
+        };
+
+        setGeneratedPosts(prev => [...prev, newPost]);
+        setApprovedPosts(prev => {
+          const newSet = new Set(prev);
+          newSet.add(newPost.id);
+          return newSet;
+        });
+        
+        toast({
+          title: "Post Created & Approved",
+          description: `Content scheduled for ${format(dayDate, 'MMM d')}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error approving post for day:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve post for this day.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Handle post approval with API call and state update
   const approvePost = async (postId: number) => {
@@ -649,7 +709,9 @@ export default function Schedule() {
                 ${isToday(day.date) ? 'ring-2 ring-purple-400 bg-purple-50' : ''}
                 ${day.isOptimalDay ? 'border-green-300 bg-green-50' : 'border-gray-200'}
                 ${day.posts.length > 0 ? 'bg-blue-50 border-blue-300' : ''}
+                ${selectedDay && isSameDay(selectedDay, day.date) ? 'ring-2 ring-blue-500 bg-blue-100' : ''}
               `}
+              onClick={() => handleDayClick(day.date)}
               onMouseEnter={() => setHoveredDay(day.date)}
               onMouseLeave={() => setHoveredDay(null)}
             >
@@ -710,6 +772,88 @@ export default function Schedule() {
             </Card>
           ))}
         </div>
+
+        {/* Stable Day Dropdown for Approve & Post */}
+        {selectedDay && (
+          <Card className="fixed z-50 bg-white border-2 border-blue-500 shadow-xl p-6 max-w-md" style={{
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 1000
+          }}>
+            <CardContent className="p-0">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 lowercase">
+                  {format(selectedDay, 'MMMM d, yyyy')}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedDay(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <XCircle className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* Posts for this day */}
+              <div className="mb-4">
+                {(() => {
+                  const dayPosts = generatedPosts.filter(post => 
+                    isSameDay(new Date(post.scheduledFor), selectedDay)
+                  );
+                  
+                  if (dayPosts.length > 0) {
+                    return (
+                      <div className="space-y-3">
+                        <p className="text-sm text-gray-600 lowercase">scheduled posts:</p>
+                        {dayPosts.map(post => (
+                          <div key={post.id} className="bg-gray-50 rounded-lg p-3">
+                            <div className="flex items-center space-x-2 mb-2">
+                              {getPlatformIcon(post.platform)}
+                              <span className="text-sm font-medium lowercase">{post.platform}</span>
+                              <Badge variant={post.status === 'approved' ? 'default' : 'outline'}>
+                                {post.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-700 mb-3">{post.content}</p>
+                            {post.status !== 'approved' && (
+                              <Button
+                                onClick={() => approvePostForDay(selectedDay, post.id)}
+                                className="approve-button bg-green-600 hover:bg-green-700 text-white text-sm lowercase"
+                                size="sm"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                approve & auto-post
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-gray-600 mb-4 lowercase">no content scheduled for this day</p>
+                        <Button
+                          onClick={() => approvePostForDay(selectedDay)}
+                          className="approve-button bg-blue-600 hover:bg-blue-700 text-white lowercase"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          create & approve post
+                        </Button>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+
+              <div className="text-xs text-gray-500 text-center lowercase">
+                click outside to close
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Hover Tooltip - Grok Insights */}
         {hoveredDay && (
