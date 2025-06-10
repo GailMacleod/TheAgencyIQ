@@ -321,7 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           return res.json({ 
             success: true, 
-            user: { id: existingUser.id, email: existingUser.email },
+            user: { id: (existingUser as any).id, email: (existingUser as any).email },
             sessionId: req.session.id,
             autoRecovered: true
           });
@@ -360,7 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error('Session save failed:', err);
             reject(err);
           } else {
-            console.log('Session saved successfully for user:', user.email);
+            console.log('Session saved successfully for user:', (user as any).email);
             resolve();
           }
         });
@@ -370,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ 
         success: true, 
-        user: { id: user.id, email: user.email },
+        user: { id: (user as any).id, email: (user as any).email },
         sessionId: req.session.id
       });
     } catch (error: any) {

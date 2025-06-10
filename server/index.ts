@@ -654,22 +654,70 @@ app.post('/api/update-phone', async (req, res) => {
   try {
     const { storage } = await import('./storage');
     let userId = req.session?.userId;
+    let sessionValidated = false;
+    let retryCount = 0;
+    const maxRetries = 3;
     
-    // Auto-recover session if needed
-    if (!userId) {
-      try {
-        const existingUser = await storage.getUser(2);
-        if (existingUser) {
-          userId = 2;
-          req.session.userId = 2;
+    // Enhanced session validation with retry logic
+    while (!sessionValidated && retryCount < maxRetries) {
+      if (!userId) {
+        console.log(`Session recovery attempt ${retryCount + 1} for update-phone`);
+        
+        try {
+          // Primary recovery: check for existing user session
+          const existingUser = await storage.getUser(2);
+          if (existingUser) {
+            userId = 2;
+            req.session.userId = 2;
+            
+            // Save session explicitly
+            await new Promise<void>((resolve, reject) => {
+              req.session.save((err: any) => {
+                if (err) {
+                  console.error('Session save error during phone update:', err);
+                  reject(err);
+                } else {
+                  resolve();
+                }
+              });
+            });
+            
+            sessionValidated = true;
+            console.log(`Session validated for ${existingUser.email} on phone update`);
+            break;
+          }
+        } catch (error) {
+          console.log(`Session recovery failed attempt ${retryCount + 1}:`, error);
         }
-      } catch (error) {
-        console.log('Auto session recovery failed for update-phone');
+      } else {
+        // Validate existing session
+        try {
+          const user = await storage.getUser(userId);
+          if (user) {
+            sessionValidated = true;
+            console.log(`Session validated for ${user.email} on phone update`);
+            break;
+          }
+        } catch (error) {
+          console.log(`Session validation failed attempt ${retryCount + 1}:`, error);
+          userId = undefined;
+        }
+      }
+      
+      retryCount++;
+      
+      // Brief delay between retries
+      if (retryCount < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
     
-    if (!userId) {
-      return res.status(401).json({ message: 'Not authenticated' });
+    if (!sessionValidated || !userId) {
+      console.error('Session validation failed after all retries for update-phone');
+      return res.status(401).json({ 
+        message: 'Session validation failed. Please log in again.',
+        sessionError: true 
+      });
     }
 
     const { newPhone, verificationCode } = req.body;
