@@ -800,7 +800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const { postLedger } = await import('../shared/schema');
             await db.update(postLedger)
               .set({ userId: smsVerifiedPhone })
-              .where(eq(postLedger.userId, user.phone));
+              .where(eq(postLedger.userId, user.phone as string));
               
             console.log(`Updated post ledger records from ${user.phone} to ${smsVerifiedPhone}`);
           }

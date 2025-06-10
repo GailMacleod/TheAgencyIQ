@@ -92,6 +92,33 @@ export default function Profile() {
       });
       if (!response.ok) {
         const error = await response.json();
+        
+        // Handle session validation errors specifically
+        if (error.sessionError || response.status === 401) {
+          // Attempt to re-establish session before retrying
+          try {
+            const sessionResponse = await fetch('/api/establish-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (sessionResponse.ok) {
+              // Retry the phone update after session recovery
+              const retryResponse = await fetch('/api/update-phone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newPhone, verificationCode })
+              });
+              
+              if (retryResponse.ok) {
+                return retryResponse.json();
+              }
+            }
+          } catch (sessionError) {
+            console.error('Session recovery failed during phone update:', sessionError);
+          }
+        }
+        
         throw new Error(error.message || 'Failed to update phone number');
       }
       return response.json();
@@ -108,9 +135,13 @@ export default function Profile() {
       });
     },
     onError: (error: Error) => {
+      const errorMessage = error.message.includes('Session validation failed') 
+        ? 'Session expired. Please refresh the page and try again.'
+        : error.message;
+      
       toast({
         title: "Error",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
