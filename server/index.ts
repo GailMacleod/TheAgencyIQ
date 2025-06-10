@@ -346,6 +346,18 @@ app.post('/api/generate-schedule', async (req, res) => {
       });
     }
 
+    // Check platform connections before generating schedule
+    const connections = await storage.getPlatformConnectionsByUser(userId);
+    const activeConnections = connections.filter(c => c.isActive);
+    
+    if (activeConnections.length === 0) {
+      return res.status(400).json({
+        message: "Connect your social media accounts to generate schedule.",
+        requiresConnection: true,
+        availablePlatforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
+      });
+    }
+
     const { db } = await import('./db');
     const { postSchedule } = await import('../shared/schema');
     const { eq, and } = await import('drizzle-orm');
@@ -372,10 +384,13 @@ app.post('/api/generate-schedule', async (req, res) => {
       return res.status(400).json({ message: 'Brand purpose required for schedule generation' });
     }
     
-    // Generate quota-limited draft posts with simplified content
-    const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
+    // Generate quota-limited draft posts only for connected platforms
+    const connectedPlatforms = activeConnections.map(c => c.platform);
     const newPosts = [];
     const crypto = await import('crypto');
+    
+    console.log(`User has connected platforms: ${connectedPlatforms.join(', ')}`);
+    console.log(`Generating ${remainingSlots} posts distributed across connected platforms`);
     
     for (let i = 0; i < remainingSlots; i++) {
       const platform = platforms[i % platforms.length];
@@ -482,7 +497,25 @@ app.post('/api/approve-post', async (req, res) => {
       });
     }
 
-    // Post to social platform via OAuth
+    // Validate token expiration and refresh if needed
+    if (platformConnection.expiresAt && new Date() > platformConnection.expiresAt) {
+      if (platformConnection.refreshToken) {
+        console.log(`Access token expired for ${post.platform}, attempting refresh...`);
+        return res.status(401).json({ 
+          message: `${post.platform} access token expired. Please reconnect your account.`,
+          requiresReconnection: true,
+          platform: post.platform
+        });
+      } else {
+        return res.status(401).json({ 
+          message: `${post.platform} access token expired. Please reconnect your account.`,
+          requiresReconnection: true,
+          platform: post.platform
+        });
+      }
+    }
+
+    // Post to social platform via live OAuth credentials
     const { PostPublisher } = await import('./post-publisher');
     
     try {

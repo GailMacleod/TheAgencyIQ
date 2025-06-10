@@ -12,16 +12,30 @@ export class PostPublisher {
   
   static async publishToFacebook(accessToken: string, content: string): Promise<PublishResult> {
     try {
-      // Use the live Facebook credentials to post directly
+      // Validate access token format
+      if (!accessToken || accessToken.length < 10) {
+        throw new Error('Invalid or missing Facebook access token');
+      }
+
+      // Get user's Facebook pages first
+      const pagesResponse = await axios.get(
+        `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
+      );
+
+      if (!pagesResponse.data.data || pagesResponse.data.data.length === 0) {
+        throw new Error('No Facebook pages available for posting');
+      }
+
+      // Use the first available page
+      const page = pagesResponse.data.data[0];
+      const pageAccessToken = page.access_token;
+
+      // Post to the Facebook page
       const response = await axios.post(
-        `https://graph.facebook.com/v18.0/me/feed?access_token=${accessToken}`,
+        `https://graph.facebook.com/v18.0/${page.id}/feed`,
         {
-          message: content
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
+          message: content,
+          access_token: pageAccessToken
         }
       );
       
@@ -31,9 +45,9 @@ export class PostPublisher {
         success: true,
         platformPostId: response.data.id,
         analytics: { 
-          reach: Math.floor(Math.random() * 1000) + 100,
-          engagement: Math.floor(Math.random() * 50) + 10,
-          impressions: Math.floor(Math.random() * 5000) + 500
+          reach: 0,
+          engagement: 0,
+          impressions: 0
         }
       };
     } catch (error: any) {
@@ -47,22 +61,60 @@ export class PostPublisher {
 
   static async publishToInstagram(accessToken: string, content: string, imageUrl?: string): Promise<PublishResult> {
     try {
-      // Create Instagram media container using live credentials
+      // Validate access token format
+      if (!accessToken || accessToken.length < 10) {
+        throw new Error('Invalid or missing Instagram access token');
+      }
+
+      // Get Instagram Business Account ID
+      const accountResponse = await axios.get(
+        `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
+      );
+
+      let instagramAccountId = null;
+      for (const account of accountResponse.data.data) {
+        const igResponse = await axios.get(
+          `https://graph.facebook.com/v18.0/${account.id}?fields=instagram_business_account&access_token=${account.access_token}`
+        );
+        
+        if (igResponse.data.instagram_business_account) {
+          instagramAccountId = igResponse.data.instagram_business_account.id;
+          break;
+        }
+      }
+
+      if (!instagramAccountId) {
+        throw new Error('No Instagram Business Account found');
+      }
+
+      // Create Instagram media container
       const mediaData: any = {
         caption: content,
         image_url: imageUrl || 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=1080&h=1080&fit=crop'
       };
 
       const response = await axios.post(
-        `https://graph.facebook.com/v18.0/me/media?access_token=${accessToken}`,
-        mediaData
+        `https://graph.facebook.com/v18.0/${instagramAccountId}/media`,
+        mediaData,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
       );
       
       // Publish the media
       const publishResponse = await axios.post(
-        `https://graph.facebook.com/v18.0/me/media_publish?access_token=${accessToken}`,
+        `https://graph.facebook.com/v18.0/${instagramAccountId}/media_publish`,
         {
           creation_id: response.data.id
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
         }
       );
 
@@ -84,25 +136,29 @@ export class PostPublisher {
 
   static async publishToLinkedIn(accessToken: string, content: string): Promise<PublishResult> {
     try {
-      // Get LinkedIn client credentials access token
-      const tokenResponse = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: process.env.LINKEDIN_CLIENT_ID!,
-        client_secret: process.env.LINKEDIN_CLIENT_SECRET!,
-        scope: 'w_member_social'
-      }), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
+      // Validate access token format
+      if (!accessToken || accessToken.length < 10) {
+        throw new Error('Invalid or missing LinkedIn access token');
+      }
 
-      const realAccessToken = tokenResponse.data.access_token;
+      // Get user profile to determine the author URN
+      const profileResponse = await axios.get(
+        'https://api.linkedin.com/v2/people/~',
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const authorUrn = `urn:li:person:${profileResponse.data.id}`;
 
       // Post to LinkedIn using ugcPosts API
       const response = await axios.post(
         'https://api.linkedin.com/v2/ugcPosts',
         {
-          author: 'urn:li:organization:YOUR_ORG_ID',
+          author: authorUrn,
           lifecycleState: 'PUBLISHED',
           specificContent: {
             'com.linkedin.ugc.ShareContent': {
@@ -118,7 +174,7 @@ export class PostPublisher {
         },
         {
           headers: {
-            'Authorization': `Bearer ${realAccessToken}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
             'X-Restli-Protocol-Version': '2.0.0'
           }
@@ -143,11 +199,16 @@ export class PostPublisher {
 
   static async publishToTwitter(accessToken: string, tokenSecret: string, content: string): Promise<PublishResult> {
     try {
-      // Note: Twitter API v2 requires different authentication approach
+      // Validate access token format
+      if (!accessToken || accessToken.length < 10) {
+        throw new Error('Invalid or missing Twitter access token');
+      }
+
+      // Twitter API v2 with Bearer token authentication
       const response = await axios.post(
         'https://api.twitter.com/2/tweets',
         {
-          text: content
+          text: content.length > 280 ? content.substring(0, 277) + '...' : content
         },
         {
           headers: {
@@ -157,12 +218,15 @@ export class PostPublisher {
         }
       );
       
+      console.log(`Twitter post published successfully: ${response.data.data.id}`);
+      
       return {
         success: true,
         platformPostId: response.data.data.id,
         analytics: { reach: 0, engagement: 0, impressions: 0 }
       };
     } catch (error: any) {
+      console.error('Twitter publish error:', error.response?.data || error.message);
       return {
         success: false,
         error: error.response?.data?.title || error.message
@@ -172,18 +236,18 @@ export class PostPublisher {
 
   static async publishToYouTube(accessToken: string, content: string, videoData?: any): Promise<PublishResult> {
     try {
-      // YouTube requires video upload - this is a simplified example
-      // In practice, you'd need to handle video file uploads
+      // Validate access token format
+      if (!accessToken || accessToken.length < 10) {
+        throw new Error('Invalid or missing YouTube access token');
+      }
+
+      // For YouTube, we'll create a community post instead of video upload
+      // as video upload requires actual video file handling
       const response = await axios.post(
-        'https://www.googleapis.com/youtube/v3/videos?part=snippet,status',
+        'https://www.googleapis.com/youtube/v3/communityPosts?part=snippet',
         {
           snippet: {
-            title: content.substring(0, 100),
-            description: content,
-            categoryId: '22' // People & Blogs
-          },
-          status: {
-            privacyStatus: 'public'
+            text: content
           }
         },
         {
@@ -193,6 +257,8 @@ export class PostPublisher {
           }
         }
       );
+
+      console.log(`YouTube community post published successfully: ${response.data.id}`);
       
       return {
         success: true,
@@ -200,6 +266,7 @@ export class PostPublisher {
         analytics: { reach: 0, engagement: 0, impressions: 0 }
       };
     } catch (error: any) {
+      console.error('YouTube publish error:', error.response?.data || error.message);
       return {
         success: false,
         error: error.response?.data?.error?.message || error.message
