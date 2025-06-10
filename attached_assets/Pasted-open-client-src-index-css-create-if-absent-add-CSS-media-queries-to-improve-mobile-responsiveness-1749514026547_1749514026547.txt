@@ -1,0 +1,52 @@
+open client/src/index.css (create if absent), add CSS media queries to improve mobile responsiveness for screens under 768px without affecting functionality: 1) Set .app-container { display: flex; flex-direction: column; max-width: 100%; margin: 0 auto; } to stack content. 2) For .connect-section (e.g., social media connect area), add flex-direction: column; gap: 10px; to stack cards vertically. 3) For .profile-menu (e.g., dropdown), add max-width: 100%; to prevent overflow, preserving button sizes. 4) Add a script in client/src/index.js to log 'Mobile layout applied' on load if screen < 768px, with a revert option logging 'Reverting to default layout' if buttons are unresponsive. Commit with message 'enhance-mobile-responsiveness-safely' without deploying. Ensure no unauthorized changes beyond this addition."
+Instructions:
+Open or create client/src/index.css in Replit.
+Apply the prompt as written.
+Add the following CSS:
+css
+
+Collapse
+
+Wrap
+
+Copy
+.app-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .connect-section {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .profile-menu {
+    max-width: 100%;
+  }
+}
+In client/src/index.js (or main entry file), add:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+if (window.matchMedia('(max-width: 768px)').matches) {
+  console.log('Mobile layout applied');
+  const buttons = document.querySelectorAll('.connect-button, .profile-menu button');
+  buttons.forEach(button => {
+    button.addEventListener('click', () => {
+      if (!button.offsetParent) console.log('Reverting to default layout');
+    });
+  });
+}
+Ensure .app-container, .connect-section, and .profile-menu match your HTML structure (e.g., adjust .connect-section to .social-connect or .user-menu based on screenshots). Add these classes to your existing components if absent (e.g., wrap connect cards in <div class="connect-section">).
+Save the file(s).
+Go to the Git tab, commit with "enhance-mobile-responsiveness-safely" (do not deploy).
+Run locally (e.g., NODE_ENV=production tsx server/index.ts), access https://app.theagencyiq.ai on a mobile browser (e.g., Chrome DevTools mobile view or phone), log in with testuser@agencyiq.com / TestPass123!, test OAuth connects (e.g., TikTok), redeem a gift certificate via POST to /api/redeem-gift-certificate, check profile menu actions (cancel subscription), verify layout stacks without breaking clicks, and check console for logs at 10:08 AM AEST.
+Report the outcome (e.g., layout responsive, all functions intact) and any issues.

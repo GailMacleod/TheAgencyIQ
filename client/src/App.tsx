@@ -58,18 +58,33 @@ function App() {
     }
   }, []);
 
+  // Mobile layout detection and setup
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      console.log('Mobile layout applied');
+      const buttons = document.querySelectorAll('.connect-button, .profile-menu button');
+      buttons.forEach(button => {
+        button.addEventListener('click', () => {
+          if (!button.offsetParent) console.log('Reverting to default layout');
+        });
+      });
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        {showSplash ? (
-          <SplashScreen onComplete={() => setShowSplash(false)} />
-        ) : (
-          <>
-            <Router />
-            <GrokWidget />
-          </>
-        )}
+        <div className="app-container">
+          <Toaster />
+          {showSplash ? (
+            <SplashScreen onComplete={() => setShowSplash(false)} />
+          ) : (
+            <>
+              <Router />
+              <GrokWidget />
+            </>
+          )}
+        </div>
       </TooltipProvider>
     </QueryClientProvider>
   );

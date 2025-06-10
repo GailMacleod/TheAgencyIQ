@@ -59,7 +59,7 @@ export default function Splash() {
                   <span className="block bg-gradient-atomiq bg-clip-text text-transparent">with 24/7 social media posts</span>
                   
                 </h1>
-                <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">Streamlined waterfall workflow and Brand Purpose to boost small business online social presence.</p>
+                <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">Complete waterfall workflow to drive small businesses's online social presence.</p>
               </div>
               
               {/* Platform logos for education */}
