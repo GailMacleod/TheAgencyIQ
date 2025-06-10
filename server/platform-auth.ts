@@ -45,11 +45,11 @@ export async function authenticateLinkedIn(username: string, password: string): 
 export async function authenticateFacebook(username: string, password: string): Promise<AuthTokens> {
   try {
     // Validate credentials format
-    if (!username.includes('@')) {
-      throw new Error('Please provide a valid email address');
+    if (!username || username.trim().length === 0) {
+      throw new Error('Username or email is required');
     }
     
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
       throw new Error('Password must be at least 6 characters');
     }
 
@@ -69,7 +69,7 @@ export async function authenticateFacebook(username: string, password: string): 
       .digest('hex');
 
     const accessToken = `EAABw${userHash.substring(0, 50)}ZD`; // Facebook-style token format
-    const platformUsername = username.split('@')[0];
+    const platformUsername = username.includes('@') ? username.split('@')[0] : username;
     const platformUserId = `fb_${crypto.createHash('md5').update(username).digest('hex').substring(0, 16)}`;
 
     return {
@@ -87,11 +87,11 @@ export async function authenticateFacebook(username: string, password: string): 
 export async function authenticateInstagram(username: string, password: string): Promise<AuthTokens> {
   try {
     // Validate credentials format
-    if (!username.includes('@')) {
-      throw new Error('Please provide a valid email address');
+    if (!username || username.trim().length === 0) {
+      throw new Error('Username or email is required');
     }
     
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
       throw new Error('Password must be at least 6 characters');
     }
 
@@ -111,7 +111,7 @@ export async function authenticateInstagram(username: string, password: string):
       .digest('hex');
 
     const accessToken = `IGQVJ${userHash.substring(0, 50)}ZD`; // Instagram-style token format
-    const platformUsername = username.split('@')[0];
+    const platformUsername = username.includes('@') ? username.split('@')[0] : username;
     const platformUserId = `ig_${crypto.createHash('md5').update(username).digest('hex').substring(0, 16)}`;
 
     return {
