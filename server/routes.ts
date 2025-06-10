@@ -1868,41 +1868,37 @@ Continue building your Value Proposition Canvas systematically.`;
   // Get subscription usage statistics
   app.get("/api/subscription-usage", requireAuth, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
+      // Use subscription service for accurate plan enforcement
+      const { SubscriptionService } = await import('./subscription-service');
+      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
+      
       const posts = await storage.getPostsByUser(req.session.userId);
       
-      // Calculate usage statistics
-      const publishedPosts = posts.filter(p => p.status === 'published').length;
-      const failedPosts = posts.filter(p => p.status === 'failed').length;
-      const partialPosts = posts.filter(p => p.status === 'partial').length;
+      // Calculate usage statistics from actual posts
+      const publishedPosts = posts.filter(p => p.status === 'published' && p.subscriptionCycle === subscriptionStatus.subscriptionCycle).length;
+      const failedPosts = posts.filter(p => p.status === 'failed' && p.subscriptionCycle === subscriptionStatus.subscriptionCycle).length;
+      const partialPosts = posts.filter(p => p.status === 'partial' && p.subscriptionCycle === subscriptionStatus.subscriptionCycle).length;
       
-      const totalPosts = user.totalPosts || 0;
-      const remainingPosts = user.remainingPosts || 0;
-      const usedPosts = totalPosts - remainingPosts;
-
-      // Calculate subscription limits based on plan
-      const subscriptionLimits = {
-        starter: { posts: 15, reach: 5000, engagement: 3.5 },
-        professional: { posts: 30, reach: 15000, engagement: 4.5 },
-        growth: { posts: 60, reach: 30000, engagement: 5.5 }
+      // Use proper plan allocation: Starter=14, Growth=27, Professional=52
+      const { SUBSCRIPTION_PLANS } = await import('./subscription-service');
+      const userPlan = SUBSCRIPTION_PLANS[subscriptionStatus.plan.name.toLowerCase()];
+      
+      const planLimits = {
+        posts: subscriptionStatus.totalPostsAllowed, // Use actual subscription allocation
+        reach: userPlan.name === 'professional' ? 15000 : userPlan.name === 'growth' ? 30000 : 5000,
+        engagement: userPlan.name === 'professional' ? 4.5 : userPlan.name === 'growth' ? 5.5 : 3.5
       };
 
-      const planLimits = subscriptionLimits[user.subscriptionPlan as keyof typeof subscriptionLimits] || subscriptionLimits.starter;
-
       res.json({
-        subscriptionPlan: user.subscriptionPlan,
-        totalAllocation: totalPosts,
-        remainingPosts: remainingPosts,
-        usedPosts: usedPosts,
+        subscriptionPlan: subscriptionStatus.plan.name.toLowerCase(),
+        totalAllocation: subscriptionStatus.totalPostsAllowed,
+        remainingPosts: subscriptionStatus.postsRemaining,
+        usedPosts: subscriptionStatus.postsUsed,
         publishedPosts: publishedPosts,
         failedPosts: failedPosts,
         partialPosts: partialPosts,
         planLimits: planLimits,
-        usagePercentage: totalPosts > 0 ? Math.round((usedPosts / totalPosts) * 100) : 0
+        usagePercentage: subscriptionStatus.totalPostsAllowed > 0 ? Math.round((subscriptionStatus.postsUsed / subscriptionStatus.totalPostsAllowed) * 100) : 0
       });
 
     } catch (error: any) {
