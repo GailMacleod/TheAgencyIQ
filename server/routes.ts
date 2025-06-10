@@ -1149,105 +1149,107 @@ Continue refining these elements to build a stronger brand foundation.`;
     }
   });
 
-  // Brand posts API endpoint with xAI integration
-  app.get("/api/brand-posts", requireAuth, async (req: any, res) => {
-    console.log('Brand posts request - Session:', req.session?.userId);
-    
-    const currentDate = new Date().toISOString().split('T')[0];
-    let attempts = 0;
-    const maxRetries = 2;
-    
-    while (attempts <= maxRetries) {
-      try {
-        attempts++;
-        
-        // Set 3-second timeout for xAI API call
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('API timeout')), 3000);
-        });
-        
-        // Actual xAI API integration
-        const { generateContentCalendar } = await import('./grok');
-        
-        console.log(`xAI API call attempt ${attempts} for ${currentDate}`);
-        
-        const apiCall = async () => {
-          try {
-            // Get user's brand purpose data for context
-            const userId = req.session.userId;
-            const brandPurpose = await storage.getBrandPurposeByUser(userId);
-            
-            if (!brandPurpose) {
-              console.log(`No brand purpose found for user ${userId}, using fallback content`);
-              throw new Error('No brand purpose data available');
-            }
+  // Generate AI-powered schedule using xAI integration
+  app.post("/api/generate-ai-schedule", requireAuth, async (req: any, res) => {
+    try {
+      const { brandPurpose, totalPosts = 30, platforms } = req.body;
+      
+      if (!brandPurpose) {
+        return res.status(400).json({ message: "Brand purpose data required" });
+      }
 
-            console.log(`Generating content for brand: ${brandPurpose.brandName}`);
-            
-            const contentParams = {
-              brandName: brandPurpose.brandName,
-              productsServices: brandPurpose.productsServices,
-              corePurpose: brandPurpose.corePurpose,
-              audience: brandPurpose.audience,
-              jobToBeDone: brandPurpose.jobToBeDone,
-              motivations: brandPurpose.motivations,
-              painPoints: brandPurpose.painPoints,
-              goals: brandPurpose.goals || {},
-              contactDetails: brandPurpose.contactDetails || {},
-              platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-              totalPosts: 5
-            };
+      console.log(`Generating AI schedule for ${brandPurpose.brandName} with ${totalPosts} posts`);
 
-            const generatedPosts = await generateContentCalendar(contentParams);
-            
-            console.log(`xAI generated ${generatedPosts.length} posts for ${brandPurpose.brandName}`);
-            
-            return {
-              posts: generatedPosts.map(post => ({
-                id: Date.now() + Math.random(),
-                platform: post.platform,
-                content: post.content,
-                scheduledFor: post.scheduledFor,
-                status: 'draft',
-                aiRecommendation: `Generated for ${brandPurpose.brandName} targeting ${brandPurpose.audience}`
-              }))
-            };
-          } catch (error: any) {
-            console.error(`xAI API error on attempt ${attempts}:`, error.message);
-            throw error;
-          }
-        };
-        
-        const result = await Promise.race([apiCall(), timeoutPromise]);
-        console.log(`Brand posts fetched for ${currentDate} with status success`);
-        
-        res.json(result);
-        return;
-        
-      } catch (error) {
-        console.log(`Brand posts fetch attempt ${attempts} failed for ${currentDate}`);
-        
-        if (attempts > maxRetries) {
-          console.log(`Brand posts fetched for ${currentDate} with status fail`);
-          
-          // Fallback mock data when API fails
-          const fallbackPosts = {
-            posts: [
-              {
-                id: Date.now(),
-                platform: 'facebook',
-                content: 'Fallback content: Supporting Queensland small businesses',
-                scheduledFor: new Date().toISOString(),
-                status: 'draft',
-                aiRecommendation: 'Fallback recommendation'
-              }
-            ]
+      // Import xAI functions
+      const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
+      
+      // Prepare content generation parameters
+      const contentParams = {
+        brandName: brandPurpose.brandName,
+        productsServices: brandPurpose.productsServices,
+        corePurpose: brandPurpose.corePurpose,
+        audience: brandPurpose.audience,
+        jobToBeDone: brandPurpose.jobToBeDone,
+        motivations: brandPurpose.motivations,
+        painPoints: brandPurpose.painPoints,
+        goals: brandPurpose.goals || {},
+        contactDetails: brandPurpose.contactDetails || {},
+        platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
+        totalPosts
+      };
+
+      // Generate brand analysis
+      const analysis = await analyzeBrandPurpose(contentParams);
+      console.log(`Brand analysis completed. JTBD Score: ${analysis.jtbdScore}/100`);
+
+      // Generate intelligent content calendar
+      const generatedPosts = await generateContentCalendar(contentParams);
+      console.log(`Generated ${generatedPosts.length} AI-optimized posts`);
+
+      // Save posts to database
+      const savedPosts = [];
+      for (const post of generatedPosts) {
+        try {
+          const postData = {
+            userId: req.session.userId,
+            platform: post.platform,
+            content: post.content,
+            status: 'draft',
+            scheduledFor: new Date(post.scheduledFor),
+            aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience}. JTBD alignment: ${analysis.jtbdScore}/100`
           };
-          
-          res.json(fallbackPosts);
-          return;
+
+          const savedPost = await storage.createPost(postData);
+          savedPosts.push({
+            ...savedPost,
+            aiScore: analysis.jtbdScore
+          });
+        } catch (error) {
+          console.error('Error saving post:', error);
         }
       }
+
+      // Prepare schedule insights
+      const scheduleData = {
+        posts: savedPosts,
+        analysis: {
+          jtbdScore: analysis.jtbdScore,
+          platformWeighting: analysis.platformWeighting,
+          tone: analysis.tone,
+          postTypeAllocation: analysis.postTypeAllocation,
+          suggestions: analysis.suggestions
+        },
+        schedule: {
+          optimalTimes: {
+            facebook: ['9:00 AM', '1:00 PM', '3:00 PM'],
+            instagram: ['6:00 AM', '12:00 PM', '7:00 PM'],
+            linkedin: ['8:00 AM', '12:00 PM', '5:00 PM'],
+            x: ['9:00 AM', '3:00 PM', '6:00 PM'],
+            youtube: ['2:00 PM', '8:00 PM']
+          },
+          eventAlignment: [
+            'Queensland SME Expo alignment',
+            'Local business networking events',
+            'Industry peak times for engagement'
+          ],
+          contentThemes: [
+            'Brand purpose storytelling',
+            'Customer pain point solutions',
+            'Job-to-be-done focused content',
+            'Queensland business community'
+          ]
+        }
+      };
+
+      console.log(`AI schedule generated successfully: ${savedPosts.length} posts saved`);
+      res.json(scheduleData);
+
+    } catch (error: any) {
+      console.error('AI schedule generation error:', error);
+      res.status(500).json({ 
+        message: "Error generating AI schedule",
+        error: error.message 
+      });
     }
   });
 

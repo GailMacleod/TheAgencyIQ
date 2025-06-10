@@ -13,7 +13,7 @@ import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
 import PlatformConnections from "@/pages/real-platform-connections";
-import Schedule from "@/pages/schedule";
+import IntelligentSchedule from "@/pages/intelligent-schedule";
 import Login from "@/pages/login";
 import GrokTest from "@/pages/grok-test";
 import Analytics from "@/pages/analytics";
@@ -32,7 +32,7 @@ function Router() {
       <Route path="/subscription" component={Subscription} />
       <Route path="/brand-purpose" component={BrandPurpose} />
       <Route path="/platform-connections" component={PlatformConnections} />
-      <Route path="/schedule" component={Schedule} />
+      <Route path="/schedule" component={IntelligentSchedule} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/yearly-analytics" component={YearlyAnalytics} />
       <Route path="/profile" component={Profile} />
