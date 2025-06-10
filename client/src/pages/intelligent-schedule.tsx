@@ -521,8 +521,13 @@ export default function IntelligentSchedule() {
                       <div className="flex items-center space-x-3">
                         {getPlatformIcon(post.platform)}
                         <span className="font-medium text-gray-900 capitalize">{post.platform}</span>
-                        <Badge variant={post.status === 'published' ? 'default' : 'outline'}>
-                          {post.status}
+                        <Badge variant={
+                          post.status === 'published' ? 'default' : 
+                          post.status === 'approved' ? 'secondary' : 'outline'
+                        } className={
+                          post.status === 'approved' ? 'bg-green-100 text-green-800 border-green-300' : ''
+                        }>
+                          {post.status === 'approved' ? 'Approved ✓' : post.status}
                         </Badge>
                         {post.aiScore && (
                           <Badge variant="secondary" className="bg-purple-100 text-purple-800">
@@ -559,12 +564,16 @@ export default function IntelligentSchedule() {
                       {post.status !== 'published' && (
                         <Button
                           onClick={() => approvePost(post.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white"
+                          className={
+                            post.status === 'approved' || approvedPosts.has(post.id)
+                              ? "bg-gray-600 hover:bg-gray-700 text-white cursor-not-allowed"
+                              : "bg-green-600 hover:bg-green-700 text-white"
+                          }
                           size="sm"
-                          disabled={approvedPosts.has(post.id)}
+                          disabled={post.status === 'approved' || approvedPosts.has(post.id)}
                         >
                           <CheckCircle className="w-4 h-4 mr-2" />
-                          {approvedPosts.has(post.id) ? 'Approved' : 'Approve & Schedule'}
+                          {post.status === 'approved' || approvedPosts.has(post.id) ? 'Approved ✓' : 'Approve & Schedule'}
                         </Button>
                       )}
                     </div>

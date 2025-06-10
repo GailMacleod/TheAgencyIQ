@@ -1143,6 +1143,17 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Get platform connections status
+  app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
+    try {
+      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      res.json(connections);
+    } catch (error: any) {
+      console.error('Get connections error:', error);
+      res.status(500).json({ message: "Error fetching connections" });
+    }
+  });
+
   // Auto-post entire 30-day schedule
   app.post("/api/auto-post-schedule", requireAuth, async (req: any, res) => {
     try {
