@@ -268,6 +268,10 @@ async function restoreSubscribers() {
 
 // Brand posts API endpoint with xAI integration
 app.get("/api/brand-posts", async (req: any, res) => {
+  // Authentication check
+  if (!req.session?.userId) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
   const currentDate = new Date().toISOString().split('T')[0];
   let attempts = 0;
   const maxRetries = 2;
