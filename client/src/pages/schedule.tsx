@@ -1003,15 +1003,16 @@ export default function Schedule() {
       </div>
 
       {/* Navigation to Analytics - Always Visible */}
-      <div className="bg-white border-t border-gray-200 py-6">
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-t-2 border-purple-200 py-8 mt-8">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <Button
             onClick={() => setLocation("/analytics")}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-medium lowercase"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-4 text-lg rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 uppercase tracking-wide"
+            size="lg"
           >
-            next: view analytics
+            NEXT: VIEW ANALYTICS →
           </Button>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-gray-600 mt-3 font-medium">
             Track your post performance and engagement metrics
           </p>
         </div>
