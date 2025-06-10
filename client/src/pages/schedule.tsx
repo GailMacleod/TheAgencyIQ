@@ -408,8 +408,16 @@ export default function Schedule() {
     staleTime: 30000,
   });
 
-  // Type-safe posts array with debugging
-  const postsArray: Post[] = Array.isArray(posts) ? posts : [];
+  // Combine all posts from both API and generated state
+  const apiPosts: Post[] = Array.isArray(posts) ? posts : [];
+  const statePosts: Post[] = Array.isArray(generatedPosts) ? generatedPosts : [];
+  
+  // Merge posts, avoiding duplicates by ID
+  const allPostsMap = new Map<number, Post>();
+  [...apiPosts, ...statePosts].forEach(post => {
+    allPostsMap.set(post.id, post);
+  });
+  const postsArray: Post[] = Array.from(allPostsMap.values());
   
   // Filter posts based on selected filter
   const filteredPosts = postsArray.filter(post => {
