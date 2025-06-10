@@ -1481,10 +1481,18 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      // Get current subscription status for reference but generate full 30-day schedule
+      // Get current subscription status to determine actual post limit
       const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
-      
-      console.log(`Generating full 30-day AI schedule for ${brandPurpose.brandName} (${totalPosts} posts). Subscription allows ${subscriptionStatus.postsRemaining} to be published.`);
+      const actualPostLimit = Math.min(totalPosts, subscriptionStatus.totalPostsAllowed);
+
+      if (actualPostLimit <= 0) {
+        return res.status(400).json({ 
+          message: `You've used all ${subscriptionStatus.totalPostsAllowed} posts for this billing cycle. Upgrade your plan or wait for next cycle.`,
+          subscriptionLimitReached: true
+        });
+      }
+
+      console.log(`Generating AI schedule for ${brandPurpose.brandName} with ${actualPostLimit}/${totalPosts} posts (subscription limit applied)`);
 
       // Import xAI functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
@@ -1501,7 +1509,7 @@ Continue building your Value Proposition Canvas systematically.`;
         goals: brandPurpose.goals || {},
         contactDetails: brandPurpose.contactDetails || {},
         platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-        totalPosts: totalPosts // Generate full 30-day schedule
+        totalPosts: actualPostLimit // Use subscription-limited count
       };
 
       // Generate brand analysis
