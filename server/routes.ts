@@ -1470,12 +1470,34 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Brand purpose data required" });
       }
 
-      console.log(`Generating AI schedule for ${brandPurpose.brandName} with ${totalPosts} posts`);
+      // Check subscription limits before generating posts
+      const { SubscriptionService } = await import('./subscription-service');
+      const limitCheck = await SubscriptionService.canCreatePost(req.session.userId);
+      
+      if (!limitCheck.allowed) {
+        return res.status(400).json({ 
+          message: limitCheck.reason,
+          subscriptionLimitReached: true
+        });
+      }
+
+      // Get current subscription status to determine actual post limit
+      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
+      const actualPostLimit = Math.min(totalPosts, subscriptionStatus.postsRemaining);
+
+      if (actualPostLimit <= 0) {
+        return res.status(400).json({ 
+          message: `You've used all ${subscriptionStatus.totalPostsAllowed} posts for this billing cycle. Upgrade your plan or wait for next cycle.`,
+          subscriptionLimitReached: true
+        });
+      }
+
+      console.log(`Generating AI schedule for ${brandPurpose.brandName} with ${actualPostLimit}/${totalPosts} posts (subscription limit applied)`);
 
       // Import xAI functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
       
-      // Prepare content generation parameters
+      // Prepare content generation parameters with subscription limit
       const contentParams = {
         brandName: brandPurpose.brandName,
         productsServices: brandPurpose.productsServices,
@@ -1487,7 +1509,7 @@ Continue building your Value Proposition Canvas systematically.`;
         goals: brandPurpose.goals || {},
         contactDetails: brandPurpose.contactDetails || {},
         platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-        totalPosts
+        totalPosts: actualPostLimit // Use subscription-limited count
       };
 
       // Generate brand analysis

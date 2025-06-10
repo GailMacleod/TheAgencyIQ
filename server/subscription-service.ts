@@ -168,10 +168,10 @@ export class SubscriptionService {
     await db
       .update(subscriptionAnalytics)
       .set({
-        successfulPosts: db.raw('successful_posts + 1'),
-        totalReach: db.raw(`total_reach + ${reach}`),
-        totalEngagement: db.raw(`total_engagement + ${engagement}`),
-        totalImpressions: db.raw(`total_impressions + ${impressions}`)
+        successfulPosts: sql`${subscriptionAnalytics.successfulPosts} + 1`,
+        totalReach: sql`${subscriptionAnalytics.totalReach} + ${reach}`,
+        totalEngagement: sql`${subscriptionAnalytics.totalEngagement} + ${engagement}`,
+        totalImpressions: sql`${subscriptionAnalytics.totalImpressions} + ${impressions}`
       })
       .where(and(
         eq(subscriptionAnalytics.userId, userId),
@@ -224,8 +224,8 @@ export class SubscriptionService {
       posts: cyclePosts,
       summary: {
         totalPosts: cyclePosts.length,
-        averageReach: analytics.successfulPosts > 0 ? Math.round(analytics.totalReach / analytics.successfulPosts) : 0,
-        averageEngagement: analytics.successfulPosts > 0 ? Math.round(analytics.totalEngagement / analytics.successfulPosts) : 0,
+        averageReach: (analytics.successfulPosts || 0) > 0 ? Math.round((analytics.totalReach || 0) / (analytics.successfulPosts || 1)) : 0,
+        averageEngagement: (analytics.successfulPosts || 0) > 0 ? Math.round((analytics.totalEngagement || 0) / (analytics.successfulPosts || 1)) : 0,
         platformBreakdown: cyclePosts.reduce((acc, post) => {
           acc[post.platform] = (acc[post.platform] || 0) + 1;
           return acc;
