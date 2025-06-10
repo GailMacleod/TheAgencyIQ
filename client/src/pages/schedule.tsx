@@ -315,6 +315,52 @@ export default function Schedule() {
     }
   };
 
+  // Auto-post entire 30-day schedule
+  const autoPostEntireSchedule = async () => {
+    try {
+      setShowAIThinking(true);
+      setAIStep(0);
+
+      toast({
+        title: "Auto-posting Schedule",
+        description: "Publishing all approved posts to your connected platforms...",
+      });
+
+      const response = await fetch('/api/auto-post-schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setShowAIThinking(false);
+        
+        toast({
+          title: "Schedule Published",
+          description: `${result.successCount}/${result.totalPosts} posts published successfully`,
+        });
+
+        // Refresh posts to show updated status
+        refetchPosts();
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to auto-post schedule');
+      }
+    } catch (error: any) {
+      console.error('Error auto-posting schedule:', error);
+      setShowAIThinking(false);
+      
+      toast({
+        title: "Auto-posting Error",
+        description: error.message || "Failed to auto-post schedule. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Fetch user data
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["/api/user"],
@@ -437,6 +483,20 @@ export default function Schedule() {
           <p className="text-gray-600 lowercase">
             ai has analyzed queensland events and optimal posting times to create your personalized content calendar
           </p>
+          
+          {/* Auto-post entire schedule button */}
+          <div className="mt-6">
+            <Button
+              onClick={autoPostEntireSchedule}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg lowercase"
+              size="lg"
+            >
+              auto-post entire 30-day schedule
+            </Button>
+            <p className="text-sm text-gray-500 mt-2 lowercase">
+              publishes all approved posts to your connected platforms
+            </p>
+          </div>
         </div>
 
         {/* Main Post List */}

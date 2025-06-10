@@ -1058,10 +1058,11 @@ Continue refining these elements to build a stronger brand foundation.`;
       }
 
       // Check subscription limits
-      if (user.remainingPosts < approvedPosts.length) {
+      const remainingPosts = user.remainingPosts || 0;
+      if (remainingPosts < approvedPosts.length) {
         return res.status(400).json({ 
-          message: `Insufficient posts remaining. Need ${approvedPosts.length}, have ${user.remainingPosts}`,
-          remainingPosts: user.remainingPosts
+          message: `Insufficient posts remaining. Need ${approvedPosts.length}, have ${remainingPosts}`,
+          remainingPosts
         });
       }
 
@@ -1127,7 +1128,7 @@ Continue refining these elements to build a stronger brand foundation.`;
         successCount,
         failureCount: approvedPosts.length - successCount,
         results: publishResults,
-        remainingPosts: user.remainingPosts - successCount
+        remainingPosts: (user.remainingPosts || 0) - successCount
       });
 
     } catch (error: any) {
