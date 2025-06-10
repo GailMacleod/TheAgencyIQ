@@ -1041,6 +1041,101 @@ Continue refining these elements to build a stronger brand foundation.`;
     }
   });
 
+  // Auto-post entire 30-day schedule
+  app.post("/api/auto-post-schedule", requireAuth, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get all approved posts for the user
+      const posts = await storage.getPostsByUser(req.session.userId);
+      const approvedPosts = posts.filter(post => post.status === 'approved');
+
+      if (approvedPosts.length === 0) {
+        return res.status(400).json({ message: "No approved posts found for scheduling" });
+      }
+
+      // Check subscription limits
+      if (user.remainingPosts < approvedPosts.length) {
+        return res.status(400).json({ 
+          message: `Insufficient posts remaining. Need ${approvedPosts.length}, have ${user.remainingPosts}`,
+          remainingPosts: user.remainingPosts
+        });
+      }
+
+      const publishResults = [];
+      let successCount = 0;
+
+      // Publish all approved posts
+      for (const post of approvedPosts) {
+        try {
+          const platformConnections = await storage.getPlatformConnectionsByUser(req.session.userId);
+          const platformConnection = platformConnections.find(conn => 
+            conn.platform.toLowerCase() === post.platform.toLowerCase() && conn.isActive
+          );
+
+          if (platformConnection) {
+            const result = await PostPublisher.publishPost(
+              req.session.userId,
+              post.id,
+              [post.platform]
+            );
+
+            if (result.success) {
+              await storage.updatePost(post.id, { 
+                status: 'published',
+                publishedAt: new Date()
+              });
+              successCount++;
+              publishResults.push({
+                postId: post.id,
+                platform: post.platform,
+                status: 'success',
+                scheduledFor: post.scheduledFor
+              });
+            } else {
+              publishResults.push({
+                postId: post.id,
+                platform: post.platform,
+                status: 'failed',
+                error: result.results?.[0]?.error || 'Unknown error'
+              });
+            }
+          } else {
+            publishResults.push({
+              postId: post.id,
+              platform: post.platform,
+              status: 'failed',
+              error: `No active ${post.platform} connection found`
+            });
+          }
+        } catch (error: any) {
+          publishResults.push({
+            postId: post.id,
+            platform: post.platform,
+            status: 'failed',
+            error: error.message
+          });
+        }
+      }
+
+      res.json({
+        message: `Auto-posting complete: ${successCount}/${approvedPosts.length} posts published`,
+        totalPosts: approvedPosts.length,
+        successCount,
+        failureCount: approvedPosts.length - successCount,
+        results: publishResults,
+        remainingPosts: user.remainingPosts - successCount
+      });
+
+    } catch (error: any) {
+      console.error('Auto-post schedule error:', error);
+      res.status(500).json({ message: "Error auto-posting schedule" });
+    }
+  });
+
   // Create new post
   app.post("/api/posts", requireAuth, async (req: any, res) => {
     try {

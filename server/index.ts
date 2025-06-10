@@ -266,9 +266,13 @@ async function restoreSubscribers() {
   }
 }
 
+// Session middleware already configured in routes.ts
+
 // Brand posts API endpoint with xAI integration
 app.get("/api/brand-posts", async (req: any, res) => {
-  // Authentication check with proper session handling
+  // Enhanced authentication check
+  console.log('Brand posts request - Session:', req.session?.userId, 'Cookies:', req.headers.cookie);
+  
   if (!req.session?.userId) {
     console.log('Brand posts: No authenticated session found');
     return res.status(401).json({ message: "Not authenticated" });

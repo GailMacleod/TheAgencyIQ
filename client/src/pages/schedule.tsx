@@ -101,7 +101,7 @@ export default function Schedule() {
       );
 
       // Update database if post exists there
-      const existingPost = posts?.find(p => p.id === postId);
+      const existingPost = postsArray.find((p: Post) => p.id === postId);
       if (existingPost) {
         const response = await fetch(`/api/posts/${postId}`, {
           method: 'PUT',
@@ -203,7 +203,7 @@ export default function Schedule() {
       
       // Find the post in either generated posts or database posts
       const targetPost = generatedPosts.find(p => p.id === postId) || 
-                        posts?.find(p => p.id === postId);
+                        postsArray.find(p => p.id === postId);
       
       if (targetPost) {
         // Save to database and potentially publish immediately
@@ -325,6 +325,9 @@ export default function Schedule() {
     queryKey: ["/api/posts"],
   });
 
+  // Type-safe posts array
+  const postsArray: Post[] = Array.isArray(posts) ? posts : [];
+
   // Platform icon component
   const getPlatformIcon = (platform: string) => {
     const iconClass = "w-4 h-4 text-blue-600";
@@ -387,9 +390,9 @@ export default function Schedule() {
   for (let i = 0; i < 30; i++) {
     const date = addDays(startDate, i);
     const localEvents = getLocalEvents(date);
-    const dayPosts = posts?.filter(post => 
+    const dayPosts = postsArray.filter((post: Post) => 
       isSameDay(new Date(post.scheduledFor), date)
-    ) || [];
+    );
 
     calendarDays.push({
       date,
@@ -439,7 +442,7 @@ export default function Schedule() {
         {/* Main Post List */}
         <div className="mb-8">
           <div className="grid gap-6">
-            {posts?.slice(0, 5).map((post: Post) => (
+            {postsArray.slice(0, 5).map((post: Post) => (
               <Card key={post.id} className="overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-3 mb-4">
