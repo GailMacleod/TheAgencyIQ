@@ -212,7 +212,10 @@ Make content authentic to Queensland culture and specifically tailored to achiev
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
-    return result.posts || [];
+    const posts = result.posts || [];
+    
+    // Enforce strict subscription limit - truncate to exact totalPosts
+    return posts.slice(0, params.totalPosts);
   } catch (error) {
     console.error("Content generation error:", error);
     throw new Error("Failed to generate content calendar");

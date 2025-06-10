@@ -1470,18 +1470,8 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Brand purpose data required" });
       }
 
-      // Check subscription limits before generating posts
-      const { SubscriptionService } = await import('./subscription-service');
-      const limitCheck = await SubscriptionService.canCreatePost(req.session.userId);
-      
-      if (!limitCheck.allowed) {
-        return res.status(400).json({ 
-          message: limitCheck.reason,
-          subscriptionLimitReached: true
-        });
-      }
-
       // Get current subscription status and enforce strict plan limits
+      const { SubscriptionService } = await import('./subscription-service');
       const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
       
       // Import subscription plans to get exact allocation
@@ -1494,6 +1484,16 @@ Continue building your Value Proposition Canvas systematically.`;
           subscriptionLimitReached: true
         });
       }
+
+      // Clear existing posts for this cycle before generating new ones
+      const existingPosts = await storage.getPostsByUser(req.session.userId);
+      const postsInCurrentCycle = existingPosts.filter(p => p.subscriptionCycle === subscriptionStatus.subscriptionCycle);
+      
+      for (const post of postsInCurrentCycle) {
+        await storage.deletePost(post.id);
+      }
+      
+      console.log(`Cleared ${postsInCurrentCycle.length} existing posts for fresh ${userPlan.name} plan generation`);
 
       // Enforce exact plan allocation for 30-day cycle
       const planPostLimit = userPlan.postsPerMonth;
@@ -1533,9 +1533,13 @@ Continue building your Value Proposition Canvas systematically.`;
       const generatedPosts = await generateContentCalendar(contentParams);
       console.log(`Generated ${generatedPosts.length} AI-optimized posts`);
 
-      // Save posts to database
+      // Save posts to database with strict subscription limit enforcement
       const savedPosts = [];
-      for (const post of generatedPosts) {
+      const postsToSave = generatedPosts.slice(0, planPostLimit); // Enforce exact plan limit
+      
+      console.log(`Saving exactly ${planPostLimit} posts for ${userPlan.name} plan (generated ${generatedPosts.length}, saving ${postsToSave.length})`);
+      
+      for (const post of postsToSave) {
         try {
           const postData = {
             userId: req.session.userId,
