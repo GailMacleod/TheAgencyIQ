@@ -1397,6 +1397,36 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Update post content
+  app.put("/api/posts/:id", requireAuth, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { content } = req.body;
+      const userId = req.session.userId;
+
+      if (!content) {
+        return res.status(400).json({ message: "Content is required" });
+      }
+
+      // Verify the post belongs to the user
+      const posts = await storage.getPostsByUser(userId);
+      const post = posts.find(p => p.id === postId);
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      // Update the post content
+      const updatedPost = await storage.updatePost(postId, { content });
+      
+      console.log(`Post ${postId} content updated by user ${userId}`);
+      res.json({ success: true, post: updatedPost });
+    } catch (error) {
+      console.error('Error updating post:', error);
+      res.status(500).json({ message: "Failed to update post" });
+    }
+  });
+
   // Generate content calendar
   app.post("/api/generate-content-calendar", requireAuth, async (req: any, res) => {
     try {

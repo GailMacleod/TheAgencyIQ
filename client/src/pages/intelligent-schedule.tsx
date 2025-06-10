@@ -692,6 +692,55 @@ export default function IntelligentSchedule() {
         )}
       </div>
 
+      {/* Edit Content Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Post Content</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="content" className="text-sm font-medium">
+                Post Content
+              </label>
+              <Textarea
+                id="content"
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="Enter your post content..."
+                rows={8}
+                className="resize-none"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditModalOpen(false)}
+              disabled={editPostMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={saveEditedContent}
+              disabled={editPostMutation.isPending}
+            >
+              {editPostMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <MasterFooter />
     </div>
   );
