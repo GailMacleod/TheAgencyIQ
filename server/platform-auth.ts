@@ -12,11 +12,11 @@ interface AuthTokens {
 export async function authenticateLinkedIn(username: string, password: string): Promise<AuthTokens> {
   try {
     // Validate credentials format
-    if (!username.includes('@')) {
-      throw new Error('Please provide a valid email address');
+    if (!username || username.trim().length === 0) {
+      throw new Error('Username or email is required');
     }
     
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
       throw new Error('Password must be at least 6 characters');
     }
 
@@ -27,7 +27,7 @@ export async function authenticateLinkedIn(username: string, password: string): 
       .digest('hex');
 
     const accessToken = `linkedin_${userHash.substring(0, 32)}_${timestamp}`;
-    const platformUsername = username.split('@')[0];
+    const platformUsername = username.includes('@') ? username.split('@')[0] : username;
     const platformUserId = `li_${crypto.createHash('md5').update(username).digest('hex').substring(0, 16)}`;
 
     return {
@@ -166,12 +166,12 @@ export async function authenticateTwitter(username: string, password: string): P
 // YouTube authentication using Google OAuth
 export async function authenticateYouTube(username: string, password: string): Promise<AuthTokens> {
   try {
-    // Validate credentials format
-    if (!username.includes('@')) {
-      throw new Error('Please provide a valid email address');
+    // Validate credentials format - YouTube accepts email or username
+    if (!username || username.trim().length === 0) {
+      throw new Error('Username or email is required');
     }
     
-    if (password.length < 6) {
+    if (!password || password.length < 6) {
       throw new Error('Password must be at least 6 characters');
     }
 
@@ -191,7 +191,7 @@ export async function authenticateYouTube(username: string, password: string): P
       .digest('hex');
 
     const accessToken = `ya29.${userHash.substring(0, 50)}`; // Google-style token format
-    const platformUsername = username.split('@')[0];
+    const platformUsername = username.includes('@') ? username.split('@')[0] : username;
     const platformUserId = `yt_${crypto.createHash('md5').update(username).digest('hex').substring(0, 16)}`;
 
     return {
