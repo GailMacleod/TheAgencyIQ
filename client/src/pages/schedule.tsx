@@ -1002,22 +1002,20 @@ export default function Schedule() {
         )}
       </div>
 
-      {/* Navigation to Analytics - Fixed Position */}
-      {postsArray.length > 0 && (
-        <div className="bg-white border-t border-gray-200 py-6">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <Button
-              onClick={() => setLocation("/analytics")}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-medium lowercase"
-            >
-              next: view analytics
-            </Button>
-            <p className="text-sm text-gray-500 mt-2">
-              Track your post performance and engagement metrics
-            </p>
-          </div>
+      {/* Navigation to Analytics - Always Visible */}
+      <div className="bg-white border-t border-gray-200 py-6">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <Button
+            onClick={() => setLocation("/analytics")}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-medium lowercase"
+          >
+            next: view analytics
+          </Button>
+          <p className="text-sm text-gray-500 mt-2">
+            Track your post performance and engagement metrics
+          </p>
         </div>
-      )}
+      </div>
 
       <MasterFooter />
     </div>
