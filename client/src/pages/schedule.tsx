@@ -470,7 +470,7 @@ export default function Schedule() {
           </p>
           
           {/* Action Buttons */}
-          <div className="flex justify-center space-x-3 mt-4">
+          <div className="flex justify-center space-x-3 mt-4 mobile-action-buttons">
             <Button
               onClick={() => window.location.href = '/analytics'}
               variant="outline"
@@ -485,7 +485,7 @@ export default function Schedule() {
             >
               {showAIThinking ? 'ai is thinking...' : 'generate content with ai'}
             </Button>
-        </div>
+          </div>
 
         {/* AI Thinking Process Modal */}
         {showAIThinking && (
@@ -602,7 +602,7 @@ export default function Schedule() {
             <Card 
               key={index}
               className={`
-                relative min-h-24 p-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                calendar-day-card relative min-h-24 p-2 cursor-pointer transition-all duration-200 hover:shadow-md
                 ${isToday(day.date) ? 'ring-2 ring-purple-400 bg-purple-50' : ''}
                 ${day.isOptimalDay ? 'border-green-300 bg-green-50' : 'border-gray-200'}
                 ${day.posts.length > 0 ? 'bg-blue-50 border-blue-300' : ''}
@@ -610,7 +610,7 @@ export default function Schedule() {
               onMouseEnter={() => setHoveredDay(day.date)}
               onMouseLeave={() => setHoveredDay(null)}
             >
-              <CardContent className="p-0">
+              <CardContent className="calendar-day-content p-0">
                 {/* Date */}
                 <div className="text-xs font-medium text-gray-700 mb-1">
                   {format(day.date, 'd')}
