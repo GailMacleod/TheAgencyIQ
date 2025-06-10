@@ -782,7 +782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const recentVerification = await db.select()
           .from(verificationCodes)
           .where(eq(verificationCodes.verified, true))
-          .orderBy(desc(verificationCodes.created_at))
+          .orderBy(desc(verificationCodes.createdAt))
           .limit(1);
           
         if (recentVerification.length > 0) {

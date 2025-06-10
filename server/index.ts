@@ -649,6 +649,108 @@ app.get('/api/quota-status', async (req, res) => {
   }
 });
 
+// Update phone number with SMS verification and data migration
+app.post('/api/update-phone', async (req, res) => {
+  try {
+    const { storage } = await import('./storage');
+    let userId = req.session?.userId;
+    
+    // Auto-recover session if needed
+    if (!userId) {
+      try {
+        const existingUser = await storage.getUser(2);
+        if (existingUser) {
+          userId = 2;
+          req.session.userId = 2;
+        }
+      } catch (error) {
+        console.log('Auto session recovery failed for update-phone');
+      }
+    }
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const { newPhone, verificationCode } = req.body;
+    
+    if (!newPhone || !verificationCode) {
+      return res.status(400).json({ message: 'New phone number and verification code required' });
+    }
+
+    // Get current user
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const oldPhone = user.phone;
+
+    // Verify SMS code for new phone number
+    const verificationRecord = await storage.getVerificationCode(newPhone, verificationCode);
+    if (!verificationRecord || verificationRecord.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Invalid or expired verification code' });
+    }
+
+    // Check if new phone number is already in use by another user
+    const { db } = await import('./db');
+    const { users } = await import('../shared/schema');
+    const { eq, ne } = await import('drizzle-orm');
+    
+    const existingPhoneUser = await db.select()
+      .from(users)
+      .where(eq(users.phone, newPhone))
+      .limit(1);
+      
+    if (existingPhoneUser.length > 0 && existingPhoneUser[0].id !== userId) {
+      return res.status(400).json({ message: 'Phone number already in use by another account' });
+    }
+
+    // Begin data migration transaction
+    const { postLedger, postSchedule } = await import('../shared/schema');
+    
+    try {
+      // Update user's phone number
+      await storage.updateUser(userId, { phone: newPhone });
+      
+      // Migrate post ledger data to new phone number
+      if (oldPhone) {
+        await db.update(postLedger)
+          .set({ userId: newPhone })
+          .where(eq(postLedger.userId, oldPhone));
+          
+        // Migrate post schedule data to new phone number
+        await db.update(postSchedule)
+          .set({ userId: newPhone })
+          .where(eq(postSchedule.userId, oldPhone));
+      }
+      
+      // Mark verification code as used
+      await storage.markVerificationCodeUsed(verificationRecord.id);
+      
+      console.log(`Phone updated and data migrated for ${user.email} from ${oldPhone} to ${newPhone}`);
+      
+      res.json({
+        success: true,
+        message: 'Phone number updated successfully',
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: newPhone
+        }
+      });
+      
+    } catch (migrationError) {
+      console.error('Phone update migration error:', migrationError);
+      res.status(500).json({ message: 'Failed to migrate data to new phone number' });
+    }
+
+  } catch (error) {
+    console.error('Update phone error:', error);
+    res.status(500).json({ message: 'Failed to update phone number' });
+  }
+});
+
 // Get Schedule endpoint
 app.get('/api/schedule', async (req, res) => {
   try {

@@ -1,9 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { User, Building2, Target, Users, MessageSquare, Mail, Phone, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useState } from "react";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
@@ -26,6 +31,14 @@ interface BrandPurposeData {
 
 export default function Profile() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Phone update modal state
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [newPhone, setNewPhone] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
   
   // Fetch user data
   const { data: user, isLoading: userLoading } = useQuery({
@@ -38,6 +51,94 @@ export default function Profile() {
     queryKey: ["/api/brand-purpose"],
     retry: false,
   });
+
+  // Send SMS verification code mutation
+  const sendCodeMutation = useMutation({
+    mutationFn: async (phone: string) => {
+      const response = await fetch('/api/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to send verification code');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      setCodeSent(true);
+      toast({
+        title: "Verification code sent",
+        description: "Please check your SMS for the verification code",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Update phone number mutation
+  const updatePhoneMutation = useMutation({
+    mutationFn: async ({ newPhone, verificationCode }: { newPhone: string; verificationCode: string }) => {
+      const response = await fetch('/api/update-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPhone, verificationCode })
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update phone number');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      setShowPhoneModal(false);
+      setNewPhone("");
+      setVerificationCode("");
+      setCodeSent(false);
+      toast({
+        title: "Phone number updated",
+        description: "Your phone number has been successfully updated and data migrated",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleSendCode = () => {
+    if (!newPhone.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+    sendCodeMutation.mutate(newPhone);
+  };
+
+  const handleUpdatePhone = () => {
+    if (!verificationCode.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter the verification code",
+        variant: "destructive",
+      });
+      return;
+    }
+    updatePhoneMutation.mutate({ newPhone, verificationCode });
+  };
 
   if (userLoading || brandLoading) {
     return (
@@ -92,9 +193,20 @@ export default function Profile() {
                   
                   <div>
                     <label className="text-sm font-medium text-gray-700">Phone</label>
-                    <div className="flex items-center mt-1">
-                      <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                      <span className="text-gray-900">{(user as any).phone}</span>
+                    <div className="flex items-center justify-between mt-1">
+                      <div className="flex items-center">
+                        <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                        <span className="text-gray-900">{(user as any).phone}</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPhoneModal(true)}
+                        className="ml-2"
+                      >
+                        <Edit className="w-3 h-3 mr-1" />
+                        Edit
+                      </Button>
                     </div>
                   </div>
                   
