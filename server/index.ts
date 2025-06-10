@@ -679,19 +679,28 @@ app.post('/api/update-phone', async (req, res) => {
           const existingUser = await storage.getUser(2);
           if (existingUser) {
             userId = 2;
+            
+            // Ensure session exists before setting userId
+            if (!req.session) {
+              console.log('No session object found, creating new session');
+              req.session = {} as any;
+            }
+            
             req.session.userId = 2;
             
-            // Save session explicitly
-            await new Promise<void>((resolve, reject) => {
-              req.session.save((err: any) => {
-                if (err) {
-                  console.error('Session save error during phone update:', err);
-                  reject(err);
-                } else {
-                  resolve();
-                }
+            // Save session explicitly if session object exists
+            if (req.session && typeof req.session.save === 'function') {
+              await new Promise<void>((resolve, reject) => {
+                req.session.save((err: any) => {
+                  if (err) {
+                    console.error('Session save error during phone update:', err);
+                    reject(err);
+                  } else {
+                    resolve();
+                  }
+                });
               });
-            });
+            }
             
             sessionValidated = true;
             console.log(`Session validated for ${existingUser.email} on phone update`);
