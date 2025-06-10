@@ -63,7 +63,7 @@ export default function Splash() {
               </div>
               
               {/* Platform logos for education */}
-              <div className="flex justify-center items-center space-x-8">
+              <div className="platform-logos flex justify-center items-center space-x-8">
                 <SiFacebook className="w-8 h-8" style={{ color: '#1877F2' }} />
                 <SiInstagram className="w-8 h-8" style={{ color: '#E4405F' }} />
                 <SiLinkedin className="w-8 h-8" style={{ color: '#0A66C2' }} />

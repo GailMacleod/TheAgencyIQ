@@ -208,7 +208,7 @@ export default function RealPlatformConnections() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="connect-section grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {platforms.map((platform) => {
               const Icon = platform.icon;
               const connected = isConnected(platform.id);
@@ -274,7 +274,7 @@ export default function RealPlatformConnections() {
                           size="sm"
                           onClick={() => disconnectPlatform(platform.id)}
                           disabled={isLoading}
-                          className="flex-1 text-white bg-[#ff538f] hover:bg-[#e04880] border-[#ff538f]"
+                          className="connect-button flex-1 text-white bg-[#ff538f] hover:bg-[#e04880] border-[#ff538f]"
                         >
                           {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                           Disconnect
@@ -283,7 +283,7 @@ export default function RealPlatformConnections() {
                         <Button
                           onClick={() => connectPlatform(platform.id)}
                           disabled={isLoading || !platform.approved}
-                          className="flex-1"
+                          className="connect-button flex-1"
                           variant={platform.approved ? "default" : "secondary"}
                         >
                           {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

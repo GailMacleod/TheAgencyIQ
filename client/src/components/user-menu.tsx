@@ -149,7 +149,7 @@ export default function UserMenu() {
           <span className="sr-only">User menu</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72 p-4">
+      <DropdownMenuContent align="end" className="profile-menu w-72 p-4">
         <div className="space-y-4">
           {/* User Info */}
           <div className="flex items-center space-x-3">

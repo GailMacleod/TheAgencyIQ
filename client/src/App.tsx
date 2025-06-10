@@ -64,8 +64,9 @@ function App() {
       console.log('Mobile layout applied');
       const buttons = document.querySelectorAll('.connect-button, .profile-menu button');
       buttons.forEach(button => {
-        button.addEventListener('click', () => {
-          if (!button.offsetParent) console.log('Reverting to default layout');
+        const htmlButton = button as HTMLElement;
+        htmlButton.addEventListener('click', () => {
+          if (!htmlButton.offsetParent) console.log('Reverting to default layout');
         });
       });
     }
