@@ -32,7 +32,7 @@ function Router() {
       <Route path="/" component={Splash} />
       <Route path="/subscription" component={Subscription} />
       <Route path="/brand-purpose" component={BrandPurpose} />
-      <Route path="/platform-connections" component={PlatformConnections} />
+      <Route path="/platform-connections" component={ConnectPlatforms} />
       <Route path="/connect-platforms" component={ConnectPlatforms} />
       <Route path="/schedule" component={IntelligentSchedule} />
       <Route path="/intelligent-schedule" component={IntelligentSchedule} />
