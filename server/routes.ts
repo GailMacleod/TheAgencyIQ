@@ -1383,6 +1383,20 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Brand posts endpoint with CSP header
+  app.get("/api/brand-posts", requireAuth, async (req: any, res) => {
+    // Set specific CSP header for this endpoint
+    res.setHeader('Content-Security-Policy', 'connect-src self https://www.google-analytics.com https://api.xai.com https://api.stripe.com https://checkout.stripe.com;');
+    
+    try {
+      const posts = await storage.getPostsByUser(req.session.userId);
+      res.json(posts);
+    } catch (error) {
+      console.error('Error fetching brand posts:', error);
+      res.status(500).json({ message: "Failed to fetch brand posts" });
+    }
+  });
+
   // Generate content calendar
   app.post("/api/generate-content-calendar", requireAuth, async (req: any, res) => {
     try {
