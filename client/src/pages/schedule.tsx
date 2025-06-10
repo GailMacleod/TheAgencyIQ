@@ -1000,6 +1000,21 @@ export default function Schedule() {
             </Card>
           </div>
         )}
+
+        {/* Navigation to Analytics */}
+        {postsArray.length > 0 && (
+          <div className="mt-12 mb-8 text-center">
+            <Button
+              onClick={() => setLocation("/analytics")}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-medium lowercase"
+            >
+              next: view analytics
+            </Button>
+            <p className="text-sm text-gray-500 mt-2">
+              Track your post performance and engagement metrics
+            </p>
+          </div>
+        )}
       </div>
 
       <MasterFooter />
