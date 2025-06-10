@@ -236,7 +236,7 @@ class QuotaService {
     const { db } = await import('./db');
     const { postLedger } = await import('../shared/schema');
     
-    const quotaMap = { 'starter': 12, 'growth': 27, 'pro': 52 };
+    const quotaMap = { 'starter': 12, 'growth': 27, 'professional': 52 };
     const quota = quotaMap[subscriptionTier as keyof typeof quotaMap] || 12;
     
     const ledgerData = {
