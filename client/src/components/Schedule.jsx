@@ -3,9 +3,7 @@ import React, { useState, useCallback } from 'react';
 const Schedule = () => {
   const [hoveredDate, setHoveredDate] = useState(null);
 
-  const handleMouseEnter = useCallback((e, date) => {
-    e.stopPropagation();
-    e.preventDefault();
+  const handleMouseEnter = useCallback((date) => {
     setHoveredDate(date);
     console.log('Dropdown stabilized on ' + date);
   }, []); // Empty dependency array prevents re-render
@@ -21,7 +19,7 @@ const Schedule = () => {
           <div
             key={date}
             className="calendar-day"
-            onMouseEnter={(e) => handleMouseEnter(e, date)}
+            onMouseEnter={() => handleMouseEnter(date)}
             onMouseLeave={handleMouseLeave}
           >
             {date}
