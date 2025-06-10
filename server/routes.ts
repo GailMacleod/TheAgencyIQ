@@ -649,9 +649,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: 2, 
           email: 'gailm@macleodglba.com.au', 
           phone: '+61412345678',
-          subscriptionPlan: 'starter',
-          remainingPosts: 12,
-          totalPosts: 12
+          subscriptionPlan: 'professional',
+          remainingPosts: 52,
+          totalPosts: 52
         });
       }
 
