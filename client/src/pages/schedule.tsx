@@ -661,38 +661,52 @@ export default function Schedule() {
                   
                   {/* Editable content for main schedule */}
                   {editingPost?.id === post.id ? (
-                    <div className="mb-4">
+                    <div className="mb-4 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                      <label className="block text-sm font-medium text-blue-800 mb-2">
+                        Edit your post content:
+                      </label>
                       <textarea
-                        value={editingPost.content}
+                        value={editingPost.content || ''}
                         onChange={(e) => setEditingPost({...editingPost, content: e.target.value})}
-                        className="w-full p-3 border border-gray-300 rounded text-gray-800 resize-none"
-                        rows={4}
+                        className="w-full p-3 border-2 border-blue-300 rounded-lg text-gray-800 resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        rows={6}
                         autoFocus
+                        placeholder="Enter your post content here..."
                       />
-                      <div className="flex space-x-3 mt-3">
-                        <Button
-                          onClick={() => saveEditedPost(post.id, editingPost.content)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white lowercase"
-                        >
-                          save changes
-                        </Button>
-                        <Button
-                          onClick={() => setEditingPost(null)}
-                          variant="outline"
-                          className="lowercase"
-                        >
-                          cancel
-                        </Button>
+                      <div className="flex justify-between items-center mt-3">
+                        <span className="text-sm text-gray-500">
+                          Characters: {(editingPost.content || '').length}
+                        </span>
+                        <div className="flex space-x-3">
+                          <Button
+                            onClick={() => saveEditedPost(post.id, editingPost.content || '')}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6"
+                            disabled={!editingPost.content?.trim()}
+                          >
+                            Save Changes
+                          </Button>
+                          <Button
+                            onClick={() => setEditingPost(null)}
+                            variant="outline"
+                            className="border-gray-300 hover:bg-gray-50"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ) : (
                     <div className="flex space-x-3">
                       <Button
-                        onClick={() => setEditingPost({id: post.id, content: post.content})}
+                        onClick={() => {
+                          console.log('Edit button clicked for post:', post.id, post.content);
+                          setEditingPost({id: post.id, content: post.content});
+                        }}
                         variant="outline"
-                        className="lowercase"
+                        className="bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-700 font-medium"
+                        size="sm"
                       >
-                        edit post
+                        ✏️ Edit Content
                       </Button>
                       
                       {post.status !== 'approved' && !approvedPosts.has(post.id) ? (
@@ -874,30 +888,39 @@ export default function Schedule() {
                               
                               {/* Editable content */}
                               {editingPost?.id === post.id ? (
-                                <div className="mb-3">
+                                <div className="mb-3 bg-blue-50 p-3 rounded border-2 border-blue-200">
+                                  <label className="block text-xs font-medium text-blue-800 mb-1">
+                                    Edit content:
+                                  </label>
                                   <textarea
-                                    value={editingPost.content}
+                                    value={editingPost.content || ''}
                                     onChange={(e) => setEditingPost({...editingPost, content: e.target.value})}
-                                    className="w-full p-2 border border-gray-300 rounded text-sm resize-none"
-                                    rows={3}
+                                    className="w-full p-2 border-2 border-blue-300 rounded text-sm resize-none focus:border-blue-500"
+                                    rows={4}
                                     autoFocus
+                                    placeholder="Enter your post content..."
                                   />
-                                  <div className="flex space-x-2 mt-2">
-                                    <Button
-                                      onClick={() => saveEditedPost(post.id, editingPost.content)}
-                                      size="sm"
-                                      className="bg-blue-600 hover:bg-blue-700 text-white lowercase"
-                                    >
-                                      save changes
-                                    </Button>
-                                    <Button
-                                      onClick={() => setEditingPost(null)}
-                                      size="sm"
-                                      variant="outline"
-                                      className="lowercase"
-                                    >
-                                      cancel
-                                    </Button>
+                                  <div className="flex justify-between items-center mt-2">
+                                    <span className="text-xs text-gray-500">
+                                      {(editingPost.content || '').length} chars
+                                    </span>
+                                    <div className="flex space-x-2">
+                                      <Button
+                                        onClick={() => saveEditedPost(post.id, editingPost.content || '')}
+                                        size="sm"
+                                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                                        disabled={!editingPost.content?.trim()}
+                                      >
+                                        Save
+                                      </Button>
+                                      <Button
+                                        onClick={() => setEditingPost(null)}
+                                        size="sm"
+                                        variant="outline"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
                                   </div>
                                 </div>
                               ) : (
