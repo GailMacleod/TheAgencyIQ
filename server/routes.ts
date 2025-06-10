@@ -892,6 +892,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // Simple platform connection with username/password
+  app.post("/api/connect-platform-simple", requireAuth, async (req: any, res) => {
+    try {
+      const { platform, username, password } = req.body;
+      const userId = req.session.userId;
+
+      if (!platform || !username || !password) {
+        return res.status(400).json({ message: "Platform, username, and password are required" });
+      }
+
+      // Perform real OAuth token exchange using platform APIs
+      console.log(`Authenticating ${platform} for user ${userId}`);
+      
+      let tokens;
+      
+      try {
+        switch (platform) {
+          case 'linkedin':
+            tokens = await authenticateLinkedIn(username, password);
+            break;
+          case 'facebook':
+            tokens = await authenticateFacebook(username, password);
+            break;
+          case 'instagram':
+            tokens = await authenticateInstagram(username, password);
+            break;
+          case 'x':
+            tokens = await authenticateTwitter(username, password);
+            break;
+          case 'youtube':
+            tokens = await authenticateYouTube(username, password);
+            break;
+          default:
+            throw new Error(`Platform ${platform} not supported`);
+        }
+      } catch (authError: any) {
+        console.error(`${platform} authentication failed:`, authError.message);
+        return res.status(401).json({ 
+          message: `Authentication failed for ${platform}. Please check your credentials.` 
+        });
+      }
+
+      // Store the connection with real tokens
+      const connection = await storage.createPlatformConnection({
+        userId,
+        platform,
+        platformUserId: tokens.platformUserId,
+        platformUsername: tokens.platformUsername,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        isActive: true
+      });
+
+      res.json({ 
+        success: true, 
+        connection,
+        message: `Successfully connected to ${platform}` 
+      });
+    } catch (error) {
+      console.error('Platform connection error:', error);
+      res.status(500).json({ message: "Failed to connect platform" });
+    }
+  });
+
   // Disconnect platform
   app.post("/api/disconnect-platform", requireAuth, async (req: any, res) => {
     try {

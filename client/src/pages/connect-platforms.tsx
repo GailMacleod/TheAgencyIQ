@@ -1,12 +1,13 @@
 import { useLocation } from "wouter";
-import { Facebook, Instagram, Linkedin, Twitter, Youtube, CheckCircle, AlertCircle, ExternalLink } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Twitter, Youtube, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
@@ -56,11 +57,9 @@ export default function ConnectPlatforms() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Get URL parameters for OAuth success/error handling
-  const urlParams = new URLSearchParams(window.location.search);
-  const successPlatform = urlParams.get('success');
-  const errorPlatform = urlParams.get('error');
+  const [showPassword, setShowPassword] = useState<{[key: string]: boolean}>({});
+  const [credentials, setCredentials] = useState<{[key: string]: {username: string, password: string}}>({});
+  const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
 
   // Fetch platform connections
   const { data: connections = [], isLoading } = useQuery<PlatformConnection[]>({
@@ -68,28 +67,42 @@ export default function ConnectPlatforms() {
     retry: 2
   });
 
-  // Handle OAuth success/error messages
-  useEffect(() => {
-    if (successPlatform) {
+  // Connect platform with username/password
+  const connectMutation = useMutation({
+    mutationFn: async ({ platform, username, password }: { platform: string, username: string, password: string }) => {
+      const response = await fetch('/api/connect-platform-simple', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ platform, username, password })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Connection failed');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
       toast({
         title: "Platform Connected",
-        description: `Successfully connected ${platformConfig[successPlatform as keyof typeof platformConfig]?.name}`,
+        description: `Successfully connected ${platformConfig[variables.platform as keyof typeof platformConfig]?.name}`,
       });
-      // Clear URL parameters
-      window.history.replaceState({}, document.title, "/connect-platforms");
-      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-    }
-    
-    if (errorPlatform) {
+      // Clear credentials
+      setCredentials(prev => ({ ...prev, [variables.platform]: { username: '', password: '' } }));
+      setConnecting(prev => ({ ...prev, [variables.platform]: false }));
+    },
+    onError: (error: any, variables) => {
       toast({
         title: "Connection Failed",
-        description: `Failed to connect ${platformConfig[errorPlatform as keyof typeof platformConfig]?.name}. Please try again.`,
+        description: error.message || "Failed to connect platform. Please check your credentials.",
         variant: "destructive"
       });
-      // Clear URL parameters
-      window.history.replaceState({}, document.title, "/connect-platforms");
+      setConnecting(prev => ({ ...prev, [variables.platform]: false }));
     }
-  }, [successPlatform, errorPlatform, toast, queryClient]);
+  });
 
   // Disconnect platform mutation
   const disconnectMutation = useMutation({
@@ -118,8 +131,33 @@ export default function ConnectPlatforms() {
     }
   });
 
-  const connectPlatform = (platform: string) => {
-    window.location.href = `/auth/${platform}`;
+  const handleConnect = async (platform: string) => {
+    const creds = credentials[platform];
+    if (!creds?.username || !creds?.password) {
+      toast({
+        title: "Missing Credentials",
+        description: "Please enter both username and password",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setConnecting(prev => ({ ...prev, [platform]: true }));
+    connectMutation.mutate({
+      platform,
+      username: creds.username,
+      password: creds.password
+    });
+  };
+
+  const updateCredentials = (platform: string, field: 'username' | 'password', value: string) => {
+    setCredentials(prev => ({
+      ...prev,
+      [platform]: {
+        ...prev[platform],
+        [field]: value
+      }
+    }));
   };
 
   const isConnected = (platform: string) => {
@@ -214,13 +252,52 @@ export default function ConnectPlatforms() {
                       </Button>
                     </div>
                   ) : (
-                    <Button
-                      onClick={() => connectPlatform(platform)}
-                      className="w-full"
-                    >
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Connect {config.name}
-                    </Button>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor={`${platform}-username`}>Username/Email</Label>
+                        <Input
+                          id={`${platform}-username`}
+                          type="text"
+                          placeholder="Enter your username or email"
+                          value={credentials[platform]?.username || ''}
+                          onChange={(e) => updateCredentials(platform, 'username', e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor={`${platform}-password`}>Password</Label>
+                        <div className="relative">
+                          <Input
+                            id={`${platform}-password`}
+                            type={showPassword[platform] ? "text" : "password"}
+                            placeholder="Enter your password"
+                            value={credentials[platform]?.password || ''}
+                            onChange={(e) => updateCredentials(platform, 'password', e.target.value)}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowPassword(prev => ({ ...prev, [platform]: !prev[platform] }))}
+                          >
+                            {showPassword[platform] ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <Button
+                        onClick={() => handleConnect(platform)}
+                        className="w-full"
+                        disabled={connecting[platform] || connectMutation.isPending}
+                      >
+                        {connecting[platform] ? 'Connecting...' : `Connect ${config.name}`}
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
