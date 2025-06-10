@@ -470,14 +470,20 @@ app.post('/api/approve-post', async (req, res) => {
       });
     }
     
-    // Post to social platform via OAuth
-    const { PostPublisher } = await import('./post-publisher');
+    // Check platform connection availability
     const connections = await storage.getPlatformConnectionsByUser(userId);
     const platformConnection = connections.find(c => c.platform === post.platform && c.isActive);
     
     if (!platformConnection) {
-      return res.status(400).json({ message: `${post.platform} not connected` });
+      return res.status(400).json({ 
+        message: `${post.platform} account not connected. Please connect your account first.`,
+        requiresConnection: true,
+        platform: post.platform
+      });
     }
+
+    // Post to social platform via OAuth
+    const { PostPublisher } = await import('./post-publisher');
     
     try {
       let publishResult;
