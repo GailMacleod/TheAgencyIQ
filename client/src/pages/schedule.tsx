@@ -842,7 +842,48 @@ export default function Schedule() {
                                     edit
                                   </Button>
                                   
-                                  {post.status !== 'approved' ? (
+                                  {post.status === 'published' ? (
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-sm text-green-600 font-medium">✓ Published to {post.platform}</span>
+                                      <Button
+                                        onClick={() => {
+                                          toast({
+                                            title: "Post Already Published",
+                                            description: `This post has been successfully published to ${post.platform} and counted against your subscription.`,
+                                          });
+                                        }}
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-xs"
+                                      >
+                                        view status
+                                      </Button>
+                                    </div>
+                                  ) : post.status === 'approved' ? (
+                                    <div className="flex space-x-2">
+                                      <Button
+                                        onClick={() => publishPost(post.id, post.platform)}
+                                        className="approve-button bg-blue-600 hover:bg-blue-700 text-white text-sm lowercase"
+                                        size="sm"
+                                      >
+                                        <Play className="w-4 h-4 mr-2" />
+                                        approve & auto-post
+                                      </Button>
+                                      <Button
+                                        onClick={() => {
+                                          toast({
+                                            title: "Post Status: Approved Only",
+                                            description: "This post is approved but not yet published to social media platform. Click 'Approve & Auto-Post' to publish it.",
+                                          });
+                                        }}
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-xs"
+                                      >
+                                        status: approved only
+                                      </Button>
+                                    </div>
+                                  ) : (
                                     <>
                                       <Button
                                         onClick={() => approvePostForDay(selectedDay, post.id, false)}
@@ -853,38 +894,14 @@ export default function Schedule() {
                                         approve & schedule
                                       </Button>
                                       <Button
-                                        onClick={() => approvePostForDay(selectedDay, post.id, true)}
-                                        className="approve-button bg-blue-600 hover:bg-blue-700 text-white text-sm lowercase"
-                                        size="sm"
-                                      >
-                                        <Play className="w-4 h-4 mr-2" />
-                                        publish now
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <div className="flex space-x-2">
-                                      <Button
                                         onClick={() => publishPost(post.id, post.platform)}
-                                        className="approve-button bg-green-600 hover:bg-green-700 text-white text-sm lowercase"
+                                        className="approve-button bg-blue-600 hover:bg-blue-700 text-white text-sm lowercase"
                                         size="sm"
                                       >
                                         <Play className="w-4 h-4 mr-2" />
                                         approve & auto-post
                                       </Button>
-                                      <Button
-                                        onClick={() => {
-                                          toast({
-                                            title: "Post Status",
-                                            description: "This post is approved but not yet published to social media platform.",
-                                          });
-                                        }}
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-xs"
-                                      >
-                                        status: approved only
-                                      </Button>
-                                    </div>
+                                    </>
                                   )}
                                 </div>
                               )}
