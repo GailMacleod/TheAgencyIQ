@@ -1481,18 +1481,31 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      // Get current subscription status to determine actual post limit
+      // Get current subscription status and enforce strict plan limits
       const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
-      const actualPostLimit = Math.min(totalPosts, subscriptionStatus.totalPostsAllowed);
-
-      if (actualPostLimit <= 0) {
+      
+      // Import subscription plans to get exact allocation
+      const { SUBSCRIPTION_PLANS } = await import('./subscription-service');
+      const userPlan = SUBSCRIPTION_PLANS[subscriptionStatus.plan.name.toLowerCase()];
+      
+      if (!userPlan) {
         return res.status(400).json({ 
-          message: `You've used all ${subscriptionStatus.totalPostsAllowed} posts for this billing cycle. Upgrade your plan or wait for next cycle.`,
+          message: `Invalid subscription plan: ${subscriptionStatus.plan.name}`,
           subscriptionLimitReached: true
         });
       }
 
-      console.log(`Generating AI schedule for ${brandPurpose.brandName} with ${actualPostLimit}/${totalPosts} posts (subscription limit applied)`);
+      // Enforce exact plan allocation for 30-day cycle
+      const planPostLimit = userPlan.postsPerMonth;
+      
+      if (subscriptionStatus.postsRemaining <= 0) {
+        return res.status(400).json({ 
+          message: `You've used all ${planPostLimit} posts for this billing cycle (${userPlan.name} plan). Upgrade your plan or wait for next cycle.`,
+          subscriptionLimitReached: true
+        });
+      }
+
+      console.log(`Generating AI schedule for ${brandPurpose.brandName}: ${userPlan.name} plan = ${planPostLimit} posts for 30-day cycle`);
 
       // Import xAI functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
@@ -1509,7 +1522,7 @@ Continue building your Value Proposition Canvas systematically.`;
         goals: brandPurpose.goals || {},
         contactDetails: brandPurpose.contactDetails || {},
         platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-        totalPosts: actualPostLimit // Use subscription-limited count
+        totalPosts: planPostLimit // Use exact subscription plan allocation
       };
 
       // Generate brand analysis

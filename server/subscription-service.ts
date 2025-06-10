@@ -60,7 +60,7 @@ export class SubscriptionService {
     if (!plan) throw new Error('Invalid subscription plan');
     
     const { cycleStart, cycleEnd, cycleName } = this.getCurrentCycle(subscriptionStart);
-    const totalAllowed = plan.postsPerMonth + plan.freeBonus;
+    const totalAllowed = plan.postsPerMonth; // Strict plan enforcement: no free bonus
     
     // Check if analytics already exist for this cycle
     const [existing] = await db
