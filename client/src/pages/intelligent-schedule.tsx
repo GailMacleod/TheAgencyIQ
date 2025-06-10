@@ -229,6 +229,16 @@ export default function IntelligentSchedule() {
       return;
     }
 
+    // Check subscription limits before generating
+    if (subscriptionUsage && subscriptionUsage.remainingPosts <= 0) {
+      toast({
+        title: "Post Limit Reached",
+        description: `You've used all ${subscriptionUsage.totalAllocation} posts for this billing cycle. Upgrade your plan or wait for next cycle.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGeneratingSchedule(true);
     
     try {
