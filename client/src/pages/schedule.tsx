@@ -374,8 +374,18 @@ export default function Schedule() {
     staleTime: 30000,
   });
 
-  // Type-safe posts array
+  // Type-safe posts array with debugging
   const postsArray: Post[] = Array.isArray(posts) ? posts : [];
+  
+  // Debug logging
+  console.log('Schedule Debug:', {
+    user,
+    userLoading,
+    posts,
+    postsLoading,
+    postsArray: postsArray.length,
+    postsArrayData: postsArray
+  });
 
   // Platform icon component
   const getPlatformIcon = (platform: string) => {
