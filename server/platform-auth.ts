@@ -103,7 +103,7 @@ export async function authenticateInstagram(username: string, password: string):
     // Generate authenticated access token for Instagram
     const timestamp = Date.now();
     const appSignature = crypto.createHash('sha256')
-      .update(`${process.env.INSTAGRAM_CLIENT_ID}_${process.env.INSTAGRAM_CLIENT_SECRET}`)
+      .update(`${process.env.FACEBOOK_APP_ID}_${process.env.FACEBOOK_APP_SECRET}`)
       .digest('hex').substring(0, 16);
     
     const userHash = crypto.createHash('sha256')
