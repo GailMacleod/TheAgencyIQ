@@ -1001,19 +1001,19 @@ export default function Schedule() {
           </div>
         )}
 
-        {/* Visible Navigation Section */}
-        <div className="w-full bg-white border-2 border-purple-300 rounded-xl shadow-xl p-8 mt-8 mb-8">
+        {/* ANALYTICS BUTTON - BRIGHT AND VISIBLE */}
+        <div className="w-full bg-gradient-to-r from-red-500 to-orange-500 text-white p-8 rounded-lg mt-6 shadow-2xl border-4 border-yellow-400">
           <div className="text-center">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Ready to track your results?</h3>
+            <h2 className="text-2xl font-black mb-4 uppercase tracking-wide">NEXT STEP</h2>
             <Button
               onClick={() => setLocation("/analytics")}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-16 py-6 text-xl rounded-xl font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105"
+              className="bg-white text-red-600 hover:bg-yellow-100 px-12 py-4 text-2xl font-black rounded-lg shadow-xl border-4 border-yellow-400 uppercase tracking-wide"
               size="lg"
             >
-              🚀 VIEW ANALYTICS NOW →
+              VIEW ANALYTICS
             </Button>
-            <p className="text-gray-700 mt-4 text-lg font-medium">
-              See how your posts are performing across all platforms
+            <p className="mt-4 text-xl font-bold">
+              Click here to see your results!
             </p>
           </div>
         </div>
