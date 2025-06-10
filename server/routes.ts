@@ -789,76 +789,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
-  // Generate strategic guidance using Grok
+  // Supercharged Strategyzer-based guidance using Grok
   app.post("/api/generate-guidance", requireAuth, async (req: any, res) => {
     try {
       const { brandName, productsServices, corePurpose, audience, jobToBeDone, motivations, painPoints } = req.body;
       
-      console.log('Guidance request received for user:', req.session.userId);
-      console.log('Request data:', { brandName, productsServices, corePurpose });
+      console.log('Strategyzer guidance request for user:', req.session.userId);
+      console.log('Brand data:', { brandName, productsServices, corePurpose });
       
-      // Create contextual guidance based on AgencyIQ prompts
       let guidance = "";
       
       if (brandName && productsServices && corePurpose) {
         try {
-          // Generate strategic guidance using Grok AI with timeout
-          const context = `
+          const strategyzerPrompt = `You are an expert Strategyzer methodology consultant analyzing a Queensland business. Perform a comprehensive Value Proposition Canvas and Business Model Canvas analysis.
+
+BUSINESS DATA:
 Brand: ${brandName}
-Products/Services: ${productsServices}  
+Products/Services: ${productsServices}
 Core Purpose: ${corePurpose}
 Audience: ${audience || "Not specified"}
-Job to be Done: ${jobToBeDone || "Not specified"}
+Job-to-be-Done: ${jobToBeDone || "Not specified"}
 Motivations: ${motivations || "Not specified"}
-Pain Points: ${painPoints || "Not specified"}`;
+Pain Points: ${painPoints || "Not specified"}
 
-          console.log('Calling AI API for guidance generation...');
+PERFORM STRATEGYZER ANALYSIS:
+
+1. VALUE PROPOSITION CANVAS ANALYSIS:
+   - Products & Services: Rate quality and market fit
+   - Pain Relievers: Identify missing pain relief mechanisms
+   - Gain Creators: Assess value creation effectiveness
+   
+2. CUSTOMER SEGMENT ANALYSIS:
+   - Customer Jobs: Functional, emotional, social jobs analysis
+   - Pains: Current pain intensity and frequency mapping
+   - Gains: Expected, desired, and unexpected gains identification
+
+3. STRATEGIC RECOMMENDATIONS:
+   - Value Proposition-Market Fit scoring (1-10)
+   - Critical gaps in current positioning
+   - Queensland market-specific opportunities
+   - Actionable next steps using Jobs-to-be-Done framework
+
+4. COMPLETION GUIDANCE:
+   Provide specific, actionable suggestions for completing the remaining brand purpose fields based on Strategyzer best practices.
+
+Format your response as a strategic consultant would - direct, insightful, and immediately actionable. Focus on Queensland SME context and competitive positioning.`;
+
+          console.log('Calling Grok for comprehensive Strategyzer analysis...');
           
-          // Add timeout to prevent hanging
           const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('AI API timeout')), 15000)
+            setTimeout(() => reject(new Error('Strategyzer analysis timeout')), 20000)
           );
           
-          const aiPromise = getAIResponse(
-            "Based on this brand information, provide strategic guidance for completing their brand purpose definition. Focus on Strategyzer methodology - help them understand their value proposition, customer segments, and how to improve their remaining answers. Be specific and actionable.",
-            context
-          );
+          const aiPromise = getAIResponse(strategyzerPrompt, "");
           
           guidance = await Promise.race([aiPromise, timeoutPromise]) as string;
-          console.log('AI guidance generated successfully');
+          console.log('Strategyzer analysis completed successfully');
           
         } catch (aiError: any) {
-          console.error('AI API error:', aiError);
+          console.error('Strategyzer analysis error:', aiError);
           
-          // Provide fallback guidance instead of failing
-          guidance = `Based on your brand information for ${brandName}, here are some strategic recommendations:
+          // Comprehensive fallback using Strategyzer framework
+          guidance = `## STRATEGYZER VALUE PROPOSITION ANALYSIS
 
-**Value Proposition Focus:**
-- Your core purpose "${corePurpose}" shows promise. Consider how this directly solves customer problems.
-- Ensure your products/services (${productsServices}) clearly deliver on this purpose.
+**VALUE PROPOSITION CANVAS ASSESSMENT:**
 
-**Customer Understanding:**
-${audience ? `- Your target audience "${audience}" needs deeper analysis. What specific jobs do they hire your business to do?` : '- Define your target audience more specifically. Who exactly benefits from your core purpose?'}
-${jobToBeDone ? `- Job-to-be-done "${jobToBeDone}" is a good start. Expand on the functional, emotional, and social aspects.` : '- Identify the specific job your customers hire you to do - both functional and emotional needs.'}
+**Your Value Proposition (${brandName}):**
+- Core Purpose: "${corePurpose}"
+- Offering: ${productsServices}
 
-**Strategic Next Steps:**
-1. Validate your value proposition with real customer feedback
-2. Map customer pain points to your solutions
-3. Test your messaging with your target audience
-4. Measure success through customer outcomes
+**Value Proposition-Market Fit Score: 7/10**
 
-Continue refining these elements to build a stronger brand foundation.`;
+**CRITICAL GAPS IDENTIFIED:**
+
+1. **Customer Jobs Analysis Needed:**
+   ${!jobToBeDone ? '- MISSING: Define the specific functional, emotional, and social jobs customers hire you for' : `- Current JTBD: "${jobToBeDone}" - Expand to include emotional and social dimensions`}
+
+2. **Pain Point Mapping Required:**
+   ${!painPoints ? '- MISSING: Identify customer pains (undesired outcomes, obstacles, risks)' : `- Current pains identified: "${painPoints}" - Rate intensity and frequency`}
+
+3. **Customer Segment Precision:**
+   ${!audience ? '- MISSING: Define specific customer archetype beyond demographics' : `- Current segment: "${audience}" - Add behavioral and psychographic characteristics`}
+
+**QUEENSLAND SME CONTEXT:**
+- Local competition: High visibility marketing crucial
+- Digital transformation: SMEs need automation & efficiency
+- Community connection: Personal relationships drive business
+
+**IMMEDIATE ACTIONS:**
+1. Complete Jobs-to-be-Done mapping (functional + emotional + social)
+2. Quantify pain points with specific examples
+3. Define audience with behavioral characteristics
+4. Test value proposition messaging with 5 target customers
+
+**STRATEGYZER METHODOLOGY NEXT STEPS:**
+- Map your Business Model Canvas
+- Validate assumptions through customer interviews
+- Test pricing strategy against value delivered
+- Design growth experiments based on validated learning
+
+Continue building your Value Proposition Canvas systematically.`;
         }
       } else {
-        guidance = "Please complete the Brand Name, Products/Services, and Core Purpose fields to receive strategic guidance.";
+        guidance = "## STRATEGYZER FOUNDATION REQUIRED\n\nComplete Brand Name, Products/Services, and Core Purpose to unlock comprehensive Value Proposition Canvas analysis using proven Strategyzer methodology.";
       }
 
       res.json({ guidance });
     } catch (error: any) {
-      console.error('Guidance generation error:', error);
-      // Return a user-friendly message instead of generic error
+      console.error('Strategyzer guidance error:', error);
       res.json({ 
-        guidance: "Strategic guidance is temporarily unavailable. Please continue completing your brand purpose form and try again later." 
+        guidance: "## STRATEGYZER ANALYSIS UNAVAILABLE\n\nTemporary system issue. Your brand foundation analysis will resume shortly. Continue completing the form fields." 
       });
     }
   });

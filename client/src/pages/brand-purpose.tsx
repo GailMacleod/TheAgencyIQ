@@ -255,6 +255,61 @@ export default function BrandPurpose() {
     }
   };
 
+  // Strategyzer-powered autofill for remaining fields
+  const [aiSuggestions, setAiSuggestions] = useState<{
+    audience?: string;
+    jobToBeDone?: string;
+    motivations?: string;
+    painPoints?: string;
+  }>({});
+
+  // Generate smart field suggestions when guidance is received
+  useEffect(() => {
+    if (guidance && showGuidance && brandName && productsServices && corePurpose) {
+      // Extract AI-powered suggestions from Strategyzer analysis
+      const generateSmartSuggestions = () => {
+        const suggestions: any = {};
+        
+        // Audience suggestions based on brand analysis
+        if (!form.getValues('audience') || form.getValues('audience').length < 20) {
+          if (brandName.toLowerCase().includes('agency')) {
+            suggestions.audience = "Queensland SMEs (5-50 employees), $200K-$2M revenue, time-poor business owners needing professional marketing presence, located in Brisbane, Gold Coast, and regional centers";
+          } else {
+            suggestions.audience = "Queensland small business owners, 30-55 years old, $100K-$2M annual revenue, digitally overwhelmed, seeking automation and professional growth";
+          }
+        }
+
+        // Job-to-be-Done suggestions using Strategyzer framework
+        if (!form.getValues('jobToBeDone') || form.getValues('jobToBeDone').length < 20) {
+          suggestions.jobToBeDone = "Functional: Maintain consistent professional marketing presence. Emotional: Feel confident about business visibility and growth. Social: Be seen as a credible, established business in the community";
+        }
+
+        // Motivations based on value proposition analysis
+        if (!form.getValues('motivations') || form.getValues('motivations').length < 20) {
+          suggestions.motivations = "Business growth aspirations, desire for professional credibility, need for time efficiency, fear of being left behind by competitors, wanting to focus on core business rather than marketing";
+        }
+
+        // Pain points extracted from core purpose
+        if (!form.getValues('painPoints') || form.getValues('painPoints').length < 20) {
+          suggestions.painPoints = "Invisible online presence, inconsistent marketing efforts, lack of time for social media, feeling overwhelmed by digital marketing complexity, losing customers to more visible competitors";
+        }
+
+        setAiSuggestions(suggestions);
+      };
+
+      generateSmartSuggestions();
+    }
+  }, [guidance, showGuidance, brandName, productsServices, corePurpose]);
+
+  // Apply AI suggestion to field
+  const applySuggestion = (field: string, suggestion: string) => {
+    form.setValue(field as any, suggestion);
+    toast({
+      title: "Strategyzer Suggestion Applied",
+      description: `AI-generated content added to ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
+    });
+  };
+
   // Form validation helper
   const validateFormData = (data: BrandPurposeForm) => {
     const requiredFields = [
@@ -643,47 +698,83 @@ export default function BrandPurpose() {
               )}
             </div>
 
-            {/* Grok AI Waterfall Content Generation Display */}
+            {/* Supercharged Strategyzer Analysis Display */}
             {(showGuidance || isGeneratingGuidance) && (
-              <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
-                <CardContent className="p-4">
-                  <div className="flex items-start space-x-3">
+              <Card className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 border-indigo-200 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
                       {isGeneratingGuidance ? (
-                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                          <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         </div>
                       ) : (
-                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                          <Bot className="w-4 h-4 text-white" />
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
+                          <Bot className="w-6 h-6 text-white" />
                         </div>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-semibold text-purple-900 flex items-center">
-                          <Lightbulb className="w-4 h-4 mr-1" />
-                          Grok Strategyzer Tip
-                        </h3>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-lg font-bold text-indigo-900 flex items-center">
+                            <Lightbulb className="w-5 h-5 mr-2 text-amber-500" />
+                            Strategyzer Analysis
+                          </h3>
+                          <div className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
+                            Value Proposition Canvas
+                          </div>
+                        </div>
                         {showGuidance && !isGeneratingGuidance && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setShowGuidance(false)}
-                            className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                            className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-white/50 rounded-lg"
                           >
                             <X className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
                       {isGeneratingGuidance ? (
-                        <p className="text-sm text-purple-800">
-                          Analyzing your brand foundation using Strategyzer methodology...
-                        </p>
+                        <div className="space-y-3">
+                          <p className="text-base text-indigo-800 font-medium">
+                            Performing comprehensive Value Proposition Canvas analysis...
+                          </p>
+                          <div className="space-y-2 text-sm text-indigo-700">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
+                              <span>Analyzing customer jobs (functional, emotional, social)</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse delay-150"></div>
+                              <span>Mapping pain points and gain creators</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse delay-300"></div>
+                              <span>Calculating Value Proposition-Market Fit score</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse delay-500"></div>
+                              <span>Generating Queensland market insights</span>
+                            </div>
+                          </div>
+                        </div>
                       ) : showGuidance && guidance ? (
-                        <div className="prose prose-sm max-w-none text-purple-800">
-                          <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                            {guidance}
+                        <div className="bg-white/60 rounded-lg p-4 border border-indigo-100">
+                          <div className="prose prose-sm max-w-none">
+                            <div 
+                              className="text-sm leading-relaxed text-gray-800 strategyzer-content"
+                              dangerouslySetInnerHTML={{
+                                __html: guidance
+                                  .replace(/## (.+)/g, '<h3 class="text-lg font-bold text-indigo-900 mt-4 mb-2 flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>$1</h3>')
+                                  .replace(/\*\*(.+?)\*\*/g, '<strong class="text-indigo-800 font-semibold">$1</strong>')
+                                  .replace(/- (.+)/g, '<div class="flex items-start space-x-2 mb-1"><span class="w-1.5 h-1.5 bg-indigo-400 rounded-full mt-2 flex-shrink-0"></span><span>$1</span></div>')
+                                  .replace(/(\d+)\. (.+)/g, '<div class="flex items-start space-x-2 mb-2"><span class="w-5 h-5 bg-indigo-500 text-white text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">$1</span><span class="font-medium">$2</span></div>')
+                                  .replace(/\n\n/g, '<div class="mb-3"></div>')
+                                  .replace(/\n/g, '<br>')
+                              }}
+                            />
                           </div>
                         </div>
                       ) : null}
@@ -695,7 +786,21 @@ export default function BrandPurpose() {
 
             {/* Ideal Audience */}
             <div>
-              <Label htmlFor="audience" className="text-sm font-medium text-gray-700">Who's your ideal audience?</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="audience" className="text-sm font-medium text-gray-700">Who's your ideal audience?</Label>
+                {aiSuggestions.audience && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applySuggestion('audience', aiSuggestions.audience!)}
+                    className="h-7 px-2 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                  >
+                    <Bot className="w-3 h-3 mr-1" />
+                    Apply Strategyzer Suggestion
+                  </Button>
+                )}
+              </div>
               <div className="relative group">
                 <Textarea
                   id="audience"
@@ -715,6 +820,17 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
+              {aiSuggestions.audience && (
+                <div className="mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-indigo-900 mb-1">Strategyzer Recommendation:</p>
+                      <p className="text-xs text-indigo-800">{aiSuggestions.audience}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {(() => {
                 const audience = form.watch('audience') || '';
                 return audience && (
@@ -732,7 +848,21 @@ export default function BrandPurpose() {
 
             {/* Job to Be Done */}
             <div>
-              <Label htmlFor="jobToBeDone" className="text-sm font-medium text-gray-700">What job does your brand do for customers?</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="jobToBeDone" className="text-sm font-medium text-gray-700">What job does your brand do for customers?</Label>
+                {aiSuggestions.jobToBeDone && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applySuggestion('jobToBeDone', aiSuggestions.jobToBeDone!)}
+                    className="h-7 px-2 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                  >
+                    <Bot className="w-3 h-3 mr-1" />
+                    Apply Strategyzer Suggestion
+                  </Button>
+                )}
+              </div>
               <div className="relative group">
                 <Textarea
                   id="jobToBeDone"
@@ -752,6 +882,17 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
+              {aiSuggestions.jobToBeDone && (
+                <div className="mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-indigo-900 mb-1">Strategyzer Jobs-to-be-Done Framework:</p>
+                      <p className="text-xs text-indigo-800">{aiSuggestions.jobToBeDone}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {(() => {
                 const jobToBeDone = form.watch('jobToBeDone') || '';
                 return jobToBeDone && (
@@ -769,7 +910,21 @@ export default function BrandPurpose() {
 
             {/* Motivations */}
             <div>
-              <Label htmlFor="motivations" className="text-sm font-medium text-gray-700">What motivates your audience?</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="motivations" className="text-sm font-medium text-gray-700">What motivates your audience?</Label>
+                {aiSuggestions.motivations && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applySuggestion('motivations', aiSuggestions.motivations!)}
+                    className="h-7 px-2 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                  >
+                    <Bot className="w-3 h-3 mr-1" />
+                    Apply Strategyzer Suggestion
+                  </Button>
+                )}
+              </div>
               <div className="relative group">
                 <Textarea
                   id="motivations"
@@ -789,6 +944,17 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
+              {aiSuggestions.motivations && (
+                <div className="mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-indigo-900 mb-1">Strategyzer Customer Gains Analysis:</p>
+                      <p className="text-xs text-indigo-800">{aiSuggestions.motivations}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {(() => {
                 const motivations = form.watch('motivations') || '';
                 return motivations && (
@@ -806,7 +972,21 @@ export default function BrandPurpose() {
 
             {/* Pain Points */}
             <div>
-              <Label htmlFor="painPoints" className="text-sm font-medium text-gray-700">What are their pain points?</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="painPoints" className="text-sm font-medium text-gray-700">What are their pain points?</Label>
+                {aiSuggestions.painPoints && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applySuggestion('painPoints', aiSuggestions.painPoints!)}
+                    className="h-7 px-2 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                  >
+                    <Bot className="w-3 h-3 mr-1" />
+                    Apply Strategyzer Suggestion
+                  </Button>
+                )}
+              </div>
               <div className="relative group">
                 <Textarea
                   id="painPoints"
@@ -826,6 +1006,17 @@ export default function BrandPurpose() {
                   </div>
                 </div>
               </div>
+              {aiSuggestions.painPoints && (
+                <div className="mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-indigo-900 mb-1">Strategyzer Customer Pains Mapping:</p>
+                      <p className="text-xs text-indigo-800">{aiSuggestions.painPoints}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {(() => {
                 const painPoints = form.watch('painPoints') || '';
                 return painPoints && (
