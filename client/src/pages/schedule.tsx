@@ -11,6 +11,7 @@ import { format, addDays, startOfMonth, endOfMonth, isSameDay, isToday } from "d
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
+import BrandSync from "@/components/Schedule";
 
 interface Post {
   id: number;

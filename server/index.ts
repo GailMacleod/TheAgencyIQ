@@ -266,6 +266,80 @@ async function restoreSubscribers() {
   }
 }
 
+// Brand posts API endpoint with xAI integration
+app.get("/api/brand-posts", async (req: any, res) => {
+  const currentDate = new Date().toISOString().split('T')[0];
+  let attempts = 0;
+  const maxRetries = 2;
+  
+  while (attempts <= maxRetries) {
+    try {
+      attempts++;
+      
+      // Set 3-second timeout for xAI API call
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('API timeout')), 3000);
+      });
+      
+      // Simulate xAI API call (replace with actual xAI integration)
+      const apiCall = new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            posts: [
+              {
+                id: Date.now() + Math.random(),
+                platform: 'facebook',
+                content: 'AI-generated brand purpose content for Queensland SMEs',
+                scheduledFor: new Date().toISOString(),
+                status: 'draft',
+                aiRecommendation: 'Optimized for Queensland business engagement'
+              },
+              {
+                id: Date.now() + Math.random() + 1,
+                platform: 'instagram',
+                content: 'Visual storytelling for Queensland small business success',
+                scheduledFor: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                status: 'draft',
+                aiRecommendation: 'Perfect for visual brand narrative'
+              }
+            ]
+          });
+        }, 1000);
+      });
+      
+      const result = await Promise.race([apiCall, timeoutPromise]);
+      console.log(`Brand posts fetched for ${currentDate} with status success`);
+      
+      res.json(result);
+      return;
+      
+    } catch (error) {
+      console.log(`Brand posts fetch attempt ${attempts} failed for ${currentDate}`);
+      
+      if (attempts > maxRetries) {
+        console.log(`Brand posts fetched for ${currentDate} with status fail`);
+        
+        // Fallback mock data when API fails
+        const fallbackPosts = {
+          posts: [
+            {
+              id: Date.now(),
+              platform: 'facebook',
+              content: 'Fallback content: Supporting Queensland small businesses',
+              scheduledFor: new Date().toISOString(),
+              status: 'draft',
+              aiRecommendation: 'Fallback recommendation'
+            }
+          ]
+        };
+        
+        res.json(fallbackPosts);
+        return;
+      }
+    }
+  }
+});
+
 (async () => {
   const server = await registerRoutes(app);
   

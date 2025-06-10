@@ -1129,7 +1129,7 @@ Continue refining these elements to build a stronger brand foundation.`;
           // Update post status to published
           await storage.updatePost(parseInt(postId), { 
             status: 'published',
-            publishedAt: new Date().toISOString()
+            publishedAt: new Date()
           });
 
           res.json({
