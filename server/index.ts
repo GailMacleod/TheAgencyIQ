@@ -714,7 +714,9 @@ app.post('/api/update-phone', async (req, res) => {
     
     if (!sessionValidated || !userId) {
       console.error('Session validation failed after all retries for update-phone');
+      res.setHeader('Content-Type', 'application/json');
       return res.status(401).json({ 
+        success: false,
         message: 'Session validation failed. Please log in again.',
         sessionError: true 
       });
@@ -723,13 +725,21 @@ app.post('/api/update-phone', async (req, res) => {
     const { newPhone, verificationCode } = req.body;
     
     if (!newPhone || !verificationCode) {
-      return res.status(400).json({ message: 'New phone number and verification code required' });
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(400).json({ 
+        success: false,
+        message: 'New phone number and verification code required' 
+      });
     }
 
     // Get current user
     const user = await storage.getUser(userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(404).json({ 
+        success: false,
+        message: 'User not found' 
+      });
     }
 
     const oldPhone = user.phone;
@@ -737,7 +747,11 @@ app.post('/api/update-phone', async (req, res) => {
     // Verify SMS code for new phone number
     const verificationRecord = await storage.getVerificationCode(newPhone, verificationCode);
     if (!verificationRecord || verificationRecord.expiresAt < new Date()) {
-      return res.status(400).json({ message: 'Invalid or expired verification code' });
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid or expired verification code' 
+      });
     }
 
     // Check if new phone number is already in use by another user
@@ -751,7 +765,11 @@ app.post('/api/update-phone', async (req, res) => {
       .limit(1);
       
     if (existingPhoneUser.length > 0 && existingPhoneUser[0].id !== userId) {
-      return res.status(400).json({ message: 'Phone number already in use by another account' });
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(400).json({ 
+        success: false,
+        message: 'Phone number already in use by another account' 
+      });
     }
 
     // Begin data migration transaction
@@ -776,9 +794,11 @@ app.post('/api/update-phone', async (req, res) => {
       // Mark verification code as used
       await storage.markVerificationCodeUsed(verificationRecord.id);
       
-      console.log(`Phone updated and data migrated for ${user.email} from ${oldPhone} to ${newPhone}`);
+      console.log(`Phone update processed for ${user.email}: ${newPhone}`);
       
-      res.json({
+      // Ensure JSON response headers are set explicitly
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(200).json({
         success: true,
         message: 'Phone number updated successfully',
         user: {
@@ -790,12 +810,22 @@ app.post('/api/update-phone', async (req, res) => {
       
     } catch (migrationError) {
       console.error('Phone update migration error:', migrationError);
-      res.status(500).json({ message: 'Failed to migrate data to new phone number' });
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(500).json({ 
+        success: false,
+        message: 'Failed to migrate data to new phone number',
+        error: migrationError instanceof Error ? migrationError.message : 'Unknown migration error'
+      });
     }
 
   } catch (error) {
     console.error('Update phone error:', error);
-    res.status(500).json({ message: 'Failed to update phone number' });
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(500).json({ 
+      success: false,
+      message: 'Failed to update phone number',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

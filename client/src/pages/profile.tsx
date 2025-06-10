@@ -87,11 +87,28 @@ export default function Profile() {
     mutationFn: async ({ newPhone, verificationCode }: { newPhone: string; verificationCode: string }) => {
       const response = await fetch('/api/update-phone', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ newPhone, verificationCode })
       });
+      
+      // Check if response is HTML (DOCTYPE error)
+      const contentType = response.headers.get('content-type');
+      if (contentType && !contentType.includes('application/json')) {
+        console.error('Received HTML response instead of JSON:', await response.text());
+        throw new Error('Server configuration error. Please refresh the page and try again.');
+      }
+      
       if (!response.ok) {
-        const error = await response.json();
+        let error;
+        try {
+          error = await response.json();
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          throw new Error(`Server error: ${response.status}. Please try again.`);
+        }
         
         // Handle session validation errors specifically
         if (error.sessionError || response.status === 401) {
@@ -99,14 +116,20 @@ export default function Profile() {
           try {
             const sessionResponse = await fetch('/api/establish-session', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' }
+              headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              }
             });
             
             if (sessionResponse.ok) {
               // Retry the phone update after session recovery
               const retryResponse = await fetch('/api/update-phone', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
                 body: JSON.stringify({ newPhone, verificationCode })
               });
               
@@ -121,7 +144,13 @@ export default function Profile() {
         
         throw new Error(error.message || 'Failed to update phone number');
       }
-      return response.json();
+      
+      try {
+        return await response.json();
+      } catch (parseError) {
+        console.error('Failed to parse success response:', parseError);
+        throw new Error('Update may have succeeded, but response was invalid. Please refresh the page.');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
