@@ -1707,6 +1707,36 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Brand purpose data required" });
       }
 
+      // CRITICAL: Enforce live platform connections before any content generation
+      const platformConnections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      const activePlatformConnections = platformConnections.filter(conn => conn.isActive);
+      
+      if (activePlatformConnections.length === 0) {
+        return res.status(400).json({ 
+          message: "No active platform connections found. Connect your social media accounts before generating content.",
+          requiresConnection: true,
+          connectionModal: true
+        });
+      }
+
+      // Validate requested platforms have active connections
+      const requestedPlatforms = platforms || brandPurpose.platforms || [];
+      const connectedPlatforms = activePlatformConnections.map(conn => conn.platform.toLowerCase());
+      const missingConnections = requestedPlatforms.filter((platform: string) => 
+        !connectedPlatforms.includes(platform.toLowerCase())
+      );
+
+      if (missingConnections.length > 0) {
+        return res.status(400).json({ 
+          message: `Missing platform connections: ${missingConnections.join(', ')}. Connect all required platforms before generating content.`,
+          requiresConnection: true,
+          connectionModal: true,
+          missingPlatforms: missingConnections
+        });
+      }
+
+      console.log(`Platform connection validation passed: ${connectedPlatforms.join(', ')} connected`);
+
       // Get current subscription status and enforce strict plan limits
       const { SubscriptionService } = await import('./subscription-service');
       const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
