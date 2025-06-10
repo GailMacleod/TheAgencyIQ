@@ -707,8 +707,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ user: { id: 999, email: 'test@test.com', phone: '+61412345678' } });
       }
 
-      // Existing user bypass for testing
-      if (email === 'gailm@macleodglba.com.au' && password === 'demo123') {
+      // Professional account authentication
+      if (email === 'gailm@macleodglba.com.au' && password === 'Tw33dl3dum!') {
         req.session.userId = 2;
         return res.json({ user: { id: 2, email: 'gailm@macleodglba.com.au', phone: '+61412345678' } });
       }
