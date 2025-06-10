@@ -584,6 +584,43 @@ app.get('/api/quota-status', async (req, res) => {
   }
 });
 
+// Get Schedule endpoint
+app.get('/api/schedule', async (req, res) => {
+  try {
+    const { storage } = await import('./storage');
+    const userId = req.session?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user || !user.phone) {
+      return res.status(404).json({ message: 'User not found or mobile number missing' });
+    }
+
+    const mobileNumber = user.phone;
+    const { db } = await import('./db');
+    const { postSchedule } = await import('../shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const posts = await db.select().from(postSchedule).where(eq(postSchedule.userId, mobileNumber));
+    
+    res.json({
+      success: true,
+      posts: posts.sort((a, b) => {
+        const dateA = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
+        const dateB = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
+        return dateA - dateB;
+      })
+    });
+
+  } catch (error) {
+    console.error('Schedule fetch error:', error);
+    res.status(500).json({ message: 'Failed to fetch schedule' });
+  }
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

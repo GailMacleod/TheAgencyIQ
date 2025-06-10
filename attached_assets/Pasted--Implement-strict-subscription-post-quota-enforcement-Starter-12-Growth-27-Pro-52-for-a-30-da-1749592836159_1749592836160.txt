@@ -1,0 +1,265 @@
+ Implement strict subscription post quota enforcement (Starter: 12, Growth: 27, Pro: 52) for a 30-day rolling period, ensuring financial stability and accurate analytics. Generate full quota as drafts after Brand Purpose, count posts only on successful social media posting, allow unlimited draft edits and schedule regeneration, and reset quota every 30 days without carry-over. Use mobile number as UID. Do not modify working features (Brand Purpose, OAuth, Google Analytics).
+
+Requirements:
+
+
+
+
+
+Post Quota & Schedule Generation:
+
+
+
+
+
+Quota: Starter (12), Growth (27), Pro (52).
+
+
+
+After Brand Purpose completion, generate exactly quota draft posts in post_schedule.
+
+
+
+Posts are not counted until successfully posted to social platform via "Approve & Post".
+
+
+
+Post Counting:
+
+
+
+
+
+On "Approve & Post":
+
+
+
+
+
+Validate: post_ledger.used_posts < quota and status = draft.
+
+
+
+Post to platform via OAuth.
+
+
+
+On success (API 200): Set status = posted, is_counted = true, increment post_ledger.used_posts.
+
+
+
+Fire Google Analytics event: post_success.
+
+
+
+If used_posts >= quota:
+
+
+
+
+
+Disable "Approve & Post" button.
+
+
+
+Show modal: "You’ve reached your post limit this cycle. Upgrade to continue."
+
+
+
+Editing & Schedule Regeneration:
+
+
+
+
+
+Allow unlimited edits/reordering of draft posts (no quota impact).
+
+
+
+Allow Brand Purpose edits and schedule regeneration:
+
+
+
+
+
+Generate new schedule with exactly quota posts.
+
+
+
+Retain existing posted posts (marked is_counted = true).
+
+
+
+Fill remaining slots with new drafts (e.g., if 5 posted, generate 7/22/47 new drafts for Starter/Growth/Pro).
+
+
+
+Prevent reuse of posted posts in new schedules.
+
+
+
+Disable "Generate New Schedule" if used_posts >= quota.
+
+
+
+30-Day Rolling Period:
+
+
+
+
+
+Track cycle: isCurrentCycle = (now - post_ledger.period_start) < 30 * 24 * 60 * 60 * 1000.
+
+
+
+Reset used_posts = 0 and period_start = now when cycle ends.
+
+
+
+No carry-over of unused posts.
+
+Schema:
+
+
+
+
+
+post_schedule:
+
+
+
+
+
+post_id: uuid
+
+
+
+user_id: string (mobile number UID)
+
+
+
+content: string
+
+
+
+platform: string (facebook | instagram | etc.)
+
+
+
+status: draft | scheduled | posted
+
+
+
+is_counted: boolean (true only if posted)
+
+
+
+scheduled_at: datetime
+
+
+
+post_ledger:
+
+
+
+
+
+user_id: string (mobile number UID)
+
+
+
+subscription_tier: starter | growth | pro
+
+
+
+period_start: datetime
+
+
+
+quota: 12 | 27 | 52
+
+
+
+used_posts: number
+
+
+
+last_posted: datetime
+
+API Behavior:
+
+
+
+
+
+POST /generate-schedule:
+
+
+
+
+
+Generate quota posts:
+
+
+
+
+
+Keep existing posted posts.
+
+
+
+Add new drafts to reach quota total.
+
+
+
+Block if used_posts >= quota.
+
+
+
+POST /approve-post:
+
+
+
+
+
+Validate: status = draft, used_posts < quota.
+
+
+
+Post via OAuth.
+
+
+
+On success: Update status = posted, is_counted = true, increment used_posts.
+
+
+
+Trigger analytics.
+
+Safeguards:
+
+
+
+
+
+Server-side quota validation (JWT/session auth).
+
+
+
+Lock posted posts to prevent reuse.
+
+
+
+Allow unlimited draft edits without quota impact.
+
+
+
+Do not modify Brand Purpose, OAuth, or Google Analytics.
+
+
+
+Ensure analytics only track successful posts.
+
+Commit Message:
+
+feat: enforce full quota schedule generation, count only successful posts, allow draft edits and regeneration, with 30-day reset using mobile UID
