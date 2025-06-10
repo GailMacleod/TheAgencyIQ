@@ -790,9 +790,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Queensland events endpoint for calendar optimization
-  app.get("/api/queensland-events", (req, res) => {
+  app.get("/api/queensland-events", async (req, res) => {
     try {
-      const { getEventsForDateRange } = require('./queensland-events');
+      const { getEventsForDateRange } = await import('./queensland-events.js');
       const startDate = new Date().toISOString().split('T')[0];
       const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       

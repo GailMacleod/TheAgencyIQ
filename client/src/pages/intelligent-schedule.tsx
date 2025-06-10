@@ -430,12 +430,55 @@ export default function IntelligentSchedule() {
         {/* AI-Generated Posts Display */}
         {!postsLoading && postsArray.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <Sparkles className="w-6 h-6 text-purple-600 mr-2" />
-              Your AI-Generated Content ({postsArray.length} posts)
-            </h2>
-            <div className="grid gap-6">
-              {postsArray.slice(0, 10).map((post: Post) => (
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                <Sparkles className="w-6 h-6 text-purple-600 mr-2" />
+                Your AI-Generated Content ({postsArray.length} posts)
+              </h2>
+              
+              {/* View Toggle */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setCalendarView(true)}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                    calendarView ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 mr-1 inline" />
+                  Calendar
+                </button>
+                <button
+                  onClick={() => setCalendarView(false)}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                    !calendarView ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  List
+                </button>
+              </div>
+            </div>
+
+            {calendarView ? (
+              // Calendar Grid View
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {calendarDates.map((date, index) => {
+                  const postsForDate = getPostsForDate(date);
+                  const eventsForDate = getEventsForDate(date);
+                  
+                  return (
+                    <CalendarCard
+                      key={index}
+                      date={date}
+                      posts={postsForDate}
+                      events={eventsForDate}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              // List View
+              <div className="grid gap-6">
+                {postsArray.slice(0, 10).map((post: Post) => (
                 <Card key={post.id} className="overflow-hidden border-l-4 border-purple-500">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
@@ -490,7 +533,8 @@ export default function IntelligentSchedule() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
