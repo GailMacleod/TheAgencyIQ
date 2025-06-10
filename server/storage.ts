@@ -5,6 +5,7 @@ import {
   brandPurpose,
   verificationCodes,
   giftCertificates,
+  subscriptionAnalytics,
   type User,
   type InsertUser,
   type Post,
@@ -17,6 +18,8 @@ import {
   type InsertVerificationCode,
   type GiftCertificate,
   type InsertGiftCertificate,
+  type SubscriptionAnalytics,
+  type InsertSubscriptionAnalytics,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";

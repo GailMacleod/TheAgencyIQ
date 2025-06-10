@@ -35,11 +35,13 @@ export const posts = pgTable("posts", {
   userId: integer("user_id").notNull().references(() => users.id),
   platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'tiktok', 'x'
   content: text("content").notNull(),
-  status: text("status").notNull().default("scheduled"), // 'scheduled', 'published', 'failed'
+  status: text("status").notNull().default("draft"), // 'draft', 'approved', 'scheduled', 'published', 'failed'
   publishedAt: timestamp("published_at"),
   errorLog: text("error_log"),
-  analytics: jsonb("analytics"), // Store Google Analytics data: { reach: number, engagement: number, impressions: number }
+  analytics: jsonb("analytics"), // Store analytics data: { reach: number, engagement: number, impressions: number }
   scheduledFor: timestamp("scheduled_for"),
+  aiRecommendation: text("ai_recommendation"),
+  subscriptionCycle: text("subscription_cycle"), // Track which 30-day cycle this post belongs to
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -96,6 +98,24 @@ export const giftCertificates = pgTable("gift_certificates", {
   redeemedAt: timestamp("redeemed_at"),
 });
 
+// Subscription Analytics table for tracking post performance and limits
+export const subscriptionAnalytics = pgTable("subscription_analytics", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  subscriptionCycle: text("subscription_cycle").notNull(), // Format: 'YYYY-MM-DD'
+  subscriptionPlan: text("subscription_plan").notNull(), // 'starter', 'growth', 'professional'
+  totalPostsAllowed: integer("total_posts_allowed").notNull(),
+  postsUsed: integer("posts_used").default(0),
+  successfulPosts: integer("successful_posts").default(0),
+  totalReach: integer("total_reach").default(0),
+  totalEngagement: integer("total_engagement").default(0),
+  totalImpressions: integer("total_impressions").default(0),
+  cycleStartDate: timestamp("cycle_start_date").notNull(),
+  cycleEndDate: timestamp("cycle_end_date").notNull(),
+  dataRetentionExpiry: timestamp("data_retention_expiry").notNull(), // 3 months after cycle end
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Create insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -130,6 +150,11 @@ export const insertGiftCertificateSchema = createInsertSchema(giftCertificates).
   redeemedAt: true,
 });
 
+export const insertSubscriptionAnalyticsSchema = createInsertSchema(subscriptionAnalytics).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -143,3 +168,5 @@ export type VerificationCode = typeof verificationCodes.$inferSelect;
 export type InsertVerificationCode = z.infer<typeof insertVerificationCodeSchema>;
 export type GiftCertificate = typeof giftCertificates.$inferSelect;
 export type InsertGiftCertificate = z.infer<typeof insertGiftCertificateSchema>;
+export type SubscriptionAnalytics = typeof subscriptionAnalytics.$inferSelect;
+export type InsertSubscriptionAnalytics = z.infer<typeof insertSubscriptionAnalyticsSchema>;
