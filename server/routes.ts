@@ -157,9 +157,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (err) console.error('Session save failed:', err);
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         // Database connectivity issues - continue without blocking
-        if (error.message.includes('Control plane') || error.message.includes('Database timeout')) {
+        if (error?.message?.includes('Control plane') || error?.message?.includes('Database timeout')) {
           console.log('Database connectivity issue, proceeding with degraded auth');
         }
       }
