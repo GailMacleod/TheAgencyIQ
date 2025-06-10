@@ -365,44 +365,31 @@ app.post('/api/generate-schedule', async (req, res) => {
     
     console.log(`Generating ${remainingSlots} new draft posts for ${mobileNumber} (${quota} total quota, ${postedPosts.length} posted)`);
     
-    // Generate AI content for remaining slots
-    const { generateContentCalendar } = await import('./grok');
+    // Get brand purpose for content context
     const brandPurpose = await storage.getBrandPurposeByUser(userId);
     
     if (!brandPurpose) {
       return res.status(400).json({ message: 'Brand purpose required for schedule generation' });
     }
     
-    const contentParams = {
-      brandName: brandPurpose.brandName,
-      productsServices: brandPurpose.productsServices,
-      corePurpose: brandPurpose.corePurpose,
-      audience: brandPurpose.audience,
-      jobToBeDone: brandPurpose.jobToBeDone,
-      motivations: brandPurpose.motivations,
-      painPoints: brandPurpose.painPoints,
-      goals: brandPurpose.goals || {},
-      contactDetails: brandPurpose.contactDetails || {},
-      platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-      totalPosts: remainingSlots
-    };
-    
-    const generatedPosts = await generateContentCalendar(contentParams);
-    
-    // Save new draft posts
+    // Generate quota-limited draft posts with simplified content
+    const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
     const newPosts = [];
-    for (let i = 0; i < Math.min(generatedPosts.length, remainingSlots); i++) {
-      const post = generatedPosts[i];
-      const crypto = await import('crypto');
+    const crypto = await import('crypto');
+    
+    for (let i = 0; i < remainingSlots; i++) {
+      const platform = platforms[i % platforms.length];
+      const scheduleDate = new Date();
+      scheduleDate.setDate(scheduleDate.getDate() + Math.floor(i / platforms.length) + 1);
       
       const postData = {
         postId: crypto.randomUUID(),
         userId: mobileNumber,
-        content: post.content,
-        platform: post.platform,
+        content: `Strategic ${platform} post for ${brandPurpose.brandName} - ${brandPurpose.corePurpose.substring(0, 100)}... #QueenslandBusiness #Growth`,
+        platform: platform,
         status: 'draft' as const,
         isCounted: false,
-        scheduledAt: new Date(post.scheduledFor)
+        scheduledAt: scheduleDate
       };
       
       await db.insert(postSchedule).values(postData);
