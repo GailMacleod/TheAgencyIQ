@@ -329,59 +329,11 @@ export default function Subscription() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Simple Footer */}
       <footer className="bg-card border-t">
-        <div className="container-atomiq py-16">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <img 
-                  src="/attached_assets/agency_logo_1749083054761.png" 
-                  alt="AiQ" 
-                  className="h-10 w-auto"
-                />
-              </div>
-              <p className="text-muted-foreground leading-relaxed">
-                Smarter social media automation for Queensland businesses. Technology and intelligence working together.
-              </p>
-            </div>
-            
-            <div className="space-y-4">
-              <h5 className="font-semibold">Product</h5>
-              <div className="space-y-2">
-                <Link href="/subscription" className="nav-link block">Pricing</Link>
-                <Link href="/#features" className="nav-link block">Features</Link>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h5 className="font-semibold">Company</h5>
-              <div className="space-y-2">
-                <a href="#" className="nav-link block">About</a>
-                <a href="#" className="nav-link block">Contact</a>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h5 className="font-semibold">Support</h5>
-              <div className="space-y-2">
-                <a href="#" className="nav-link block">Help Center</a>
-                <a href="#" className="nav-link block">Documentation</a>
-              </div>
-            </div>
-          </div>
-          
-          <div className="border-t border-border mt-12 pt-8 text-center space-y-4">
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-sm text-muted-foreground">
-              <a href="https://app.theagencyiq.ai/terms" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
-                Terms of Service
-              </a>
-              <span className="hidden sm:block">•</span>
-              <a href="https://app.theagencyiq.ai/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
-                Privacy Policy
-              </a>
-            </div>
-            <p className="text-muted-foreground">
+        <div className="container-atomiq py-8">
+          <div className="text-center">
+            <p className="text-muted-foreground text-sm">
               &copy; 2024 MacleodGlobal trading as The AgencyIQ. All rights reserved.
             </p>
           </div>
