@@ -1137,6 +1137,108 @@ Continue refining these elements to build a stronger brand foundation.`;
     }
   });
 
+  // Brand posts API endpoint with xAI integration
+  app.get("/api/brand-posts", requireAuth, async (req: any, res) => {
+    console.log('Brand posts request - Session:', req.session?.userId);
+    
+    const currentDate = new Date().toISOString().split('T')[0];
+    let attempts = 0;
+    const maxRetries = 2;
+    
+    while (attempts <= maxRetries) {
+      try {
+        attempts++;
+        
+        // Set 3-second timeout for xAI API call
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('API timeout')), 3000);
+        });
+        
+        // Actual xAI API integration
+        const { generateContentCalendar } = await import('./grok');
+        
+        console.log(`xAI API call attempt ${attempts} for ${currentDate}`);
+        
+        const apiCall = async () => {
+          try {
+            // Get user's brand purpose data for context
+            const userId = req.session.userId;
+            const brandPurpose = await storage.getBrandPurposeByUser(userId);
+            
+            if (!brandPurpose) {
+              console.log(`No brand purpose found for user ${userId}, using fallback content`);
+              throw new Error('No brand purpose data available');
+            }
+
+            console.log(`Generating content for brand: ${brandPurpose.brandName}`);
+            
+            const contentParams = {
+              brandName: brandPurpose.brandName,
+              productsServices: brandPurpose.productsServices,
+              corePurpose: brandPurpose.corePurpose,
+              audience: brandPurpose.audience,
+              jobToBeDone: brandPurpose.jobToBeDone,
+              motivations: brandPurpose.motivations,
+              painPoints: brandPurpose.painPoints,
+              goals: brandPurpose.goals || {},
+              contactDetails: brandPurpose.contactDetails || {},
+              platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
+              totalPosts: 5
+            };
+
+            const generatedPosts = await generateContentCalendar(contentParams);
+            
+            console.log(`xAI generated ${generatedPosts.length} posts for ${brandPurpose.brandName}`);
+            
+            return {
+              posts: generatedPosts.map(post => ({
+                id: Date.now() + Math.random(),
+                platform: post.platform,
+                content: post.content,
+                scheduledFor: post.scheduledFor,
+                status: 'draft',
+                aiRecommendation: `Generated for ${brandPurpose.brandName} targeting ${brandPurpose.audience}`
+              }))
+            };
+          } catch (error: any) {
+            console.error(`xAI API error on attempt ${attempts}:`, error.message);
+            throw error;
+          }
+        };
+        
+        const result = await Promise.race([apiCall(), timeoutPromise]);
+        console.log(`Brand posts fetched for ${currentDate} with status success`);
+        
+        res.json(result);
+        return;
+        
+      } catch (error) {
+        console.log(`Brand posts fetch attempt ${attempts} failed for ${currentDate}`);
+        
+        if (attempts > maxRetries) {
+          console.log(`Brand posts fetched for ${currentDate} with status fail`);
+          
+          // Fallback mock data when API fails
+          const fallbackPosts = {
+            posts: [
+              {
+                id: Date.now(),
+                platform: 'facebook',
+                content: 'Fallback content: Supporting Queensland small businesses',
+                scheduledFor: new Date().toISOString(),
+                status: 'draft',
+                aiRecommendation: 'Fallback recommendation'
+              }
+            ]
+          };
+          
+          res.json(fallbackPosts);
+          return;
+        }
+      }
+    }
+  });
+
   // Create new post
   app.post("/api/posts", requireAuth, async (req: any, res) => {
     try {
