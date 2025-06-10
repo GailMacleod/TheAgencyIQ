@@ -291,14 +291,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!userId) {
       console.log('No userId provided, attempting automatic session recovery');
       try {
-        // Check if user ID 2 exists (existing authenticated user)
-        const existingUser = await storage.getUser(2);
+        // Set timeout for session recovery to prevent hanging
+        const sessionTimeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session recovery timeout')), 2000)
+        );
+        
+        const userQuery = storage.getUser(2);
+        const existingUser = await Promise.race([userQuery, sessionTimeout]);
+        
         if (existingUser) {
           console.log('Found existing user, establishing session automatically');
           req.session.userId = 2;
           
-          await new Promise<void>((resolve, reject) => {
+          // Use timeout for session save to prevent hanging
+          const saveTimeout = new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('Session save timeout')), 1000);
             req.session.save((err: any) => {
+              clearTimeout(timeout);
               if (err) {
                 console.error('Auto session save failed:', err);
                 reject(err);
@@ -307,6 +316,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             });
           });
+          
+          await saveTimeout;
           
           return res.json({ 
             success: true, 
@@ -317,6 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (autoError) {
         console.error('Auto session recovery failed:', autoError);
+        // Don't fail completely, continue with normal flow
       }
       
       console.log('400 Error: Missing userId in request body:', req.body);
@@ -324,7 +336,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const user = await storage.getUser(userId);
+      // Set timeout for user lookup to prevent hanging
+      const userTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('User lookup timeout')), 2000)
+      );
+      
+      const userQuery = storage.getUser(userId);
+      const user = await Promise.race([userQuery, userTimeout]);
+      
       if (!user) {
         console.log('User not found for ID:', userId);
         return res.status(404).json({ success: false, message: 'User not found' });
@@ -332,8 +351,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       req.session.userId = userId;
       
-      await new Promise<void>((resolve, reject) => {
+      // Use timeout for session save to prevent hanging
+      const saveTimeout = new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Session save timeout')), 1000);
         req.session.save((err: any) => {
+          clearTimeout(timeout);
           if (err) {
             console.error('Session save failed:', err);
             reject(err);
@@ -343,6 +365,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
       });
+      
+      await saveTimeout;
       
       res.json({ 
         success: true, 
@@ -704,12 +728,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Test account bypass
       if (email === 'test@test.com' && password === 'test123') {
         req.session.userId = 999;
+        
+        await new Promise<void>((resolve) => {
+          req.session.save((err: any) => {
+            if (err) console.error('Session save error:', err);
+            resolve();
+          });
+        });
+        
         return res.json({ user: { id: 999, email: 'test@test.com', phone: '+61412345678' } });
       }
 
       // Professional account authentication
       if (email === 'gailm@macleodglba.com.au' && password === 'Tw33dl3dum!') {
         req.session.userId = 2;
+        
+        await new Promise<void>((resolve) => {
+          req.session.save((err: any) => {
+            if (err) console.error('Session save error:', err);
+            resolve();
+          });
+        });
+        
         return res.json({ user: { id: 2, email: 'gailm@macleodglba.com.au', phone: '+61412345678' } });
       }
 
@@ -724,6 +764,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       req.session.userId = user.id;
+      
+      await new Promise<void>((resolve) => {
+        req.session.save((err: any) => {
+          if (err) console.error('Session save error:', err);
+          resolve();
+        });
+      });
 
       res.json({ user: { id: user.id, email: user.email, phone: user.phone } });
     } catch (error: any) {
