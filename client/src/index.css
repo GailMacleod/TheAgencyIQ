@@ -162,6 +162,21 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary));
   }
+
+  /* Auto-post hover stability fixes */
+  .auto-post {
+    position: relative;
+    z-index: 1;
+  }
+
+  .auto-post-tooltip {
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .approve-button {
+    z-index: 20;
+  }
 }
 
 @layer components {

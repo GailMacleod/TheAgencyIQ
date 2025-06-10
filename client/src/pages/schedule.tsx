@@ -569,7 +569,16 @@ export default function Schedule() {
             </h2>
             <div className="grid gap-6">
               {generatedPosts.map((post) => (
-                <Card key={post.id} className="p-6">
+                <Card 
+                  key={post.id} 
+                  className="auto-post p-6"
+                  onMouseOver={(e) => {
+                    if (e.target.classList.contains('auto-post')) {
+                      e.stopPropagation();
+                      console.log('Auto-post hover stabilized on post', post.id);
+                    }
+                  }}
+                >
                   <CardContent className="p-0">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
@@ -600,7 +609,7 @@ export default function Schedule() {
                     <div className="flex space-x-3">
                       <Button
                         onClick={() => approvePost(post.id)}
-                        className={`lowercase ${
+                        className={`lowercase approve-button ${
                           approvedPosts.has(post.id) || post.status === 'approved' 
                             ? 'bg-[#3250fa] hover:bg-[#2940e6] text-white' 
                             : 'bg-green-600 hover:bg-green-700 text-white'
