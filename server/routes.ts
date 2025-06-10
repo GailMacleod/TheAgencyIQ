@@ -631,29 +631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      // Test account bypass
-      if (req.session.userId === 999) {
-        return res.json({ 
-          id: 999, 
-          email: 'test@test.com', 
-          phone: '+61412345678',
-          subscriptionPlan: 'starter',
-          remainingPosts: 12,
-          totalPosts: 12
-        });
-      }
 
-      // Existing user bypass for testing
-      if (req.session.userId === 2) {
-        return res.json({ 
-          id: 2, 
-          email: 'gailm@macleodglba.com.au', 
-          phone: '+61412345678',
-          subscriptionPlan: 'professional',
-          remainingPosts: 52,
-          totalPosts: 52
-        });
-      }
 
       const user = await storage.getUser(req.session.userId);
       if (!user) {
