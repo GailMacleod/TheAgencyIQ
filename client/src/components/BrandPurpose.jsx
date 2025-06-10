@@ -61,14 +61,22 @@ export default function BrandPurpose({ posts = [], user = null }) {
   const handleGenerateSchedule = async () => {
     if (!user?.email) return;
 
+    // Marketing essentials enforced on client side
+    const marketingEssentials = {
+      job: 'automate 30-day marketing',
+      services: 'social media automation, platform connections',
+      tone: 'professional, supportive'
+    };
+
     const fullBrandPurpose = {
       goals: brandPurposeData.goals,
       targets: brandPurposeData.targets,
       text: brandPurposeData.text,
-      brandPurpose: existingBrandPurpose
+      brandPurpose: existingBrandPurpose,
+      ...marketingEssentials
     };
 
-    console.log(`Full Brand Purpose sent for ${user.email}: [goals: ${JSON.stringify(brandPurposeData.goals)}, targets: ${JSON.stringify(brandPurposeData.targets)}, text: ${brandPurposeData.text}]`);
+    console.log(`Full Brand Purpose with essentials sent for ${user.email}: [goals: ${JSON.stringify(brandPurposeData.goals)}, targets: ${JSON.stringify(brandPurposeData.targets)}, text: ${brandPurposeData.text}, job: ${marketingEssentials.job}, services: ${marketingEssentials.services}, tone: ${marketingEssentials.tone}]`);
 
     try {
       const response = await fetch('/api/brand-posts', {
@@ -81,7 +89,7 @@ export default function BrandPurpose({ posts = [], user = null }) {
 
       const result = await response.json();
       if (result.success) {
-        console.log('Schedule generation complete with Strategyzer insights');
+        console.log('Schedule generation complete with Strategyzer insights and marketing essentials');
       }
     } catch (error) {
       console.error('Failed to generate schedule:', error);

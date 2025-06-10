@@ -128,7 +128,13 @@ app.post('/api/brand-posts', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Parse the entire Brand Purpose into Strategyzer components
+    // Parse the entire Brand Purpose into Strategyzer components with marketing essentials
+    const marketingEssentials = {
+      job: 'automate 30-day marketing',
+      services: 'social media automation, platform connections',
+      tone: 'professional, supportive'
+    };
+
     const strategyzerComponents = {
       goals: goals || {},
       targets: targets || {},
@@ -139,16 +145,17 @@ app.post('/api/brand-posts', async (req, res) => {
       audience: brandPurpose?.audience || '',
       jobToBeDone: brandPurpose?.jobToBeDone || '',
       motivations: brandPurpose?.motivations || '',
-      painPoints: brandPurpose?.painPoints || ''
+      painPoints: brandPurpose?.painPoints || '',
+      ...marketingEssentials
     };
 
-    console.log(`Full Brand Purpose parsed for ${user.email}: [goals: ${JSON.stringify(goals)}, targets: ${JSON.stringify(targets)}, text: ${text}]`);
+    console.log(`Full Brand Purpose with essentials parsed for ${user.email}: [goals: ${JSON.stringify(goals)}, targets: ${JSON.stringify(targets)}, text: ${text}, job: ${marketingEssentials.job}, services: ${marketingEssentials.services}, tone: ${marketingEssentials.tone}]`);
 
-    // Send to xAI API with Think mode
+    // Send to xAI API with Think mode and enforced marketing essentials
     const { getAIResponse } = await import('./grok');
     
     const strategyzerPrompt = `
-    Analyze this complete Brand Purpose using Strategyzer methodology:
+    Analyze this complete Brand Purpose using Strategyzer methodology with enforced marketing essentials:
     
     Goals: ${JSON.stringify(strategyzerComponents.goals)}
     Targets: ${JSON.stringify(strategyzerComponents.targets)}
@@ -163,7 +170,12 @@ app.post('/api/brand-posts', async (req, res) => {
     - Motivations: ${strategyzerComponents.motivations}
     - Pain Points: ${strategyzerComponents.painPoints}
     
-    Using Think mode, provide strategic insights and content recommendations.
+    ENFORCED MARKETING ESSENTIALS:
+    - Primary Job: ${marketingEssentials.job}
+    - Core Services: ${marketingEssentials.services}
+    - Required Tone: ${marketingEssentials.tone}
+    
+    Using Think mode, provide strategic insights and content recommendations that strictly adhere to these marketing essentials while addressing the brand purpose components.
     `;
 
     const aiInsights = await getAIResponse(strategyzerPrompt, 'strategyzer-analysis', strategyzerComponents);
