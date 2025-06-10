@@ -59,6 +59,21 @@ export default function Schedule() {
   const [generatedPosts, setGeneratedPosts] = useState<Post[]>([]);
   const [approvedPosts, setApprovedPosts] = useState<Set<number>>(new Set());
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (selectedDay && !target.closest('.fixed.z-50')) {
+        setSelectedDay(null);
+      }
+    };
+
+    if (selectedDay) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [selectedDay]);
+
   // Handle day selection for dropdown
   const handleDayClick = (date: Date) => {
     if (selectedDay && isSameDay(selectedDay, date)) {
@@ -792,7 +807,7 @@ export default function Schedule() {
                   onClick={() => setSelectedDay(null)}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  <XCircle className="w-4 h-4" />
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
 
