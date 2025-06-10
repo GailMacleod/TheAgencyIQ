@@ -393,9 +393,9 @@ app.post('/api/generate-schedule', async (req, res) => {
     console.log(`Generating ${remainingSlots} posts distributed across connected platforms`);
     
     for (let i = 0; i < remainingSlots; i++) {
-      const platform = platforms[i % platforms.length];
+      const platform = connectedPlatforms[i % connectedPlatforms.length];
       const scheduleDate = new Date();
-      scheduleDate.setDate(scheduleDate.getDate() + Math.floor(i / platforms.length) + 1);
+      scheduleDate.setDate(scheduleDate.getDate() + Math.floor(i / connectedPlatforms.length) + 1);
       
       const postData = {
         postId: crypto.randomUUID(),
