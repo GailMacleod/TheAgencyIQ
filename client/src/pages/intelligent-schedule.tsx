@@ -153,6 +153,42 @@ export default function IntelligentSchedule() {
     return queenslandEvents.filter(event => event.date === dateStr);
   };
 
+  // Approve and schedule individual post
+  const approvePost = async (postId: number) => {
+    try {
+      const response = await fetch('/api/approve-post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ postId })
+      });
+
+      if (response.ok) {
+        setApprovedPosts(prev => {
+          const newSet = new Set(prev);
+          newSet.add(postId);
+          return newSet;
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+        
+        toast({
+          title: "Post Approved",
+          description: "Post has been approved and scheduled for publishing.",
+        });
+      } else {
+        throw new Error('Failed to approve post');
+      }
+    } catch (error) {
+      toast({
+        title: "Approval Failed",
+        description: "Failed to approve post. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Generate AI-powered content schedule
   const generateIntelligentSchedule = async () => {
     if (!brandPurpose) {
@@ -522,11 +558,13 @@ export default function IntelligentSchedule() {
                       
                       {post.status !== 'published' && (
                         <Button
+                          onClick={() => approvePost(post.id)}
                           className="bg-green-600 hover:bg-green-700 text-white"
                           size="sm"
+                          disabled={approvedPosts.has(post.id)}
                         >
                           <CheckCircle className="w-4 h-4 mr-2" />
-                          Approve & Schedule
+                          {approvedPosts.has(post.id) ? 'Approved' : 'Approve & Schedule'}
                         </Button>
                       )}
                     </div>

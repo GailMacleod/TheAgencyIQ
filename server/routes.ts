@@ -804,6 +804,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Approve individual post for scheduling
+  app.post("/api/approve-post", requireAuth, async (req: any, res) => {
+    try {
+      const { postId } = req.body;
+      const userId = req.session.userId;
+
+      if (!postId) {
+        return res.status(400).json({ message: "Post ID is required" });
+      }
+
+      // Update post status to approved
+      const updatedPost = await storage.updatePost(postId, { 
+        status: 'approved'
+      });
+
+      if (!updatedPost) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      console.log(`Post ${postId} approved by user ${userId}`);
+      res.json({ success: true, post: updatedPost });
+    } catch (error) {
+      console.error('Error approving post:', error);
+      res.status(500).json({ message: "Failed to approve post" });
+    }
+  });
+
   // Supercharged Strategyzer-based guidance using Grok
   app.post("/api/generate-guidance", requireAuth, async (req: any, res) => {
     try {
