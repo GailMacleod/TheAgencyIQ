@@ -1,9 +1,11 @@
 import { useLocation } from "wouter";
-import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play, Eye, ThumbsUp, X, Sparkles, Brain, Target, Users, MapPin } from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play, Eye, ThumbsUp, X, Sparkles, Brain, Target, Users, MapPin, Edit3, Save } from "lucide-react";
 import CalendarCard from "@/components/calendar-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -90,6 +92,8 @@ export default function IntelligentSchedule() {
   const { toast } = useToast();
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [editingPost, setEditingPost] = useState<{id: number, content: string} | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [approvedPosts, setApprovedPosts] = useState<Set<number>>(new Set());
   const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
   const [scheduleGenerated, setScheduleGenerated] = useState(false);
@@ -98,6 +102,46 @@ export default function IntelligentSchedule() {
   const [queenslandEvents, setQueenslandEvents] = useState<any[]>([]);
 
   const queryClient = useQueryClient();
+
+  // Edit post content mutation
+  const editPostMutation = useMutation({
+    mutationFn: async ({ postId, content }: { postId: number; content: string }) => {
+      const response = await apiRequest("PUT", `/api/posts/${postId}`, { content });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      setIsEditModalOpen(false);
+      setEditingPost(null);
+      setEditContent("");
+      toast({
+        title: "Content Updated",
+        description: "Post content has been successfully updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update post content. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Handle edit content button click
+  const handleEditPost = (post: Post) => {
+    console.log('Edit clicked for', post.platform);
+    setEditingPost({ id: post.id, content: post.content });
+    setEditContent(post.content);
+    setIsEditModalOpen(true);
+  };
+
+  // Save edited content
+  const saveEditedContent = () => {
+    if (editingPost) {
+      editPostMutation.mutate({ postId: editingPost.id, content: editContent });
+    }
+  };
 
   // Fetch user data
   const { data: user, isLoading: userLoading } = useQuery({
@@ -585,11 +629,11 @@ export default function IntelligentSchedule() {
                     
                     <div className="flex space-x-3">
                       <Button
-                        onClick={() => setEditingPost({id: post.id, content: post.content})}
+                        onClick={() => handleEditPost(post)}
                         variant="outline"
                         size="sm"
                       >
-                        <Eye className="w-4 h-4 mr-2" />
+                        <Edit3 className="w-4 h-4 mr-2" />
                         Edit Content
                       </Button>
                       
