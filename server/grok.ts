@@ -119,7 +119,7 @@ export async function generateContentCalendar(params: ContentGenerationParams): 
       })
       .join(', ');
 
-    const prompt = `Generate ${params.totalPosts} social media posts for a Queensland business using AI analysis results:
+    const prompt = `Generate EXACTLY ${params.totalPosts} social media posts (no more, no less) for a Queensland business using AI analysis results:
 
 BRAND ANALYSIS RESULTS:
 - JTBD Specificity Score: ${analysis.jtbdScore}/100
@@ -171,7 +171,7 @@ Use recommended tone: ${analysis.tone}
 POST TYPE DISTRIBUTION (follow percentages):
 ${JSON.stringify(analysis.postTypeAllocation)}
 
-Generate exactly ${params.totalPosts} posts. Return as JSON array with format:
+CRITICAL: You must generate exactly ${params.totalPosts} posts. Count carefully. Return as JSON array with format:
 [
   {
     "platform": "platform_name",
