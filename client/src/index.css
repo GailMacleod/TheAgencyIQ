@@ -226,6 +226,24 @@
   .calendar-grid {
     isolation: isolate;
   }
+
+  /* Desktop dropdown card flickering fixes */
+  .calendar-day {
+    position: relative;
+    z-index: 1;
+  }
+
+  .auto-post-dropdown {
+    position: absolute;
+    z-index: 100;
+    pointer-events: none;
+    animation: none;
+  }
+
+  .approve-button {
+    z-index: 200;
+    position: relative;
+  }
 }
 
 @layer components {

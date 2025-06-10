@@ -645,7 +645,7 @@ export default function Schedule() {
             <Card 
               key={index}
               className={`
-                calendar-day-card relative min-h-24 p-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                calendar-day calendar-day-card relative min-h-24 p-2 cursor-pointer transition-all duration-200 hover:shadow-md
                 ${isToday(day.date) ? 'ring-2 ring-purple-400 bg-purple-50' : ''}
                 ${day.isOptimalDay ? 'border-green-300 bg-green-50' : 'border-gray-200'}
                 ${day.posts.length > 0 ? 'bg-blue-50 border-blue-300' : ''}

@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 
 const Schedule = () => {
-  const handleMouseOver = (e, date) => {
-    if (e.target.classList.contains('auto-post')) {
-      e.stopPropagation();
-      console.log('Auto-post hover stabilized on ' + date);
-      // Existing hover logic for auto-post-tooltip
-    }
+  const [hoveredDate, setHoveredDate] = useState(null);
+
+  const handleMouseEnter = useCallback((e, date) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setHoveredDate(date);
+    console.log('Dropdown stabilized on ' + date);
+  }, []); // Empty dependency array prevents re-render
+
+  const handleMouseLeave = () => {
+    setHoveredDate(null);
   };
 
   return (
@@ -15,12 +20,17 @@ const Schedule = () => {
         {['10', '11', '12', '13', '14', '15', '16'].map(date => (
           <div
             key={date}
-            className={date === '12' ? 'auto-post date-cell' : 'date-cell'} // Simulate auto-generated post on date 12
-            onMouseOver={(e) => handleMouseOver(e, date)}
+            className="calendar-day"
+            onMouseEnter={(e) => handleMouseEnter(e, date)}
+            onMouseLeave={handleMouseLeave}
           >
             {date}
-            {date === '12' && <div className="auto-post-tooltip">Auto-generated post for {date}</div>}
-            <button className="approve-button">approve and post</button>
+            {date === '12' && hoveredDate === date && (
+              <div className="auto-post-dropdown">
+                <p>Auto-generated post for {date}</p>
+                <button className="approve-button">approve and post</button>
+              </div>
+            )}
           </div>
         ))}
       </div>
