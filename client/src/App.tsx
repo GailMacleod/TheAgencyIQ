@@ -61,17 +61,24 @@ function App() {
     }
   }, []);
 
-  // Establish authentication session on app load
+  // Establish authentication session on app load with robust error handling
   useEffect(() => {
     const establishSession = async () => {
       try {
+        // Add timeout to prevent hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
         const response = await fetch('/api/establish-session', {
           method: 'POST',
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
+          signal: controller.signal,
         });
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           const data = await response.json();
@@ -79,12 +86,21 @@ function App() {
         } else {
           console.log('Session establishment failed, continuing without auth');
         }
-      } catch (error) {
-        console.log('Session establishment error, continuing without auth');
+      } catch (error: any) {
+        if (error.name === 'AbortError') {
+          console.log('Session establishment timeout, continuing without auth');
+        } else if (error.message?.includes('Failed to fetch')) {
+          console.log('Network error during session establishment, continuing without auth');
+        } else {
+          console.log('Session establishment error, continuing without auth');
+        }
       }
     };
     
-    establishSession();
+    // Don't await to prevent blocking app initialization
+    establishSession().catch(() => {
+      // Silently handle any remaining unhandled promise rejections
+    });
   }, []);
 
   // Mobile layout detection and setup
