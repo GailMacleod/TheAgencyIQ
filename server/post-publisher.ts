@@ -13,10 +13,14 @@ export class PostPublisher {
   static async publishToFacebook(accessToken: string, content: string): Promise<PublishResult> {
     try {
       const response = await axios.post(
-        'https://graph.facebook.com/v18.0/me/feed',
+        `https://graph.facebook.com/v18.0/me/feed?access_token=${accessToken}`,
         {
-          message: content,
-          access_token: accessToken
+          message: content
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
       );
       
@@ -26,6 +30,7 @@ export class PostPublisher {
         analytics: { reach: 0, engagement: 0, impressions: 0 }
       };
     } catch (error: any) {
+      console.error('Facebook publish error:', error.response?.data || error.message);
       return {
         success: false,
         error: error.response?.data?.error?.message || error.message

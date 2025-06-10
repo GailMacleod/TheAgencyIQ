@@ -134,26 +134,49 @@ export async function authenticateInstagram(username: string, password: string):
 // Twitter/X authentication using real API
 export async function authenticateTwitter(username: string, password: string): Promise<AuthTokens> {
   try {
-    // Use Twitter OAuth 2.0 client credentials flow
-    const authResponse = await axios.post('https://api.twitter.com/oauth2/token', 
-      'grant_type=client_credentials', 
-      {
-        headers: {
-          'Authorization': `Basic ${Buffer.from(`${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`).toString('base64')}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+    // Use Twitter OAuth 1.0a for better compatibility
+    const timestamp = Math.floor(Date.now() / 1000);
+    const nonce = Math.random().toString(36).substring(2, 15);
+    
+    // Generate OAuth signature for Twitter API v1.1
+    const params = {
+      oauth_consumer_key: process.env.TWITTER_CLIENT_ID!,
+      oauth_nonce: nonce,
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_timestamp: timestamp.toString(),
+      oauth_version: '1.0'
+    };
+
+    // Create base string for signature
+    const paramString = Object.entries(params)
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+      .sort()
+      .join('&');
+
+    const baseString = `POST&${encodeURIComponent('https://api.twitter.com/oauth/request_token')}&${encodeURIComponent(paramString)}`;
+    
+    // Generate signature
+    const signingKey = `${encodeURIComponent(process.env.TWITTER_CLIENT_SECRET!)}&`;
+    const signature = crypto.createHmac('sha1', signingKey).update(baseString).digest('base64');
+
+    // Make request token call
+    const authResponse = await axios.post('https://api.twitter.com/oauth/request_token', null, {
+      headers: {
+        'Authorization': `OAuth oauth_consumer_key="${process.env.TWITTER_CLIENT_ID}", oauth_nonce="${nonce}", oauth_signature="${encodeURIComponent(signature)}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${timestamp}", oauth_version="1.0"`,
+        'Content-Type': 'application/x-www-form-urlencoded'
       }
-    );
+    });
 
-    const accessToken = authResponse.data.access_token;
+    // Parse response
+    const responseParams = new URLSearchParams(authResponse.data);
+    const oauthToken = responseParams.get('oauth_token') || '';
+    const oauthTokenSecret = responseParams.get('oauth_token_secret') || '';
 
-    // For user-specific operations, we'll need user context
-    // Using the provided username as the platform username
     const platformUsername = username.startsWith('@') ? username.substring(1) : username;
 
     return {
-      accessToken: accessToken,
-      refreshToken: '', // Client credentials flow doesn't provide refresh tokens
+      accessToken: oauthToken,
+      refreshToken: oauthTokenSecret,
       platformUserId: `twitter_${crypto.createHash('md5').update(username).digest('hex').substring(0, 16)}`,
       platformUsername: platformUsername
     };
