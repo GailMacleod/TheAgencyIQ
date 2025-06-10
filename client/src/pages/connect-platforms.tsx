@@ -63,7 +63,7 @@ export default function ConnectPlatforms() {
   const errorPlatform = urlParams.get('error');
 
   // Fetch platform connections
-  const { data: connections = [], isLoading } = useQuery({
+  const { data: connections = [], isLoading } = useQuery<PlatformConnection[]>({
     queryKey: ['/api/platform-connections'],
     retry: 2
   });
@@ -93,10 +93,15 @@ export default function ConnectPlatforms() {
 
   // Disconnect platform mutation
   const disconnectMutation = useMutation({
-    mutationFn: (platform: string) => apiRequest(`/api/disconnect-platform`, {
-      method: 'POST',
-      body: { platform }
-    }),
+    mutationFn: async (platform: string) => {
+      const response = await fetch('/api/disconnect-platform', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ platform })
+      });
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
       toast({
@@ -118,13 +123,13 @@ export default function ConnectPlatforms() {
   };
 
   const isConnected = (platform: string) => {
-    return connections.some((conn: PlatformConnection) => 
+    return (connections as PlatformConnection[]).some((conn: PlatformConnection) => 
       conn.platform === platform && conn.isActive
     );
   };
 
   const getConnection = (platform: string) => {
-    return connections.find((conn: PlatformConnection) => 
+    return (connections as PlatformConnection[]).find((conn: PlatformConnection) => 
       conn.platform === platform && conn.isActive
     );
   };
@@ -223,7 +228,7 @@ export default function ConnectPlatforms() {
           })}
         </div>
 
-        {connections.length > 0 && (
+        {(connections as PlatformConnection[]).length > 0 && (
           <div className="mt-8 text-center">
             <Button
               onClick={() => setLocation("/intelligent-schedule")}
