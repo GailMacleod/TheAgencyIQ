@@ -1000,21 +1000,21 @@ export default function Schedule() {
             </Card>
           </div>
         )}
-      </div>
 
-      {/* Navigation to Analytics - Always Visible */}
-      <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-t-2 border-purple-200 py-8 mt-8">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <Button
-            onClick={() => setLocation("/analytics")}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-4 text-lg rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 uppercase tracking-wide"
-            size="lg"
-          >
-            NEXT: VIEW ANALYTICS →
-          </Button>
-          <p className="text-gray-600 mt-3 font-medium">
-            Track your post performance and engagement metrics
-          </p>
+        {/* Navigation to Analytics - Inside Main Container */}
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg py-8 mt-12 mb-8">
+          <div className="text-center">
+            <Button
+              onClick={() => setLocation("/analytics")}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-4 text-lg rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 uppercase tracking-wide"
+              size="lg"
+            >
+              NEXT: VIEW ANALYTICS →
+            </Button>
+            <p className="text-gray-600 mt-3 font-medium">
+              Track your post performance and engagement metrics
+            </p>
+          </div>
         </div>
       </div>
 
