@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ALLOWED_ORIGINS, SECURITY_HEADERS, validateDomain, isSecureContext } from "./ssl-config";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 
@@ -181,14 +183,126 @@ app.post('/api/cancel-subscription', async (req, res) => {
 import BreachNotificationService from "./breach-notification";
 import { DataCleanupService } from "./data-cleanup";
 
+// Subscriber backup and restore functions
+async function backupSubscribers() {
+  try {
+    const { storage } = await import('./storage');
+    const { db } = await import('./db');
+    const { users } = await import('../shared/schema');
+    
+    // Fetch all users with their subscription data and OAuth tokens
+    const allUsers = await db.select({
+      id: users.id,
+      email: users.email,
+      phone: users.phone,
+      subscriptionPlan: users.subscriptionPlan,
+      stripeCustomerId: users.stripeCustomerId,
+      stripeSubscriptionId: users.stripeSubscriptionId,
+      remainingPosts: users.remainingPosts,
+      totalPosts: users.totalPosts,
+      createdAt: users.createdAt
+    }).from(users);
+
+    const backupData = {
+      timestamp: new Date().toISOString(),
+      users: allUsers
+    };
+
+    const backupPath = path.join(process.cwd(), 'subscribers.json');
+    fs.writeFileSync(backupPath, JSON.stringify(backupData, null, 2));
+    
+    console.log(`All subscriber data backed up at ${new Date().toISOString()}`);
+    return backupData;
+  } catch (error) {
+    console.error('Failed to backup subscribers:', error);
+    throw error;
+  }
+}
+
+async function restoreSubscribers() {
+  try {
+    const backupPath = path.join(process.cwd(), 'subscribers.json');
+    
+    if (!fs.existsSync(backupPath)) {
+      console.log('No subscriber backup file found, skipping restore');
+      return;
+    }
+
+    const { storage } = await import('./storage');
+    const { db } = await import('./db');
+    const { users } = await import('../shared/schema');
+    
+    const backupData = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
+    
+    if (backupData.users && Array.isArray(backupData.users)) {
+      for (const userData of backupData.users) {
+        try {
+          // Check if user already exists
+          const existingUser = await storage.getUserByEmail(userData.email);
+          
+          if (!existingUser) {
+            // Insert user directly into database to preserve all backup data
+            await db.insert(users).values({
+              email: userData.email,
+              password: 'oauth_restored_user', // Temporary password for OAuth users
+              phone: userData.phone || '',
+              subscriptionPlan: userData.subscriptionPlan || 'starter',
+              stripeCustomerId: userData.stripeCustomerId,
+              stripeSubscriptionId: userData.stripeSubscriptionId,
+              remainingPosts: userData.remainingPosts || 10,
+              totalPosts: userData.totalPosts || 0,
+              createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date()
+            });
+          }
+        } catch (userError) {
+          console.error(`Failed to restore user ${userData.email}:`, userError);
+        }
+      }
+      
+      console.log(`All subscriber data restored at ${new Date().toISOString()}`);
+    }
+  } catch (error) {
+    console.error('Failed to restore subscribers:', error);
+  }
+}
+
 (async () => {
   const server = await registerRoutes(app);
+  
+  // Restore subscriber data on startup
+  await restoreSubscribers();
   
   // Start periodic breach notification monitoring
   setInterval(() => {
     BreachNotificationService.checkPendingNotifications();
   }, 60 * 60 * 1000); // Check every hour for pending notifications
   
+  // Schedule daily subscriber backup at 1 AM
+  const scheduleBackup = () => {
+    const now = new Date();
+    const next1AM = new Date();
+    next1AM.setHours(1, 0, 0, 0);
+    
+    // If it's already past 1 AM today, schedule for tomorrow
+    if (now.getTime() > next1AM.getTime()) {
+      next1AM.setDate(next1AM.getDate() + 1);
+    }
+    
+    const timeUntil1AM = next1AM.getTime() - now.getTime();
+    
+    setTimeout(() => {
+      // Run backup
+      backupSubscribers().catch(error => {
+        console.error("❌ Subscriber backup failed:", error);
+      });
+      
+      // Schedule next backup in 24 hours
+      setInterval(() => {
+        backupSubscribers();
+      }, 24 * 60 * 60 * 1000);
+    }, timeUntil1AM);
+  };
+
   // Start daily data cleanup at 2 AM
   const scheduleDaily = () => {
     const now = new Date();
@@ -219,6 +333,7 @@ import { DataCleanupService } from "./data-cleanup";
     }, timeUntil2AM);
   };
   
+  scheduleBackup();
   scheduleDaily();
 
   // Global error handling middleware
