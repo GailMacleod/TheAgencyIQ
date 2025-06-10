@@ -230,6 +230,360 @@ app.post('/api/brand-posts', async (req, res) => {
   }
 });
 
+// Quota enforcement service
+class QuotaService {
+  static async initializeUserLedger(mobileNumber: string, subscriptionTier: string) {
+    const { db } = await import('./db');
+    const { postLedger } = await import('../shared/schema');
+    
+    const quotaMap = { 'starter': 12, 'growth': 27, 'pro': 52 };
+    const quota = quotaMap[subscriptionTier as keyof typeof quotaMap] || 12;
+    
+    const ledgerData = {
+      userId: mobileNumber,
+      subscriptionTier,
+      periodStart: new Date(),
+      quota,
+      usedPosts: 0,
+      lastPosted: null
+    };
+    
+    await db.insert(postLedger).values(ledgerData).onConflictDoUpdate({
+      target: postLedger.userId,
+      set: { subscriptionTier, quota }
+    });
+    
+    return ledgerData;
+  }
+  
+  static async checkCurrentCycle(mobileNumber: string) {
+    const { db } = await import('./db');
+    const { postLedger } = await import('../shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const [ledger] = await db.select().from(postLedger).where(eq(postLedger.userId, mobileNumber));
+    
+    if (!ledger) return null;
+    
+    const now = new Date();
+    const cycleAge = now.getTime() - ledger.periodStart.getTime();
+    const isCurrentCycle = cycleAge < (30 * 24 * 60 * 60 * 1000); // 30 days
+    
+    if (!isCurrentCycle) {
+      // Reset cycle
+      await db.update(postLedger)
+        .set({ 
+          periodStart: now, 
+          usedPosts: 0,
+          updatedAt: now
+        })
+        .where(eq(postLedger.userId, mobileNumber));
+      
+      return { ...ledger, usedPosts: 0, periodStart: now };
+    }
+    
+    return ledger;
+  }
+  
+  static async canPost(mobileNumber: string): Promise<{ allowed: boolean; reason?: string; ledger?: any }> {
+    const ledger = await this.checkCurrentCycle(mobileNumber);
+    
+    if (!ledger) {
+      return { allowed: false, reason: 'User not found' };
+    }
+    
+    if (ledger.usedPosts >= ledger.quota) {
+      return { 
+        allowed: false, 
+        reason: "You've reached your post limit this cycle. Upgrade to continue.",
+        ledger 
+      };
+    }
+    
+    return { allowed: true, ledger };
+  }
+}
+
+// Generate Schedule endpoint
+app.post('/api/generate-schedule', async (req, res) => {
+  try {
+    const { storage } = await import('./storage');
+    const userId = req.session?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user || !user.phone) {
+      return res.status(404).json({ message: 'User not found or mobile number missing' });
+    }
+
+    const mobileNumber = user.phone;
+    const subscriptionTier = user.subscriptionPlan?.toLowerCase() || 'starter';
+    
+    // Initialize/check quota
+    await QuotaService.initializeUserLedger(mobileNumber, subscriptionTier);
+    const quotaCheck = await QuotaService.canPost(mobileNumber);
+    
+    if (!quotaCheck.allowed && quotaCheck.ledger?.usedPosts >= quotaCheck.ledger?.quota) {
+      return res.status(400).json({ 
+        message: quotaCheck.reason,
+        quotaLimitReached: true 
+      });
+    }
+
+    const { db } = await import('./db');
+    const { postSchedule } = await import('../shared/schema');
+    const { eq, and } = await import('drizzle-orm');
+    
+    // Get existing posts, keep posted ones
+    const existingPosts = await db.select().from(postSchedule).where(eq(postSchedule.userId, mobileNumber));
+    const postedPosts = existingPosts.filter(p => p.status === 'posted' && p.isCounted);
+    const draftPosts = existingPosts.filter(p => p.status === 'draft');
+    
+    // Clear draft posts for regeneration
+    for (const draft of draftPosts) {
+      await db.delete(postSchedule).where(eq(postSchedule.postId, draft.postId));
+    }
+    
+    const quota = quotaCheck.ledger.quota;
+    const remainingSlots = quota - postedPosts.length;
+    
+    console.log(`Generating ${remainingSlots} new draft posts for ${mobileNumber} (${quota} total quota, ${postedPosts.length} posted)`);
+    
+    // Generate AI content for remaining slots
+    const { generateContentCalendar } = await import('./grok');
+    const brandPurpose = await storage.getBrandPurposeByUser(userId);
+    
+    if (!brandPurpose) {
+      return res.status(400).json({ message: 'Brand purpose required for schedule generation' });
+    }
+    
+    const contentParams = {
+      brandName: brandPurpose.brandName,
+      productsServices: brandPurpose.productsServices,
+      corePurpose: brandPurpose.corePurpose,
+      audience: brandPurpose.audience,
+      jobToBeDone: brandPurpose.jobToBeDone,
+      motivations: brandPurpose.motivations,
+      painPoints: brandPurpose.painPoints,
+      goals: brandPurpose.goals || {},
+      contactDetails: brandPurpose.contactDetails || {},
+      platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
+      totalPosts: remainingSlots
+    };
+    
+    const generatedPosts = await generateContentCalendar(contentParams);
+    
+    // Save new draft posts
+    const newPosts = [];
+    for (let i = 0; i < Math.min(generatedPosts.length, remainingSlots); i++) {
+      const post = generatedPosts[i];
+      const crypto = await import('crypto');
+      
+      const postData = {
+        postId: crypto.randomUUID(),
+        userId: mobileNumber,
+        content: post.content,
+        platform: post.platform,
+        status: 'draft' as const,
+        isCounted: false,
+        scheduledAt: new Date(post.scheduledFor)
+      };
+      
+      await db.insert(postSchedule).values(postData);
+      newPosts.push(postData);
+    }
+    
+    // Return complete schedule
+    const allPosts = await db.select().from(postSchedule).where(eq(postSchedule.userId, mobileNumber));
+    
+    res.json({
+      success: true,
+      posts: allPosts,
+      quota: quota,
+      usedPosts: quotaCheck.ledger.usedPosts,
+      remainingPosts: quota - quotaCheck.ledger.usedPosts,
+      generatedNewDrafts: newPosts.length
+    });
+
+  } catch (error) {
+    console.error('Generate schedule error:', error);
+    res.status(500).json({ message: 'Failed to generate schedule' });
+  }
+});
+
+// Approve and Post endpoint
+app.post('/api/approve-post', async (req, res) => {
+  try {
+    const { postId } = req.body;
+    const { storage } = await import('./storage');
+    const userId = req.session?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user || !user.phone) {
+      return res.status(404).json({ message: 'User not found or mobile number missing' });
+    }
+
+    const mobileNumber = user.phone;
+    const { db } = await import('./db');
+    const { postSchedule, postLedger } = await import('../shared/schema');
+    const { eq, and } = await import('drizzle-orm');
+    
+    // Get post
+    const [post] = await db.select().from(postSchedule).where(
+      and(eq(postSchedule.postId, postId), eq(postSchedule.userId, mobileNumber))
+    );
+    
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    
+    if (post.status !== 'draft') {
+      return res.status(400).json({ message: 'Only draft posts can be approved' });
+    }
+    
+    // Check quota
+    const quotaCheck = await QuotaService.canPost(mobileNumber);
+    if (!quotaCheck.allowed) {
+      return res.status(400).json({ 
+        message: quotaCheck.reason,
+        quotaLimitReached: true 
+      });
+    }
+    
+    // Post to social platform via OAuth
+    const { PostPublisher } = await import('./post-publisher');
+    const connections = await storage.getPlatformConnectionsByUser(userId);
+    const platformConnection = connections.find(c => c.platform === post.platform && c.isActive);
+    
+    if (!platformConnection) {
+      return res.status(400).json({ message: `${post.platform} not connected` });
+    }
+    
+    try {
+      let publishResult;
+      
+      switch (post.platform) {
+        case 'facebook':
+          publishResult = await PostPublisher.publishToFacebook(platformConnection.accessToken, post.content);
+          break;
+        case 'instagram':
+          publishResult = await PostPublisher.publishToInstagram(platformConnection.accessToken, post.content);
+          break;
+        case 'linkedin':
+          publishResult = await PostPublisher.publishToLinkedIn(platformConnection.accessToken, post.content);
+          break;
+        case 'x':
+          publishResult = await PostPublisher.publishToTwitter(platformConnection.accessToken, platformConnection.refreshToken || '', post.content);
+          break;
+        case 'youtube':
+          publishResult = await PostPublisher.publishToYouTube(platformConnection.accessToken, post.content);
+          break;
+        default:
+          throw new Error(`Unsupported platform: ${post.platform}`);
+      }
+      
+      if (publishResult.success) {
+        // Update post status and increment quota
+        await db.update(postSchedule)
+          .set({ 
+            status: 'posted',
+            isCounted: true
+          })
+          .where(eq(postSchedule.postId, postId));
+        
+        await db.update(postLedger)
+          .set({ 
+            usedPosts: quotaCheck.ledger.usedPosts + 1,
+            lastPosted: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(postLedger.userId, mobileNumber));
+        
+        // Fire Google Analytics event
+        console.log(`Google Analytics event: post_success for ${mobileNumber} on ${post.platform}`);
+        
+        res.json({
+          success: true,
+          post: { ...post, status: 'posted', isCounted: true },
+          platformPostId: publishResult.platformPostId,
+          analytics: publishResult.analytics
+        });
+        
+      } else {
+        res.status(400).json({ 
+          message: 'Failed to post to platform',
+          error: publishResult.error 
+        });
+      }
+      
+    } catch (error) {
+      console.error(`Failed to post to ${post.platform}:`, error);
+      res.status(500).json({ message: 'Platform posting failed' });
+    }
+
+  } catch (error) {
+    console.error('Approve post error:', error);
+    res.status(500).json({ message: 'Failed to approve post' });
+  }
+});
+
+// Get Quota Status endpoint
+app.get('/api/quota-status', async (req, res) => {
+  try {
+    const { storage } = await import('./storage');
+    const userId = req.session?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user || !user.phone) {
+      return res.status(404).json({ message: 'User not found or mobile number missing' });
+    }
+
+    const mobileNumber = user.phone;
+    const quotaCheck = await QuotaService.canPost(mobileNumber);
+    
+    if (!quotaCheck.ledger) {
+      return res.status(404).json({ message: 'Quota ledger not found' });
+    }
+
+    const { db } = await import('./db');
+    const { postSchedule } = await import('../shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const posts = await db.select().from(postSchedule).where(eq(postSchedule.userId, mobileNumber));
+    const draftPosts = posts.filter(p => p.status === 'draft');
+    const postedPosts = posts.filter(p => p.status === 'posted' && p.isCounted);
+    
+    res.json({
+      success: true,
+      quota: quotaCheck.ledger.quota,
+      usedPosts: quotaCheck.ledger.usedPosts,
+      remainingPosts: quotaCheck.ledger.quota - quotaCheck.ledger.usedPosts,
+      subscriptionTier: quotaCheck.ledger.subscriptionTier,
+      periodStart: quotaCheck.ledger.periodStart,
+      lastPosted: quotaCheck.ledger.lastPosted,
+      canPost: quotaCheck.allowed,
+      draftCount: draftPosts.length,
+      postedCount: postedPosts.length,
+      totalScheduled: posts.length
+    });
+
+  } catch (error) {
+    console.error('Quota status error:', error);
+    res.status(500).json({ message: 'Failed to get quota status' });
+  }
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

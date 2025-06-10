@@ -29,7 +29,31 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Posts table for managing social media content
+// Post schedule table for quota enforcement with mobile UID
+export const postSchedule = pgTable("post_schedule", {
+  postId: text("post_id").primaryKey(), // UUID
+  userId: text("user_id").notNull(), // Mobile number UID
+  content: text("content").notNull(),
+  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'tiktok', 'x'
+  status: text("status").notNull().default("draft"), // 'draft', 'scheduled', 'posted'
+  isCounted: boolean("is_counted").notNull().default(false), // True only if posted successfully
+  scheduledAt: timestamp("scheduled_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Post ledger for 30-day rolling quota tracking
+export const postLedger = pgTable("post_ledger", {
+  userId: text("user_id").primaryKey(), // Mobile number UID
+  subscriptionTier: text("subscription_tier").notNull(), // 'starter', 'growth', 'pro'
+  periodStart: timestamp("period_start").notNull(),
+  quota: integer("quota").notNull(), // 12, 27, 52
+  usedPosts: integer("used_posts").notNull().default(0),
+  lastPosted: timestamp("last_posted"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Legacy posts table (keeping for backward compatibility)
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -155,11 +179,24 @@ export const insertSubscriptionAnalyticsSchema = createInsertSchema(subscription
   createdAt: true,
 });
 
+export const insertPostScheduleSchema = createInsertSchema(postSchedule).omit({
+  createdAt: true,
+});
+
+export const insertPostLedgerSchema = createInsertSchema(postLedger).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Post = typeof posts.$inferSelect;
 export type InsertPost = z.infer<typeof insertPostSchema>;
+export type PostSchedule = typeof postSchedule.$inferSelect;
+export type InsertPostSchedule = z.infer<typeof insertPostScheduleSchema>;
+export type PostLedger = typeof postLedger.$inferSelect;
+export type InsertPostLedger = z.infer<typeof insertPostLedgerSchema>;
 export type PlatformConnection = typeof platformConnections.$inferSelect;
 export type InsertPlatformConnection = z.infer<typeof insertPlatformConnectionSchema>;
 export type BrandPurpose = typeof brandPurpose.$inferSelect;
