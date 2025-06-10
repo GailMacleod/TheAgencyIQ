@@ -40,26 +40,20 @@ interface User {
   totalPosts: number;
 }
 
-interface SubscriptionStatus {
-  plan: {
-    name: string;
-    postsPerMonth: number;
-    freeBonus: number;
+interface SubscriptionUsage {
+  subscriptionPlan: string;
+  totalAllocation: number;
+  remainingPosts: number;
+  usedPosts: number;
+  publishedPosts: number;
+  failedPosts: number;
+  partialPosts: number;
+  planLimits: {
+    posts: number;
+    reach: number;
+    engagement: number;
   };
-  totalAllowed: number;
-  used: number;
-  remaining: number;
-  cycle: {
-    name: string;
-    start: string;
-    end: string;
-  };
-  analytics: {
-    successfulPosts: number;
-    totalReach: number;
-    totalEngagement: number;
-    totalImpressions: number;
-  };
+  usagePercentage: number;
 }
 
 interface BrandPurpose {
@@ -125,7 +119,7 @@ export default function IntelligentSchedule() {
   });
 
   // Fetch subscription status for post limits
-  const { data: subscriptionUsage } = useQuery({
+  const { data: subscriptionUsage } = useQuery<SubscriptionUsage>({
     queryKey: ["/api/subscription-usage"],
     enabled: !!user && !userLoading,
   });
