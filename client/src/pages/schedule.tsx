@@ -56,6 +56,49 @@ export default function Schedule() {
   const [showAIThinking, setShowAIThinking] = useState(false);
   const [aiStep, setAIStep] = useState(0);
   const [generatedPosts, setGeneratedPosts] = useState<Post[]>([]);
+  const [approvedPosts, setApprovedPosts] = useState<Set<number>>(new Set());
+
+  // Handle post approval with API call
+  const approvePost = async (postId: number) => {
+    try {
+      setApprovedPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.add(postId);
+        return newSet;
+      });
+      
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'approved' })
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Post Approved",
+          description: "Post has been approved and scheduled successfully.",
+        });
+        refetchPosts();
+      } else {
+        throw new Error('Failed to approve post');
+      }
+    } catch (error) {
+      console.error('Error approving post:', error);
+      setApprovedPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
+      toast({
+        title: "Error",
+        description: "Failed to approve post. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Fetch user data
   const { data: user, isLoading: userLoading } = useQuery({
@@ -341,83 +384,18 @@ export default function Schedule() {
   console.log('Generated posts in state:', generatedPosts.length);
   console.log('Posts with scheduled dates:', calendarDays.filter(day => day.posts.length > 0));
 
-  // Add event listeners for button interactions
+  // Initialize approved posts from existing post statuses
   useEffect(() => {
-    // Approve & Schedule button feedback
-    const approveButtons = document.querySelectorAll('button');
-    const approveButtonsFiltered = Array.from(approveButtons).filter(button => 
-      button.textContent?.includes('approve & schedule')
-    );
-    
-    approveButtonsFiltered.forEach(button => {
-      const handleApproveClick = (e: Event) => {
-        console.log('Button approved');
-        console.log('Post approved and updated');
-        const target = e.target as HTMLElement;
-        
-        target.style.backgroundColor = '#3250fa';
-        target.textContent = 'Approved';
-        target.setAttribute('disabled', 'true');
-        
-        setTimeout(() => {
-          target.removeAttribute('disabled');
-        }, 2000);
-      };
+    if (posts && posts.length > 0) {
+      const approvedPostIds = posts
+        .filter(post => post.status === 'approved')
+        .map(post => post.id);
       
-      button.addEventListener('click', handleApproveClick);
-    });
-
-    // Edit Post button functionality
-    const editButtons = document.querySelectorAll('button');
-    const editButtonsFiltered = Array.from(editButtons).filter(button => 
-      button.textContent?.includes('edit post')
-    );
-    
-    editButtonsFiltered.forEach(button => {
-      const handleEditClick = (e: Event) => {
-        const target = e.target as HTMLElement;
-        const postCard = target.closest('.p-6') as HTMLElement;
-        const contentElement = postCard?.querySelector('.text-gray-800') as HTMLElement;
-        
-        if (contentElement && !postCard.querySelector('input[type="text"]')) {
-          const originalContent = contentElement.textContent || '';
-          const input = document.createElement('input');
-          input.type = 'text';
-          input.value = originalContent;
-          input.className = 'w-full p-2 border border-gray-300 rounded text-gray-800';
-          
-          contentElement.style.display = 'none';
-          contentElement.parentNode?.insertBefore(input, contentElement.nextSibling);
-          input.focus();
-          
-          const handleBlur = () => {
-            console.log('Post content updated to:', input.value);
-            contentElement.textContent = input.value;
-            contentElement.style.display = 'block';
-            input.remove();
-          };
-          
-          input.addEventListener('blur', handleBlur);
-          input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-              input.blur();
-            }
-          });
-        }
-      };
-      
-      button.addEventListener('click', handleEditClick);
-    });
-
-    return () => {
-      approveButtonsFiltered.forEach(button => {
-        button.removeEventListener('click', () => {});
-      });
-      editButtonsFiltered.forEach(button => {
-        button.removeEventListener('click', () => {});
-      });
-    };
-  }, [generatedPosts]);
+      if (approvedPostIds.length > 0) {
+        setApprovedPosts(new Set(approvedPostIds));
+      }
+    }
+  }, [posts]);
 
   const getPlatformIcon = (platform: string) => {
     const iconClass = "w-4 h-4";
@@ -567,12 +545,16 @@ export default function Schedule() {
                     
                     <div className="flex space-x-3">
                       <Button
-                        onClick={() => approvePostMutation.mutate(post.id)}
-                        className="bg-green-600 hover:bg-green-700 text-white lowercase"
-                        disabled={approvePostMutation.isPending}
+                        onClick={() => approvePost(post.id)}
+                        className={`lowercase ${
+                          approvedPosts.has(post.id) || post.status === 'approved' 
+                            ? 'bg-[#3250fa] hover:bg-[#2940e6] text-white' 
+                            : 'bg-green-600 hover:bg-green-700 text-white'
+                        }`}
+                        disabled={approvedPosts.has(post.id) || post.status === 'approved'}
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        approve & schedule
+                        {approvedPosts.has(post.id) || post.status === 'approved' ? 'approved' : 'approve & schedule'}
                       </Button>
                       <Button
                         variant="outline"
