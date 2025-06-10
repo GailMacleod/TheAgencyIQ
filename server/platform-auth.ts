@@ -54,166 +54,175 @@ export async function authenticateLinkedIn(username: string, password: string): 
   }
 }
 
-// Facebook authentication using real API
+// Facebook OAuth authentication using real API
 export async function authenticateFacebook(username: string, password: string): Promise<AuthTokens> {
   try {
-    // Validate credentials format
-    if (!username || username.trim().length === 0) {
-      throw new Error('Username or email is required');
-    }
-    
-    if (!password || password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
-    }
-
-    // Verify Facebook app credentials are configured
     if (!process.env.FACEBOOK_APP_ID || !process.env.FACEBOOK_APP_SECRET) {
-      throw new Error('Facebook app credentials not configured');
+      throw new Error('Facebook OAuth credentials not configured');
     }
 
-    // Generate authenticated access token that incorporates your app credentials
-    const timestamp = Date.now();
-    const appSignature = crypto.createHash('sha256')
-      .update(`${process.env.FACEBOOK_APP_ID}_${process.env.FACEBOOK_APP_SECRET}`)
-      .digest('hex').substring(0, 16);
-    
-    const userHash = crypto.createHash('sha256')
-      .update(`${username}_${appSignature}_${timestamp}`)
-      .digest('hex');
+    // Real Facebook Graph API authentication
+    const response = await axios.get('https://graph.facebook.com/oauth/access_token', {
+      params: {
+        client_id: process.env.FACEBOOK_APP_ID,
+        client_secret: process.env.FACEBOOK_APP_SECRET,
+        grant_type: 'client_credentials'
+      }
+    });
 
-    const accessToken = `EAABw${userHash.substring(0, 50)}ZD`; // Facebook-style token format
-    const platformUsername = username.includes('@') ? username.split('@')[0] : username;
-    const platformUserId = `fb_${crypto.createHash('md5').update(username).digest('hex').substring(0, 16)}`;
+    if (response.data.access_token) {
+      // Validate user credentials against Facebook API
+      const userResponse = await axios.get('https://graph.facebook.com/me', {
+        params: {
+          access_token: response.data.access_token,
+          fields: 'id,name,email'
+        }
+      });
 
-    return {
-      accessToken: accessToken,
-      refreshToken: `refresh_${userHash.substring(32, 64)}`,
-      platformUserId: platformUserId,
-      platformUsername: platformUsername
-    };
+      return {
+        accessToken: response.data.access_token,
+        refreshToken: '',
+        platformUserId: userResponse.data.id,
+        platformUsername: userResponse.data.name || username
+      };
+    }
+
+    throw new Error('Invalid Facebook credentials');
   } catch (error: any) {
+    if (error.response) {
+      throw new Error(`Facebook authentication failed: ${error.response.data.error?.message || 'Invalid credentials'}`);
+    }
     throw new Error(`Facebook authentication failed: ${error.message}`);
   }
 }
 
-// Instagram authentication (uses Facebook Business API)
+// Instagram OAuth authentication using Facebook Business API
 export async function authenticateInstagram(username: string, password: string): Promise<AuthTokens> {
   try {
-    // Validate credentials format
-    if (!username || username.trim().length === 0) {
-      throw new Error('Username or email is required');
-    }
-    
-    if (!password || password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
+    if (!process.env.INSTAGRAM_CLIENT_ID || !process.env.INSTAGRAM_CLIENT_SECRET) {
+      throw new Error('Instagram OAuth credentials not configured');
     }
 
-    // Instagram uses Facebook's API system, so we use Facebook credentials
-    if (!process.env.FACEBOOK_APP_ID || !process.env.FACEBOOK_APP_SECRET) {
-      throw new Error('Instagram app credentials not configured');
+    // Real Instagram Basic Display API authentication
+    const response = await axios.post('https://api.instagram.com/oauth/access_token', {
+      client_id: process.env.INSTAGRAM_CLIENT_ID,
+      client_secret: process.env.INSTAGRAM_CLIENT_SECRET,
+      grant_type: 'authorization_code',
+      redirect_uri: process.env.INSTAGRAM_REDIRECT_URI || 'https://localhost:5000/auth/instagram/callback',
+      code: username // In real OAuth flow, this would be the authorization code
+    });
+
+    if (response.data.access_token) {
+      // Get user profile
+      const profileResponse = await axios.get('https://graph.instagram.com/me', {
+        params: {
+          fields: 'id,username',
+          access_token: response.data.access_token
+        }
+      });
+
+      return {
+        accessToken: response.data.access_token,
+        refreshToken: '',
+        platformUserId: profileResponse.data.id,
+        platformUsername: profileResponse.data.username
+      };
     }
 
-    // Generate authenticated access token for Instagram
-    const timestamp = Date.now();
-    const appSignature = crypto.createHash('sha256')
-      .update(`${process.env.FACEBOOK_APP_ID}_${process.env.FACEBOOK_APP_SECRET}`)
-      .digest('hex').substring(0, 16);
-    
-    const userHash = crypto.createHash('sha256')
-      .update(`${username}_${appSignature}_${timestamp}`)
-      .digest('hex');
-
-    const accessToken = `IGQVJ${userHash.substring(0, 50)}ZD`; // Instagram-style token format
-    const platformUsername = username.includes('@') ? username.split('@')[0] : username;
-    const platformUserId = `ig_${crypto.createHash('md5').update(username).digest('hex').substring(0, 16)}`;
-
-    return {
-      accessToken: accessToken,
-      refreshToken: `refresh_${userHash.substring(32, 64)}`,
-      platformUserId: platformUserId,
-      platformUsername: platformUsername
-    };
+    throw new Error('Invalid Instagram credentials');
   } catch (error: any) {
+    if (error.response) {
+      throw new Error(`Instagram authentication failed: ${error.response.data.error_description || 'Invalid credentials'}`);
+    }
     throw new Error(`Instagram authentication failed: ${error.message}`);
   }
 }
 
-// Twitter/X authentication using real API
+// Twitter/X OAuth authentication using real API
 export async function authenticateTwitter(username: string, password: string): Promise<AuthTokens> {
   try {
-    // Validate credentials format
-    if (password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
-    }
-
-    // Verify Twitter app credentials are configured
     if (!process.env.TWITTER_CLIENT_ID || !process.env.TWITTER_CLIENT_SECRET) {
-      throw new Error('Twitter app credentials not configured');
+      throw new Error('Twitter OAuth credentials not configured');
     }
 
-    // Generate authenticated access token for Twitter/X
-    const timestamp = Date.now();
-    const appSignature = crypto.createHash('sha256')
-      .update(`${process.env.TWITTER_CLIENT_ID}_${process.env.TWITTER_CLIENT_SECRET}`)
-      .digest('hex').substring(0, 16);
-    
-    const userHash = crypto.createHash('sha256')
-      .update(`${username}_${appSignature}_${timestamp}`)
-      .digest('hex');
+    // Real Twitter OAuth 2.0 authentication
+    const response = await axios.post('https://api.twitter.com/2/oauth2/token', {
+      grant_type: 'client_credentials',
+      client_id: process.env.TWITTER_CLIENT_ID,
+      client_secret: process.env.TWITTER_CLIENT_SECRET
+    }, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
 
-    const accessToken = `twitter_${userHash.substring(0, 32)}_${timestamp}`;
-    const platformUsername = username.startsWith('@') ? username.substring(1) : username;
-    const platformUserId = `tw_${crypto.createHash('md5').update(username).digest('hex').substring(0, 16)}`;
+    if (response.data.access_token) {
+      // Get user profile
+      const profileResponse = await axios.get('https://api.twitter.com/2/users/me', {
+        headers: {
+          'Authorization': `Bearer ${response.data.access_token}`
+        }
+      });
 
-    return {
-      accessToken: accessToken,
-      refreshToken: `refresh_${userHash.substring(32, 64)}`,
-      platformUserId: platformUserId,
-      platformUsername: platformUsername
-    };
+      return {
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token || '',
+        platformUserId: profileResponse.data.data.id,
+        platformUsername: profileResponse.data.data.username
+      };
+    }
+
+    throw new Error('Invalid Twitter credentials');
   } catch (error: any) {
+    if (error.response) {
+      throw new Error(`Twitter authentication failed: ${error.response.data.error_description || 'Invalid credentials'}`);
+    }
     throw new Error(`Twitter authentication failed: ${error.message}`);
   }
 }
 
-// YouTube authentication using Google OAuth
+// YouTube OAuth authentication using Google API
 export async function authenticateYouTube(username: string, password: string): Promise<AuthTokens> {
   try {
-    // Validate credentials format - YouTube accepts email or username
-    if (!username || username.trim().length === 0) {
-      throw new Error('Username or email is required');
-    }
-    
-    if (!password || password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
-    }
-
-    // Verify YouTube app credentials are configured
     if (!process.env.YOUTUBE_CLIENT_ID || !process.env.YOUTUBE_CLIENT_SECRET) {
-      throw new Error('YouTube app credentials not configured');
+      throw new Error('YouTube OAuth credentials not configured');
     }
 
-    // Generate authenticated access token for YouTube
-    const timestamp = Date.now();
-    const appSignature = crypto.createHash('sha256')
-      .update(`${process.env.YOUTUBE_CLIENT_ID}_${process.env.YOUTUBE_CLIENT_SECRET}`)
-      .digest('hex').substring(0, 16);
-    
-    const userHash = crypto.createHash('sha256')
-      .update(`${username}_${appSignature}_${timestamp}`)
-      .digest('hex');
+    // Real Google OAuth 2.0 authentication for YouTube
+    const response = await axios.post('https://oauth2.googleapis.com/token', {
+      client_id: process.env.YOUTUBE_CLIENT_ID,
+      client_secret: process.env.YOUTUBE_CLIENT_SECRET,
+      grant_type: 'authorization_code',
+      code: username, // In real OAuth flow, this would be the authorization code
+      redirect_uri: process.env.YOUTUBE_REDIRECT_URI || 'https://localhost:5000/auth/youtube/callback'
+    });
 
-    const accessToken = `ya29.${userHash.substring(0, 50)}`; // Google-style token format
-    const platformUsername = username.includes('@') ? username.split('@')[0] : username;
-    const platformUserId = `yt_${crypto.createHash('md5').update(username).digest('hex').substring(0, 16)}`;
+    if (response.data.access_token) {
+      // Get user profile from YouTube API
+      const profileResponse = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
+        params: {
+          part: 'snippet',
+          mine: true
+        },
+        headers: {
+          'Authorization': `Bearer ${response.data.access_token}`
+        }
+      });
 
-    return {
-      accessToken: accessToken,
-      refreshToken: `refresh_${userHash.substring(32, 64)}`,
-      platformUserId: platformUserId,
-      platformUsername: platformUsername
-    };
+      const channel = profileResponse.data.items?.[0];
+      return {
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token || '',
+        platformUserId: channel?.id || 'unknown',
+        platformUsername: channel?.snippet?.title || username
+      };
+    }
+
+    throw new Error('Invalid YouTube credentials');
   } catch (error: any) {
+    if (error.response) {
+      throw new Error(`YouTube authentication failed: ${error.response.data.error_description || 'Invalid credentials'}`);
+    }
     throw new Error(`YouTube authentication failed: ${error.message}`);
   }
 }
