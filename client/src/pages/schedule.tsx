@@ -61,6 +61,9 @@ export default function Schedule() {
   const [approvedPosts, setApprovedPosts] = useState<Set<number>>(new Set());
   const [editingPost, setEditingPost] = useState<{id: number, content: string} | null>(null);
 
+  // Initialize brand sync component
+  const brandSync = BrandSync();
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -945,9 +948,12 @@ export default function Schedule() {
               {/* Posts for this day */}
               <div className="mb-4">
                 {(() => {
-                  const dayPosts = generatedPosts.filter(post => 
+                  // Combine generated posts and brand posts for this day
+                  const generatedDayPosts = generatedPosts.filter(post => 
                     isSameDay(new Date(post.scheduledFor), selectedDay)
                   );
+                  const brandDayPosts = brandSync.getPostsForDay(selectedDay);
+                  const dayPosts = [...generatedDayPosts, ...brandDayPosts];
                   
                   if (dayPosts.length > 0) {
                     return (
