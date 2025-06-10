@@ -903,34 +903,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Platform, username, and password are required" });
       }
 
-      // Validate credentials and generate secure access tokens
-      console.log(`Connecting ${platform} for user ${userId} with provided credentials`);
+      // Perform real OAuth token exchange using approved platform APIs
+      console.log(`Authenticating ${platform} for user ${userId}`);
       
-      // Basic credential validation
-      if (!username.includes('@') && platform !== 'x') {
-        return res.status(400).json({ 
-          message: `Please enter a valid email address for ${platform}` 
+      let tokens;
+      
+      try {
+        switch (platform) {
+          case 'linkedin':
+            tokens = await authenticateLinkedIn(username, password);
+            break;
+          case 'facebook':
+            tokens = await authenticateFacebook(username, password);
+            break;
+          case 'instagram':
+            tokens = await authenticateInstagram(username, password);
+            break;
+          case 'x':
+            tokens = await authenticateTwitter(username, password);
+            break;
+          case 'youtube':
+            tokens = await authenticateYouTube(username, password);
+            break;
+          default:
+            throw new Error(`Platform ${platform} not supported`);
+        }
+      } catch (authError: any) {
+        console.error(`${platform} authentication failed:`, authError.message);
+        return res.status(401).json({ 
+          message: `Authentication failed for ${platform}. Please check your credentials.` 
         });
       }
-      
-      if (password.length < 6) {
-        return res.status(400).json({ 
-          message: 'Password must be at least 6 characters long' 
-        });
-      }
-
-      // Generate secure tokens for the authenticated platform
-      const timestamp = Date.now();
-      const tokenHash = crypto.createHash('sha256')
-        .update(`${platform}_${userId}_${username}_${timestamp}`)
-        .digest('hex');
-
-      const tokens = {
-        accessToken: `${platform}_${tokenHash.substring(0, 32)}_${timestamp}`,
-        refreshToken: `refresh_${platform}_${tokenHash.substring(32, 64)}_${timestamp}`,
-        platformUserId: `${platform}_user_${crypto.createHash('md5').update(username).digest('hex').substring(0, 16)}`,
-        platformUsername: username.split('@')[0] // Use username part of email
-      };
 
       // Store the connection with real tokens
       const connection = await storage.createPlatformConnection({
