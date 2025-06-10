@@ -77,9 +77,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Allow non-HTTPS in development
       maxAge: sessionTtl,
+      sameSite: 'lax',
     },
+    name: 'connect.sid',
   }));
 
   // Initialize Passport
@@ -175,6 +177,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     res.json({ received: true });
   });
+
+
 
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
