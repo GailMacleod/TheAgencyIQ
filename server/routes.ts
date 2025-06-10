@@ -1152,6 +1152,87 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Simple platform connection with customer credentials
+  app.post("/api/connect-platform-simple", requireAuth, async (req: any, res) => {
+    try {
+      const { platform, username, password } = req.body;
+      const userId = req.session.userId;
+
+      if (!platform || !username || !password) {
+        return res.status(400).json({ message: "Platform, username, and password are required" });
+      }
+
+      // For pending platforms (TikTok only)
+      if (platform === 'tiktok') {
+        return res.status(202).json({ 
+          message: `TikTok connection coming soon`,
+          pending: true
+        });
+      }
+
+      // Import authentication functions
+      const { 
+        authenticateFacebook, 
+        authenticateInstagram, 
+        authenticateLinkedIn, 
+        authenticateTwitter, 
+        authenticateYouTube 
+      } = await import('./platform-auth');
+
+      // Authenticate with the platform using provided credentials
+      let authResult;
+      try {
+        switch (platform) {
+          case 'facebook':
+            authResult = await authenticateFacebook(username, password);
+            break;
+          case 'instagram':
+            authResult = await authenticateInstagram(username, password);
+            break;
+          case 'linkedin':
+            authResult = await authenticateLinkedIn(username, password);
+            break;
+          case 'x':
+            authResult = await authenticateTwitter(username, password);
+            break;
+          case 'youtube':
+            authResult = await authenticateYouTube(username, password);
+            break;
+          default:
+            return res.status(400).json({ message: "Unsupported platform" });
+        }
+
+        // Store the connection in database
+        const connection = await storage.createPlatformConnection({
+          userId,
+          platform,
+          platformUserId: authResult.platformUserId,
+          platformUsername: authResult.platformUsername,
+          accessToken: authResult.accessToken,
+          refreshToken: authResult.refreshToken,
+          isActive: true
+        });
+
+        res.json({ 
+          success: true, 
+          connection,
+          message: `${platform} connected successfully`
+        });
+
+      } catch (authError: any) {
+        console.error(`${platform} authentication failed:`, authError);
+        res.status(401).json({ 
+          message: `Failed to connect ${platform}. Please check your credentials.`,
+          error: authError.message 
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Platform connection error:', error);
+      res.status(500).json({ message: "Error connecting platform" });
+    }
+  });
+
   // Connect platform (OAuth placeholder)
   app.post("/api/connect-platform", requireAuth, async (req: any, res) => {
     try {
@@ -1170,21 +1251,6 @@ Continue building your Value Proposition Canvas systematically.`;
         platformUsername: `mock_username_${platform}`,
         accessToken: `mock_token_${platform}_${Date.now()}`,
         refreshToken: `mock_refresh_${platform}_${Date.now()}`,
-      });
-
-      // Automatically create sample analytics data for connected platforms
-      await storage.createPost({
-        userId: req.session.userId,
-        platform,
-        content: `Sample ${platform} post with engagement analytics`,
-        scheduledFor: new Date(),
-        status: 'published',
-        publishedAt: new Date(),
-        analytics: {
-          reach: Math.floor(Math.random() * 3000) + 1000,
-          engagement: Math.floor(Math.random() * 500) + 100,
-          impressions: Math.floor(Math.random() * 5000) + 2000
-        }
       });
 
       res.json(connection);
