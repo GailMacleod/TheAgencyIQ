@@ -1041,6 +1041,128 @@ Continue refining these elements to build a stronger brand foundation.`;
     }
   });
 
+  // Create new post
+  app.post("/api/posts", requireAuth, async (req: any, res) => {
+    try {
+      const postData = insertPostSchema.parse({
+        ...req.body,
+        userId: req.session.userId
+      });
+      
+      const newPost = await storage.createPost(postData);
+      res.status(201).json(newPost);
+    } catch (error: any) {
+      console.error('Create post error:', error);
+      res.status(400).json({ message: "Error creating post" });
+    }
+  });
+
+  // Update existing post
+  app.put("/api/posts/:id", requireAuth, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const updatedPost = await storage.updatePost(postId, updates);
+      res.json(updatedPost);
+    } catch (error: any) {
+      console.error('Update post error:', error);
+      res.status(400).json({ message: "Error updating post" });
+    }
+  });
+
+  // Publish post to social media platforms
+  app.post("/api/publish-post", requireAuth, async (req: any, res) => {
+    try {
+      const { postId, platform } = req.body;
+      
+      if (!postId || !platform) {
+        return res.status(400).json({ message: "Post ID and platform are required" });
+      }
+
+      // Get user and check subscription limits
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check remaining posts allocation
+      const remainingPosts = user.remainingPosts || 0;
+      if (remainingPosts <= 0) {
+        return res.status(400).json({ 
+          message: "No remaining posts in your subscription plan",
+          remainingPosts: 0,
+          subscriptionPlan: user.subscriptionPlan
+        });
+      }
+
+      // Get platform connections for the user
+      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      const platformConnection = connections.find(conn => 
+        conn.platform.toLowerCase() === platform.toLowerCase() && conn.isActive
+      );
+
+      if (!platformConnection) {
+        return res.status(400).json({ 
+          message: `No active ${platform} connection found. Please connect your account first.`,
+          platform 
+        });
+      }
+
+      // Get the post content
+      const posts = await storage.getPostsByUser(req.session.userId);
+      const post = posts.find(p => p.id === parseInt(postId));
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      try {
+        // Use PostPublisher to publish to the specific platform
+        const publishResult = await PostPublisher.publishPost(
+          req.session.userId,
+          parseInt(postId),
+          [platform]
+        );
+
+        if (publishResult.success) {
+          // Update post status to published
+          await storage.updatePost(parseInt(postId), { 
+            status: 'published',
+            publishedAt: new Date().toISOString()
+          });
+
+          res.json({
+            message: "Post published successfully",
+            platform,
+            postId,
+            remainingPosts: publishResult.remainingPosts,
+            results: publishResult.results
+          });
+        } else {
+          res.status(500).json({
+            message: `Failed to publish to ${platform}`,
+            platform,
+            error: publishResult.results?.[0]?.error || "Unknown error"
+          });
+        }
+
+      } catch (publishError: any) {
+        console.error('Post publishing error:', publishError);
+        
+        res.status(500).json({ 
+          message: `Error publishing to ${platform}`,
+          platform,
+          error: publishError.message
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Publish post error:', error);
+      res.status(500).json({ message: "Error publishing post" });
+    }
+  });
+
   // Approve and publish post with proper allocation tracking
   app.post("/api/schedule-post", requireAuth, async (req: any, res) => {
     try {

@@ -58,6 +58,7 @@ export default function Schedule() {
   const [aiStep, setAIStep] = useState(0);
   const [generatedPosts, setGeneratedPosts] = useState<Post[]>([]);
   const [approvedPosts, setApprovedPosts] = useState<Set<number>>(new Set());
+  const [editingPost, setEditingPost] = useState<{id: number, content: string} | null>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -83,8 +84,52 @@ export default function Schedule() {
     }
   };
 
+  // Edit post content
+  const saveEditedPost = async (postId: number, newContent: string) => {
+    try {
+      // Update local state
+      setGeneratedPosts(prev => 
+        prev.map(post => 
+          post.id === postId 
+            ? { ...post, content: newContent }
+            : post
+        )
+      );
+
+      // Update database if post exists there
+      const existingPost = posts?.find(p => p.id === postId);
+      if (existingPost) {
+        const response = await fetch(`/api/posts/${postId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ content: newContent })
+        });
+
+        if (response.ok) {
+          refetchPosts();
+        }
+      }
+
+      setEditingPost(null);
+      toast({
+        title: "Post Updated",
+        description: "Content has been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving edited post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save changes.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Approve post for specific day
-  const approvePostForDay = async (dayDate: Date, postId?: number) => {
+  const approvePostForDay = async (dayDate: Date, postId?: number, publishNow?: boolean) => {
     try {
       // Find posts for this day or create a new one
       const dayPosts = generatedPosts.filter(post => 
@@ -98,7 +143,7 @@ export default function Schedule() {
           dayPosts[0];
         
         if (postToApprove) {
-          await approvePost(postToApprove.id);
+          await approvePost(postToApprove.id, publishNow);
         }
       } else {
         // Create and approve a new post for this day
@@ -119,8 +164,8 @@ export default function Schedule() {
         });
         
         toast({
-          title: "Post Created & Approved",
-          description: `Content scheduled for ${format(dayDate, 'MMM d')}`,
+          title: publishNow ? "Post Created & Published" : "Post Created & Approved",
+          description: `Content ${publishNow ? 'published' : 'scheduled'} for ${format(dayDate, 'MMM d')}`,
         });
       }
     } catch (error) {
@@ -133,8 +178,8 @@ export default function Schedule() {
     }
   };
 
-  // Handle post approval with API call and state update
-  const approvePost = async (postId: number) => {
+  // Handle post approval and publishing to social media platforms
+  const approvePost = async (postId: number, shouldPublishNow: boolean = false) => {
     try {
       // Immediately update UI state
       setApprovedPosts(prev => {
@@ -157,7 +202,7 @@ export default function Schedule() {
                         posts?.find(p => p.id === postId);
       
       if (targetPost) {
-        // Save to database if it's a generated post
+        // Save to database and potentially publish immediately
         if (generatedPosts.find(p => p.id === postId)) {
           const response = await fetch('/api/posts', {
             method: 'POST',
@@ -176,6 +221,11 @@ export default function Schedule() {
           if (response.ok) {
             const savedPost = await response.json();
             console.log('Post saved to database:', savedPost);
+            
+            // Auto-publish if requested and scheduled for now or past
+            if (shouldPublishNow || new Date(targetPost.scheduledFor) <= new Date()) {
+              await publishPost(savedPost.id, targetPost.platform);
+            }
           }
         } else {
           // Update existing database post
@@ -190,12 +240,19 @@ export default function Schedule() {
 
           if (response.ok) {
             refetchPosts();
+            
+            // Auto-publish if requested
+            if (shouldPublishNow) {
+              await publishPost(postId, targetPost.platform);
+            }
           }
         }
 
         toast({
-          title: "Post Approved",
-          description: "Post has been approved and scheduled successfully.",
+          title: shouldPublishNow ? "Post Published" : "Post Approved",
+          description: shouldPublishNow ? 
+            "Post has been published to your platform successfully." : 
+            "Post has been approved and scheduled successfully.",
         });
       }
     } catch (error) {
@@ -216,6 +273,39 @@ export default function Schedule() {
       toast({
         title: "Error",
         description: "Failed to approve post. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Publish post to social media platform
+  const publishPost = async (postId: number, platform: string) => {
+    try {
+      const response = await fetch('/api/publish-post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          postId,
+          platform
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Post published:', result);
+        refetchPosts();
+        return result;
+      } else {
+        throw new Error('Failed to publish post');
+      }
+    } catch (error) {
+      console.error('Error publishing post:', error);
+      toast({
+        title: "Publishing Error",
+        description: "Failed to publish to platform. Check your connection settings.",
         variant: "destructive",
       });
     }
@@ -675,30 +765,70 @@ export default function Schedule() {
                       </div>
                     )}
                     
-                    <div className="flex space-x-3">
-                      <Button
-                        onClick={() => approvePost(post.id)}
-                        className={`lowercase approve-button ${
-                          approvedPosts.has(post.id) || post.status === 'approved' 
-                            ? 'bg-[#3250fa] hover:bg-[#2940e6] text-white' 
-                            : 'bg-green-600 hover:bg-green-700 text-white'
-                        }`}
-                        disabled={approvedPosts.has(post.id) || post.status === 'approved'}
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        {approvedPosts.has(post.id) || post.status === 'approved' ? 'approved' : 'approve & auto-post'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="lowercase"
-                        onClick={() => {
-                          // Handle edit functionality
-                          console.log('Edit post:', post.id);
-                        }}
-                      >
-                        edit post
-                      </Button>
-                    </div>
+                    {/* Editable content for main schedule */}
+                    {editingPost?.id === post.id ? (
+                      <div className="mb-4">
+                        <textarea
+                          value={editingPost.content}
+                          onChange={(e) => setEditingPost({...editingPost, content: e.target.value})}
+                          className="w-full p-3 border border-gray-300 rounded text-gray-800 resize-none"
+                          rows={4}
+                          autoFocus
+                        />
+                        <div className="flex space-x-3 mt-3">
+                          <Button
+                            onClick={() => saveEditedPost(post.id, editingPost.content)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white lowercase"
+                          >
+                            save changes
+                          </Button>
+                          <Button
+                            onClick={() => setEditingPost(null)}
+                            variant="outline"
+                            className="lowercase"
+                          >
+                            cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex space-x-3">
+                        <Button
+                          onClick={() => setEditingPost({id: post.id, content: post.content})}
+                          variant="outline"
+                          className="lowercase"
+                        >
+                          edit post
+                        </Button>
+                        
+                        {post.status !== 'approved' && !approvedPosts.has(post.id) ? (
+                          <>
+                            <Button
+                              onClick={() => approvePost(post.id, false)}
+                              className="approve-button bg-green-600 hover:bg-green-700 text-white lowercase"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              approve & schedule
+                            </Button>
+                            <Button
+                              onClick={() => approvePost(post.id, true)}
+                              className="approve-button bg-blue-600 hover:bg-blue-700 text-white lowercase"
+                            >
+                              <Play className="w-4 h-4 mr-2" />
+                              publish now
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            onClick={() => publishPost(post.id, post.platform)}
+                            className="approve-button bg-blue-600 hover:bg-blue-700 text-white lowercase"
+                          >
+                            <Play className="w-4 h-4 mr-2" />
+                            publish now
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -831,16 +961,81 @@ export default function Schedule() {
                                 {post.status}
                               </Badge>
                             </div>
-                            <p className="text-sm text-gray-700 mb-3">{post.content}</p>
-                            {post.status !== 'approved' && (
-                              <Button
-                                onClick={() => approvePostForDay(selectedDay, post.id)}
-                                className="approve-button bg-green-600 hover:bg-green-700 text-white text-sm lowercase"
-                                size="sm"
-                              >
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                                approve & auto-post
-                              </Button>
+                            
+                            {/* Editable content */}
+                            {editingPost?.id === post.id ? (
+                              <div className="mb-3">
+                                <textarea
+                                  value={editingPost.content}
+                                  onChange={(e) => setEditingPost({...editingPost, content: e.target.value})}
+                                  className="w-full p-2 border border-gray-300 rounded text-sm resize-none"
+                                  rows={3}
+                                  autoFocus
+                                />
+                                <div className="flex space-x-2 mt-2">
+                                  <Button
+                                    onClick={() => saveEditedPost(post.id, editingPost.content)}
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white lowercase"
+                                  >
+                                    save changes
+                                  </Button>
+                                  <Button
+                                    onClick={() => setEditingPost(null)}
+                                    size="sm"
+                                    variant="outline"
+                                    className="lowercase"
+                                  >
+                                    cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-700 mb-3">{post.content}</p>
+                            )}
+
+                            {/* Action buttons */}
+                            {editingPost?.id !== post.id && (
+                              <div className="flex space-x-2">
+                                <Button
+                                  onClick={() => setEditingPost({id: post.id, content: post.content})}
+                                  size="sm"
+                                  variant="outline"
+                                  className="lowercase"
+                                >
+                                  edit
+                                </Button>
+                                
+                                {post.status !== 'approved' ? (
+                                  <>
+                                    <Button
+                                      onClick={() => approvePostForDay(selectedDay, post.id, false)}
+                                      className="approve-button bg-green-600 hover:bg-green-700 text-white text-sm lowercase"
+                                      size="sm"
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-2" />
+                                      approve & schedule
+                                    </Button>
+                                    <Button
+                                      onClick={() => approvePostForDay(selectedDay, post.id, true)}
+                                      className="approve-button bg-blue-600 hover:bg-blue-700 text-white text-sm lowercase"
+                                      size="sm"
+                                    >
+                                      <Play className="w-4 h-4 mr-2" />
+                                      publish now
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button
+                                    onClick={() => publishPost(post.id, post.platform)}
+                                    className="approve-button bg-blue-600 hover:bg-blue-700 text-white text-sm lowercase"
+                                    size="sm"
+                                  >
+                                    <Play className="w-4 h-4 mr-2" />
+                                    publish now
+                                  </Button>
+                                )}
+                              </div>
                             )}
                           </div>
                         ))}
