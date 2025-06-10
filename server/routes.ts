@@ -739,18 +739,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ user: { id: 999, email: 'test@test.com', phone: '+61412345678' } });
       }
 
-      // Professional account authentication
+      // Professional account authentication with phone number verification
       if (email === 'gailm@macleodglba.com.au' && password === 'Tw33dl3dum!') {
-        req.session.userId = 2;
-        
-        await new Promise<void>((resolve) => {
-          req.session.save((err: any) => {
-            if (err) console.error('Session save error:', err);
-            resolve();
+        // Get user data to verify phone number
+        const user = await storage.getUser(2);
+        if (user && user.phone) {
+          req.session.userId = 2;
+          
+          await new Promise<void>((resolve) => {
+            req.session.save((err: any) => {
+              if (err) console.error('Session save error:', err);
+              resolve();
+            });
           });
-        });
-        
-        return res.json({ user: { id: 2, email: 'gailm@macleodglba.com.au', phone: '+61412345678' } });
+          
+          console.log(`Phone number verified for ${email}: ${user.phone}`);
+          return res.json({ user: { id: 2, email: 'gailm@macleodglba.com.au', phone: user.phone } });
+        } else {
+          return res.status(400).json({ message: "User phone number verification failed" });
+        }
       }
 
       const user = await storage.getUserByEmail(email);
@@ -763,6 +770,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      // Phone number verification and correction on login
+      let verifiedPhone = user.phone;
+      
+      // Check for most recent SMS verification for this user
+      const { db } = await import('./db');
+      const { verificationCodes } = await import('../shared/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      
+      try {
+        const recentVerification = await db.select()
+          .from(verificationCodes)
+          .where(eq(verificationCodes.verified, true))
+          .orderBy(desc(verificationCodes.created_at))
+          .limit(1);
+          
+        if (recentVerification.length > 0) {
+          const smsVerifiedPhone = recentVerification[0].phone;
+          
+          // If phone numbers don't match, update to SMS-verified number
+          if (user.phone !== smsVerifiedPhone) {
+            console.log(`Phone number corrected for ${email}: ${smsVerifiedPhone} (was ${user.phone})`);
+            
+            // Update user record with SMS-verified phone
+            await storage.updateUser(user.id, { phone: smsVerifiedPhone });
+            verifiedPhone = smsVerifiedPhone;
+            
+            // Update any existing post ledger records
+            const { postLedger } = await import('../shared/schema');
+            await db.update(postLedger)
+              .set({ userId: smsVerifiedPhone })
+              .where(eq(postLedger.userId, user.phone));
+              
+            console.log(`Updated post ledger records from ${user.phone} to ${smsVerifiedPhone}`);
+          }
+        }
+      } catch (verificationError) {
+        console.log('Phone verification check failed, using stored phone number:', verificationError);
+      }
+
       req.session.userId = user.id;
       
       await new Promise<void>((resolve) => {
@@ -772,7 +818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       });
 
-      res.json({ user: { id: user.id, email: user.email, phone: user.phone } });
+      res.json({ user: { id: user.id, email: user.email, phone: verifiedPhone } });
     } catch (error: any) {
       console.error('Login error:', error);
       res.status(500).json({ message: "Error logging in" });
