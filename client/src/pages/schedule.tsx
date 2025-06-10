@@ -462,12 +462,13 @@ export default function Schedule() {
     });
   }
 
+  // Show loading states
   if (userLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-gray-600 lowercase">loading your account...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your account...</p>
         </div>
       </div>
     );
@@ -475,69 +476,69 @@ export default function Schedule() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <p className="text-gray-600 lowercase">please log in to view your schedule</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (postsLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-gray-600 lowercase">loading your posts...</p>
+          <p className="text-gray-600">Please wait while we authenticate your session...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+    <div className="min-h-screen bg-gray-50">
       <MasterHeader showUserMenu={true} />
 
-      <div className="schedule-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <BackButton to="/brand-purpose" label="Back to Brand Purpose" />
         </div>
         
         <div className="text-center mb-8">
-          <p className="text-sm text-gray-600 lowercase">step 3 of 3</p>
+          <p className="text-sm text-gray-600">Step 3 of 3</p>
           <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
             <div className="bg-purple-600 h-2 rounded-full w-full"></div>
           </div>
         </div>
 
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4 lowercase">
-            your 30-day social media schedule
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Your 30-Day Social Media Schedule
           </h1>
-          <p className="text-gray-600 lowercase">
-            ai has analyzed queensland events and optimal posting times to create your personalized content calendar
+          <p className="text-gray-600">
+            AI has analyzed Queensland events and optimal posting times to create your personalized content calendar
           </p>
           
           {/* Auto-post entire schedule button */}
           <div className="mt-6">
             <Button
               onClick={autoPostEntireSchedule}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg lowercase"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg"
               size="lg"
             >
-              auto-post entire 30-day schedule
+              Auto-Post Entire 30-Day Schedule
             </Button>
-            <p className="text-sm text-gray-500 mt-2 lowercase">
-              publishes all approved posts to your connected platforms
+            <p className="text-sm text-gray-500 mt-2">
+              Publishes all approved posts to your connected platforms
             </p>
           </div>
         </div>
 
+        {/* Posts Loading State */}
+        {postsLoading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your posts...</p>
+          </div>
+        )}
+
         {/* Main Post List */}
-        <div className="mb-8">
-          <div className="grid gap-6">
-            {postsArray.slice(0, 5).map((post: Post) => (
-              <Card key={post.id} className="overflow-hidden">
+        {!postsLoading && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Posts ({postsArray.length})</h2>
+            <div className="grid gap-6">
+              {postsArray.length > 0 ? (
+                postsArray.slice(0, 5).map((post: Post) => (
+                  <Card key={post.id} className="overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-3 mb-4">
                     {getPlatformIcon(post.platform)}
@@ -623,10 +624,22 @@ export default function Schedule() {
                     </div>
                   )}
                 </CardContent>
-              </Card>
-            ))}
+                  </Card>
+                ))
+              ) : (
+                <div className="text-center py-8 bg-white rounded-lg border">
+                  <p className="text-gray-500 mb-4">No posts found. Create your first post to get started.</p>
+                  <Button
+                    onClick={() => window.location.href = '/brand-purpose'}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    Create Posts
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-4 mb-8">
