@@ -60,6 +60,7 @@ export default function Schedule() {
   const [generatedPosts, setGeneratedPosts] = useState<Post[]>([]);
   const [approvedPosts, setApprovedPosts] = useState<Set<number>>(new Set());
   const [editingPost, setEditingPost] = useState<{id: number, content: string} | null>(null);
+  const [listFilter, setListFilter] = useState<'all' | 'draft' | 'approved' | 'published'>('all');
 
   // Initialize brand sync component
   const brandSync = BrandSync();
@@ -410,6 +411,20 @@ export default function Schedule() {
   // Type-safe posts array with debugging
   const postsArray: Post[] = Array.isArray(posts) ? posts : [];
   
+  // Filter posts based on selected filter
+  const filteredPosts = postsArray.filter(post => {
+    switch (listFilter) {
+      case 'draft':
+        return post.status === 'draft' || !post.status;
+      case 'approved':
+        return post.status === 'approved';
+      case 'published':
+        return post.status === 'published';
+      default:
+        return true;
+    }
+  });
+  
   // Debug logging
   console.log('Schedule Debug:', {
     user,
@@ -568,9 +583,47 @@ export default function Schedule() {
         {!postsLoading && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Posts ({postsArray.length})</h2>
-            <div className="grid gap-6">
-              {postsArray.length > 0 ? (
-                postsArray.slice(0, 5).map((post: Post) => (
+            
+            {/* Filter Tabs */}
+            <div className="flex space-x-1 mb-6 bg-gray-100 rounded-lg p-1">
+              <Button
+                onClick={() => setListFilter('all')}
+                variant={listFilter === 'all' ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1 lowercase"
+              >
+                all posts ({postsArray.length})
+              </Button>
+              <Button
+                onClick={() => setListFilter('draft')}
+                variant={listFilter === 'draft' ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1 lowercase"
+              >
+                drafts ({postsArray.filter(p => p.status === 'draft' || !p.status).length})
+              </Button>
+              <Button
+                onClick={() => setListFilter('approved')}
+                variant={listFilter === 'approved' ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1 lowercase"
+              >
+                approved ({postsArray.filter(p => p.status === 'approved').length})
+              </Button>
+              <Button
+                onClick={() => setListFilter('published')}
+                variant={listFilter === 'published' ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1 lowercase"
+              >
+                published ({postsArray.filter(p => p.status === 'published').length})
+              </Button>
+            </div>
+
+            {/* Scrollable Posts Container */}
+            <div className="max-h-96 overflow-y-auto space-y-4 pr-2">
+              {filteredPosts.length > 0 ? (
+                filteredPosts.map((post: Post) => (
                   <Card key={post.id} className="overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-3 mb-4">
@@ -661,13 +714,20 @@ export default function Schedule() {
                 ))
               ) : (
                 <div className="text-center py-8 bg-white rounded-lg border">
-                  <p className="text-gray-500 mb-4">No posts found. Create your first post to get started.</p>
-                  <Button
-                    onClick={() => window.location.href = '/brand-purpose'}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
-                  >
-                    Create Posts
-                  </Button>
+                  <p className="text-gray-500 mb-4">
+                    {listFilter === 'all' ? 'No posts found. Create your first post to get started.' :
+                     listFilter === 'draft' ? 'No draft posts found.' :
+                     listFilter === 'approved' ? 'No approved posts found.' :
+                     'No published posts found.'}
+                  </p>
+                  {listFilter === 'all' && (
+                    <Button
+                      onClick={() => window.location.href = '/brand-purpose'}
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      Create Posts
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
