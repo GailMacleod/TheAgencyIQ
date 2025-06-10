@@ -651,133 +651,45 @@ app.get('/api/quota-status', async (req, res) => {
 
 // Update phone number with SMS verification and data migration
 app.post('/api/update-phone', async (req, res) => {
-  // Set JSON response headers immediately
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Cache-Control', 'no-cache');
-  
-  console.log('Phone update request received:', {
-    hasBody: !!req.body,
-    contentType: req.headers['content-type'],
-    userAgent: req.headers['user-agent'],
-    referer: req.headers.referer
-  });
+  // Enforce JSON response headers immediately
+  res.set('Content-Type', 'application/json');
+  res.set('Cache-Control', 'no-cache');
   
   try {
     const { storage } = await import('./storage');
     let userId = req.session?.userId;
-    let sessionValidated = false;
-    let retryCount = 0;
-    const maxRetries = 3;
     
-    // Enhanced session validation with retry logic
-    while (!sessionValidated && retryCount < maxRetries) {
-      if (!userId) {
-        console.log(`Session recovery attempt ${retryCount + 1} for update-phone`);
-        
-        try {
-          // Primary recovery: check for existing user session
-          const existingUser = await storage.getUser(2);
-          if (existingUser) {
-            userId = 2;
-            
-            // Ensure session exists before setting userId
-            if (!req.session) {
-              console.log('No session object found, creating new session');
-              req.session = {} as any;
-            }
-            
-            req.session.userId = 2;
-            
-            // Save session explicitly if session object exists
-            if (req.session && typeof req.session.save === 'function') {
-              await new Promise<void>((resolve, reject) => {
-                req.session.save((err: any) => {
-                  if (err) {
-                    console.error('Session save error during phone update:', err);
-                    reject(err);
-                  } else {
-                    resolve();
-                  }
-                });
-              });
-            }
-            
-            sessionValidated = true;
-            console.log(`Session validated for ${existingUser.email} on phone update`);
-            break;
-          }
-        } catch (error) {
-          console.log(`Session recovery failed attempt ${retryCount + 1}:`, error);
-        }
-      } else {
-        // Validate existing session
-        try {
-          const user = await storage.getUser(userId);
-          if (user) {
-            sessionValidated = true;
-            console.log(`Session validated for ${user.email} on phone update`);
-            break;
-          }
-        } catch (error) {
-          console.log(`Session validation failed attempt ${retryCount + 1}:`, error);
-          userId = undefined;
-        }
-      }
-      
-      retryCount++;
-      
-      // Brief delay between retries
-      if (retryCount < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+    // Validate session with live OAuth token from platform_connections
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
-    
-    if (!sessionValidated || !userId) {
-      console.error('Session validation failed after all retries for update-phone');
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(401).json({ 
-        success: false,
-        message: 'Session validation failed. Please log in again.',
-        sessionError: true 
-      });
+
+    // Get current user with OAuth validation
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
 
     const { newPhone, verificationCode } = req.body;
     
     if (!newPhone || !verificationCode) {
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(400).json({ 
-        success: false,
-        message: 'New phone number and verification code required' 
-      });
+      return res.status(400).json({ error: 'New phone number and verification code required' });
     }
 
-    // Get current user
-    const user = await storage.getUser(userId);
-    if (!user) {
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(404).json({ 
-        success: false,
-        message: 'User not found' 
-      });
-    }
-
-    const oldPhone = user.phone;
+    console.log(`Phone update requested for ${user.email}: ${newPhone}`);
 
     // Verify SMS code for new phone number
     const verificationRecord = await storage.getVerificationCode(newPhone, verificationCode);
-    if (!verificationRecord || verificationRecord.expiresAt < new Date()) {
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(400).json({ 
-        success: false,
-        message: 'Invalid or expired verification code' 
-      });
+    if (!verificationRecord || verificationRecord.expiresAt < new Date() || verificationRecord.verified) {
+      return res.status(400).json({ error: 'Invalid or expired verification code' });
     }
+
+    console.log(`SMS code verified for ${user.email}: ${newPhone}`);
 
     // Check if new phone number is already in use by another user
     const { db } = await import('./db');
     const { users } = await import('../shared/schema');
-    const { eq, ne } = await import('drizzle-orm');
+    const { eq } = await import('drizzle-orm');
     
     const existingPhoneUser = await db.select()
       .from(users)
@@ -785,80 +697,52 @@ app.post('/api/update-phone', async (req, res) => {
       .limit(1);
       
     if (existingPhoneUser.length > 0 && existingPhoneUser[0].id !== userId) {
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(400).json({ 
-        success: false,
-        message: 'Phone number already in use by another account' 
-      });
+      return res.status(400).json({ error: 'Phone number already in use by another account' });
     }
+
+    const oldPhone = user.phone;
 
     // Begin data migration transaction
     const { postLedger, postSchedule } = await import('../shared/schema');
     
-    try {
-      // Update user's phone number
-      await storage.updateUser(userId, { phone: newPhone });
-      
-      // Migrate post ledger data to new phone number
-      if (oldPhone) {
-        await db.update(postLedger)
-          .set({ userId: newPhone })
-          .where(eq(postLedger.userId, oldPhone));
-          
-        // Migrate post schedule data to new phone number
-        await db.update(postSchedule)
-          .set({ userId: newPhone })
-          .where(eq(postSchedule.userId, oldPhone));
-      }
-      
-      // Mark verification code as used
-      await storage.markVerificationCodeUsed(verificationRecord.id);
-      
-      console.log(`Phone update processed for ${user.email}: ${newPhone}`);
-      
-      // Ensure JSON response headers are set explicitly
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(200).json({
-        success: true,
-        message: 'Phone number updated successfully',
-        user: {
-          id: user.id,
-          email: user.email,
-          phone: newPhone
-        }
-      });
-      
-    } catch (migrationError) {
-      console.error('Phone update migration error:', migrationError);
-      res.setHeader('Content-Type', 'application/json');
-      return res.status(500).json({ 
-        success: false,
-        message: 'Failed to migrate data to new phone number',
-        error: migrationError instanceof Error ? migrationError.message : 'Unknown migration error'
-      });
+    // Update user's phone number as mobile UID
+    await storage.updateUser(userId, { phone: newPhone });
+    
+    // Migrate post_ledger and post_schedule data to new user_id
+    if (oldPhone) {
+      await db.update(postLedger)
+        .set({ userId: newPhone })
+        .where(eq(postLedger.userId, oldPhone));
+        
+      await db.update(postSchedule)
+        .set({ userId: newPhone })
+        .where(eq(postSchedule.userId, oldPhone));
+        
+      console.log(`Data migrated for ${user.email} from ${oldPhone} to ${newPhone}`);
     }
+    
+    // Mark verification code as used
+    await storage.markVerificationCodeUsed(verificationRecord.id);
+    
+    return res.status(200).json({
+      success: true,
+      newPhone: newPhone
+    });
 
   } catch (error) {
-    console.error('Update phone error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const user = await (async () => {
+      try {
+        const { storage } = await import('./storage');
+        return req.session?.userId ? await storage.getUser(req.session.userId) : null;
+      } catch {
+        return null;
+      }
+    })();
     
-    // Ensure we always respond with JSON, even in catastrophic failures
-    try {
-      if (!res.headersSent) {
-        res.setHeader('Content-Type', 'application/json');
-        return res.status(500).json({ 
-          success: false,
-          message: 'Failed to update phone number',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-    } catch (responseError) {
-      console.error('Failed to send error response:', responseError);
-      // Last resort - try to send minimal JSON response
-      if (!res.headersSent) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end('{"success":false,"message":"Server error"}');
-      }
-    }
+    console.log(`Error on phone update for ${user?.email || 'unknown'}: ${errorMessage}`);
+    
+    return res.status(500).json({ error: 'Server error' });
   }
 });
 
