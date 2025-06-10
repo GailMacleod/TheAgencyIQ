@@ -75,7 +75,7 @@ passport.use(new LinkedInStrategy({
   clientID: process.env.LINKEDIN_CLIENT_ID!,
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/linkedin/callback`,
-  scope: ['r_liteprofile', 'w_member_social'],
+  scope: ['profile', 'w_member_social'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   try {

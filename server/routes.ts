@@ -84,9 +84,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: 'connect.sid',
   }));
 
-  // Initialize Passport
-  app.use(passport.initialize());
-  app.use(passport.session());
+  // Initialize Passport and OAuth strategies
+  const { passport: configuredPassport } = await import('./oauth-config.js');
+  app.use(configuredPassport.initialize());
+  app.use(configuredPassport.session());
 
   passport.serializeUser((user: any, done) => {
     done(null, user);
@@ -834,58 +835,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OAuth Authentication Routes
   
   // Facebook OAuth
-  app.get('/auth/facebook', passport.authenticate('facebook', {
+  app.get('/auth/facebook', requireAuth, configuredPassport.authenticate('facebook', {
     scope: ['pages_manage_posts', 'pages_read_engagement', 'business_management']
   }));
 
   app.get('/auth/facebook/callback',
-    passport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
+    configuredPassport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
     (req, res) => {
       res.redirect('/connect-platforms?success=facebook');
     }
   );
 
   // Instagram OAuth (uses Facebook)
-  app.get('/auth/instagram', passport.authenticate('instagram', {
+  app.get('/auth/instagram', requireAuth, configuredPassport.authenticate('instagram', {
     scope: ['instagram_basic', 'instagram_content_publish']
   }));
 
   app.get('/auth/instagram/callback',
-    passport.authenticate('instagram', { failureRedirect: '/connect-platforms?error=instagram' }),
+    configuredPassport.authenticate('instagram', { failureRedirect: '/connect-platforms?error=instagram' }),
     (req, res) => {
       res.redirect('/connect-platforms?success=instagram');
     }
   );
 
   // LinkedIn OAuth
-  app.get('/auth/linkedin', passport.authenticate('linkedin', {
-    scope: ['r_liteprofile', 'w_member_social']
+  app.get('/auth/linkedin', requireAuth, configuredPassport.authenticate('linkedin', {
+    scope: ['profile', 'w_member_social']
   }));
 
   app.get('/auth/linkedin/callback',
-    passport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
+    configuredPassport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
     (req, res) => {
       res.redirect('/connect-platforms?success=linkedin');
     }
   );
 
   // X (Twitter) OAuth
-  app.get('/auth/twitter', passport.authenticate('twitter'));
+  app.get('/auth/twitter', requireAuth, configuredPassport.authenticate('twitter'));
 
   app.get('/auth/twitter/callback',
-    passport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=twitter' }),
+    configuredPassport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=twitter' }),
     (req, res) => {
       res.redirect('/connect-platforms?success=twitter');
     }
   );
 
   // YouTube OAuth
-  app.get('/auth/youtube', passport.authenticate('youtube', {
+  app.get('/auth/youtube', requireAuth, configuredPassport.authenticate('youtube', {
     scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload']
   }));
 
   app.get('/auth/youtube/callback',
-    passport.authenticate('youtube', { failureRedirect: '/connect-platforms?error=youtube' }),
+    configuredPassport.authenticate('youtube', { failureRedirect: '/connect-platforms?error=youtube' }),
     (req, res) => {
       res.redirect('/connect-platforms?success=youtube');
     }
