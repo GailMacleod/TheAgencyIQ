@@ -166,29 +166,48 @@ export default function BrandPurpose() {
     }
   }, [existingBrandPurpose, form]);
 
-  // GROK AUTOFILL DISABLED TO PREVENT INFINITE API LOOPS
-  // Autofill functionality temporarily disabled for production stability
+  // Watch form values to trigger Grok API waterfall content generation
+  const brandName = form.watch("brandName");
+  const productsServices = form.watch("productsServices");
+  const corePurpose = form.watch("corePurpose");
 
-  // Watch form values to trigger guidance after first three questions
-  const watchedValues = (() => {
-    try {
-      return form.watch();
-    } catch (error) {
-      console.error("Form watch failed:", error);
-      return {};
+  // Grok API waterfall content generation after first three fields
+  useEffect(() => {
+    // Trigger waterfall generation when first three fields have sufficient content
+    if (brandName && brandName.length >= 2 && 
+        productsServices && productsServices.length >= 10 && 
+        corePurpose && corePurpose.length >= 10 &&
+        !isGeneratingGuidance && !showGuidance && !isExistingData) {
+      
+      console.log('Triggering Grok API waterfall content generation...');
+      setIsGeneratingGuidance(true);
+      
+      // Generate strategic guidance based on Strategyzer methodology
+      guidanceMutation.mutate({
+        brandName,
+        productsServices,
+        corePurpose
+      });
     }
-  })();
+  }, [brandName, productsServices, corePurpose, isGeneratingGuidance, showGuidance, isExistingData]);
 
-  
-
-  // Auto-save disabled to prevent server flooding
+  // Auto-save for better user experience
   const autoSaveMutation = useMutation({
     mutationFn: async (formData: Partial<BrandPurposeForm>) => {
-      // Auto-save temporarily disabled
-      return null;
+      if (!formData.brandName || formData.brandName.length < 2) return null;
+      
+      try {
+        const response = await apiRequest("POST", "/api/brand-purpose/autosave", formData);
+        return response.json();
+      } catch (error) {
+        console.error("Auto-save failed:", error);
+        return null;
+      }
     },
     onError: () => {},
-    onSuccess: () => {},
+    onSuccess: () => {
+      console.log("Form auto-saved");
+    },
     retry: false,
   });
 
@@ -227,8 +246,14 @@ export default function BrandPurpose() {
     },
   });
 
-  // AUTOMATIC GUIDANCE GENERATION DISABLED TO PREVENT INFINITE LOOP
-  // Users can manually request guidance using the guidance button in the UI
+  // Manual guidance generation on demand
+  const generateGuidanceManually = () => {
+    const formData = form.getValues();
+    if (formData.brandName && formData.productsServices && formData.corePurpose) {
+      setIsGeneratingGuidance(true);
+      guidanceMutation.mutate(formData);
+    }
+  };
 
   // Form validation helper
   const validateFormData = (data: BrandPurposeForm) => {
@@ -617,6 +642,56 @@ export default function BrandPurpose() {
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.corePurpose.message}</p>
               )}
             </div>
+
+            {/* Grok AI Waterfall Content Generation Display */}
+            {(showGuidance || isGeneratingGuidance) && (
+              <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+                <CardContent className="p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      {isGeneratingGuidance ? (
+                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                          <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                          <Bot className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-semibold text-purple-900 flex items-center">
+                          <Lightbulb className="w-4 h-4 mr-1" />
+                          Grok Strategyzer Tip
+                        </h3>
+                        {showGuidance && !isGeneratingGuidance && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowGuidance(false)}
+                            className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {isGeneratingGuidance ? (
+                        <p className="text-sm text-purple-800">
+                          Analyzing your brand foundation using Strategyzer methodology...
+                        </p>
+                      ) : showGuidance && guidance ? (
+                        <div className="prose prose-sm max-w-none text-purple-800">
+                          <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                            {guidance}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Ideal Audience */}
             <div>
