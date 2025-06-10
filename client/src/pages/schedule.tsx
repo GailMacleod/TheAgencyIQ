@@ -58,40 +58,86 @@ export default function Schedule() {
   const [generatedPosts, setGeneratedPosts] = useState<Post[]>([]);
   const [approvedPosts, setApprovedPosts] = useState<Set<number>>(new Set());
 
-  // Handle post approval with API call
+  // Handle post approval with API call and state update
   const approvePost = async (postId: number) => {
     try {
+      // Immediately update UI state
       setApprovedPosts(prev => {
         const newSet = new Set(prev);
         newSet.add(postId);
         return newSet;
       });
-      
-      const response = await fetch(`/api/posts/${postId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status: 'approved' })
-      });
 
-      if (response.ok) {
+      // Update generated posts state
+      setGeneratedPosts(prev => 
+        prev.map(post => 
+          post.id === postId 
+            ? { ...post, status: 'approved' }
+            : post
+        )
+      );
+      
+      // Find the post in either generated posts or database posts
+      const targetPost = generatedPosts.find(p => p.id === postId) || 
+                        posts?.find(p => p.id === postId);
+      
+      if (targetPost) {
+        // Save to database if it's a generated post
+        if (generatedPosts.find(p => p.id === postId)) {
+          const response = await fetch('/api/posts', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              platform: targetPost.platform,
+              content: targetPost.content,
+              scheduledFor: targetPost.scheduledFor,
+              status: 'approved'
+            })
+          });
+
+          if (response.ok) {
+            const savedPost = await response.json();
+            console.log('Post saved to database:', savedPost);
+          }
+        } else {
+          // Update existing database post
+          const response = await fetch(`/api/posts/${postId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ status: 'approved' })
+          });
+
+          if (response.ok) {
+            refetchPosts();
+          }
+        }
+
         toast({
           title: "Post Approved",
           description: "Post has been approved and scheduled successfully.",
         });
-        refetchPosts();
-      } else {
-        throw new Error('Failed to approve post');
       }
     } catch (error) {
       console.error('Error approving post:', error);
+      // Revert state changes on error
       setApprovedPosts(prev => {
         const newSet = new Set(prev);
         newSet.delete(postId);
         return newSet;
       });
+      setGeneratedPosts(prev => 
+        prev.map(post => 
+          post.id === postId 
+            ? { ...post, status: 'draft' }
+            : post
+        )
+      );
       toast({
         title: "Error",
         description: "Failed to approve post. Please try again.",
@@ -297,18 +343,20 @@ export default function Schedule() {
           // Limit posts based on subscription
           const limitedPosts = posts.slice(0, postCount);
           
-          // Convert API response to Post format
+          // Convert API response to Post format with unique IDs
           const newPosts = limitedPosts.map((post: any, index: number): Post => ({
-            id: post.id || Date.now() + index,
+            id: post.id || (Date.now() + index + Math.random() * 1000),
             platform: post.platform,
             content: post.content,
-            status: post.status || 'draft',
+            status: 'draft', // Always start as draft
             scheduledFor: post.scheduledFor,
             aiRecommendation: `Strategic content optimized for ${post.platform} engagement`
           }));
           
           setGeneratedPosts(newPosts);
-          console.log('Generated posts set to state:', newPosts);
+          // Clear any previous approved posts state when generating new content
+          setApprovedPosts(new Set());
+          console.log('Generated posts set to state:', newPosts.length, 'posts');
           
           // Also render directly to calendar grid if available
           if (calendar && newPosts.length > 0) {
@@ -382,7 +430,13 @@ export default function Schedule() {
   // Debug calendar generation
   console.log('Calendar days generated:', calendarDays.length);
   console.log('Generated posts in state:', generatedPosts.length);
+  console.log('Approved posts state:', Array.from(approvedPosts));
   console.log('Posts with scheduled dates:', calendarDays.filter(day => day.posts.length > 0));
+  
+  // Debug individual post states
+  generatedPosts.forEach(post => {
+    console.log(`Post ${post.id}: status=${post.status}, approved=${approvedPosts.has(post.id)}, platform=${post.platform}`);
+  });
 
   // Initialize approved posts from existing post statuses
   useEffect(() => {
@@ -554,11 +608,15 @@ export default function Schedule() {
                         disabled={approvedPosts.has(post.id) || post.status === 'approved'}
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        {approvedPosts.has(post.id) || post.status === 'approved' ? 'approved' : 'approve & schedule'}
+                        {approvedPosts.has(post.id) || post.status === 'approved' ? 'approved' : 'approve & auto-post'}
                       </Button>
                       <Button
                         variant="outline"
                         className="lowercase"
+                        onClick={() => {
+                          // Handle edit functionality
+                          console.log('Edit post:', post.id);
+                        }}
                       >
                         edit post
                       </Button>
