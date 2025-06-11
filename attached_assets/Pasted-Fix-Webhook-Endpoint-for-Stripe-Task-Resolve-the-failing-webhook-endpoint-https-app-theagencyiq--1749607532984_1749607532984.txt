@@ -1,0 +1,229 @@
+Fix Webhook Endpoint for Stripe
+
+Task: Resolve the failing webhook endpoint https://app.theagencyiq.ai/api/webhook for the Macleodglba account, ensuring successful event delivery. Update server/index.ts to handle Stripe events, add logging, and verify signatures. Preserve all functionality (Brand Purpose, quota system, OAuth, Google Analytics).
+
+Requirements:
+
+
+
+
+
+Webhook Endpoint Implementation:
+
+
+
+
+
+In server/index.ts, define or update /api/webhook:
+
+
+
+
+
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+
+
+
+
+
+res.set('Content-Type', 'application/json');
+
+
+
+const sig = req.headers['stripe-signature'];
+
+
+
+const endpointSecret = 'YOUR_WEBHOOK_SECRET'; // Replace with your Stripe webhook secret
+
+
+
+let event;
+
+
+
+try {
+
+
+
+
+
+event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+
+
+
+console.log('Webhook received:', event.type);
+
+
+
+} catch (err) {
+
+
+
+
+
+console.error('Webhook signature verification failed:', err.message);
+
+
+
+return res.status(400).json({ error: 'Invalid signature' });
+
+
+
+}
+
+
+
+switch (event.type) {
+
+
+
+
+
+case 'checkout.session.completed':
+
+
+
+
+
+console.log('Checkout session completed:', event.data.object);
+
+
+
+// Add fulfillment logic here
+
+
+
+break;
+
+
+
+case 'invoice.created':
+
+
+
+
+
+console.log('Invoice created:', event.data.object);
+
+
+
+// Add invoice handling logic
+
+
+
+break;
+
+
+
+default:
+
+
+
+
+
+console.log('Unhandled event:', event.type);
+
+
+
+}
+
+
+
+res.status(200).json({ received: true }); // Quick 200 response
+
+
+
+});
+
+
+
+Install Stripe: npm install stripe if not present.
+
+
+
+Error Handling:
+
+
+
+
+
+Add global handler: app.use((err, req, res, next) => { console.error('Global error:', err.stack); res.status(500).json({ error: 'Server error', stack: err.stack }); });
+
+
+
+Testing:
+
+
+
+
+
+Install Stripe CLI: Follow stripe login and stripe listen --forward-to https://app.theagencyiq.ai/api/webhook.
+
+
+
+Trigger test events: stripe trigger checkout.session.completed.
+
+
+
+Check Replit logs for "Webhook received" or errors.
+
+
+
+Client Integration:
+
+
+
+
+
+No client changes needed for webhook, but ensure client/src/api.ts handles JSON errors:
+
+
+
+
+
+if (!response.ok) { const text = await response.text(); console.error('Error:', text); throw new Error('Server error: ' + text.substring(0, 50)); }
+
+
+
+Deployment Preparation:
+
+
+
+
+
+Commit changes in Replit Git tab, sync with remote, and push.
+
+
+
+Redeploy: Click “Redeploy” and monitor the log.
+
+
+
+Verify: Access https://app.theagencyiq.ai/api/webhook in Stripe Dashboard and check event delivery status.
+
+
+
+Safeguards:
+
+
+
+
+
+Preserve /api/brand-posts, /api/approve-post, /api/quota-status, and phone update logic.
+
+
+
+Use live Stripe and OAuth credentials.
+
+
+
+Rollback if webhook fix breaks other features.
+
+
+
+Update Stripe Dashboard with the correct secret if changed.
+
+Commit Message:
+
+fix: resolve failing webhook endpoint for Stripe integration

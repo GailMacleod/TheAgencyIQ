@@ -131,6 +131,125 @@ app.get('/.well-known/health', (req, res) => {
   res.json({ status: 'ok', domain: 'app.theagencyiq.ai' });
 });
 
+// Stripe webhook endpoint - must be before express.json() middleware
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  res.set('Content-Type', 'application/json');
+  
+  const sig = req.headers['stripe-signature'];
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  
+  if (!endpointSecret) {
+    console.error('Stripe webhook secret not configured');
+    return res.status(400).json({ error: 'Webhook secret not configured' });
+  }
+  
+  let event;
+  
+  try {
+    const Stripe = (await import('stripe')).default;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: "2025-05-28.basil",
+    });
+    
+    event = stripe.webhooks.constructEvent(req.body, sig!, endpointSecret);
+    console.log('Webhook received:', event.type);
+  } catch (err: any) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).json({ error: 'Invalid signature' });
+  }
+  
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        console.log('Checkout session completed:', event.data.object);
+        const session = event.data.object;
+        
+        // Handle successful subscription creation
+        if (session.mode === 'subscription') {
+          const customerId = session.customer as string;
+          const subscriptionId = session.subscription as string;
+          const userIdFromMetadata = session.metadata?.userId;
+          
+          if (userIdFromMetadata && userIdFromMetadata !== 'guest') {
+            const { storage } = await import('./storage');
+            
+            // Update existing user with subscription details
+            await storage.updateUserStripeInfo(
+              parseInt(userIdFromMetadata),
+              customerId,
+              subscriptionId
+            );
+            
+            // Update subscription plan based on metadata
+            const plan = session.metadata?.plan || 'starter';
+            const posts = parseInt(session.metadata?.posts || '10');
+            const totalPosts = parseInt(session.metadata?.totalPosts || '12');
+            
+            await storage.updateUser(parseInt(userIdFromMetadata), {
+              subscriptionPlan: plan,
+              remainingPosts: posts,
+              totalPosts: totalPosts
+            });
+            
+            console.log('User subscription updated:', { userId: userIdFromMetadata, plan, subscriptionId });
+          }
+        }
+        break;
+        
+      case 'invoice.created':
+        console.log('Invoice created:', event.data.object);
+        // Add invoice handling logic
+        break;
+        
+      case 'customer.subscription.updated':
+        const subscription = event.data.object;
+        console.log('Subscription updated:', subscription.id);
+        
+        // Handle subscription changes (plan changes, status updates)
+        const status = subscription.status;
+        const customerId = subscription.customer as string;
+        
+        console.log('Subscription status:', { customerId, status });
+        break;
+        
+      case 'customer.subscription.deleted':
+        const deletedSubscription = event.data.object;
+        console.log('Subscription cancelled:', deletedSubscription.id);
+        
+        // Handle subscription cancellation
+        const cancelledCustomerId = deletedSubscription.customer as string;
+        console.log('Subscription cancelled for customer:', cancelledCustomerId);
+        break;
+        
+      case 'invoice.payment_succeeded':
+        const invoice = event.data.object;
+        console.log('Payment succeeded for invoice:', invoice.id);
+        
+        // Handle successful recurring payments
+        const invoiceCustomerId = invoice.customer as string;
+        console.log('Recurring payment successful:', invoiceCustomerId);
+        break;
+        
+      case 'invoice.payment_failed':
+        const failedInvoice = event.data.object;
+        console.log('Payment failed for invoice:', failedInvoice.id);
+        
+        // Handle failed payments
+        const failedCustomerId = failedInvoice.customer as string;
+        console.log('Payment failed for customer:', failedCustomerId);
+        break;
+        
+      default:
+        console.log('Unhandled event:', event.type);
+    }
+    
+    res.status(200).json({ received: true }); // Quick 200 response
+  } catch (error: any) {
+    console.error('Error processing webhook:', error.message);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
