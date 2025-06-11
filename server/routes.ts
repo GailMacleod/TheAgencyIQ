@@ -680,7 +680,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify the SMS code
       const codeRecord = await storage.getVerificationCode(newPhone, verificationCode);
-      if (!codeRecord || codeRecord.isUsed) {
+      if (!codeRecord || codeRecord.verified) {
         return res.status(400).json({ 
           error: "Invalid or expired verification code" 
         });
