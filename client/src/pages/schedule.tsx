@@ -12,6 +12,7 @@ import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
 import BrandSync from "@/components/Schedule";
+import CMOStrategy from "@/components/CMOStrategy";
 
 interface Post {
   id: number;
@@ -592,6 +593,21 @@ export default function Schedule() {
             <p className="text-gray-600">Loading your posts...</p>
           </div>
         )}
+
+        {/* CMO Brand Domination Strategy */}
+        <div className="mb-8">
+          <CMOStrategy 
+            brandPurpose={brandPurposeData}
+            onStrategyGenerated={(posts) => {
+              // Refresh posts after CMO strategy generation
+              refetchPosts();
+              toast({
+                title: "Brand Domination Strategy Deployed",
+                description: `${posts.length} unstoppable posts generated for explosive business growth`,
+              });
+            }}
+          />
+        </div>
 
         {/* Main Post List */}
         {!postsLoading && (

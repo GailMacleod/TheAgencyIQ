@@ -1886,7 +1886,7 @@ Continue building your Value Proposition Canvas systematically.`;
           status: 'draft',
           scheduledFor: scheduleDate,
           aiRecommendation: post.strategicInsight || 'CMO-generated unstoppable content for brand domination',
-          subscriptionCycle: subscriptionStatus.subscriptionCycle
+          subscriptionCycle: '2025-06'
         });
         
         savedPosts.push(savedPost);
