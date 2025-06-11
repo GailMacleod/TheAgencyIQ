@@ -85,20 +85,24 @@ export default function Profile() {
   // Update phone number mutation
   const updatePhoneMutation = useMutation({
     mutationFn: async ({ newPhone, verificationCode }: { newPhone: string; verificationCode: string }) => {
-      console.log(`Phone update requested for ${(user as any)?.email}: ${newPhone}`);
+      const email = (user as any)?.email;
+      console.log(`Phone update sent for ${email}: ${newPhone}`);
       
       const response = await fetch('/api/update-phone', {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ newPhone, verificationCode })
+        body: JSON.stringify({ email, newPhone, verificationCode }),
+        credentials: 'include'
       });
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update phone number');
+      const contentType = response.headers.get('content-type');
+      
+      if (!response.ok || !contentType?.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error('Invalid response: ' + text.substring(0, 50));
       }
       
       return response.json();

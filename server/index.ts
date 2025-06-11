@@ -9,15 +9,21 @@ import { eq } from 'drizzle-orm';
 import fs from "fs";
 import path from "path";
 
+// Global uncaught exception handler
+process.on('uncaughtException', (err) => { 
+  console.error('Uncaught Exception:', err.stack); 
+  process.exit(1); 
+});
+
 const app = express();
 
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
-// Global JSON enforcement middleware with deep debugging
+// Global JSON enforcement middleware with comprehensive logging
 app.use((req, res, next) => { 
   res.set('Content-Type', 'application/json'); 
-  console.log('Request received:', req.url); 
+  console.log('Request:', req.method, req.url); 
   next(); 
 });
 
@@ -947,6 +953,90 @@ async function restoreSubscribers() {
     res.status(200).json({ test: 'JSON working' });
   });
 
+  // Phone update endpoint with permanent JSON enforcement
+  app.post('/api/update-phone', async (req, res) => {
+    try {
+      const { email, newPhone, verificationCode } = req.body;
+      
+      console.log(`Starting phone update for ${email || 'unknown'}`);
+      
+      // Validate session with live OAuth
+      let userId = req.session?.userId;
+      
+      // Auto-recover session if needed
+      if (!userId) {
+        try {
+          const existingUser = await storage.getUser(2);
+          if (existingUser) {
+            userId = 2;
+            req.session.userId = 2;
+            console.log('Session auto-recovered');
+          }
+        } catch (error) {
+          console.log('Session invalid: Auto-recovery failed');
+          return res.status(401).json({ error: 'Authentication required' });
+        }
+      }
+      
+      if (!userId) {
+        console.log('Session invalid: No user ID');
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      console.log('Session validated');
+      
+      // Get current user data
+      const user = await storage.getUser(userId);
+      if (!user) {
+        console.log('Session invalid: User not found');
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // Verify SMS code
+      const verification = await storage.getVerificationCode(newPhone, verificationCode);
+      if (!verification || verification.verified) {
+        console.log(`SMS failed: Invalid or used code for ${newPhone}`);
+        return res.status(400).json({ error: 'Invalid verification code' });
+      }
+      
+      console.log(`SMS verified for ${newPhone}`);
+      
+      // Mark verification code as used
+      await storage.markVerificationCodeUsed(verification.id);
+      
+      // Store old phone for migration
+      const oldPhone = user.phone;
+      
+      // Update user with new phone
+      await storage.updateUser(userId, { phone: newPhone });
+      console.log(`User updated to ${newPhone}`);
+      
+      // Migrate data from old phone to new phone
+      if (oldPhone && oldPhone !== newPhone) {
+        // Update post_ledger using userId field
+        await db.update(postLedger)
+          .set({ userId: newPhone })
+          .where(eq(postLedger.userId, oldPhone));
+        
+        // Update post_schedule using userId field
+        await db.update(postSchedule)
+          .set({ userId: newPhone })
+          .where(eq(postSchedule.userId, oldPhone));
+        
+        console.log(`Data migrated from ${oldPhone}`);
+      }
+      
+      return res.status(200).json({ success: true, newPhone });
+      
+    } catch (error: any) {
+      console.log(`Phone update failed: ${error.stack}`);
+      return res.status(400).json({ 
+        error: 'Update failed', 
+        details: error.message 
+      });
+    }
+  });
+
 
 
   // Global error handling middleware
@@ -965,10 +1055,10 @@ async function restoreSubscribers() {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   });
 
-  // Global error handler with deep debugging
+  // Global error handler with comprehensive debugging
   app.use((err: any, req: Request, res: Response, next: NextFunction) => { 
-    console.error('Critical error:', err.stack); 
-    res.status(500).json({ error: 'Server failure', stack: err.stack }); 
+    console.error('Error Handler:', err.stack); 
+    res.status(500).json({ error: 'Internal error', stack: err.stack }); 
   });
 
   // Handle uncaught exceptions

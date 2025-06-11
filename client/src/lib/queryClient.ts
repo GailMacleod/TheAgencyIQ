@@ -11,25 +11,26 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
-  const res = await fetch(url, {
+): Promise<any> {
+  const options: RequestInit = {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: data ? { "Content-Type": "application/json" } : undefined,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
-  });
+  };
 
-  console.log(`API response for ${url}: ${res.status}`);
-  
-  // Check response type for JSON enforcement
-  if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
-    const responseText = await res.text();
-    console.error('Non-JSON response:', responseText);
-    throw new Error('Invalid server response');
+  const response = await fetch(url, options);
+  const contentType = response.headers.get('content-type');
+
+  console.log(`API call to ${url} returned ${response.status}`);
+
+  if (!response.ok || !contentType?.includes('application/json')) {
+    const text = await response.text();
+    console.error('Non-JSON response:', text);
+    throw new Error('Invalid response: ' + text.substring(0, 50));
   }
 
-  await throwIfResNotOk(res);
-  return res;
+  return response.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
