@@ -1550,7 +1550,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Connect platform (OAuth placeholder)
+  // Connect platform (OAuth redirect)
   app.post("/api/connect-platform", requireAuth, async (req: any, res) => {
     try {
       const { platform } = req.body;
@@ -1559,18 +1559,13 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Platform is required" });
       }
 
-      // In a real implementation, this would initiate OAuth flow
-      // For now, we'll simulate a successful connection
-      const connection = await storage.createPlatformConnection({
-        userId: req.session.userId,
-        platform,
-        platformUserId: `mock_user_${platform}_${req.session.userId}`,
-        platformUsername: `mock_username_${platform}`,
-        accessToken: `mock_token_${platform}_${Date.now()}`,
-        refreshToken: `mock_refresh_${platform}_${Date.now()}`,
+      // Redirect to OAuth authentication for the platform
+      const authUrl = `/auth/${platform}`;
+      res.json({ 
+        success: true,
+        authUrl: authUrl,
+        message: `Redirecting to ${platform} authentication`
       });
-
-      res.json(connection);
     } catch (error: any) {
       console.error('Platform connection error:', error);
       res.status(500).json({ message: "Error connecting platform" });
@@ -2902,55 +2897,77 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Post approval with subscription tracking
-  app.post("/api/posts/approve", async (req, res) => {
+  // Publish individual post endpoint
+  app.post("/api/publish-post", requireAuth, async (req: any, res) => {
     try {
-      // For demo purposes, use mock user ID if no session
-      const userId = req.session.userId || 1;
-      const { postId } = req.body;
+      const { postId, platform } = req.body;
+      const userId = req.session.userId;
       
-      // Get user to check remaining posts or create demo user
-      let user = await storage.getUser(userId);
+      if (!postId || !platform) {
+        return res.status(400).json({ message: "Post ID and platform are required" });
+      }
+
+      // Get user and verify subscription
+      const user = await storage.getUser(userId);
       if (!user) {
-        // Create demo user for testing
-        user = await storage.createUser({
-          email: "demo@theagencyiq.ai",
-          password: "demo123",
-          phone: "+61400000000",
-          subscriptionPlan: "professional",
-          remainingPosts: 45,
-          totalPosts: 60
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check subscription limits
+      const remainingPosts = user.remainingPosts || 0;
+      if (remainingPosts <= 0) {
+        return res.status(400).json({ 
+          message: `No posts remaining in your ${user.subscriptionPlan} plan. Please upgrade or wait for next billing cycle.`,
+          subscriptionLimitReached: true
         });
       }
 
-      // Check if user has remaining posts
-      const remainingPosts = user.remainingPosts || 0;
-      if (remainingPosts <= 0) {
-        return res.status(400).json({ message: "No remaining posts in your subscription plan" });
+      // Verify platform connection exists and is active
+      const platformConnections = await storage.getPlatformConnectionsByUser(userId);
+      const platformConnection = platformConnections.find(conn => 
+        conn.platform.toLowerCase() === platform.toLowerCase() && conn.isActive
+      );
+
+      if (!platformConnection) {
+        return res.status(400).json({ 
+          message: `${platform} account not connected. Please connect your ${platform} account first.`,
+          requiresConnection: true 
+        });
       }
 
-      // Create the approved post in database
-      const newPost = await storage.createPost({
-        userId: userId,
-        platform: "multi-platform",
-        content: "Approved Grok-generated content",
-        status: "approved",
-        scheduledFor: new Date(),
-      });
+      // Check for demo/mock tokens
+      if (platformConnection.accessToken.includes('demo_') || platformConnection.accessToken.includes('mock_')) {
+        return res.status(400).json({ 
+          message: `${platform} connection uses test credentials. Please reconnect with real OAuth credentials.`,
+          requiresReconnection: true 
+        });
+      }
 
-      // Decrement remaining posts
-      const updatedUser = await storage.updateUser(userId, {
-        remainingPosts: remainingPosts - 1
-      });
+      // Publish the post using PostPublisher
+      const result = await PostPublisher.publishPost(userId, postId, [platform]);
 
-      res.json({ 
-        post: newPost,
-        remainingPosts: updatedUser.remainingPosts,
-        message: "Post approved and scheduled for publishing"
-      });
+      if (result.success) {
+        res.json({
+          success: true,
+          message: `Post published successfully to ${platform}`,
+          remainingPosts: result.remainingPosts,
+          platformResults: result.results
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: `Failed to publish to ${platform}`,
+          error: result.results[platform]?.error || 'Unknown error',
+          remainingPosts: result.remainingPosts
+        });
+      }
+
     } catch (error: any) {
-      console.error("Post approval error:", error);
-      res.status(500).json({ message: "Failed to approve post: " + error.message });
+      console.error('Post publishing error:', error);
+      res.status(500).json({ 
+        message: "Error publishing post",
+        error: error.message 
+      });
     }
   });
 

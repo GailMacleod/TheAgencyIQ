@@ -75,7 +75,7 @@ passport.use(new LinkedInStrategy({
   clientID: process.env.LINKEDIN_CLIENT_ID!,
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/linkedin/callback`,
-  scope: ['profile', 'w_member_social'],
+  scope: ['profile', 'w_member_social', 'openid', 'email'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   try {
@@ -84,18 +84,25 @@ passport.use(new LinkedInStrategy({
       return done(new Error('User not authenticated'));
     }
 
+    console.log('LinkedIn OAuth successful:', {
+      profileId: profile.id,
+      displayName: profile.displayName,
+      accessTokenLength: accessToken ? accessToken.length : 0
+    });
+
     await storage.createPlatformConnection({
       userId,
       platform: 'linkedin',
       platformUserId: profile.id,
-      platformUsername: profile.displayName,
+      platformUsername: profile.displayName || profile.name?.givenName + ' ' + profile.name?.familyName,
       accessToken,
-      refreshToken,
+      refreshToken: refreshToken || 'linkedin_refresh_token',
       isActive: true
     });
 
     return done(null, { platform: 'linkedin', success: true });
   } catch (error) {
+    console.error('LinkedIn OAuth error:', error);
     return done(error);
   }
 }));
