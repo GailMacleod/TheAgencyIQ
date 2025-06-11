@@ -86,42 +86,22 @@ export default function ConnectPlatforms() {
     retry: 2
   });
 
-  // Connect platform with username/password
-  const connectMutation = useMutation({
-    mutationFn: async ({ platform, username, password }: { platform: string, username: string, password: string }) => {
-      const response = await fetch('/api/connect-platform-simple', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ platform, username, password })
-      });
+  // OAuth connection for platforms
+  const handleOAuthConnect = async (platform: string) => {
+    try {
+      setConnecting(prev => ({ ...prev, [platform]: true }));
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Connection failed');
-      }
-      
-      return response.json();
-    },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-      toast({
-        title: "Platform Connected",
-        description: `Successfully connected ${platformConfig[variables.platform as keyof typeof platformConfig]?.name}`,
-      });
-      // Clear credentials
-      setCredentials(prev => ({ ...prev, [variables.platform]: { username: '', password: '' } }));
-      setConnecting(prev => ({ ...prev, [variables.platform]: false }));
-    },
-    onError: (error: any, variables) => {
+      // Redirect to OAuth flow
+      window.location.href = `/auth/${platform}`;
+    } catch (error: any) {
       toast({
         title: "Connection Failed",
-        description: error.message || "Failed to connect platform. Please check your credentials.",
+        description: "Failed to initiate OAuth connection",
         variant: "destructive"
       });
-      setConnecting(prev => ({ ...prev, [variables.platform]: false }));
+      setConnecting(prev => ({ ...prev, [platform]: false }));
     }
-  });
+  };
 
   // Disconnect platform mutation
   const disconnectMutation = useMutation({
@@ -150,43 +130,20 @@ export default function ConnectPlatforms() {
     }
   });
 
-  const handleConnect = async (platform: string) => {
-    const creds = credentials[platform];
-    if (!creds?.username || !creds?.password) {
-      toast({
-        title: "Missing Credentials",
-        description: "Please enter both username and password",
-        variant: "destructive"
-      });
-      return;
-    }
 
-    setConnecting(prev => ({ ...prev, [platform]: true }));
-    connectMutation.mutate({
-      platform,
-      username: creds.username,
-      password: creds.password
-    });
-  };
 
-  const updateCredentials = (platform: string, field: 'username' | 'password', value: string) => {
-    setCredentials(prev => ({
-      ...prev,
-      [platform]: {
-        ...prev[platform],
-        [field]: value
-      }
-    }));
-  };
+
 
   const isConnected = (platform: string) => {
-    return (connections as PlatformConnection[]).some((conn: PlatformConnection) => 
+    if (!connections || !Array.isArray(connections)) return false;
+    return connections.some((conn: PlatformConnection) => 
       conn.platform === platform && conn.isActive
     );
   };
 
   const getConnection = (platform: string) => {
-    return (connections as PlatformConnection[]).find((conn: PlatformConnection) => 
+    if (!connections || !Array.isArray(connections)) return null;
+    return connections.find((conn: PlatformConnection) => 
       conn.platform === platform && conn.isActive
     );
   };
@@ -295,52 +252,18 @@ export default function ConnectPlatforms() {
                           </p>
                         </div>
                       ) : (
-                        <>
-                          <div className="space-y-2">
-                            <Label htmlFor={`${platform}-username`}>Username/Email</Label>
-                            <Input
-                              id={`${platform}-username`}
-                              type="text"
-                              placeholder="Enter your username or email"
-                              value={credentials[platform]?.username || ''}
-                              onChange={(e) => updateCredentials(platform, 'username', e.target.value)}
-                            />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <Label htmlFor={`${platform}-password`}>Password</Label>
-                            <div className="relative">
-                              <Input
-                                id={`${platform}-password`}
-                                type={showPassword[platform] ? "text" : "password"}
-                                placeholder="Enter your password"
-                                value={credentials[platform]?.password || ''}
-                                onChange={(e) => updateCredentials(platform, 'password', e.target.value)}
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                onClick={() => setShowPassword(prev => ({ ...prev, [platform]: !prev[platform] }))}
-                              >
-                                {showPassword[platform] ? (
-                                  <EyeOff className="h-4 w-4" />
-                                ) : (
-                                  <Eye className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-
+                        <div className="text-center">
+                          <p className="text-sm text-gray-600 mb-4">
+                            Connect using secure OAuth authentication
+                          </p>
                           <Button
-                            onClick={() => handleConnect(platform)}
+                            onClick={() => handleOAuthConnect(platform)}
                             className="w-full"
-                            disabled={connecting[platform] || connectMutation.isPending}
+                            disabled={connecting[platform]}
                           >
                             {connecting[platform] ? 'Connecting...' : 'CONNECT'}
                           </Button>
-                        </>
+                        </div>
                       )}
                     </div>
                   )}
@@ -350,7 +273,7 @@ export default function ConnectPlatforms() {
           })}
         </div>
 
-        {(connections as PlatformConnection[]).length > 0 && (
+        {connections && Array.isArray(connections) && connections.length > 0 && (
           <div className="mt-8 text-center">
             <Button
               onClick={() => setLocation("/intelligent-schedule")}
