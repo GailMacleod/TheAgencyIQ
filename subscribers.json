@@ -1,0 +1,71 @@
+{
+  "timestamp": "2025-06-11T01:00:00.038Z",
+  "users": [
+    {
+      "id": 6,
+      "email": "testuser@agencyiq.com",
+      "phone": "+15005550007",
+      "subscriptionPlan": "professional",
+      "stripeCustomerId": "",
+      "stripeSubscriptionId": "",
+      "remainingPosts": 50,
+      "totalPosts": 52,
+      "createdAt": "2025-06-08T22:08:03.322Z"
+    },
+    {
+      "id": 1,
+      "email": "demo@theagencyiq.ai",
+      "phone": "+61400000000",
+      "subscriptionPlan": "professional",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "remainingPosts": 45,
+      "totalPosts": 60,
+      "createdAt": "2025-06-05T04:30:34.929Z"
+    },
+    {
+      "id": 5,
+      "email": "test@test.com",
+      "phone": "+61412345678",
+      "subscriptionPlan": "starter",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "remainingPosts": 12,
+      "totalPosts": 12,
+      "createdAt": "2025-06-08T02:06:48.464Z"
+    },
+    {
+      "id": 3,
+      "email": "gail@theagencyiq.ai",
+      "phone": "",
+      "subscriptionPlan": "starter",
+      "stripeCustomerId": "cus_SSs0TNwkQ59MKH",
+      "stripeSubscriptionId": "sub_1RXwGCS90ymeq6trNambE81q",
+      "remainingPosts": 10,
+      "totalPosts": 12,
+      "createdAt": "2025-06-06T04:11:27.791Z"
+    },
+    {
+      "id": 8,
+      "email": "testuser@example.com",
+      "phone": "+61400999888",
+      "subscriptionPlan": "starter",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "remainingPosts": 0,
+      "totalPosts": 0,
+      "createdAt": "2025-06-10T23:24:17.969Z"
+    },
+    {
+      "id": 2,
+      "email": "gailm@macleodglba.com.au",
+      "phone": "+610424835189",
+      "subscriptionPlan": "professional",
+      "stripeCustomerId": "cus_SStznDRDVG32xg",
+      "stripeSubscriptionId": "sub_1RXyC1S90ymeq6trOeP7IZeM",
+      "remainingPosts": 50,
+      "totalPosts": 52,
+      "createdAt": "2025-06-05T06:20:56.594Z"
+    }
+  ]
+}
