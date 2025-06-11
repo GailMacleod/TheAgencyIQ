@@ -1,0 +1,235 @@
+Microservice Phone Update with Twilio
+
+Task: Create a standalone microservice for phone number updates using Twilio, fixing the "Unexpected token '<' <!DOCTYPE..." error. Export data from Replit, update client/src/components/BrandPurpose.jsx and client/src/api.ts. Preserve all functionality (Brand Purpose, quota system, OAuth, Google Analytics). Avoid Replit runtime for this endpoint.
+
+Requirements:
+
+
+
+
+
+Microservice Setup:
+
+
+
+
+
+Create a new directory phone-update-service locally.
+
+
+
+Install: npm init -y, npm install twilio sqlite3 express.
+
+
+
+In phone-update-service/index.js:
+
+
+
+
+
+const express = require('express'); const app = express(); app.use(express.json());
+
+
+
+const twilio = require('twilio')('YOUR_ACCOUNT_SID', 'YOUR_AUTH_TOKEN'); (use signup credentials).
+
+
+
+const sqlite3 = require('sqlite3').verbose(); const db = new sqlite3.Database('users.db');
+
+
+
+Initialize DB:
+
+
+
+
+
+db.serialize(() => { db.run('CREATE TABLE IF NOT EXISTS users (user_id TEXT PRIMARY KEY, email TEXT, subscription_plan TEXT)'); db.run('CREATE TABLE IF NOT EXISTS post_ledger (user_id TEXT, period_start TEXT, quota INTEGER, used_posts INTEGER)'); db.run('CREATE TABLE IF NOT EXISTS post_schedule (post_id TEXT, user_id TEXT, status TEXT, is_counted INTEGER)'); });
+
+
+
+Define /update-phone:
+
+
+
+
+
+app.post('/update-phone', async (req, res) => {
+
+
+
+
+
+res.set('Content-Type', 'application/json');
+
+
+
+console.log('Starting phone update for', req.body.email);
+
+
+
+const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+
+
+await twilio.messages.create({ body: Verification code: ${code}, from: 'YOUR_TWILIO_NUMBER', to: req.body.newPhone });
+
+
+
+console.log('SMS sent to', req.body.newPhone);
+
+
+
+if (req.body.verificationCode !== code) return res.status(400).json({ error: 'Invalid code' });
+
+
+
+db.run('UPDATE users SET user_id = ? WHERE email = ?', [req.body.newPhone, req.body.email]);
+
+
+
+db.run('UPDATE post_ledger SET user_id = ? WHERE user_id = ?', [req.body.newPhone, '+61434567890']);
+
+
+
+db.run('UPDATE post_schedule SET user_id = ? WHERE user_id = ?', [req.body.newPhone, '+61434567890']);
+
+
+
+console.log('Data migrated to', req.body.newPhone);
+
+
+
+res.json({ success: true, newPhone: req.body.newPhone });
+
+
+
+});
+
+
+
+Start: app.listen(3000, () => console.log('Server on 3000'));
+
+
+
+Export Replit data: Add a temporary /api/export-data in Replit’s server/index.ts (as prior prompt) and import to users.db.
+
+
+
+Client Integration:
+
+
+
+
+
+In client/src/components/BrandPurpose.jsx, update the phone modal:
+
+
+
+
+
+First call: apiRequest('http://localhost:3000/update-phone', { method: 'POST', body: JSON.stringify({ email, newPhone }) }) for SMS.
+
+
+
+Second call: Send { email, newPhone, verificationCode }.
+
+
+
+Log 'Phone update sent to microservice for [email]: [newPhone]'.
+
+
+
+Show error: 'Update failed: [details]'.
+
+
+
+Client API Fix:
+
+
+
+
+
+In client/src/api.ts, update apiRequest:
+
+
+
+
+
+const response = await fetch(url, options);
+
+
+
+if (!response.ok) { const text = await response.text(); console.error('Error:', text); throw new Error('Server error: ' + text.substring(0, 50)); }
+
+
+
+Return response.json().
+
+
+
+Log 'API call to [url] returned [status]'.
+
+
+
+Preserve Functionality:
+
+
+
+
+
+Keep Replit’s /api/brand-posts, /api/approve-post, /api/quota-status unchanged.
+
+
+
+Sync users.db with Replit data manually initially.
+
+
+
+Testing:
+
+
+
+
+
+Run microservice: node index.js in phone-update-service.
+
+
+
+Use ngrok: ngrok http 3000 to get a public URL (e.g., https://abcd1234.ngrok.io).
+
+
+
+Test: curl -X POST "https://abcd1234.ngrok.io/update-phone" -H "Content-Type: application/json" -d '{"email": "gailm@macleodglba.com.au", "newPhone": "+610424835189"}', then with verification code.
+
+
+
+Check logs for "Data migrated".
+
+
+
+Safeguards:
+
+
+
+
+
+Preserve posted posts and quota.
+
+
+
+Use live Twilio and OAuth credentials.
+
+
+
+Rollback to Replit if microservice fails.
+
+
+
+Plan full migration to local Node.js/Heroku post-test.
+
+Commit Message:
+
+feat: microservice for phone update with Twilio and ngrok
