@@ -925,46 +925,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session?.userId;
       
       if (userId) {
-        // Clear cached data and reset post ledger for clean start
-        const user = await storage.getUser(userId);
-        if (user && user.phone) {
-          const { db } = await import('./db');
-          const { postLedger, postSchedule } = await import('../shared/schema');
-          const { eq } = await import('drizzle-orm');
-          
-          // Clear all draft posts to prevent retention
-          await db.delete(postSchedule).where(eq(postSchedule.userId, user.phone));
-          
-          // Reset post ledger for fresh start
-          await db.delete(postLedger).where(eq(postLedger.userId, user.phone));
-          
-          console.log(`Cleared session data and reset post ledger for user ${user.email}`);
-        }
+        console.log(`Logging out user ${userId}`);
       }
       
-      // Clear session cookies and data
-      req.session.destroy((err: any) => {
-        if (err) {
-          console.error('Session destruction error:', err);
-          return res.status(500).json({ message: "Error logging out" });
-        }
-        
-        // Clear session cookie
-        res.clearCookie('connect.sid');
-        
-        console.log('User logged out successfully with complete session cleanup');
-        res.json({ message: "Logged out successfully" });
+      // Immediately clear session and prevent auto-recovery
+      req.session = null;
+      
+      // Clear all possible session cookies
+      res.clearCookie('connect.sid', {
+        path: '/',
+        httpOnly: true,
+        secure: false, // Set to true in production
+        sameSite: 'lax'
+      });
+      
+      res.clearCookie('sessionId');
+      res.clearCookie('userId');
+      
+      console.log('User logged out successfully - session completely cleared');
+      res.json({ 
+        success: true,
+        message: "Logged out successfully",
+        redirect: "/" 
       });
       
     } catch (error: any) {
-      console.error('Logout cleanup error:', error);
-      // Still destroy session even if cleanup fails
-      req.session.destroy((err: any) => {
-        if (err) {
-          return res.status(500).json({ message: "Error logging out" });
-        }
-        res.clearCookie('connect.sid');
-        res.json({ message: "Logged out successfully" });
+      console.error('Logout error:', error);
+      
+      // Force session clear even on error
+      req.session = null;
+      res.clearCookie('connect.sid');
+      
+      res.json({ 
+        success: true,
+        message: "Logged out successfully" 
       });
     }
   });

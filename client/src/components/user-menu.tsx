@@ -35,20 +35,33 @@ export default function UserMenu() {
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/auth/logout"),
     onSuccess: () => {
+      // Clear all cached data immediately
       queryClient.clear();
-      toast({
-        title: "Logged Out",
-        description: "You have been successfully logged out.",
-      });
-      setLocation("/");
+      queryClient.invalidateQueries();
+      
+      // Clear localStorage and sessionStorage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Force page reload to ensure complete session cleanup
+      window.location.href = "/";
     },
     onError: (error: any) => {
       console.error("Logout error:", error);
+      
+      // Even on error, force logout locally
+      queryClient.clear();
+      localStorage.clear();
+      sessionStorage.clear();
+      
       toast({
-        title: "Error",
-        description: "Failed to logout. Please try again.",
-        variant: "destructive",
+        title: "Logged Out",
+        description: "Session cleared. Redirecting to home page.",
       });
+      
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1000);
     },
   });
 
