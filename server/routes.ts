@@ -488,6 +488,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Phone update endpoint with deep debugging and session handling
+  app.post('/api/update-phone', async (req, res) => {
+    try {
+      const { newPhone, verificationCode } = req.body;
+      const session = req.session as any;
+      
+      // Get user email for logging
+      const userEmail = session.userId ? 
+        (await storage.getUser(session.userId))?.email || 'unknown' : 'no-session';
+      
+      console.log(`Starting phone update for ${userEmail}`);
+      
+      // Validate session with live OAuth
+      if (!session.userId) {
+        console.log('Session invalid');
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      console.log('Session validated');
+      
+      // Get current user data
+      const user = await storage.getUser(session.userId);
+      if (!user) {
+        console.log('User not found');
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // Verify SMS code
+      const verification = await storage.getVerificationCode(newPhone, verificationCode);
+      if (!verification || verification.verified) {
+        console.log(`SMS failed: Invalid or used code for ${newPhone}`);
+        return res.status(400).json({ error: 'Invalid verification code' });
+      }
+      console.log(`SMS verified for ${userEmail}: ${newPhone}`);
+      
+      // Mark verification code as used
+      await storage.markVerificationCodeUsed(verification.id);
+      
+      // Store old phone for migration
+      const oldPhone = user.phone;
+      
+      // Update user with new phone
+      await storage.updateUser(session.userId, { phone: newPhone });
+      console.log(`User updated to ${newPhone} for ${userEmail}`);
+      
+      // Migrate data from old phone to new phone
+      if (oldPhone && oldPhone !== newPhone) {
+        const { db } = await import('./db');
+        const { postLedger, postSchedule } = await import('../shared/schema');
+        const { eq } = await import('drizzle-orm');
+        
+        // Update post_ledger using userId field
+        await db.update(postLedger)
+          .set({ userId: newPhone })
+          .where(eq(postLedger.userId, oldPhone));
+        
+        // Update post_schedule using userId field
+        await db.update(postSchedule)
+          .set({ userId: newPhone })
+          .where(eq(postSchedule.userId, oldPhone));
+        
+        console.log(`Data migrated from ${oldPhone} to ${newPhone}`);
+      }
+      
+      return res.status(200).json({ success: true, newPhone });
+      
+    } catch (error: any) {
+      console.log(`Phone update error: ${error.message}`);
+      return res.status(500).json({ 
+        error: error.message, 
+        stack: error.stack 
+      });
+    }
+  });
+
   // Verify code and create user
   // Generate gift certificates endpoint (admin only - based on actual purchase)
   app.post("/api/generate-gift-certificates", async (req, res) => {
