@@ -2972,7 +2972,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Analytics dashboard data
-  app.get("/api/analytics", async (req, res) => {
+  app.get("/api/analytics", requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId || 1;
 
