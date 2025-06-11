@@ -896,38 +896,14 @@ app.get('/api/export-data', async (req, res) => {
     const { db } = await import('./db');
     const { users, postLedger, postSchedule, giftCertificates, brandPurpose, posts, platformConnections } = await import('../shared/schema');
     
-    // Export all data with gift certificates using safe column selection
-    const allUsers = await db.select({
-      id: users.id,
-      userId: users.userId,
-      email: users.email,
-      phone: users.phone,
-      subscriptionPlan: users.subscriptionPlan,
-      subscriptionStart: users.subscriptionStart,
-      remainingPosts: users.remainingPosts,
-      totalPosts: users.totalPosts,
-      stripeCustomerId: users.stripeCustomerId,
-      stripeSubscriptionId: users.stripeSubscriptionId
-    }).from(users);
-    
-    const allLedger = await db.select().from(postLedger);
-    
-    const allSchedule = await db.select().from(postSchedule);
-    const allGifts = await db.select().from(giftCertificates);
-    const allBrandPurpose = await db.select().from(brandPurpose);
-    const allPosts = await db.select().from(posts);
-    const allConnections = await db.select({
-      id: platformConnections.id,
-      userId: platformConnections.userId,
-      platform: platformConnections.platform,
-      accessToken: platformConnections.accessToken,
-      refreshToken: platformConnections.refreshToken,
-      connectedAt: platformConnections.connectedAt,
-      platformUserId: platformConnections.platformUserId,
-      platformUsername: platformConnections.platformUsername,
-      expiresAt: platformConnections.expiresAt,
-      isActive: platformConnections.isActive
-    }).from(platformConnections);
+    // Use raw SQL queries to bypass schema issues
+    const allUsers = await db.execute('SELECT id, user_id, email, phone, subscription_plan, subscription_start, remaining_posts, total_posts, stripe_customer_id, stripe_subscription_id FROM users');
+    const allLedger = await db.execute('SELECT user_id, subscription_tier, period_start, quota, used_posts, last_posted, updated_at FROM post_ledger');
+    const allSchedule = await db.execute('SELECT post_id, user_id, content, platform, status, is_counted, scheduled_at, created_at FROM post_schedule');
+    const allGifts = await db.execute('SELECT id, code, plan, is_used, created_for, redeemed_by, created_at, redeemed_at FROM gift_certificates');
+    const allBrandPurpose = await db.execute('SELECT id, user_id, brand_name, products_services, core_purpose, audience, job_to_be_done, motivations, pain_points, goals, logo_url, contact_details, platforms, total_posts, created_at FROM brand_purpose');
+    const allPosts = await db.execute('SELECT id, user_id, platform, content, status, published_at, error_log, scheduled_for, created_at, analytics, ai_recommendation, subscription_cycle FROM posts');
+    const allConnections = await db.execute('SELECT id, user_id, platform, access_token, refresh_token, connected_at, platform_user_id, platform_username, expires_at, is_active FROM platform_connections');
     
     const exportData = {
       export_info: {
