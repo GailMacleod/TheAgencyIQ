@@ -22,6 +22,7 @@ import YearlyAnalytics from "@/pages/yearly-analytics";
 import Profile from "@/pages/profile";
 import ResetPassword from "@/pages/reset-password";
 import RedeemCertificate from "@/pages/redeem-certificate";
+import AdminDashboard from "@/components/AdminDashboard";
 
 function Router() {
   // Track page views when routes change
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/redeem-certificate" component={RedeemCertificate} />
+      <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

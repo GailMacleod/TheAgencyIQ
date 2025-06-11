@@ -796,6 +796,111 @@ app.post('/api/cancel-subscription', async (req, res) => {
 import BreachNotificationService from "./breach-notification";
 import { DataCleanupService } from "./data-cleanup";
 
+// Admin endpoints with gift certificate data
+app.get('/api/admin/users', async (req, res) => {
+  res.set('Content-Type', 'application/json');
+  
+  if (req.headers.authorization !== 'Bearer YOUR_ADMIN_TOKEN') {
+    console.log(`Admin access denied for ${req.ip}`);
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const { db } = await import('./db');
+    const { users, postLedger, postSchedule, giftCertificates } = await import('../shared/schema');
+    
+    // Fetch all data with proper joins
+    const allUsers = await db.select().from(users);
+    const allLedger = await db.select().from(postLedger);
+    const allSchedule = await db.select().from(postSchedule);
+    const allGifts = await db.select().from(giftCertificates);
+    
+    const userData = allUsers.map(user => ({
+      phone: user.phone,
+      email: user.email,
+      plan: user.subscriptionPlan,
+      start: user.subscriptionStart,
+      ledger: allLedger.filter(l => l.userId === user.id),
+      posts: allSchedule.filter(p => p.userId === user.id),
+      gifts: allGifts.filter(g => g.redeemedBy && g.redeemedBy.toString() === user.id.toString()).map(g => ({
+        code: g.code,
+        redeemed: g.isUsed,
+        plan: g.plan,
+        createdFor: g.createdFor,
+        redeemedAt: g.redeemedAt
+      }))
+    }));
+
+    console.log(`Admin data with gifts fetched for ${req.ip}`);
+    res.json(userData);
+  } catch (err: any) {
+    console.error('Admin fetch error:', err.stack);
+    res.status(500).json({ error: 'Server error', stack: err.stack });
+  }
+});
+
+// Data location check endpoint
+app.get('/api/locate-data', (req, res) => {
+  res.set('Content-Type', 'application/json');
+  
+  let dataSource = 'postgresql';
+  let giftSource = 'postgresql';
+  
+  try {
+    console.log('Data source:', dataSource, 'Gift source:', giftSource);
+    res.json({ dataSource, giftSource });
+  } catch (err: any) {
+    console.error('Location error:', err.stack);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Data export with gift certificates
+app.get('/api/export-data', async (req, res) => {
+  res.set('Content-Type', 'application/json');
+  
+  if (req.headers.authorization !== 'Bearer YOUR_ADMIN_TOKEN') {
+    console.log(`Export access denied for ${req.ip}`);
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const { db } = await import('./db');
+    const { users, postLedger, postSchedule, giftCertificates, brandPurpose, posts, platformConnections } = await import('../shared/schema');
+    
+    // Export all data with gift certificates
+    const allUsers = await db.select().from(users);
+    const allLedger = await db.select().from(postLedger);
+    const allSchedule = await db.select().from(postSchedule);
+    const allGifts = await db.select().from(giftCertificates);
+    const allBrandPurpose = await db.select().from(brandPurpose);
+    const allPosts = await db.select().from(posts);
+    const allConnections = await db.select().from(platformConnections);
+    
+    const exportData = {
+      export_info: {
+        exported_at: new Date().toISOString(),
+        phone_uid_system: true,
+        gift_certificates_included: true,
+        admin_export: true
+      },
+      users: allUsers,
+      post_ledger: allLedger,
+      post_schedule: allSchedule,
+      gift_certificates: allGifts,
+      brand_purpose: allBrandPurpose,
+      posts: allPosts,
+      platform_connections: allConnections
+    };
+
+    console.log(`Data with gifts exported for ${req.ip}`);
+    res.json(exportData);
+  } catch (err: any) {
+    console.error('Export error:', err.stack);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Subscriber backup and restore functions
 async function backupSubscribers() {
   try {

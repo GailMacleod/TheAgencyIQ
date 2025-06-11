@@ -1,0 +1,349 @@
+Locate and Export Gift Certificates
+
+Task: Identify where gift certificates for testers are stored, add them to the admin view, and export them with user data for local migration. Update server/index.ts and client/src/components/AdminDashboard.jsx. Preserve all functionality (Brand Purpose, quota system, OAuth, Google Analytics).
+
+Requirements:
+
+
+
+
+
+Admin Endpoint with Gift Certificates:
+
+
+
+
+
+In server/index.ts, update the admin route:
+
+
+
+
+
+app.get('/api/admin/users', async (req, res) => {
+
+
+
+
+
+res.set('Content-Type', 'application/json');
+
+
+
+if (req.headers.authorization !== 'Bearer YOUR_ADMIN_TOKEN') {
+
+
+
+
+
+console.log('Admin access denied for [req.ip]');
+
+
+
+return res.status(403).json({ error: 'Unauthorized' });
+
+
+
+}
+
+
+
+try {
+
+
+
+
+
+const users = await pool.query('SELECT user_id, email, subscription_plan, subscription_start FROM users');
+
+
+
+const ledger = await pool.query('SELECT user_id, period_start, quota, used_posts FROM post_ledger');
+
+
+
+const schedule = await pool.query('SELECT user_id, post_id, status, is_counted, scheduled_at FROM post_schedule');
+
+
+
+// Assume gift certificates in a table or users field
+
+
+
+const gifts = await pool.query('SELECT user_id, code, redeemed FROM gift_certificates'); // Adjust table/query if different
+
+
+
+const userData = users.rows.map(user => ({ phone: user.user_id, email: user.email, plan: user.subscription_plan, start: user.subscription_start, ledger: ledger.rows.filter(l => l.user_id === user.user_id), posts: schedule.rows.filter(p => p.user_id === user.user_id), gifts: gifts.rows.filter(g => g.user_id === user.user_id).map(g => ({ code: g.code, redeemed: g.redeemed })) }));
+
+
+
+console.log('Admin data with gifts fetched for [req.ip]');
+
+
+
+res.json(userData);
+
+
+
+} catch (err) {
+
+
+
+
+
+console.error('Admin fetch error:', err.stack);
+
+
+
+res.status(500).json({ error: 'Server error', stack: err.stack });
+
+
+
+}
+
+
+
+});
+
+
+
+Log all admin access.
+
+
+
+Data Location Check:
+
+
+
+
+
+Update /api/locate-data:
+
+
+
+
+
+app.get('/api/locate-data', (req, res) => {
+
+
+
+
+
+res.set('Content-Type', 'application/json');
+
+
+
+let dataSource = 'unknown'; let giftSource = 'unknown';
+
+
+
+try {
+
+
+
+
+
+const fs = require('fs'); if (fs.existsSync('data.json')) dataSource = 'data.json';
+
+
+
+const db = require('replitdb'); const users = db.get('users'); if (users) dataSource = 'replitdb';
+
+
+
+const gifts = db.get('gift_certificates'); if (gifts) giftSource = 'replitdb'; // Adjust if separate
+
+
+
+console.log('Data source:', dataSource, 'Gift source:', giftSource);
+
+
+
+res.json({ dataSource, giftSource });
+
+
+
+} catch (err) {
+
+
+
+
+
+console.error('Location error:', err.stack);
+
+
+
+res.status(500).json({ error: err.message });
+
+
+
+}
+
+
+
+});
+
+
+
+Data Export with Gifts:
+
+
+
+
+
+Update /api/export-data:
+
+
+
+
+
+app.get('/api/export-data', async (req, res) => {
+
+
+
+
+
+res.set('Content-Type', 'application/json');
+
+
+
+if (req.headers.authorization !== 'Bearer YOUR_ADMIN_TOKEN') {
+
+
+
+
+
+console.log('Export access denied for [req.ip]');
+
+
+
+return res.status(403).json({ error: 'Unauthorized' });
+
+
+
+}
+
+
+
+try {
+
+
+
+
+
+const users = await pool.query('SELECT user_id, email, subscription_plan, subscription_start FROM users');
+
+
+
+const ledger = await pool.query('SELECT user_id, period_start, quota, used_posts FROM post_ledger');
+
+
+
+const schedule = await pool.query('SELECT user_id, post_id, status, is_counted, scheduled_at FROM post_schedule');
+
+
+
+const gifts = await pool.query('SELECT user_id, code, redeemed FROM gift_certificates');
+
+
+
+const exportData = users.rows.map(user => ({ phone: user.user_id, email: user.email, plan: user.subscription_plan, start: user.subscription_start, ledger: ledger.rows.filter(l => l.user_id === user.user_id), posts: schedule.rows.filter(p => p.user_id === user.user_id), gifts: gifts.rows.filter(g => g.user_id === user.user_id).map(g => ({ code: g.code, redeemed: g.redeemed })) }));
+
+
+
+console.log('Data with gifts exported for [req.ip]');
+
+
+
+res.json(exportData);
+
+
+
+} catch (err) {
+
+
+
+
+
+console.error('Export error:', err.stack);
+
+
+
+res.status(500).json({ error: err.message });
+
+
+
+}
+
+
+
+});
+
+
+
+Admin Dashboard with Gifts:
+
+
+
+
+
+In client/src/components/AdminDashboard.jsx, update:
+
+
+
+
+
+import React, { useState, useEffect } from 'react'; import { apiRequest } from '../api';  const AdminDashboard = () => {   const [users, setUsers] = useState([]);   const [loading, setLoading] = useState(true);    useEffect(() => {     const fetchData = async () => {       try {         const response = await apiRequest('/api/admin/users', { headers: { Authorization: 'Bearer YOUR_ADMIN_TOKEN' } });         console.log('Admin data with gifts loaded:', response);         setUsers(response);         setLoading(false);       } catch (error) {         console.error('Admin load failed:', error.message);         alert('Failed to load data: ' + error.message);       }     };     fetchData();   }, []);    return (     <div>       <h2>Admin Dashboard</h2>       {loading ? <p>Loading...</p> : (         <ul>           {users.map(user => (             <li key={user.phone}>               Phone: {user.phone}, Email: {user.email}, Plan: {user.plan}, Start: {user.start}               <ul>                 {user.ledger.map(l => <li key={l.period_start}>Ledger: {l.quota - l.used_posts} remaining</li>)}                 {user.posts.map(p => <li key={p.post_id}>Post: {p.status}, {p.scheduled_at}</li>)}                 {user.gifts.length > 0 && <li>Gifts: {user.gifts.map(g => `${g.code} (${g.redeemed ? 'Redeemed' : 'Available'})`).join(', ')}</li>}               </ul>             </li>           ))}         </ul>       )}     </div>     ); };  export default AdminDashboard;
+
+
+
+Add to client/src/index.js: import AdminDashboard from './components/AdminDashboard';.
+
+
+
+Testing:
+
+
+
+
+
+Run locally: node server/index.ts and npm start (after local PostgreSQL setup).
+
+
+
+Test /api/locate-data with curl -X GET "http://localhost:5000/api/locate-data".
+
+
+
+Test admin with curl -X GET "http://localhost:5000/api/admin/users" -H "Authorization: Bearer YOUR_ADMIN_TOKEN".
+
+
+
+Export with curl -X GET "http://localhost:5000/api/export-data" -H "Authorization: Bearer YOUR_ADMIN_TOKEN".
+
+
+
+Safeguards:
+
+
+
+
+
+Preserve /api/brand-posts, /api/approve-post, /api/quota-status.
+
+
+
+Use live OAuth credentials.
+
+
+
+Rollback if admin access disrupts functionality.
+
+
+
+Adjust gift_certificates query if the table name or structure differs.
+
+Commit Message:
+
+feat: add admin data inspection with phone UID and gift certificates
