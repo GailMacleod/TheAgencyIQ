@@ -6,6 +6,8 @@ import {
   verificationCodes,
   giftCertificates,
   subscriptionAnalytics,
+  postLedger,
+  postSchedule,
   type User,
   type InsertUser,
   type Post,
@@ -25,11 +27,13 @@ import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations
+  // User operations - phone UID architecture
   getUser(id: number): Promise<User | undefined>;
+  getUserByPhone(phone: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User>;
+  updateUserPhone(oldPhone: string, newPhone: string): Promise<User>;
   updateUserStripeInfo(id: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
 
   // Post operations
@@ -70,6 +74,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.userId, phone));
+    return user;
+  }
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
@@ -90,6 +99,42 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  async updateUserPhone(oldPhone: string, newPhone: string): Promise<User> {
+    // Start transaction to ensure complete data migration
+    return await db.transaction(async (tx) => {
+      // Update user_id (phone UID) in users table
+      const [user] = await tx
+        .update(users) 
+        .set({ 
+          userId: newPhone,
+          phone: newPhone,
+          updatedAt: new Date() 
+        })
+        .where(eq(users.userId, oldPhone))
+        .returning();
+
+      if (!user) {
+        throw new Error(`User with phone ${oldPhone} not found`);
+      }
+
+      // Raw SQL for complex foreign key updates to ensure data integrity
+      await tx.execute(`
+        UPDATE post_ledger 
+        SET user_id = '${newPhone}' 
+        WHERE user_id = '${oldPhone}'
+      `);
+
+      await tx.execute(`
+        UPDATE post_schedule 
+        SET user_id = '${newPhone}' 
+        WHERE user_id = '${oldPhone}'
+      `);
+
+      console.log(`Successfully migrated all data from ${oldPhone} to ${newPhone}`);
+      return user;
+    });
   }
 
   async updateUserStripeInfo(id: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
