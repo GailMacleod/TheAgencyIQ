@@ -19,6 +19,15 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  console.log(`API response for ${url}: ${res.status}`);
+  
+  // Check response type for JSON enforcement
+  if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
+    const responseText = await res.text();
+    console.error('Non-JSON response:', responseText);
+    throw new Error('Invalid server response');
+  }
+
   await throwIfResNotOk(res);
   return res;
 }
