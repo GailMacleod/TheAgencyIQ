@@ -657,6 +657,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comprehensive phone update endpoint with complete data migration
+  app.post("/api/update-phone", requireAuth, async (req: any, res) => {
+    try {
+      const { newPhone, verificationCode } = req.body;
+      
+      if (!newPhone || !verificationCode) {
+        return res.status(400).json({ 
+          error: "New phone number and verification code are required" 
+        });
+      }
+
+      // Get current user by session ID
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser || !currentUser.userId) {
+        return res.status(404).json({ 
+          error: "Current user not found or no phone number on record" 
+        });
+      }
+
+      console.log(`Phone update request: ${currentUser.userId} -> ${newPhone}`);
+
+      // Verify the SMS code
+      const codeRecord = await storage.getVerificationCode(newPhone, verificationCode);
+      if (!codeRecord || codeRecord.isUsed) {
+        return res.status(400).json({ 
+          error: "Invalid or expired verification code" 
+        });
+      }
+
+      // Check if new phone number is already in use
+      const existingUser = await storage.getUserByPhone(newPhone);
+      if (existingUser && existingUser.id !== currentUser.id) {
+        return res.status(409).json({ 
+          error: "Phone number already in use by another account" 
+        });
+      }
+
+      // Perform comprehensive data migration with transaction
+      const updatedUser = await storage.updateUserPhone(currentUser.userId, newPhone);
+      
+      // Mark verification code as used
+      await storage.markVerificationCodeUsed(codeRecord.id);
+
+      console.log(`Successfully migrated all data from ${currentUser.userId} to ${newPhone}`);
+
+      res.json({ 
+        success: true, 
+        message: "Phone number updated successfully with complete data migration",
+        user: updatedUser,
+        migratedData: {
+          posts: "All scheduled posts migrated",
+          quota: "Quota and usage data migrated", 
+          connections: "Platform connections preserved"
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Phone update error:', error);
+      res.status(500).json({ 
+        error: "Failed to update phone number: " + error.message 
+      });
+    }
+  });
+
   // Facebook/Instagram data deletion callback endpoint
   app.post("/api/facebook/data-deletion", async (req, res) => {
     try {
