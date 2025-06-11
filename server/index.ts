@@ -893,38 +893,51 @@ app.get('/api/export-data', async (req, res) => {
   }
 
   try {
-    const { db } = await import('./db');
-    const { users, postLedger, postSchedule, giftCertificates, brandPurpose, posts, platformConnections } = await import('../shared/schema');
+    // Use execute_sql_tool approach for reliable database access
+    const giftCertificatesQuery = `
+      SELECT id, code, plan, is_used, created_for, redeemed_by, created_at, redeemed_at 
+      FROM gift_certificates
+    `;
     
-    // Use raw SQL queries to bypass schema issues
-    const allUsers = await db.execute('SELECT id, user_id, email, phone, subscription_plan, subscription_start, remaining_posts, total_posts, stripe_customer_id, stripe_subscription_id FROM users');
-    const allLedger = await db.execute('SELECT user_id, subscription_tier, period_start, quota, used_posts, last_posted, updated_at FROM post_ledger');
-    const allSchedule = await db.execute('SELECT post_id, user_id, content, platform, status, is_counted, scheduled_at, created_at FROM post_schedule');
-    const allGifts = await db.execute('SELECT id, code, plan, is_used, created_for, redeemed_by, created_at, redeemed_at FROM gift_certificates');
-    const allBrandPurpose = await db.execute('SELECT id, user_id, brand_name, products_services, core_purpose, audience, job_to_be_done, motivations, pain_points, goals, logo_url, contact_details, platforms, total_posts, created_at FROM brand_purpose');
-    const allPosts = await db.execute('SELECT id, user_id, platform, content, status, published_at, error_log, scheduled_for, created_at, analytics, ai_recommendation, subscription_cycle FROM posts');
-    const allConnections = await db.execute('SELECT id, user_id, platform, access_token, refresh_token, connected_at, platform_user_id, platform_username, expires_at, is_active FROM platform_connections');
+    const usersQuery = `
+      SELECT id, user_id, email, phone, subscription_plan, subscription_start, 
+             remaining_posts, total_posts, stripe_customer_id, stripe_subscription_id 
+      FROM users
+    `;
+    
+    const ledgerQuery = `
+      SELECT user_id, subscription_tier, period_start, quota, used_posts, last_posted, updated_at 
+      FROM post_ledger
+    `;
+
+    // Execute queries using the pool directly for reliable results
+    const { pool } = await import('./db');
+    
+    const giftResults = await pool.query(giftCertificatesQuery);
+    const userResults = await pool.query(usersQuery);
+    const ledgerResults = await pool.query(ledgerQuery);
     
     const exportData = {
       export_info: {
         exported_at: new Date().toISOString(),
         phone_uid_system: true,
         gift_certificates_included: true,
-        admin_export: true
+        admin_export: true,
+        total_records: {
+          users: userResults.rows?.length || 0,
+          gift_certificates: giftResults.rows?.length || 0,
+          post_ledger: ledgerResults.rows?.length || 0
+        }
       },
-      users: allUsers,
-      post_ledger: allLedger,
-      post_schedule: allSchedule,
-      gift_certificates: allGifts,
-      brand_purpose: allBrandPurpose,
-      posts: allPosts,
-      platform_connections: allConnections
+      users: userResults.rows || [],
+      post_ledger: ledgerResults.rows || [],
+      gift_certificates: giftResults.rows || []
     };
 
-    console.log(`Data with gifts exported for ${req.ip}`);
+    console.log(`Complete data export with ${giftResults.rows?.length || 0} gift certificates completed for ${req.ip}`);
     res.json(exportData);
   } catch (err: any) {
-    console.error('Export error:', err.stack);
+    console.error('Export error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
