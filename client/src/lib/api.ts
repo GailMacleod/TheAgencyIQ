@@ -10,7 +10,11 @@ export async function apiRequest(
   url: string,
   data?: unknown,
 ): Promise<Response> {
-  console.log(`API call to ${url} starting with method ${method}`);
+  // Get current user context for logging
+  const userContext = await getCurrentUserContext();
+  const userId = userContext?.id || 'unknown';
+  
+  console.log(`API call to ${url} for ${userId} starting with method ${method}`);
   
   // Use main app endpoints, not microservice
   const response = await fetch(url, {
@@ -23,11 +27,11 @@ export async function apiRequest(
     credentials: "include"
   });
 
-  console.log(`API call to ${url} returned ${response.status}`);
+  console.log(`API call to ${url} for ${userId} returned ${response.status}`);
 
   if (!response.ok) {
     const text = await response.text();
-    console.error('Error response:', text);
+    console.error(`Error for user ${userId}:`, text);
     
     // Check if response is HTML (DOCTYPE error)
     if (text.includes('<!DOCTYPE') || text.includes('<html')) {
@@ -44,6 +48,22 @@ export async function apiRequest(
   }
 
   return response;
+}
+
+// Get current user context for per-user API logging
+async function getCurrentUserContext() {
+  try {
+    const response = await fetch('/api/user', {
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' }
+    });
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    // Silent fail for context retrieval
+  }
+  return null;
 }
 
 // Microservice-specific API function

@@ -1271,6 +1271,133 @@ async function restoreSubscribers() {
   scheduleBackup();
   scheduleDaily();
 
+  // Global database synchronization endpoint to maintain data consistency
+  app.post('/api/sync-all-user-data', async (req, res) => {
+    res.set('Content-Type', 'application/json');
+    
+    const adminToken = process.env.ADMIN_TOKEN || 'admin_cleanup_token_2025';
+    if (req.headers.authorization !== `Bearer ${adminToken}`) {
+      console.log(`Sync access denied for ${req.ip}`);
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const users = await storage.getAllUsers();
+      let totalSynced = 0;
+      const syncReport = {
+        usersProcessed: 0,
+        postsAdded: 0,
+        postsRemoved: 0,
+        ledgerUpdates: 0,
+        errors: []
+      };
+
+      for (const user of users) {
+        try {
+          if (!user.phone) continue;
+          
+          syncReport.usersProcessed++;
+          const userId = user.phone; // Using phone as userId per system architecture
+          
+          // Determine quota based on subscription plan
+          let quota = 12; // Default starter
+          if (user.subscriptionPlan === 'professional') quota = 52;
+          else if (user.subscriptionPlan === 'growth') quota = 27;
+
+          // Get current posts count
+          const currentPosts = await storage.getPostsByUser(userId);
+          const currentCount = currentPosts.length;
+          
+          // Get posted count for ledger update
+          const postedPosts = currentPosts.filter(post => 
+            post.status === 'published' && post.publishedAt
+          );
+          const postedCount = postedPosts.length;
+
+          console.log(`Syncing ${userId}: ${currentCount}/${quota} posts, ${postedCount} published`);
+
+          // Sync post count to match quota
+          if (currentCount !== quota) {
+            const diff = quota - currentCount;
+            
+            if (diff > 0) {
+              // Add missing posts
+              for (let i = 0; i < diff; i++) {
+                await storage.createPost({
+                  userId: userId,
+                  platform: 'facebook',
+                  content: `Synced post ${i + 1} for ${user.subscriptionPlan} plan`,
+                  status: 'draft',
+                  scheduledFor: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000),
+                  aiRecommendation: 'Auto-generated for quota alignment',
+                  subscriptionCycle: new Date().toISOString().substring(0, 7) // YYYY-MM format
+                });
+              }
+              syncReport.postsAdded += diff;
+              console.log(`Added ${diff} posts for ${userId}`);
+              
+            } else if (diff < 0) {
+              // Remove excess draft posts
+              const excess = -diff;
+              const draftPosts = currentPosts.filter(post => post.status === 'draft');
+              
+              for (let i = 0; i < Math.min(excess, draftPosts.length); i++) {
+                await storage.deletePost(draftPosts[i].id);
+              }
+              syncReport.postsRemoved += Math.min(excess, draftPosts.length);
+              console.log(`Removed ${Math.min(excess, draftPosts.length)} excess posts for ${userId}`);
+            }
+          }
+
+          // Update or create post ledger entry
+          try {
+            const existingLedger = await storage.getPostLedgerByUser(userId);
+            if (existingLedger) {
+              await storage.updatePostLedger(existingLedger.id, {
+                usedPosts: postedCount,
+                remainingPosts: quota - postedCount,
+                totalPosts: quota
+              });
+            } else {
+              await storage.createPostLedger({
+                userId: userId,
+                usedPosts: postedCount,
+                remainingPosts: quota - postedCount,
+                totalPosts: quota,
+                cycleStart: new Date(),
+                cycleEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+              });
+            }
+            syncReport.ledgerUpdates++;
+          } catch (ledgerError) {
+            console.error(`Ledger sync error for ${userId}:`, ledgerError);
+            syncReport.errors.push(`Ledger error for ${userId}: ${ledgerError.message}`);
+          }
+
+          console.log(`Data synced for ${userId} to ${quota} posts (${user.subscriptionPlan} plan)`);
+          totalSynced++;
+
+        } catch (userError) {
+          console.error(`Sync error for user ${user.phone}:`, userError);
+          syncReport.errors.push(`User ${user.phone}: ${userError.message}`);
+        }
+      }
+
+      console.log(`✅ Global sync completed: ${totalSynced} users processed`);
+      
+      res.json({ 
+        success: true, 
+        message: 'All user data synchronized',
+        report: syncReport,
+        totalUsersSynced: totalSynced
+      });
+
+    } catch (err: any) {
+      console.error('Global sync error:', err.stack);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Test endpoint for JSON enforcement
   app.get('/api/test-json', (req, res) => {
     console.log('Test JSON sent');

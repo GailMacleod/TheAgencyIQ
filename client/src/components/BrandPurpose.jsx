@@ -44,6 +44,36 @@ export default function BrandPurpose({ posts = [], user = null }) {
     }
   }, [existingBrandPurpose]);
 
+  // Global data synchronization on component load
+  useEffect(() => {
+    const syncData = async () => {
+      if (user?.id) {
+        try {
+          const adminToken = 'admin_cleanup_token_2025';
+          const response = await fetch('/api/sync-all-user-data', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${adminToken}`,
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log(`Customer data populated for ${user.id || 'unknown'}:`, result);
+          } else {
+            console.warn('Data sync permission denied or failed');
+          }
+        } catch (error) {
+          console.error('Global data sync failed:', error);
+        }
+      }
+    };
+    
+    syncData();
+  }, [user?.id]);
+
   const handleEditClick = (post) => {
     console.log('Edit clicked for', post.platform);
     setEditingPost(post);

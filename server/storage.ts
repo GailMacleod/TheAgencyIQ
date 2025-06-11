@@ -66,6 +66,11 @@ export interface IStorage {
 
   // Platform connection search operations
   getPlatformConnectionsByPlatformUserId(platformUserId: string): Promise<PlatformConnection[]>;
+
+  // Post ledger operations for synchronization
+  getPostLedgerByUser(userId: string): Promise<any | undefined>;
+  createPostLedger(ledger: any): Promise<any>;
+  updatePostLedger(id: number, updates: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -307,6 +312,29 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(platformConnections)
       .where(eq(platformConnections.platformUserId, platformUserId));
+  }
+
+  // Post ledger operations for synchronization
+  async getPostLedgerByUser(userId: string): Promise<any | undefined> {
+    const [ledger] = await db.select().from(postLedger).where(eq(postLedger.userId, userId));
+    return ledger;
+  }
+
+  async createPostLedger(ledger: any): Promise<any> {
+    const [newLedger] = await db
+      .insert(postLedger)
+      .values(ledger)
+      .returning();
+    return newLedger;
+  }
+
+  async updatePostLedger(id: number, updates: any): Promise<any> {
+    const [updatedLedger] = await db
+      .update(postLedger)
+      .set(updates)
+      .where(eq(postLedger.id, id))
+      .returning();
+    return updatedLedger;
   }
 }
 
