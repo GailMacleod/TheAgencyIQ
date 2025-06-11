@@ -29,7 +29,7 @@ app.use((req, res, next) => {
 
 // Global error handler to ensure JSON responses
 app.use((err: any, req: Request, res: Response, next: NextFunction) => { 
-  console.error('Error:', err.stack); 
+  console.error('Global error:', err.stack); 
   res.status(500).json({ error: 'Server error', stack: err.stack }); 
 });
 
