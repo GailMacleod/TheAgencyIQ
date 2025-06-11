@@ -809,27 +809,64 @@ app.get('/api/admin/users', async (req, res) => {
     const { db } = await import('./db');
     const { users, postLedger, postSchedule, giftCertificates } = await import('../shared/schema');
     
-    // Fetch all data with proper joins
-    const allUsers = await db.select().from(users);
-    const allLedger = await db.select().from(postLedger);
-    const allSchedule = await db.select().from(postSchedule);
-    const allGifts = await db.select().from(giftCertificates);
+    // Fetch all data with specific columns to avoid schema mismatches
+    const allUsers = await db.select({
+      id: users.id,
+      userId: users.userId,
+      email: users.email,
+      phone: users.phone,
+      subscriptionPlan: users.subscriptionPlan,
+      subscriptionStart: users.subscriptionStart,
+      remainingPosts: users.remainingPosts,
+      totalPosts: users.totalPosts
+    }).from(users);
     
-    const userData = allUsers.map(user => ({
-      phone: user.phone,
-      email: user.email,
-      plan: user.subscriptionPlan,
-      start: user.subscriptionStart,
-      ledger: allLedger.filter(l => l.userId === user.id),
-      posts: allSchedule.filter(p => p.userId === user.id),
-      gifts: allGifts.filter(g => g.redeemedBy && g.redeemedBy.toString() === user.id.toString()).map(g => ({
-        code: g.code,
-        redeemed: g.isUsed,
-        plan: g.plan,
-        createdFor: g.createdFor,
-        redeemedAt: g.redeemedAt
-      }))
-    }));
+    const allLedger = await db.select({
+      userId: postLedger.userId,
+      subscriptionTier: postLedger.subscriptionTier,
+      periodStart: postLedger.periodStart,
+      quota: postLedger.quota,
+      usedPosts: postLedger.usedPosts
+    }).from(postLedger);
+    
+    const allSchedule = await db.select({
+      postId: postSchedule.postId,
+      userId: postSchedule.userId,
+      platform: postSchedule.platform,
+      status: postSchedule.status,
+      isCounted: postSchedule.isCounted,
+      scheduledAt: postSchedule.scheduledAt
+    }).from(postSchedule);
+    
+    const allGifts = await db.select({
+      id: giftCertificates.id,
+      code: giftCertificates.code,
+      plan: giftCertificates.plan,
+      isUsed: giftCertificates.isUsed,
+      createdFor: giftCertificates.createdFor,
+      redeemedBy: giftCertificates.redeemedBy,
+      createdAt: giftCertificates.createdAt,
+      redeemedAt: giftCertificates.redeemedAt
+    }).from(giftCertificates);
+    
+    const userData = allUsers.map(user => {
+      const userIdentifier = user.phone || user.userId;
+      return {
+        phone: userIdentifier,
+        email: user.email,
+        plan: user.subscriptionPlan,
+        start: user.subscriptionStart,
+        ledger: allLedger.filter(l => l.userId === userIdentifier),
+        posts: allSchedule.filter(p => p.userId === userIdentifier),
+        gifts: allGifts.filter(g => g.redeemedBy === user.id).map(g => ({
+          code: g.code,
+          redeemed: g.isUsed,
+          plan: g.plan,
+          createdFor: g.createdFor,
+          redeemedAt: g.redeemedAt
+        }))
+      };
+    });
 
     console.log(`Admin data with gifts fetched for ${req.ip}`);
     res.json(userData);
