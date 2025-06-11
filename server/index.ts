@@ -651,12 +651,12 @@ app.post('/api/approve-post', async (req, res) => {
 
     const mobileNumber = user.phone;
     const { db } = await import('./db');
-    const { postSchedule, postLedger } = await import('../shared/schema');
+    const { posts } = await import('../shared/schema');
     const { eq, and } = await import('drizzle-orm');
     
-    // Get post
-    const [post] = await db.select().from(postSchedule).where(
-      and(eq(postSchedule.postId, postId), eq(postSchedule.userId, mobileNumber))
+    // Get post using correct table and integer ID
+    const [post] = await db.select().from(posts).where(
+      and(eq(posts.id, parseInt(postId)), eq(posts.userId, user.id))
     );
     
     if (!post) {
@@ -733,28 +733,20 @@ app.post('/api/approve-post', async (req, res) => {
       }
       
       if (publishResult.success) {
-        // Update post status and increment quota
-        await db.update(postSchedule)
+        // Update post status to approved/published in posts table
+        await db.update(posts)
           .set({ 
-            status: 'posted',
-            isCounted: true
+            status: 'approved',
+            publishedAt: new Date()
           })
-          .where(eq(postSchedule.postId, postId));
-        
-        await db.update(postLedger)
-          .set({ 
-            usedPosts: quotaCheck.ledger.usedPosts + 1,
-            lastPosted: new Date(),
-            updatedAt: new Date()
-          })
-          .where(eq(postLedger.userId, mobileNumber));
+          .where(eq(posts.id, parseInt(postId)));
         
         // Fire Google Analytics event
         console.log(`Google Analytics event: post_success for ${mobileNumber} on ${post.platform}`);
         
         res.json({
           success: true,
-          post: { ...post, status: 'posted', isCounted: true },
+          post: { ...post, status: 'approved', publishedAt: new Date() },
           platformPostId: publishResult.platformPostId,
           analytics: publishResult.analytics
         });
