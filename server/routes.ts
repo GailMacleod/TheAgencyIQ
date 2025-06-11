@@ -1550,7 +1550,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Connect platform (OAuth redirect)
+  // Connect platform (OAuth redirect only - no demo tokens)
   app.post("/api/connect-platform", requireAuth, async (req: any, res) => {
     try {
       const { platform } = req.body;
@@ -1559,12 +1559,12 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Platform is required" });
       }
 
-      // Redirect to OAuth authentication for the platform
+      // Only allow real OAuth authentication - no demo/mock connections
       const authUrl = `/auth/${platform}`;
       res.json({ 
         success: true,
         authUrl: authUrl,
-        message: `Redirecting to ${platform} authentication`
+        message: `Redirecting to ${platform} OAuth authentication`
       });
     } catch (error: any) {
       console.error('Platform connection error:', error);

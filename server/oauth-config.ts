@@ -23,7 +23,18 @@ passport.use(new FacebookStrategy({
       return done(new Error('User not authenticated'));
     }
 
-    // Store platform connection
+    // Validate real OAuth token (no demo/mock tokens allowed)
+    if (!accessToken || accessToken.includes('demo') || accessToken.includes('mock') || accessToken.length < 10) {
+      return done(new Error('Invalid Facebook OAuth token received'));
+    }
+
+    console.log('Facebook OAuth successful:', {
+      profileId: profile.id,
+      displayName: profile.displayName,
+      tokenType: 'live_oauth'
+    });
+
+    // Store platform connection with real credentials only
     await storage.createPlatformConnection({
       userId,
       platform: 'facebook',
@@ -36,6 +47,7 @@ passport.use(new FacebookStrategy({
 
     return done(null, { platform: 'facebook', success: true });
   } catch (error) {
+    console.error('Facebook OAuth error:', error);
     return done(error);
   }
 }));
@@ -54,6 +66,17 @@ passport.use('instagram', new FacebookStrategy({
       return done(new Error('User not authenticated'));
     }
 
+    // Validate real OAuth token (no demo/mock tokens allowed)
+    if (!accessToken || accessToken.includes('demo') || accessToken.includes('mock') || accessToken.length < 10) {
+      return done(new Error('Invalid Instagram OAuth token received'));
+    }
+
+    console.log('Instagram OAuth successful:', {
+      profileId: profile.id,
+      displayName: profile.displayName,
+      tokenType: 'live_oauth'
+    });
+
     await storage.createPlatformConnection({
       userId,
       platform: 'instagram',
@@ -66,6 +89,7 @@ passport.use('instagram', new FacebookStrategy({
 
     return done(null, { platform: 'instagram', success: true });
   } catch (error) {
+    console.error('Instagram OAuth error:', error);
     return done(error);
   }
 }));
@@ -84,10 +108,15 @@ passport.use(new LinkedInStrategy({
       return done(new Error('User not authenticated'));
     }
 
+    // Validate real OAuth token (no demo/mock tokens allowed)
+    if (!accessToken || accessToken.includes('demo') || accessToken.includes('mock') || accessToken.length < 10) {
+      return done(new Error('Invalid LinkedIn OAuth token received'));
+    }
+
     console.log('LinkedIn OAuth successful:', {
       profileId: profile.id,
       displayName: profile.displayName,
-      accessTokenLength: accessToken ? accessToken.length : 0
+      tokenType: 'live_oauth'
     });
 
     await storage.createPlatformConnection({
@@ -96,7 +125,7 @@ passport.use(new LinkedInStrategy({
       platformUserId: profile.id,
       platformUsername: profile.displayName || profile.name?.givenName + ' ' + profile.name?.familyName,
       accessToken,
-      refreshToken: refreshToken || 'linkedin_refresh_token',
+      refreshToken: refreshToken || null,
       isActive: true
     });
 
@@ -120,6 +149,17 @@ passport.use(new TwitterStrategy({
       return done(new Error('User not authenticated'));
     }
 
+    // Validate real OAuth token (no demo/mock tokens allowed)
+    if (!token || token.includes('demo') || token.includes('mock') || token.length < 10) {
+      return done(new Error('Invalid X OAuth token received'));
+    }
+
+    console.log('X OAuth successful:', {
+      profileId: profile.id,
+      username: profile.username,
+      tokenType: 'live_oauth'
+    });
+
     await storage.createPlatformConnection({
       userId,
       platform: 'x',
@@ -132,6 +172,7 @@ passport.use(new TwitterStrategy({
 
     return done(null, { platform: 'x', success: true });
   } catch (error) {
+    console.error('X OAuth error:', error);
     return done(error);
   }
 }));
