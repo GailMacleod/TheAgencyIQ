@@ -1294,24 +1294,17 @@ async function restoreSubscribers() {
 
       for (const user of users) {
         try {
-          if (!user.phone) continue;
+          if (!user.id) continue;
           
           syncReport.usersProcessed++;
-          const userId = user.phone; // Using phone as userId per system architecture
+          const userId = user.phone || user.userId; // Use phone or userId field
           
           // Determine quota based on subscription plan
           let quota = 12; // Default starter
           if (user.subscriptionPlan === 'professional') quota = 52;
           else if (user.subscriptionPlan === 'growth') quota = 27;
-
-          // Get current posts count using proper user ID lookup
-          const userRecord = await storage.getUserByPhone(userId);
-          if (!userRecord) {
-            console.log(`User record not found for phone: ${userId}`);
-            continue;
-          }
           
-          const currentPosts = await storage.getPostsByUser(userRecord.id);
+          const currentPosts = await storage.getPostsByUser(user.id);
           const currentCount = currentPosts.length;
           
           // Get posted count for ledger update
@@ -1330,7 +1323,7 @@ async function restoreSubscribers() {
               // Add missing posts
               for (let i = 0; i < diff; i++) {
                 await storage.createPost({
-                  userId: userRecord.id, // Use proper integer ID
+                  userId: user.id, // Use proper integer ID
                   platform: 'facebook',
                   content: `Synced post ${i + 1} for ${user.subscriptionPlan} plan`,
                   status: 'draft',
@@ -1373,7 +1366,6 @@ async function restoreSubscribers() {
                 quota: quota,
                 usedPosts: postedCount,
                 lastPosted: null,
-                createdAt: new Date(),
                 updatedAt: new Date()
               });
             }
