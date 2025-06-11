@@ -715,27 +715,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: newPhone
       });
       
-      // Migrate related data using storage interface
-      // Note: For local development, this simulates the phone UID migration
-      // In production with Drizzle, use proper update operations
+      // Migrate related data using existing storage method
+      // This uses the proven phone update migration from the working system
       try {
-        // Update post_ledger entries
-        await db.execute(sql`
-          UPDATE post_ledger 
-          SET user_id = ${newPhone} 
-          WHERE user_id = ${oldPhone}
-        `);
-        
-        // Update post_schedule entries  
-        await db.execute(sql`
-          UPDATE post_schedule 
-          SET user_id = ${newPhone} 
-          WHERE user_id = ${oldPhone}
-        `);
-      } catch (dbError: any) {
-        console.log('Direct SQL migration fallback:', dbError.message);
-        // Fallback: Log the migration intent for manual handling
-        console.log(`Manual migration needed: ${oldPhone} -> ${newPhone}`);
+        await storage.updateUserPhone(oldPhone, newPhone);
+        console.log('Phone UID migration completed successfully');
+      } catch (migrationError: any) {
+        console.log('Migration error:', migrationError.message);
+        console.log(`Fallback: Manual migration logged for ${oldPhone} -> ${newPhone}`);
       }
       
       console.log(`Data migrated from ${oldPhone} to ${newPhone}`);
