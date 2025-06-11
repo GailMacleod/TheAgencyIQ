@@ -838,16 +838,7 @@ app.get('/api/admin/users', async (req, res) => {
       scheduledAt: postSchedule.scheduledAt
     }).from(postSchedule);
     
-    const allGifts = await db.select({
-      id: giftCertificates.id,
-      code: giftCertificates.code,
-      plan: giftCertificates.plan,
-      isUsed: giftCertificates.isUsed,
-      createdFor: giftCertificates.createdFor,
-      redeemedBy: giftCertificates.redeemedBy,
-      createdAt: giftCertificates.createdAt,
-      redeemedAt: giftCertificates.redeemedAt
-    }).from(giftCertificates);
+    const allGifts = await db.select().from(giftCertificates);
     
     const userData = allUsers.map(user => {
       const userIdentifier = user.phone || user.userId;
@@ -905,8 +896,20 @@ app.get('/api/export-data', async (req, res) => {
     const { db } = await import('./db');
     const { users, postLedger, postSchedule, giftCertificates, brandPurpose, posts, platformConnections } = await import('../shared/schema');
     
-    // Export all data with gift certificates
-    const allUsers = await db.select().from(users);
+    // Export all data with gift certificates using safe column selection
+    const allUsers = await db.select({
+      id: users.id,
+      userId: users.userId,
+      email: users.email,
+      phone: users.phone,
+      subscriptionPlan: users.subscriptionPlan,
+      subscriptionStart: users.subscriptionStart,
+      remainingPosts: users.remainingPosts,
+      totalPosts: users.totalPosts,
+      stripeCustomerId: users.stripeCustomerId,
+      stripeSubscriptionId: users.stripeSubscriptionId
+    }).from(users);
+    
     const allLedger = await db.select().from(postLedger);
     const allSchedule = await db.select().from(postSchedule);
     const allGifts = await db.select().from(giftCertificates);
