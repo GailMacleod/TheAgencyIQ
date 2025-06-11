@@ -13,12 +13,13 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// Users table with subscription and post tracking
+// Users table with phone as primary UID for robust data integrity
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 15 }).notNull().unique(), // Phone number UID
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  phone: text("phone"),
+  phone: text("phone"), // Legacy field for migration
   subscriptionPlan: text("subscription_plan"), // 'starter', 'growth', 'professional'
   subscriptionStart: timestamp("subscription_start"),
   remainingPosts: integer("remaining_posts").default(0),
