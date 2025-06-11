@@ -20,6 +20,15 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
+// Environment stabilization check
+app.use((req, res, next) => { 
+  console.log('Environment check:', process.env.NODE_ENV); 
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('Development mode detected');
+  }
+  next(); 
+});
+
 // Global JSON enforcement middleware with comprehensive logging
 app.use((req, res, next) => { 
   res.set('Content-Type', 'application/json'); 

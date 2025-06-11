@@ -3948,6 +3948,9 @@ Continue building your Value Proposition Canvas systematically.`;
 
   // Phone update endpoint with two-step verification
   app.post('/api/update-phone', async (req, res) => {
+    // Force JSON response to prevent HTML injection
+    res.set('Content-Type', 'application/json');
+    
     try {
       const { email, newPhone, verificationCode } = req.body;
       
@@ -3958,6 +3961,14 @@ Continue building your Value Proposition Canvas systematically.`;
           error: "Email and new phone number are required" 
         });
       }
+
+      // Session validation
+      if (!req.session?.userId) {
+        console.log('No session found for phone update');
+        return res.status(401).json({ error: 'No session - please log in' });
+      }
+
+      console.log('Session validated for phone update');
 
       // Verify SMS code
       const storedData = verificationCodes.get(newPhone);
@@ -4007,16 +4018,39 @@ Continue building your Value Proposition Canvas systematically.`;
       
       console.log(`Phone updated successfully for ${email}: ${newPhone}`);
       
-      res.json({ 
+      res.status(200).json({ 
         success: true, 
         newPhone: newPhone,
         message: 'Phone number updated successfully'
       });
 
-    } catch (error) {
-      console.error('Phone update error:', error);
-      res.status(500).json({ error: 'Failed to update phone number' });
+    } catch (error: any) {
+      console.error('Phone update error:', error.stack);
+      res.status(500).json({ 
+        error: 'Failed to update phone number',
+        details: error.message 
+      });
     }
+  });
+
+  // Credential security check endpoint
+  app.get('/api/check-credentials', (req, res) => {
+    res.set('Content-Type', 'application/json');
+    
+    const adminToken = process.env.ADMIN_TOKEN || 'admin_cleanup_token_2025';
+    if (req.headers.authorization !== `Bearer ${adminToken}`) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    const credentialCheck = {
+      twilio: process.env.TWILIO_ACCOUNT_SID ? 'Secured' : 'Exposed',
+      stripe: process.env.STRIPE_WEBHOOK_SECRET ? 'Secured' : 'Exposed',
+      database: process.env.DATABASE_URL ? 'Secured' : 'Exposed',
+      xai: process.env.XAI_API_KEY ? 'Secured' : 'Exposed'
+    };
+    
+    console.log('Credential security check:', credentialCheck);
+    res.json(credentialCheck);
   });
 
   // Database cleanup endpoint for removing excess posts and optimizing performance

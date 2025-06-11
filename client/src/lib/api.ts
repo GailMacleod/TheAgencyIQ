@@ -12,20 +12,18 @@ export async function apiRequest(
 ): Promise<Response> {
   console.log(`API call to ${url} starting with method ${method}`);
   
-  // Determine if this is a microservice call
-  const isMicroserviceCall = url.includes('/update-phone');
-  const targetUrl = isMicroserviceCall 
-    ? `${MICROSERVICE_ENDPOINTS.phoneUpdate}${url}` 
-    : url;
-  
-  const response = await fetch(targetUrl, {
+  // Use main app endpoints, not microservice
+  const response = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: { 
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
     body: data ? JSON.stringify(data) : undefined,
-    credentials: isMicroserviceCall ? "omit" : "include", // No credentials for microservice
+    credentials: "include"
   });
 
-  console.log(`API call to ${targetUrl} returned ${response.status}`);
+  console.log(`API call to ${url} returned ${response.status}`);
 
   if (!response.ok) {
     const text = await response.text();
@@ -33,7 +31,7 @@ export async function apiRequest(
     
     // Check if response is HTML (DOCTYPE error)
     if (text.includes('<!DOCTYPE') || text.includes('<html')) {
-      throw new Error('Server returned HTML instead of JSON. Check server configuration.');
+      throw new Error('Server returned HTML instead of JSON - environment issue detected');
     }
     
     // Try to parse as JSON for proper error handling
