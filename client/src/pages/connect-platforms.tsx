@@ -76,8 +76,6 @@ export default function ConnectPlatforms() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [showPassword, setShowPassword] = useState<{[key: string]: boolean}>({});
-  const [credentials, setCredentials] = useState<{[key: string]: {username: string, password: string}}>({});
   const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
 
   // Fetch platform connections
@@ -91,12 +89,26 @@ export default function ConnectPlatforms() {
     try {
       setConnecting(prev => ({ ...prev, [platform]: true }));
       
+      // Map platform names to OAuth routes
+      const oauthRoutes: { [key: string]: string } = {
+        'facebook': '/auth/facebook',
+        'instagram': '/auth/instagram', 
+        'linkedin': '/auth/linkedin',
+        'x': '/auth/twitter',
+        'youtube': '/auth/youtube'
+      };
+      
+      const oauthUrl = oauthRoutes[platform];
+      if (!oauthUrl) {
+        throw new Error(`OAuth not configured for ${platform}`);
+      }
+      
       // Redirect to OAuth flow
-      window.location.href = `/auth/${platform}`;
+      window.location.href = oauthUrl;
     } catch (error: any) {
       toast({
         title: "Connection Failed",
-        description: "Failed to initiate OAuth connection",
+        description: error.message || "Failed to initiate OAuth connection",
         variant: "destructive"
       });
       setConnecting(prev => ({ ...prev, [platform]: false }));
