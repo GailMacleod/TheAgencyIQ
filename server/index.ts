@@ -1315,37 +1315,17 @@ async function restoreSubscribers() {
 
           console.log(`Syncing ${userId}: ${currentCount}/${quota} posts, ${postedCount} published`);
 
-          // Sync post count to match quota
-          if (currentCount !== quota) {
-            const diff = quota - currentCount;
+          // Only track actual user-generated posts - no auto-creation
+          // Remove any excess posts beyond subscription quota
+          if (currentCount > quota) {
+            const excess = currentCount - quota;
+            const draftPosts = currentPosts.filter(post => post.status === 'draft');
             
-            if (diff > 0) {
-              // Add missing posts
-              for (let i = 0; i < diff; i++) {
-                await storage.createPost({
-                  userId: user.id, // Use proper integer ID
-                  platform: 'facebook',
-                  content: `Synced post ${i + 1} for ${user.subscriptionPlan} plan`,
-                  status: 'draft',
-                  scheduledFor: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000),
-                  aiRecommendation: 'Auto-generated for quota alignment',
-                  subscriptionCycle: new Date().toISOString().substring(0, 7) // YYYY-MM format
-                });
-              }
-              syncReport.postsAdded += diff;
-              console.log(`Added ${diff} posts for ${userId}`);
-              
-            } else if (diff < 0) {
-              // Remove excess draft posts
-              const excess = -diff;
-              const draftPosts = currentPosts.filter(post => post.status === 'draft');
-              
-              for (let i = 0; i < Math.min(excess, draftPosts.length); i++) {
-                await storage.deletePost(draftPosts[i].id);
-              }
-              syncReport.postsRemoved += Math.min(excess, draftPosts.length);
-              console.log(`Removed ${Math.min(excess, draftPosts.length)} excess posts for ${userId}`);
+            for (let i = 0; i < Math.min(excess, draftPosts.length); i++) {
+              await storage.deletePost(draftPosts[i].id);
             }
+            syncReport.postsRemoved += Math.min(excess, draftPosts.length);
+            console.log(`Removed ${Math.min(excess, draftPosts.length)} excess posts for ${userId}`);
           }
 
           // Update or create post ledger entry

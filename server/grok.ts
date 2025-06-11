@@ -163,15 +163,21 @@ CONTENT STRATEGY REQUIREMENTS:
 - Include clear calls-to-action based on business goals
 
 PLATFORM-SPECIFIC OPTIMIZATION:
-Distribute content across platforms based on AI analysis weighting:
+Distribute exactly ${params.totalPosts} posts across platforms using AI analysis weighting:
 ${JSON.stringify(analysis.platformWeighting)}
+
+STRICT QUOTA ENFORCEMENT:
+- Total posts generated MUST equal exactly ${params.totalPosts}
+- Posts will be distributed optimally across connected platforms: ${params.platforms.join(', ')}
+- Platform distribution based on AI analysis but constrained to total quota
+- No platform should exceed reasonable distribution (max 60% per platform)
 
 Use recommended tone: ${analysis.tone}
 
-POST TYPE DISTRIBUTION (follow percentages):
+POST TYPE DISTRIBUTION (follow percentages within total quota):
 ${JSON.stringify(analysis.postTypeAllocation)}
 
-CRITICAL: You must generate exactly ${params.totalPosts} posts. Count carefully. Return as JSON array with format:
+CRITICAL: You must generate exactly ${params.totalPosts} posts total across ALL platforms. Count carefully. Return as JSON array with format:
 [
   {
     "platform": "platform_name",
