@@ -3,6 +3,8 @@ export async function apiRequest(
   url: string,
   data?: unknown,
 ): Promise<Response> {
+  console.log(`API call to ${url} starting with method ${method}`);
+  
   const response = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -10,9 +12,12 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  console.log(`API call to ${url} returned ${response.status}`);
+
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`${response.status}: ${text || response.statusText}`);
+    console.error('Error:', text);
+    throw new Error('Server error: ' + text.substring(0, 50));
   }
 
   return response;
