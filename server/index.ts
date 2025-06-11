@@ -10,6 +10,12 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
+// Global JSON enforcement middleware
+app.use((req, res, next) => { 
+  res.set('Content-Type', 'application/json'); 
+  next(); 
+});
+
 // Domain validation middleware - BYPASSED for Replit deployments
 app.use((req, res, next) => {
   const hostname = req.hostname || req.header('host') || '';
@@ -651,28 +657,35 @@ app.get('/api/quota-status', async (req, res) => {
 
 // Update phone number with SMS verification and data migration
 app.post('/api/update-phone', async (req, res) => {
-  // Enforce JSON response headers immediately
-  res.set('Content-Type', 'application/json');
-  res.set('Cache-Control', 'no-cache');
-  
   try {
     const { storage } = await import('./storage');
     let userId = req.session?.userId;
     
-    // Validate session with live OAuth token from platform_connections
+    console.log('Phone update request received:', {
+      userId: userId,
+      hasSession: !!req.session,
+      body: req.body
+    });
+
+    // Validate session with live OAuth
     if (!userId) {
+      console.log('Session check failed: No userId');
       return res.status(401).json({ error: 'Authentication required' });
     }
 
     // Get current user with OAuth validation
     const user = await storage.getUser(userId);
     if (!user) {
+      console.log(`Session check failed: User not found for ID ${userId}`);
       return res.status(404).json({ error: 'User not found' });
     }
+
+    console.log(`Session check for ${user.email}`);
 
     const { newPhone, verificationCode } = req.body;
     
     if (!newPhone || !verificationCode) {
+      console.log('SMS verification failed: Missing phone or code');
       return res.status(400).json({ error: 'New phone number and verification code required' });
     }
 
@@ -680,11 +693,22 @@ app.post('/api/update-phone', async (req, res) => {
 
     // Verify SMS code for new phone number
     const verificationRecord = await storage.getVerificationCode(newPhone, verificationCode);
-    if (!verificationRecord || verificationRecord.expiresAt < new Date() || verificationRecord.verified) {
-      return res.status(400).json({ error: 'Invalid or expired verification code' });
+    if (!verificationRecord) {
+      console.log(`SMS verification failed: No record found for ${newPhone}`);
+      return res.status(400).json({ error: 'Invalid verification code' });
+    }
+    
+    if (verificationRecord.expiresAt < new Date()) {
+      console.log(`SMS verification failed: Code expired for ${newPhone}`);
+      return res.status(400).json({ error: 'Verification code expired' });
+    }
+    
+    if (verificationRecord.verified) {
+      console.log(`SMS verification failed: Code already used for ${newPhone}`);
+      return res.status(400).json({ error: 'Verification code already used' });
     }
 
-    console.log(`SMS code verified for ${user.email}: ${newPhone}`);
+    console.log(`SMS verified for ${user.email}: ${newPhone}`);
 
     // Check if new phone number is already in use by another user
     const { db } = await import('./db');
@@ -697,16 +721,20 @@ app.post('/api/update-phone', async (req, res) => {
       .limit(1);
       
     if (existingPhoneUser.length > 0 && existingPhoneUser[0].id !== userId) {
+      console.log(`Phone update failed: ${newPhone} already in use`);
       return res.status(400).json({ error: 'Phone number already in use by another account' });
     }
 
     const oldPhone = user.phone;
 
     // Begin data migration transaction
+    console.log(`Starting data migration for ${user.email} from ${oldPhone} to ${newPhone}`);
+    
     const { postLedger, postSchedule } = await import('../shared/schema');
     
     // Update user's phone number as mobile UID
     await storage.updateUser(userId, { phone: newPhone });
+    console.log(`User updated to ${newPhone} for ${user.email}`);
     
     // Migrate post_ledger and post_schedule data to new user_id
     if (oldPhone) {
@@ -718,11 +746,14 @@ app.post('/api/update-phone', async (req, res) => {
         .set({ userId: newPhone })
         .where(eq(postSchedule.userId, oldPhone));
         
-      console.log(`Data migrated for ${user.email} from ${oldPhone} to ${newPhone}`);
+      console.log(`Data migrated from ${oldPhone} to ${newPhone}`);
     }
     
     // Mark verification code as used
     await storage.markVerificationCodeUsed(verificationRecord.id);
+    console.log(`Verification code marked as used for ${newPhone}`);
+    
+    console.log(`Phone update completed successfully for ${user.email}: ${newPhone}`);
     
     return res.status(200).json({
       success: true,
@@ -731,18 +762,23 @@ app.post('/api/update-phone', async (req, res) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const user = await (async () => {
+    const userEmail = await (async () => {
       try {
         const { storage } = await import('./storage');
-        return req.session?.userId ? await storage.getUser(req.session.userId) : null;
+        const user = req.session?.userId ? await storage.getUser(req.session.userId) : null;
+        return user?.email || 'unknown';
       } catch {
-        return null;
+        return 'unknown';
       }
     })();
     
-    console.log(`Error on phone update for ${user?.email || 'unknown'}: ${errorMessage}`);
+    console.log(`Phone update error for ${userEmail}: ${errorMessage}`);
+    console.error('Full error details:', error);
     
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ 
+      error: 'Update failed', 
+      details: errorMessage 
+    });
   }
 });
 
@@ -1039,6 +1075,12 @@ async function restoreSubscribers() {
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  });
+
+  // Global error handler
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => { 
+    console.error('Global error:', err.stack); 
+    res.status(500).json({ error: 'Server error', details: err.message }); 
   });
 
   // Handle uncaught exceptions

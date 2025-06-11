@@ -103,7 +103,8 @@ export default function Profile() {
       
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log(`Update sent for ${(user as any)?.email}: ${data.newPhone}`);
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       setShowPhoneModal(false);
       setNewPhone("");
@@ -111,17 +112,16 @@ export default function Profile() {
       setCodeSent(false);
       toast({
         title: "Phone number updated",
-        description: "Your phone number has been successfully updated and data migrated",
+        description: `Successfully updated to ${data.newPhone}`,
       });
     },
     onError: (error: Error) => {
-      const errorMessage = error.message.includes('Session validation failed') 
-        ? 'Session expired. Please refresh the page and try again.'
-        : error.message;
+      const errorDetails = error.message || 'Unknown error occurred';
+      console.error(`Phone update error for ${(user as any)?.email}:`, errorDetails);
       
       toast({
         title: "Error",
-        description: errorMessage,
+        description: `Error: ${errorDetails}`,
         variant: "destructive",
       });
     }
