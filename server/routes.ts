@@ -1970,12 +1970,9 @@ Continue building your Value Proposition Canvas systematically.`;
       // Only actual posting/publishing counts against their limit
       const planPostLimit = userPlan.postsPerMonth;
       
-      // Clear any existing draft posts to regenerate fresh schedule
+      // Clear ALL existing draft posts for this user to prevent duplication
       const existingPosts = await storage.getPostsByUser(req.session.userId);
-      const draftPosts = existingPosts.filter(p => 
-        p.subscriptionCycle === subscriptionStatus.subscriptionCycle && 
-        p.status === 'draft'
-      );
+      const draftPosts = existingPosts.filter(p => p.status === 'draft');
       
       if (draftPosts.length > 0) {
         console.log(`Clearing ${draftPosts.length} draft posts to regenerate fresh schedule`);
@@ -1984,6 +1981,36 @@ Continue building your Value Proposition Canvas systematically.`;
         }
       }
 
+      // Verify user ID consistency before proceeding
+      if (!req.session.userId) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'User session required for content generation' 
+        });
+      }
+
+      // Double-check user exists in database to prevent orphaned posts
+      const sessionUser = await storage.getUser(req.session.userId);
+      if (!sessionUser) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Invalid user session' 
+        });
+      }
+
+      console.log(`User ID tracking verified: ${req.session.userId} (${sessionUser.email})`);
+
+      // Log current post counts before generation
+      const currentPosts = await storage.getPostsByUser(req.session.userId);
+      const currentCounts = {
+        total: currentPosts.length,
+        draft: currentPosts.filter(p => p.status === 'draft').length,
+        approved: currentPosts.filter(p => p.status === 'approved').length,
+        scheduled: currentPosts.filter(p => p.status === 'scheduled').length,
+        published: currentPosts.filter(p => p.status === 'published').length
+      };
+      
+      console.log(`Pre-generation post counts for user ${req.session.userId}:`, currentCounts);
       console.log(`Generating fresh ${planPostLimit} posts for ${brandPurpose.brandName}: ${userPlan.name} plan - unlimited regenerations allowed`)
 
       // Import xAI functions

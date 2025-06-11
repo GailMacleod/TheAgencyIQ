@@ -407,6 +407,12 @@ export default function Schedule() {
     queryKey: ["/api/user"],
   });
 
+  // Fetch brand purpose data
+  const { data: brandPurposeData } = useQuery({
+    queryKey: ["/api/brand-purpose"],
+    enabled: !!user && !userLoading,
+  });
+
   // Fetch posts only after user is authenticated
   const { data: posts, isLoading: postsLoading, refetch: refetchPosts } = useQuery({
     queryKey: ["/api/posts"],
