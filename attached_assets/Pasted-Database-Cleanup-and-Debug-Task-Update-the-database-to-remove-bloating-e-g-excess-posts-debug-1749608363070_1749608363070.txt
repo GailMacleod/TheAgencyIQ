@@ -1,0 +1,341 @@
+Database Cleanup and Debug
+
+Task: Update the database to remove bloating (e.g., excess posts), debug the "Unexpected token '<' <!DOCTYPE..." error on /api/update-phone, and resolve the "INVALID_STATE" deployment issue. Update server/index.ts. Preserve all functionality (Brand Purpose, quota system, OAuth, Google Analytics).
+
+Requirements:
+
+
+
+
+
+Database Cleanup:
+
+
+
+
+
+In server/index.ts, add a cleanup endpoint:
+
+
+
+
+
+app.post('/api/cleanup-db', async (req, res) => {
+
+
+
+
+
+res.set('Content-Type', 'application/json');
+
+
+
+if (req.headers.authorization !== 'Bearer YOUR_ADMIN_TOKEN') {
+
+
+
+
+
+console.log('Cleanup access denied for [req.ip]');
+
+
+
+return res.status(403).json({ error: 'Unauthorized' });
+
+
+
+}
+
+
+
+try {
+
+
+
+
+
+// Remove posts beyond quota (52 for Professional)
+
+
+
+const users = await pool.query('SELECT user_id, subscription_plan FROM users');
+
+
+
+for (const user of users.rows) {
+
+
+
+
+
+const quota = user.subscription_plan === 'professional' ? 52 : user.subscription_plan === 'growth' ? 27 : 12;
+
+
+
+const postedCount = await pool.query('SELECT COUNT(*) as count FROM post_schedule WHERE user_id = $1 AND status = $2 AND is_counted = $3', [user.user_id, 'posted', true]);
+
+
+
+if (postedCount.rows[0].count > quota) {
+
+
+
+
+
+const excess = postedCount.rows[0].count - quota;
+
+
+
+await pool.query('DELETE FROM post_schedule WHERE user_id = $1 AND status = $2 AND is_counted = $3 LIMIT $4', [user.user_id, 'posted', true, excess]);
+
+
+
+console.log('Removed', excess, 'excess posts for', user.user_id);
+
+
+
+}
+
+
+
+}
+
+
+
+res.json({ success: true, message: 'Database cleaned' });
+
+
+
+} catch (err) {
+
+
+
+
+
+console.error('Cleanup error:', err.stack);
+
+
+
+res.status(500).json({ error: err.message });
+
+
+
+}
+
+
+
+});
+
+
+
+Test with curl -X POST "http://localhost:5000/api/cleanup-db" -H "Authorization: Bearer YOUR_ADMIN_TOKEN" -H "Content-Type: application/json".
+
+
+
+Debug Phone Update:
+
+
+
+
+
+Update /api/update-phone:
+
+
+
+
+
+app.post('/api/update-phone', async (req, res) => {
+
+
+
+
+
+res.set('Content-Type', 'application/json');
+
+
+
+const twilio = require('twilio')('YOUR_ACCOUNT_SID', 'YOUR_AUTH_TOKEN');
+
+
+
+console.log('Starting phone update for', req.body.email);
+
+
+
+try {
+
+
+
+
+
+if (!req.session || !req.session.user) throw new Error('No session');
+
+
+
+console.log('Session validated');
+
+
+
+const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+
+
+await twilio.messages.create({ body: Verification code: ${code}, from: 'YOUR_TWILIO_NUMBER', to: req.body.newPhone });
+
+
+
+console.log('SMS sent to', req.body.newPhone);
+
+
+
+if (req.body.verificationCode !== code) throw new Error('Invalid code');
+
+
+
+console.log('SMS verified');
+
+
+
+await pool.query('UPDATE users SET user_id = $1 WHERE email = $2', [req.body.newPhone, req.body.email]);
+
+
+
+await pool.query('UPDATE post_ledger SET user_id = $1 WHERE user_id = $2', [req.body.newPhone, '+61434567890']);
+
+
+
+await pool.query('UPDATE post_schedule SET user_id = $1 WHERE user_id = $2', [req.body.newPhone, '+61434567890']);
+
+
+
+console.log('Data migrated to', req.body.newPhone);
+
+
+
+res.status(200).json({ success: true, newPhone: req.body.newPhone });
+
+
+
+} catch (err) {
+
+
+
+
+
+console.error('Phone update error:', err.stack);
+
+
+
+res.status(400).json({ error: err.message });
+
+
+
+}
+
+
+
+});
+
+
+
+Add global handler: app.use((err, req, res, next) => { console.error('Global error:', err.stack); res.status(500).json({ error: 'Server error', stack: err.stack }); });
+
+
+
+Resolve INVALID_STATE:
+
+
+
+
+
+Commit all changes: Go to the Git tab, sync with remote (Sync with Remote), and push (Push).
+
+
+
+Redeploy: Click “Redeploy” and monitor the deployment log for errors.
+
+
+
+If "INVALID_STATE" persists, clear uncommitted changes or create a new Replit environment, copying files manually.
+
+
+
+Client Integration:
+
+
+
+
+
+In client/src/components/BrandPurpose.jsx, update the phone modal:
+
+
+
+
+
+First call: apiRequest('/api/update-phone', { method: 'POST', body: JSON.stringify({ email, newPhone }) }) for SMS.
+
+
+
+Second call: Send { email, newPhone, verificationCode }.
+
+
+
+Log 'Phone update sent for [email]: [newPhone]'.
+
+
+
+Show error: 'Update failed: [details]'.
+
+
+
+Client API Fix:
+
+
+
+
+
+In client/src/api.ts, update apiRequest:
+
+
+
+
+
+if (!response.ok) { const text = await response.text(); console.error('Error:', text); throw new Error('Server error: ' + text.substring(0, 50)); }
+
+
+
+Return response.json().
+
+
+
+Log 'API call to [url] returned [status]'.
+
+
+
+Testing and Deployment:
+
+
+
+
+
+Run locally: NODE_ENV=production tsx server/index.ts and npm start.
+
+
+
+Test cleanup: curl -X POST "http://localhost:5000/api/cleanup-db" -H "Authorization: Bearer YOUR_ADMIN_TOKEN".
+
+
+
+Test phone update: curl -X POST "http://localhost:5000/api/update-phone" -H "Content-Type: application/json" -d '{"email": "gailm@macleodglba.com.au", "newPhone": "+610424835189"}', then with verification code.
+
+
+
+Deploy to Replit: Commit, redeploy, and verify http://your-replit-username.your-project.repl.co/profile shows the new phone.
+
+
+
+Check deployment log for "INVALID_STATE" resolution.
+
+Commit Message:
+
+fix: cleanup database, debug phone update, and resolve deployment state

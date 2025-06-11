@@ -4170,6 +4170,94 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Database cleanup endpoint for removing excess posts and optimizing performance
+  app.post('/api/cleanup-db', async (req, res) => {
+    res.set('Content-Type', 'application/json');
+    
+    // Admin authorization check
+    const adminToken = process.env.ADMIN_TOKEN || 'admin_cleanup_token_2025';
+    if (req.headers.authorization !== `Bearer ${adminToken}`) {
+      console.log(`Cleanup access denied for ${req.ip}`);
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      let totalCleaned = 0;
+      const cleanupReport = {
+        usersProcessed: 0,
+        excessPostsRemoved: 0,
+        quotaViolations: [],
+        errors: []
+      };
+
+      // Get all users with their subscription plans
+      const users = await storage.getAllUsers();
+      
+      for (const user of users) {
+        try {
+          if (!user.phone) continue;
+          
+          cleanupReport.usersProcessed++;
+          
+          // Determine quota based on subscription plan
+          let quota = 12; // Default starter
+          if (user.subscriptionPlan === 'growth') quota = 27;
+          if (user.subscriptionPlan === 'professional' || user.subscriptionPlan === 'pro') quota = 52;
+
+          // Count posted posts for this user using Drizzle
+          const postedPosts = await db.select().from(postSchedule)
+            .where(sql`${postSchedule.userId} = ${user.phone} AND ${postSchedule.status} = 'posted' AND ${postSchedule.isCounted} = true`);
+          
+          const postedCount = postedPosts.length;
+          
+          if (postedCount > quota) {
+            const excess = postedCount - quota;
+            
+            // Get oldest excess posts to remove
+            const excessPosts = await db.select().from(postSchedule)
+              .where(sql`${postSchedule.userId} = ${user.phone} AND ${postSchedule.status} = 'posted' AND ${postSchedule.isCounted} = true`)
+              .orderBy(sql`${postSchedule.createdAt} ASC`)
+              .limit(excess);
+            
+            // Remove excess posts using postId
+            for (const post of excessPosts) {
+              await db.delete(postSchedule).where(eq(postSchedule.postId, post.postId));
+            }
+            
+            console.log(`Removed ${excess} excess posts for user ${user.phone} (${user.subscriptionPlan})`);
+            cleanupReport.excessPostsRemoved += excess;
+            cleanupReport.quotaViolations.push({
+              userId: user.phone,
+              plan: user.subscriptionPlan,
+              quota: quota,
+              had: postedCount,
+              removed: excess
+            });
+            
+            totalCleaned += excess;
+          }
+        } catch (userError) {
+          console.error(`Error processing user ${user.phone}:`, userError);
+          cleanupReport.errors.push(`User ${user.phone}: ${userError.message}`);
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Database cleaned successfully. Removed ${totalCleaned} excess posts.`,
+        report: cleanupReport
+      });
+
+    } catch (err) {
+      console.error('Database cleanup error:', err);
+      res.status(500).json({ 
+        error: 'Cleanup failed', 
+        details: err.message,
+        stack: err.stack 
+      });
+    }
+  });
+
   // Webhook endpoint moved to server/index.ts to prevent conflicts
 
   // OAuth Routes for Real Platform Connections
