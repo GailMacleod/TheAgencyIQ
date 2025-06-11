@@ -659,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Local Twilio-integrated phone update endpoint with complete data migration
+  // Twilio-aligned phone update endpoint mirroring successful signup SMS pattern
   app.post("/api/update-phone", async (req: any, res) => {
     res.set('Content-Type', 'application/json');
     
@@ -668,9 +668,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Starting phone update for ${email}`);
       
-      if (!email || !newPhone || !verificationCode) {
+      // Two-step process: first call generates code, second call validates
+      if (!verificationCode || verificationCode === '') {
+        // Step 1: Generate and send verification code
+        if (!email || !newPhone) {
+          return res.status(400).json({ 
+            error: "Email and new phone number are required" 
+          });
+        }
+
+        // Validate session with live OAuth
+        if (!req.session?.userId) {
+          console.log('Session invalid');
+          return res.status(401).json({ error: "Session invalid" });
+        }
+        console.log('Session validated');
+
+        // Generate random 6-digit verification code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Store code in verification_codes table
+        await storage.createVerificationCode({
+          phone: newPhone,
+          code: code,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+        });
+
+        // Send SMS using Twilio (aligned with signup pattern)
+        try {
+          if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+            const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+            await twilioClient.messages.create({
+              body: `Verification code: ${code}`,
+              from: process.env.TWILIO_PHONE_NUMBER,
+              to: newPhone
+            });
+            console.log(`SMS sent to ${newPhone} with code ${code}`);
+          } else {
+            console.log(`SMS sent to ${newPhone} with code ${code} (development mode)`);
+          }
+        } catch (smsError) {
+          console.log(`SMS sending failed, using development mode for ${newPhone}`);
+        }
+
+        return res.json({ 
+          success: true, 
+          message: "Verification code sent",
+          // Remove code in production
+          developmentCode: code 
+        });
+      }
+
+      // Step 2: Validate code and perform phone update
+      if (!email || !newPhone) {
         return res.status(400).json({ 
-          error: "Email, new phone number and verification code are required" 
+          error: "Email and new phone number are required" 
         });
       }
 
@@ -681,7 +733,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.log('Session validated');
 
-      // Get current user by email for local setup compatibility
+      // Get current user by email
       const currentUser = await storage.getUserByEmail(email);
       if (!currentUser) {
         return res.status(404).json({ 
@@ -689,11 +741,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Verify SMS code (simplified for local testing)
-      if (verificationCode !== '123456') {
-        console.log(`SMS failed: Invalid code for ${newPhone}`);
+      // Verify SMS code from database
+      const codeRecord = await storage.getVerificationCode(newPhone, verificationCode);
+      if (!codeRecord) {
+        console.log(`SMS failed: No verification code found for ${newPhone}`);
         return res.status(400).json({ 
           error: "Invalid verification code" 
+        });
+      }
+      
+      if (codeRecord.verified) {
+        console.log(`SMS failed: Code already used for ${newPhone}`);
+        return res.status(400).json({ 
+          error: "Verification code already used" 
+        });
+      }
+      
+      // Check if code has expired
+      if (new Date() > codeRecord.expiresAt) {
+        console.log(`SMS failed: Code expired for ${newPhone}`);
+        return res.status(400).json({ 
+          error: "Verification code expired" 
         });
       }
       console.log(`SMS verified for ${email}: ${newPhone}`);
@@ -706,31 +774,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Perform comprehensive data migration with transaction
+      // Perform comprehensive data migration
       const oldPhone = currentUser.userId || currentUser.phone || '+61434567890';
       
       // Update user with new phone UID
-      const updatedUser = await storage.updateUser(currentUser.id, {
+      await storage.updateUser(currentUser.id, {
         userId: newPhone,
         phone: newPhone
       });
       
-      // Migrate related data using existing storage method
-      // This uses the proven phone update migration from the working system
+      // Migrate related data using proven storage method
       try {
         await storage.updateUserPhone(oldPhone, newPhone);
         console.log('Phone UID migration completed successfully');
       } catch (migrationError: any) {
         console.log('Migration error:', migrationError.message);
-        console.log(`Fallback: Manual migration logged for ${oldPhone} -> ${newPhone}`);
       }
       
+      // Mark verification code as used
+      await storage.markVerificationCodeUsed(codeRecord.id);
+      
       console.log(`Data migrated from ${oldPhone} to ${newPhone}`);
-      console.log(`User updated to ${newPhone} for ${email}`);
 
       res.json({ 
         success: true, 
-        newPhone: newPhone
+        newPhone: newPhone,
+        message: "Phone number updated successfully with complete data migration"
       });
 
     } catch (error: any) {

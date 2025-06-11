@@ -27,6 +27,12 @@ app.use((req, res, next) => {
   next(); 
 });
 
+// Global error handler to ensure JSON responses
+app.use((err: any, req: Request, res: Response, next: NextFunction) => { 
+  console.error('Error:', err.stack); 
+  res.status(500).json({ error: 'Server error', stack: err.stack }); 
+});
+
 // Domain validation middleware - BYPASSED for Replit deployments
 app.use((req, res, next) => {
   const hostname = req.hostname || req.header('host') || '';

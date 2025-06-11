@@ -16,8 +16,20 @@ export async function apiRequest(
 
   if (!response.ok) {
     const text = await response.text();
-    console.error('Error:', text);
-    throw new Error('Server error: ' + text.substring(0, 50));
+    console.error('Non-JSON response:', text);
+    
+    // Check if response is HTML (DOCTYPE error)
+    if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+      throw new Error('Server returned HTML instead of JSON. Check server configuration.');
+    }
+    
+    // Try to parse as JSON for proper error handling
+    try {
+      const errorData = JSON.parse(text);
+      throw new Error(errorData.error || errorData.message || 'Server error');
+    } catch (parseError) {
+      throw new Error('Server error: ' + text.substring(0, 100));
+    }
   }
 
   return response;
