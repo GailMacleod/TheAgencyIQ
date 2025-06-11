@@ -1838,6 +1838,80 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // CMO-Led Brand Domination Strategy Endpoint
+  app.post("/api/generate-cmo-strategy", requireAuth, async (req: any, res) => {
+    try {
+      const { brandPurpose, totalPosts = 52, platforms } = req.body;
+      
+      if (!brandPurpose) {
+        return res.status(400).json({ message: "Brand purpose data required for CMO strategy" });
+      }
+
+      // Import CMO strategy functions
+      const { adaptToAnyBrand } = await import('./cmo-strategy');
+      
+      // Get user subscription and enforce limits
+      const user = await storage.getUser(req.session.userId);
+      if (!user || !user.subscriptionPlan) {
+        return res.status(403).json({ message: "Active subscription required for CMO strategy generation" });
+      }
+
+      const planLimits = { starter: 12, growth: 27, professional: 52 };
+      const planPostLimit = Math.min(totalPosts, planLimits[user.subscriptionPlan as keyof typeof planLimits] || 12);
+      
+      // Generate unstoppable content using CMO team insights
+      const unstoppableContent = await adaptToAnyBrand(
+        brandPurpose.corePurpose || brandPurpose.brandName,
+        brandPurpose.audience,
+        brandPurpose.painPoints,
+        brandPurpose.motivations,
+        brandPurpose.goals || {},
+        platforms || ['facebook', 'instagram', 'linkedin', 'youtube'],
+        planPostLimit
+      );
+
+      // Save posts with June 11, 2025, 4:00 PM AEST launch timing
+      const launchDate = new Date('2025-06-11T16:00:00+10:00');
+      const savedPosts = [];
+      
+      for (let i = 0; i < unstoppableContent.length; i++) {
+        const post = unstoppableContent[i];
+        const scheduleDate = new Date(launchDate);
+        scheduleDate.setHours(scheduleDate.getHours() + Math.floor(i / 4) * 6); // Spread posts every 6 hours
+        
+        const savedPost = await storage.createPost({
+          userId: req.session.userId,
+          platform: post.platform,
+          content: post.content,
+          status: 'draft',
+          scheduledFor: scheduleDate,
+          aiRecommendation: post.strategicInsight || 'CMO-generated unstoppable content for brand domination',
+          subscriptionCycle: subscriptionStatus.subscriptionCycle
+        });
+        
+        savedPosts.push(savedPost);
+      }
+
+      res.json({
+        success: true,
+        strategy: "CMO-led brand domination",
+        posts: savedPosts,
+        generatedCount: unstoppableContent.length,
+        launchTime: "June 11, 2025, 4:00 PM AEST",
+        targetMetrics: {
+          salesTarget: "$10,000/month",
+          conversionRate: "3%",
+          timeToMarket: "10 minutes automated setup"
+        },
+        message: "Unstoppable content strategy deployed - ready to annihilate competition and explode sales"
+      });
+
+    } catch (error: any) {
+      console.error('CMO strategy generation error:', error);
+      res.status(500).json({ message: "Error generating CMO strategy: " + error.message });
+    }
+  });
+
   // Generate AI-powered schedule using xAI integration
   app.post("/api/generate-ai-schedule", requireAuth, async (req: any, res) => {
     try {
