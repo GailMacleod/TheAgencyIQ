@@ -1,0 +1,289 @@
+Add Verification Code Field for Phone Update
+
+Task: Add a verification code input field to the phone number change modal in the profile section, completing the two-step Twilio verification flow. Update client/src/components/BrandPurpose.jsx and ensure server/index.ts handles it. Preserve all functionality (Brand Purpose, quota system, OAuth, Google Analytics).
+
+Requirements:
+
+
+
+
+
+Client-Side Modal Update:
+
+
+
+
+
+In client/src/components/BrandPurpose.jsx, update the phone number change modal:
+
+
+
+
+
+Existing code (assumed):
+
+const [phoneModalOpen, setPhoneModalOpen] = useState(false);
+const [newPhone, setNewPhone] = useState('');
+const handlePhoneUpdate = async () => {
+  const response = await apiRequest('/api/update-phone', { method: 'POST', body: JSON.stringify({ email: 'gailm@macleodglba.com.au', newPhone }) });
+  console.log('Phone update response:', response);
+};
+
+
+
+Enhance to:
+
+const [phoneModalOpen, setPhoneModalOpen] = useState(false);
+const [newPhone, setNewPhone] = useState('');
+const [verificationCode, setVerificationCode] = useState('');
+const [step, setStep] = useState(1); // 1: Enter phone, 2: Enter code
+
+const handlePhoneUpdate = async () => {
+  if (step === 1) {
+    console.log('Sending SMS for', newPhone);
+    const response = await apiRequest('/api/update-phone', { method: 'POST', body: JSON.stringify({ email: 'gailm@macleodglba.com.au', newPhone }) });
+    if (response.success) {
+      setStep(2);
+      console.log('SMS sent, awaiting code');
+    } else {
+      alert('Failed to send SMS: ' + response.error);
+    }
+  } else if (step === 2) {
+    console.log('Verifying code for', newPhone);
+    const response = await apiRequest('/api/update-phone', { method: 'POST', body: JSON.stringify({ email: 'gailm@macleodglba.com.au', newPhone, verificationCode }) });
+    if (response.success) {
+      alert('Phone updated to ' + newPhone);
+      setPhoneModalOpen(false);
+    } else {
+      alert('Verification failed: ' + response.error);
+    }
+  }
+};
+
+return (
+  <div>
+    <button onClick={() => setPhoneModalOpen(true)}>Edit Phone</button>
+    {phoneModalOpen && (
+      <div className="modal">
+        <h3>Update Phone Number</h3>
+        {step === 1 && (
+          <div>
+            <input type="text" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="New Phone Number" />
+            <button onClick={handlePhoneUpdate}>Send Verification Code</button>
+          </div>
+        )}
+        {step === 2 && (
+          <div>
+            <input type="text" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} placeholder="Verification Code" />
+            <button onClick={handlePhoneUpdate}>Verify and Update</button>
+          </div>
+        )}
+        <button onClick={() => setPhoneModalOpen(false)}>Cancel</button>
+      </div>
+    )}
+  </div>
+);
+
+
+
+Log all steps and responses.
+
+
+
+Server-Side Consistency:
+
+
+
+
+
+In server/index.ts, ensure /api/update-phone supports the two-step flow:
+
+
+
+
+
+app.post('/api/update-phone', async (req, res) => {
+
+
+
+
+
+res.set('Content-Type', 'application/json');
+
+
+
+const twilio = require('twilio')('YOUR_ACCOUNT_SID', 'YOUR_AUTH_TOKEN');
+
+
+
+console.log('Phone update request for', req.body.email);
+
+
+
+try {
+
+
+
+
+
+if (!req.body.verificationCode) {
+
+
+
+
+
+const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+
+
+await twilio.messages.create({ body: Verification code: ${code}, from: 'YOUR_TWILIO_NUMBER', to: req.body.newPhone });
+
+
+
+console.log('SMS sent to', req.body.newPhone);
+
+
+
+res.status(200).json({ success: true });
+
+
+
+} else {
+
+
+
+
+
+if (req.body.verificationCode !== 'expected_code') throw new Error('Invalid code'); // Replace with stored code logic
+
+
+
+await pool.query('UPDATE users SET user_id = $1 WHERE email = $2', [req.body.newPhone, req.body.email]);
+
+
+
+await pool.query('UPDATE post_ledger SET user_id = $1 WHERE user_id = $2', [req.body.newPhone, '+61434567890']);
+
+
+
+await pool.query('UPDATE post_schedule SET user_id = $1 WHERE user_id = $2', [req.body.newPhone, '+61434567890']);
+
+
+
+console.log('Data migrated to', req.body.newPhone);
+
+
+
+res.status(200).json({ success: true, newPhone: req.body.newPhone });
+
+
+
+}
+
+
+
+} catch (err) {
+
+
+
+
+
+console.error('Phone update error:', err.stack);
+
+
+
+res.status(400).json({ error: err.message });
+
+
+
+}
+
+
+
+});
+
+
+
+Add global handler: app.use((err, req, res, next) => { console.error('Global error:', err.stack); res.status(500).json({ error: 'Server error', stack: err.stack }); });
+
+
+
+Client API Fix:
+
+
+
+
+
+In client/src/api.ts, ensure apiRequest handles the flow:
+
+
+
+
+
+if (!response.ok) { const text = await response.text(); console.error('Error:', text); throw new Error('Server error: ' + text.substring(0, 50)); }
+
+
+
+Return response.json().
+
+
+
+Log 'API call to [url] returned [status]'.
+
+
+
+Testing:
+
+
+
+
+
+Run locally: NODE_ENV=production tsx server/index.ts and npm start.
+
+
+
+Test: Open the profile, click "Edit Phone", enter a new number (e.g., +610424835189), click "Send Verification Code", input the received code, and click "Verify and Update".
+
+
+
+Check logs for "SMS sent" and "Data migrated".
+
+
+
+Deployment Preparation:
+
+
+
+
+
+Commit changes in Replit Git tab, sync with remote, and push.
+
+
+
+Redeploy: Click “Redeploy” and monitor the log.
+
+
+
+Verify: Test the phone update flow in the deployed app (https://app.theagencyiq.ai/profile).
+
+
+
+Safeguards:
+
+
+
+
+
+Preserve /api/brand-posts, /api/approve-post, /api/quota-status, and webhook.
+
+
+
+Use live Twilio and OAuth credentials.
+
+
+
+Rollback if the flow breaks other features.
+
+Commit Message:
+
+fix: add verification code field for phone number update
