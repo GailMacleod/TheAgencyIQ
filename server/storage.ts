@@ -328,11 +328,11 @@ export class DatabaseStorage implements IStorage {
     return newLedger;
   }
 
-  async updatePostLedger(id: number, updates: any): Promise<any> {
+  async updatePostLedger(userId: string, updates: any): Promise<any> {
     const [updatedLedger] = await db
       .update(postLedger)
       .set(updates)
-      .where(eq(postLedger.id, id))
+      .where(eq(postLedger.userId, userId))
       .returning();
     return updatedLedger;
   }

@@ -1304,8 +1304,14 @@ async function restoreSubscribers() {
           if (user.subscriptionPlan === 'professional') quota = 52;
           else if (user.subscriptionPlan === 'growth') quota = 27;
 
-          // Get current posts count
-          const currentPosts = await storage.getPostsByUser(userId);
+          // Get current posts count using proper user ID lookup
+          const userRecord = await storage.getUserByPhone(userId);
+          if (!userRecord) {
+            console.log(`User record not found for phone: ${userId}`);
+            continue;
+          }
+          
+          const currentPosts = await storage.getPostsByUser(userRecord.id);
           const currentCount = currentPosts.length;
           
           // Get posted count for ledger update
@@ -1324,7 +1330,7 @@ async function restoreSubscribers() {
               // Add missing posts
               for (let i = 0; i < diff; i++) {
                 await storage.createPost({
-                  userId: userId,
+                  userId: userRecord.id, // Use proper integer ID
                   platform: 'facebook',
                   content: `Synced post ${i + 1} for ${user.subscriptionPlan} plan`,
                   status: 'draft',
@@ -1353,25 +1359,28 @@ async function restoreSubscribers() {
           try {
             const existingLedger = await storage.getPostLedgerByUser(userId);
             if (existingLedger) {
-              await storage.updatePostLedger(existingLedger.id, {
+              await storage.updatePostLedger(userId, {
                 usedPosts: postedCount,
-                remainingPosts: quota - postedCount,
-                totalPosts: quota
+                subscriptionTier: user.subscriptionPlan?.toLowerCase() || 'starter',
+                quota: quota,
+                updatedAt: new Date()
               });
             } else {
               await storage.createPostLedger({
                 userId: userId,
+                subscriptionTier: user.subscriptionPlan?.toLowerCase() || 'starter',
+                periodStart: new Date(),
+                quota: quota,
                 usedPosts: postedCount,
-                remainingPosts: quota - postedCount,
-                totalPosts: quota,
-                cycleStart: new Date(),
-                cycleEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                lastPosted: null,
+                createdAt: new Date(),
+                updatedAt: new Date()
               });
             }
             syncReport.ledgerUpdates++;
-          } catch (ledgerError) {
+          } catch (ledgerError: any) {
             console.error(`Ledger sync error for ${userId}:`, ledgerError);
-            syncReport.errors.push(`Ledger error for ${userId}: ${ledgerError.message}`);
+            syncReport.errors.push(`Ledger error for ${userId}: ${ledgerError.message || 'Unknown error'}`);
           }
 
           console.log(`Data synced for ${userId} to ${quota} posts (${user.subscriptionPlan} plan)`);
