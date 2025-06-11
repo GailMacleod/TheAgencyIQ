@@ -911,11 +911,23 @@ app.get('/api/export-data', async (req, res) => {
     }).from(users);
     
     const allLedger = await db.select().from(postLedger);
+    
     const allSchedule = await db.select().from(postSchedule);
     const allGifts = await db.select().from(giftCertificates);
     const allBrandPurpose = await db.select().from(brandPurpose);
     const allPosts = await db.select().from(posts);
-    const allConnections = await db.select().from(platformConnections);
+    const allConnections = await db.select({
+      id: platformConnections.id,
+      userId: platformConnections.userId,
+      platform: platformConnections.platform,
+      accessToken: platformConnections.accessToken,
+      refreshToken: platformConnections.refreshToken,
+      connectedAt: platformConnections.connectedAt,
+      platformUserId: platformConnections.platformUserId,
+      platformUsername: platformConnections.platformUsername,
+      expiresAt: platformConnections.expiresAt,
+      isActive: platformConnections.isActive
+    }).from(platformConnections);
     
     const exportData = {
       export_info: {
