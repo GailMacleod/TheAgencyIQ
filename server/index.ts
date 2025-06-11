@@ -585,8 +585,8 @@ app.post('/api/generate-schedule', async (req, res) => {
     
     for (let i = 0; i < remainingSlots; i++) {
       const platform = connectedPlatforms[i % connectedPlatforms.length];
-      const scheduleDate = new Date();
-      scheduleDate.setDate(scheduleDate.getDate() + Math.floor(i / connectedPlatforms.length) + 1);
+      const scheduleDate = new Date('2025-07-16T18:00:00+10:00'); // July 16, 2025, 6:00 PM AEST
+      scheduleDate.setDate(scheduleDate.getDate() + Math.floor(i / connectedPlatforms.length));
       
       const postData = {
         postId: crypto.randomUUID(),

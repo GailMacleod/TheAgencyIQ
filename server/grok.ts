@@ -119,48 +119,39 @@ export async function generateContentCalendar(params: ContentGenerationParams): 
       })
       .join(', ');
 
-    const prompt = `Generate EXACTLY ${params.totalPosts} social media posts (no more, no less) for a Queensland business using AI analysis results:
+    const prompt = `Strategically interpret the brand purpose (${params.corePurpose}) using Strategyzer strategy methodology. Optimize AI to transform this into kick-ass, customer-relevant social media posts for ${params.platforms.join(', ')}. Ensure flow from brand purpose to platform-specific content, prioritizing engagement and SEO.
 
-BRAND ANALYSIS RESULTS:
+Generate EXACTLY ${params.totalPosts} social media posts (no more, no less) using strategic brand analysis:
+
+STRATEGYZER BRAND ANALYSIS:
 - JTBD Specificity Score: ${analysis.jtbdScore}/100
-- Recommended Tone: ${analysis.tone}
+- Strategic Tone: ${analysis.tone}
 - Platform Distribution: ${JSON.stringify(analysis.platformWeighting)}
-- Post Type Allocation: ${JSON.stringify(analysis.postTypeAllocation)}
+- Content Type Allocation: ${JSON.stringify(analysis.postTypeAllocation)}
 
-BUSINESS DATA:
-
-Brand Identity:
+BRAND STRATEGY FOUNDATION:
 - Brand Name: ${params.brandName}
 - Products/Services: ${params.productsServices}
 - Core Purpose: ${params.corePurpose}
-
-Customer Understanding:
 - Target Audience: ${params.audience}
 - Job to Be Done: ${params.jobToBeDone}
-- Audience Motivations: ${params.motivations}
+- Customer Motivations: ${params.motivations}
 - Pain Points: ${params.painPoints}
+- Business Goals: ${goalsText}
 
-Business Goals: ${goalsText}
+STRATEGIC CONTENT REQUIREMENTS:
+Transform brand purpose into customer-relevant content that:
+- Directly addresses specific customer pain points: ${params.painPoints}
+- Helps customers achieve their job-to-be-done: ${params.jobToBeDone}
+- Connects emotionally with customer motivations: ${params.motivations}
+- Drives strategic business goals with clear calls-to-action
+- Uses #QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing strategically
 
-Contact Information:
-- Email: ${params.contactDetails?.email || 'contact email'}
-- Phone: ${params.contactDetails?.phone || 'contact phone'}
-
-Connected platforms: ${params.platforms.join(', ')}
-
-Create engaging, brand-aligned content that addresses audience motivations and pain points. Each post should include brand name naturally, reference products/services, and align with the job-to-be-done insights. Include appropriate URLs and contact details based on goals.
-
-QUEENSLAND MARKET CONTEXT:
-- Focus on Queensland small business challenges and opportunities
-- Include local events, networking opportunities, and market trends
-- Address specific pain points of Queensland SMEs
-- Leverage local community connections and business ecosystem
-
-CONTENT STRATEGY REQUIREMENTS:
-- Each post must directly address a specific pain point from: ${params.painPoints}
-- Content should help audience achieve their job-to-be-done: ${params.jobToBeDone}
-- Motivate action by connecting to audience motivations: ${params.motivations}
-- Include clear calls-to-action based on business goals
+QUEENSLAND STRATEGIC CONTEXT:
+- Focus on Queensland small business ecosystem and opportunities
+- Address specific regional pain points and market dynamics
+- Leverage local business networks and community connections
+- Include timing around Queensland business cycles and events
 
 PLATFORM-SPECIFIC OPTIMIZATION:
 Distribute exactly ${params.totalPosts} posts across platforms using AI analysis weighting:
