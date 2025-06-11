@@ -191,6 +191,17 @@ passport.use('youtube', new GoogleStrategy({
       return done(new Error('User not authenticated'));
     }
 
+    // Validate real OAuth token (no demo/mock tokens allowed)
+    if (!accessToken || accessToken.includes('demo') || accessToken.includes('mock') || accessToken.length < 10) {
+      return done(new Error('Invalid YouTube OAuth token received'));
+    }
+
+    console.log('YouTube OAuth successful:', {
+      profileId: profile.id,
+      displayName: profile.displayName,
+      tokenType: 'live_oauth'
+    });
+
     await storage.createPlatformConnection({
       userId,
       platform: 'youtube',
@@ -203,6 +214,7 @@ passport.use('youtube', new GoogleStrategy({
 
     return done(null, { platform: 'youtube', success: true });
   } catch (error) {
+    console.error('YouTube OAuth error:', error);
     return done(error);
   }
 }));
