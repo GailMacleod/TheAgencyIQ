@@ -141,6 +141,7 @@ passport.use(new TwitterStrategy({
   consumerKey: process.env.TWITTER_CLIENT_ID!,
   consumerSecret: process.env.TWITTER_CLIENT_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`,
+  userProfileURL: "https://api.twitter.com/1.1/account/verify_credentials.json?include_email=true",
   passReqToCallback: true
 }, async (req: any, token: string, tokenSecret: string, profile: any, done: any) => {
   try {
