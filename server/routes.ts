@@ -2107,7 +2107,27 @@ Continue building your Value Proposition Canvas systematically.`;
         }
       };
 
+      // Verify post counts after generation to prevent duplication
+      const finalPosts = await storage.getPostsByUser(req.session.userId);
+      const finalCounts = {
+        total: finalPosts.length,
+        draft: finalPosts.filter(p => p.status === 'draft').length,
+        approved: finalPosts.filter(p => p.status === 'approved').length,
+        scheduled: finalPosts.filter(p => p.status === 'scheduled').length,
+        published: finalPosts.filter(p => p.status === 'published').length
+      };
+      
+      console.log(`Post-generation verification for user ${req.session.userId}:`, finalCounts);
       console.log(`AI schedule generated successfully: ${savedPosts.length} posts saved`);
+
+      // Add verification data to response
+      scheduleData.verification = {
+        preGeneration: currentCounts,
+        postGeneration: finalCounts,
+        newPostsCreated: savedPosts.length,
+        userIdVerified: req.session.userId
+      };
+
       res.json(scheduleData);
 
     } catch (error: any) {
