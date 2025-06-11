@@ -29,10 +29,50 @@ app.use((req, res, next) => {
   next(); 
 });
 
-// Global JSON enforcement middleware with comprehensive logging
+// Comprehensive API protection - completely bypass Vite for API routes
+app.use('/api', (req, res, next) => {
+  // Completely override response handling for API routes
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-cache');
+  
+  // Override all response methods to ensure JSON
+  const originalJson = res.json;
+  const originalSend = res.send;
+  const originalSendFile = res.sendFile;
+  const originalRender = res.render;
+  
+  res.json = function(obj: any) {
+    res.setHeader('Content-Type', 'application/json');
+    return originalJson.call(this, obj);
+  };
+  
+  res.send = function(body: any) {
+    res.setHeader('Content-Type', 'application/json');
+    if (typeof body === 'object') {
+      return originalJson.call(this, body);
+    }
+    return originalSend.call(this, body);
+  };
+  
+  res.sendFile = function() {
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(404).json({ error: 'API endpoint not found' });
+  };
+  
+  res.render = function() {
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(404).json({ error: 'API endpoint not found' });
+  };
+  
+  console.log('API Request:', req.method, req.url);
+  next();
+});
+
+// Global logging for non-API requests
 app.use((req, res, next) => { 
-  res.set('Content-Type', 'application/json'); 
-  console.log('Request:', req.method, req.url); 
+  if (!req.url.startsWith('/api')) {
+    console.log('Request:', req.method, req.url); 
+  }
   next(); 
 });
 
@@ -1267,6 +1307,9 @@ async function restoreSubscribers() {
   process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
   });
+
+  // Register API routes BEFORE Vite setup to prevent HTML responses
+  const httpServer = await registerRoutes(app);
 
   // API route protection middleware - prevents HTML responses for API calls
   app.use('/api/*', (req, res, next) => {
