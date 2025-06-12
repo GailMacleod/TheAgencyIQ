@@ -159,8 +159,27 @@ export class PostPublisher {
         throw new Error('Invalid or missing LinkedIn access token');
       }
 
+      // First validate the token is working
+      let profileResponse;
+      try {
+        profileResponse = await axios.get(
+          'https://api.linkedin.com/v2/people/~',
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+      } catch (tokenError: any) {
+        if (tokenError.response?.status === 401) {
+          throw new Error('LinkedIn access token expired or invalid. Please reconnect your LinkedIn account.');
+        }
+        throw tokenError;
+      }
+
       // Get user profile to determine the author URN
-      const profileResponse = await axios.get(
+      const profileResponse2 = await axios.get(
         'https://api.linkedin.com/v2/people/~',
         {
           headers: {
