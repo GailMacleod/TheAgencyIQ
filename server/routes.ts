@@ -1176,9 +1176,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // LinkedIn OAuth
-  app.get('/auth/linkedin', requireAuth, configuredPassport.authenticate('linkedin', {
-    scope: ['profile', 'w_member_social']
+  // LinkedIn OAuth - Remove requireAuth to allow OAuth initialization
+  app.get('/auth/linkedin', configuredPassport.authenticate('linkedin', {
+    scope: ['r_liteprofile', 'w_member_social', 'r_emailaddress']
   }));
 
   app.get('/auth/linkedin/callback',
@@ -3785,108 +3785,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  app.get("/api/auth/linkedin", (req, res) => {
-    const clientId = process.env.LINKEDIN_CLIENT_ID;
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/linkedin/callback`;
-    const scope = 'w_member_social,r_liteprofile,r_emailaddress';
-    
-    if (!clientId) {
-      return res.status(500).json({ message: "LinkedIn Client ID not configured" });
-    }
-    
-    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
-    res.redirect(authUrl);
-  });
-
-  app.get("/api/auth/linkedin/callback", async (req, res) => {
-    try {
-      const { code } = req.query;
-      const clientId = process.env.LINKEDIN_CLIENT_ID;
-      const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/linkedin/callback`;
-
-      if (!code || !clientId || !clientSecret) {
-        // Record potential breach attempt for missing OAuth parameters
-        if (req.session?.userId) {
-          await BreachNotificationService.recordIncident(
-            req.session.userId,
-            'platform_breach',
-            `LinkedIn OAuth authentication failed - missing parameters from IP ${req.ip}`,
-            ['linkedin'],
-            'medium'
-          );
-        }
-        return res.redirect('/platform-connections?error=linkedin_auth_failed');
-      }
-
-      // Exchange code for access token
-      const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          code: code as string,
-          redirect_uri: redirectUri,
-          client_id: clientId,
-          client_secret: clientSecret
-        })
-      });
-      const tokenData = await tokenResponse.json();
-
-      if (!tokenData.access_token) {
-        // Record OAuth token exchange failure
-        if (req.session?.userId) {
-          await BreachNotificationService.recordIncident(
-            req.session.userId,
-            'platform_breach',
-            `LinkedIn OAuth token exchange failed for user from IP ${req.ip}`,
-            ['linkedin'],
-            'medium'
-          );
-        }
-        return res.redirect('/platform-connections?error=linkedin_token_failed');
-      }
-
-      // Get user profile
-      const profileResponse = await fetch('https://api.linkedin.com/v2/people/~', {
-        headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
-      });
-      const profileData = await profileResponse.json();
-
-      // Store connection in database
-      if (req.session.userId) {
-        await storage.createPlatformConnection({
-          userId: req.session.userId,
-          platform: 'linkedin',
-          platformUserId: profileData.id,
-          platformUsername: `${profileData.firstName?.localized?.en_US || ''} ${profileData.lastName?.localized?.en_US || ''}`.trim(),
-          accessToken: tokenData.access_token,
-          refreshToken: tokenData.refresh_token || null,
-          expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
-          isActive: true
-        });
-        
-        console.log(`✅ Successful LinkedIn connection for user ${req.session.userId}`);
-      }
-
-      res.redirect('/platform-connections?connected=linkedin');
-    } catch (error) {
-      console.error('LinkedIn OAuth error:', error);
-      
-      // Record OAuth callback failure as potential security incident
-      if (req.session?.userId) {
-        await BreachNotificationService.recordIncident(
-          req.session.userId,
-          'platform_breach',
-          `LinkedIn OAuth callback error: ${error instanceof Error ? error.message : 'Unknown error'} from IP ${req.ip}`,
-          ['linkedin'],
-          'high'
-        );
-      }
-      
-      res.redirect('/platform-connections?error=linkedin_callback_failed');
-    }
-  });
+  // LinkedIn OAuth routes removed - using Passport-based implementation only
 
   app.get("/api/auth/x", (req, res) => {
     const clientId = process.env.TWITTER_CLIENT_ID;
