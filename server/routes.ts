@@ -388,13 +388,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Create Stripe checkout session
+  // Create Stripe checkout session for new user signups
   app.post("/api/create-checkout-session", async (req, res) => {
     try {
       const { priceId } = req.body;
       
       if (!priceId) {
         return res.status(400).json({ message: "Price ID is required" });
+      }
+
+      // Map price IDs to plan details for new signups
+      const planMapping: { [key: string]: { name: string, posts: number, totalPosts: number } } = {
+        "price_starter": { name: "starter", posts: 10, totalPosts: 12 },
+        "price_growth": { name: "growth", posts: 25, totalPosts: 27 },
+        "price_professional": { name: "professional", posts: 50, totalPosts: 52 }
+      };
+
+      let planDetails = planMapping[priceId];
+      
+      // If not found in mapping, extract from Stripe metadata
+      if (!planDetails) {
+        try {
+          const price = await stripe.prices.retrieve(priceId);
+          const product = await stripe.products.retrieve(price.product as string);
+          
+          const plan = product.metadata?.plan || 'starter';
+          const posts = parseInt(product.metadata?.posts || '10');
+          const totalPosts = parseInt(product.metadata?.totalPosts || '12');
+          
+          planDetails = { name: plan, posts, totalPosts };
+        } catch (error) {
+          return res.status(400).json({ message: "Invalid price ID" });
+        }
       }
 
       const domains = process.env.REPLIT_DOMAINS?.split(',') || [`localhost:5000`];
@@ -409,6 +434,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'subscription',
         success_url: `https://${domain}/api/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `https://${domain}/subscription`,
+        metadata: {
+          plan: planDetails.name,
+          posts: planDetails.posts.toString(),
+          totalPosts: planDetails.totalPosts.toString(),
+          userId: 'new_signup'
+        }
       });
 
       res.json({ url: session.url });
@@ -2721,75 +2752,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Create checkout session for subscription
-  app.post("/api/create-checkout-session", requireAuth, async (req: any, res) => {
-    try {
-      const { priceId } = req.body;
-      
-      if (!priceId) {
-        return res.status(400).json({ message: "Price ID is required" });
-      }
 
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Map actual Stripe price IDs to plan details
-      const planMapping: { [key: string]: { name: string, posts: number, totalPosts: number } } = {
-        "price_starter": { name: "starter", posts: 10, totalPosts: 12 },
-        "price_growth": { name: "growth", posts: 25, totalPosts: 27 },
-        "price_professional": { name: "professional", posts: 50, totalPosts: 52 }
-      };
-
-      // Use the priceId directly for Stripe API
-      let planDetails = planMapping[priceId];
-      
-      // If not found in mapping, treat as valid Stripe price ID and extract plan from metadata
-      if (!planDetails) {
-        // For actual Stripe price IDs, we'll get plan details from Stripe
-        try {
-          const price = await stripe.prices.retrieve(priceId);
-          const product = await stripe.products.retrieve(price.product as string);
-          
-          // Extract plan details from product metadata
-          const plan = product.metadata?.plan || 'starter';
-          const posts = parseInt(product.metadata?.posts || '10');
-          const totalPosts = parseInt(product.metadata?.totalPosts || '12');
-          
-          planDetails = { name: plan, posts, totalPosts };
-        } catch (error) {
-          return res.status(400).json({ message: "Invalid price ID" });
-        }
-      }
-
-      const session = await stripe.checkout.sessions.create({
-        mode: 'subscription',
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
-        success_url: `${req.protocol}://${req.get('host')}/brand-purpose?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${req.protocol}://${req.get('host')}/subscription`,
-        client_reference_id: user.id.toString(),
-        customer_email: user.email,
-        metadata: {
-          plan: planDetails.name,
-          posts: planDetails.posts.toString(),
-          totalPosts: planDetails.totalPosts.toString(),
-          userId: user.id.toString()
-        }
-      });
-
-      res.json({ url: session.url });
-    } catch (error: any) {
-      console.error("Error creating checkout session:", error);
-      res.status(500).json({ message: "Failed to create checkout session" });
-    }
-  });
 
   // Replace failed post
   app.post("/api/replace-post", requireAuth, async (req: any, res) => {
@@ -3542,8 +3505,11 @@ Continue building your Value Proposition Canvas systematically.`;
       const session = await stripe.checkout.sessions.retrieve(session_id);
       
       if (session.payment_status === 'paid') {
-        // Extract customer email from session
+        // Extract customer email and plan details from session
         const customerEmail = session.customer_details?.email;
+        const planName = session.metadata?.plan || 'starter';
+        const remainingPosts = parseInt(session.metadata?.posts || '10');
+        const totalPosts = parseInt(session.metadata?.totalPosts || '12');
         
         if (customerEmail) {
           // Find or create user with this email
@@ -3552,15 +3518,18 @@ Continue building your Value Proposition Canvas systematically.`;
           if (!user) {
             // Create a new user account with the subscription
             const hashedPassword = await bcrypt.hash('temp' + Date.now(), 10);
+            const tempPhone = `+temp${Date.now().toString().slice(-10)}`; // Generate temp phone as userId
             user = await storage.createUser({
+              userId: tempPhone,
               email: customerEmail,
               password: hashedPassword,
               phone: '',
-              subscriptionPlan: plan || 'starter',
+              subscriptionPlan: planName,
+              subscriptionStart: new Date(),
               stripeCustomerId: session.customer as string,
               stripeSubscriptionId: session.subscription as string,
-              remainingPosts: plan === 'professional' ? 50 : plan === 'growth' ? 25 : 10,
-              totalPosts: plan === 'professional' ? 52 : plan === 'growth' ? 27 : 12
+              remainingPosts: remainingPosts,
+              totalPosts: totalPosts
             });
           } else {
             // Update existing user with subscription details
@@ -3569,6 +3538,14 @@ Continue building your Value Proposition Canvas systematically.`;
               session.customer as string,
               session.subscription as string
             );
+            
+            // Update subscription plan details
+            await storage.updateUser(user.id, {
+              subscriptionPlan: planName,
+              subscriptionStart: new Date(),
+              remainingPosts: remainingPosts,
+              totalPosts: totalPosts
+            });
           }
           
           // Log the user in
