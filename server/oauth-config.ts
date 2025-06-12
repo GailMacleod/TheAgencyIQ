@@ -103,9 +103,40 @@ passport.use(new LinkedInStrategy({
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   try {
-    const userId = req.session.userId;
+    console.log('LinkedIn OAuth callback received:', {
+      profileId: profile.id,
+      displayName: profile.displayName,
+      sessionUserId: req.session?.userId,
+      hasAccessToken: !!accessToken
+    });
+
+    // For LinkedIn OAuth, we need to find the user differently since session might be lost
+    let userId = req.session?.userId;
+    
+    // If no session userId, try to find user by email from profile
+    if (!userId && profile.emails && profile.emails[0]) {
+      const user = await storage.getUserByEmail(profile.emails[0].value);
+      if (user) {
+        userId = user.id;
+        req.session.userId = userId; // Restore session
+        req.session.save(); // Ensure session is persisted
+      }
+    }
+
+    // Try one more recovery attempt using any available user identifier
+    if (!userId && profile.id) {
+      // Find user by LinkedIn profile ID if previously connected
+      const existingConnection = await storage.getPlatformConnectionByExternalId('linkedin', profile.id);
+      if (existingConnection) {
+        userId = existingConnection.userId;
+        req.session.userId = userId;
+        req.session.save();
+      }
+    }
+
     if (!userId) {
-      return done(new Error('User not authenticated'));
+      console.error('LinkedIn OAuth: No user session found and cannot recover');
+      return done(new Error('User session lost during OAuth - please log in again'));
     }
 
     // Validate real OAuth token (no demo/mock tokens allowed)
@@ -116,6 +147,7 @@ passport.use(new LinkedInStrategy({
     console.log('LinkedIn OAuth successful:', {
       profileId: profile.id,
       displayName: profile.displayName,
+      userId: userId,
       tokenType: 'live_oauth'
     });
 
