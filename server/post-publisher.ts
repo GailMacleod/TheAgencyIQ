@@ -1,5 +1,6 @@
 import { storage } from './storage';
 import axios from 'axios';
+import crypto from 'crypto';
 
 interface PublishResult {
   success: boolean;
@@ -17,7 +18,6 @@ export class PostPublisher {
         throw new Error('Invalid or missing Facebook access token');
       }
 
-      const crypto = require('crypto');
       const appSecret = process.env.FACEBOOK_APP_SECRET;
       
       if (!appSecret) {
