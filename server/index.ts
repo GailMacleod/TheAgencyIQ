@@ -723,13 +723,56 @@ app.post('/api/approve-post', async (req, res) => {
 
     // Validate token expiration and refresh if needed
     if (platformConnection.expiresAt && new Date() > platformConnection.expiresAt) {
-      if (platformConnection.refreshToken) {
-        console.log(`Access token expired for ${post.platform}, attempting refresh...`);
-        return res.status(401).json({ 
-          message: `${post.platform} access token expired. Please reconnect your account.`,
-          requiresReconnection: true,
-          platform: post.platform
-        });
+      if (platformConnection.refreshToken && post.platform === 'linkedin') {
+        console.log(`LinkedIn token expired, attempting refresh for user_id: ${userId}...`);
+        
+        try {
+          // LinkedIn token refresh
+          const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              grant_type: 'refresh_token',
+              refresh_token: platformConnection.refreshToken,
+              client_id: process.env.LINKEDIN_CLIENT_ID!,
+              client_secret: process.env.LINKEDIN_CLIENT_SECRET!
+            })
+          });
+
+          const tokenData = await tokenResponse.json();
+          
+          if (tokenData.access_token) {
+            const expiresAt = tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null;
+            
+            // Update platform connection with new token
+            await storage.updatePlatformConnection(platformConnection.id, {
+              accessToken: tokenData.access_token,
+              refreshToken: tokenData.refresh_token || platformConnection.refreshToken,
+              expiresAt,
+              isActive: true
+            });
+
+            console.log('✅ LinkedIn token refreshed successfully for user_id: 2');
+            
+            // Update platformConnection object for this request
+            platformConnection.accessToken = tokenData.access_token;
+            platformConnection.expiresAt = expiresAt;
+          } else {
+            console.error('LinkedIn token refresh failed:', tokenData);
+            return res.status(401).json({ 
+              message: "LinkedIn connection expired. Please reconnect your account.",
+              requiresReconnection: true,
+              platform: 'linkedin'
+            });
+          }
+        } catch (refreshError) {
+          console.error('LinkedIn token refresh error:', refreshError);
+          return res.status(401).json({ 
+            message: "LinkedIn connection expired. Please reconnect your account.",
+            requiresReconnection: true,
+            platform: 'linkedin'
+          });
+        }
       } else {
         return res.status(401).json({ 
           message: `${post.platform} access token expired. Please reconnect your account.`,

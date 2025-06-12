@@ -1,8 +1,19 @@
 {
-  "timestamp": "2025-06-11T01:00:00.038Z",
+  "timestamp": "2025-06-12T01:00:00.046Z",
   "users": [
     {
-      "id": 6,
+      "id": 2,
+      "email": "gailm@macleodglba.com.au",
+      "phone": "+61424835189",
+      "subscriptionPlan": "professional",
+      "stripeCustomerId": "cus_SStznDRDVG32xg",
+      "stripeSubscriptionId": "sub_1RXyC1S90ymeq6trOeP7IZeM",
+      "remainingPosts": 50,
+      "totalPosts": 52,
+      "createdAt": "2025-06-05T06:20:56.594Z"
+    },
+    {
+      "id": 9,
       "email": "testuser@agencyiq.com",
       "phone": "+15005550007",
       "subscriptionPlan": "professional",
@@ -13,7 +24,7 @@
       "createdAt": "2025-06-08T22:08:03.322Z"
     },
     {
-      "id": 1,
+      "id": 10,
       "email": "demo@theagencyiq.ai",
       "phone": "+61400000000",
       "subscriptionPlan": "professional",
@@ -24,7 +35,7 @@
       "createdAt": "2025-06-05T04:30:34.929Z"
     },
     {
-      "id": 5,
+      "id": 11,
       "email": "test@test.com",
       "phone": "+61412345678",
       "subscriptionPlan": "starter",
@@ -35,7 +46,7 @@
       "createdAt": "2025-06-08T02:06:48.464Z"
     },
     {
-      "id": 3,
+      "id": 12,
       "email": "gail@theagencyiq.ai",
       "phone": "",
       "subscriptionPlan": "starter",
@@ -46,26 +57,15 @@
       "createdAt": "2025-06-06T04:11:27.791Z"
     },
     {
-      "id": 8,
+      "id": 13,
       "email": "testuser@example.com",
       "phone": "+61400999888",
       "subscriptionPlan": "starter",
       "stripeCustomerId": null,
       "stripeSubscriptionId": null,
-      "remainingPosts": 0,
+      "remainingPosts": 10,
       "totalPosts": 0,
       "createdAt": "2025-06-10T23:24:17.969Z"
-    },
-    {
-      "id": 2,
-      "email": "gailm@macleodglba.com.au",
-      "phone": "+610424835189",
-      "subscriptionPlan": "professional",
-      "stripeCustomerId": "cus_SStznDRDVG32xg",
-      "stripeSubscriptionId": "sub_1RXyC1S90ymeq6trOeP7IZeM",
-      "remainingPosts": 50,
-      "totalPosts": 52,
-      "createdAt": "2025-06-05T06:20:56.594Z"
     }
   ]
 }
