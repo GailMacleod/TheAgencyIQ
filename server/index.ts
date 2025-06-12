@@ -340,6 +340,39 @@ app.post('/api/brand-posts', async (req, res) => {
       ...marketingEssentials
     };
 
+    // Initialize PostCountManager to prevent doubling
+    const { PostCountManager } = await import('./postCountManager');
+    
+    // Get user's subscription quota
+    const subscriptionQuotas = { starter: 12, growth: 27, professional: 52 };
+    let postCount = 12; // Default starter
+    if (user.email === 'gailm@macleodglba.com.au') {
+      postCount = 52; // Professional plan
+    } else if (user.subscriptionPlan) {
+      const planKey = user.subscriptionPlan.toLowerCase();
+      postCount = subscriptionQuotas[planKey] || 12;
+    }
+    
+    // Sync with quota and clear unapproved posts to prevent doubling
+    const syncResult = await PostCountManager.syncWithQuota(userId, postCount);
+    console.log(`Post sync result for ${user.email}:`, syncResult);
+    
+    // Only generate if posts are needed
+    if (syncResult.postsToGenerate <= 0) {
+      return res.json({
+        success: true,
+        message: `You already have ${syncResult.finalCounts.total} posts (quota: ${postCount}). No new posts needed.`,
+        posts: [],
+        quota: postCount,
+        currentCount: syncResult.finalCounts.total,
+        cleared: syncResult.cleared
+      });
+    }
+    
+    // Update postCount to only generate what's needed
+    postCount = syncResult.postsToGenerate;
+    console.log(`Generating ${postCount} new posts for ${user.email} (cleared ${syncResult.cleared} unapproved)`);
+
     // Clear posts cache before xAI optimum days fetch
     const cacheFilePath = path.join(process.cwd(), 'posts-cache.json');
     
@@ -351,23 +384,6 @@ app.post('/api/brand-posts', async (req, res) => {
     } catch (error) {
       console.error('Failed to clear posts cache:', error);
     }
-
-    // Enforce subscription limits based on user email
-    const subscriptionLimits: { [key: string]: number } = {
-      'starter': 12,
-      'growth': 27, 
-      'professional': 52
-    };
-
-    let postCount = 12; // Default starter
-    if (user.email === 'gailm@macleodglba.com.au') {
-      postCount = 52; // Professional plan
-    } else if (user.subscriptionPlan) {
-      const planKey = user.subscriptionPlan.toLowerCase();
-      postCount = subscriptionLimits[planKey] || 12;
-    }
-
-    console.log(`Post count set for ${user.email}: ${postCount}`);
 
     console.log(`Full Brand Purpose with essentials parsed for ${user.email}: [goals: ${JSON.stringify(goals)}, targets: ${JSON.stringify(targets)}, text: ${text}, job: ${marketingEssentials.job}, services: ${marketingEssentials.services}, tone: ${marketingEssentials.tone}]`);
 
