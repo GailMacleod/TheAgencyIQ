@@ -98,7 +98,7 @@ passport.use('instagram', new FacebookStrategy({
 passport.use(new LinkedInStrategy({
   clientID: process.env.LINKEDIN_CLIENT_ID!,
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
-  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/linkedin/callback`,
+  callbackURL: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/auth/linkedin/callback',
   scope: ['r_liteprofile', 'w_member_social', 'r_emailaddress'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
@@ -125,13 +125,8 @@ passport.use(new LinkedInStrategy({
 
     // Try one more recovery attempt using any available user identifier
     if (!userId && profile.id) {
-      // Find user by LinkedIn profile ID if previously connected
-      const existingConnection = await storage.getPlatformConnectionByExternalId('linkedin', profile.id);
-      if (existingConnection) {
-        userId = existingConnection.userId;
-        req.session.userId = userId;
-        req.session.save();
-      }
+      // Skip platform connection lookup for now - focus on session recovery
+      console.log('LinkedIn OAuth: Could not recover user session for profile ID:', profile.id);
     }
 
     if (!userId) {

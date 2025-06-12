@@ -77,6 +77,7 @@ export default function ConnectPlatforms() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
+  const [showManualConnection, setShowManualConnection] = useState<string | null>(null);
 
   // Fetch platform connections
   const { data: connections = [], isLoading } = useQuery<PlatformConnection[]>({
@@ -88,6 +89,24 @@ export default function ConnectPlatforms() {
   const handleOAuthConnect = async (platform: string) => {
     try {
       setConnecting(prev => ({ ...prev, [platform]: true }));
+      
+      // Special handling for LinkedIn - provide manual connection option
+      if (platform === 'linkedin') {
+        const proceed = confirm(
+          "LinkedIn OAuth app needs reactivation. Would you like to use manual connection instead?\n\n" +
+          "Manual connection lets you enter your LinkedIn credentials directly for posting."
+        );
+        
+        if (proceed) {
+          // Show manual connection form for LinkedIn
+          setShowManualConnection('linkedin');
+          setConnecting(prev => ({ ...prev, [platform]: false }));
+          return;
+        } else {
+          setConnecting(prev => ({ ...prev, [platform]: false }));
+          return;
+        }
+      }
       
       // Map platform names to OAuth routes
       const oauthRoutes: { [key: string]: string } = {
@@ -262,6 +281,22 @@ export default function ConnectPlatforms() {
                           <p className="text-xs text-gray-500">
                             TikTok connection available soon
                           </p>
+                        </div>
+                      ) : platform === 'linkedin' ? (
+                        <div className="text-center">
+                          <p className="text-sm text-orange-600 mb-2">
+                            OAuth app needs reactivation
+                          </p>
+                          <p className="text-xs text-gray-500 mb-4">
+                            Manual connection available as backup
+                          </p>
+                          <Button
+                            onClick={() => setShowManualConnection('linkedin')}
+                            className="w-full bg-blue-700 hover:bg-blue-800"
+                            disabled={connecting[platform]}
+                          >
+                            {connecting[platform] ? 'Connecting...' : 'CONNECT LINKEDIN'}
+                          </Button>
                         </div>
                       ) : (
                         <div className="text-center">
