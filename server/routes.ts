@@ -3634,7 +3634,7 @@ Continue building your Value Proposition Canvas systematically.`;
         redirectUri = `${req.protocol}://${host}/api/auth/facebook/callback`;
       }
       
-      const scope = 'public_profile,email,pages_show_list,pages_manage_posts,pages_read_engagement';
+      const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement';
       const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
       
       if (!clientId) {
