@@ -4172,7 +4172,6 @@ Continue building your Value Proposition Canvas systematically.`;
       }
 
       // Store connection with encrypted credentials
-      const bcrypt = require('bcrypt');
       const encryptedPassword = await bcrypt.hash(password, 10);
       
       await storage.createPlatformConnection({

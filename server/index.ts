@@ -341,8 +341,6 @@ app.post('/api/brand-posts', async (req, res) => {
     };
 
     // Clear posts cache before xAI optimum days fetch
-    const fs = require('fs');
-    const path = require('path');
     const cacheFilePath = path.join(process.cwd(), 'posts-cache.json');
     
     try {
@@ -723,24 +721,7 @@ app.post('/api/approve-post', async (req, res) => {
       });
     }
 
-    // Check if we have valid OAuth credentials for this platform
-    const hasValidToken = platformConnection.accessToken && 
-                         !platformConnection.accessToken.includes('demo') && 
-                         !platformConnection.accessToken.includes('mock') &&
-                         platformConnection.accessToken.length > 50;
-
-    if (!hasValidToken) {
-      console.log(`${post.platform} requires fresh OAuth connection for publishing`);
-      return res.status(200).json({ 
-        success: true,
-        message: `Post approved and scheduled for ${post.platform}. Please connect your ${post.platform} account to enable publishing.`,
-        requiresConnection: true,
-        platform: post.platform,
-        postId: post.id
-      });
-    }
-
-    console.log(`Publishing to ${post.platform} with valid OAuth connection`);
+    console.log(`Publishing to ${post.platform} with established connection`);
 
     // Post to social platform via live OAuth credentials
     const { PostPublisher } = await import('./post-publisher');
@@ -782,15 +763,27 @@ app.post('/api/approve-post', async (req, res) => {
         
         res.json({
           success: true,
+          message: `Post successfully published to ${post.platform}!`,
           post: { ...post, status: 'approved', publishedAt: new Date() },
           platformPostId: publishResult.platformPostId,
           analytics: publishResult.analytics
         });
         
       } else {
-        res.status(400).json({ 
-          message: 'Failed to post to platform',
-          error: publishResult.error 
+        // Mark as approved even if publishing fails - user has approved the content
+        await db.update(posts)
+          .set({ 
+            status: 'approved',
+            errorLog: publishResult.error
+          })
+          .where(eq(posts.id, parseInt(postId)));
+        
+        res.json({
+          success: true,
+          message: `Post approved! To publish to ${post.platform}, please reconnect your account with fresh OAuth credentials.`,
+          requiresReconnection: true,
+          platform: post.platform,
+          error: publishResult.error
         });
       }
       
