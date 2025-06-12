@@ -4,7 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { ALLOWED_ORIGINS, SECURITY_HEADERS, validateDomain, isSecureContext } from "./ssl-config";
 import { storage } from './storage';
 import { db } from './db';
-import { postLedger, postSchedule } from '../shared/schema';
+import { postLedger, postSchedule, posts } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 import fs from "fs";
 import path from "path";
