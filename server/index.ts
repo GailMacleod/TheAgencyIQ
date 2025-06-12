@@ -623,7 +623,14 @@ app.post('/api/generate-schedule', async (req, res) => {
 // Approve and Post endpoint
 app.post('/api/approve-post', async (req, res) => {
   try {
+    console.log('Approve post request:', { body: req.body, sessionUserId: req.session?.userId });
     const { postId } = req.body;
+    
+    if (!postId) {
+      console.log('Error: Post ID is missing');
+      return res.status(400).json({ message: 'Post ID is required' });
+    }
+    
     const { storage } = await import('./storage');
     let userId = req.session?.userId;
     
@@ -646,6 +653,7 @@ app.post('/api/approve-post', async (req, res) => {
 
     const user = await storage.getUser(userId);
     if (!user || !user.phone) {
+      console.log('Error: User not found or missing phone:', { userId, user: user ? 'exists' : 'null' });
       return res.status(404).json({ message: 'User not found or mobile number missing' });
     }
 
@@ -654,17 +662,23 @@ app.post('/api/approve-post', async (req, res) => {
     const { posts } = await import('../shared/schema');
     const { eq, and } = await import('drizzle-orm');
     
+    console.log('Looking for post:', { postId, userId: user.id });
+    
     // Get post using correct table and integer ID
     const [post] = await db.select().from(posts).where(
       and(eq(posts.id, parseInt(postId)), eq(posts.userId, user.id))
     );
     
+    console.log('Post found:', { postExists: !!post, status: post?.status });
+    
     if (!post) {
+      console.log('Error: Post not found');
       return res.status(404).json({ message: 'Post not found' });
     }
     
-    if (post.status !== 'draft') {
-      return res.status(400).json({ message: 'Only draft posts can be approved' });
+    if (post.status === 'published' || post.status === 'approved') {
+      console.log('Error: Post already processed:', post.status);
+      return res.status(400).json({ message: 'Post has already been approved or published' });
     }
     
     // Check quota
