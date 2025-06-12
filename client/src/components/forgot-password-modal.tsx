@@ -16,6 +16,7 @@ interface ForgotPasswordModalProps {
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Valid phone number is required"),
 });
 
 type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
@@ -27,7 +28,8 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
   const form = useForm<ForgotPasswordForm>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
-      email: "demo@agencyiq.com",
+      email: "",
+      phone: "",
     },
   });
 
@@ -39,7 +41,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
       
       toast({
         title: "Reset Link Sent",
-        description: "If an account exists, a reset link has been sent to your email and logged to console",
+        description: "If an account exists with matching email and phone, a reset link has been sent to your email",
       });
       
       onClose();
@@ -64,14 +66,28 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
         
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-sections">
           <div>
-            <Label className="text-sm font-medium text-foreground lowercase">email</Label>
+            <Label className="text-sm font-medium text-foreground lowercase">email address</Label>
             <Input
               type="email"
+              placeholder="your@email.com"
               {...form.register('email')}
               className="mt-2"
             />
             {form.formState.errors.email && (
               <p className="text-sm text-destructive mt-1">{form.formState.errors.email.message}</p>
+            )}
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium text-foreground lowercase">phone number</Label>
+            <Input
+              type="tel"
+              placeholder="+61412345678"
+              {...form.register('phone')}
+              className="mt-2"
+            />
+            {form.formState.errors.phone && (
+              <p className="text-sm text-destructive mt-1">{form.formState.errors.phone.message}</p>
             )}
           </div>
           

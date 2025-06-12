@@ -3379,13 +3379,13 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Forgot password
+  // Forgot password with email and phone verification
   app.post("/api/forgot-password", async (req, res) => {
     try {
-      const { email } = req.body;
+      const { email, phone } = req.body;
       
-      if (!email) {
-        return res.status(400).json({ message: "Email is required" });
+      if (!email || !phone) {
+        return res.status(400).json({ message: "Both email and phone number are required" });
       }
 
       // Validate email format
@@ -3394,11 +3394,18 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Invalid email format" });
       }
 
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
-        // Don't reveal if user exists for security
+      // Find user by email
+      const userByEmail = await storage.getUserByEmail(email);
+      if (!userByEmail) {
         return res.json({ message: "If an account exists, a reset link has been sent" });
       }
+
+      // Verify phone number matches the account
+      if (userByEmail.phone !== phone) {
+        return res.json({ message: "If an account exists, a reset link has been sent" });
+      }
+
+      const user = userByEmail;
 
       // Generate secure reset token
       const resetToken = crypto.randomUUID().replace(/-/g, '');
