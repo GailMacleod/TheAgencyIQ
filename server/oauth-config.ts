@@ -207,8 +207,8 @@ passport.use(new TwitterStrategy({
 
 // YouTube (Google) OAuth Strategy
 passport.use('youtube', new GoogleStrategy({
-  clientID: process.env.YOUTUBE_CLIENT_ID!,
-  clientSecret: process.env.YOUTUBE_CLIENT_SECRET!,
+  clientID: process.env.GOOGLE_CLIENT_ID!,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/youtube/callback`,
   scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload'],
   passReqToCallback: true

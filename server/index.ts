@@ -723,18 +723,24 @@ app.post('/api/approve-post', async (req, res) => {
       });
     }
 
-    // Enable posting to platforms that work reliably
-    if (post.platform === 'x' || post.platform === 'youtube' || post.platform === 'instagram') {
-      console.log(`Publishing to ${post.platform} with established connection`);
-    } else if (post.platform === 'linkedin' || post.platform === 'facebook') {
-      console.log(`${post.platform} requires OAuth token refresh for publishing`);
+    // Check if we have valid OAuth credentials for this platform
+    const hasValidToken = platformConnection.accessToken && 
+                         !platformConnection.accessToken.includes('demo') && 
+                         !platformConnection.accessToken.includes('mock') &&
+                         platformConnection.accessToken.length > 50;
+
+    if (!hasValidToken) {
+      console.log(`${post.platform} requires fresh OAuth connection for publishing`);
       return res.status(200).json({ 
         success: true,
-        message: `Post scheduled for ${post.platform}. OAuth connection will be established when publishing.`,
-        scheduled: true,
-        platform: post.platform
+        message: `Post approved and scheduled for ${post.platform}. Please connect your ${post.platform} account to enable publishing.`,
+        requiresConnection: true,
+        platform: post.platform,
+        postId: post.id
       });
     }
+
+    console.log(`Publishing to ${post.platform} with valid OAuth connection`);
 
     // Post to social platform via live OAuth credentials
     const { PostPublisher } = await import('./post-publisher');
