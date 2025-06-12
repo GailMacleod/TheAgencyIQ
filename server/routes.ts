@@ -500,7 +500,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Complete phone verification and create account
+  app.post("/api/complete-phone-verification", async (req, res) => {
+    try {
+      const { phone, code, password } = req.body;
+      
+      if (!phone || !code || !password) {
+        return res.status(400).json({ message: "Phone, code, and password are required" });
+      }
 
+      // Verify the SMS code
+      const storedCode = verificationCodes.get(phone);
+      if (!storedCode) {
+        return res.status(400).json({ message: "No verification code found for this phone number" });
+      }
+
+      if (storedCode.expiresAt < new Date()) {
+        verificationCodes.delete(phone);
+        return res.status(400).json({ message: "Verification code has expired" });
+      }
+
+      if (storedCode.code !== code) {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+
+      // Check for pending payment in session
+      const pendingPayment = req.session.pendingPayment;
+      if (!pendingPayment) {
+        return res.status(400).json({ message: "No pending payment found. Please complete payment first." });
+      }
+
+      // Create user account with verified phone number
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      const user = await storage.createUser({
+        userId: phone, // Phone number is the unique identifier
+        email: pendingPayment.email,
+        password: hashedPassword,
+        phone: phone,
+        subscriptionPlan: pendingPayment.plan,
+        subscriptionStart: new Date(),
+        stripeCustomerId: pendingPayment.stripeCustomerId,
+        stripeSubscriptionId: pendingPayment.stripeSubscriptionId,
+        remainingPosts: pendingPayment.remainingPosts,
+        totalPosts: pendingPayment.totalPosts
+      });
+
+      // Initialize post count ledger for the user
+      await QuotaService.initializeUserLedger(phone, pendingPayment.plan);
+
+      // Clean up verification code and pending payment
+      verificationCodes.delete(phone);
+      delete req.session.pendingPayment;
+
+      // Log the user in
+      req.session.userId = user.id;
+      
+      req.session.save((err: any) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: "Account created but login failed" });
+        }
+        
+        console.log(`Account created and logged in: ${user.email} with phone ${phone}`);
+        res.json({ 
+          message: "Account created successfully",
+          user: {
+            id: user.id,
+            email: user.email,
+            phone: user.phone,
+            subscriptionPlan: user.subscriptionPlan
+          }
+        });
+      });
+
+    } catch (error: any) {
+      console.error('Phone verification completion error:', error);
+      res.status(500).json({ message: "Failed to complete verification" });
+    }
+  });
 
   // Verify code and create user
   // Generate gift certificates endpoint (admin only - based on actual purchase)
@@ -3512,27 +3590,35 @@ Continue building your Value Proposition Canvas systematically.`;
         const totalPosts = parseInt(session.metadata?.totalPosts || '12');
         
         if (customerEmail) {
-          // Find or create user with this email
+          // Check if user already exists with verified phone
           let user = await storage.getUserByEmail(customerEmail);
           
           if (!user) {
-            // Create a new user account with the subscription
-            const hashedPassword = await bcrypt.hash('temp' + Date.now(), 10);
-            const tempPhone = `+temp${Date.now().toString().slice(-10)}`; // Generate temp phone as userId
-            user = await storage.createUser({
-              userId: tempPhone,
+            // New user - redirect to phone verification first
+            // Store payment session for completion after phone verification
+            const pendingAccount = {
               email: customerEmail,
-              password: hashedPassword,
-              phone: '',
-              subscriptionPlan: planName,
-              subscriptionStart: new Date(),
+              plan: planName,
+              remainingPosts: remainingPosts,
+              totalPosts: totalPosts,
               stripeCustomerId: session.customer as string,
               stripeSubscriptionId: session.subscription as string,
-              remainingPosts: remainingPosts,
-              totalPosts: totalPosts
+              sessionId: session_id
+            };
+            
+            // Store in session for phone verification completion
+            req.session.pendingPayment = pendingAccount;
+            req.session.save((err: any) => {
+              if (err) {
+                console.error('Session save error:', err);
+                return res.redirect('/subscription?error=session_failed');
+              }
+              console.log(`Payment successful - redirecting to phone verification for ${customerEmail}`);
+              return res.redirect('/phone-verification?payment=pending&email=' + encodeURIComponent(customerEmail));
             });
+            return;
           } else {
-            // Update existing user with subscription details
+            // Existing user - update subscription details
             user = await storage.updateUserStripeInfo(
               user.id,
               session.customer as string,
@@ -3546,22 +3632,21 @@ Continue building your Value Proposition Canvas systematically.`;
               remainingPosts: remainingPosts,
               totalPosts: totalPosts
             });
+            
+            // Log the user in
+            req.session.userId = user.id;
+            
+            // Save session before redirect
+            req.session.save((err: any) => {
+              if (err) {
+                console.error('Session save error:', err);
+                return res.redirect('/subscription?error=session_failed');
+              }
+              console.log(`Payment successful - redirecting existing user ${user.id} to brand purpose setup`);
+              return res.redirect('/brand-purpose?payment=success&setup=required');
+            });
+            return;
           }
-          
-          // Log the user in
-          req.session.userId = user.id;
-          
-          // Save session before redirect
-          req.session.save((err: any) => {
-            if (err) {
-              console.error('Session save error:', err);
-              return res.redirect('/subscription?error=session_failed');
-            }
-            // Redirect to brand purpose setup with success indicator
-            console.log(`Payment successful - redirecting user ${user.id} to brand purpose setup`);
-            return res.redirect('/brand-purpose?payment=success&setup=required');
-          });
-          return; // Prevent falling through to error redirect
         }
       }
       
