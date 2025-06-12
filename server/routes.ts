@@ -3619,7 +3619,7 @@ Continue building your Value Proposition Canvas systematically.`;
 
       const clientId = process.env.FACEBOOK_APP_ID;
       const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/facebook/callback`;
-      const scope = 'pages_manage_posts,pages_read_engagement,pages_show_list';
+      const scope = 'public_profile,email,pages_show_list,pages_manage_posts,pages_read_engagement,publish_to_groups';
       const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
       
       if (!clientId) {
@@ -3628,7 +3628,12 @@ Continue building your Value Proposition Canvas systematically.`;
       }
       
       console.log(`Starting Facebook OAuth for user_id: ${userId}`);
+      console.log(`Facebook redirect URI: ${redirectUri}`);
+      console.log(`Facebook App ID: ${clientId}`);
+      console.log(`Facebook scope: ${scope}`);
+      
       const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
+      console.log(`Facebook OAuth URL: ${authUrl}`);
       res.redirect(authUrl);
     } catch (error) {
       console.error('Facebook OAuth initiation error:', error);
@@ -3735,8 +3740,8 @@ Continue building your Value Proposition Canvas systematically.`;
       console.log(`✅ Facebook connection successful for user_id: ${userId}`);
       console.log(`✅ Token expires: ${expiresAt?.toISOString() || 'No expiration'}`);
 
-      // Redirect to platform connections page with success
-      res.redirect('/connect-platforms?connected=facebook');
+      // Redirect to dashboard on success
+      res.redirect('/dashboard?connected=facebook');
     } catch (error) {
       console.error('Facebook OAuth callback error:', error);
       res.redirect('/connect-platforms?error=facebook_callback_failed');

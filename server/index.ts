@@ -773,6 +773,13 @@ app.post('/api/approve-post', async (req, res) => {
             platform: 'linkedin'
           });
         }
+      } else if (post.platform === 'facebook') {
+        console.log(`Facebook token expired for user_id: ${userId}, requesting reconnection...`);
+        return res.status(401).json({ 
+          message: "Facebook connection expired. Please reconnect your account.",
+          requiresReconnection: true,
+          platform: 'facebook'
+        });
       } else {
         return res.status(401).json({ 
           message: `${post.platform} access token expired. Please reconnect your account.`,
