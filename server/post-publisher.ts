@@ -17,9 +17,25 @@ export class PostPublisher {
         throw new Error('Invalid or missing Facebook access token');
       }
 
+      const crypto = require('crypto');
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+      
+      if (!appSecret) {
+        throw new Error('Facebook App Secret not configured');
+      }
+
+      // Generate appsecret_proof required for server-to-server calls
+      const appsecretProof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
+
       // Get user's Facebook pages first
       const pagesResponse = await axios.get(
-        `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
+        `https://graph.facebook.com/v18.0/me/accounts`,
+        {
+          params: {
+            access_token: accessToken,
+            appsecret_proof: appsecretProof
+          }
+        }
       );
 
       if (!pagesResponse.data.data || pagesResponse.data.data.length === 0) {
@@ -29,13 +45,15 @@ export class PostPublisher {
       // Use the first available page
       const page = pagesResponse.data.data[0];
       const pageAccessToken = page.access_token;
+      const pageAppsecretProof = crypto.createHmac('sha256', appSecret).update(pageAccessToken).digest('hex');
 
       // Post to the Facebook page
       const response = await axios.post(
         `https://graph.facebook.com/v18.0/${page.id}/feed`,
         {
           message: content,
-          access_token: pageAccessToken
+          access_token: pageAccessToken,
+          appsecret_proof: pageAppsecretProof
         }
       );
       

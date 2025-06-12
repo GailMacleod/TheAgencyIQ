@@ -640,10 +640,12 @@ app.post('/api/approve-post', async (req, res) => {
         const existingUser = await storage.getUser(2);
         if (existingUser) {
           userId = 2;
-          req.session.userId = 2;
-          await new Promise((resolve) => {
-            req.session.save(() => resolve(void 0));
-          });
+          if (req.session) {
+            req.session.userId = 2;
+            await new Promise((resolve) => {
+              req.session.save(() => resolve(void 0));
+            });
+          }
           console.log('Session auto-recovered for approve-post');
         }
       } catch (error) {
