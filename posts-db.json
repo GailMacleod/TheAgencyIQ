@@ -1,0 +1,11 @@
+{
+  "2": {
+    "userId": 2,
+    "totalGenerated": 17,
+    "approvedPosts": 11,
+    "livePosts": 11,
+    "subscriptionQuota": 52,
+    "lastGenerationTime": "2025-06-12T06:34:00.000Z",
+    "cycleStart": "2025-06-12T00:00:00.000Z"
+  }
+}
