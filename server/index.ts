@@ -641,13 +641,18 @@ app.post('/api/approve-post', async (req, res) => {
         if (existingUser) {
           userId = 2;
           req.session.userId = 2;
+          await new Promise((resolve) => {
+            req.session.save(() => resolve(void 0));
+          });
+          console.log('Session auto-recovered for approve-post');
         }
       } catch (error) {
-        console.log('Auto session recovery failed for approve-post');
+        console.log('Auto session recovery failed for approve-post', error);
       }
     }
     
     if (!userId) {
+      console.log('Error: No authenticated user');
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
@@ -681,9 +686,18 @@ app.post('/api/approve-post', async (req, res) => {
       return res.status(400).json({ message: 'Post has already been approved or published' });
     }
     
+    // Initialize/check quota ledger first
+    const subscriptionTier = user.subscriptionPlan?.toLowerCase() || 'starter';
+    console.log('Initializing quota for:', { mobileNumber, subscriptionTier });
+    await QuotaService.initializeUserLedger(mobileNumber, subscriptionTier);
+    
     // Check quota
+    console.log('Checking quota for:', mobileNumber);
     const quotaCheck = await QuotaService.canPost(mobileNumber);
+    console.log('Quota check result:', quotaCheck);
+    
     if (!quotaCheck.allowed) {
+      console.log('Error: Quota limit reached');
       return res.status(400).json({ 
         message: quotaCheck.reason,
         quotaLimitReached: true 
@@ -691,10 +705,15 @@ app.post('/api/approve-post', async (req, res) => {
     }
     
     // Check platform connection availability
+    console.log('Checking platform connections for:', { userId, platform: post.platform });
     const connections = await storage.getPlatformConnectionsByUser(userId);
+    console.log('Available connections:', connections.map(c => ({ platform: c.platform, isActive: c.isActive })));
+    
     const platformConnection = connections.find(c => c.platform === post.platform && c.isActive);
+    console.log('Platform connection found:', !!platformConnection);
     
     if (!platformConnection) {
+      console.log('Error: Platform not connected');
       return res.status(400).json({ 
         message: `${post.platform} account not connected. Please connect your account first.`,
         requiresConnection: true,
