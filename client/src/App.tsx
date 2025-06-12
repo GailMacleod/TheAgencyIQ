@@ -45,6 +45,7 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/redeem-certificate" component={RedeemCertificate} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/dashboard" component={ConnectPlatforms} />
       <Route component={NotFound} />
     </Switch>
   );
