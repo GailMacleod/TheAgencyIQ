@@ -14,7 +14,7 @@ import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Valid phone number is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -29,8 +29,8 @@ export default function Login() {
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "demo@aiq.com",
-      password: "password123",
+      phone: "+61413950520",
+      password: "Tw33dl3dum!",
     },
   });
 
@@ -71,14 +71,15 @@ export default function Login() {
             
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-sections">
               <div>
-                <Label className="text-sm font-medium text-foreground lowercase">email</Label>
+                <Label className="text-sm font-medium text-foreground lowercase">phone number</Label>
                 <Input
-                  type="email"
-                  {...form.register('email')}
+                  type="tel"
+                  placeholder="+61412345678"
+                  {...form.register('phone')}
                   className="mt-2"
                 />
-                {form.formState.errors.email && (
-                  <p className="text-sm text-destructive mt-1">{form.formState.errors.email.message}</p>
+                {form.formState.errors.phone && (
+                  <p className="text-sm text-destructive mt-1">{form.formState.errors.phone.message}</p>
                 )}
               </div>
               

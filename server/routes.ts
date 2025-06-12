@@ -919,17 +919,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Login
+  // Login with phone number
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { phone, password } = req.body;
       
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      if (!phone || !password) {
+        return res.status(400).json({ message: "Phone number and password are required" });
       }
 
       // Test account bypass
-      if (email === 'test@test.com' && password === 'test123') {
+      if (phone === '+61412345678' && password === 'test123') {
         req.session.userId = 999;
         
         await new Promise<void>((resolve) => {
@@ -942,11 +942,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ user: { id: 999, email: 'test@test.com', phone: '+61412345678' } });
       }
 
-      // Professional account authentication with phone number verification
-      if (email === 'gailm@macleodglba.com.au' && password === 'Tw33dl3dum!') {
+      // Professional account authentication with phone number
+      if (phone === '+61413950520' && password === 'Tw33dl3dum!') {
         // Get user data to verify phone number
         const user = await storage.getUser(2);
-        if (user && user.phone) {
+        if (user && user.phone === phone) {
           req.session.userId = 2;
           
           await new Promise<void>((resolve) => {
@@ -956,14 +956,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           });
           
-          console.log(`Phone number verified for ${email}: ${user.phone}`);
-          return res.json({ user: { id: 2, email: 'gailm@macleodglba.com.au', phone: user.phone } });
+          console.log(`Phone number verified for ${phone}: ${user.email}`);
+          return res.json({ user: { id: 2, email: user.email, phone: user.phone } });
         } else {
           return res.status(400).json({ message: "User phone number verification failed" });
         }
       }
 
-      const user = await storage.getUserByEmail(email);
+      // Find user by phone number (unique identifier)
+      const user = await storage.getUserByPhone(phone);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
