@@ -98,7 +98,7 @@ passport.use('instagram', new FacebookStrategy({
 passport.use(new LinkedInStrategy({
   clientID: process.env.LINKEDIN_CLIENT_ID!,
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
-  callbackURL: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/auth/linkedin/callback',
+  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/linkedin/callback`,
   scope: ['r_liteprofile', 'w_member_social', 'r_emailaddress'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
