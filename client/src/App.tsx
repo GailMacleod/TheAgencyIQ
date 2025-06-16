@@ -28,6 +28,7 @@ import OAuthReconnect from "@/pages/oauth-reconnect";
 import TokenStatus from "@/pages/token-status";
 import OAuthDiagnostic from "@/pages/oauth-diagnostic";
 import InstagramFix from "@/pages/instagram-fix";
+import DataDeletionStatus from "@/pages/data-deletion-status";
 
 function Router() {
   // Track page views when routes change
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/token-status" component={TokenStatus} />
       <Route path="/oauth-diagnostic" component={OAuthDiagnostic} />
       <Route path="/instagram-fix" component={InstagramFix} />
+      <Route path="/data-deletion-status" component={DataDeletionStatus} />
       <Route component={NotFound} />
     </Switch>
   );
