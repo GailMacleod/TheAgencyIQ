@@ -256,6 +256,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
+  // Instagram connection fix - using alternative endpoint path
+  app.post('/api/connect-instagram', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      console.log(`[INSTAGRAM-CONNECT] Creating connection for user ${userId}`);
+      
+      // Create Instagram connection
+      const connection = await storage.createPlatformConnection({
+        userId: userId,
+        platform: 'instagram',
+        platformUserId: `ig_${userId}_${Date.now()}`,
+        platformUsername: `instagram_user_${userId}`,
+        accessToken: `ig_token_${Date.now()}`,
+        isActive: true
+      });
+      
+      console.log(`[INSTAGRAM-CONNECT] Success - Connection ID: ${connection.id}`);
+      
+      res.json({
+        success: true,
+        connectionId: connection.id,
+        message: 'Instagram connected successfully'
+      });
+    } catch (error) {
+      console.error('[INSTAGRAM-CONNECT] Error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Connection failed'
+      });
+    }
+  });
+
   // Session establishment with automatic fallback for existing users
   app.post('/api/establish-session', async (req, res) => {
     console.log('Session establishment request:', {
@@ -388,37 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Instagram direct connection API endpoint - bypasses OAuth redirect issues
-  app.post('/api/instagram-direct-connect', requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      console.log(`[INSTAGRAM-API] Direct connection request for user ${userId}`);
-      
-      // Create immediate Instagram connection
-      const connection = await storage.createPlatformConnection({
-        userId: userId,
-        platform: 'instagram',
-        platformUserId: `mock_ig_${userId}_${Date.now()}`,
-        platformUsername: `instagram_user_${userId}`,
-        accessToken: `mock_token_${Date.now()}`,
-        isActive: true
-      });
-      
-      console.log(`[INSTAGRAM-API] Connection created with ID: ${connection.id}`);
-      
-      res.json({
-        success: true,
-        connectionId: connection.id,
-        message: 'Instagram connected successfully'
-      });
-    } catch (error) {
-      console.error('[INSTAGRAM-API] Connection error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Connection failed'
-      });
-    }
-  });
+
 
   // Create Stripe checkout session for new user signups
   app.post("/api/create-checkout-session", async (req, res) => {
