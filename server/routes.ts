@@ -2559,6 +2559,18 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Working post test endpoint
+  app.get('/api/test-working-posts', requireAuth, async (req: any, res) => {
+    try {
+      const { WorkingPostTest } = await import('./working-post-test');
+      const testResults = await WorkingPostTest.testPostPublishingWithCurrentTokens(req.session.userId);
+      res.json(testResults);
+    } catch (error) {
+      console.error('Working post test error:', error);
+      res.status(500).json({ error: 'Failed to test working posts' });
+    }
+  });
+
   // Import OAuth configuration (passport already initialized above)
   await import('./oauth-config');
 

@@ -54,7 +54,7 @@ export default function OAuthReconnect() {
       connected: false,
       issue: 'Invalid OAuth access token - Cannot parse access token',
       solution: 'Reconnect with pages_manage_posts and publish_actions permissions',
-      reconnectUrl: '/auth/facebook',
+      reconnectUrl: '/auth/facebook/reconnect',
       permissions: ['pages_manage_posts', 'pages_read_engagement', 'publish_actions', 'email']
     },
     {
