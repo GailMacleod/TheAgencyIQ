@@ -15,7 +15,7 @@ export class InstagramFixDirect {
     const instagramParams = new URLSearchParams({
       client_id: process.env.FACEBOOK_APP_ID!, // Instagram uses Facebook App ID
       redirect_uri: redirectUri,
-      scope: 'instagram_basic,pages_show_list,instagram_manage_posts,business_management',
+      scope: 'instagram_basic pages_show_list instagram_manage_posts', // Space-delimited format
       response_type: 'code',
       state: `user_${userId}_instagram_business`
     });

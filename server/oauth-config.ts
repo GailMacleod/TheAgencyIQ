@@ -59,7 +59,7 @@ passport.use('instagram', new FacebookStrategy({
   clientSecret: process.env.FACEBOOK_APP_SECRET!,
   callbackURL: 'https://app.theagencyiq.ai/api/auth/instagram/callback',
   profileFields: ['id', 'username'],
-  scope: ['instagram_basic', 'pages_show_list', 'instagram_manage_posts', 'business_management'],
+  scope: ['instagram_basic', 'pages_show_list', 'instagram_manage_posts'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   try {

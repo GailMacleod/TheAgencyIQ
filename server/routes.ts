@@ -1276,7 +1276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Instagram OAuth (uses Facebook Business API)
   app.get('/auth/instagram', requireAuth, configuredPassport.authenticate('instagram', {
-    scope: ['instagram_basic', 'pages_show_list', 'instagram_manage_posts', 'business_management']
+    scope: ['instagram_basic', 'pages_show_list', 'instagram_manage_posts']
   }));
 
   app.get('/auth/instagram/callback',
@@ -4075,17 +4075,17 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   app.get("/api/auth/instagram", (req, res) => {
-    // Use production redirect URI for Instagram OAuth
+    // Use production redirect URI for Instagram OAuth via Facebook Business API
     const redirectUri = 'https://app.theagencyiq.ai/api/auth/instagram/callback';
     const clientId = process.env.FACEBOOK_APP_ID; // Instagram uses Facebook App ID
-    const scope = 'instagram_basic,pages_show_list,instagram_manage_posts,business_management';
+    const scope = 'instagram_basic pages_show_list instagram_manage_posts'; // Space-delimited as required by Facebook
     
     if (!clientId) {
       return res.status(500).json({ message: "Facebook App ID not configured" });
     }
     
     // Use Facebook OAuth endpoint for Instagram Business API
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=user_${req.session?.userId || 'unknown'}_instagram_business`;
+    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code&state=user_${req.session?.userId || 'unknown'}_instagram_business`;
     res.redirect(authUrl);
   });
 
