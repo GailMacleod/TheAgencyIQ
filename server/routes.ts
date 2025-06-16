@@ -170,11 +170,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  passport.serializeUser((user: any, done) => {
+  configuredPassport.serializeUser((user: any, done) => {
     done(null, user);
   });
 
-  passport.deserializeUser((user: any, done) => {
+  configuredPassport.deserializeUser((user: any, done) => {
     done(null, user);
   });
 
@@ -2558,6 +2558,55 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Failed to test connection' });
     }
   });
+
+  // Import OAuth configuration (passport already initialized above)
+  await import('./oauth-config');
+
+  // OAuth reconnection routes
+  app.get('/auth/facebook/reconnect', requireAuth, (req: any, res, next) => {
+    console.log('Facebook OAuth reconnection initiated for user:', req.session.userId);
+    configuredPassport.authenticate('facebook', { 
+      scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_actions'] 
+    })(req, res, next);
+  });
+
+  app.get('/auth/facebook/reconnect/callback', 
+    configuredPassport.authenticate('facebook', { failureRedirect: '/oauth-reconnect?error=facebook' }),
+    (req, res) => {
+      console.log('Facebook OAuth reconnection successful');
+      res.redirect('/oauth-reconnect?success=facebook');
+    }
+  );
+
+  // LinkedIn OAuth reconnection routes
+  app.get('/auth/linkedin/reconnect', requireAuth, (req: any, res, next) => {
+    console.log('LinkedIn OAuth reconnection initiated for user:', req.session.userId);
+    configuredPassport.authenticate('linkedin', { 
+      scope: ['r_liteprofile', 'r_emailaddress', 'w_member_social'] 
+    })(req, res, next);
+  });
+
+  app.get('/auth/linkedin/reconnect/callback',
+    configuredPassport.authenticate('linkedin', { failureRedirect: '/oauth-reconnect?error=linkedin' }),
+    (req, res) => {
+      console.log('LinkedIn OAuth reconnection successful');
+      res.redirect('/oauth-reconnect?success=linkedin');
+    }
+  );
+
+  // X/Twitter OAuth reconnection routes
+  app.get('/auth/twitter/reconnect', requireAuth, (req: any, res, next) => {
+    console.log('X OAuth reconnection initiated for user:', req.session.userId);
+    configuredPassport.authenticate('twitter')(req, res, next);
+  });
+
+  app.get('/auth/twitter/reconnect/callback',
+    configuredPassport.authenticate('twitter', { failureRedirect: '/oauth-reconnect?error=twitter' }),
+    (req, res) => {
+      console.log('X OAuth reconnection successful');
+      res.redirect('/oauth-reconnect?success=twitter');
+    }
+  );
 
   // Get subscription usage statistics
   app.get("/api/subscription-usage", requireAuth, async (req: any, res) => {

@@ -30,7 +30,7 @@ export class OAuthFix {
         facebook: {
           issue: "Invalid OAuth access token - token expired or lacks posting permissions",
           solution: "Reconnect with pages_manage_posts, pages_read_engagement, and publish_actions permissions",
-          url: `${baseUrl}/auth/facebook`
+          url: `${baseUrl}/auth/facebook/reconnect`
         },
         linkedin: {
           issue: "Access token expired",
