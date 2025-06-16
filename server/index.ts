@@ -20,6 +20,18 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
+// Content Security Policy headers to allow Facebook scripts
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.facebook.com; " +
+    "connect-src 'self' https://connect.facebook.net https://www.facebook.com; " +
+    "img-src 'self' data: https://www.facebook.com; " +
+    "frame-src 'self' https://www.facebook.com;"
+  );
+  next();
+});
+
 // Environment stabilization check
 app.use((req, res, next) => { 
   console.log('Environment check:', process.env.NODE_ENV); 

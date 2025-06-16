@@ -2955,6 +2955,15 @@ Continue building your Value Proposition Canvas systematically.`;
 
   // Monitor for unauthorized access attempts
   app.use((req, res, next) => {
+    // Skip security monitoring for development environment and localhost
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const isLocalhost = req.ip === '127.0.0.1' || req.ip === '::1' || req.hostname === 'localhost';
+    const isViteDevAccess = req.path.includes('AdminDashboard.tsx') || req.path.includes('/src/');
+    
+    if (isDevelopment && (isLocalhost || isViteDevAccess)) {
+      return next();
+    }
+
     // Monitor for suspicious activity patterns
     const suspiciousPatterns = [
       '/admin',

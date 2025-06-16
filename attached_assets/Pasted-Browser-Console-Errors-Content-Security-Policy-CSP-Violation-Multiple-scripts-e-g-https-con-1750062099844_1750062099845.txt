@@ -1,0 +1,69 @@
+Browser Console Errors:
+Content Security Policy (CSP) Violation: Multiple scripts (e.g., https://connect.facebook.net/en_US/fbevents.js) are blocked due to the CSP directive script-src 'self'. This prevents the Meta Pixel from loading, which is critical for Instagram OAuth via Facebook’s API.
+Failed to Load Resources: Several requests (e.g., net::ERR_COMMON_NAME_INVALID) indicate SSL/TLS or domain issues, likely due to Replit’s dynamic environment.
+Meta Pixel Initialized: The console logs "Meta Pixel Initialized successfully," but the CSP violation likely overrides this.
+Server Logs:
+Development Mode: The app is running on port 5000 with Vite in development mode, serving various client-side files.
+Suspicious Access Attempts: Repeated warnings about /src/components/AdminDashboard.tsx from 127.0.0.1 (localhost) with high-severity breaches. This might be a false positive from Vite’s hot module reloading.
+Session Recovery: A POST to /api/establish-session attempts automatic session recovery for user 2, but no user ID is provided initially.
+No OAuth-Specific Errors: The logs don’t show explicit Instagram OAuth failures, suggesting the issue is client-side (e.g., Pixel or redirect).
+Why Instagram Isn’t Connecting
+CSP Blocking Meta Pixel: The blocked fbevents.js script prevents Pixel initialization, which may disrupt OAuth flow tracking or authentication callbacks.
+Replit Environment: Dynamic URLs and SSL issues (e.g., net::ERR_COMMON_NAME_INVALID) could misalign with Facebook’s OAuth redirect expectations.
+AdminDashboard Access: Security alerts might interfere if they block admin-related OAuth endpoints.
+Fixes
+Resolve CSP Violation:
+Update your CSP in vite.config.js or a security header to allow Facebook scripts:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+export default defineConfig({
+  server: {
+    headers: {
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' https://connect.facebook.net;"
+    }
+  }
+});
+Redeploy and test.
+Fix SSL/Redirect Issues:
+Ensure the OAuth redirect URI (https://app.theagencyiq.ai/api/auth/instagram/callback) matches Facebook’s app settings. Replit’s dynamic URL might cause mismatches—use a custom domain or test with Replit’s live URL.
+Check SSL certificates via Replit’s deployment settings or use a service like Cloudflare.
+Test Meta Pixel:
+Verify Pixel loading by adding a debug event:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+fbq('init', '1409057863445071a');
+fbq('track', 'PageView');
+console.log('Pixel test fired');
+Use Meta Pixel Helper to confirm.
+Handle Security Alerts:
+If AdminDashboard.tsx access is intentional (e.g., for admin OAuth), whitelist 127.0.0.1 in your security logic or adjust the breach detection in server/index.ts.
+Example adjustment:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+if (req.ip === '127.0.0.1' && req.path.includes('AdminDashboard')) {
+  // Allow local development access
+  return next();
+}
+Test Instagram OAuth:
+Navigate to /instagram-fix in your app, initiate the OAuth flow, and check the callback response. Ensure the Facebook app has instagram_basic, pages_show_list, and instagram_manage_posts scopes.
