@@ -51,6 +51,7 @@ function Router() {
       <Route path="/dashboard" component={ConnectPlatforms} />
       <Route path="/connection-repair" component={ConnectionRepair} />
       <Route path="/oauth-reconnect" component={OAuthReconnect} />
+      <Route path="/token-status" component={TokenStatus} />
       <Route component={NotFound} />
     </Switch>
   );

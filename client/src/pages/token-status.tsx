@@ -4,8 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
-import { MasterHeader } from '@/components/master-header';
-import { MasterFooter } from '@/components/master-footer';
+import MasterHeader from '@/components/master-header';
+import MasterFooter from '@/components/master-footer';
 
 interface TokenValidation {
   valid: boolean;
