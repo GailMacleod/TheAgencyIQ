@@ -2406,11 +2406,13 @@ Continue building your Value Proposition Canvas systematically.`;
         );
 
         if (publishResult.success) {
+          const updatedUser = await storage.getUser(req.session.userId);
           res.json({
-            message: "Post published successfully",
-            remainingPosts: publishResult.remainingPosts,
+            message: `Post published successfully to ${publishResult.successfulPlatforms} platform(s)`,
+            remainingPosts: updatedUser?.remainingPosts || 0,
             results: publishResult.results,
-            postId: postId
+            postId: postId,
+            successfulPlatforms: publishResult.successfulPlatforms
           });
         } else {
           // All platforms failed - allocation preserved
@@ -2418,7 +2420,8 @@ Continue building your Value Proposition Canvas systematically.`;
             message: "Post publishing failed on all platforms - allocation preserved",
             remainingPosts: user.remainingPosts,
             results: publishResult.results,
-            error: "All platform publications failed"
+            error: "All platform publications failed",
+            troubleshooting: publishResult.results.map(r => `${r.platform}: ${r.error}`).join('; ')
           });
         }
 

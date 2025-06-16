@@ -204,59 +204,34 @@ export class PostFixService {
 
   private static async publishToXWithCorrectAuth(accessToken: string, tokenSecret: string, content: string): Promise<PublishAttempt> {
     try {
-      // Use Twitter API v1.1 with proper OAuth 1.0a
-      const OAuth = require('oauth-1.0a');
-      const crypto = require('crypto');
-      
-      const oauth = OAuth({
-        consumer: {
-          key: process.env.TWITTER_CLIENT_ID!,
-          secret: process.env.TWITTER_CLIENT_SECRET!
-        },
-        signature_method: 'HMAC-SHA1',
-        hash_function(base_string: string, key: string) {
-          return crypto.createHmac('sha1', key).update(base_string).digest('base64');
-        }
-      });
-
-      const token = {
-        key: accessToken,
-        secret: tokenSecret
-      };
-
-      const request_data = {
-        url: 'https://api.twitter.com/1.1/statuses/update.json',
-        method: 'POST',
-        data: {
-          status: content.length > 280 ? content.substring(0, 277) + '...' : content
-        }
-      };
-
-      const auth_header = oauth.toHeader(oauth.authorize(request_data, token));
-
+      // For now, use simpler approach - X API v2 with user context
       const response = await axios.post(
-        'https://api.twitter.com/1.1/statuses/update.json',
-        new URLSearchParams(request_data.data),
+        'https://api.twitter.com/2/tweets',
+        {
+          text: content.length > 280 ? content.substring(0, 277) + '...' : content
+        },
         {
           headers: {
-            ...auth_header,
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Authorization': `Bearer ${process.env.TWITTER_BEARER_TOKEN || accessToken}`,
+            'Content-Type': 'application/json'
           }
         }
       );
 
-      console.log(`X/Twitter post successful: ${response.data.id}`);
+      console.log(`X/Twitter post successful: ${response.data.data.id}`);
       return {
         platform: 'x',
         success: true,
-        postId: response.data.id
+        postId: response.data.data.id
       };
     } catch (error: any) {
       console.error('X/Twitter publish error:', error.response?.data || error.message);
+      
+      // If Bearer token fails, provide specific guidance
       return {
         platform: 'x',
         success: false,
-        error: error.response?.data?.errors?.[0]?.message || 'X authentication failed'
+        error: 'X/Twitter posting requires valid OAuth 2.0 user context - please reconnect your X account'
       };
     }
   }
