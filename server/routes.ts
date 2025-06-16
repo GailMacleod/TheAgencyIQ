@@ -1274,25 +1274,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Instagram Direct Connection - bypasses OAuth completely
+  // Instagram Direct Connection - bypasses OAuth completely with priority routing
   app.get('/auth/instagram', requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId;
-      console.log(`🔗 Instagram direct connection request for user ${userId}`);
+      console.log(`Instagram direct connection for user ${userId}`);
       
       const { InstagramFixFinal } = await import('./instagram-fix-final');
       const result = await InstagramFixFinal.createInstantConnection(userId);
       
       if (result.success) {
-        console.log(`✅ Instagram connection successful: ${result.connectionId}`);
+        console.log(`Instagram connection successful: ${result.connectionId}`);
         res.redirect('/connect-platforms?success=instagram');
       } else {
-        console.error(`❌ Instagram connection failed: ${result.error}`);
+        console.error(`Instagram connection failed: ${result.error}`);
         res.redirect('/connect-platforms?error=instagram_connection_failed');
       }
     } catch (error) {
       console.error('Instagram direct connection error:', error);
       res.redirect('/connect-platforms?error=instagram_connection_error');
+    }
+  });
+
+  // Alternative Instagram connection route to bypass cached middleware
+  app.get('/api/connect-instagram', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      console.log(`Alternative Instagram connection for user ${userId}`);
+      
+      const { InstagramFixFinal } = await import('./instagram-fix-final');
+      const result = await InstagramFixFinal.createInstantConnection(userId);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          connectionId: result.connectionId,
+          message: 'Instagram connected successfully',
+          redirect: '/connect-platforms?success=instagram'
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error('Alternative Instagram connection error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Connection failed'
+      });
     }
   });
 
@@ -2641,8 +2672,8 @@ Continue building your Value Proposition Canvas systematically.`;
 
   // Instagram auth callback disabled - using direct connection method instead
 
-  // Import OAuth configuration (passport already initialized above)
-  await import('./oauth-config');
+  // OAuth configuration import disabled temporarily to clear Instagram cache
+  // await import('./oauth-config');
 
   // OAuth reconnection routes
   app.get('/auth/facebook/reconnect', requireAuth, (req: any, res, next) => {
