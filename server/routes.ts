@@ -4899,15 +4899,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   );
 
-  // Instagram OAuth (uses Facebook)
-  app.get('/auth/instagram', requireAuth, passport.authenticate('instagram', { scope: ['instagram_basic', 'instagram_content_publish'] }));
-  
-  app.get('/auth/instagram/callback',
-    passport.authenticate('instagram', { failureRedirect: '/platform-connections?error=instagram_failed' }),
-    (req, res) => {
-      res.redirect('/platform-connections?success=instagram_connected');
-    }
-  );
+  // Instagram OAuth disabled - using direct connection method instead
 
   // LinkedIn OAuth
   app.get('/auth/linkedin', requireAuth, passport.authenticate('linkedin', { scope: ['r_liteprofile', 'w_member_social'] }));

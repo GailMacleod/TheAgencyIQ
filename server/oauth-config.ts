@@ -53,48 +53,8 @@ passport.use(new FacebookStrategy({
   }
 }));
 
-// Instagram OAuth (uses Facebook Graph API with Instagram Business API)
-passport.use('instagram', new FacebookStrategy({
-  clientID: process.env.FACEBOOK_APP_ID!,
-  clientSecret: process.env.FACEBOOK_APP_SECRET!,
-  callbackURL: 'https://app.theagencyiq.ai/api/auth/instagram/callback',
-  profileFields: ['id', 'username'],
-  scope: ['instagram_basic', 'pages_show_list', 'instagram_manage_posts'],
-  passReqToCallback: true
-}, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
-  try {
-    const userId = req.session.userId;
-    if (!userId) {
-      return done(new Error('User not authenticated'));
-    }
-
-    // Validate real OAuth token
-    if (!accessToken || accessToken.includes('demo') || accessToken.includes('mock') || accessToken.length < 10) {
-      return done(new Error('Invalid Instagram OAuth token received'));
-    }
-
-    console.log('Instagram OAuth successful:', {
-      profileId: profile.id,
-      username: profile.username,
-      tokenType: 'live_oauth'
-    });
-
-    await storage.createPlatformConnection({
-      userId,
-      platform: 'instagram',
-      platformUserId: profile.id,
-      platformUsername: profile.username || profile.displayName,
-      accessToken,
-      refreshToken,
-      isActive: true
-    });
-
-    return done(null, { platform: 'instagram', success: true });
-  } catch (error) {
-    console.error('Instagram OAuth error:', error);
-    return done(error);
-  }
-}));
+// Instagram - Direct connection method (OAuth disabled due to app configuration issues)
+// Instagram connections are now handled via direct API endpoints in routes.ts
 
 // LinkedIn OAuth Strategy
 passport.use(new LinkedInStrategy({
