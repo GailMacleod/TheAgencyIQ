@@ -164,7 +164,7 @@ export class BulletproofPublisher {
       // Platform-specific validation
       switch (platform) {
         case 'x':
-          if (!connection.tokenSecret) {
+          if (!connection.refreshToken) {
             throw new Error('Missing Twitter token secret');
           }
           break;
@@ -373,7 +373,7 @@ export class BulletproofPublisher {
    * OAuth 1.0a with comprehensive validation
    */
   private static async bulletproofXPublish(connection: any, content: string): Promise<BulletproofPublishResult> {
-    const { accessToken, tokenSecret } = connection;
+    const { accessToken, refreshToken: tokenSecret } = connection;
     
     try {
       const OAuth = require('oauth-1.0a');

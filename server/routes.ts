@@ -2375,6 +2375,105 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Platform Health Monitoring - Bulletproof Publishing Support
+  app.get("/api/platform-health", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId || 2;
+      const { PlatformHealthMonitor } = await import('./platform-health-monitor');
+      
+      const healthStatuses = await PlatformHealthMonitor.validateAllConnections(userId);
+      
+      const overallHealth = {
+        healthy: healthStatuses.filter(h => h.healthy).length,
+        total: healthStatuses.length,
+        needsAttention: healthStatuses.filter(h => !h.healthy),
+        lastChecked: new Date()
+      };
+      
+      res.json({
+        success: true,
+        overallHealth,
+        platforms: healthStatuses
+      });
+    } catch (error) {
+      console.error('Platform health check failed:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Health check failed",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Force platform health repair
+  app.post("/api/repair-connections", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId || 2;
+      const { platform } = req.body;
+      const { PlatformHealthMonitor } = await import('./platform-health-monitor');
+      
+      if (platform) {
+        // Repair specific platform
+        const connection = await storage.getPlatformConnection(userId, platform);
+        if (connection) {
+          const health = await PlatformHealthMonitor.validateConnection(connection);
+          const repaired = await PlatformHealthMonitor.autoFixConnection(userId, platform, health);
+          
+          res.json({
+            success: repaired,
+            platform,
+            message: repaired ? `${platform} connection repaired` : `${platform} needs manual reconnection`
+          });
+        } else {
+          res.status(404).json({ message: `${platform} connection not found` });
+        }
+      } else {
+        // Repair all connections
+        const healthStatuses = await PlatformHealthMonitor.validateAllConnections(userId);
+        const repairs = [];
+        
+        for (const health of healthStatuses) {
+          if (!health.healthy) {
+            const repaired = await PlatformHealthMonitor.autoFixConnection(userId, health.platform, health);
+            repairs.push({ platform: health.platform, repaired });
+          }
+        }
+        
+        res.json({
+          success: true,
+          repairs,
+          message: `Attempted repairs on ${repairs.length} platforms`
+        });
+      }
+    } catch (error) {
+      console.error('Connection repair failed:', error);
+      res.status(500).json({ message: "Connection repair failed" });
+    }
+  });
+
+  // Bulletproof System Test - Comprehensive reliability testing
+  app.get("/api/bulletproof-test", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId || 2;
+      const { BulletproofTester } = await import('./bulletproof-test');
+      
+      const testResult = await BulletproofTester.runComprehensiveTest(userId);
+      
+      res.json({
+        success: true,
+        timestamp: new Date(),
+        ...testResult
+      });
+    } catch (error) {
+      console.error('Bulletproof system test failed:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Bulletproof system test failed",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Auto-post entire 30-day schedule
   app.post("/api/auto-post-schedule", requireAuth, async (req: any, res) => {
     try {
