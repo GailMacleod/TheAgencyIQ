@@ -2474,6 +2474,91 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Post Verification and Subscription Deduction - Independent Flow
+  app.post("/api/check-post", requireAuth, async (req: any, res) => {
+    try {
+      const { subscriptionId, postId } = req.body;
+      
+      if (!subscriptionId || !postId) {
+        return res.status(400).json({
+          success: false,
+          message: "subscriptionId and postId are required"
+        });
+      }
+
+      const { PostVerificationService } = await import('./post-verification-service');
+      const result = await PostVerificationService.checkAndDeductPost(subscriptionId, postId);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Post verification failed:', error);
+      res.status(500).json({
+        success: false,
+        message: "Post verification service error",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Bulk Post Verification - For batch processing
+  app.post("/api/check-posts-bulk", requireAuth, async (req: any, res) => {
+    try {
+      const { subscriptionId, postIds } = req.body;
+      
+      if (!subscriptionId || !Array.isArray(postIds)) {
+        return res.status(400).json({
+          success: false,
+          message: "subscriptionId and postIds array are required"
+        });
+      }
+
+      const { PostVerificationService } = await import('./post-verification-service');
+      const results = await PostVerificationService.bulkVerifyAndDeduct(subscriptionId, postIds);
+      
+      res.json({
+        success: true,
+        results
+      });
+    } catch (error) {
+      console.error('Bulk post verification failed:', error);
+      res.status(500).json({
+        success: false,
+        message: "Bulk verification service error",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Platform-specific Post Verification
+  app.post("/api/verify-platform-posts", requireAuth, async (req: any, res) => {
+    try {
+      const { postId, platforms } = req.body;
+      
+      if (!postId || !Array.isArray(platforms)) {
+        return res.status(400).json({
+          success: false,
+          message: "postId and platforms array are required"
+        });
+      }
+
+      const { PostVerificationService } = await import('./post-verification-service');
+      const verificationResults = await PostVerificationService.verifyPostAcrossPlatforms(postId, platforms);
+      
+      res.json({
+        success: true,
+        postId,
+        platforms: verificationResults
+      });
+    } catch (error) {
+      console.error('Platform verification failed:', error);
+      res.status(500).json({
+        success: false,
+        message: "Platform verification error",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Auto-post entire 30-day schedule
   app.post("/api/auto-post-schedule", requireAuth, async (req: any, res) => {
     try {
