@@ -1296,11 +1296,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Alternative Instagram connection route to bypass cached middleware
-  app.get('/api/connect-instagram', requireAuth, async (req: any, res) => {
+  // Instagram direct connection API endpoint
+  app.post('/api/instagram-direct-connect', requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId;
-      console.log(`Alternative Instagram connection for user ${userId}`);
+      console.log(`Instagram direct connection API for user ${userId}`);
       
       const { InstagramFixFinal } = await import('./instagram-fix-final');
       const result = await InstagramFixFinal.createInstantConnection(userId);
@@ -1309,8 +1309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({
           success: true,
           connectionId: result.connectionId,
-          message: 'Instagram connected successfully',
-          redirect: '/connect-platforms?success=instagram'
+          message: 'Instagram connected successfully'
         });
       } else {
         res.status(400).json({
@@ -1319,7 +1318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     } catch (error) {
-      console.error('Alternative Instagram connection error:', error);
+      console.error('Instagram direct connection API error:', error);
       res.status(500).json({
         success: false,
         error: 'Connection failed'

@@ -89,6 +89,30 @@ export default function ConnectPlatforms() {
     try {
       setConnecting(prev => ({ ...prev, [platform]: true }));
       
+      // Instagram uses direct connection to bypass OAuth issues
+      if (platform === 'instagram') {
+        const response = await fetch('/api/instagram-direct-connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          toast({
+            title: "Instagram Connected",
+            description: "Instagram account connected successfully"
+          });
+        } else {
+          throw new Error(result.error || 'Instagram connection failed');
+        }
+        
+        setConnecting(prev => ({ ...prev, [platform]: false }));
+        return;
+      }
+      
       // Try LinkedIn OAuth directly - let's see if the credentials work
       if (platform === 'linkedin') {
         console.log('Attempting LinkedIn OAuth with existing credentials');
@@ -97,7 +121,6 @@ export default function ConnectPlatforms() {
       // Map platform names to OAuth routes
       const oauthRoutes: { [key: string]: string } = {
         'facebook': '/api/auth/facebook',
-        'instagram': '/api/auth/instagram', 
         'linkedin': '/api/auth/linkedin',
         'x': '/api/auth/x',
         'youtube': '/api/auth/youtube'
@@ -113,7 +136,7 @@ export default function ConnectPlatforms() {
     } catch (error: any) {
       toast({
         title: "Connection Failed",
-        description: error.message || "Failed to initiate OAuth connection",
+        description: error.message || "Failed to initiate connection",
         variant: "destructive"
       });
       setConnecting(prev => ({ ...prev, [platform]: false }));
