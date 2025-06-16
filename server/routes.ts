@@ -2593,6 +2593,25 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Direct OAuth fix endpoint
+  app.get('/api/oauth-fix-direct', requireAuth, async (req: any, res) => {
+    try {
+      const { DirectOAuthFix } = await import('./oauth-fix-direct');
+      const tokenStatus = await DirectOAuthFix.testCurrentTokenStatus(req.session.userId);
+      const fixSolution = await DirectOAuthFix.fixAllConnections(req.session.userId);
+      
+      res.json({
+        success: true,
+        currentStatus: tokenStatus,
+        solution: fixSolution,
+        message: 'Direct OAuth reconnection URLs generated with proper posting permissions'
+      });
+    } catch (error) {
+      console.error('Direct OAuth fix error:', error);
+      res.status(500).json({ error: 'Failed to generate OAuth fix' });
+    }
+  });
+
   // Import OAuth configuration (passport already initialized above)
   await import('./oauth-config');
 

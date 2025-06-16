@@ -26,6 +26,7 @@ import AdminDashboard from "@/components/AdminDashboard";
 import ConnectionRepair from "@/pages/connection-repair";
 import OAuthReconnect from "@/pages/oauth-reconnect";
 import TokenStatus from "@/pages/token-status";
+import OAuthDiagnostic from "@/pages/oauth-diagnostic";
 
 function Router() {
   // Track page views when routes change
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/connection-repair" component={ConnectionRepair} />
       <Route path="/oauth-reconnect" component={OAuthReconnect} />
       <Route path="/token-status" component={TokenStatus} />
+      <Route path="/oauth-diagnostic" component={OAuthDiagnostic} />
       <Route component={NotFound} />
     </Switch>
   );

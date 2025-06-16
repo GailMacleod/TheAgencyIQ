@@ -53,12 +53,13 @@ passport.use(new FacebookStrategy({
   }
 }));
 
-// Instagram OAuth (uses Facebook Graph API)
+// Instagram OAuth (uses Facebook Graph API with Instagram Basic Display)
 passport.use('instagram', new FacebookStrategy({
   clientID: process.env.INSTAGRAM_CLIENT_ID!,
   clientSecret: process.env.INSTAGRAM_CLIENT_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/instagram/callback`,
-  profileFields: ['id', 'displayName'],
+  profileFields: ['id', 'username'],
+  scope: ['instagram_basic', 'instagram_content_publish', 'pages_show_list'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   try {
@@ -67,14 +68,14 @@ passport.use('instagram', new FacebookStrategy({
       return done(new Error('User not authenticated'));
     }
 
-    // Validate real OAuth token (no demo/mock tokens allowed)
+    // Validate real OAuth token
     if (!accessToken || accessToken.includes('demo') || accessToken.includes('mock') || accessToken.length < 10) {
       return done(new Error('Invalid Instagram OAuth token received'));
     }
 
     console.log('Instagram OAuth successful:', {
       profileId: profile.id,
-      displayName: profile.displayName,
+      username: profile.username,
       tokenType: 'live_oauth'
     });
 
@@ -82,7 +83,7 @@ passport.use('instagram', new FacebookStrategy({
       userId,
       platform: 'instagram',
       platformUserId: profile.id,
-      platformUsername: profile.displayName,
+      platformUsername: profile.username || profile.displayName,
       accessToken,
       refreshToken,
       isActive: true
