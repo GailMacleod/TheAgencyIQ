@@ -6,7 +6,7 @@
 // Test function matching your requested format
 async function checkAndDeductPost(subscriptionId, postId) {
   try {
-    const response = await fetch('/api/check-post', {
+    const response = await fetch('http://localhost:5000/api/check-post', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subscriptionId, postId })
@@ -41,7 +41,7 @@ async function testVerificationFlow() {
   
   // Test bulk verification
   console.log('\n🔢 Testing Bulk Verification');
-  const bulkResult = await fetch('/api/check-posts-bulk', {
+  const bulkResult = await fetch('http://localhost:5000/api/check-posts-bulk', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
@@ -57,7 +57,7 @@ async function testVerificationFlow() {
   
   // Test platform verification
   console.log('\n🔍 Testing Platform Verification');
-  const platformResult = await fetch('/api/verify-platform-posts', {
+  const platformResult = await fetch('http://localhost:5000/api/verify-platform-posts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 

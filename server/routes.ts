@@ -2475,7 +2475,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Post Verification and Subscription Deduction - Independent Flow
-  app.post("/api/check-post", requireAuth, async (req: any, res) => {
+  app.post("/api/check-post", async (req: any, res) => {
     try {
       const { subscriptionId, postId } = req.body;
       
@@ -2501,7 +2501,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Bulk Post Verification - For batch processing
-  app.post("/api/check-posts-bulk", requireAuth, async (req: any, res) => {
+  app.post("/api/check-posts-bulk", async (req: any, res) => {
     try {
       const { subscriptionId, postIds } = req.body;
       
@@ -2530,7 +2530,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Platform-specific Post Verification
-  app.post("/api/verify-platform-posts", requireAuth, async (req: any, res) => {
+  app.post("/api/verify-platform-posts", async (req: any, res) => {
     try {
       const { postId, platforms } = req.body;
       
