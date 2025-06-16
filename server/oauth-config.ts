@@ -15,7 +15,7 @@ passport.use(new FacebookStrategy({
   clientSecret: process.env.FACEBOOK_APP_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`,
   profileFields: ['id', 'displayName', 'email'],
-  scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_to_groups', 'pages_show_list', 'user_posts'],
+  scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_to_groups', 'pages_show_list', 'user_posts', 'publish_actions'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   try {

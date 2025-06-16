@@ -2397,11 +2397,11 @@ Continue building your Value Proposition Canvas systematically.`;
       }
 
       try {
-        // Use improved publishing system with fallbacks
-        const { PostFixService } = await import('./post-fix');
-        const publishResult = await PostFixService.publishPostWithFallbacks(
+        // Use improved publishing system with real platform connections
+        const { PostPublisherV2 } = await import('./post-publisher-v2');
+        const publishResult = await PostPublisherV2.publishToAllPlatforms(
           req.session.userId,
-          parseInt(postId),
+          post.content,
           platforms
         );
 
