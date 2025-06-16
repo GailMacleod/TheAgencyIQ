@@ -4313,15 +4313,23 @@ Continue building your Value Proposition Canvas systematically.`;
           code: code as string
         })
       });
+      
       const tokenData = await tokenResponse.json();
+      console.log('Facebook token exchange response:', { 
+        status: tokenResponse.status, 
+        hasAccessToken: !!tokenData.access_token,
+        error: tokenData.error,
+        errorDescription: tokenData.error_description 
+      });
 
       if (!tokenData.access_token) {
+        console.error('Instagram OAuth token exchange failed:', tokenData);
         // Record OAuth token exchange failure
         if (req.session?.userId) {
           await BreachNotificationService.recordIncident(
             req.session.userId,
             'platform_breach',
-            `Instagram OAuth token exchange failed for user from IP ${req.ip}`,
+            `Instagram OAuth token exchange failed: ${tokenData.error || 'Unknown error'} from IP ${req.ip}`,
             ['instagram'],
             'medium'
           );
