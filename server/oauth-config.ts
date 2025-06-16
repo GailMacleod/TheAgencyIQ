@@ -9,12 +9,13 @@ const OAUTH_REDIRECT_BASE = process.env.REPLIT_DOMAINS
   ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
   : 'http://localhost:5000';
 
-// Facebook OAuth Strategy
+// Facebook OAuth Strategy with proper page permissions
 passport.use(new FacebookStrategy({
   clientID: process.env.FACEBOOK_APP_ID!,
   clientSecret: process.env.FACEBOOK_APP_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`,
   profileFields: ['id', 'displayName', 'email'],
+  scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_to_groups', 'pages_show_list'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   try {
@@ -99,7 +100,7 @@ passport.use(new LinkedInStrategy({
   clientID: process.env.LINKEDIN_CLIENT_ID!,
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/linkedin/callback`,
-  scope: ['r_liteprofile', 'w_member_social', 'r_emailaddress'],
+  scope: ['profile', 'w_member_social', 'email'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   try {

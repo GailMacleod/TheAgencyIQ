@@ -241,25 +241,56 @@ export class PostPublisher {
         throw new Error('Invalid or missing Twitter access token');
       }
 
-      // Twitter API v2 with Bearer token authentication
-      const response = await axios.post(
-        'https://api.twitter.com/2/tweets',
-        {
-          text: content.length > 280 ? content.substring(0, 277) + '...' : content
+      if (!tokenSecret || tokenSecret.length < 10) {
+        throw new Error('Invalid or missing Twitter token secret');
+      }
+
+      // Twitter API v1.1 with OAuth 1.0a authentication (required for posting)
+      const crypto = require('crypto');
+      const OAuth = require('oauth-1.0a');
+      
+      const oauth = OAuth({
+        consumer: {
+          key: process.env.TWITTER_CLIENT_ID!,
+          secret: process.env.TWITTER_CLIENT_SECRET!
         },
+        signature_method: 'HMAC-SHA1',
+        hash_function(base_string: string, key: string) {
+          return crypto.createHmac('sha1', key).update(base_string).digest('base64');
+        }
+      });
+
+      const token = {
+        key: accessToken,
+        secret: tokenSecret
+      };
+
+      const request_data = {
+        url: 'https://api.twitter.com/1.1/statuses/update.json',
+        method: 'POST',
+        data: {
+          status: content.length > 280 ? content.substring(0, 277) + '...' : content
+        }
+      };
+
+      const auth_header = oauth.toHeader(oauth.authorize(request_data, token));
+
+      const response = await axios.post(
+        'https://api.twitter.com/1.1/statuses/update.json',
+        request_data.data,
         {
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
+            ...auth_header,
+            'Content-Type': 'application/x-www-form-urlencoded'
           }
         }
       );
       
-      console.log(`Twitter post published successfully: ${response.data.data.id}`);
+      console.log(`Twitter post published successfully: ${response.data.id}`);
       
       return {
         success: true,
-        platformPostId: response.data.data.id,
+        platformPostId: response.data.id,
         analytics: { reach: 0, engagement: 0, impressions: 0 }
       };
     } catch (error: any) {
