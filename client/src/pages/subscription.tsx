@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import AIWidget from "@/components/grok-widget";
 import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
+import { MetaPixelTracker } from "@/lib/meta-pixel";
 
 const signupSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -85,14 +86,40 @@ export default function Subscription() {
 
   const handleSelectPlan = (planId: string) => {
     setShowSignupForm(planId);
+    
+    // Track plan selection for conversion optimization
+    const plan = plans.find(p => p.id === planId);
+    if (plan) {
+      MetaPixelTracker.trackConversionFunnel('subscription_plan_selected', {
+        plan_name: plan.name,
+        plan_price: plan.price,
+        plan_posts: plan.posts
+      });
+    }
   };
 
   const handleSignupAndPayment = async (data: SignupForm, priceId: string, planId: string) => {
     try {
       setLoadingPlan(planId);
       
+      // Track registration initiation
+      MetaPixelTracker.trackConversionFunnel('registration_started', {
+        plan_id: planId,
+        email: data.email,
+        phone: data.phone
+      });
+      
       // First create the user account
       await apiRequest("POST", "/api/auth/signup", data);
+      
+      // Track successful registration
+      const plan = plans.find(p => p.id === planId);
+      if (plan) {
+        MetaPixelTracker.trackUserRegistration('subscription_form', plan.name);
+        
+        // Track lead generation
+        MetaPixelTracker.trackLead('subscription_signup', plan.name === 'Professional' ? 197 : plan.name === 'Growth' ? 97 : 47);
+      }
       
       // Then create checkout session with the new user
       const response = await apiRequest("POST", "/api/create-checkout-session", {
@@ -102,12 +129,27 @@ export default function Subscription() {
       const checkoutData = await response.json();
       
       if (checkoutData.url) {
+        // Track checkout initiation
+        MetaPixelTracker.trackEvent('InitiateCheckout', {
+          value: plan?.name === 'Professional' ? 197 : plan?.name === 'Growth' ? 97 : 47,
+          currency: 'AUD',
+          content_name: plan?.name + ' Subscription',
+          content_category: 'subscription'
+        });
+        
         window.location.href = checkoutData.url;
       } else {
         throw new Error("No checkout URL received");
       }
     } catch (error: any) {
       console.error("Signup and payment error:", error);
+      
+      // Track registration/payment failure
+      MetaPixelTracker.trackError('subscription_signup_failed', error.message, {
+        plan_id: planId,
+        step: 'payment_initiation'
+      });
+      
       toast({
         title: "Process Failed",
         description: error.message || "Failed to create account and process payment",
