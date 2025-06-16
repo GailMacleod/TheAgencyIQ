@@ -4100,12 +4100,14 @@ Continue building your Value Proposition Canvas systematically.`;
   // Instagram OAuth (uses Facebook Business API)
   app.get("/api/auth/instagram", (req, res) => {
     const redirectUri = 'https://app.theagencyiq.ai/api/auth/instagram/callback';
-    const clientId = process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID;
+    const clientId = process.env.FACEBOOK_APP_ID;
     const scope = 'instagram_basic pages_show_list instagram_manage_posts';
     
     if (!clientId) {
-      return res.status(500).json({ message: "Facebook Client ID not configured" });
+      return res.status(500).json({ message: "Facebook App ID not configured" });
     }
+    
+    console.log('Instagram OAuth initiation:', { clientId, redirectUri, scope });
     
     const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=user_${req.session?.userId || 'unknown'}_instagram_business`;
     res.redirect(authUrl);
@@ -4264,9 +4266,16 @@ Continue building your Value Proposition Canvas systematically.`;
   app.get("/api/auth/instagram/callback", async (req, res) => {
     try {
       const { code, state } = req.query;
-      const clientId = process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID;
-      const clientSecret = process.env.FACEBOOK_CLIENT_SECRET || process.env.FACEBOOK_APP_SECRET;
+      const clientId = process.env.FACEBOOK_APP_ID;
+      const clientSecret = process.env.FACEBOOK_APP_SECRET;
       const redirectUri = 'https://app.theagencyiq.ai/api/auth/instagram/callback';
+      
+      console.log('Instagram OAuth callback:', { 
+        hasCode: !!code, 
+        state, 
+        hasClientId: !!clientId, 
+        hasClientSecret: !!clientSecret 
+      });
 
       if (!code || !clientId || !clientSecret) {
         // Record potential breach attempt for missing OAuth parameters
@@ -4282,9 +4291,14 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.redirect('/connect-platforms?error=instagram_auth_failed');
       }
 
-      // Extract user ID from state parameter
-      const userId = state?.toString().split('_')[1];
+      // Extract user ID from state parameter or use session
+      let userId = state?.toString().split('_')[1];
+      if (!userId && req.session?.userId) {
+        userId = req.session.userId.toString();
+        console.log('Using session userId:', userId);
+      }
       if (!userId) {
+        console.error('No userId found in state or session');
         return res.redirect('/connect-platforms?error=invalid_state');
       }
 
