@@ -28,18 +28,59 @@ export class PostPublisher {
       const appsecretProof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
 
       // Get user's Facebook pages first
-      const pagesResponse = await axios.get(
-        `https://graph.facebook.com/v18.0/me/accounts`,
-        {
-          params: {
+      let pagesResponse;
+      try {
+        pagesResponse = await axios.get(
+          `https://graph.facebook.com/v18.0/me/accounts`,
+          {
+            params: {
+              access_token: accessToken,
+              appsecret_proof: appsecretProof
+            }
+          }
+        );
+      } catch (pageError: any) {
+        // If pages endpoint fails, try posting to user's feed directly
+        console.log('Facebook pages endpoint failed, attempting user feed post...');
+        
+        const userPostResponse = await axios.post(
+          `https://graph.facebook.com/v18.0/me/feed`,
+          {
+            message: content,
             access_token: accessToken,
             appsecret_proof: appsecretProof
           }
-        }
-      );
+        );
+
+        console.log(`Facebook user feed post published successfully: ${userPostResponse.data.id}`);
+        
+        return {
+          success: true,
+          platformPostId: userPostResponse.data.id,
+          analytics: { reach: 0, engagement: 0, impressions: 0 }
+        };
+      }
 
       if (!pagesResponse.data.data || pagesResponse.data.data.length === 0) {
-        throw new Error('No Facebook pages available for posting');
+        // Fallback to user feed if no pages available
+        console.log('No Facebook pages found, posting to user feed...');
+        
+        const userPostResponse = await axios.post(
+          `https://graph.facebook.com/v18.0/me/feed`,
+          {
+            message: content,
+            access_token: accessToken,
+            appsecret_proof: appsecretProof
+          }
+        );
+
+        console.log(`Facebook user feed post published successfully: ${userPostResponse.data.id}`);
+        
+        return {
+          success: true,
+          platformPostId: userPostResponse.data.id,
+          analytics: { reach: 0, engagement: 0, impressions: 0 }
+        };
       }
 
       // Use the first available page

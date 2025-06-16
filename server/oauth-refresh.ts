@@ -76,8 +76,18 @@ export class OAuthRefreshService {
 
   static async validateAndRefreshConnection(connectionId: number): Promise<boolean> {
     try {
-      const connections = await storage.getAllPlatformConnections();
-      const connection = connections.find(c => c.id === connectionId);
+      // Get all users' connections and find the specific one
+      const users = await storage.getAllUsers();
+      let connection: any = null;
+      
+      for (const user of users) {
+        const userConnections = await storage.getPlatformConnectionsByUser(user.id);
+        const found = userConnections.find((c: any) => c.id === connectionId);
+        if (found) {
+          connection = found;
+          break;
+        }
+      }
       
       if (!connection || !connection.isActive) {
         return false;

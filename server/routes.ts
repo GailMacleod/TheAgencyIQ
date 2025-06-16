@@ -2397,8 +2397,9 @@ Continue building your Value Proposition Canvas systematically.`;
       }
 
       try {
-        // Use PostPublisher to handle multi-platform publishing
-        const publishResult = await PostPublisher.publishPost(
+        // Use improved publishing system with fallbacks
+        const { PostFixService } = await import('./post-fix');
+        const publishResult = await PostFixService.publishPostWithFallbacks(
           req.session.userId,
           parseInt(postId),
           platforms
@@ -2491,6 +2492,38 @@ Continue building your Value Proposition Canvas systematically.`;
     } catch (error: any) {
       console.error('Post retry error:', error);
       res.status(500).json({ message: "Error retrying post publication" });
+    }
+  });
+
+  // Comprehensive post publishing diagnostic
+  app.get("/api/post-diagnostics", requireAuth, async (req: any, res) => {
+    try {
+      const { PostDiagnosticsService } = await import('./post-diagnostics');
+      
+      // Run comprehensive diagnostic
+      const diagnostic = await PostDiagnosticsService.runComprehensiveDiagnostic(req.session.userId);
+      
+      // Apply automatic fixes
+      const autoFixes = await PostDiagnosticsService.autoFixCommonIssues(req.session.userId);
+      diagnostic.fixesApplied.push(...autoFixes);
+
+      res.json({
+        success: true,
+        diagnostic,
+        summary: {
+          connectedPlatforms: diagnostic.platformConnections.filter(c => c.status === 'connected').length,
+          totalErrors: diagnostic.publishingErrors.length,
+          recommendationsCount: diagnostic.recommendations.length,
+          fixesApplied: diagnostic.fixesApplied.length
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Post diagnostics error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Error running post diagnostics: " + error.message 
+      });
     }
   });
 
