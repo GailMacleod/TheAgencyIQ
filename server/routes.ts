@@ -2396,12 +2396,19 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
+      // Get the post data first
+      const posts = await storage.getPostsByUser(req.session.userId);
+      const postData = posts.find(p => p.id === parseInt(postId));
+      if (!postData) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
       try {
-        // Use improved publishing system with real platform connections
-        const { PostPublisherV2 } = await import('./post-publisher-v2');
-        const publishResult = await PostPublisherV2.publishToAllPlatforms(
+        // Use direct publishing system that works
+        const { DirectPostPublisher } = await import('./post-publisher-direct');
+        const publishResult = await DirectPostPublisher.publishPost(
           req.session.userId,
-          post.content,
+          postData.content,
           platforms
         );
 
