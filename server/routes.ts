@@ -2571,6 +2571,28 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Token validation endpoint
+  app.get('/api/validate-tokens', requireAuth, async (req: any, res) => {
+    try {
+      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      const { TokenValidator } = await import('./token-validator');
+      const validationResults = await TokenValidator.validateAllUserTokens(req.session.userId, connections);
+      
+      res.json({
+        success: true,
+        validationResults,
+        summary: {
+          totalConnections: connections.length,
+          validConnections: Object.values(validationResults).filter((r: any) => r.valid).length,
+          needingReconnection: Object.values(validationResults).filter((r: any) => r.needsReconnection).length
+        }
+      });
+    } catch (error) {
+      console.error('Token validation error:', error);
+      res.status(500).json({ error: 'Failed to validate tokens' });
+    }
+  });
+
   // Import OAuth configuration (passport already initialized above)
   await import('./oauth-config');
 

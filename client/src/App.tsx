@@ -25,6 +25,7 @@ import RedeemCertificate from "@/pages/redeem-certificate";
 import AdminDashboard from "@/components/AdminDashboard";
 import ConnectionRepair from "@/pages/connection-repair";
 import OAuthReconnect from "@/pages/oauth-reconnect";
+import TokenStatus from "@/pages/token-status";
 
 function Router() {
   // Track page views when routes change
