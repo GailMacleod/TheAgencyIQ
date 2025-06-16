@@ -45,8 +45,10 @@ export interface IStorage {
 
   // Platform connection operations
   getPlatformConnectionsByUser(userId: number): Promise<PlatformConnection[]>;
+  getPlatformConnection(userId: number, platform: string): Promise<PlatformConnection | undefined>;
   createPlatformConnection(connection: InsertPlatformConnection): Promise<PlatformConnection>;
   updatePlatformConnection(id: number, updates: Partial<InsertPlatformConnection>): Promise<PlatformConnection>;
+  updatePlatformConnectionByPlatform(userId: number, platform: string, updates: Partial<InsertPlatformConnection>): Promise<PlatformConnection>;
   deletePlatformConnection(id: number): Promise<void>;
 
   // Brand purpose operations
@@ -212,6 +214,29 @@ export class DatabaseStorage implements IStorage {
       .update(platformConnections)
       .set(updates)
       .where(eq(platformConnections.id, id))
+      .returning();
+    return platformConnection;
+  }
+
+  async getPlatformConnection(userId: number, platform: string): Promise<PlatformConnection | undefined> {
+    const [connection] = await db
+      .select()
+      .from(platformConnections)
+      .where(and(
+        eq(platformConnections.userId, userId),
+        eq(platformConnections.platform, platform)
+      ));
+    return connection;
+  }
+
+  async updatePlatformConnectionByPlatform(userId: number, platform: string, updates: Partial<InsertPlatformConnection>): Promise<PlatformConnection> {
+    const [platformConnection] = await db
+      .update(platformConnections)
+      .set(updates)
+      .where(and(
+        eq(platformConnections.userId, userId),
+        eq(platformConnections.platform, platform)
+      ))
       .returning();
     return platformConnection;
   }
