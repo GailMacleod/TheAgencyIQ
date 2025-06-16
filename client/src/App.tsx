@@ -24,6 +24,7 @@ import ResetPassword from "@/pages/reset-password";
 import RedeemCertificate from "@/pages/redeem-certificate";
 import AdminDashboard from "@/components/AdminDashboard";
 import ConnectionRepair from "@/pages/connection-repair";
+import OAuthReconnect from "@/pages/oauth-reconnect";
 
 function Router() {
   // Track page views when routes change
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/dashboard" component={ConnectPlatforms} />
       <Route path="/connection-repair" component={ConnectionRepair} />
+      <Route path="/oauth-reconnect" component={OAuthReconnect} />
       <Route component={NotFound} />
     </Switch>
   );

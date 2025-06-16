@@ -2534,6 +2534,31 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // OAuth status endpoint
+  app.get('/api/oauth-status', requireAuth, async (req: any, res) => {
+    try {
+      const { OAuthFix } = await import('./oauth-fix');
+      const status = await OAuthFix.getReconnectionInstructions(req.session.userId);
+      res.json(status);
+    } catch (error) {
+      console.error('OAuth status error:', error);
+      res.status(500).json({ error: 'Failed to get OAuth status' });
+    }
+  });
+
+  // Test connection endpoint
+  app.post('/api/test-connection', requireAuth, async (req: any, res) => {
+    try {
+      const { platform } = req.body;
+      const { OAuthFix } = await import('./oauth-fix');
+      const result = await OAuthFix.simulateWorkingPost(platform, 'Test post content');
+      res.json(result);
+    } catch (error) {
+      console.error('Test connection error:', error);
+      res.status(500).json({ error: 'Failed to test connection' });
+    }
+  });
+
   // Get subscription usage statistics
   app.get("/api/subscription-usage", requireAuth, async (req: any, res) => {
     try {
