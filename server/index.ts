@@ -26,18 +26,18 @@ app.use((req, res, next) => {
   if (existingCSP) {
     // Enhance existing CSP with Facebook domains
     const enhancedCSP = existingCSP
-      .replace('script-src \'self\'', 'script-src \'self\' \'unsafe-inline\' https://connect.facebook.net https://www.facebook.com')
-      .replace('connect-src \'self\'', 'connect-src \'self\' https://connect.facebook.net https://www.facebook.com')
-      .replace('img-src \'self\' data: https:', 'img-src \'self\' data: https: https://www.facebook.com')
+      .replace('script-src \'self\'', 'script-src \'self\' \'unsafe-inline\' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com')
+      .replace('connect-src \'self\'', 'connect-src \'self\' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com')
+      .replace('img-src \'self\' data: https:', 'img-src \'self\' data: https: https://www.facebook.com https://graph.facebook.com')
       .replace('frame-src', 'frame-src https://www.facebook.com');
     
     res.setHeader('Content-Security-Policy', enhancedCSP);
   } else {
     res.setHeader('Content-Security-Policy', 
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.facebook.com; " +
-      "connect-src 'self' https://connect.facebook.net https://www.facebook.com; " +
-      "img-src 'self' data: https://www.facebook.com; " +
+      "script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com; " +
+      "connect-src 'self' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com; " +
+      "img-src 'self' data: https://www.facebook.com https://graph.facebook.com; " +
       "frame-src 'self' https://www.facebook.com;"
     );
   }
