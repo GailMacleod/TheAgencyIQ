@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MasterHeader } from '@/components/master-header';
-import { MasterFooter } from '@/components/master-footer';
+import MasterHeader from '@/components/master-header';
+import MasterFooter from '@/components/master-footer';
 import { CheckCircle, XCircle, AlertTriangle, Shield, RefreshCw, Activity } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -63,11 +63,7 @@ export default function BulletproofDashboard() {
   // Repair connections
   const repairConnectionsMutation = useMutation({
     mutationFn: async (platform?: string) => {
-      return await apiRequest('/api/repair-connections', {
-        method: 'POST',
-        body: JSON.stringify({ platform }),
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return await apiRequest('/api/repair-connections', 'POST', { platform });
     },
     onSuccess: () => {
       refetchHealth();

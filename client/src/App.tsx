@@ -30,6 +30,7 @@ import OAuthDiagnostic from "@/pages/oauth-diagnostic";
 import InstagramFix from "@/pages/instagram-fix";
 import DataDeletionStatus from "@/pages/data-deletion-status";
 import MetaPixelTest from "@/pages/meta-pixel-test";
+import BulletproofDashboard from "@/pages/bulletproof-dashboard";
 
 function Router() {
   // Track page views when routes change

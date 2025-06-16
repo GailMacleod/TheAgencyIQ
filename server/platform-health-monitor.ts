@@ -498,9 +498,8 @@ export class PlatformHealthMonitor {
 
   private static async markForReauthorization(userId: number, platform: string, fixes: string[]): Promise<void> {
     // Mark connection as needing reauthorization
-    await storage.updatePlatformConnection(userId, platform, {
+    await storage.updatePlatformConnectionByPlatform(userId, platform, {
       isActive: false,
-      needsReauthorization: true,
       lastError: `Requires reauthorization: ${fixes.join(', ')}`
     });
   }
