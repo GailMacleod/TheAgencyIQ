@@ -39,8 +39,20 @@ export default function ConnectionRepair() {
   const loadRepairDiagnosis = async () => {
     try {
       setLoading(true);
-      const response = await apiRequest('/api/connection-repair');
-      setRepairData(response);
+      const response = await fetch('/api/connection-repair', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load diagnosis: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setRepairData(data);
     } catch (error: any) {
       toast({
         title: "Error loading diagnosis",
