@@ -89,9 +89,9 @@ export default function ConnectPlatforms() {
     try {
       setConnecting(prev => ({ ...prev, [platform]: true }));
       
-      // Instagram uses direct connection to bypass OAuth issues
+      // Instagram uses Facebook Business API connection
       if (platform === 'instagram') {
-        const response = await fetch('/api/instagram-direct-connect', {
+        const response = await fetch('/api/connect-instagram', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include'
@@ -103,7 +103,7 @@ export default function ConnectPlatforms() {
           queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
           toast({
             title: "Instagram Connected",
-            description: "Instagram account connected successfully"
+            description: `Connected Instagram: ${result.username || 'Business Account'}`
           });
         } else {
           throw new Error(result.error || 'Instagram connection failed');
