@@ -9,6 +9,7 @@ import { TrendingUp, TrendingDown, Target, Users, MessageCircle, Eye, BarChart3,
 import { format, startOfYear, endOfYear, eachMonthOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
+import { MetaPixelTracker } from "@/lib/meta-pixel";
 
 interface MonthlyPerformance {
   month: string;
@@ -70,6 +71,50 @@ export default function YearlyAnalytics() {
   const { data: brandPurpose } = useQuery({
     queryKey: ["/api/brand-purpose"],
   });
+
+  // Track yearly analytics page view and engagement
+  useEffect(() => {
+    if (yearlyAnalytics) {
+      // Track comprehensive yearly analytics view
+      MetaPixelTracker.trackAnalyticsView('yearly', yearlyAnalytics.monthlyPerformance?.map(() => 'comprehensive') || []);
+      
+      // Track advanced feature usage
+      MetaPixelTracker.trackFeatureUsage('yearly_analytics_dashboard');
+      
+      // Track business performance insights
+      const yearProgress = calculateYearProgress();
+      const overallPerformance = yearlyAnalytics.yearEndProjection.conversions >= 1000 ? 'excellent' : 
+                                yearlyAnalytics.yearEndProjection.conversions >= 500 ? 'good' : 'developing';
+      
+      MetaPixelTracker.trackCustomEvent('YearlyPerformanceReview', {
+        year_progress: Math.round(yearProgress),
+        overall_performance: overallPerformance,
+        total_posts_ytd: yearlyAnalytics.monthlyPerformance?.reduce((sum, month) => sum + month.posts, 0) || 0,
+        total_conversions_ytd: yearlyAnalytics.monthlyPerformance?.reduce((sum, month) => sum + month.conversions, 0) || 0,
+        projected_year_end_conversions: yearlyAnalytics.yearEndProjection.conversions,
+        best_performing_month: yearlyAnalytics.bestPerformingMonth?.month || 'none',
+        quarterly_view: selectedQuarter
+      });
+      
+      // Track goal achievement rates for business optimization
+      if (yearlyAnalytics.brandPurposeAlignment) {
+        const avgGoalAchievement = (
+          yearlyAnalytics.brandPurposeAlignment.growthGoal.percentage +
+          yearlyAnalytics.brandPurposeAlignment.efficiencyGoal.percentage +
+          yearlyAnalytics.brandPurposeAlignment.reachGoal.percentage +
+          yearlyAnalytics.brandPurposeAlignment.engagementGoal.percentage
+        ) / 4;
+        
+        MetaPixelTracker.trackCustomEvent('GoalAchievementAnalysis', {
+          average_goal_achievement: Math.round(avgGoalAchievement),
+          growth_goal_status: yearlyAnalytics.brandPurposeAlignment.growthGoal.percentage >= 90 ? 'achieved' : 'in_progress',
+          efficiency_goal_status: yearlyAnalytics.brandPurposeAlignment.efficiencyGoal.percentage >= 90 ? 'achieved' : 'in_progress',
+          reach_goal_status: yearlyAnalytics.brandPurposeAlignment.reachGoal.percentage >= 90 ? 'achieved' : 'in_progress',
+          engagement_goal_status: yearlyAnalytics.brandPurposeAlignment.engagementGoal.percentage >= 90 ? 'achieved' : 'in_progress'
+        });
+      }
+    }
+  }, [yearlyAnalytics, selectedQuarter]);
 
   const getPerformanceColor = (percentage: number) => {
     if (percentage >= 90) return "text-green-600 bg-green-50 border-green-200";

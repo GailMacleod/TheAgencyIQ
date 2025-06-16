@@ -10,6 +10,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
+import { MetaPixelTracker } from "@/lib/meta-pixel";
 
 interface AnalyticsData {
   totalPosts: number;
@@ -67,6 +68,30 @@ export default function Analytics() {
   const { data: brandPurpose } = useQuery({
     queryKey: ["/api/brand-purpose"],
   });
+
+  // Track analytics page view for Meta Pixel
+  useEffect(() => {
+    if (analytics) {
+      // Track analytics view with performance data
+      MetaPixelTracker.trackAnalyticsView('monthly', analytics.platformBreakdown?.map(p => p.platform) || []);
+      
+      // Track feature usage
+      MetaPixelTracker.trackFeatureUsage('analytics_dashboard');
+      
+      // Track performance insights based on goal achievement
+      const performanceLevel = analytics.totalPosts >= analytics.targetPosts ? 'high' : 
+                             analytics.totalPosts >= (analytics.targetPosts * 0.7) ? 'medium' : 'low';
+      
+      MetaPixelTracker.trackCustomEvent('PerformanceReview', {
+        performance_level: performanceLevel,
+        posts_published: analytics.totalPosts,
+        target_posts: analytics.targetPosts,
+        reach_achieved: analytics.reach,
+        conversion_rate: analytics.conversions / Math.max(analytics.reach, 1) * 100,
+        platforms_connected: analytics.platformBreakdown?.length || 0
+      });
+    }
+  }, [analytics]);
 
   // Check if we have real published data
   const hasRealData = analytics?.hasRealData || false;

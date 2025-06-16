@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { TrendingUp, Eye, Users, Target } from "lucide-react";
 import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "react-icons/si";
 import { cn } from "@/lib/utils";
+import { MetaPixelTracker } from "@/lib/meta-pixel";
 
 interface AnalyticsData {
   totalPosts: number;
