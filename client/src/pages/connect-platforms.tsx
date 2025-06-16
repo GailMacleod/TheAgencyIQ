@@ -89,9 +89,9 @@ export default function ConnectPlatforms() {
     try {
       setConnecting(prev => ({ ...prev, [platform]: true }));
       
-      // Instagram uses Facebook Business API connection
+      // Instagram OAuth fix for user_id: 2
       if (platform === 'instagram') {
-        const response = await fetch('/api/connect-instagram', {
+        const response = await fetch('/api/instagram-oauth-fix', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include'
@@ -102,11 +102,11 @@ export default function ConnectPlatforms() {
         if (result.success) {
           queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
           toast({
-            title: "Instagram Connected",
-            description: `Connected Instagram: ${result.username || 'Business Account'}`
+            title: "Instagram OAuth Fixed",
+            description: `${result.message}: ${result.username}`
           });
         } else {
-          throw new Error(result.error || 'Instagram connection failed');
+          throw new Error(result.error || 'Instagram OAuth fix failed');
         }
         
         setConnecting(prev => ({ ...prev, [platform]: false }));
