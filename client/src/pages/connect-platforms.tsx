@@ -91,10 +91,11 @@ export default function ConnectPlatforms() {
       
       // Instagram OAuth fix for user_id: 2
       if (platform === 'instagram') {
-        const response = await fetch('/api/user/instagram-fix', {
+        const response = await fetch('/api/brand-purpose', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include'
+          credentials: 'include',
+          body: JSON.stringify({ action: 'instagram-oauth-fix' })
         });
         
         const result = await response.json();
