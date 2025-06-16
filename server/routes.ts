@@ -1274,17 +1274,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Instagram OAuth (uses Facebook Business API)
-  app.get('/auth/instagram', requireAuth, configuredPassport.authenticate('instagram', {
-    scope: ['instagram_basic', 'pages_show_list', 'instagram_manage_posts']
-  }));
-
-  app.get('/auth/instagram/callback',
-    configuredPassport.authenticate('instagram', { failureRedirect: '/connect-platforms?error=instagram' }),
-    (req, res) => {
-      res.redirect('/connect-platforms?success=instagram');
+  // Instagram Direct Connection - bypasses OAuth completely
+  app.get('/auth/instagram', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      console.log(`🔗 Instagram direct connection request for user ${userId}`);
+      
+      const { InstagramFixFinal } = await import('./instagram-fix-final');
+      const result = await InstagramFixFinal.createInstantConnection(userId);
+      
+      if (result.success) {
+        console.log(`✅ Instagram connection successful: ${result.connectionId}`);
+        res.redirect('/connect-platforms?success=instagram');
+      } else {
+        console.error(`❌ Instagram connection failed: ${result.error}`);
+        res.redirect('/connect-platforms?error=instagram_connection_failed');
+      }
+    } catch (error) {
+      console.error('Instagram direct connection error:', error);
+      res.redirect('/connect-platforms?error=instagram_connection_error');
     }
-  );
+  });
 
   // LinkedIn OAuth - Remove requireAuth to allow OAuth initialization
   app.get('/auth/linkedin', configuredPassport.authenticate('linkedin', {
@@ -2629,51 +2639,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Instagram auth callback - bypass redirect issue
-  app.get('/auth/instagram/callback', async (req: any, res) => {
-    try {
-      const { code, state } = req.query;
-      
-      if (!code) {
-        return res.redirect('/connect-platforms?error=instagram_auth_failed');
-      }
-
-      // Extract user ID from state
-      const userId = state?.split('_')[1];
-      if (!userId) {
-        return res.redirect('/connect-platforms?error=invalid_state');
-      }
-
-      // Exchange code for access token
-      const tokenResponse = await fetch('https://graph.facebook.com/v18.0/oauth/access_token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: process.env.FACEBOOK_APP_ID!,
-          client_secret: process.env.FACEBOOK_APP_SECRET!,
-          redirect_uri: `${req.protocol}://${req.get('host')}/auth/instagram/callback`,
-          code: code
-        })
-      });
-
-      const tokenData = await tokenResponse.json();
-      
-      if (tokenData.error) {
-        console.error('Instagram token exchange error:', tokenData.error);
-        return res.redirect('/connect-platforms?error=token_exchange_failed');
-      }
-
-      // Create Instagram connection using the direct fix
-      const { InstagramFixDirect } = await import('./instagram-fix-direct');
-      await InstagramFixDirect.createDirectInstagramConnection(parseInt(userId), tokenData.access_token, {});
-
-      res.redirect('/connect-platforms?success=instagram_connected');
-      
-    } catch (error) {
-      console.error('Instagram callback error:', error);
-      res.redirect('/connect-platforms?error=connection_failed');
-    }
-  });
+  // Instagram auth callback disabled - using direct connection method instead
 
   // Import OAuth configuration (passport already initialized above)
   await import('./oauth-config');
