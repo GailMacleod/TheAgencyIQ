@@ -932,20 +932,25 @@ app.post('/api/approve-post', async (req, res) => {
         });
         
       } else {
-        // Mark as approved even if publishing fails - user has approved the content
+        // Mark post as failed and schedule for retry
         await db.update(posts)
           .set({ 
-            status: 'approved',
+            status: 'failed',
             errorLog: publishResult.error
           })
           .where(eq(posts.id, parseInt(postId)));
         
+        // Import and use retry service
+        const { PostRetryService } = await import('./post-retry-service');
+        await PostRetryService.markPostFailed(parseInt(postId), publishResult.error || 'Publishing failed');
+        
         res.json({
           success: true,
-          message: `Post approved! To publish to ${post.platform}, please reconnect your account with fresh OAuth credentials.`,
+          message: `Post marked for retry! It will automatically post when you reconnect your ${post.platform} account.`,
           requiresReconnection: true,
           platform: post.platform,
-          error: publishResult.error
+          error: publishResult.error,
+          willRetry: true
         });
       }
       

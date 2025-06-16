@@ -2315,10 +2315,63 @@ Continue building your Value Proposition Canvas systematically.`;
 
       console.log(`✅ Direct YouTube connection created for user ${userId}:`, result.id);
       
+      // Process any failed posts for retry when YouTube reconnects
+      await PostRetryService.onPlatformReconnected(userId, 'youtube');
+      
       res.redirect('/platform-connections?connected=youtube');
     } catch (error) {
       console.error('Direct YouTube connection failed:', error);
       res.redirect('/platform-connections?error=youtube_connection_failed');
+    }
+  });
+
+  // Get failed posts for retry management
+  app.get("/api/failed-posts", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const failedPosts = await PostRetryService.getFailedPosts(userId);
+      
+      res.json({
+        success: true,
+        failedPosts,
+        total: failedPosts.length
+      });
+    } catch (error) {
+      console.error('Error fetching failed posts:', error);
+      res.status(500).json({ message: "Failed to fetch failed posts" });
+    }
+  });
+
+  // Manually retry a failed post
+  app.post("/api/retry-post", requireAuth, async (req: any, res) => {
+    try {
+      const { postId } = req.body;
+      const userId = req.session.userId;
+      
+      if (!postId) {
+        return res.status(400).json({ message: "Post ID is required" });
+      }
+
+      const success = await PostRetryService.retryPost(postId);
+      
+      if (success) {
+        res.json({
+          success: true,
+          message: "Post retry initiated successfully"
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: "Failed to retry post"
+        });
+      }
+    } catch (error) {
+      console.error('Error retrying post:', error);
+      res.status(500).json({ message: "Failed to retry post" });
     }
   });
 
@@ -4571,6 +4624,9 @@ Continue building your Value Proposition Canvas systematically.`;
 
       console.log(`✅ Direct Instagram connection created for user ${userId}:`, result.id);
       
+      // Process any failed posts for retry when Instagram reconnects
+      await PostRetryService.onPlatformReconnected(userId, 'instagram');
+      
       res.redirect('/platform-connections?connected=instagram');
     } catch (error) {
       console.error('Direct Instagram connection failed:', error);
@@ -4950,6 +5006,9 @@ Continue building your Value Proposition Canvas systematically.`;
       });
 
       console.log(`✅ Direct X connection created for user ${userId}:`, result.id);
+      
+      // Process any failed posts for retry when X reconnects
+      await PostRetryService.onPlatformReconnected(userId, 'x');
       
       res.redirect('/platform-connections?connected=x');
     } catch (error) {
