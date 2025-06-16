@@ -8,15 +8,14 @@ export class InstagramFixDirect {
     bypass: boolean;
   }> {
     
-    const baseUrl = process.env.REPLIT_DOMAINS 
-      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
-      : 'http://localhost:5000';
+    // Use production redirect URI for Instagram OAuth
+    const redirectUri = 'https://app.theagencyiq.ai/api/auth/instagram/callback';
 
     // Instagram Business API requires Facebook App with Instagram permissions
     const instagramParams = new URLSearchParams({
       client_id: process.env.FACEBOOK_APP_ID!, // Instagram uses Facebook App ID
-      redirect_uri: `${baseUrl}/auth/instagram/callback`,
-      scope: 'instagram_basic,instagram_content_publish,pages_show_list,business_management',
+      redirect_uri: redirectUri,
+      scope: 'instagram_basic,pages_show_list,instagram_manage_posts,business_management',
       response_type: 'code',
       state: `user_${userId}_instagram_business`
     });

@@ -1274,9 +1274,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Instagram OAuth (uses Facebook)
+  // Instagram OAuth (uses Facebook Business API)
   app.get('/auth/instagram', requireAuth, configuredPassport.authenticate('instagram', {
-    scope: ['instagram_basic', 'instagram_content_publish']
+    scope: ['instagram_basic', 'pages_show_list', 'instagram_manage_posts', 'business_management']
   }));
 
   app.get('/auth/instagram/callback',
@@ -4075,24 +4075,26 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   app.get("/api/auth/instagram", (req, res) => {
-    const clientId = process.env.INSTAGRAM_CLIENT_ID;
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/instagram/callback`;
-    const scope = 'user_profile,user_media';
+    // Use production redirect URI for Instagram OAuth
+    const redirectUri = 'https://app.theagencyiq.ai/api/auth/instagram/callback';
+    const clientId = process.env.FACEBOOK_APP_ID; // Instagram uses Facebook App ID
+    const scope = 'instagram_basic,pages_show_list,instagram_manage_posts,business_management';
     
     if (!clientId) {
-      return res.status(500).json({ message: "Instagram Client ID not configured" });
+      return res.status(500).json({ message: "Facebook App ID not configured" });
     }
     
-    const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
+    // Use Facebook OAuth endpoint for Instagram Business API
+    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=user_${req.session?.userId || 'unknown'}_instagram_business`;
     res.redirect(authUrl);
   });
 
   app.get("/api/auth/instagram/callback", async (req, res) => {
     try {
-      const { code } = req.query;
-      const clientId = process.env.INSTAGRAM_CLIENT_ID;
-      const clientSecret = process.env.INSTAGRAM_CLIENT_SECRET;
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/instagram/callback`;
+      const { code, state } = req.query;
+      const clientId = process.env.FACEBOOK_APP_ID; // Instagram uses Facebook App ID
+      const clientSecret = process.env.FACEBOOK_APP_SECRET; // Instagram uses Facebook App Secret
+      const redirectUri = 'https://app.theagencyiq.ai/api/auth/instagram/callback';
 
       if (!code || !clientId || !clientSecret) {
         // Record potential breach attempt for missing OAuth parameters
@@ -4105,17 +4107,22 @@ Continue building your Value Proposition Canvas systematically.`;
             'medium'
           );
         }
-        return res.redirect('/platform-connections?error=instagram_auth_failed');
+        return res.redirect('/connect-platforms?error=instagram_auth_failed');
       }
 
-      // Exchange code for access token
-      const tokenResponse = await fetch('https://api.instagram.com/oauth/access_token', {
+      // Extract user ID from state parameter
+      const userId = state?.toString().split('_')[1];
+      if (!userId) {
+        return res.redirect('/connect-platforms?error=invalid_state');
+      }
+
+      // Exchange code for access token using Facebook Graph API
+      const tokenResponse = await fetch('https://graph.facebook.com/v18.0/oauth/access_token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           client_id: clientId,
           client_secret: clientSecret,
-          grant_type: 'authorization_code',
           redirect_uri: redirectUri,
           code: code as string
         })

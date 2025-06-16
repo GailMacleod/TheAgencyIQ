@@ -53,13 +53,13 @@ passport.use(new FacebookStrategy({
   }
 }));
 
-// Instagram OAuth (uses Facebook Graph API with Instagram Basic Display)
+// Instagram OAuth (uses Facebook Graph API with Instagram Business API)
 passport.use('instagram', new FacebookStrategy({
-  clientID: process.env.INSTAGRAM_CLIENT_ID!,
-  clientSecret: process.env.INSTAGRAM_CLIENT_SECRET!,
-  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/instagram/callback`,
+  clientID: process.env.FACEBOOK_APP_ID!,
+  clientSecret: process.env.FACEBOOK_APP_SECRET!,
+  callbackURL: 'https://app.theagencyiq.ai/api/auth/instagram/callback',
   profileFields: ['id', 'username'],
-  scope: ['instagram_basic', 'instagram_content_publish', 'pages_show_list'],
+  scope: ['instagram_basic', 'pages_show_list', 'instagram_manage_posts', 'business_management'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   try {
