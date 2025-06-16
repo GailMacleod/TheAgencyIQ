@@ -1,6 +1,7 @@
 import { storage } from './storage';
 import axios from 'axios';
 import crypto from 'crypto';
+import { PostRetryService } from './post-retry-service';
 
 interface PublishResult {
   success: boolean;
@@ -111,9 +112,18 @@ export class PostPublisher {
       };
     } catch (error: any) {
       console.error('Facebook publish error:', error.response?.data || error.message);
+      const errorMessage = error.response?.data?.error?.message || error.message;
+      
+      // Mark post for retry if it's an OAuth/permission error
+      if (errorMessage.includes('OAuthException') || 
+          errorMessage.includes('permission') || 
+          errorMessage.includes('access_token')) {
+        console.log('Facebook OAuth error detected - post will be retried when connection is restored');
+      }
+      
       return {
         success: false,
-        error: error.response?.data?.error?.message || error.message
+        error: errorMessage
       };
     }
   }

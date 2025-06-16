@@ -22,6 +22,7 @@ import axios from "axios";
 import PostPublisher from "./post-publisher";
 import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
+import { PostRetryService } from './post-retry-service';
 
 // Session type declaration
 declare module 'express-session' {
@@ -4755,6 +4756,9 @@ Continue building your Value Proposition Canvas systematically.`;
       });
 
       console.log(`✅ Direct LinkedIn connection created for user ${userId}:`, result.id);
+      
+      // Process any failed posts for retry when LinkedIn reconnects
+      await PostRetryService.onPlatformReconnected(userId, 'linkedin');
       
       res.redirect('/platform-connections?connected=linkedin');
     } catch (error) {
