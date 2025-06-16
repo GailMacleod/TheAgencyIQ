@@ -2498,34 +2498,31 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Comprehensive post publishing diagnostic
-  app.get("/api/post-diagnostics", requireAuth, async (req: any, res) => {
+  // Post connection repair and diagnosis
+  app.get("/api/connection-repair", requireAuth, async (req: any, res) => {
     try {
-      const { PostDiagnosticsService } = await import('./post-diagnostics');
+      const { ConnectionRepairService } = await import('./connection-repair');
       
-      // Run comprehensive diagnostic
-      const diagnostic = await PostDiagnosticsService.runComprehensiveDiagnostic(req.session.userId);
-      
-      // Apply automatic fixes
-      const autoFixes = await PostDiagnosticsService.autoFixCommonIssues(req.session.userId);
-      diagnostic.fixesApplied.push(...autoFixes);
+      // Generate repair instructions
+      const repairInstructions = await ConnectionRepairService.generateRepairInstructions(req.session.userId);
+      const quickSummary = await ConnectionRepairService.getQuickFixSummary();
 
       res.json({
         success: true,
-        diagnostic,
-        summary: {
-          connectedPlatforms: diagnostic.platformConnections.filter(c => c.status === 'connected').length,
-          totalErrors: diagnostic.publishingErrors.length,
-          recommendationsCount: diagnostic.recommendations.length,
-          fixesApplied: diagnostic.fixesApplied.length
-        }
+        diagnosis: quickSummary,
+        repairInstructions,
+        nextSteps: [
+          "Reconnect platforms with proper permissions",
+          "Test post publishing after reconnection",
+          "Verify all 50 approved posts can be published"
+        ]
       });
 
     } catch (error: any) {
-      console.error('Post diagnostics error:', error);
+      console.error('Connection repair error:', error);
       res.status(500).json({ 
         success: false,
-        message: "Error running post diagnostics: " + error.message 
+        message: "Error analyzing connections: " + error.message 
       });
     }
   });
