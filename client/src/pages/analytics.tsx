@@ -11,6 +11,7 @@ import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
+import MetaPixelStatus from "@/components/meta-pixel-status";
 
 interface AnalyticsData {
   totalPosts: number;
@@ -318,6 +319,11 @@ export default function Analytics() {
             </CardContent>
           </Card>
         )}
+
+        {/* Meta Pixel Status Component */}
+        <div className="mb-8">
+          <MetaPixelStatus />
+        </div>
 
         {/* Navigation to Yearly Analytics */}
         <div className="text-center mb-8">

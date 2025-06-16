@@ -51,14 +51,33 @@ export default function AnalyticsBar({ className }: AnalyticsBarProps) {
       try {
         // Temporarily disable analytics API calls to prevent auth loop
         setLoading(false);
+        
+        // Track analytics bar view for engagement insights
+        MetaPixelTracker.trackFeatureUsage('analytics_bar_view');
+        
         return;
         const response = await fetch('/api/analytics/monthly');
         if (response.ok) {
           const data = await response.json();
           setAnalytics(data);
+          
+          // Track analytics bar data load with performance metrics
+          MetaPixelTracker.trackCustomEvent('AnalyticsBarLoaded', {
+            total_posts: data.totalPosts,
+            total_reach: data.totalReach,
+            total_engagement: data.totalEngagement,
+            connected_platforms_count: data.connectedPlatforms?.length || 0,
+            has_top_performing_post: !!data.topPerformingPost
+          });
         }
       } catch (error) {
         console.error('Error fetching analytics:', error);
+        
+        // Track analytics loading errors
+        MetaPixelTracker.trackError('analytics_bar_load_failed', error.message, {
+          component: 'analytics_bar',
+          retry_attempt: 'initial'
+        });
       } finally {
         setLoading(false);
       }
