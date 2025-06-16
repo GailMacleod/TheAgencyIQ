@@ -2,9 +2,9 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertBrandPurposeSchema, insertPostSchema, users, postLedger, postSchedule } from "@shared/schema";
+import { insertUserSchema, insertBrandPurposeSchema, insertPostSchema, users, postLedger, postSchedule, platformConnections, posts, brandPurpose, giftCertificates } from "@shared/schema";
 import { db } from "./db";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import Stripe from "stripe";
 import { z } from "zod";
@@ -4102,7 +4102,7 @@ Continue building your Value Proposition Canvas systematically.`;
     res.redirect(authUrl);
   });
 
-  // Facebook Data Deletion Callback URL (required for Facebook apps)
+  // Comprehensive Data Deletion Endpoint (Meta/Facebook/Instagram compliance)
   app.post("/api/facebook/data-deletion", express.json(), async (req, res) => {
     try {
       const { signed_request } = req.body;
@@ -4117,21 +4117,54 @@ Continue building your Value Proposition Canvas systematically.`;
       // Parse the signed request to get user ID
       const [encodedSig, payload] = signed_request.split('.');
       const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
-      const userId = data.user_id;
+      const facebookUserId = data.user_id;
 
-      if (userId) {
-        // Generate confirmation code for this deletion request
-        const confirmationCode = crypto.randomBytes(16).toString('hex');
+      if (facebookUserId) {
+        // Generate unique confirmation code for tracking
+        const confirmationCode = `DEL_${facebookUserId}_${Date.now()}`;
         
-        // Log the data deletion request
-        console.log(`Facebook data deletion request for user ${userId}, confirmation: ${confirmationCode}`);
-        
-        // In a production app, you would:
-        // 1. Queue the user data for deletion
-        // 2. Remove all user posts, connections, and personal data
-        // 3. Maintain logs for compliance
-        
-        // For now, we'll just acknowledge the request
+        // Find user by Facebook platform connection
+        const userConnections = await db.select()
+          .from(platformConnections)
+          .where(eq(platformConnections.platformUserId, facebookUserId));
+
+        if (userConnections.length > 0) {
+          const userId = userConnections[0].userId;
+          
+          // Comprehensive data deletion across all platforms
+          await db.transaction(async (tx) => {
+            // Delete all platform connections (Facebook, Instagram, LinkedIn, etc.)
+            await tx.delete(platformConnections)
+              .where(eq(platformConnections.userId, userId));
+
+            // Delete all posts and content
+            await tx.delete(posts)
+              .where(eq(posts.userId, userId));
+
+            // Delete brand purpose data
+            await tx.delete(brandPurpose)
+              .where(eq(brandPurpose.userId, userId));
+
+            // Delete gift certificates associated with user
+            await tx.update(giftCertificates)
+              .set({ redeemedBy: null, isUsed: false })
+              .where(eq(giftCertificates.redeemedBy, userId));
+
+            // Delete user account
+            await tx.delete(users)
+              .where(eq(users.id, userId));
+          });
+
+          console.log(`Complete data deletion executed for Facebook user ${facebookUserId}, internal user ${userId}, confirmation: ${confirmationCode}`);
+          
+          return res.json({
+            url: `https://app.theagencyiq.ai/data-deletion-status?code=${confirmationCode}`,
+            confirmation_code: confirmationCode
+          });
+        }
+
+        // User not found in our system but acknowledge the request
+        console.log(`Facebook data deletion request for unknown user ${facebookUserId}, confirmation: ${confirmationCode}`);
         return res.json({
           url: `https://app.theagencyiq.ai/data-deletion-status?code=${confirmationCode}`,
           confirmation_code: confirmationCode
@@ -4143,7 +4176,37 @@ Continue building your Value Proposition Canvas systematically.`;
         confirmation_code: "user_not_found"
       });
     } catch (error) {
-      console.error('Facebook data deletion callback error:', error);
+      console.error('Data deletion callback error:', error);
+      res.status(500).json({
+        url: "https://app.theagencyiq.ai/data-deletion-status",
+        confirmation_code: "processing_error"
+      });
+    }
+  });
+
+  // Generic data deletion endpoint for all platforms
+  app.post("/api/data-deletion", express.json(), async (req, res) => {
+    try {
+      const { platform, user_id, signed_request } = req.body;
+      
+      // Route Facebook/Instagram requests to specialized handler
+      if (platform === 'facebook' || platform === 'instagram' || signed_request) {
+        req.body = { signed_request: signed_request || `platform.${Buffer.from(JSON.stringify({user_id})).toString('base64url')}` };
+        req.url = '/api/facebook/data-deletion';
+        return registerRoutes(app);
+      }
+
+      // Handle other platforms
+      const confirmationCode = `DEL_${platform || 'UNKNOWN'}_${user_id || 'ANON'}_${Date.now()}`;
+      
+      console.log(`Data deletion request for platform: ${platform}, user: ${user_id}, confirmation: ${confirmationCode}`);
+      
+      res.json({
+        url: `https://app.theagencyiq.ai/data-deletion-status?code=${confirmationCode}`,
+        confirmation_code: confirmationCode
+      });
+    } catch (error) {
+      console.error('Generic data deletion error:', error);
       res.status(500).json({
         url: "https://app.theagencyiq.ai/data-deletion-status",
         confirmation_code: "processing_error"
