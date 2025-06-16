@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Gift, CheckCircle, AlertCircle } from "lucide-react";
+import { MetaPixelTracker } from "@/lib/meta-pixel";
 
 const certificateSchema = z.object({
   code: z.string().min(1, "Certificate code is required").max(50, "Code is too long"),
@@ -34,6 +35,24 @@ export default function RedeemCertificate() {
   const redeemMutation = useMutation({
     mutationFn: (data: CertificateForm) => apiRequest("POST", "/api/redeem-gift-certificate", data),
     onSuccess: (data: any) => {
+      // Track successful gift certificate redemption
+      MetaPixelTracker.trackGiftCertificateRedeem(data.certificateCode || form.getValues('code'), data.plan);
+      
+      // Track as a conversion event
+      MetaPixelTracker.trackEvent('Purchase', {
+        value: data.plan === 'Professional' ? 197 : data.plan === 'Growth' ? 97 : 47,
+        currency: 'AUD',
+        content_name: `${data.plan} Plan (Gift Certificate)`,
+        content_category: 'gift_certificate_redemption'
+      });
+      
+      // Track conversion funnel completion
+      MetaPixelTracker.trackConversionFunnel('gift_certificate_redeemed', {
+        plan: data.plan,
+        posts_available: data.user.remainingPosts,
+        certificate_code: form.getValues('code')
+      });
+      
       toast({
         title: "Certificate Redeemed Successfully!",
         description: `Your account has been upgraded to ${data.plan} plan with ${data.user.remainingPosts} posts available.`,
@@ -46,6 +65,12 @@ export default function RedeemCertificate() {
       setLocation("/schedule");
     },
     onError: (error: any) => {
+      // Track redemption failure
+      MetaPixelTracker.trackError('gift_certificate_redemption_failed', error.message, {
+        certificate_code: form.getValues('code'),
+        step: 'redemption_validation'
+      });
+      
       toast({
         title: "Redemption Failed",
         description: error.message || "Failed to redeem certificate. Please check your code and try again.",

@@ -14,6 +14,7 @@ import { format, addDays, startOfMonth, endOfMonth, isSameDay, isToday } from "d
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
+import { MetaPixelTracker } from "@/lib/meta-pixel";
 
 interface Post {
   id: number;

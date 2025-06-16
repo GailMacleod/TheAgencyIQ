@@ -29,6 +29,7 @@ import TokenStatus from "@/pages/token-status";
 import OAuthDiagnostic from "@/pages/oauth-diagnostic";
 import InstagramFix from "@/pages/instagram-fix";
 import DataDeletionStatus from "@/pages/data-deletion-status";
+import MetaPixelTest from "@/pages/meta-pixel-test";
 
 function Router() {
   // Track page views when routes change
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/oauth-diagnostic" component={OAuthDiagnostic} />
       <Route path="/instagram-fix" component={InstagramFix} />
       <Route path="/data-deletion-status" component={DataDeletionStatus} />
+      <Route path="/meta-pixel-test" component={MetaPixelTest} />
       <Route component={NotFound} />
     </Switch>
   );
