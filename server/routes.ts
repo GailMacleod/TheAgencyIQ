@@ -4074,26 +4074,39 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  app.get("/api/auth/instagram", (req, res) => {
-    // Use production redirect URI for Instagram OAuth via Facebook Business API
+  // Facebook OAuth for Instagram Business API
+  app.get("/api/auth/facebook", (req, res) => {
     const redirectUri = 'https://app.theagencyiq.ai/api/auth/instagram/callback';
-    const clientId = process.env.FACEBOOK_APP_ID; // Instagram uses Facebook App ID
-    const scope = 'instagram_basic pages_show_list instagram_manage_posts'; // Space-delimited as required by Facebook
+    const clientId = process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID;
+    const scope = 'instagram_basic pages_show_list instagram_manage_posts';
     
     if (!clientId) {
-      return res.status(500).json({ message: "Facebook App ID not configured" });
+      return res.status(500).json({ message: "Facebook Client ID not configured" });
     }
     
-    // Use Facebook OAuth endpoint for Instagram Business API
-    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code&state=user_${req.session?.userId || 'unknown'}_instagram_business`;
+    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=user_${req.session?.userId || 'unknown'}_facebook_instagram`;
+    res.redirect(authUrl);
+  });
+
+  // Instagram OAuth (uses Facebook Business API)
+  app.get("/api/auth/instagram", (req, res) => {
+    const redirectUri = 'https://app.theagencyiq.ai/api/auth/instagram/callback';
+    const clientId = process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID;
+    const scope = 'instagram_basic pages_show_list instagram_manage_posts';
+    
+    if (!clientId) {
+      return res.status(500).json({ message: "Facebook Client ID not configured" });
+    }
+    
+    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=user_${req.session?.userId || 'unknown'}_instagram_business`;
     res.redirect(authUrl);
   });
 
   app.get("/api/auth/instagram/callback", async (req, res) => {
     try {
       const { code, state } = req.query;
-      const clientId = process.env.FACEBOOK_APP_ID; // Instagram uses Facebook App ID
-      const clientSecret = process.env.FACEBOOK_APP_SECRET; // Instagram uses Facebook App Secret
+      const clientId = process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID;
+      const clientSecret = process.env.FACEBOOK_CLIENT_SECRET || process.env.FACEBOOK_APP_SECRET;
       const redirectUri = 'https://app.theagencyiq.ai/api/auth/instagram/callback';
 
       if (!code || !clientId || !clientSecret) {
