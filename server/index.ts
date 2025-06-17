@@ -890,7 +890,7 @@ app.post('/api/approve-post', async (req, res) => {
     
     try {
       const publishResult = await BulletproofPublisher.publish({
-        userId: req.session.userId || 2, // Fallback to default user for bulletproof operation
+        userId: userId, // Use the correctly recovered userId from session
         platform: post.platform,
         content: post.content
       });

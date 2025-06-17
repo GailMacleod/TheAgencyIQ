@@ -35,6 +35,15 @@ export class BulletproofPublisher {
     try {
       console.log(`🚀 BULLETPROOF PUBLISH: ${request.platform} for user ${request.userId}`);
       
+      // Validate userId parameter first
+      if (!request.userId || typeof request.userId !== 'number') {
+        console.error('CRITICAL ERROR: Invalid userId in publish request:', request);
+        return {
+          success: false,
+          error: `Invalid userId: ${request.userId}. Expected a number.`
+        };
+      }
+      
       // STEP 1: Pre-flight health check
       const healthStatus = await this.preFlightHealthCheck(request.userId, request.platform);
       
