@@ -119,7 +119,7 @@ export class PlatformHealthMonitor {
       }
 
       // Check required permissions for posting
-      const requiredScopes = ['pages_manage_posts', 'pages_read_engagement', 'publish_to_groups'];
+      const requiredScopes = ['pages_manage_posts', 'pages_read_engagement'];
       const userScopes = tokenData.scopes || [];
       const missingScopes = requiredScopes.filter(scope => !userScopes.includes(scope));
 

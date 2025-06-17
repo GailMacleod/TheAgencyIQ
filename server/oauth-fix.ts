@@ -105,13 +105,10 @@ export class OAuthFix {
   } {
     return {
       facebook: [
-        'email',
+        'public_profile',
         'pages_manage_posts', // Required for posting to pages
         'pages_read_engagement', // Required for analytics
-        'publish_to_groups', // Required for group posting
-        'pages_show_list', // Required to list pages
-        'user_posts', // Required for user timeline posting
-        'publish_actions' // Required for publishing
+        'pages_show_list' // Required to list pages
       ],
       linkedin: [
         'r_liteprofile', // Basic profile info
