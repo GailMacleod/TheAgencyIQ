@@ -15,6 +15,7 @@ import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
+import AutoPostingEnforcer from "@/components/auto-posting-enforcer";
 
 interface Post {
   id: number;
@@ -659,6 +660,13 @@ export default function IntelligentSchedule() {
               ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Auto-Publishing Enforcer */}
+        {postsArray.length > 0 && (
+          <div className="mb-8">
+            <AutoPostingEnforcer />
           </div>
         )}
 

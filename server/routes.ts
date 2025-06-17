@@ -2598,7 +2598,37 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Auto-post entire 30-day schedule
+  // Auto-posting enforcer - Ensures posts are published within 30-day subscription
+  app.post("/api/enforce-auto-posting", requireAuth, async (req: any, res) => {
+    try {
+      const { AutoPostingEnforcer } = await import('./auto-posting-enforcer');
+      
+      console.log(`Enforcing auto-posting for user ${req.session.userId}`);
+      
+      const result = await AutoPostingEnforcer.enforceAutoPosting(req.session.userId);
+      
+      res.json({
+        success: result.success,
+        message: `Auto-posting enforced: ${result.postsPublished}/${result.postsProcessed} posts published`,
+        postsProcessed: result.postsProcessed,
+        postsPublished: result.postsPublished,
+        postsFailed: result.postsFailed,
+        connectionRepairs: result.connectionRepairs,
+        errors: result.errors,
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('Auto-posting enforcer error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Auto-posting enforcement failed",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Auto-post entire 30-day schedule with bulletproof publishing
   app.post("/api/auto-post-schedule", requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.session.userId);
@@ -2625,72 +2655,101 @@ Continue building your Value Proposition Canvas systematically.`;
 
       const publishResults = [];
       let successCount = 0;
+      let postsDeducted = 0;
 
-      // Publish all approved posts
+      // Import bulletproof publisher
+      const { BulletproofPublisher } = await import('./bulletproof-publisher');
+
+      // Publish all approved posts using bulletproof system
       for (const post of approvedPosts) {
         try {
-          const platformConnections = await storage.getPlatformConnectionsByUser(req.session.userId);
-          const platformConnection = platformConnections.find(conn => 
-            conn.platform.toLowerCase() === post.platform.toLowerCase() && conn.isActive
-          );
+          console.log(`Auto-posting: Publishing post ${post.id} to ${post.platform}`);
+          
+          const result = await BulletproofPublisher.publish({
+            userId: req.session.userId,
+            platform: post.platform,
+            content: post.content,
+            imageUrl: post.imageUrl || undefined
+          });
 
-          if (platformConnection) {
-            const result = await PostPublisher.publishPost(
-              req.session.userId,
-              post.id,
-              [post.platform]
-            );
+          if (result.success && result.platformPostId) {
+            // Update post status
+            await storage.updatePost(post.id, { 
+              status: 'published',
+              publishedAt: new Date(),
+              errorLog: null
+            });
 
-            if (result.success) {
-              await storage.updatePost(post.id, { 
-                status: 'published',
-                publishedAt: new Date()
-              });
-              successCount++;
-              publishResults.push({
-                postId: post.id,
-                platform: post.platform,
-                status: 'success',
-                scheduledFor: post.scheduledFor
-              });
-            } else {
-              publishResults.push({
-                postId: post.id,
-                platform: post.platform,
-                status: 'failed',
-                error: result.results?.[0]?.error || 'Unknown error'
-              });
-            }
+            // Deduct from user's remaining posts
+            await storage.updateUser(req.session.userId, {
+              remainingPosts: (user.remainingPosts || 0) - 1
+            });
+            postsDeducted++;
+            successCount++;
+
+            publishResults.push({
+              postId: post.id,
+              platform: post.platform,
+              status: 'success',
+              platformPostId: result.platformPostId,
+              scheduledFor: post.scheduledFor,
+              publishedAt: new Date().toISOString()
+            });
+
+            console.log(`Auto-posting: Successfully published post ${post.id} to ${post.platform}`);
           } else {
+            // Mark post as failed but don't deduct quota
+            await storage.updatePost(post.id, { 
+              status: 'failed',
+              errorLog: result.error || 'Bulletproof publisher failed'
+            });
+
             publishResults.push({
               postId: post.id,
               platform: post.platform,
               status: 'failed',
-              error: `No active ${post.platform} connection found`
+              error: result.error || 'Publishing failed',
+              fallbackUsed: result.fallbackUsed || false
             });
+
+            console.log(`Auto-posting: Failed to publish post ${post.id} to ${post.platform}: ${result.error}`);
           }
         } catch (error: any) {
+          // Mark post as failed
+          await storage.updatePost(post.id, { 
+            status: 'failed',
+            errorLog: error.message
+          });
+
           publishResults.push({
             postId: post.id,
             platform: post.platform,
             status: 'failed',
             error: error.message
           });
+
+          console.error(`Auto-posting: Error publishing post ${post.id}:`, error.message);
         }
       }
 
+      // Update user's remaining posts count
+      const updatedUser = await storage.getUser(req.session.userId);
+      const finalRemainingPosts = (updatedUser?.remainingPosts || 0);
+
       res.json({
-        message: `Auto-posting complete: ${successCount}/${approvedPosts.length} posts published`,
+        message: `Auto-posting complete: ${successCount}/${approvedPosts.length} posts published successfully`,
         totalPosts: approvedPosts.length,
         successCount,
         failureCount: approvedPosts.length - successCount,
+        postsDeducted,
+        remainingPosts: finalRemainingPosts,
         results: publishResults,
-        remainingPosts: (user.remainingPosts || 0) - successCount
+        bulletproofPublishing: true
       });
 
     } catch (error: any) {
       console.error('Auto-post schedule error:', error);
-      res.status(500).json({ message: "Error auto-posting schedule" });
+      res.status(500).json({ message: "Error auto-posting schedule", error: error.message });
     }
   });
 
