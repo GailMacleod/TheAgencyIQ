@@ -208,7 +208,7 @@ export default function AutoPostingEnforcer() {
                     <Alert key={index} variant="destructive">
                       <AlertDescription className="text-sm">
                         {error}
-                        {error.includes('Missing permissions: publish_to_groups') && (
+                        {error.includes('Missing permissions') && (
                           <div className="mt-2">
                             <Button 
                               onClick={handleFacebookReconnect}
