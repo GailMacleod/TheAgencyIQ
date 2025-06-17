@@ -24,7 +24,7 @@ export default function AutoPostingEnforcer() {
 
   const enforceAutoPostingMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/enforce-auto-posting', 'POST', {});
+      return await apiRequest('POST', '/api/enforce-auto-posting', {});
     },
     onSuccess: (result: AutoPostingResult) => {
       setLastResult(result);

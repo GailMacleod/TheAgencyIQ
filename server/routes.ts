@@ -2598,6 +2598,53 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Facebook reconnection with proper publishing permissions
+  app.get("/api/reconnect/facebook", requireAuth, async (req: any, res) => {
+    try {
+      const clientId = process.env.FACEBOOK_APP_ID;
+      
+      if (!clientId) {
+        return res.status(500).json({ 
+          success: false, 
+          message: "Facebook App ID not configured" 
+        });
+      }
+
+      const host = req.get('host');
+      let redirectUri;
+      
+      if (host?.includes('replit.dev')) {
+        redirectUri = `https://${host}/api/auth/facebook/callback`;
+      } else if (host?.includes('localhost')) {
+        redirectUri = `http://localhost:5000/api/auth/facebook/callback`;
+      } else {
+        redirectUri = `${req.protocol}://${host}/api/auth/facebook/callback`;
+      }
+      
+      // Include all necessary permissions for publishing
+      const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement,publish_to_groups,pages_manage_engagement';
+      const state = Buffer.from(JSON.stringify({ 
+        userId: req.session.userId,
+        reconnect: true 
+      })).toString('base64');
+      
+      const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${scope}&response_type=code`;
+      
+      res.json({
+        success: true,
+        authUrl: authUrl,
+        message: "Facebook reconnection URL generated with publishing permissions"
+      });
+      
+    } catch (error) {
+      console.error('Facebook reconnection error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to generate Facebook reconnection URL"
+      });
+    }
+  });
+
   // Auto-posting enforcer - Ensures posts are published within 30-day subscription
   app.post("/api/enforce-auto-posting", requireAuth, async (req: any, res) => {
     try {
@@ -4715,7 +4762,7 @@ Continue building your Value Proposition Canvas systematically.`;
         redirectUri = `${req.protocol}://${host}/api/auth/facebook/callback`;
       }
       
-      const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement';
+      const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement,publish_to_groups';
       const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
       
       if (!clientId) {
