@@ -2559,6 +2559,45 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // X.AI Credentials Test - Direct API test
+  app.post("/api/grok-test", async (req: any, res) => {
+    try {
+      const { prompt } = req.body;
+      
+      if (!process.env.XAI_API_KEY) {
+        return res.status(500).json({
+          success: false,
+          message: "X.AI API key not configured",
+          credentialsStatus: "missing"
+        });
+      }
+
+      const { getAIResponse } = await import('./grok');
+      const testPrompt = prompt || "Generate a brief business insight for Queensland small businesses using X.AI.";
+      
+      console.log('Testing X.AI credentials with prompt:', testPrompt);
+      
+      const response = await getAIResponse(testPrompt, 'credential-test', {});
+      
+      res.json({
+        success: true,
+        message: "X.AI credentials working properly",
+        credentialsStatus: "active",
+        response: response,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('X.AI credential test failed:', error);
+      res.status(500).json({
+        success: false,
+        message: "X.AI credential test failed",
+        credentialsStatus: "error",
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // Auto-post entire 30-day schedule
   app.post("/api/auto-post-schedule", requireAuth, async (req: any, res) => {
     try {
