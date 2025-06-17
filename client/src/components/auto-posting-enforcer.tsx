@@ -47,8 +47,27 @@ export default function AutoPostingEnforcer() {
     }
   });
 
+  const reconnectFacebookMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('GET', '/api/reconnect/facebook', {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success && data.authUrl) {
+        window.open(data.authUrl, '_blank', 'width=600,height=700');
+      }
+    },
+    onError: (error) => {
+      console.error('Facebook reconnection error:', error);
+    }
+  });
+
   const triggerAutoPosting = () => {
     enforceAutoPostingMutation.mutate();
+  };
+
+  const handleFacebookReconnect = () => {
+    reconnectFacebookMutation.mutate();
   };
 
   const getStatusColor = (success: boolean) => {
@@ -189,6 +208,20 @@ export default function AutoPostingEnforcer() {
                     <Alert key={index} variant="destructive">
                       <AlertDescription className="text-sm">
                         {error}
+                        {error.includes('Missing permissions: publish_to_groups') && (
+                          <div className="mt-2">
+                            <Button 
+                              onClick={handleFacebookReconnect}
+                              disabled={reconnectFacebookMutation.isPending}
+                              variant="outline"
+                              size="sm"
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              <RefreshCw className={`w-3 h-3 mr-1 ${reconnectFacebookMutation.isPending ? 'animate-spin' : ''}`} />
+                              Fix Facebook Permissions
+                            </Button>
+                          </div>
+                        )}
                       </AlertDescription>
                     </Alert>
                   ))}
