@@ -254,39 +254,7 @@ export class BulletproofPublisher {
       console.error('Facebook User feed failed:', userError.response?.data);
     }
     
-    // Strategy 3: Groups (Last resort)
-    try {
-      const groupsResponse = await axios.get(
-        `https://graph.facebook.com/v18.0/me/groups`,
-        {
-          params: {
-            access_token: accessToken,
-            appsecret_proof: appsecretProof
-          }
-        }
-      );
-      
-      if (groupsResponse.data.data && groupsResponse.data.data.length > 0) {
-        const group = groupsResponse.data.data[0];
-        const groupResponse = await axios.post(
-          `https://graph.facebook.com/v18.0/${group.id}/feed`,
-          {
-            message: content,
-            access_token: accessToken,
-            appsecret_proof: appsecretProof
-          }
-        );
-        
-        return {
-          success: true,
-          platformPostId: groupResponse.data.id,
-          analytics: { reach: 0, engagement: 0, impressions: 0 },
-          fallbackUsed: true
-        };
-      }
-    } catch (groupError) {
-      console.log('Facebook Groups strategy also failed');
-    }
+    // Groups strategy removed - publish_to_groups permission deprecated by Facebook
     
     return {
       success: false,
