@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, XCircle, AlertTriangle, Zap, Clock, Shield } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Zap, Clock, Shield, RefreshCw } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 
 interface AutoPostingResult {
