@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-06-12T01:00:00.046Z",
+  "timestamp": "2025-06-20T01:00:00.587Z",
   "users": [
     {
       "id": 2,
@@ -66,6 +66,17 @@
       "remainingPosts": 10,
       "totalPosts": 0,
       "createdAt": "2025-06-10T23:24:17.969Z"
+    },
+    {
+      "id": 14,
+      "email": "macmacangel@gmail.com",
+      "phone": "",
+      "subscriptionPlan": "starter",
+      "stripeCustomerId": "cus_SUIyp7KleXvukm",
+      "stripeSubscriptionId": "sub_1RZKN2S90ymeq6tryQ9FSAjA",
+      "remainingPosts": 10,
+      "totalPosts": 12,
+      "createdAt": "2025-06-12T23:17:38.674Z"
     }
   ]
 }
