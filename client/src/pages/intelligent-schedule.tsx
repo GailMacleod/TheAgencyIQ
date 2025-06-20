@@ -171,8 +171,32 @@ export default function IntelligentSchedule() {
     enabled: !!user && !userLoading,
   });
 
+  // Check platform connections automatically
+  const { data: connectionStatus } = useQuery({
+    queryKey: ["/api/connection-status"],
+    enabled: !!user && !userLoading,
+    refetchInterval: 5 * 60 * 1000, // Check every 5 minutes
+  });
+
   // Type-safe posts array
   const postsArray: Post[] = Array.isArray(posts) ? posts : [];
+
+  // Handle connection status and redirect if needed
+  useEffect(() => {
+    if (connectionStatus && !connectionStatus.canProceed) {
+      // Show user-friendly message and redirect to Connect Platforms
+      toast({
+        title: "Platform Connection Required",
+        description: connectionStatus.message || "Please reconnect your social media accounts to continue posting",
+        variant: "default",
+      });
+      
+      // Auto-redirect to Connect Platforms page after 2 seconds
+      setTimeout(() => {
+        window.location.href = '/connect-platforms';
+      }, 2000);
+    }
+  }, [connectionStatus, toast]);
 
   // Fetch Queensland events for calendar optimization
   useEffect(() => {

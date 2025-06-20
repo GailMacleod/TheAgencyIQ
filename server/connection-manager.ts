@@ -87,17 +87,19 @@ export class ConnectionManager {
     const platformList = platforms.join(', ');
     const message = `Please reconnect your ${platformList} account${platforms.length > 1 ? 's' : ''} to continue posting`;
     
-    await db.execute(sql`
-      UPDATE posts 
-      SET error_log = ${message},
-          status = CASE 
-            WHEN status = 'approved' THEN 'pending_connection'
-            ELSE status 
-          END
-      WHERE user_id = ${userId} 
-      AND platform = ANY(${platforms})
-      AND status IN ('approved', 'draft', 'failed')
-    `);
+    for (const platform of platforms) {
+      await db.execute(sql`
+        UPDATE posts 
+        SET error_log = ${message},
+            status = CASE 
+              WHEN status = 'approved' THEN 'pending_connection'
+              ELSE status 
+            END
+        WHERE user_id = ${userId} 
+        AND platform = ${platform}
+        AND status IN ('approved', 'draft', 'failed')
+      `);
+    }
   }
   
   /**
@@ -166,7 +168,7 @@ export class ConnectionManager {
     return {
       isConnected: isValid,
       needsReauth: !isValid,
-      lastChecked: connection.connectedAt
+      lastChecked: connection.connectedAt || undefined
     };
   }
 }
