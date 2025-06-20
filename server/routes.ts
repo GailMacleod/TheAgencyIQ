@@ -2831,6 +2831,52 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // OAuth Platform Testing
+  app.get("/api/test-oauth-platforms", requireAuth, async (req: any, res) => {
+    try {
+      const { OAuthTester } = require('./oauth-tester');
+      const results = await OAuthTester.testAllPlatforms(req.session.userId);
+      
+      res.json({
+        success: true,
+        platforms: results,
+        summary: Object.keys(results).map(platform => ({
+          platform,
+          status: results[platform].success ? 'working' : 'failed',
+          message: results[platform].message
+        }))
+      });
+    } catch (error) {
+      console.error('OAuth testing error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to test OAuth platforms"
+      });
+    }
+  });
+
+  // Repair OAuth Connection
+  app.post("/api/repair-oauth-connection", requireAuth, async (req: any, res) => {
+    try {
+      const { platform } = req.body;
+      const { OAuthTester } = require('./oauth-tester');
+      
+      const result = await OAuthTester.repairConnection(platform, req.session.userId);
+      
+      res.json({
+        success: result.success,
+        message: result.message,
+        platform
+      });
+    } catch (error) {
+      console.error('OAuth repair error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to repair OAuth connection"
+      });
+    }
+  });
+
   // Auto-posting enforcer - Ensures posts are published within 30-day subscription
   app.post("/api/enforce-auto-posting", requireAuth, async (req: any, res) => {
     try {

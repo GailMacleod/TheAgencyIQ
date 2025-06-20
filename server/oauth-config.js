@@ -85,35 +85,41 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
   console.log('LinkedIn OAuth credentials not available - skipping LinkedIn strategy');
 }
 
-// Twitter Strategy - Enhanced error handling
+// Twitter Strategy - Fixed authentication
 if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
-  passport.use(new TwitterStrategy({
-    consumerKey: process.env.TWITTER_CLIENT_ID,
-    consumerSecret: process.env.TWITTER_CLIENT_SECRET,
-    callbackURL: "/auth/twitter/callback",
-    includeEmail: true
-  },
-  async (token, tokenSecret, profile, done) => {
-    try {
-      console.log('Twitter OAuth profile received:', profile.id, profile.username);
-      const connection = await storage.createPlatformConnection({
-        userId: profile.id, // This will be updated with session userId
-        platform: 'x',
-        platformUserId: profile.id,
-        platformUsername: profile.username,
-        accessToken: token,
-        refreshToken: tokenSecret,
-        expiresAt: null,
-        isActive: true
-      });
-      
-      console.log('Twitter OAuth successful:', profile.id);
-      done(null, { id: profile.id, connection });
-    } catch (error) {
-      console.error('Twitter OAuth storage error:', error);
-      done(error, null);
-    }
-  }));
+  try {
+    passport.use(new TwitterStrategy({
+      consumerKey: process.env.TWITTER_CLIENT_ID,
+      consumerSecret: process.env.TWITTER_CLIENT_SECRET,
+      callbackURL: "/auth/twitter/callback",
+      includeEmail: false, // Disable email to avoid permission issues
+      userProfileURL: "https://api.twitter.com/1.1/account/verify_credentials.json?include_email=false&skip_status=true"
+    },
+    async (token, tokenSecret, profile, done) => {
+      try {
+        console.log('Twitter OAuth profile received:', profile.id, profile.username);
+        const connection = await storage.createPlatformConnection({
+          userId: profile.id,
+          platform: 'x',
+          platformUserId: profile.id,
+          platformUsername: profile.username || profile.screen_name,
+          accessToken: token,
+          refreshToken: tokenSecret,
+          expiresAt: null,
+          isActive: true
+        });
+        
+        console.log('Twitter OAuth successful:', profile.id);
+        done(null, { id: profile.id, connection });
+      } catch (error) {
+        console.error('Twitter OAuth storage error:', error);
+        done(error, null);
+      }
+    }));
+    console.log('Twitter OAuth strategy configured successfully');
+  } catch (error) {
+    console.error('Twitter OAuth strategy setup failed:', error);
+  }
 } else {
   console.log('Twitter OAuth credentials not available - skipping Twitter strategy');
 }

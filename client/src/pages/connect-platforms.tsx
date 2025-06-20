@@ -77,6 +77,8 @@ export default function ConnectPlatforms() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
+  const [testing, setTesting] = useState(false);
+  const [testResults, setTestResults] = useState<any>(null);
 
   // Fetch platform connections
   const { data: connections = [], isLoading } = useQuery<PlatformConnection[]>({
@@ -249,8 +251,37 @@ export default function ConnectPlatforms() {
             Connect your social media accounts to enable automated posting with real API credentials
           </p>
           
-          {/* Navigation buttons to test other parts of the app */}
+          {/* OAuth Testing and Navigation */}
           <div className="flex justify-center space-x-4 mt-6">
+            <Button
+              onClick={async () => {
+                setTesting(true);
+                try {
+                  const response = await fetch('/api/test-oauth-platforms', {
+                    credentials: 'include'
+                  });
+                  const data = await response.json();
+                  setTestResults(data);
+                  toast({
+                    title: "OAuth Test Complete",
+                    description: `Tested ${Object.keys(data.platforms).length} platforms`
+                  });
+                } catch (error) {
+                  toast({
+                    title: "Test Failed",
+                    description: "Could not test OAuth platforms",
+                    variant: "destructive"
+                  });
+                } finally {
+                  setTesting(false);
+                }
+              }}
+              variant="outline"
+              className="text-sm"
+              disabled={testing}
+            >
+              {testing ? 'Testing...' : 'Test All Platforms'}
+            </Button>
             <Button
               onClick={() => setLocation("/intelligent-schedule")}
               variant="outline"
@@ -267,6 +298,26 @@ export default function ConnectPlatforms() {
             </Button>
           </div>
         </div>
+
+        {/* OAuth Test Results Display */}
+        {testResults && (
+          <div className="mb-8 bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">Platform Test Results</h3>
+            <div className="grid gap-3">
+              {testResults.summary.map((result: any) => (
+                <div key={result.platform} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-3 h-3 rounded-full ${result.status === 'working' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="font-medium capitalize">{result.platform}</span>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {result.status === 'working' ? '✅ Ready' : '❌ ' + result.message}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Object.entries(platformConfig).map(([platform, config]) => {
