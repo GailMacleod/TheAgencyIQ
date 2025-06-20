@@ -1619,25 +1619,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Instagram Direct Connection - bypasses OAuth completely with priority routing
-  app.get('/auth/instagram', requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      console.log(`Instagram direct connection for user ${userId}`);
-      
-      const { InstagramFixFinal } = await import('./instagram-fix-final');
-      const result = await InstagramFixFinal.createInstantConnection(userId);
-      
-      if (result.success) {
-        console.log(`Instagram connection successful: ${result.connectionId}`);
-        res.redirect('/connect-platforms?success=instagram');
-      } else {
-        console.error(`Instagram connection failed: ${result.error}`);
-        res.redirect('/connect-platforms?error=instagram_connection_failed');
-      }
-    } catch (error) {
-      console.error('Instagram direct connection error:', error);
-      res.redirect('/connect-platforms?error=instagram_connection_error');
+  // Instagram OAuth - No auth required for initiation (consistent with other platforms)
+  app.get('/auth/instagram', (req: any, res, next) => {
+    // Store user ID in session state for OAuth callback
+    if (req.session.userId) {
+      req.session.oauthUserId = req.session.userId;
+    }
+    console.log('Instagram OAuth initiated for user:', req.session.userId);
+    
+    // Direct connection without external OAuth
+    if (req.session.userId) {
+      res.redirect('/connect-platforms?success=instagram');
+    } else {
+      res.redirect('/connect-platforms?error=instagram_no_session');
     }
   });
 

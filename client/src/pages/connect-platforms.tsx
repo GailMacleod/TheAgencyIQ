@@ -121,10 +121,11 @@ export default function ConnectPlatforms() {
       
       // Map platform names to OAuth routes
       const oauthRoutes: { [key: string]: string } = {
-        'facebook': '/api/auth/facebook',
-        'linkedin': '/api/auth/linkedin',
-        'x': '/api/auth/x',
-        'youtube': '/api/auth/youtube'
+        'facebook': '/auth/facebook',
+        'linkedin': '/auth/linkedin',
+        'x': '/auth/twitter',
+        'youtube': '/auth/youtube',
+        'instagram': '/auth/instagram'
       };
       
       const oauthUrl = oauthRoutes[platform];
