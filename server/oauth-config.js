@@ -81,15 +81,17 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
   }));
 }
 
-// Twitter Strategy
+// Twitter Strategy - Enhanced error handling
 if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
   passport.use(new TwitterStrategy({
     consumerKey: process.env.TWITTER_CLIENT_ID,
     consumerSecret: process.env.TWITTER_CLIENT_SECRET,
-    callbackURL: "/auth/twitter/callback"
+    callbackURL: "/auth/twitter/callback",
+    includeEmail: true
   },
   async (token, tokenSecret, profile, done) => {
     try {
+      console.log('Twitter OAuth profile received:', profile.id, profile.username);
       const connection = await storage.createPlatformConnection({
         userId: profile.id, // This will be updated with session userId
         platform: 'x',
@@ -104,10 +106,12 @@ if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
       console.log('Twitter OAuth successful:', profile.id);
       done(null, { id: profile.id, connection });
     } catch (error) {
-      console.error('Twitter OAuth error:', error);
+      console.error('Twitter OAuth storage error:', error);
       done(error, null);
     }
   }));
+} else {
+  console.log('Twitter OAuth credentials not available - skipping Twitter strategy');
 }
 
 // YouTube (Google) Strategy

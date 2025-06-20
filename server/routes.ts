@@ -1643,14 +1643,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // LinkedIn OAuth
+  // LinkedIn OAuth - No auth required for initiation
   app.get('/auth/linkedin', (req: any, res, next) => {
-    // Store user ID in session before OAuth
+    // Store user ID in session state for OAuth callback
     if (req.session.userId) {
       req.session.oauthUserId = req.session.userId;
     }
+    console.log('LinkedIn OAuth initiated for user:', req.session.userId);
     configuredPassport.authenticate('linkedin', {
-      scope: ['r_liteprofile', 'w_member_social', 'r_emailaddress']
+      scope: ['r_liteprofile', 'w_member_social', 'r_emailaddress'],
+      state: req.session.userId || 'anonymous'
     })(req, res, next);
   });
 
@@ -1672,13 +1674,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // X (Twitter) OAuth
+  // X (Twitter) OAuth - No auth required for initiation
   app.get('/auth/twitter', (req: any, res, next) => {
-    // Store user ID in session before OAuth
+    // Store user ID in session state for OAuth callback
     if (req.session.userId) {
       req.session.oauthUserId = req.session.userId;
     }
-    configuredPassport.authenticate('twitter')(req, res, next);
+    console.log('Twitter OAuth initiated for user:', req.session.userId);
+    configuredPassport.authenticate('twitter', {
+      state: req.session.userId || 'anonymous'
+    })(req, res, next);
   });
 
   app.get('/auth/twitter/callback',
@@ -1699,14 +1704,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // YouTube OAuth
+  // YouTube OAuth - No auth required for initiation
   app.get('/auth/youtube', (req: any, res, next) => {
-    // Store user ID in session before OAuth
+    // Store user ID in session state for OAuth callback
     if (req.session.userId) {
       req.session.oauthUserId = req.session.userId;
     }
+    console.log('YouTube OAuth initiated for user:', req.session.userId);
     configuredPassport.authenticate('youtube', {
-      scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload']
+      scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload'],
+      state: req.session.userId || 'anonymous'
     })(req, res, next);
   });
 
@@ -1727,6 +1734,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   );
+
+  // OAuth System Status Endpoint
+  app.get('/api/oauth-status', requireAuth, async (req: any, res) => {
+    try {
+      const { OAuthStatusMonitor } = await import('./oauth-status');
+      const systemStatus = await OAuthStatusMonitor.getSystemStatus();
+      const userConnections = await OAuthStatusMonitor.getUserConnections(req.session.userId);
+      
+      res.json({
+        system: systemStatus,
+        userConnections,
+        userId: req.session.userId
+      });
+    } catch (error: any) {
+      console.error('OAuth status check failed:', error);
+      res.status(500).json({ 
+        error: 'Failed to check OAuth status',
+        message: error.message 
+      });
+    }
+  });
 
   // Simple platform connection with username/password
   app.post("/api/connect-platform-simple", requireAuth, async (req: any, res) => {
