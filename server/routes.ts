@@ -1588,15 +1588,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // OAuth Authentication Routes
   
-  // Facebook OAuth
-  app.get('/auth/facebook', requireAuth, configuredPassport.authenticate('facebook', {
-    scope: ['pages_manage_posts', 'pages_read_engagement', 'business_management']
-  }));
+  // Facebook OAuth - No auth required for initiation
+  app.get('/auth/facebook', (req: any, res, next) => {
+    // Store user ID in session state for OAuth callback
+    if (req.session.userId) {
+      req.session.oauthUserId = req.session.userId;
+    }
+    console.log('Facebook OAuth initiated for user:', req.session.userId);
+    configuredPassport.authenticate('facebook', {
+      scope: ['pages_manage_posts', 'pages_read_engagement', 'business_management'],
+      state: req.session.userId || 'anonymous'
+    })(req, res, next);
+  });
 
   app.get('/auth/facebook/callback',
     configuredPassport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
-    (req, res) => {
-      res.redirect('/connect-platforms?success=facebook');
+    async (req: any, res) => {
+      try {
+        // Update connection with correct user ID
+        if (req.session.oauthUserId && req.user?.connection) {
+          await storage.updatePlatformConnection(req.user.connection.id, {
+            userId: req.session.oauthUserId
+          });
+        }
+        res.redirect('/connect-platforms?success=facebook');
+      } catch (error) {
+        console.error('Facebook callback error:', error);
+        res.redirect('/connect-platforms?error=facebook');
+      }
     }
   );
 
@@ -1624,37 +1643,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // LinkedIn OAuth - Remove requireAuth to allow OAuth initialization
-  app.get('/auth/linkedin', configuredPassport.authenticate('linkedin', {
-    scope: ['r_liteprofile', 'w_member_social', 'r_emailaddress']
-  }));
+  // LinkedIn OAuth
+  app.get('/auth/linkedin', (req: any, res, next) => {
+    // Store user ID in session before OAuth
+    if (req.session.userId) {
+      req.session.oauthUserId = req.session.userId;
+    }
+    configuredPassport.authenticate('linkedin', {
+      scope: ['r_liteprofile', 'w_member_social', 'r_emailaddress']
+    })(req, res, next);
+  });
 
   app.get('/auth/linkedin/callback',
     configuredPassport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
-    (req, res) => {
-      res.redirect('/connect-platforms?success=linkedin');
+    async (req: any, res) => {
+      try {
+        // Update connection with correct user ID
+        if (req.session.oauthUserId && req.user?.connection) {
+          await storage.updatePlatformConnection(req.user.connection.id, {
+            userId: req.session.oauthUserId
+          });
+        }
+        res.redirect('/connect-platforms?success=linkedin');
+      } catch (error) {
+        console.error('LinkedIn callback error:', error);
+        res.redirect('/connect-platforms?error=linkedin');
+      }
     }
   );
 
   // X (Twitter) OAuth
-  app.get('/auth/twitter', requireAuth, configuredPassport.authenticate('twitter'));
+  app.get('/auth/twitter', (req: any, res, next) => {
+    // Store user ID in session before OAuth
+    if (req.session.userId) {
+      req.session.oauthUserId = req.session.userId;
+    }
+    configuredPassport.authenticate('twitter')(req, res, next);
+  });
 
   app.get('/auth/twitter/callback',
     configuredPassport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=twitter' }),
-    (req, res) => {
-      res.redirect('/connect-platforms?success=twitter');
+    async (req: any, res) => {
+      try {
+        // Update connection with correct user ID
+        if (req.session.oauthUserId && req.user?.connection) {
+          await storage.updatePlatformConnection(req.user.connection.id, {
+            userId: req.session.oauthUserId
+          });
+        }
+        res.redirect('/connect-platforms?success=twitter');
+      } catch (error) {
+        console.error('Twitter callback error:', error);
+        res.redirect('/connect-platforms?error=twitter');
+      }
     }
   );
 
   // YouTube OAuth
-  app.get('/auth/youtube', requireAuth, configuredPassport.authenticate('youtube', {
-    scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload']
-  }));
+  app.get('/auth/youtube', (req: any, res, next) => {
+    // Store user ID in session before OAuth
+    if (req.session.userId) {
+      req.session.oauthUserId = req.session.userId;
+    }
+    configuredPassport.authenticate('youtube', {
+      scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload']
+    })(req, res, next);
+  });
 
   app.get('/auth/youtube/callback',
     configuredPassport.authenticate('youtube', { failureRedirect: '/connect-platforms?error=youtube' }),
-    (req, res) => {
-      res.redirect('/connect-platforms?success=youtube');
+    async (req: any, res) => {
+      try {
+        // Update connection with correct user ID
+        if (req.session.oauthUserId && req.user?.connection) {
+          await storage.updatePlatformConnection(req.user.connection.id, {
+            userId: req.session.oauthUserId
+          });
+        }
+        res.redirect('/connect-platforms?success=youtube');
+      } catch (error) {
+        console.error('YouTube callback error:', error);
+        res.redirect('/connect-platforms?error=youtube');
+      }
     }
   );
 
