@@ -20,6 +20,28 @@ export class PostRetryService {
   private static readonly RETRY_DELAY_MINUTES = 5;
 
   /**
+   * Queue post for retry with enhanced error categorization
+   */
+  static async queueForRetry(postId: number, platform: string, reason: string): Promise<void> {
+    try {
+      console.log(`📝 RETRY SERVICE: Queuing post ${postId} for retry - ${reason}`);
+      
+      // Update post status to indicate retry queue
+      await storage.updatePost(postId, {
+        status: 'retry_queued',
+        errorLog: `Queued for retry: ${reason}`,
+        scheduledFor: new Date(Date.now() + this.RETRY_DELAY_MINUTES * 60 * 1000)
+      });
+      
+      console.log(`✅ RETRY SERVICE: Post ${postId} queued for retry`);
+      console.log(`   Next retry: ${new Date(Date.now() + this.RETRY_DELAY_MINUTES * 60 * 1000).toISOString()}`);
+      
+    } catch (error) {
+      console.error('Failed to queue post for retry:', error);
+    }
+  }
+
+  /**
    * Mark a post as failed and queue for retry
    */
   static async markPostFailed(postId: number, failureReason: string): Promise<void> {

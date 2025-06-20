@@ -3528,25 +3528,63 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Token validation endpoint
+  // Token validation endpoint with enhanced monitoring
   app.get('/api/validate-tokens', requireAuth, async (req: any, res) => {
     try {
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
       const { TokenValidator } = await import('./token-validator');
       const validationResults = await TokenValidator.validateAllUserTokens(req.session.userId, connections);
       
+      // Get health monitoring data
+      const { PlatformHealthMonitor } = await import('./platform-health-monitor');
+      const healthReport = PlatformHealthMonitor.getOverallHealthReport(req.session.userId);
+      
       res.json({
         success: true,
         validationResults,
+        healthReport,
         summary: {
           totalConnections: connections.length,
           validConnections: Object.values(validationResults).filter((r: any) => r.valid).length,
-          needingReconnection: Object.values(validationResults).filter((r: any) => r.needsReconnection).length
+          needingReconnection: Object.values(validationResults).filter((r: any) => r.needsReconnection).length,
+          overallHealth: healthReport.overallHealth
         }
       });
     } catch (error) {
       console.error('Token validation error:', error);
       res.status(500).json({ error: 'Failed to validate tokens' });
+    }
+  });
+
+  // Platform health monitoring endpoint
+  app.get('/api/platform-health', requireAuth, async (req: any, res) => {
+    try {
+      const { PlatformHealthMonitor } = await import('./platform-health-monitor');
+      const healthReport = PlatformHealthMonitor.getOverallHealthReport(req.session.userId);
+      
+      res.json({
+        success: true,
+        ...healthReport
+      });
+    } catch (error) {
+      console.error('Platform health monitoring error:', error);
+      res.status(500).json({ error: 'Failed to get platform health data' });
+    }
+  });
+
+  // Retry queue status endpoint
+  app.get('/api/retry-queue-status', requireAuth, async (req: any, res) => {
+    try {
+      const { PostRetryService } = await import('./post-retry-service');
+      const queueStatus = PostRetryService.getRetryQueueStatus?.() || { message: 'Basic retry service active' };
+      
+      res.json({
+        success: true,
+        ...queueStatus
+      });
+    } catch (error) {
+      console.error('Retry queue status error:', error);
+      res.status(500).json({ error: 'Failed to get retry queue status' });
     }
   });
 

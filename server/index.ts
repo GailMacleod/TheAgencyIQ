@@ -1446,6 +1446,18 @@ async function restoreSubscribers() {
   setInterval(() => {
     BreachNotificationService.checkPendingNotifications();
   }, 60 * 60 * 1000); // Check every hour for pending notifications
+
+  // Initialize enhanced retry processor for bulletproof publishing
+  const { PostRetryService } = await import('./post-retry-service');
+  PostRetryService.startRetryProcessor?.() || console.log('🔄 RETRY SERVICE: Basic processor active');
+  
+  // Initialize platform health monitoring cleanup
+  const { PlatformHealthMonitor } = await import('./platform-health-monitor');
+  setInterval(() => {
+    PlatformHealthMonitor.clearOldLogs();
+  }, 24 * 60 * 60 * 1000); // Clean logs daily
+  
+  console.log('🚀 BULLETPROOF PUBLISHING SYSTEM: All services initialized');
   
   // Schedule daily subscriber backup at 1 AM
   const scheduleBackup = () => {
