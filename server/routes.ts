@@ -2089,6 +2089,57 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Fix platform connections (remove invalid tokens and prepare for reconnection)
+  app.post("/api/fix-platform-connections", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      console.log(`🔧 Platform connection fix requested for user ${userId}`);
+      
+      const { PlatformConnectionFixer } = await import('./platform-connection-fixer.js');
+      
+      // First cleanup duplicates
+      const cleanupResult = await PlatformConnectionFixer.cleanupDuplicateConnections(userId);
+      console.log(`Cleaned up ${cleanupResult.cleaned} duplicate connections, kept ${cleanupResult.kept}`);
+      
+      // Then fix invalid connections
+      const fixResult = await PlatformConnectionFixer.fixConnections(userId);
+      
+      res.json({
+        ...fixResult,
+        cleanup: cleanupResult
+      });
+      
+    } catch (error: any) {
+      console.error('Platform connection fix failed:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fix platform connections",
+        error: error.message 
+      });
+    }
+  });
+
+  // Get repair status for all platforms
+  app.get("/api/platform-repair-status", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      
+      const { PlatformRepairSystem } = await import('./platform-repair-system.js');
+      const status = await PlatformRepairSystem.getRepairStatus(userId);
+      
+      res.json(status);
+      
+    } catch (error: any) {
+      console.error('Platform repair status check failed:', error);
+      res.status(500).json({ 
+        needsRepair: [],
+        healthy: [],
+        total: 0,
+        error: error.message 
+      });
+    }
+  });
+
   // Update post content
   app.put("/api/posts/:id", requireAuth, async (req: any, res) => {
     try {
