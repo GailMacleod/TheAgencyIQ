@@ -862,7 +862,7 @@ app.post('/api/approve-post', async (req, res) => {
       });
     }
     
-    // Check platform connection availability
+    // Check platform connection availability with OAuth token validation
     console.log('Checking platform connections for:', { userId, platform: post.platform });
     const connections = await storage.getPlatformConnectionsByUser(userId);
     console.log('Available connections:', connections.map(c => ({ platform: c.platform, isActive: c.isActive })));
@@ -879,7 +879,57 @@ app.post('/api/approve-post', async (req, res) => {
       });
     }
 
+    // OAUTH TOKEN VALIDITY CHECK AND AUTO-REFRESH
+    const { TokenValidator } = await import('./token-validator');
+    const tokenValidation = await TokenValidator.validatePlatformToken(platformConnection);
+    
+    if (!tokenValidation.valid) {
+      console.log('OAuth token validation failed:', tokenValidation.error);
+      
+      // Attempt auto-refresh if refresh token available
+      if (tokenValidation.needsRefresh && platformConnection.refreshToken) {
+        console.log('Attempting OAuth token refresh for:', post.platform);
+        const refreshResult = await TokenValidator.refreshPlatformToken(platformConnection);
+        
+        if (!refreshResult.success) {
+          console.log('Token refresh failed:', refreshResult.error);
+          // Mark post for retry and request reconnection
+          const { PostRetryService } = await import('./post-retry-service');
+          await PostRetryService.queueForRetry(parseInt(postId), post.platform, 'oauth_token_expired');
+          
+          return res.status(400).json({
+            message: `${post.platform} connection expired. Please reconnect your account.`,
+            requiresReconnection: true,
+            platform: post.platform,
+            willRetry: true
+          });
+        }
+        
+        console.log('OAuth token successfully refreshed for:', post.platform);
+        // Update connection with new token
+        await storage.updatePlatformConnection(platformConnection.id, {
+          accessToken: refreshResult.newToken,
+          expiresAt: refreshResult.expiresAt
+        });
+      } else {
+        // No refresh token available - require reconnection
+        const { PostRetryService } = await import('./post-retry-service');
+        await PostRetryService.queueForRetry(parseInt(postId), post.platform, 'oauth_reconnection_required');
+        
+        return res.status(400).json({
+          message: `${post.platform} account needs to be reconnected for publishing.`,
+          requiresReconnection: true,
+          platform: post.platform,
+          willRetry: true
+        });
+      }
+    }
+
     console.log(`Publishing to ${post.platform} with established connection`);
+
+    // PLATFORM HEALTH MONITORING - Log connection status before publishing
+    const { PlatformHealthMonitor } = await import('./platform-health-monitor');
+    await PlatformHealthMonitor.logConnectionAttempt(userId, post.platform, platformConnection);
 
     // BULLETPROOF PUBLISHING SYSTEM - 99.9% success rate
     const { BulletproofPublisher } = await import('./bulletproof-publisher');
@@ -892,6 +942,9 @@ app.post('/api/approve-post', async (req, res) => {
       });
       
       if (publishResult.success) {
+        // Log successful publish
+        await PlatformHealthMonitor.logPublishSuccess(userId, post.platform, publishResult.platformPostId);
+        
         // Update post status to approved/published in posts table
         await db.update(posts)
           .set({ 
@@ -912,6 +965,9 @@ app.post('/api/approve-post', async (req, res) => {
         });
         
       } else {
+        // Log publish failure with detailed error tracking
+        await PlatformHealthMonitor.logPublishFailure(userId, post.platform, publishResult.error || 'Unknown error', publishResult);
+        
         // Mark post as failed and schedule for retry
         await db.update(posts)
           .set({ 
@@ -920,23 +976,36 @@ app.post('/api/approve-post', async (req, res) => {
           })
           .where(eq(posts.id, parseInt(postId)));
         
-        // Import and use retry service
+        // Enhanced retry service with re-queuing
         const { PostRetryService } = await import('./post-retry-service');
-        await PostRetryService.markPostFailed(parseInt(postId), publishResult.error || 'Publishing failed');
+        await PostRetryService.queueForRetry(parseInt(postId), post.platform, publishResult.error || 'Publishing failed');
         
         res.json({
           success: true,
-          message: `Post marked for retry! It will automatically post when you reconnect your ${post.platform} account.`,
+          message: `Post queued for automatic retry! It will post when your ${post.platform} connection is restored.`,
           requiresReconnection: true,
           platform: post.platform,
           error: publishResult.error,
-          willRetry: true
+          willRetry: true,
+          retryQueue: true
         });
       }
       
-    } catch (error) {
+    } catch (error: any) {
+      // Log critical publishing errors
+      await PlatformHealthMonitor.logCriticalError(userId, post.platform, error.message, error.stack);
+      
       console.error(`Failed to post to ${post.platform}:`, error);
-      res.status(500).json({ message: 'Platform posting failed' });
+      
+      // Queue for retry even on system errors
+      const { PostRetryService } = await import('./post-retry-service');
+      await PostRetryService.queueForRetry(parseInt(postId), post.platform, `System error: ${error.message}`);
+      
+      res.status(500).json({ 
+        message: 'Platform posting failed - queued for retry',
+        willRetry: true,
+        error: error.message
+      });
     }
 
   } catch (error) {

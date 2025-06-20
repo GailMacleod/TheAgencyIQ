@@ -1,174 +1,359 @@
+/**
+ * TOKEN VALIDATOR
+ * Enhanced OAuth token validation and refresh system
+ * Ensures platform connections remain valid for bulletproof publishing
+ */
+
+import { storage } from './storage';
 import axios from 'axios';
 
+interface TokenValidationResult {
+  valid: boolean;
+  needsRefresh: boolean;
+  needsReconnection: boolean;
+  error?: string;
+  expiresAt?: Date;
+}
+
+interface TokenRefreshResult {
+  success: boolean;
+  newToken?: string;
+  refreshToken?: string;
+  expiresAt?: Date;
+  error?: string;
+}
+
 export class TokenValidator {
-  
-  static async validateAllUserTokens(userId: number, connections: any[]): Promise<{
-    [platform: string]: {
-      valid: boolean;
-      error?: string;
-      needsReconnection: boolean;
-      permissions?: string[];
-    }
-  }> {
-    
-    const results: any = {};
-    
-    for (const conn of connections) {
-      try {
-        switch (conn.platform) {
-          case 'facebook':
-            results.facebook = await this.validateFacebookToken(conn.accessToken);
-            break;
-          case 'linkedin':
-            results.linkedin = await this.validateLinkedInToken(conn.accessToken);
-            break;
-          case 'x':
-          case 'twitter':
-            results.twitter = await this.validateTwitterToken(conn.accessToken);
-            break;
-          case 'instagram':
-            results.instagram = await this.validateInstagramToken(conn.accessToken);
-            break;
-          default:
-            results[conn.platform] = { valid: false, needsReconnection: true, error: 'Platform not supported' };
-        }
-      } catch (error: any) {
-        results[conn.platform] = { 
-          valid: false, 
-          needsReconnection: true, 
-          error: error.message 
+
+  /**
+   * Validate platform token with comprehensive checks
+   */
+  static async validatePlatformToken(connection: any): Promise<TokenValidationResult> {
+    try {
+      console.log(`🔍 TOKEN VALIDATOR: Checking ${connection.platform} token validity`);
+
+      // Basic validation checks
+      if (!connection.accessToken) {
+        return {
+          valid: false,
+          needsRefresh: false,
+          needsReconnection: true,
+          error: 'No access token found'
         };
       }
+
+      // Check for demo/test tokens
+      if (connection.accessToken.includes('demo_') || 
+          connection.accessToken.includes('mock_') ||
+          connection.accessToken.includes('test_')) {
+        return {
+          valid: false,
+          needsRefresh: false,
+          needsReconnection: true,
+          error: 'Demo/test token detected'
+        };
+      }
+
+      // Check token expiry
+      if (connection.expiresAt) {
+        const now = new Date();
+        const expiryDate = new Date(connection.expiresAt);
+        const timeUntilExpiry = expiryDate.getTime() - now.getTime();
+        
+        // Token expired
+        if (timeUntilExpiry <= 0) {
+          return {
+            valid: false,
+            needsRefresh: true,
+            needsReconnection: !connection.refreshToken,
+            error: 'Token expired'
+          };
+        }
+        
+        // Token expires within 1 hour - preemptive refresh
+        if (timeUntilExpiry < 60 * 60 * 1000) {
+          return {
+            valid: false,
+            needsRefresh: true,
+            needsReconnection: !connection.refreshToken,
+            error: 'Token expires soon'
+          };
+        }
+      }
+
+      // Platform-specific token validation
+      const platformValidation = await this.validateTokenWithPlatform(connection);
+      
+      if (!platformValidation.valid) {
+        return {
+          valid: false,
+          needsRefresh: connection.refreshToken ? true : false,
+          needsReconnection: !connection.refreshToken,
+          error: platformValidation.error || 'Platform validation failed'
+        };
+      }
+
+      console.log(`✅ TOKEN VALIDATOR: ${connection.platform} token is valid`);
+      return {
+        valid: true,
+        needsRefresh: false,
+        needsReconnection: false
+      };
+
+    } catch (error: any) {
+      console.error(`TOKEN VALIDATOR ERROR for ${connection.platform}:`, error.message);
+      return {
+        valid: false,
+        needsRefresh: false,
+        needsReconnection: true,
+        error: `Validation error: ${error.message}`
+      };
     }
-    
+  }
+
+  /**
+   * Refresh platform token using refresh token
+   */
+  static async refreshPlatformToken(connection: any): Promise<TokenRefreshResult> {
+    try {
+      console.log(`🔄 TOKEN VALIDATOR: Refreshing ${connection.platform} token`);
+
+      if (!connection.refreshToken) {
+        return {
+          success: false,
+          error: 'No refresh token available'
+        };
+      }
+
+      // Platform-specific token refresh
+      const refreshResult = await this.refreshTokenWithPlatform(connection);
+      
+      if (refreshResult.success) {
+        console.log(`✅ TOKEN VALIDATOR: ${connection.platform} token refreshed successfully`);
+      } else {
+        console.log(`❌ TOKEN VALIDATOR: ${connection.platform} token refresh failed - ${refreshResult.error}`);
+      }
+
+      return refreshResult;
+
+    } catch (error: any) {
+      console.error(`TOKEN REFRESH ERROR for ${connection.platform}:`, error.message);
+      return {
+        success: false,
+        error: `Refresh error: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Validate all user tokens
+   */
+  static async validateAllUserTokens(userId: number, connections: any[]): Promise<Record<string, TokenValidationResult>> {
+    const results: Record<string, TokenValidationResult> = {};
+
+    for (const connection of connections) {
+      if (connection.isActive) {
+        results[connection.platform] = await this.validatePlatformToken(connection);
+      }
+    }
+
     return results;
   }
 
-  private static async validateFacebookToken(accessToken: string): Promise<{
-    valid: boolean; error?: string; needsReconnection: boolean; permissions?: string[];
-  }> {
-    
+  /**
+   * Platform-specific token validation
+   */
+  private static async validateTokenWithPlatform(connection: any): Promise<{ valid: boolean; error?: string }> {
     try {
-      // Check token validity and permissions
-      const response = await axios.get(`https://graph.facebook.com/me/permissions?access_token=${accessToken}`);
-      
-      const permissions = response.data.data || [];
-      const grantedPermissions = permissions
-        .filter((p: any) => p.status === 'granted')
-        .map((p: any) => p.permission);
-      
-      const requiredPermissions = ['pages_manage_posts', 'pages_read_engagement'];
-      const hasRequiredPermissions = requiredPermissions.every(perm => 
-        grantedPermissions.includes(perm)
-      );
-      
-      if (!hasRequiredPermissions) {
-        return {
-          valid: false,
-          needsReconnection: true,
-          error: `Missing required permissions: ${requiredPermissions.filter(p => !grantedPermissions.includes(p)).join(', ')}`,
-          permissions: grantedPermissions
-        };
+      switch (connection.platform.toLowerCase()) {
+        case 'facebook':
+          return await this.validateFacebookToken(connection.accessToken);
+        case 'instagram':
+          return await this.validateInstagramToken(connection.accessToken);
+        case 'linkedin':
+          return await this.validateLinkedInToken(connection.accessToken);
+        case 'x':
+          return await this.validateXToken(connection.accessToken);
+        case 'youtube':
+          return await this.validateYouTubeToken(connection.accessToken);
+        default:
+          return { valid: false, error: 'Unsupported platform' };
       }
-      
-      return {
-        valid: true,
-        needsReconnection: false,
-        permissions: grantedPermissions
-      };
-      
     } catch (error: any) {
-      return {
-        valid: false,
-        needsReconnection: true,
-        error: error.response?.data?.error?.message || 'Token validation failed'
-      };
+      return { valid: false, error: error.message };
     }
   }
 
-  private static async validateLinkedInToken(accessToken: string): Promise<{
-    valid: boolean; error?: string; needsReconnection: boolean;
-  }> {
-    
+  /**
+   * Platform-specific token refresh
+   */
+  private static async refreshTokenWithPlatform(connection: any): Promise<TokenRefreshResult> {
     try {
-      const response = await axios.get('https://api.linkedin.com/v2/me', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Restli-Protocol-Version': '2.0.0'
-        }
+      switch (connection.platform.toLowerCase()) {
+        case 'facebook':
+          return await this.refreshFacebookToken(connection);
+        case 'instagram':
+          return await this.refreshInstagramToken(connection);
+        case 'linkedin':
+          return await this.refreshLinkedInToken(connection);
+        case 'x':
+          return await this.refreshXToken(connection);
+        case 'youtube':
+          return await this.refreshYouTubeToken(connection);
+        default:
+          return { success: false, error: 'Unsupported platform' };
+      }
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Facebook token validation
+  private static async validateFacebookToken(accessToken: string): Promise<{ valid: boolean; error?: string }> {
+    try {
+      const response = await axios.get(`https://graph.facebook.com/me?access_token=${accessToken}`);
+      return { valid: !!response.data.id };
+    } catch (error: any) {
+      return { valid: false, error: 'Facebook token invalid' };
+    }
+  }
+
+  // Instagram token validation
+  private static async validateInstagramToken(accessToken: string): Promise<{ valid: boolean; error?: string }> {
+    try {
+      const response = await axios.get(`https://graph.facebook.com/me?access_token=${accessToken}`);
+      return { valid: !!response.data.id };
+    } catch (error: any) {
+      return { valid: false, error: 'Instagram token invalid' };
+    }
+  }
+
+  // LinkedIn token validation
+  private static async validateLinkedInToken(accessToken: string): Promise<{ valid: boolean; error?: string }> {
+    try {
+      const response = await axios.get('https://api.linkedin.com/v2/people/~', {
+        headers: { Authorization: `Bearer ${accessToken}` }
       });
-      
-      if (response.status === 200 && response.data.id) {
-        return { valid: true, needsReconnection: false };
-      }
-      
-      return {
-        valid: false,
-        needsReconnection: true,
-        error: 'LinkedIn token invalid or expired'
-      };
-      
+      return { valid: !!response.data.id };
     } catch (error: any) {
-      return {
-        valid: false,
-        needsReconnection: true,
-        error: error.response?.data?.message || 'LinkedIn token expired'
-      };
+      return { valid: false, error: 'LinkedIn token invalid' };
     }
   }
 
-  private static async validateTwitterToken(accessToken: string): Promise<{
-    valid: boolean; error?: string; needsReconnection: boolean;
-  }> {
-    
-    // Twitter OAuth 1.0a tokens are incompatible with current API v2
-    if (accessToken.includes('twitter_token') || accessToken.length < 50) {
-      return {
-        valid: false,
-        needsReconnection: true,
-        error: 'OAuth 1.0a token incompatible with Twitter API v2'
-      };
-    }
-    
+  // X (Twitter) token validation
+  private static async validateXToken(accessToken: string): Promise<{ valid: boolean; error?: string }> {
     try {
       const response = await axios.get('https://api.twitter.com/2/users/me', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
+        headers: { Authorization: `Bearer ${accessToken}` }
       });
-      
-      if (response.status === 200 && response.data.data?.id) {
-        return { valid: true, needsReconnection: false };
-      }
-      
-      return {
-        valid: false,
-        needsReconnection: true,
-        error: 'Twitter token invalid'
-      };
-      
+      return { valid: !!response.data.data?.id };
     } catch (error: any) {
-      return {
-        valid: false,
-        needsReconnection: true,
-        error: 'Requires OAuth 2.0 upgrade'
-      };
+      return { valid: false, error: 'X token invalid' };
     }
   }
 
-  private static async validateInstagramToken(accessToken: string): Promise<{
-    valid: boolean; error?: string; needsReconnection: boolean;
-  }> {
-    
-    // Demo tokens cannot post to real Instagram
-    if (accessToken.includes('demo')) {
-      return {
-        valid: false,
-        needsReconnection: true,
-        error: 'Demo token cannot post to real Instagram accounts'
-      };
+  // YouTube token validation
+  private static async validateYouTubeToken(accessToken: string): Promise<{ valid: boolean; error?: string }> {
+    try {
+      const response = await axios.get('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      return { valid: !!response.data.items?.length };
+    } catch (error: any) {
+      return { valid: false, error: 'YouTube token invalid' };
     }
-    
-    return { valid: true, needsReconnection: false };
+  }
+
+  // Facebook token refresh
+  private static async refreshFacebookToken(connection: any): Promise<TokenRefreshResult> {
+    try {
+      const response = await axios.post('https://graph.facebook.com/oauth/access_token', {
+        grant_type: 'refresh_token',
+        refresh_token: connection.refreshToken,
+        client_id: process.env.FACEBOOK_APP_ID,
+        client_secret: process.env.FACEBOOK_APP_SECRET
+      });
+
+      return {
+        success: true,
+        newToken: response.data.access_token,
+        refreshToken: response.data.refresh_token || connection.refreshToken,
+        expiresAt: new Date(Date.now() + (response.data.expires_in * 1000))
+      };
+    } catch (error: any) {
+      return { success: false, error: 'Facebook token refresh failed' };
+    }
+  }
+
+  // Instagram token refresh (uses Facebook refresh)
+  private static async refreshInstagramToken(connection: any): Promise<TokenRefreshResult> {
+    return await this.refreshFacebookToken(connection);
+  }
+
+  // LinkedIn token refresh
+  private static async refreshLinkedInToken(connection: any): Promise<TokenRefreshResult> {
+    try {
+      const response = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', {
+        grant_type: 'refresh_token',
+        refresh_token: connection.refreshToken,
+        client_id: process.env.LINKEDIN_CLIENT_ID,
+        client_secret: process.env.LINKEDIN_CLIENT_SECRET
+      });
+
+      return {
+        success: true,
+        newToken: response.data.access_token,
+        refreshToken: response.data.refresh_token || connection.refreshToken,
+        expiresAt: new Date(Date.now() + (response.data.expires_in * 1000))
+      };
+    } catch (error: any) {
+      return { success: false, error: 'LinkedIn token refresh failed' };
+    }
+  }
+
+  // X (Twitter) token refresh
+  private static async refreshXToken(connection: any): Promise<TokenRefreshResult> {
+    try {
+      const response = await axios.post('https://api.twitter.com/2/oauth2/token', {
+        grant_type: 'refresh_token',
+        refresh_token: connection.refreshToken,
+        client_id: process.env.TWITTER_CLIENT_ID
+      }, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${Buffer.from(`${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`).toString('base64')}`
+        }
+      });
+
+      return {
+        success: true,
+        newToken: response.data.access_token,
+        refreshToken: response.data.refresh_token || connection.refreshToken,
+        expiresAt: new Date(Date.now() + (response.data.expires_in * 1000))
+      };
+    } catch (error: any) {
+      return { success: false, error: 'X token refresh failed' };
+    }
+  }
+
+  // YouTube token refresh
+  private static async refreshYouTubeToken(connection: any): Promise<TokenRefreshResult> {
+    try {
+      const response = await axios.post('https://oauth2.googleapis.com/token', {
+        grant_type: 'refresh_token',
+        refresh_token: connection.refreshToken,
+        client_id: process.env.YOUTUBE_CLIENT_ID,
+        client_secret: process.env.YOUTUBE_CLIENT_SECRET
+      });
+
+      return {
+        success: true,
+        newToken: response.data.access_token,
+        refreshToken: response.data.refresh_token || connection.refreshToken,
+        expiresAt: new Date(Date.now() + (response.data.expires_in * 1000))
+      };
+    } catch (error: any) {
+      return { success: false, error: 'YouTube token refresh failed' };
+    }
   }
 }
