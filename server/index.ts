@@ -444,10 +444,15 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Fine-tuned Brand Posts endpoint with PostgreSQL cache synchronization
+// Fine-tuned Brand Posts endpoint with PostgreSQL cache synchronization and CSP headers
 app.post('/api/brand-posts', async (req, res) => {
   const startTime = Date.now();
   let mobileNumber = 'unknown';
+  
+  // Set explicit CSP headers for platform connections
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; script-src 'self' https://connect.facebook.net https://platform.twitter.com https://www.googletagmanager.com https://www.google-analytics.com; connect-src 'self' https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.fbcdn.net https://*.twimg.com https://*.google-analytics.com; frame-src 'self' https://www.facebook.com https://platform.twitter.com;"
+  );
   
   try {
     const { goals, targets, text, brandPurpose } = req.body;
@@ -471,6 +476,9 @@ app.post('/api/brand-posts', async (req, res) => {
     }
     
     mobileNumber = user.phone || user.email || 'unknown';
+    
+    // Log CSP header application with phone number
+    console.log(`CSP updated [${mobileNumber}] - Platform connection headers applied`);
 
     // Parse the entire Brand Purpose into Strategyzer components with marketing essentials
     const marketingEssentials = {
@@ -526,25 +534,43 @@ app.post('/api/brand-posts', async (req, res) => {
     postCount = syncResult.postsToGenerate;
     console.log(`Generating ${postCount} new posts for ${user.email} (cleared ${syncResult.cleared} unapproved)`);
 
-    // POSTGRESQL CACHE SYNCHRONIZATION - Prevent drift between DB and cache
+    // POSTGRESQL CACHE SYNCHRONIZATION - Query posts_cache table and overwrite local cache
     const { db } = await import('./db');
-    const { posts: postsTable } = await import('../shared/schema');
+    const { posts: postsTable, postsCache } = await import('../shared/schema');
     const { eq } = await import('drizzle-orm');
     
-    // Force PostgreSQL cache sync
-    const pgPosts = await db.select().from(postsTable).where(eq(postsTable.userId, userId));
-    console.log(`PostgreSQL sync check: ${pgPosts.length} posts in database for user ${userId}`);
-    
-    // Clear filesystem cache to prevent drift
-    const cacheFilePath = path.join(process.cwd(), 'posts-cache.json');
-    
+    // Force PostgreSQL cache sync from posts_cache table
+    let cacheData = [];
     try {
-      if (fs.existsSync(cacheFilePath)) {
-        fs.unlinkSync(cacheFilePath);
-        console.log(`Cache synced [${mobileNumber}] - filesystem cache cleared, PostgreSQL authoritative`);
+      const [postsCacheRecord] = await db.select().from(postsCache).where(eq(postsCache.userPhone, mobileNumber));
+      if (postsCacheRecord && postsCacheRecord.cacheData) {
+        cacheData = postsCacheRecord.cacheData;
+        console.log(`PostgreSQL cache found: ${cacheData.length} cached posts for ${mobileNumber}`);
+      } else {
+        // Fallback to direct posts table query
+        const pgPosts = await db.select().from(postsTable).where(eq(postsTable.userId, userId));
+        cacheData = pgPosts;
+        console.log(`PostgreSQL fallback: ${pgPosts.length} posts from main table for user ${userId}`);
       }
     } catch (error) {
-      console.error('Failed to clear posts cache:', error);
+      console.error('PostgreSQL cache query failed:', error);
+      // Emergency fallback to main posts table
+      const pgPosts = await db.select().from(postsTable).where(eq(postsTable.userId, userId));
+      cacheData = pgPosts;
+    }
+    
+    // Overwrite local cache file with PostgreSQL data
+    const cacheFilePath = path.join(process.cwd(), 'posts-cache.json');
+    try {
+      const cacheContent = {
+        [mobileNumber]: cacheData,
+        timestamp: new Date().toISOString(),
+        source: 'postgresql_cache_table'
+      };
+      fs.writeFileSync(cacheFilePath, JSON.stringify(cacheContent, null, 2));
+      console.log(`Cache synced [${mobileNumber}] - ${cacheData.length} posts from PostgreSQL cache table`);
+    } catch (error) {
+      console.error('Failed to write cache file:', error);
     }
 
     console.log(`Full Brand Purpose with essentials parsed for ${user.email}: [goals: ${JSON.stringify(goals)}, targets: ${JSON.stringify(targets)}, text: ${text}, job: ${marketingEssentials.job}, services: ${marketingEssentials.services}, tone: ${marketingEssentials.tone}]`);
@@ -807,10 +833,15 @@ app.post('/api/generate-schedule', async (req, res) => {
   }
 });
 
-// Consolidated Post Processing Endpoint - Optimized for Launch
+// Consolidated Post Processing Endpoint - Optimized for Launch with CSP Headers
 app.post('/api/post', async (req, res) => {
   const startTime = Date.now();
   let mobileNumber = 'unknown';
+  
+  // Set explicit CSP headers for platform connections
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; script-src 'self' https://connect.facebook.net https://platform.twitter.com https://www.googletagmanager.com https://www.google-analytics.com; connect-src 'self' https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.fbcdn.net https://*.twimg.com https://*.google-analytics.com; frame-src 'self' https://www.facebook.com https://platform.twitter.com;"
+  );
   
   try {
     console.log('Post processing request initiated:', { 
@@ -885,6 +916,10 @@ app.post('/api/post', async (req, res) => {
     }
 
     mobileNumber = user.phone;
+    
+    // Log CSP header application with phone number
+    console.log(`CSP updated [${mobileNumber}] - Platform connection headers applied`);
+    
     const { db } = await import('./db');
     const { posts } = await import('../shared/schema');
     const { eq, and } = await import('drizzle-orm');
