@@ -23,6 +23,7 @@ import PostPublisher from "./post-publisher";
 import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
 import { PostRetryService } from './post-retry-service';
+import { OAuthRepairSystem } from './oauth-repair-system';
 
 // Session type declaration
 declare module 'express-session' {
@@ -2067,6 +2068,42 @@ Continue building your Value Proposition Canvas systematically.`;
     } catch (error) {
       console.error('Error fetching brand posts:', error);
       res.status(500).json({ message: "Failed to fetch brand posts" });
+    }
+  });
+
+  // OAuth token repair and validation system
+  app.post("/api/repair-oauth-tokens", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      console.log(`🔧 Starting OAuth repair for user ${userId}`);
+      
+      // Run comprehensive token validation and repair
+      const result = await OAuthRepairSystem.repairAllTokens(userId);
+      
+      // Attempt to retry failed posts if any tokens were repaired
+      let retriedPosts = 0;
+      if (result.repaired > 0) {
+        retriedPosts = await OAuthRepairSystem.retryFailedPosts(userId);
+      }
+      
+      res.json({
+        success: true,
+        repaired: result.repaired,
+        failed: result.failed,
+        requiresManualAuth: result.requiresManualAuth,
+        retriedPosts,
+        message: result.requiresManualAuth.length > 0 
+          ? `${result.requiresManualAuth.length} platforms require re-authentication: ${result.requiresManualAuth.join(', ')}`
+          : 'All platform tokens validated successfully'
+      });
+      
+    } catch (error: any) {
+      console.error('OAuth repair error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to repair OAuth tokens",
+        error: error.message 
+      });
     }
   });
 
