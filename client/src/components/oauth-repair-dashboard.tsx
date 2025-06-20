@@ -24,9 +24,13 @@ export default function OAuthRepairDashboard() {
   const handleRepairTokens = async () => {
     setIsRepairing(true);
     try {
-      const result = await apiRequest('/repair-oauth-tokens', {
-        method: 'POST'
+      const response = await fetch('/api/repair-oauth-tokens', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+      const result = await response.json();
       
       setLastResult(result);
       
