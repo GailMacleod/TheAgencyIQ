@@ -16,7 +16,7 @@ import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
 import AutoPostingEnforcer from "@/components/auto-posting-enforcer";
-import OAuthRepairDashboard from "@/components/oauth-repair-dashboard";
+
 
 interface Post {
   id: number;
@@ -664,10 +664,7 @@ export default function IntelligentSchedule() {
           </div>
         )}
 
-        {/* Platform Connection Status */}
-        <div className="mb-8">
-          <OAuthRepairDashboard />
-        </div>
+
 
         {/* Auto-Publishing Enforcer */}
         {postsArray.length > 0 && (

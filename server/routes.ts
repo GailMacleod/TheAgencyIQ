@@ -23,7 +23,7 @@ import PostPublisher from "./post-publisher";
 import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
 import { PostRetryService } from './post-retry-service';
-import { OAuthTokenValidator } from './oauth-token-validator';
+import { ConnectionManager } from './connection-manager';
 
 // Session type declaration
 declare module 'express-session' {
@@ -2071,82 +2071,19 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // OAuth token validation system - fix all publishing failures
-  app.post("/api/repair-oauth-tokens", requireAuth, async (req: any, res) => {
+  // Check connection status before accessing schedule
+  app.get("/api/connection-status", requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId;
-      console.log(`🔧 Diagnosing platform connection failures for user ${userId}`);
+      const status = await ConnectionManager.checkConnectionsBeforeSchedule(userId);
       
-      // Get all platform connections
-      const connections = await db.select()
-        .from(platformConnections)
-        .where(eq(platformConnections.userId, userId));
-      
-      const results = [];
-      let validCount = 0;
-      let invalidCount = 0;
-      const requiresReauth = [];
-      
-      for (const connection of connections) {
-        const { platform, accessToken } = connection;
-        
-        // Check if token is obviously invalid (mock/demo tokens)
-        const isMockToken = accessToken.includes('demo') || 
-                           accessToken.includes('valid_') || 
-                           accessToken.length < 50;
-        
-        if (isMockToken) {
-          results.push({
-            platform,
-            status: 'invalid',
-            error: 'Mock/demo token detected - requires real OAuth authentication',
-            action: 'reconnect'
-          });
-          requiresReauth.push(platform);
-          invalidCount++;
-          
-          // Mark as inactive
-          await db.update(platformConnections)
-            .set({ isActive: false })
-            .where(eq(platformConnections.id, connection.id));
-        } else {
-          results.push({
-            platform,
-            status: 'needs_testing',
-            error: 'Token requires API validation',
-            action: 'test_required'
-          });
-          validCount++;
-        }
-      }
-      
-      // Update all failed posts with clear message
-      await db.execute(sql`
-        UPDATE posts 
-        SET error_log = 'Platform authentication required - please reconnect social media accounts',
-            status = 'failed'
-        WHERE user_id = ${userId} AND status IN ('draft', 'approved', 'failed')
-      `);
-      
-      res.json({
-        success: true,
-        platforms: results,
-        summary: {
-          total: connections.length,
-          invalid: invalidCount,
-          requiresReauth: requiresReauth
-        },
-        message: requiresReauth.length > 0 
-          ? `${requiresReauth.length} platforms need re-authentication: ${requiresReauth.join(', ')}`
-          : 'Platform tokens need validation',
-        action: 'Go to Connect Platforms page to re-authenticate your social media accounts'
-      });
+      res.json(status);
       
     } catch (error: any) {
-      console.error('OAuth diagnosis error:', error);
+      console.error('Connection status check failed:', error);
       res.status(500).json({ 
-        success: false,
-        message: "Failed to diagnose platform connections",
+        canProceed: false,
+        message: "Failed to check connection status",
         error: error.message 
       });
     }
