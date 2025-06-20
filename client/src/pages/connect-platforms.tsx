@@ -114,15 +114,35 @@ export default function ConnectPlatforms() {
         return;
       }
       
-      // Try LinkedIn OAuth directly - let's see if the credentials work
+      // Direct connection for LinkedIn to avoid OAuth issues
       if (platform === 'linkedin') {
-        console.log('Attempting LinkedIn OAuth with existing credentials');
+        const response = await fetch('/api/auth/linkedin', {
+          method: 'GET',
+          credentials: 'include'
+        });
+        
+        if (response.redirected) {
+          // Handle the redirect result
+          window.location.href = response.url;
+          return;
+        }
+        
+        const result = await response.text();
+        if (result.includes('success')) {
+          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          toast({
+            title: "LinkedIn Connected",
+            description: "LinkedIn connection established successfully"
+          });
+        }
+        
+        setConnecting(prev => ({ ...prev, [platform]: false }));
+        return;
       }
       
       // Map platform names to OAuth routes
       const oauthRoutes: { [key: string]: string } = {
         'facebook': '/auth/facebook',
-        'linkedin': '/auth/linkedin',
         'x': '/auth/twitter',
         'youtube': '/auth/youtube',
         'instagram': '/auth/instagram'
@@ -132,6 +152,19 @@ export default function ConnectPlatforms() {
       if (!oauthUrl) {
         throw new Error(`OAuth not configured for ${platform}`);
       }
+      
+      // Add timeout for OAuth redirects to prevent getting stuck
+      const redirectTimer = setTimeout(() => {
+        setConnecting(prev => ({ ...prev, [platform]: false }));
+        toast({
+          title: "Connection Timeout",
+          description: "OAuth connection timed out. Please try again.",
+          variant: "destructive"
+        });
+      }, 10000); // 10 second timeout
+      
+      // Store timer reference to clear it if successful
+      window.sessionStorage.setItem('oauthTimer', redirectTimer.toString());
       
       // Redirect to OAuth flow
       window.location.href = oauthUrl;
@@ -215,6 +248,24 @@ export default function ConnectPlatforms() {
           <p className="text-gray-600 text-lg">
             Connect your social media accounts to enable automated posting with real API credentials
           </p>
+          
+          {/* Navigation buttons to test other parts of the app */}
+          <div className="flex justify-center space-x-4 mt-6">
+            <Button
+              onClick={() => setLocation("/intelligent-schedule")}
+              variant="outline"
+              className="text-sm"
+            >
+              Test AI Schedule →
+            </Button>
+            <Button
+              onClick={() => setLocation("/brand-purpose")}
+              variant="outline"
+              className="text-sm"
+            >
+              ← Back to Brand Purpose
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -298,13 +349,30 @@ export default function ConnectPlatforms() {
                           <p className="text-sm text-gray-600 mb-4">
                             Connect using secure OAuth authentication
                           </p>
-                          <Button
-                            onClick={() => handleOAuthConnect(platform)}
-                            className="w-full"
-                            disabled={connecting[platform]}
-                          >
-                            {connecting[platform] ? 'Connecting...' : 'CONNECT'}
-                          </Button>
+                          <div className="space-y-2">
+                            <Button
+                              onClick={() => handleOAuthConnect(platform)}
+                              className="w-full"
+                              disabled={connecting[platform]}
+                            >
+                              {connecting[platform] ? 'Connecting...' : 'CONNECT'}
+                            </Button>
+                            {platform === 'linkedin' && (
+                              <Button
+                                onClick={() => {
+                                  setConnecting(prev => ({ ...prev, [platform]: false }));
+                                  toast({
+                                    title: "LinkedIn Skipped",
+                                    description: "You can test other platforms and return to LinkedIn later"
+                                  });
+                                }}
+                                variant="outline"
+                                className="w-full text-xs"
+                              >
+                                Skip for Now
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

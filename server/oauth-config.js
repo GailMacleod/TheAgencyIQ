@@ -57,15 +57,17 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
     clientID: process.env.LINKEDIN_CLIENT_ID,
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
     callbackURL: "/auth/linkedin/callback",
-    scope: ['r_liteprofile', 'r_emailaddress', 'w_member_social']
+    scope: ['profile', 'email', 'w_member_social'],
+    state: true
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
+      console.log('LinkedIn OAuth profile received:', profile.id, profile.displayName);
       const connection = await storage.createPlatformConnection({
         userId: profile.id, // This will be updated with session userId
         platform: 'linkedin',
         platformUserId: profile.id,
-        platformUsername: profile.displayName || 'LinkedIn User',
+        platformUsername: profile.displayName || profile.name?.localized?.en_US || 'LinkedIn User',
         accessToken: accessToken,
         refreshToken: refreshToken,
         expiresAt: null,
@@ -79,6 +81,8 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
       done(error, null);
     }
   }));
+} else {
+  console.log('LinkedIn OAuth credentials not available - skipping LinkedIn strategy');
 }
 
 // Twitter Strategy - Enhanced error handling
