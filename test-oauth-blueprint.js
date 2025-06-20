@@ -3,7 +3,7 @@
  * Tests all components of the comprehensive OAuth system
  */
 
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 const BASE_URL = 'https://app-theagencyiq.replit.app';
 const TEST_USER_PHONE = '+61400000001';
