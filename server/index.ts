@@ -20,27 +20,23 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
-// Content Security Policy headers to allow Facebook scripts
+// Content Security Policy headers to allow Facebook Meta Pixel and SDK
 app.use((req, res, next) => {
-  const existingCSP = res.getHeader('Content-Security-Policy') as string;
-  if (existingCSP) {
-    // Enhance existing CSP with Facebook domains
-    const enhancedCSP = existingCSP
-      .replace('script-src \'self\'', 'script-src \'self\' \'unsafe-inline\' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com')
-      .replace('connect-src \'self\'', 'connect-src \'self\' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com')
-      .replace('img-src \'self\' data: https:', 'img-src \'self\' data: https: https://www.facebook.com https://graph.facebook.com')
-      .replace('frame-src', 'frame-src https://www.facebook.com');
-    
-    res.setHeader('Content-Security-Policy', enhancedCSP);
-  } else {
-    res.setHeader('Content-Security-Policy', 
-      "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com; " +
-      "connect-src 'self' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com; " +
-      "img-src 'self' data: https://www.facebook.com https://graph.facebook.com; " +
-      "frame-src 'self' https://www.facebook.com;"
-    );
-  }
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' " +
+    "https://checkout.stripe.com https://js.stripe.com " +
+    "https://www.googletagmanager.com https://www.google-analytics.com " +
+    "https://replit.com https://*.replit.app " +
+    "https://connect.facebook.net https://www.facebook.com; " +
+    "connect-src 'self' " +
+    "https://connect.facebook.net https://www.facebook.com https://graph.facebook.com " +
+    "https://api.stripe.com wss://ws-us3.pusher.com; " +
+    "img-src 'self' data: https: " +
+    "https://www.facebook.com https://graph.facebook.com; " +
+    "frame-src 'self' https://www.facebook.com https://checkout.stripe.com; " +
+    "style-src 'self' 'unsafe-inline';"
+  );
   next();
 });
 
