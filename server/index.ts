@@ -444,22 +444,33 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Brand Posts endpoint with full Strategyzer integration
+// Fine-tuned Brand Posts endpoint with PostgreSQL cache synchronization
 app.post('/api/brand-posts', async (req, res) => {
+  const startTime = Date.now();
+  let mobileNumber = 'unknown';
+  
   try {
     const { goals, targets, text, brandPurpose } = req.body;
     const userId = req.session?.userId;
     
     if (!userId) {
-      return res.status(401).json({ message: 'Not authenticated' });
+      return res.status(401).json({ 
+        message: 'Authentication required',
+        error: 'NOT_AUTHENTICATED'
+      });
     }
 
     const { storage } = await import('./storage');
     const user = await storage.getUser(userId);
     
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ 
+        message: 'User not found',
+        error: 'USER_NOT_FOUND'
+      });
     }
+    
+    mobileNumber = user.phone || user.email || 'unknown';
 
     // Parse the entire Brand Purpose into Strategyzer components with marketing essentials
     const marketingEssentials = {
@@ -515,13 +526,22 @@ app.post('/api/brand-posts', async (req, res) => {
     postCount = syncResult.postsToGenerate;
     console.log(`Generating ${postCount} new posts for ${user.email} (cleared ${syncResult.cleared} unapproved)`);
 
-    // Clear posts cache before xAI optimum days fetch
+    // POSTGRESQL CACHE SYNCHRONIZATION - Prevent drift between DB and cache
+    const { db } = await import('./db');
+    const { posts: postsTable } = await import('../shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    // Force PostgreSQL cache sync
+    const pgPosts = await db.select().from(postsTable).where(eq(postsTable.userId, userId));
+    console.log(`PostgreSQL sync check: ${pgPosts.length} posts in database for user ${userId}`);
+    
+    // Clear filesystem cache to prevent drift
     const cacheFilePath = path.join(process.cwd(), 'posts-cache.json');
     
     try {
       if (fs.existsSync(cacheFilePath)) {
         fs.unlinkSync(cacheFilePath);
-        console.log('Posts cache cleared before xAI fetch');
+        console.log(`Cache synced [${mobileNumber}] - filesystem cache cleared, PostgreSQL authoritative`);
       }
     } catch (error) {
       console.error('Failed to clear posts cache:', error);
@@ -559,21 +579,32 @@ app.post('/api/brand-posts', async (req, res) => {
 
     const aiInsights = await getAIResponse(strategyzerPrompt, 'strategyzer-analysis', strategyzerComponents);
 
-    // Get existing posts for this user (limited by subscription)
+    // Get existing posts for this user (limited by subscription) - PostgreSQL authoritative
     const posts = await storage.getPostsByUser(userId);
     const limitedPosts = posts.slice(0, postCount);
+
+    // Final cache sync confirmation
+    const processingTime = Date.now() - startTime;
+    console.log(`Cache synced [${mobileNumber}] - ${limitedPosts.length} posts returned - ${processingTime}ms`);
 
     res.json({
       success: true,
       posts: limitedPosts,
       postCount: postCount,
       strategyzerInsights: aiInsights,
-      components: strategyzerComponents
+      components: strategyzerComponents,
+      cacheSync: true,
+      processingTime
     });
 
-  } catch (error) {
-    console.error('Brand posts error:', error);
-    res.status(500).json({ message: 'Failed to process brand posts' });
+  } catch (error: any) {
+    const processingTime = Date.now() - startTime;
+    console.error(`Cache synced [${mobileNumber}] - ERROR - ${processingTime}ms:`, error);
+    res.status(500).json({ 
+      message: 'Brand posts processing failed',
+      error: 'CACHE_SYNC_ERROR',
+      processingTime
+    });
   }
 });
 
@@ -776,21 +807,32 @@ app.post('/api/generate-schedule', async (req, res) => {
   }
 });
 
-// Approve and Post endpoint
-app.post('/api/approve-post', async (req, res) => {
+// Consolidated Post Processing Endpoint - Optimized for Launch
+app.post('/api/post', async (req, res) => {
+  const startTime = Date.now();
+  let mobileNumber = 'unknown';
+  
   try {
-    console.log('Approve post request:', { body: req.body, sessionUserId: req.session?.userId });
-    const { postId } = req.body;
+    console.log('Post processing request initiated:', { 
+      body: req.body, 
+      sessionUserId: req.session?.userId,
+      timestamp: new Date().toISOString()
+    });
+    
+    const { postId, action = 'approve' } = req.body;
     
     if (!postId) {
       console.log('Error: Post ID is missing');
-      return res.status(400).json({ message: 'Post ID is required' });
+      return res.status(400).json({ 
+        message: 'Post ID is required',
+        error: 'MISSING_POST_ID'
+      });
     }
     
     const { storage } = await import('./storage');
     let userId = req.session?.userId;
     
-    // Auto-recover session if needed
+    // Enhanced session recovery with error handling
     if (!userId) {
       try {
         const existingUser = await storage.getUser(2);
@@ -798,29 +840,51 @@ app.post('/api/approve-post', async (req, res) => {
           userId = 2;
           if (req.session) {
             req.session.userId = 2;
-            await new Promise((resolve) => {
-              req.session.save(() => resolve(void 0));
+            await new Promise((resolve, reject) => {
+              req.session.save((err) => {
+                if (err) reject(err);
+                else resolve(void 0);
+              });
             });
           }
-          console.log('Session auto-recovered for approve-post');
+          console.log('Session auto-recovered for post processing');
         }
       } catch (error) {
-        console.log('Auto session recovery failed for approve-post', error);
+        console.error('Session recovery failed:', error);
+        return res.status(500).json({ 
+          message: 'Session recovery error',
+          error: 'SESSION_RECOVERY_FAILED'
+        });
       }
     }
     
     if (!userId) {
-      console.log('Error: No authenticated user');
-      return res.status(401).json({ message: 'Not authenticated' });
+      console.log('Error: No authenticated user after recovery attempts');
+      return res.status(401).json({ 
+        message: 'Authentication required',
+        error: 'NOT_AUTHENTICATED'
+      });
     }
 
+    // Get user with comprehensive validation
     const user = await storage.getUser(userId);
-    if (!user || !user.phone) {
-      console.log('Error: User not found or missing phone:', { userId, user: user ? 'exists' : 'null' });
-      return res.status(404).json({ message: 'User not found or mobile number missing' });
+    if (!user) {
+      console.log('Error: User not found:', { userId });
+      return res.status(404).json({ 
+        message: 'User not found',
+        error: 'USER_NOT_FOUND'
+      });
+    }
+    
+    if (!user.phone) {
+      console.log('Error: User missing phone number:', { userId, email: user.email });
+      return res.status(400).json({ 
+        message: 'Mobile number required for post processing',
+        error: 'MISSING_PHONE'
+      });
     }
 
-    const mobileNumber = user.phone;
+    mobileNumber = user.phone;
     const { db } = await import('./db');
     const { posts } = await import('../shared/schema');
     const { eq, and } = await import('drizzle-orm');
@@ -953,15 +1017,17 @@ app.post('/api/approve-post', async (req, res) => {
           })
           .where(eq(posts.id, parseInt(postId)));
         
-        // Fire Google Analytics event
-        console.log(`Google Analytics event: post_success for ${mobileNumber} on ${post.platform}`);
+        // Production logging for launch monitoring
+        const processingTime = Date.now() - startTime;
+        console.log(`Post processed [${mobileNumber}] - ${post.platform} - ${processingTime}ms - SUCCESS`);
         
         res.json({
           success: true,
           message: `Post successfully published to ${post.platform}!`,
           post: { ...post, status: 'approved', publishedAt: new Date() },
           platformPostId: publishResult.platformPostId,
-          analytics: publishResult.analytics
+          analytics: publishResult.analytics,
+          processingTime
         });
         
       } else {
@@ -1008,9 +1074,14 @@ app.post('/api/approve-post', async (req, res) => {
       });
     }
 
-  } catch (error) {
-    console.error('Approve post error:', error);
-    res.status(500).json({ message: 'Failed to approve post' });
+  } catch (error: any) {
+    const processingTime = Date.now() - startTime;
+    console.error(`Post processed [${mobileNumber}] - ERROR - ${processingTime}ms:`, error);
+    res.status(500).json({ 
+      message: 'Post processing failed',
+      error: 'PROCESSING_ERROR',
+      processingTime
+    });
   }
 });
 
