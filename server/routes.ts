@@ -2119,22 +2119,46 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Get repair status for all platforms
-  app.get("/api/platform-repair-status", requireAuth, async (req: any, res) => {
+  // Get user-friendly connection status
+  app.get("/api/connection-status-detailed", requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       
-      const { PlatformRepairSystem } = await import('./platform-repair-system.js');
-      const status = await PlatformRepairSystem.getRepairStatus(userId);
+      const { ConnectionStatusMonitor } = await import('./connection-status-monitor.js');
+      const status = await ConnectionStatusMonitor.getConnectionStatus(userId);
       
       res.json(status);
       
     } catch (error: any) {
-      console.error('Platform repair status check failed:', error);
+      console.error('Connection status check failed:', error);
       res.status(500).json({ 
-        needsRepair: [],
-        healthy: [],
-        total: 0,
+        connectedPlatforms: [],
+        disconnectedPlatforms: [],
+        needsAttention: true,
+        totalConnected: 0,
+        message: "Unable to check connection status",
+        error: error.message 
+      });
+    }
+  });
+
+  // Check if user can proceed with scheduling
+  app.get("/api/can-proceed-scheduling", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      
+      const { ConnectionStatusMonitor } = await import('./connection-status-monitor.js');
+      const result = await ConnectionStatusMonitor.canProceedWithScheduling(userId);
+      
+      res.json(result);
+      
+    } catch (error: any) {
+      console.error('Scheduling check failed:', error);
+      res.status(500).json({ 
+        canProceed: false,
+        connectedCount: 0,
+        message: "Unable to verify platform connections",
+        suggestedAction: "connect_platforms",
         error: error.message 
       });
     }

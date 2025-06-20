@@ -149,7 +149,7 @@ export class PlatformConnectionFixer {
           !connection.accessToken.includes('_token_') &&
           !connection.accessToken.includes('valid_') &&
           connection.accessToken.length >= 50 &&
-          connection.isActive;
+          (connection.isActive === true);
         
         platforms[targetPlatform] = isValidToken;
         
