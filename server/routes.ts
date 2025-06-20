@@ -2831,6 +2831,78 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Check Connection - 5 minute automatic token validation
+  app.get("/api/check-connection", requireAuth, async (req: any, res) => {
+    try {
+      const { db } = require('./db');
+      const { connections } = require('./models/connection');
+      const { eq, and } = require('drizzle-orm');
+      
+      const userPhone = req.session.userPhone || '+61000000000';
+      
+      // Get all platform connections for this user
+      const userConnections = await db
+        .select()
+        .from(connections)
+        .where(and(
+          eq(connections.userPhone, userPhone),
+          eq(connections.isActive, true)
+        ));
+
+      const results = [];
+      
+      for (const connection of userConnections) {
+        if (connection.expiresAt && new Date() > connection.expiresAt) {
+          console.log(`Token expired for ${userPhone} on ${connection.platform}`);
+          
+          // Attempt token refresh
+          const refreshResult = await refreshPlatformToken(connection);
+          if (refreshResult.success) {
+            console.log(`Token refreshed ${userPhone} for ${connection.platform}`);
+            results.push({
+              platform: connection.platform,
+              status: 'refreshed',
+              message: 'Token automatically refreshed'
+            });
+          } else {
+            console.log(`Redirect to connect ${userPhone}`);
+            // Mark connection as inactive
+            await db
+              .update(connections)
+              .set({ isActive: false })
+              .where(eq(connections.id, connection.id));
+            
+            results.push({
+              platform: connection.platform,
+              status: 'failed',
+              message: 'Token refresh failed, reconnection required'
+            });
+          }
+        } else {
+          console.log(`Post validated ${userPhone} for ${connection.platform}`);
+          results.push({
+            platform: connection.platform,
+            status: 'valid',
+            message: 'Connection healthy'
+          });
+        }
+      }
+      
+      res.json({
+        success: true,
+        userPhone: userPhone,
+        connections: results,
+        totalConnections: userConnections.length
+      });
+    } catch (error) {
+      console.error('Connection check error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to check connections"
+      });
+    }
+  });
+
   // OAuth Platform Testing
   app.get("/api/test-oauth-platforms", requireAuth, async (req: any, res) => {
     try {
