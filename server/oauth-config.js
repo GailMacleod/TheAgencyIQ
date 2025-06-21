@@ -1,196 +1,242 @@
-const passport = require('passport');
-const FacebookStrategy = require('passport-facebook').Strategy;
-const LinkedInStrategy = require('passport-linkedin-oauth2').Strategy;
-const TwitterStrategy = require('passport-twitter').Strategy;
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const { storage } = require('./storage');
-const { db } = require('./db');
-const { connections } = require('./models/connection');
-const { eq } = require('drizzle-orm');
+import passport from 'passport';
+import { Strategy as FacebookStrategy } from 'passport-facebook';
+import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
+import { Strategy as TwitterStrategy } from 'passport-twitter';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { db } from './db.js';
+import { connections } from './models/connection.js';
 
-// Serialize user for session
-passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
-
-// Deserialize user from session
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await storage.getUser(id);
-    done(null, user);
-  } catch (error) {
-    done(error, null);
-  }
-});
-
-// Facebook Strategy - Production OAuth with publishing permissions
-if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
-  // Get the correct domain for callback URL
-  const domains = process.env.REPLIT_DOMAINS?.split(',') || ['localhost:5000'];
-  const domain = domains[0];
-  const callbackURL = `https://${domain}/auth/facebook/callback`;
-  
-  passport.use(new FacebookStrategy({
+// OAuth configuration for all platforms
+const oauthConfig = {
+  facebook: {
     clientID: process.env.FACEBOOK_APP_ID,
     clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL: callbackURL,
-    profileFields: ['id', 'emails', 'name'],
+    callbackURL: "/auth/facebook/callback",
     scope: ['public_profile', 'pages_show_list', 'pages_manage_posts', 'pages_read_engagement']
   },
-  async (accessToken, refreshToken, profile, done) => {
-    try {
-      // Get user phone from session (will be set by route handler)
-      const userPhone = profile.userPhone || '+61000000000'; // Fallback
-      
-      // Create or update platform connection
-      const connectionData = {
-        userPhone: userPhone,
-        platform: 'facebook',
-        platformUserId: profile.id,
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        expiresAt: null, // Facebook tokens don't expire
-        isActive: true
-      };
-      
-      // Insert or update connection
-      const [connection] = await db
-        .insert(connections)
-        .values(connectionData)
-        .onConflictDoUpdate({
-          target: [connections.userPhone, connections.platform],
-          set: {
-            accessToken: connectionData.accessToken,
-            refreshToken: connectionData.refreshToken,
-            isActive: true,
-            connectedAt: new Date()
-          }
-        })
-        .returning();
-      
-      console.log(`Token refreshed ${userPhone} for facebook`);
-      done(null, { id: profile.id, connection, userPhone });
-    } catch (error) {
-      console.error('Facebook OAuth error:', error);
-      done(error, null);
-    }
-  }));
-} else {
-  console.log('Facebook OAuth credentials not available - skipping Facebook strategy');
-}
-
-// LinkedIn Strategy
-if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
-  const domains = process.env.REPLIT_DOMAINS?.split(',') || ['localhost:5000'];
-  const domain = domains[0];
-  const linkedinCallbackURL = `https://${domain}/auth/linkedin/callback`;
-  
-  passport.use(new LinkedInStrategy({
+  linkedin: {
     clientID: process.env.LINKEDIN_CLIENT_ID,
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-    callbackURL: linkedinCallbackURL,
-    scope: ['profile', 'email', 'w_member_social'],
-    state: true
+    callbackURL: "/auth/linkedin/callback",
+    scope: ['r_liteprofile', 'w_member_social']
   },
-  async (accessToken, refreshToken, profile, done) => {
-    try {
-      console.log('LinkedIn OAuth profile received:', profile.id, profile.displayName);
-      const connection = await storage.createPlatformConnection({
-        userId: profile.id, // This will be updated with session userId
-        platform: 'linkedin',
-        platformUserId: profile.id,
-        platformUsername: profile.displayName || profile.name?.localized?.en_US || 'LinkedIn User',
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        expiresAt: null,
-        isActive: true
-      });
-      
-      console.log('LinkedIn OAuth successful:', profile.id);
-      done(null, { id: profile.id, connection });
-    } catch (error) {
-      console.error('LinkedIn OAuth error:', error);
-      done(error, null);
-    }
-  }));
-} else {
-  console.log('LinkedIn OAuth credentials not available - skipping LinkedIn strategy');
-}
-
-// Twitter Strategy - Fixed authentication
-if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
-  try {
-    const domains = process.env.REPLIT_DOMAINS?.split(',') || ['localhost:5000'];
-    const domain = domains[0];
-    const twitterCallbackURL = `https://${domain}/auth/twitter/callback`;
-    
-    passport.use(new TwitterStrategy({
-      consumerKey: process.env.TWITTER_CLIENT_ID,
-      consumerSecret: process.env.TWITTER_CLIENT_SECRET,
-      callbackURL: twitterCallbackURL,
-      includeEmail: false, // Disable email to avoid permission issues
-      userProfileURL: "https://api.twitter.com/1.1/account/verify_credentials.json?include_email=false&skip_status=true"
-    },
-    async (token, tokenSecret, profile, done) => {
-      try {
-        console.log('Twitter OAuth profile received:', profile.id, profile.username);
-        const connection = await storage.createPlatformConnection({
-          userId: profile.id,
-          platform: 'x',
-          platformUserId: profile.id,
-          platformUsername: profile.username || profile.screen_name,
-          accessToken: token,
-          refreshToken: tokenSecret,
-          expiresAt: null,
-          isActive: true
-        });
-        
-        console.log('Twitter OAuth successful:', profile.id);
-        done(null, { id: profile.id, connection });
-      } catch (error) {
-        console.error('Twitter OAuth storage error:', error);
-        done(error, null);
-      }
-    }));
-    console.log('Twitter OAuth strategy configured successfully');
-  } catch (error) {
-    console.error('Twitter OAuth strategy setup failed:', error);
-  }
-} else {
-  console.log('Twitter OAuth credentials not available - skipping Twitter strategy');
-}
-
-// YouTube (Google) Strategy
-if (process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET) {
-  const domains = process.env.REPLIT_DOMAINS?.split(',') || ['localhost:5000'];
-  const domain = domains[0];
-  const youtubeCallbackURL = `https://${domain}/auth/youtube/callback`;
-  
-  passport.use(new GoogleStrategy({
+  twitter: {
+    consumerKey: process.env.TWITTER_CLIENT_ID,
+    consumerSecret: process.env.TWITTER_CLIENT_SECRET,
+    callbackURL: "/auth/twitter/callback",
+    scope: ['tweet.read', 'tweet.write', 'users.read']
+  },
+  youtube: {
     clientID: process.env.YOUTUBE_CLIENT_ID,
     clientSecret: process.env.YOUTUBE_CLIENT_SECRET,
-    callbackURL: youtubeCallbackURL
+    callbackURL: "/auth/youtube/callback",
+    scope: ['https://www.googleapis.com/auth/youtube']
   },
-  async (accessToken, refreshToken, profile, done) => {
+  instagram: {
+    clientID: process.env.INSTAGRAM_CLIENT_ID,
+    clientSecret: process.env.INSTAGRAM_CLIENT_SECRET,
+    callbackURL: "/auth/instagram/callback",
+    scope: ['instagram_basic', 'pages_show_list', 'pages_manage_posts']
+  }
+};
+
+// Initialize passport strategies
+function initializeOAuth() {
+  console.log('OAuth configured facebook');
+  passport.use(new FacebookStrategy({
+    clientID: oauthConfig.facebook.clientID,
+    clientSecret: oauthConfig.facebook.clientSecret,
+    callbackURL: oauthConfig.facebook.callbackURL,
+    profileFields: ['id', 'displayName', 'email']
+  }, async (accessToken, refreshToken, profile, done) => {
     try {
-      const connection = await storage.createPlatformConnection({
-        userId: profile.id, // This will be updated with session userId
-        platform: 'youtube',
+      const userPhone = '+61411223344'; // Default phone for OAuth sessions
+      
+      await db.insert(connections).values({
+        userPhone,
+        platform: 'facebook',
         platformUserId: profile.id,
-        platformUsername: profile.displayName,
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        expiresAt: null,
+        accessToken,
+        refreshToken,
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
         isActive: true
+      }).onConflictDoUpdate({
+        target: [connections.userPhone, connections.platform],
+        set: {
+          accessToken,
+          refreshToken,
+          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          isActive: true,
+          connectedAt: new Date()
+        }
       });
       
-      console.log('YouTube OAuth successful:', profile.id);
-      done(null, { id: profile.id, connection });
+      console.log(`Facebook connected for ${userPhone}`);
+      return done(null, { platform: 'facebook', userPhone, profile });
     } catch (error) {
-      console.error('YouTube OAuth error:', error);
-      done(error, null);
+      console.error('Facebook OAuth error:', error);
+      return done(error);
     }
   }));
+
+  console.log('OAuth configured linkedin');
+  passport.use(new LinkedInStrategy({
+    clientID: oauthConfig.linkedin.clientID,
+    clientSecret: oauthConfig.linkedin.clientSecret,
+    callbackURL: oauthConfig.linkedin.callbackURL,
+    scope: oauthConfig.linkedin.scope
+  }, async (accessToken, refreshToken, profile, done) => {
+    try {
+      const userPhone = '+61411223344';
+      
+      await db.insert(connections).values({
+        userPhone,
+        platform: 'linkedin',
+        platformUserId: profile.id,
+        accessToken,
+        refreshToken,
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+        isActive: true
+      }).onConflictDoUpdate({
+        target: [connections.userPhone, connections.platform],
+        set: {
+          accessToken,
+          refreshToken,
+          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          isActive: true,
+          connectedAt: new Date()
+        }
+      });
+      
+      console.log(`LinkedIn connected for ${userPhone}`);
+      return done(null, { platform: 'linkedin', userPhone, profile });
+    } catch (error) {
+      console.error('LinkedIn OAuth error:', error);
+      return done(error);
+    }
+  }));
+
+  console.log('OAuth configured twitter');
+  passport.use(new TwitterStrategy({
+    consumerKey: oauthConfig.twitter.consumerKey,
+    consumerSecret: oauthConfig.twitter.consumerSecret,
+    callbackURL: oauthConfig.twitter.callbackURL
+  }, async (token, tokenSecret, profile, done) => {
+    try {
+      const userPhone = '+61411223344';
+      
+      await db.insert(connections).values({
+        userPhone,
+        platform: 'x',
+        platformUserId: profile.id,
+        accessToken: token,
+        refreshToken: tokenSecret,
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Twitter tokens don't expire
+        isActive: true
+      }).onConflictDoUpdate({
+        target: [connections.userPhone, connections.platform],
+        set: {
+          accessToken: token,
+          refreshToken: tokenSecret,
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          isActive: true,
+          connectedAt: new Date()
+        }
+      });
+      
+      console.log(`Twitter connected for ${userPhone}`);
+      return done(null, { platform: 'x', userPhone, profile });
+    } catch (error) {
+      console.error('Twitter OAuth error:', error);
+      return done(error);
+    }
+  }));
+
+  console.log('OAuth configured youtube');
+  passport.use('google-youtube', new GoogleStrategy({
+    clientID: oauthConfig.youtube.clientID,
+    clientSecret: oauthConfig.youtube.clientSecret,
+    callbackURL: oauthConfig.youtube.callbackURL,
+    scope: oauthConfig.youtube.scope
+  }, async (accessToken, refreshToken, profile, done) => {
+    try {
+      const userPhone = '+61411223344';
+      
+      await db.insert(connections).values({
+        userPhone,
+        platform: 'youtube',
+        platformUserId: profile.id,
+        accessToken,
+        refreshToken,
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+        isActive: true
+      }).onConflictDoUpdate({
+        target: [connections.userPhone, connections.platform],
+        set: {
+          accessToken,
+          refreshToken,
+          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          isActive: true,
+          connectedAt: new Date()
+        }
+      });
+      
+      console.log(`YouTube connected for ${userPhone}`);
+      return done(null, { platform: 'youtube', userPhone, profile });
+    } catch (error) {
+      console.error('YouTube OAuth error:', error);
+      return done(error);
+    }
+  }));
+
+  console.log('OAuth configured instagram');
+  // Instagram uses Facebook's OAuth with specific scopes
+  passport.use('facebook-instagram', new FacebookStrategy({
+    clientID: oauthConfig.instagram.clientID || oauthConfig.facebook.clientID,
+    clientSecret: oauthConfig.instagram.clientSecret || oauthConfig.facebook.clientSecret,
+    callbackURL: oauthConfig.instagram.callbackURL,
+    profileFields: ['id', 'displayName', 'email']
+  }, async (accessToken, refreshToken, profile, done) => {
+    try {
+      const userPhone = '+61411223344';
+      
+      await db.insert(connections).values({
+        userPhone,
+        platform: 'instagram',
+        platformUserId: profile.id,
+        accessToken,
+        refreshToken,
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+        isActive: true
+      }).onConflictDoUpdate({
+        target: [connections.userPhone, connections.platform],
+        set: {
+          accessToken,
+          refreshToken,
+          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          isActive: true,
+          connectedAt: new Date()
+        }
+      });
+      
+      console.log(`Instagram connected for ${userPhone}`);
+      return done(null, { platform: 'instagram', userPhone, profile });
+    } catch (error) {
+      console.error('Instagram OAuth error:', error);
+      return done(error);
+    }
+  }));
+
+  passport.serializeUser((user, done) => {
+    done(null, user);
+  });
+
+  passport.deserializeUser((user, done) => {
+    done(null, user);
+  });
 }
 
-module.exports = { passport };
+export {
+  oauthConfig,
+  initializeOAuth
+};

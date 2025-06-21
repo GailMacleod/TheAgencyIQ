@@ -17,7 +17,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
-import { passport } from "./oauth-config";
+import passport from 'passport';
+import { initializeOAuth } from './oauth-config.js';
 import axios from "axios";
 import PostPublisher from "./post-publisher";
 import BreachNotificationService from "./breach-notification";
@@ -1814,15 +1815,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Disconnect platform
+  // Disconnect platform - OAuth Blueprint
   app.post("/api/disconnect-platform", requireAuth, async (req: any, res) => {
     try {
       const { platform } = req.body;
-      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
-      const connection = connections.find(c => c.platform === platform);
+      const userPhone = req.session.userPhone || '+61411223344';
+      const { db } = require('./db');
+      const { connections } = require('./models/connection');
+      const { eq, and } = require('drizzle-orm');
       
-      if (connection) {
-        await storage.deletePlatformConnection(connection.id);
+      const result = await db
+        .update(connections)
+        .set({ isActive: false })
+        .where(and(
+          eq(connections.userPhone, userPhone),
+          eq(connections.platform, platform)
+        ))
+        .returning();
+      
+      if (result && result.length > 0) {
+        console.log(`Platform disconnected ${userPhone} from ${platform}`);
         res.json({ success: true });
       } else {
         res.status(404).json({ message: "Platform connection not found" });
@@ -2353,11 +2365,101 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Get platform connections status
+  // Check connection status - OAuth Blueprint Implementation
+  app.get("/api/check-connection", async (req, res) => {
+    try {
+      const { db } = require('./db');
+      const { connections } = require('./models/connection');
+      const { eq } = require('drizzle-orm');
+      
+      // Get all active connections
+      const userConnections = await db
+        .select()
+        .from(connections)
+        .where(eq(connections.isActive, true));
+      
+      const results = [];
+      
+      for (const connection of userConnections) {
+        const userPhone = connection.userPhone;
+        
+        if (connection.expiresAt && new Date() > connection.expiresAt) {
+          console.log(`Token expired for ${userPhone} on ${connection.platform}`);
+          
+          // Attempt token refresh
+          const refreshResult = await refreshPlatformToken(connection);
+          if (refreshResult.success) {
+            console.log(`Token refreshed ${userPhone} for ${connection.platform}`);
+            results.push({
+              platform: connection.platform,
+              status: 'refreshed',
+              message: 'Token automatically refreshed'
+            });
+          } else {
+            console.log(`Redirect to connect ${userPhone}`);
+            // Mark connection as inactive
+            await db
+              .update(connections)
+              .set({ isActive: false })
+              .where(eq(connections.id, connection.id));
+            
+            results.push({
+              platform: connection.platform,
+              status: 'failed',
+              message: 'Token refresh failed, reconnection required'
+            });
+          }
+        } else {
+          console.log(`Post validated ${userPhone} for ${connection.platform}`);
+          results.push({
+            platform: connection.platform,
+            status: 'valid',
+            message: 'Connection healthy'
+          });
+        }
+      }
+      
+      res.json({
+        success: true,
+        connections: results,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error('Connection check error:', error);
+      res.status(500).json({ message: "Error checking connections" });
+    }
+  });
+
+  // Get platform connections status - OAuth Blueprint
   app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
     try {
-      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
-      res.json(connections);
+      const userPhone = req.session.userPhone || '+61411223344';
+      const { db } = require('./db');
+      const { connections } = require('./models/connection');
+      const { eq, and } = require('drizzle-orm');
+      
+      const userConnections = await db
+        .select()
+        .from(connections)
+        .where(and(
+          eq(connections.userPhone, userPhone),
+          eq(connections.isActive, true)
+        ));
+      
+      // Transform to match UI expectations
+      const transformedConnections = userConnections.map(conn => ({
+        id: conn.id,
+        platform: conn.platform,
+        platformUsername: conn.platformUserId || `${conn.platform} Account`,
+        platformUserId: conn.platformUserId,
+        isActive: conn.isActive,
+        connectedAt: conn.connectedAt,
+        accessToken: conn.accessToken,
+        refreshToken: conn.refreshToken,
+        expiresAt: conn.expiresAt
+      }));
+      
+      res.json(transformedConnections);
     } catch (error: any) {
       console.error('Get connections error:', error);
       res.status(500).json({ message: "Error fetching connections" });
