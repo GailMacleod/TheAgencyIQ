@@ -1,0 +1,13 @@
+open server/index.ts and create server/utils/responseHandler.ts, fix OAuth and platform connections: 1) In server/index.ts, redefine /api/oauth to use node-fetch for platform API calls (Facebook: https://graph.facebook.com/oauth/access_token, LinkedIn: https://www.linkedin.com/oauth/v2/accessToken, X/Twitter: https://api.twitter.com/oauth2/token, Instagram: https://graph.facebook.com/oauth/access_token, YouTube: https://oauth2.googleapis.com/token) with credentials from .env, store tokens in PostgreSQL 'connections' table, log 'OAuth token fetched [phone] [platform]'. 2) Add /api/validate-connection to check token validity before each post, logging 'Connection validated [phone] [platform] [status]' (status: valid/invalid). 3) In server/utils/responseHandler.ts, export a function to wrap all responses in JSON (e.g., { success: true, data: {...}, error: null }), catching errors and logging 'Response error [phone] [message]' with stack trace. 4) Apply responseHandler to all /api/* routes in server/index.ts. Commit with message 'revise-oauth-blueprint' without deploying. Run locally (NODE_ENV=production tsx server/index.ts), access https://app.theagencyiq.ai, navigate to /schedule, verify sign-in and connections work, check for no 500 or doctype errors, and review logs at 11:00 AM JST on Saturday, June 21, 2025. Report outcome (e.g., sign-in successful, connections stable, no errors, logs present) and issues, including full console output."
+
+Instructions:
+
+Open server/index.ts, redefine /api/oauth with node-fetch and token storage.
+Add /api/validate-connection with pre-publish checks.
+Create server/utils/responseHandler.ts with JSON response wrapper.
+Apply responseHandler to /api/* routes in server/index.ts.
+Save all files.
+Commit with git add -A && git commit -m "revise-oauth-blueprint" (do not deploy).
+Run locally with NODE_ENV=production tsx server/index.ts.
+Access https://app.theagencyiq.ai, test sign-in and /schedule.
+At 11:00 AM JST on Saturday, June 21, 2025, review console logs.

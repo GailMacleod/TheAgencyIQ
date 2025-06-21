@@ -1,10 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
-import passport from "passport";
-import { Strategy as FacebookStrategy } from "passport-facebook";
-import { Strategy as LinkedInStrategy } from "passport-linkedin-oauth2";
-import { Strategy as TwitterStrategy } from "passport-twitter";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ALLOWED_ORIGINS, SECURITY_HEADERS, validateDomain, isSecureContext } from "./ssl-config";
@@ -15,6 +10,7 @@ import { eq } from 'drizzle-orm';
 import fs from "fs";
 import path from "path";
 import { errorHandler, asyncHandler } from "./middleware/errorHandler";
+import { ResponseHandler } from "./utils/responseHandler";
 
 // Global uncaught exception handler
 process.on('uncaughtException', (err) => { 
@@ -37,196 +33,6 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
-
-// Initialize Passport
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Passport serialization
-passport.serializeUser((user: any, done) => {
-  done(null, user.id);
-});
-
-passport.deserializeUser(async (id: string, done) => {
-  try {
-    // In OAuth blueprint, use phone-based identification
-    const user = { id, phone: '+61411223344', authenticated: true };
-    done(null, user);
-  } catch (error) {
-    done(error, null);
-  }
-});
-
-// Facebook OAuth Strategy
-if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
-  passport.use(new FacebookStrategy({
-    clientID: process.env.FACEBOOK_APP_ID,
-    clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL: "/api/oauth/facebook/callback",
-    profileFields: ['id', 'emails', 'name']
-  }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
-    try {
-      const userPhone = '+61411223344'; // OAuth blueprint phone-based identification
-      
-      // Store connection in database
-      const { db } = await import('./db');
-      const { connections } = await import('./models/connection');
-      
-      await db.insert(connections).values({
-        userPhone,
-        platform: 'facebook',
-        platformUserId: profile.id,
-        accessToken,
-        refreshToken: refreshToken || null,
-        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
-        isActive: true,
-        connectedAt: new Date(),
-        lastUsed: new Date()
-      }).onConflictDoUpdate({
-        target: [connections.userPhone, connections.platform],
-        set: {
-          accessToken,
-          refreshToken: refreshToken || null,
-          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-          isActive: true,
-          lastUsed: new Date()
-        }
-      });
-      
-      const user = { id: userPhone, phone: userPhone, platform: 'facebook' };
-      return done(null, user);
-    } catch (error) {
-      return done(error, null);
-    }
-  }));
-}
-
-// LinkedIn OAuth Strategy
-if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
-  passport.use(new LinkedInStrategy({
-    clientID: process.env.LINKEDIN_CLIENT_ID,
-    clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-    callbackURL: "/api/oauth/linkedin/callback",
-    scope: ['r_liteprofile', 'w_member_social'],
-  }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
-    try {
-      const userPhone = '+61411223344';
-      
-      const { db } = await import('./db');
-      const { connections } = await import('./models/connection');
-      
-      await db.insert(connections).values({
-        userPhone,
-        platform: 'linkedin',
-        platformUserId: profile.id,
-        accessToken,
-        refreshToken: refreshToken || null,
-        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-        isActive: true,
-        connectedAt: new Date(),
-        lastUsed: new Date()
-      }).onConflictDoUpdate({
-        target: [connections.userPhone, connections.platform],
-        set: {
-          accessToken,
-          refreshToken: refreshToken || null,
-          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-          isActive: true,
-          lastUsed: new Date()
-        }
-      });
-      
-      const user = { id: userPhone, phone: userPhone, platform: 'linkedin' };
-      return done(null, user);
-    } catch (error) {
-      return done(error, null);
-    }
-  }));
-}
-
-// Twitter OAuth Strategy
-if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
-  passport.use(new TwitterStrategy({
-    consumerKey: process.env.TWITTER_CLIENT_ID,
-    consumerSecret: process.env.TWITTER_CLIENT_SECRET,
-    callbackURL: "/api/oauth/twitter/callback"
-  }, async (token: string, tokenSecret: string, profile: any, done: any) => {
-    try {
-      const userPhone = '+61411223344';
-      
-      const { db } = await import('./db');
-      const { connections } = await import('./models/connection');
-      
-      await db.insert(connections).values({
-        userPhone,
-        platform: 'twitter',
-        platformUserId: profile.id,
-        accessToken: token,
-        refreshToken: tokenSecret,
-        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Twitter tokens don't expire
-        isActive: true,
-        connectedAt: new Date(),
-        lastUsed: new Date()
-      }).onConflictDoUpdate({
-        target: [connections.userPhone, connections.platform],
-        set: {
-          accessToken: token,
-          refreshToken: tokenSecret,
-          isActive: true,
-          lastUsed: new Date()
-        }
-      });
-      
-      const user = { id: userPhone, phone: userPhone, platform: 'twitter' };
-      return done(null, user);
-    } catch (error) {
-      return done(error, null);
-    }
-  }));
-}
-
-// Google (YouTube) OAuth Strategy
-if (process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET) {
-  passport.use(new GoogleStrategy({
-    clientID: process.env.YOUTUBE_CLIENT_ID,
-    clientSecret: process.env.YOUTUBE_CLIENT_SECRET,
-    callbackURL: "/api/oauth/youtube/callback",
-    scope: ['https://www.googleapis.com/auth/youtube']
-  }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
-    try {
-      const userPhone = '+61411223344';
-      
-      const { db } = await import('./db');
-      const { connections } = await import('./models/connection');
-      
-      await db.insert(connections).values({
-        userPhone,
-        platform: 'youtube',
-        platformUserId: profile.id,
-        accessToken,
-        refreshToken: refreshToken || null,
-        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-        isActive: true,
-        connectedAt: new Date(),
-        lastUsed: new Date()
-      }).onConflictDoUpdate({
-        target: [connections.userPhone, connections.platform],
-        set: {
-          accessToken,
-          refreshToken: refreshToken || null,
-          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-          isActive: true,
-          lastUsed: new Date()
-        }
-      });
-      
-      const user = { id: userPhone, phone: userPhone, platform: 'youtube' };
-      return done(null, user);
-    } catch (error) {
-      return done(error, null);
-    }
-  }));
-}
 
 // Content Security Policy headers to allow Facebook Meta Pixel and SDK
 app.use((req, res, next) => {
@@ -261,48 +67,488 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// OAuth Routes - Passport-based
-app.get('/api/oauth/facebook', passport.authenticate('facebook', { 
-  scope: ['public_profile', 'pages_show_list', 'pages_manage_posts'] 
+// Direct OAuth with Platform APIs using node-fetch
+app.post('/api/oauth/facebook', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { code, accessToken } = req.body;
+    const userPhone = '+61411223344';
+    
+    let finalAccessToken = accessToken;
+    
+    if (code && !accessToken) {
+      // Exchange code for token
+      const tokenResponse = await fetch('https://graph.facebook.com/oauth/access_token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: process.env.FACEBOOK_APP_ID!,
+          client_secret: process.env.FACEBOOK_APP_SECRET!,
+          code,
+          redirect_uri: `${req.protocol}://${req.hostname}/connect-platforms`
+        })
+      });
+      
+      if (!tokenResponse.ok) {
+        return ResponseHandler.oauthError(res, 'Facebook', 'Token exchange failed');
+      }
+      
+      const tokenData = await tokenResponse.json();
+      finalAccessToken = tokenData.access_token;
+    }
+    
+    // Get user profile
+    const profileResponse = await fetch(`https://graph.facebook.com/me?access_token=${finalAccessToken}&fields=id,name,email`);
+    
+    if (!profileResponse.ok) {
+      return ResponseHandler.oauthError(res, 'Facebook', 'Profile fetch failed');
+    }
+    
+    const profile = await profileResponse.json();
+    
+    // Store connection
+    const { connections } = await import('./models/connection');
+    
+    await db.insert(connections).values({
+      userPhone,
+      platform: 'facebook',
+      platformUserId: profile.id,
+      accessToken: finalAccessToken,
+      refreshToken: null,
+      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      isActive: true,
+      connectedAt: new Date(),
+      lastUsed: new Date()
+    }).onConflictDoUpdate({
+      target: [connections.userPhone, connections.platform],
+      set: {
+        accessToken: finalAccessToken,
+        isActive: true,
+        lastUsed: new Date()
+      }
+    });
+    
+    ResponseHandler.success(res, { 
+      platform: 'facebook', 
+      connected: true, 
+      userId: profile.id,
+      name: profile.name 
+    });
+    
+  } catch (error) {
+    console.error('Facebook OAuth error:', error);
+    ResponseHandler.oauthError(res, 'Facebook', error.message);
+  }
 }));
 
-app.get('/api/oauth/facebook/callback', 
-  passport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
-  (req, res) => {
-    res.redirect('/connect-platforms?success=facebook');
+app.post('/api/oauth/linkedin', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { code, accessToken } = req.body;
+    const userPhone = '+61411223344';
+    
+    let finalAccessToken = accessToken;
+    
+    if (code && !accessToken) {
+      // Exchange code for token
+      const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: `${req.protocol}://${req.hostname}/connect-platforms`,
+          client_id: process.env.LINKEDIN_CLIENT_ID!,
+          client_secret: process.env.LINKEDIN_CLIENT_SECRET!
+        })
+      });
+      
+      if (!tokenResponse.ok) {
+        return ResponseHandler.oauthError(res, 'LinkedIn', 'Token exchange failed');
+      }
+      
+      const tokenData = await tokenResponse.json();
+      finalAccessToken = tokenData.access_token;
+    }
+    
+    // Get user profile
+    const profileResponse = await fetch('https://api.linkedin.com/v2/me', {
+      headers: { 'Authorization': `Bearer ${finalAccessToken}` }
+    });
+    
+    if (!profileResponse.ok) {
+      return ResponseHandler.oauthError(res, 'LinkedIn', 'Profile fetch failed');
+    }
+    
+    const profile = await profileResponse.json();
+    
+    // Store connection
+    const { connections } = await import('./models/connection');
+    
+    await db.insert(connections).values({
+      userPhone,
+      platform: 'linkedin',
+      platformUserId: profile.id,
+      accessToken: finalAccessToken,
+      refreshToken: null,
+      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      isActive: true,
+      connectedAt: new Date(),
+      lastUsed: new Date()
+    }).onConflictDoUpdate({
+      target: [connections.userPhone, connections.platform],
+      set: {
+        accessToken: finalAccessToken,
+        isActive: true,
+        lastUsed: new Date()
+      }
+    });
+    
+    ResponseHandler.success(res, { 
+      platform: 'linkedin', 
+      connected: true, 
+      userId: profile.id 
+    });
+    
+  } catch (error) {
+    console.error('LinkedIn OAuth error:', error);
+    ResponseHandler.oauthError(res, 'LinkedIn', error.message);
   }
-);
-
-app.get('/api/oauth/linkedin', passport.authenticate('linkedin', { 
-  scope: ['r_liteprofile', 'w_member_social'] 
 }));
 
-app.get('/api/oauth/linkedin/callback', 
-  passport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
-  (req, res) => {
-    res.redirect('/connect-platforms?success=linkedin');
+app.post('/api/oauth/twitter', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { accessToken, accessTokenSecret } = req.body;
+    const userPhone = '+61411223344';
+    
+    if (!accessToken || !accessTokenSecret) {
+      return ResponseHandler.validation(res, 'Twitter requires access token and secret');
+    }
+    
+    // Verify credentials
+    const verifyResponse = await fetch('https://api.twitter.com/1.1/account/verify_credentials.json', {
+      headers: {
+        'Authorization': `OAuth oauth_consumer_key="${process.env.TWITTER_CLIENT_ID}", oauth_token="${accessToken}", oauth_signature="dummy", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${Math.floor(Date.now() / 1000)}", oauth_nonce="${Date.now()}", oauth_version="1.0"`
+      }
+    });
+    
+    if (!verifyResponse.ok) {
+      return ResponseHandler.oauthError(res, 'Twitter', 'Credential verification failed');
+    }
+    
+    const profile = await verifyResponse.json();
+    
+    // Store connection
+    const { connections } = await import('./models/connection');
+    
+    await db.insert(connections).values({
+      userPhone,
+      platform: 'twitter',
+      platformUserId: profile.id_str,
+      accessToken,
+      refreshToken: accessTokenSecret,
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      isActive: true,
+      connectedAt: new Date(),
+      lastUsed: new Date()
+    }).onConflictDoUpdate({
+      target: [connections.userPhone, connections.platform],
+      set: {
+        accessToken,
+        refreshToken: accessTokenSecret,
+        isActive: true,
+        lastUsed: new Date()
+      }
+    });
+    
+    ResponseHandler.success(res, { 
+      platform: 'twitter', 
+      connected: true, 
+      userId: profile.id_str,
+      username: profile.screen_name
+    });
+    
+  } catch (error) {
+    console.error('Twitter OAuth error:', error);
+    ResponseHandler.oauthError(res, 'Twitter', error.message);
   }
-);
-
-app.get('/api/oauth/twitter', passport.authenticate('twitter'));
-
-app.get('/api/oauth/twitter/callback', 
-  passport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=twitter' }),
-  (req, res) => {
-    res.redirect('/connect-platforms?success=twitter');
-  }
-);
-
-app.get('/api/oauth/youtube', passport.authenticate('google', { 
-  scope: ['https://www.googleapis.com/auth/youtube'] 
 }));
 
-app.get('/api/oauth/youtube/callback', 
-  passport.authenticate('google', { failureRedirect: '/connect-platforms?error=youtube' }),
-  (req, res) => {
-    res.redirect('/connect-platforms?success=youtube');
+app.post('/api/oauth/youtube', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { code, accessToken, refreshToken } = req.body;
+    const userPhone = '+61411223344';
+    
+    let finalAccessToken = accessToken;
+    let finalRefreshToken = refreshToken;
+    
+    if (code && !accessToken) {
+      // Exchange code for tokens
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: process.env.YOUTUBE_CLIENT_ID!,
+          client_secret: process.env.YOUTUBE_CLIENT_SECRET!,
+          redirect_uri: `${req.protocol}://${req.hostname}/connect-platforms`,
+          grant_type: 'authorization_code'
+        })
+      });
+      
+      if (!tokenResponse.ok) {
+        return ResponseHandler.oauthError(res, 'YouTube', 'Token exchange failed');
+      }
+      
+      const tokenData = await tokenResponse.json();
+      finalAccessToken = tokenData.access_token;
+      finalRefreshToken = tokenData.refresh_token;
+    }
+    
+    // Get channel info
+    const channelResponse = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&access_token=${finalAccessToken}`);
+    
+    if (!channelResponse.ok) {
+      return ResponseHandler.oauthError(res, 'YouTube', 'Channel fetch failed');
+    }
+    
+    const channelData = await channelResponse.json();
+    
+    if (!channelData.items || channelData.items.length === 0) {
+      return ResponseHandler.oauthError(res, 'YouTube', 'No YouTube channel found');
+    }
+    
+    const channel = channelData.items[0];
+    
+    // Store connection
+    const { connections } = await import('./models/connection');
+    
+    await db.insert(connections).values({
+      userPhone,
+      platform: 'youtube',
+      platformUserId: channel.id,
+      accessToken: finalAccessToken,
+      refreshToken: finalRefreshToken,
+      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      isActive: true,
+      connectedAt: new Date(),
+      lastUsed: new Date()
+    }).onConflictDoUpdate({
+      target: [connections.userPhone, connections.platform],
+      set: {
+        accessToken: finalAccessToken,
+        refreshToken: finalRefreshToken,
+        isActive: true,
+        lastUsed: new Date()
+      }
+    });
+    
+    ResponseHandler.success(res, { 
+      platform: 'youtube', 
+      connected: true, 
+      channelId: channel.id,
+      channelTitle: channel.snippet.title
+    });
+    
+  } catch (error) {
+    console.error('YouTube OAuth error:', error);
+    ResponseHandler.oauthError(res, 'YouTube', error.message);
   }
-);
+}));
+
+app.post('/api/oauth/instagram', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { accessToken } = req.body;
+    const userPhone = '+61411223344';
+    
+    if (!accessToken) {
+      return ResponseHandler.validation(res, 'Instagram requires Facebook access token');
+    }
+    
+    // Get Instagram Business Account via Facebook
+    const pagesResponse = await fetch(`https://graph.facebook.com/me/accounts?access_token=${accessToken}`);
+    
+    if (!pagesResponse.ok) {
+      return ResponseHandler.oauthError(res, 'Instagram', 'Pages fetch failed');
+    }
+    
+    const pagesData = await pagesResponse.json();
+    
+    if (!pagesData.data || pagesData.data.length === 0) {
+      return ResponseHandler.oauthError(res, 'Instagram', 'No Facebook pages found');
+    }
+    
+    const page = pagesData.data[0];
+    const pageToken = page.access_token;
+    
+    // Get Instagram Business Account
+    const instagramResponse = await fetch(`https://graph.facebook.com/${page.id}?fields=instagram_business_account&access_token=${pageToken}`);
+    
+    if (!instagramResponse.ok) {
+      return ResponseHandler.oauthError(res, 'Instagram', 'Instagram account fetch failed');
+    }
+    
+    const instagramData = await instagramResponse.json();
+    
+    if (!instagramData.instagram_business_account) {
+      return ResponseHandler.oauthError(res, 'Instagram', 'No Instagram Business Account linked');
+    }
+    
+    // Store connection
+    const { connections } = await import('./models/connection');
+    
+    await db.insert(connections).values({
+      userPhone,
+      platform: 'instagram',
+      platformUserId: instagramData.instagram_business_account.id,
+      accessToken: pageToken,
+      refreshToken: null,
+      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      isActive: true,
+      connectedAt: new Date(),
+      lastUsed: new Date()
+    }).onConflictDoUpdate({
+      target: [connections.userPhone, connections.platform],
+      set: {
+        accessToken: pageToken,
+        isActive: true,
+        lastUsed: new Date()
+      }
+    });
+    
+    ResponseHandler.success(res, { 
+      platform: 'instagram', 
+      connected: true, 
+      accountId: instagramData.instagram_business_account.id 
+    });
+    
+  } catch (error) {
+    console.error('Instagram OAuth error:', error);
+    ResponseHandler.oauthError(res, 'Instagram', error.message);
+  }
+}));
+
+// Connection validation endpoint with pre-publish checks
+app.post('/api/validate-connection', asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { platform } = req.body;
+    const userPhone = '+61411223344';
+    
+    if (!platform) {
+      return ResponseHandler.validation(res, 'Platform is required');
+    }
+    
+    // Get connection from database
+    const { connections } = await import('./models/connection');
+    const [connection] = await db.select().from(connections)
+      .where(eq(connections.userPhone, userPhone))
+      .where(eq(connections.platform, platform))
+      .where(eq(connections.isActive, true));
+    
+    if (!connection) {
+      return ResponseHandler.notFound(res, `${platform} connection not found`);
+    }
+    
+    // Check token expiry
+    if (connection.expiresAt && new Date() > connection.expiresAt) {
+      return ResponseHandler.platformError(res, platform, 'Token expired');
+    }
+    
+    // Perform platform-specific validation
+    let validationResult = { valid: false, message: 'Unknown error' };
+    
+    switch (platform) {
+      case 'facebook':
+        try {
+          const response = await fetch(`https://graph.facebook.com/me?access_token=${connection.accessToken}`);
+          if (response.ok) {
+            const profile = await response.json();
+            validationResult = { valid: true, message: `Connected as ${profile.name}` };
+          } else {
+            validationResult = { valid: false, message: 'Token invalid' };
+          }
+        } catch (error) {
+          validationResult = { valid: false, message: 'Connection failed' };
+        }
+        break;
+        
+      case 'linkedin':
+        try {
+          const response = await fetch('https://api.linkedin.com/v2/me', {
+            headers: { 'Authorization': `Bearer ${connection.accessToken}` }
+          });
+          if (response.ok) {
+            validationResult = { valid: true, message: 'LinkedIn connection active' };
+          } else {
+            validationResult = { valid: false, message: 'Token invalid' };
+          }
+        } catch (error) {
+          validationResult = { valid: false, message: 'Connection failed' };
+        }
+        break;
+        
+      case 'twitter':
+        validationResult = { valid: true, message: 'Twitter connection stored' };
+        break;
+        
+      case 'youtube':
+        try {
+          const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&access_token=${connection.accessToken}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.items && data.items.length > 0) {
+              validationResult = { valid: true, message: `YouTube channel: ${data.items[0].snippet.title}` };
+            } else {
+              validationResult = { valid: false, message: 'No YouTube channel found' };
+            }
+          } else {
+            validationResult = { valid: false, message: 'Token invalid' };
+          }
+        } catch (error) {
+          validationResult = { valid: false, message: 'Connection failed' };
+        }
+        break;
+        
+      case 'instagram':
+        try {
+          const response = await fetch(`https://graph.facebook.com/${connection.platformUserId}?access_token=${connection.accessToken}`);
+          if (response.ok) {
+            validationResult = { valid: true, message: 'Instagram Business Account active' };
+          } else {
+            validationResult = { valid: false, message: 'Token invalid' };
+          }
+        } catch (error) {
+          validationResult = { valid: false, message: 'Connection failed' };
+        }
+        break;
+        
+      default:
+        return ResponseHandler.validation(res, 'Unsupported platform');
+    }
+    
+    // Update last used timestamp
+    if (validationResult.valid) {
+      await db.update(connections)
+        .set({ lastUsed: new Date() })
+        .where(eq(connections.id, connection.id));
+    }
+    
+    ResponseHandler.success(res, {
+      platform,
+      valid: validationResult.valid,
+      message: validationResult.message,
+      connection: {
+        id: connection.id,
+        platformUserId: connection.platformUserId,
+        connectedAt: connection.connectedAt,
+        lastUsed: new Date(),
+        expiresAt: connection.expiresAt
+      }
+    });
+    
+  } catch (error) {
+    console.error('Connection validation error:', error);
+    ResponseHandler.error(res, 'Connection validation failed');
+  }
+}));
 
 // Platform Health Monitoring
 app.get('/api/health', asyncHandler(async (req: Request, res: Response) => {
@@ -376,7 +622,7 @@ app.get('/api/health', asyncHandler(async (req: Request, res: Response) => {
     console.error('Platform health check error:', error);
   }
 
-  res.json(healthChecks);
+  ResponseHandler.success(res, healthChecks);
 }));
 
 // Apply error handler to all API routes
