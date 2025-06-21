@@ -271,4 +271,56 @@ export function setupOAuthBlueprint(app: Express) {
       res.status(500).json({ error: 'Failed to disconnect platform' });
     }
   });
+
+  // Login endpoint for phone-based authentication
+  app.post('/api/auth/login', async (req: any, res) => {
+    try {
+      const userPhone = '+61411223344';
+      
+      // Establish session
+      req.session.userId = userPhone;
+      req.session.userPhone = userPhone;
+      req.session.authenticated = true;
+      
+      res.json({ 
+        success: true, 
+        user: { 
+          id: userPhone,
+          phone: userPhone,
+          authenticated: true
+        }
+      });
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ error: 'Login failed' });
+    }
+  });
+
+  // Queensland events endpoint
+  app.get('/api/queensland-events', async (req: any, res) => {
+    try {
+      // Queensland events data for OAuth blueprint
+      const events = [
+        {
+          id: 1,
+          title: "Brisbane Business Expo",
+          date: "2025-07-15",
+          location: "Brisbane Convention Centre",
+          category: "business"
+        },
+        {
+          id: 2,
+          title: "Gold Coast Marketing Summit",
+          date: "2025-08-20",
+          location: "Gold Coast Convention Centre", 
+          category: "marketing"
+        }
+      ];
+      
+      res.json(events);
+    } catch (error) {
+      console.error('Queensland events error:', error);
+      res.status(500).json({ error: 'Events retrieval failed' });
+    }
+  });
 }

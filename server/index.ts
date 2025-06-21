@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ALLOWED_ORIGINS, SECURITY_HEADERS, validateDomain, isSecureContext } from "./ssl-config";
@@ -19,6 +20,17 @@ const app = express();
 
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
+
+// Session configuration for OAuth blueprint backend
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'oauth-blueprint-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Set to true in production with HTTPS
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 
 // Content Security Policy headers to allow Facebook Meta Pixel and SDK
 app.use((req, res, next) => {
