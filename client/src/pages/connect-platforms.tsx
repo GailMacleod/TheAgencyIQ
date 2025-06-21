@@ -189,20 +189,42 @@ export default function ConnectPlatforms() {
         credentials: 'include',
         body: JSON.stringify({ platform })
       });
+      if (!response.ok) {
+        throw new Error('Failed to disconnect platform');
+      }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-      toast({
-        title: "Platform Disconnected",
-        description: "Platform has been successfully disconnected"
+    onMutate: async (platform: string) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/platform-connections'] });
+      
+      // Snapshot the previous value
+      const previousConnections = queryClient.getQueryData(['/api/platform-connections']);
+      
+      // Optimistically update to remove the connection
+      queryClient.setQueryData(['/api/platform-connections'], (old: PlatformConnection[] = []) => {
+        return old.filter(conn => conn.platform !== platform);
       });
+      
+      return { previousConnections };
     },
-    onError: () => {
+    onError: (err, platform, context) => {
+      // If the mutation fails, use the context to roll back
+      if (context?.previousConnections) {
+        queryClient.setQueryData(['/api/platform-connections'], context.previousConnections);
+      }
       toast({
         title: "Disconnect Failed", 
         description: "Failed to disconnect platform. Please try again.",
         variant: "destructive"
+      });
+    },
+    onSuccess: (data, platform) => {
+      // Refetch to ensure data consistency
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+      toast({
+        title: "Platform Disconnected",
+        description: `${platform} has been successfully disconnected`
       });
     }
   });
