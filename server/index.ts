@@ -6,7 +6,7 @@ import { ALLOWED_ORIGINS, SECURITY_HEADERS, validateDomain, isSecureContext } fr
 import { storage } from './storage';
 import { db } from './db';
 import { postLedger, postSchedule, posts } from '../shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import fs from "fs";
 import path from "path";
 import { errorHandler, asyncHandler } from "./middleware/errorHandler";
@@ -439,9 +439,13 @@ app.post('/api/validate-connection', asyncHandler(async (req: Request, res: Resp
     // Get connection from database
     const { connections } = await import('./models/connection');
     const [connection] = await db.select().from(connections)
-      .where(eq(connections.userPhone, userPhone))
-      .where(eq(connections.platform, platform))
-      .where(eq(connections.isActive, true));
+      .where(
+        and(
+          eq(connections.userPhone, userPhone),
+          eq(connections.platform, platform),
+          eq(connections.isActive, true)
+        )
+      );
     
     if (!connection) {
       return ResponseHandler.notFound(res, `${platform} connection not found`);
