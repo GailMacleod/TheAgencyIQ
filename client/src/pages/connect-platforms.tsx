@@ -116,6 +116,32 @@ export default function ConnectPlatforms() {
         return;
       }
       
+      // Direct connection for Facebook to avoid OAuth redirect issues
+      if (platform === 'facebook') {
+        const response = await fetch('/api/auth/facebook', {
+          method: 'GET',
+          credentials: 'include'
+        });
+        
+        if (response.redirected) {
+          // Handle the redirect result
+          window.location.href = response.url;
+          return;
+        }
+        
+        const result = await response.text();
+        if (result.includes('connected=facebook')) {
+          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          toast({
+            title: "Facebook Connected",
+            description: "Facebook connection established successfully"
+          });
+        }
+        
+        setConnecting(prev => ({ ...prev, [platform]: false }));
+        return;
+      }
+
       // Direct connection for LinkedIn to avoid OAuth issues
       if (platform === 'linkedin') {
         const response = await fetch('/api/auth/linkedin', {
@@ -142,9 +168,8 @@ export default function ConnectPlatforms() {
         return;
       }
       
-      // Map platform names to OAuth routes
+      // Map platform names to OAuth routes (Facebook uses direct connection above)
       const oauthRoutes: { [key: string]: string } = {
-        'facebook': '/auth/facebook',
         'x': '/auth/twitter',
         'youtube': '/auth/youtube',
         'instagram': '/auth/instagram'
