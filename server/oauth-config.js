@@ -25,10 +25,15 @@ passport.deserializeUser(async (id, done) => {
 
 // Facebook Strategy - Production OAuth with publishing permissions
 if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+  // Get the correct domain for callback URL
+  const domains = process.env.REPLIT_DOMAINS?.split(',') || ['localhost:5000'];
+  const domain = domains[0];
+  const callbackURL = `https://${domain}/auth/facebook/callback`;
+  
   passport.use(new FacebookStrategy({
     clientID: process.env.FACEBOOK_APP_ID,
     clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL: "/auth/facebook/callback",
+    callbackURL: callbackURL,
     profileFields: ['id', 'emails', 'name'],
     scope: ['public_profile', 'pages_show_list', 'pages_manage_posts', 'pages_read_engagement']
   },
@@ -76,10 +81,14 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
 
 // LinkedIn Strategy
 if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
+  const domains = process.env.REPLIT_DOMAINS?.split(',') || ['localhost:5000'];
+  const domain = domains[0];
+  const linkedinCallbackURL = `https://${domain}/auth/linkedin/callback`;
+  
   passport.use(new LinkedInStrategy({
     clientID: process.env.LINKEDIN_CLIENT_ID,
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-    callbackURL: "/auth/linkedin/callback",
+    callbackURL: linkedinCallbackURL,
     scope: ['profile', 'email', 'w_member_social'],
     state: true
   },
@@ -111,10 +120,14 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
 // Twitter Strategy - Fixed authentication
 if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
   try {
+    const domains = process.env.REPLIT_DOMAINS?.split(',') || ['localhost:5000'];
+    const domain = domains[0];
+    const twitterCallbackURL = `https://${domain}/auth/twitter/callback`;
+    
     passport.use(new TwitterStrategy({
       consumerKey: process.env.TWITTER_CLIENT_ID,
       consumerSecret: process.env.TWITTER_CLIENT_SECRET,
-      callbackURL: "/auth/twitter/callback",
+      callbackURL: twitterCallbackURL,
       includeEmail: false, // Disable email to avoid permission issues
       userProfileURL: "https://api.twitter.com/1.1/account/verify_credentials.json?include_email=false&skip_status=true"
     },
@@ -149,10 +162,14 @@ if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
 
 // YouTube (Google) Strategy
 if (process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET) {
+  const domains = process.env.REPLIT_DOMAINS?.split(',') || ['localhost:5000'];
+  const domain = domains[0];
+  const youtubeCallbackURL = `https://${domain}/auth/youtube/callback`;
+  
   passport.use(new GoogleStrategy({
     clientID: process.env.YOUTUBE_CLIENT_ID,
     clientSecret: process.env.YOUTUBE_CLIENT_SECRET,
-    callbackURL: "/auth/youtube/callback"
+    callbackURL: youtubeCallbackURL
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
