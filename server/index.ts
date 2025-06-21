@@ -1,5 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import passport from "passport";
+import { Strategy as FacebookStrategy } from "passport-facebook";
+import { Strategy as LinkedInStrategy } from "passport-linkedin-oauth2";
+import { Strategy as TwitterStrategy } from "passport-twitter";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ALLOWED_ORIGINS, SECURITY_HEADERS, validateDomain, isSecureContext } from "./ssl-config";
@@ -9,6 +14,7 @@ import { postLedger, postSchedule, posts } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 import fs from "fs";
 import path from "path";
+import { errorHandler, asyncHandler } from "./middleware/errorHandler";
 
 // Global uncaught exception handler
 process.on('uncaughtException', (err) => { 
@@ -31,6 +37,196 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Passport serialization
+passport.serializeUser((user: any, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id: string, done) => {
+  try {
+    // In OAuth blueprint, use phone-based identification
+    const user = { id, phone: '+61411223344', authenticated: true };
+    done(null, user);
+  } catch (error) {
+    done(error, null);
+  }
+});
+
+// Facebook OAuth Strategy
+if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+  passport.use(new FacebookStrategy({
+    clientID: process.env.FACEBOOK_APP_ID,
+    clientSecret: process.env.FACEBOOK_APP_SECRET,
+    callbackURL: "/api/oauth/facebook/callback",
+    profileFields: ['id', 'emails', 'name']
+  }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+    try {
+      const userPhone = '+61411223344'; // OAuth blueprint phone-based identification
+      
+      // Store connection in database
+      const { db } = await import('./db');
+      const { connections } = await import('./models/connection');
+      
+      await db.insert(connections).values({
+        userPhone,
+        platform: 'facebook',
+        platformUserId: profile.id,
+        accessToken,
+        refreshToken: refreshToken || null,
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
+        isActive: true,
+        connectedAt: new Date(),
+        lastUsed: new Date()
+      }).onConflictDoUpdate({
+        target: [connections.userPhone, connections.platform],
+        set: {
+          accessToken,
+          refreshToken: refreshToken || null,
+          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          isActive: true,
+          lastUsed: new Date()
+        }
+      });
+      
+      const user = { id: userPhone, phone: userPhone, platform: 'facebook' };
+      return done(null, user);
+    } catch (error) {
+      return done(error, null);
+    }
+  }));
+}
+
+// LinkedIn OAuth Strategy
+if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
+  passport.use(new LinkedInStrategy({
+    clientID: process.env.LINKEDIN_CLIENT_ID,
+    clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+    callbackURL: "/api/oauth/linkedin/callback",
+    scope: ['r_liteprofile', 'w_member_social'],
+  }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+    try {
+      const userPhone = '+61411223344';
+      
+      const { db } = await import('./db');
+      const { connections } = await import('./models/connection');
+      
+      await db.insert(connections).values({
+        userPhone,
+        platform: 'linkedin',
+        platformUserId: profile.id,
+        accessToken,
+        refreshToken: refreshToken || null,
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+        isActive: true,
+        connectedAt: new Date(),
+        lastUsed: new Date()
+      }).onConflictDoUpdate({
+        target: [connections.userPhone, connections.platform],
+        set: {
+          accessToken,
+          refreshToken: refreshToken || null,
+          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          isActive: true,
+          lastUsed: new Date()
+        }
+      });
+      
+      const user = { id: userPhone, phone: userPhone, platform: 'linkedin' };
+      return done(null, user);
+    } catch (error) {
+      return done(error, null);
+    }
+  }));
+}
+
+// Twitter OAuth Strategy
+if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
+  passport.use(new TwitterStrategy({
+    consumerKey: process.env.TWITTER_CLIENT_ID,
+    consumerSecret: process.env.TWITTER_CLIENT_SECRET,
+    callbackURL: "/api/oauth/twitter/callback"
+  }, async (token: string, tokenSecret: string, profile: any, done: any) => {
+    try {
+      const userPhone = '+61411223344';
+      
+      const { db } = await import('./db');
+      const { connections } = await import('./models/connection');
+      
+      await db.insert(connections).values({
+        userPhone,
+        platform: 'twitter',
+        platformUserId: profile.id,
+        accessToken: token,
+        refreshToken: tokenSecret,
+        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Twitter tokens don't expire
+        isActive: true,
+        connectedAt: new Date(),
+        lastUsed: new Date()
+      }).onConflictDoUpdate({
+        target: [connections.userPhone, connections.platform],
+        set: {
+          accessToken: token,
+          refreshToken: tokenSecret,
+          isActive: true,
+          lastUsed: new Date()
+        }
+      });
+      
+      const user = { id: userPhone, phone: userPhone, platform: 'twitter' };
+      return done(null, user);
+    } catch (error) {
+      return done(error, null);
+    }
+  }));
+}
+
+// Google (YouTube) OAuth Strategy
+if (process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET) {
+  passport.use(new GoogleStrategy({
+    clientID: process.env.YOUTUBE_CLIENT_ID,
+    clientSecret: process.env.YOUTUBE_CLIENT_SECRET,
+    callbackURL: "/api/oauth/youtube/callback",
+    scope: ['https://www.googleapis.com/auth/youtube']
+  }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+    try {
+      const userPhone = '+61411223344';
+      
+      const { db } = await import('./db');
+      const { connections } = await import('./models/connection');
+      
+      await db.insert(connections).values({
+        userPhone,
+        platform: 'youtube',
+        platformUserId: profile.id,
+        accessToken,
+        refreshToken: refreshToken || null,
+        expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+        isActive: true,
+        connectedAt: new Date(),
+        lastUsed: new Date()
+      }).onConflictDoUpdate({
+        target: [connections.userPhone, connections.platform],
+        set: {
+          accessToken,
+          refreshToken: refreshToken || null,
+          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          isActive: true,
+          lastUsed: new Date()
+        }
+      });
+      
+      const user = { id: userPhone, phone: userPhone, platform: 'youtube' };
+      return done(null, user);
+    } catch (error) {
+      return done(error, null);
+    }
+  }));
+}
 
 // Content Security Policy headers to allow Facebook Meta Pixel and SDK
 app.use((req, res, next) => {
@@ -60,6 +256,131 @@ app.use((req, res, next) => {
   }
   next(); 
 });
+
+// Parse JSON and URL-encoded bodies
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// OAuth Routes - Passport-based
+app.get('/api/oauth/facebook', passport.authenticate('facebook', { 
+  scope: ['public_profile', 'pages_show_list', 'pages_manage_posts'] 
+}));
+
+app.get('/api/oauth/facebook/callback', 
+  passport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
+  (req, res) => {
+    res.redirect('/connect-platforms?success=facebook');
+  }
+);
+
+app.get('/api/oauth/linkedin', passport.authenticate('linkedin', { 
+  scope: ['r_liteprofile', 'w_member_social'] 
+}));
+
+app.get('/api/oauth/linkedin/callback', 
+  passport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
+  (req, res) => {
+    res.redirect('/connect-platforms?success=linkedin');
+  }
+);
+
+app.get('/api/oauth/twitter', passport.authenticate('twitter'));
+
+app.get('/api/oauth/twitter/callback', 
+  passport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=twitter' }),
+  (req, res) => {
+    res.redirect('/connect-platforms?success=twitter');
+  }
+);
+
+app.get('/api/oauth/youtube', passport.authenticate('google', { 
+  scope: ['https://www.googleapis.com/auth/youtube'] 
+}));
+
+app.get('/api/oauth/youtube/callback', 
+  passport.authenticate('google', { failureRedirect: '/connect-platforms?error=youtube' }),
+  (req, res) => {
+    res.redirect('/connect-platforms?success=youtube');
+  }
+);
+
+// Platform Health Monitoring
+app.get('/api/health', asyncHandler(async (req: Request, res: Response) => {
+  const healthChecks = {
+    server: 'healthy',
+    database: 'checking',
+    platforms: {
+      facebook: 'checking',
+      linkedin: 'checking',
+      twitter: 'checking',
+      youtube: 'checking',
+      instagram: 'checking'
+    },
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    // Database health check
+    const { db } = await import('./db');
+    await db.execute('SELECT 1');
+    healthChecks.database = 'healthy';
+  } catch (error) {
+    healthChecks.database = 'unhealthy';
+  }
+
+  // Platform health checks
+  const userPhone = '+61411223344';
+  
+  try {
+    const { db } = await import('./db');
+    const { connections } = await import('./models/connection');
+    const { eq } = await import('drizzle-orm');
+    
+    const activeConnections = await db
+      .select()
+      .from(connections)
+      .where(eq(connections.userPhone, userPhone));
+
+    for (const connection of activeConnections) {
+      if (connection.platform === 'facebook') {
+        try {
+          const response = await fetch(`https://graph.facebook.com/me?access_token=${connection.accessToken}`);
+          healthChecks.platforms.facebook = response.ok ? 'healthy' : 'unhealthy';
+        } catch {
+          healthChecks.platforms.facebook = 'unhealthy';
+        }
+      }
+      
+      if (connection.platform === 'linkedin') {
+        try {
+          const response = await fetch('https://api.linkedin.com/v2/me', {
+            headers: { 'Authorization': `Bearer ${connection.accessToken}` }
+          });
+          healthChecks.platforms.linkedin = response.ok ? 'healthy' : 'unhealthy';
+        } catch {
+          healthChecks.platforms.linkedin = 'unhealthy';
+        }
+      }
+      
+      if (connection.platform === 'youtube') {
+        try {
+          const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&access_token=${connection.accessToken}`);
+          healthChecks.platforms.youtube = response.ok ? 'healthy' : 'unhealthy';
+        } catch {
+          healthChecks.platforms.youtube = 'unhealthy';
+        }
+      }
+    }
+    
+  } catch (error) {
+    console.error('Platform health check error:', error);
+  }
+
+  res.json(healthChecks);
+}));
+
+// Apply error handler to all API routes
+app.use('/api/*', errorHandler);
 
 // Instagram connection endpoint - must be registered before API middleware
 app.post('/api/connect-instagram', async (req: any, res) => {
