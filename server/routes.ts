@@ -1814,12 +1814,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Disconnect platform
+  // Disconnect platform - OAuth Blueprint Implementation
   app.post("/api/disconnect-platform", requireAuth, async (req: any, res) => {
     try {
       const { platform } = req.body;
-      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
-      const connection = connections.find(c => c.platform === platform);
+      const userId = req.session.userId;
+      const userPhone = req.session.userPhone || '+61411223344';
+      
+      // Try OAuth blueprint connections table first (phone-based)
+      try {
+        const { db } = require('./db');
+        const { connections } = require('./models/connection');
+        const { eq, and } = require('drizzle-orm');
+        
+        const result = await db
+          .update(connections)
+          .set({ isActive: false })
+          .where(and(
+            eq(connections.userPhone, userPhone),
+            eq(connections.platform, platform)
+          ))
+          .returning();
+        
+        if (result && result.length > 0) {
+          console.log(`OAuth blueprint disconnect successful for ${platform}`);
+          return res.json({ success: true });
+        }
+      } catch (oauthError) {
+        console.log('OAuth disconnect failed, trying legacy table');
+      }
+      
+      // Fallback to old platform_connections table (user_id based)
+      const legacyConnections = await storage.getPlatformConnectionsByUser(userId);
+      const connection = legacyConnections.find(c => c.platform === platform);
       
       if (connection) {
         await storage.deletePlatformConnection(connection.id);
@@ -2353,11 +2380,49 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Get platform connections status
+  // Get platform connections status - OAuth Blueprint Implementation
   app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
     try {
-      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
-      res.json(connections);
+      const userId = req.session.userId;
+      const userPhone = req.session.userPhone || '+61411223344'; // Use session phone or default
+      
+      // Try OAuth blueprint connections table first (phone-based)
+      try {
+        const { db } = require('./db');
+        const { connections } = require('./models/connection');
+        const { eq, and } = require('drizzle-orm');
+        
+        const oauthConnections = await db
+          .select()
+          .from(connections)
+          .where(and(
+            eq(connections.userPhone, userPhone),
+            eq(connections.isActive, true)
+          ));
+        
+        if (oauthConnections && oauthConnections.length > 0) {
+          // Transform OAuth blueprint data to match UI expectations
+          const transformedConnections = oauthConnections.map(conn => ({
+            id: conn.id,
+            platform: conn.platform,
+            platformUsername: conn.platformUserId || `${conn.platform} Account`,
+            platformUserId: conn.platformUserId,
+            isActive: conn.isActive,
+            connectedAt: conn.connectedAt || new Date().toISOString(),
+            accessToken: conn.accessToken,
+            refreshToken: conn.refreshToken,
+            expiresAt: conn.expiresAt
+          }));
+          
+          return res.json(transformedConnections);
+        }
+      } catch (oauthError) {
+        console.log('OAuth connections query failed, falling back to platform_connections table');
+      }
+      
+      // Fallback to old platform_connections table (user_id based)
+      const legacyConnections = await storage.getPlatformConnectionsByUser(userId);
+      res.json(legacyConnections);
     } catch (error: any) {
       console.error('Get connections error:', error);
       res.status(500).json({ message: "Error fetching connections" });
