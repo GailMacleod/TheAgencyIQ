@@ -2299,7 +2299,7 @@ async function restoreSubscribers() {
 
         } catch (userError: any) {
           console.error(`Sync error for user ${user.phone}:`, userError);
-          syncReport.errors.push(`User ${user.phone}: ${userError?.message || 'Unknown error'}`);
+          (syncReport.errors as string[]).push(`User ${user.phone}: ${userError?.message || 'Unknown error'}`);
         }
       }
 
