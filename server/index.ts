@@ -1571,34 +1571,25 @@ app.post('/api/waterfall/approve', async (req, res) => {
   }
   (req.session as any).approvedPosts[id] = post;
   fs.writeFileSync('approved-posts.json', JSON.stringify((req.session as any).approvedPosts));
-  res.json({ id, status: post.status, platform: platform.toLowerCase(), remaining: subscription.posts - approvedCount - 1 });
+  res.json({ id, status: post.status, platform: platform.toLowerCase(), remaining: subscription.posts - Object.keys((req.session as any).approvedPosts).length });
 });
 
 const enforcePublish = async (post: any, userId: number) => {
-  // Use existing OAuth credentials with stored platform connections
-  const { storage } = await import('./storage');
-  const connections = await storage.getPlatformConnectionsByUser(userId);
-  const connection = connections.find(c => c.platform === post.platform && c.isActive);
-  
-  if (!connection || !connection.accessToken) {
-    return { success: false, message: `No ${post.platform} connection found` };
-  }
-
   const platforms = {
     facebook: { 
       url: 'https://graph.facebook.com/v20.0/me/feed', 
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `message=${encodeURIComponent(post.content)}&access_token=${connection.accessToken}`
+      body: `message=${encodeURIComponent(post.content)}&access_token=${process.env.FACEBOOK_APP_SECRET}`
     },
     linkedin: { 
       url: 'https://api.linkedin.com/v2/ugcPosts', 
       headers: { 
-        'Authorization': `Bearer ${connection.accessToken}`,
+        'Authorization': `Bearer ${process.env.LINKEDIN_CLIENT_SECRET}`,
         'Content-Type': 'application/json',
         'X-Restli-Protocol-Version': '2.0.0'
       },
       body: JSON.stringify({
-        author: `urn:li:person:${connection.platformUserId}`,
+        author: `urn:li:person:me`,
         lifecycleState: 'PUBLISHED',
         specificContent: {
           'com.linkedin.ugc.ShareContent': {
@@ -1610,14 +1601,14 @@ const enforcePublish = async (post: any, userId: number) => {
       })
     },
     instagram: { 
-      url: `https://graph.facebook.com/v20.0/${connection.platformUserId}/media`, 
+      url: 'https://graph.facebook.com/v20.0/me/media', 
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `caption=${encodeURIComponent(post.content)}&access_token=${connection.accessToken}`
+      body: `caption=${encodeURIComponent(post.content)}&access_token=${process.env.INSTAGRAM_CLIENT_SECRET}`
     },
     twitter: { 
       url: 'https://api.twitter.com/2/tweets', 
       headers: { 
-        'Authorization': `Bearer ${connection.accessToken}`,
+        'Authorization': `Bearer ${process.env.TWITTER_CLIENT_SECRET}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ text: post.content })
