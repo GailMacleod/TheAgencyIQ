@@ -516,9 +516,25 @@ ${strategyzerData.insights}
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8">
-          <h2 className="text-2xl font-normal text-center mb-8" style={{ color: '#333333' }}>
+          <h2 className="text-2xl font-normal text-center mb-4" style={{ color: '#333333' }}>
             {isExistingData ? 'update your brand purpose' : 'define your brand purpose'}
           </h2>
+          
+          <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-sm font-bold">💡</span>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-blue-900 mb-2">Unlock Smart Suggestions</h3>
+                <p className="text-sm text-blue-800 leading-relaxed">
+                  Complete the first three fields (Brand Name, Products/Services, Core Purpose) with detailed, high-quality content to achieve "Strong" ratings. 
+                  This will automatically trigger our Strategyzer analysis and unlock intelligent suggestions for the remaining fields, 
+                  making it easier to complete your brand purpose with expert guidance.
+                </p>
+              </div>
+            </div>
+          </div>
           
           {isExistingData && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
