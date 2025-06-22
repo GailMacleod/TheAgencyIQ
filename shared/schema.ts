@@ -70,15 +70,6 @@ export const posts = pgTable("posts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Posts cache table for PostgreSQL cache synchronization
-export const postsCache = pgTable("posts_cache", {
-  id: serial("id").primaryKey(),
-  userPhone: text("user_phone").notNull().unique(), // Phone number as key
-  cacheData: jsonb("cache_data").notNull(), // Cached posts array
-  lastUpdated: timestamp("last_updated").defaultNow(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 // Platform connections for OAuth tokens
 export const platformConnections = pgTable("platform_connections", {
   id: serial("id").primaryKey(),

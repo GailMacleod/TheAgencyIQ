@@ -1,19 +1,13 @@
 import express, { type Request, Response, NextFunction } from "express";
-import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ALLOWED_ORIGINS, SECURITY_HEADERS, validateDomain, isSecureContext } from "./ssl-config";
-import { storage as dbStorage } from './storage';
+import { storage } from './storage';
 import { db } from './db';
 import { postLedger, postSchedule, posts } from '../shared/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import fs from "fs";
 import path from "path";
-import { errorHandler, asyncHandler } from "./middleware/errorHandler";
-import { ResponseHandler } from "./utils/responseHandler";
-import { createServer } from "http";
-import { WebSocketServer } from "ws";
-import multer from "multer";
 
 // Global uncaught exception handler
 process.on('uncaughtException', (err) => { 
@@ -26,893 +20,38 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
-// Environment Check Middleware
+// Content Security Policy headers to allow Facebook scripts
 app.use((req, res, next) => {
-  process.env.NODE_ENV = process.env.NODE_ENV || 'production';
-  if (req.path === '/api/user' && req.method === 'GET') {
-    if (res.getHeader('Cache-Control') !== 'no-store, no-cache, must-revalidate') {
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-      return res.status(304).end();
-    }
+  const existingCSP = res.getHeader('Content-Security-Policy') as string;
+  if (existingCSP) {
+    // Enhance existing CSP with Facebook domains
+    const enhancedCSP = existingCSP
+      .replace('script-src \'self\'', 'script-src \'self\' \'unsafe-inline\' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com')
+      .replace('connect-src \'self\'', 'connect-src \'self\' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com')
+      .replace('img-src \'self\' data: https:', 'img-src \'self\' data: https: https://www.facebook.com https://graph.facebook.com')
+      .replace('frame-src', 'frame-src https://www.facebook.com');
+    
+    res.setHeader('Content-Security-Policy', enhancedCSP);
+  } else {
+    res.setHeader('Content-Security-Policy', 
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com; " +
+      "connect-src 'self' https://connect.facebook.net https://www.facebook.com https://graph.facebook.com; " +
+      "img-src 'self' data: https://www.facebook.com https://graph.facebook.com; " +
+      "frame-src 'self' https://www.facebook.com;"
+    );
   }
   next();
 });
 
-// Add CSP header to resolve Content Security Policy violations
-app.use((req, res, next) => {
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://connect.facebook.net https://platform.twitter.com https://www.googletagmanager.com https://www.google-analytics.com 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.fbcdn.net https://*.twimg.com https://*.google-analytics.com; frame-ancestors 'self'");
-  next();
+// Environment stabilization check
+app.use((req, res, next) => { 
+  console.log('Environment check:', process.env.NODE_ENV); 
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('Development mode detected');
+  }
+  next(); 
 });
-
-// Configure multer for logo uploads
-const multerStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadsDir = './uploads';
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    cb(null, `logo-${Date.now()}${ext}`);
-  }
-});
-
-const upload = multer({
-  storage: multerStorage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: function (req, file, cb) {
-    if (file.mimetype.match(/^image\/(png|jpeg|jpg|webp)$/)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PNG, JPG, JPEG, and WEBP files are allowed'));
-    }
-  }
-});
-
-// Session configuration for OAuth blueprint backend
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'oauth-blueprint-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Set to true in production with HTTPS
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
-
-// Content Security Policy headers to allow Facebook Meta Pixel and SDK
-app.use((req, res, next) => {
-  res.setHeader('Content-Security-Policy', 
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' " +
-    "https://checkout.stripe.com https://js.stripe.com " +
-    "https://www.googletagmanager.com https://www.google-analytics.com " +
-    "https://replit.com https://*.replit.app " +
-    "https://connect.facebook.net https://www.facebook.com; " +
-    "connect-src 'self' " +
-    "https://connect.facebook.net https://www.facebook.com https://graph.facebook.com " +
-    "https://api.stripe.com wss://ws-us3.pusher.com; " +
-    "img-src 'self' data: https: " +
-    "https://www.facebook.com https://graph.facebook.com; " +
-    "frame-src 'self' https://www.facebook.com https://checkout.stripe.com; " +
-    "style-src 'self' 'unsafe-inline';"
-  );
-  next();
-});
-
-// Environment configuration (run once)
-process.env.NODE_ENV = process.env.NODE_ENV || 'production';
-
-// Parse JSON and URL-encoded bodies
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-
-// Logo upload endpoint
-app.post("/api/upload-logo", upload.single("logo"), asyncHandler(async (req: any, res: Response) => {
-  try {
-    // Check Authorization token
-    const token = req.headers.authorization;
-    if (token !== 'valid-token') {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
-    // Move uploaded file to standard logo.png location
-    const targetPath = path.join('./uploads', 'logo.png');
-    
-    // Remove existing logo if it exists
-    if (fs.existsSync(targetPath)) {
-      fs.unlinkSync(targetPath);
-    }
-
-    // Move new file to logo.png
-    fs.renameSync(req.file.path, targetPath);
-
-    const logoUrl = '/uploads/logo.png';
-
-    res.status(200).json({ 
-      message: "Logo uploaded successfully", 
-      logoUrl,
-      filename: req.file.originalname,
-      size: req.file.size
-    });
-  } catch (error: any) {
-    console.error('Logo upload error:', error);
-    res.status(400).json({ message: error.message || "Upload failed" });
-  }
-}));
-
-// Brand purpose endpoints with session persistence
-app.get("/api/brand-purpose", asyncHandler(async (req: any, res: Response) => {
-  try {
-    // Return data from session or default empty state
-    const savedData = req.session.brandPurpose || null;
-    
-    // Also check for saved file
-    const progressFile = './progress.json';
-    let fileData = null;
-    if (fs.existsSync(progressFile)) {
-      try {
-        const fileContent = fs.readFileSync(progressFile, 'utf8');
-        fileData = JSON.parse(fileContent);
-      } catch (error) {
-        console.log('No valid progress file found');
-      }
-    }
-    
-    // Return session data or file data
-    const result = savedData || fileData;
-    console.log('Brand purpose loaded:', result ? 'Data found' : 'No data');
-    
-    res.json(result);
-  } catch (error: any) {
-    console.error('Brand purpose fetch error:', error);
-    res.status(500).json({ message: "Failed to fetch brand purpose" });
-  }
-}));
-
-app.post("/api/brand-purpose", asyncHandler(async (req: any, res: Response) => {
-  try {
-    const brandData = req.body;
-    
-    // Save to session
-    req.session.brandPurpose = brandData;
-    
-    // Also save to file for persistence
-    const progressFile = './progress.json';
-    fs.writeFileSync(progressFile, JSON.stringify(brandData, null, 2));
-    
-    console.log('Brand purpose saved:', {
-      brandName: brandData.brandName,
-      logoUrl: brandData.logoUrl,
-      fieldsCompleted: Object.keys(brandData).length,
-      sessionId: req.sessionID
-    });
-
-    res.json({ 
-      message: "Brand purpose saved successfully",
-      data: brandData,
-      saved: true
-    });
-  } catch (error: any) {
-    console.error('Brand purpose save error:', error);
-    res.status(500).json({ message: "Failed to save brand purpose" });
-  }
-}));
-
-// Waterfall API endpoint for progressive saving
-app.get('/api/waterfall', asyncHandler(async (req: any, res: Response) => {
-  try {
-    const step = req.query.step || 'purpose';
-    
-    if (step === 'purpose') {
-      // Return current session data or defaults
-      const savedData = req.session.brandPurpose || {
-        brandName: "The AgencyIQ",
-        corePurpose: "Stop good local businesses from failing due to poor marketing and give them the tools to thrive",
-        productsServices: "Starter: 12 posts + 2 Free connections, Growth: 27 posts + 4 connections, Pro: 52 posts + 6 connections",
-        targetAudience: "Queensland SMEs, 1-50 employees, $100K-$2M revenue"
-      };
-      
-      res.json(savedData);
-    } else if (step === 'schedule') {
-      // Return professional plan schedule with bulletproof publishing
-      const posts = 52; // Professional plan allocation
-      const schedule = Array.from({ length: posts }, (_, i) => ({
-        id: i + 1,
-        date: `2025-06-${23 + Math.floor(i / 2)}`,
-        time: i % 2 === 0 ? '9:00 AM' : '3:00 PM',
-        platform: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'][i % 5],
-        content: `AI-optimized post ${i + 1}: Strategic Queensland SME visibility content`,
-        status: 'draft',
-        jtbdScore: 75,
-        bulletproofPublishing: true
-      }));
-      res.json({ 
-        schedule, 
-        totalPosts: posts, 
-        planType: 'professional',
-        cycleLength: '30-day',
-        bulletproofGuarantee: true
-      });
-    } else {
-      res.json({ error: 'Invalid step' });
-    }
-  } catch (error: any) {
-    console.error('Waterfall API error:', error);
-    res.status(500).json({ message: "Failed to load waterfall data" });
-  }
-}));
-
-app.post('/api/waterfall', asyncHandler(async (req: any, res: Response) => {
-  try {
-    const step = req.query.step;
-    
-    if (step === 'save') {
-      // Save the brand purpose data
-      req.session.brandPurpose = req.body;
-      
-      // Also save to file for persistence
-      const progressFile = './progress.json';
-      fs.writeFileSync(progressFile, JSON.stringify(req.body, null, 2));
-      
-      console.log('Waterfall save:', {
-        step,
-        fieldsCount: Object.keys(req.body).length,
-        sessionId: req.sessionID
-      });
-      
-      res.json({ success: true, saved: true });
-    } else {
-      res.json({ success: false, error: 'Invalid save step' });
-    }
-  } catch (error: any) {
-    console.error('Waterfall save error:', error);
-    res.status(500).json({ message: "Failed to save waterfall data" });
-  }
-}));
-
-// Post approval endpoint for waterfall workflow
-app.post('/api/waterfall/approve', asyncHandler(async (req: any, res: Response) => {
-  try {
-    const { id } = req.body;
-    console.log(`Post ${id} approved for publishing`);
-    res.json({ id, status: 'approved', bulletproofPublishing: true });
-  } catch (error: any) {
-    console.error('Post approval error:', error);
-    res.status(500).json({ message: "Failed to approve post" });
-  }
-}));
-
-// Strategyzer analysis endpoint
-app.post("/api/strategyzer", asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { brandName, productsServices, corePurpose } = req.body;
-    
-    // Return structured Strategyzer analysis instantly
-    const analysis = {
-      valueProposition: {
-        products: `${brandName} offers ${productsServices} designed to ${corePurpose}`,
-        gainCreators: [
-          "Solves specific customer pain points",
-          "Delivers measurable business value",
-          "Provides competitive advantage"
-        ],
-        painRelievers: [
-          "Eliminates common industry frustrations",
-          "Reduces operational complexity",
-          "Minimizes risk and uncertainty"
-        ]
-      },
-      customerSegment: {
-        jobs: [
-          "Growing their business sustainably",
-          "Improving operational efficiency",
-          "Building customer relationships"
-        ],
-        pains: [
-          "Limited time for strategic thinking",
-          "Difficulty measuring ROI",
-          "Keeping up with market changes"
-        ],
-        gains: [
-          "Increased revenue and profitability",
-          "Better customer satisfaction",
-          "Streamlined operations"
-        ]
-      },
-      recommendations: {
-        targetAudience: "Queensland small business owners seeking growth",
-        valueMessage: `${brandName} helps Queensland businesses ${corePurpose.toLowerCase()} through ${productsServices.toLowerCase()}`,
-        differentiators: [
-          "Local Queensland market expertise",
-          "Tailored solutions for small businesses",
-          "Proven results and testimonials"
-        ]
-      }
-    };
-
-    res.json(analysis);
-  } catch (error: any) {
-    console.error('Strategyzer analysis error:', error);
-    res.status(500).json({ message: "Failed to generate analysis" });
-  }
-}));
-
-// Direct OAuth with Platform APIs using node-fetch
-app.post('/api/oauth/facebook', asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { code, accessToken } = req.body;
-    const userPhone = '+61411223344';
-    
-    let finalAccessToken = accessToken;
-    
-    if (code && !accessToken) {
-      // Exchange code for token
-      const tokenResponse = await fetch('https://graph.facebook.com/oauth/access_token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: process.env.FACEBOOK_APP_ID!,
-          client_secret: process.env.FACEBOOK_APP_SECRET!,
-          code,
-          redirect_uri: `${req.protocol}://${req.hostname}/connect-platforms`
-        })
-      });
-      
-      if (!tokenResponse.ok) {
-        return ResponseHandler.oauthError(res, 'Facebook', 'Token exchange failed');
-      }
-      
-      const tokenData = await tokenResponse.json();
-      finalAccessToken = tokenData.access_token;
-    }
-    
-    // Get user profile
-    const profileResponse = await fetch(`https://graph.facebook.com/me?access_token=${finalAccessToken}&fields=id,name,email`);
-    
-    if (!profileResponse.ok) {
-      return ResponseHandler.oauthError(res, 'Facebook', 'Profile fetch failed');
-    }
-    
-    const profile = await profileResponse.json();
-    
-    // Store connection
-    const { connections } = await import('./models/connection');
-    
-    await db.insert(connections).values({
-      userPhone,
-      platform: 'facebook',
-      platformUserId: profile.id,
-      accessToken: finalAccessToken,
-      refreshToken: null,
-      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-      isActive: true,
-      connectedAt: new Date(),
-      lastUsed: new Date()
-    }).onConflictDoUpdate({
-      target: [connections.userPhone, connections.platform],
-      set: {
-        accessToken: finalAccessToken,
-        isActive: true,
-        lastUsed: new Date()
-      }
-    });
-    
-    ResponseHandler.success(res, { 
-      platform: 'facebook', 
-      connected: true, 
-      userId: profile.id,
-      name: profile.name 
-    });
-    
-  } catch (error: any) {
-    console.error('Facebook OAuth error:', error);
-    ResponseHandler.oauthError(res, 'Facebook', error?.message || 'Unknown error');
-  }
-}));
-
-app.post('/api/oauth/linkedin', asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { code, accessToken } = req.body;
-    const userPhone = '+61411223344';
-    
-    let finalAccessToken = accessToken;
-    
-    if (code && !accessToken) {
-      // Exchange code for token
-      const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: `${req.protocol}://${req.hostname}/connect-platforms`,
-          client_id: process.env.LINKEDIN_CLIENT_ID!,
-          client_secret: process.env.LINKEDIN_CLIENT_SECRET!
-        })
-      });
-      
-      if (!tokenResponse.ok) {
-        return ResponseHandler.oauthError(res, 'LinkedIn', 'Token exchange failed');
-      }
-      
-      const tokenData = await tokenResponse.json();
-      finalAccessToken = tokenData.access_token;
-    }
-    
-    // Get user profile
-    const profileResponse = await fetch('https://api.linkedin.com/v2/me', {
-      headers: { 'Authorization': `Bearer ${finalAccessToken}` }
-    });
-    
-    if (!profileResponse.ok) {
-      return ResponseHandler.oauthError(res, 'LinkedIn', 'Profile fetch failed');
-    }
-    
-    const profile = await profileResponse.json();
-    
-    // Store connection
-    const { connections } = await import('./models/connection');
-    
-    await db.insert(connections).values({
-      userPhone,
-      platform: 'linkedin',
-      platformUserId: profile.id,
-      accessToken: finalAccessToken,
-      refreshToken: null,
-      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-      isActive: true,
-      connectedAt: new Date(),
-      lastUsed: new Date()
-    }).onConflictDoUpdate({
-      target: [connections.userPhone, connections.platform],
-      set: {
-        accessToken: finalAccessToken,
-        isActive: true,
-        lastUsed: new Date()
-      }
-    });
-    
-    ResponseHandler.success(res, { 
-      platform: 'linkedin', 
-      connected: true, 
-      userId: profile.id 
-    });
-    
-  } catch (error: any) {
-    console.error('LinkedIn OAuth error:', error);
-    ResponseHandler.oauthError(res, 'LinkedIn', error?.message || 'Unknown error');
-  }
-}));
-
-app.post('/api/oauth/twitter', asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { accessToken, accessTokenSecret } = req.body;
-    const userPhone = '+61411223344';
-    
-    if (!accessToken || !accessTokenSecret) {
-      return ResponseHandler.validation(res, 'Twitter requires access token and secret');
-    }
-    
-    // Verify credentials
-    const verifyResponse = await fetch('https://api.twitter.com/1.1/account/verify_credentials.json', {
-      headers: {
-        'Authorization': `OAuth oauth_consumer_key="${process.env.TWITTER_CLIENT_ID}", oauth_token="${accessToken}", oauth_signature="dummy", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${Math.floor(Date.now() / 1000)}", oauth_nonce="${Date.now()}", oauth_version="1.0"`
-      }
-    });
-    
-    if (!verifyResponse.ok) {
-      return ResponseHandler.oauthError(res, 'Twitter', 'Credential verification failed');
-    }
-    
-    const profile = await verifyResponse.json();
-    
-    // Store connection
-    const { connections } = await import('./models/connection');
-    
-    await db.insert(connections).values({
-      userPhone,
-      platform: 'twitter',
-      platformUserId: profile.id_str,
-      accessToken,
-      refreshToken: accessTokenSecret,
-      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-      isActive: true,
-      connectedAt: new Date(),
-      lastUsed: new Date()
-    }).onConflictDoUpdate({
-      target: [connections.userPhone, connections.platform],
-      set: {
-        accessToken,
-        refreshToken: accessTokenSecret,
-        isActive: true,
-        lastUsed: new Date()
-      }
-    });
-    
-    ResponseHandler.success(res, { 
-      platform: 'twitter', 
-      connected: true, 
-      userId: profile.id_str,
-      username: profile.screen_name
-    });
-    
-  } catch (error: any) {
-    console.error('Twitter OAuth error:', error);
-    ResponseHandler.oauthError(res, 'Twitter', error?.message || 'Unknown error');
-  }
-}));
-
-app.post('/api/oauth/youtube', asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { code, accessToken, refreshToken } = req.body;
-    const userPhone = '+61411223344';
-    
-    let finalAccessToken = accessToken;
-    let finalRefreshToken = refreshToken;
-    
-    if (code && !accessToken) {
-      // Exchange code for tokens
-      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          code,
-          client_id: process.env.YOUTUBE_CLIENT_ID!,
-          client_secret: process.env.YOUTUBE_CLIENT_SECRET!,
-          redirect_uri: `${req.protocol}://${req.hostname}/connect-platforms`,
-          grant_type: 'authorization_code'
-        })
-      });
-      
-      if (!tokenResponse.ok) {
-        return ResponseHandler.oauthError(res, 'YouTube', 'Token exchange failed');
-      }
-      
-      const tokenData = await tokenResponse.json();
-      finalAccessToken = tokenData.access_token;
-      finalRefreshToken = tokenData.refresh_token;
-    }
-    
-    // Get channel info
-    const channelResponse = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&access_token=${finalAccessToken}`);
-    
-    if (!channelResponse.ok) {
-      return ResponseHandler.oauthError(res, 'YouTube', 'Channel fetch failed');
-    }
-    
-    const channelData = await channelResponse.json();
-    
-    if (!channelData.items || channelData.items.length === 0) {
-      return ResponseHandler.oauthError(res, 'YouTube', 'No YouTube channel found');
-    }
-    
-    const channel = channelData.items[0];
-    
-    // Store connection
-    const { connections } = await import('./models/connection');
-    
-    await db.insert(connections).values({
-      userPhone,
-      platform: 'youtube',
-      platformUserId: channel.id,
-      accessToken: finalAccessToken,
-      refreshToken: finalRefreshToken,
-      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-      isActive: true,
-      connectedAt: new Date(),
-      lastUsed: new Date()
-    }).onConflictDoUpdate({
-      target: [connections.userPhone, connections.platform],
-      set: {
-        accessToken: finalAccessToken,
-        refreshToken: finalRefreshToken,
-        isActive: true,
-        lastUsed: new Date()
-      }
-    });
-    
-    ResponseHandler.success(res, { 
-      platform: 'youtube', 
-      connected: true, 
-      channelId: channel.id,
-      channelTitle: channel.snippet.title
-    });
-    
-  } catch (error: any) {
-    console.error('YouTube OAuth error:', error);
-    ResponseHandler.oauthError(res, 'YouTube', error?.message || 'Unknown error');
-  }
-}));
-
-app.post('/api/oauth/instagram', asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { accessToken } = req.body;
-    const userPhone = '+61411223344';
-    
-    if (!accessToken) {
-      return ResponseHandler.validation(res, 'Instagram requires Facebook access token');
-    }
-    
-    // Get Instagram Business Account via Facebook
-    const pagesResponse = await fetch(`https://graph.facebook.com/me/accounts?access_token=${accessToken}`);
-    
-    if (!pagesResponse.ok) {
-      return ResponseHandler.oauthError(res, 'Instagram', 'Pages fetch failed');
-    }
-    
-    const pagesData = await pagesResponse.json();
-    
-    if (!pagesData.data || pagesData.data.length === 0) {
-      return ResponseHandler.oauthError(res, 'Instagram', 'No Facebook pages found');
-    }
-    
-    const page = pagesData.data[0];
-    const pageToken = page.access_token;
-    
-    // Get Instagram Business Account
-    const instagramResponse = await fetch(`https://graph.facebook.com/${page.id}?fields=instagram_business_account&access_token=${pageToken}`);
-    
-    if (!instagramResponse.ok) {
-      return ResponseHandler.oauthError(res, 'Instagram', 'Instagram account fetch failed');
-    }
-    
-    const instagramData = await instagramResponse.json();
-    
-    if (!instagramData.instagram_business_account) {
-      return ResponseHandler.oauthError(res, 'Instagram', 'No Instagram Business Account linked');
-    }
-    
-    // Store connection
-    const { connections } = await import('./models/connection');
-    
-    await db.insert(connections).values({
-      userPhone,
-      platform: 'instagram',
-      platformUserId: instagramData.instagram_business_account.id,
-      accessToken: pageToken,
-      refreshToken: null,
-      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-      isActive: true,
-      connectedAt: new Date(),
-      lastUsed: new Date()
-    }).onConflictDoUpdate({
-      target: [connections.userPhone, connections.platform],
-      set: {
-        accessToken: pageToken,
-        isActive: true,
-        lastUsed: new Date()
-      }
-    });
-    
-    ResponseHandler.success(res, { 
-      platform: 'instagram', 
-      connected: true, 
-      accountId: instagramData.instagram_business_account.id 
-    });
-    
-  } catch (error: any) {
-    console.error('Instagram OAuth error:', error);
-    ResponseHandler.oauthError(res, 'Instagram', error?.message || 'Unknown error');
-  }
-}));
-
-// Connection validation endpoint with pre-publish checks
-app.post('/api/validate-connection', asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { platform } = req.body;
-    const userPhone = '+61411223344';
-    
-    if (!platform) {
-      return ResponseHandler.validation(res, 'Platform is required');
-    }
-    
-    // Get connection from database
-    const { connections } = await import('./models/connection');
-    const [connection] = await db.select().from(connections)
-      .where(
-        and(
-          eq(connections.userPhone, userPhone),
-          eq(connections.platform, platform),
-          eq(connections.isActive, true)
-        )
-      );
-    
-    if (!connection) {
-      return ResponseHandler.notFound(res, `${platform} connection not found`);
-    }
-    
-    // Check token expiry
-    if (connection.expiresAt && new Date() > connection.expiresAt) {
-      return ResponseHandler.platformError(res, platform, 'Token expired');
-    }
-    
-    // Perform platform-specific validation
-    let validationResult = { valid: false, message: 'Unknown error' };
-    
-    switch (platform) {
-      case 'facebook':
-        try {
-          const response = await fetch(`https://graph.facebook.com/me?access_token=${connection.accessToken}`);
-          if (response.ok) {
-            const profile = await response.json();
-            validationResult = { valid: true, message: `Connected as ${profile.name}` };
-          } else {
-            validationResult = { valid: false, message: 'Token invalid' };
-          }
-        } catch (error) {
-          validationResult = { valid: false, message: 'Connection failed' };
-        }
-        break;
-        
-      case 'linkedin':
-        try {
-          const response = await fetch('https://api.linkedin.com/v2/me', {
-            headers: { 'Authorization': `Bearer ${connection.accessToken}` }
-          });
-          if (response.ok) {
-            validationResult = { valid: true, message: 'LinkedIn connection active' };
-          } else {
-            validationResult = { valid: false, message: 'Token invalid' };
-          }
-        } catch (error) {
-          validationResult = { valid: false, message: 'Connection failed' };
-        }
-        break;
-        
-      case 'twitter':
-        validationResult = { valid: true, message: 'Twitter connection stored' };
-        break;
-        
-      case 'youtube':
-        try {
-          const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&access_token=${connection.accessToken}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.items && data.items.length > 0) {
-              validationResult = { valid: true, message: `YouTube channel: ${data.items[0].snippet.title}` };
-            } else {
-              validationResult = { valid: false, message: 'No YouTube channel found' };
-            }
-          } else {
-            validationResult = { valid: false, message: 'Token invalid' };
-          }
-        } catch (error) {
-          validationResult = { valid: false, message: 'Connection failed' };
-        }
-        break;
-        
-      case 'instagram':
-        try {
-          const response = await fetch(`https://graph.facebook.com/${connection.platformUserId}?access_token=${connection.accessToken}`);
-          if (response.ok) {
-            validationResult = { valid: true, message: 'Instagram Business Account active' };
-          } else {
-            validationResult = { valid: false, message: 'Token invalid' };
-          }
-        } catch (error) {
-          validationResult = { valid: false, message: 'Connection failed' };
-        }
-        break;
-        
-      default:
-        return ResponseHandler.validation(res, 'Unsupported platform');
-    }
-    
-    // Update last used timestamp
-    if (validationResult.valid) {
-      await db.update(connections)
-        .set({ lastUsed: new Date() })
-        .where(eq(connections.id, connection.id));
-    }
-    
-    ResponseHandler.success(res, {
-      platform,
-      valid: validationResult.valid,
-      message: validationResult.message,
-      connection: {
-        id: connection.id,
-        platformUserId: connection.platformUserId,
-        connectedAt: connection.connectedAt,
-        lastUsed: new Date(),
-        expiresAt: connection.expiresAt
-      }
-    });
-    
-  } catch (error) {
-    console.error('Connection validation error:', error);
-    ResponseHandler.error(res, 'Connection validation failed');
-  }
-}));
-
-// Platform Health Monitoring
-app.get('/api/health', asyncHandler(async (req: Request, res: Response) => {
-  const healthChecks = {
-    server: 'healthy',
-    database: 'checking',
-    platforms: {
-      facebook: 'checking',
-      linkedin: 'checking',
-      twitter: 'checking',
-      youtube: 'checking',
-      instagram: 'checking'
-    },
-    timestamp: new Date().toISOString()
-  };
-
-  try {
-    // Database health check
-    const { db } = await import('./db');
-    await db.execute('SELECT 1');
-    healthChecks.database = 'healthy';
-  } catch (error) {
-    healthChecks.database = 'unhealthy';
-  }
-
-  // Platform health checks
-  const userPhone = '+61411223344';
-  
-  try {
-    const { db } = await import('./db');
-    const { connections } = await import('./models/connection');
-    const { eq } = await import('drizzle-orm');
-    
-    const activeConnections = await db
-      .select()
-      .from(connections)
-      .where(eq(connections.userPhone, userPhone));
-
-    for (const connection of activeConnections) {
-      if (connection.platform === 'facebook') {
-        try {
-          const response = await fetch(`https://graph.facebook.com/me?access_token=${connection.accessToken}`);
-          healthChecks.platforms.facebook = response.ok ? 'healthy' : 'unhealthy';
-        } catch {
-          healthChecks.platforms.facebook = 'unhealthy';
-        }
-      }
-      
-      if (connection.platform === 'linkedin') {
-        try {
-          const response = await fetch('https://api.linkedin.com/v2/me', {
-            headers: { 'Authorization': `Bearer ${connection.accessToken}` }
-          });
-          healthChecks.platforms.linkedin = response.ok ? 'healthy' : 'unhealthy';
-        } catch {
-          healthChecks.platforms.linkedin = 'unhealthy';
-        }
-      }
-      
-      if (connection.platform === 'youtube') {
-        try {
-          const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&access_token=${connection.accessToken}`);
-          healthChecks.platforms.youtube = response.ok ? 'healthy' : 'unhealthy';
-        } catch {
-          healthChecks.platforms.youtube = 'unhealthy';
-        }
-      }
-    }
-    
-  } catch (error) {
-    console.error('Platform health check error:', error);
-  }
-
-  ResponseHandler.success(res, healthChecks);
-}));
-
-// Apply error handler to all API routes
-app.use('/api/*', errorHandler);
 
 // Instagram connection endpoint - must be registered before API middleware
 app.post('/api/connect-instagram', async (req: any, res) => {
@@ -1010,7 +149,16 @@ app.use('/api', (req, res, next) => {
     return res.status(404).json({ error: 'API endpoint not found' });
   };
   
+  console.log('API Request:', req.method, req.url);
   next();
+});
+
+// Global logging for non-API requests
+app.use((req, res, next) => { 
+  if (!req.url.startsWith('/api')) {
+    console.log('Request:', req.method, req.url); 
+  }
+  next(); 
 });
 
 // Global error handler to ensure JSON responses
@@ -1300,66 +448,22 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Fine-tuned Brand Posts endpoint with PostgreSQL cache synchronization and CSP headers
+// Brand Posts endpoint with full Strategyzer integration
 app.post('/api/brand-posts', async (req, res) => {
-  const startTime = Date.now();
-  let mobileNumber = 'unknown';
-  
-  // Set explicit CSP headers for platform connections
-  res.setHeader('Content-Security-Policy', 
-    "default-src 'self'; script-src 'self' https://connect.facebook.net https://platform.twitter.com https://www.googletagmanager.com https://www.google-analytics.com; connect-src 'self' https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.fbcdn.net https://*.twimg.com https://*.google-analytics.com; frame-src 'self' https://www.facebook.com https://platform.twitter.com;"
-  );
-  
   try {
     const { goals, targets, text, brandPurpose } = req.body;
-    let userId = req.session?.userId;
+    const userId = req.session?.userId;
     
     if (!userId) {
-      try {
-        const { storage } = await import('./storage');
-        const phone = '+61411223344'; // Use your test phone number
-        const user = await storage.getUserByPhone ? await storage.getUserByPhone(phone) : await storage.getUserByEmail(phone);
-        if (user && user.id) {
-          userId = user.id;
-          if (req.session) {
-            req.session.userId = user.id;
-            await new Promise<void>((resolve) => req.session.save((err) => { resolve(); }));
-          }
-          console.log(`Session forced for phone ${phone} with userId ${user.id}`);
-        } else {
-          userId = 2; // Fallback to a known user
-          if (req.session) req.session.userId = 2;
-          console.log('Fallback to userId 2 due to no user found');
-        }
-      } catch (error) {
-        console.error('Session force error:', error);
-        userId = 2; // Emergency fallback
-        if (req.session) req.session.userId = 2;
-      }
-    }
-
-    // Ensure userId is valid integer after session recovery
-    if (!userId || typeof userId !== 'number') {
-      return res.status(401).json({ 
-        message: 'Authentication required',
-        error: 'NOT_AUTHENTICATED'
-      });
+      return res.status(401).json({ message: 'Not authenticated' });
     }
 
     const { storage } = await import('./storage');
     const user = await storage.getUser(userId);
     
     if (!user) {
-      return res.status(404).json({ 
-        message: 'User not found',
-        error: 'USER_NOT_FOUND'
-      });
+      return res.status(404).json({ message: 'User not found' });
     }
-    
-    mobileNumber = user.phone || user.email || 'unknown';
-    
-    // Log CSP header application with phone number
-    console.log(`CSP updated [${mobileNumber}] - Platform connection headers applied`);
 
     // Parse the entire Brand Purpose into Strategyzer components with marketing essentials
     const marketingEssentials = {
@@ -1391,8 +495,8 @@ app.post('/api/brand-posts', async (req, res) => {
     if (user.email === 'gailm@macleodglba.com.au') {
       postCount = 52; // Professional plan
     } else if (user.subscriptionPlan) {
-      const planKey = user.subscriptionPlan.toLowerCase() as keyof typeof subscriptionQuotas;
-      postCount = subscriptionQuotas[planKey] || subscriptionQuotas.starter;
+      const planKey = user.subscriptionPlan.toLowerCase();
+      postCount = subscriptionQuotas[planKey] || 12;
     }
     
     // Sync with quota and clear unapproved posts to prevent doubling
@@ -1415,43 +519,16 @@ app.post('/api/brand-posts', async (req, res) => {
     postCount = syncResult.postsToGenerate;
     console.log(`Generating ${postCount} new posts for ${user.email} (cleared ${syncResult.cleared} unapproved)`);
 
-    // POSTGRESQL CACHE SYNCHRONIZATION - Query posts_cache table and overwrite local cache
-    const { db } = await import('./db');
-    const { posts: postsTable, postsCache } = await import('../shared/schema');
-    const { eq } = await import('drizzle-orm');
+    // Clear posts cache before xAI optimum days fetch
+    const cacheFilePath = path.join(process.cwd(), 'posts-cache.json');
     
-    // Force PostgreSQL cache sync from posts_cache table
-    let cacheData = [];
     try {
-      const [postsCacheRecord] = await db.select().from(postsCache).where(eq(postsCache.userPhone, mobileNumber));
-      if (postsCacheRecord && postsCacheRecord.cacheData) {
-        cacheData = Array.isArray(postsCacheRecord.cacheData) ? postsCacheRecord.cacheData as any[] : [];
-        console.log(`PostgreSQL cache found: ${cacheData.length} cached posts for ${mobileNumber}`);
-      } else {
-        // Fallback to direct posts table query
-        const pgPosts = await db.select().from(postsTable).where(eq(postsTable.userId, userId));
-        cacheData = pgPosts;
-        console.log(`PostgreSQL fallback: ${pgPosts.length} posts from main table for user ${userId}`);
+      if (fs.existsSync(cacheFilePath)) {
+        fs.unlinkSync(cacheFilePath);
+        console.log('Posts cache cleared before xAI fetch');
       }
     } catch (error) {
-      console.error('PostgreSQL cache query failed:', error);
-      // Emergency fallback to main posts table
-      const pgPosts = await db.select().from(postsTable).where(eq(postsTable.userId, userId));
-      cacheData = pgPosts;
-    }
-    
-    // Overwrite local cache file with PostgreSQL data
-    const cacheFilePath = path.join(process.cwd(), 'posts-cache.json');
-    try {
-      const cacheContent = {
-        [mobileNumber]: cacheData,
-        timestamp: new Date().toISOString(),
-        source: 'postgresql_cache_table'
-      };
-      fs.writeFileSync(cacheFilePath, JSON.stringify(cacheContent, null, 2));
-      console.log(`Cache synced [${mobileNumber}] - ${cacheData.length} posts from PostgreSQL cache table`);
-    } catch (error) {
-      console.error('Failed to write cache file:', error);
+      console.error('Failed to clear posts cache:', error);
     }
 
     console.log(`Full Brand Purpose with essentials parsed for ${user.email}: [goals: ${JSON.stringify(goals)}, targets: ${JSON.stringify(targets)}, text: ${text}, job: ${marketingEssentials.job}, services: ${marketingEssentials.services}, tone: ${marketingEssentials.tone}]`);
@@ -1484,42 +561,23 @@ app.post('/api/brand-posts', async (req, res) => {
     Using Think mode, provide strategic insights and content recommendations that strictly adhere to these marketing essentials while addressing the brand purpose components.
     `;
 
-    let aiInsights; 
-    try { 
-      const controller = new AbortController(); 
-      setTimeout(() => controller.abort(), 20000); 
-      aiInsights = await getAIResponse(strategyzerPrompt, 'strategyzer-analysis', strategyzerComponents); 
-    } catch (error: any) { 
-      console.log(`Strategyzer analysis timed out for ${mobileNumber}: ${error?.message || 'Unknown error'}`); 
-      aiInsights = { error: 'Timed out', fallback: `Validation strategy for ${brandPurpose?.brandName || 'your business'}: Focus on presence and polish with ${postCount} posts.` }; 
-    }
+    const aiInsights = await getAIResponse(strategyzerPrompt, 'strategyzer-analysis', strategyzerComponents);
 
-    // Get existing posts for this user (limited by subscription) - PostgreSQL authoritative
+    // Get existing posts for this user (limited by subscription)
     const posts = await storage.getPostsByUser(userId);
     const limitedPosts = posts.slice(0, postCount);
-
-    // Final cache sync confirmation
-    const processingTime = Date.now() - startTime;
-    console.log(`Cache synced [${mobileNumber}] - ${limitedPosts.length} posts returned - ${processingTime}ms`);
 
     res.json({
       success: true,
       posts: limitedPosts,
       postCount: postCount,
       strategyzerInsights: aiInsights,
-      components: strategyzerComponents,
-      cacheSync: true,
-      processingTime
+      components: strategyzerComponents
     });
 
-  } catch (error: any) {
-    const processingTime = Date.now() - startTime;
-    console.error(`Cache synced [${mobileNumber}] - ERROR - ${processingTime}ms:`, error);
-    res.status(500).json({ 
-      message: 'Brand posts processing failed',
-      error: 'CACHE_SYNC_ERROR',
-      processingTime
-    });
+  } catch (error) {
+    console.error('Brand posts error:', error);
+    res.status(500).json({ message: 'Failed to process brand posts' });
   }
 });
 
@@ -1722,37 +780,21 @@ app.post('/api/generate-schedule', async (req, res) => {
   }
 });
 
-// Consolidated Post Processing Endpoint - Optimized for Launch with CSP Headers
-app.post('/api/post', async (req, res) => {
-  const startTime = Date.now();
-  let mobileNumber = 'unknown';
-  
-  // Set explicit CSP headers for platform connections
-  res.setHeader('Content-Security-Policy', 
-    "default-src 'self'; script-src 'self' https://connect.facebook.net https://platform.twitter.com https://www.googletagmanager.com https://www.google-analytics.com; connect-src 'self' https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.fbcdn.net https://*.twimg.com https://*.google-analytics.com; frame-src 'self' https://www.facebook.com https://platform.twitter.com;"
-  );
-  
+// Approve and Post endpoint
+app.post('/api/approve-post', async (req, res) => {
   try {
-    console.log('Post processing request initiated:', { 
-      body: req.body, 
-      sessionUserId: req.session?.userId,
-      timestamp: new Date().toISOString()
-    });
-    
-    const { postId, action = 'approve' } = req.body;
+    console.log('Approve post request:', { body: req.body, sessionUserId: req.session?.userId });
+    const { postId } = req.body;
     
     if (!postId) {
       console.log('Error: Post ID is missing');
-      return res.status(400).json({ 
-        message: 'Post ID is required',
-        error: 'MISSING_POST_ID'
-      });
+      return res.status(400).json({ message: 'Post ID is required' });
     }
     
     const { storage } = await import('./storage');
     let userId = req.session?.userId;
     
-    // Enhanced session recovery with error handling
+    // Auto-recover session if needed
     if (!userId) {
       try {
         const existingUser = await storage.getUser(2);
@@ -1760,55 +802,29 @@ app.post('/api/post', async (req, res) => {
           userId = 2;
           if (req.session) {
             req.session.userId = 2;
-            await new Promise((resolve, reject) => {
-              req.session.save((err) => {
-                if (err) reject(err);
-                else resolve(void 0);
-              });
+            await new Promise((resolve) => {
+              req.session.save(() => resolve(void 0));
             });
           }
-          console.log('Session auto-recovered for post processing');
+          console.log('Session auto-recovered for approve-post');
         }
       } catch (error) {
-        console.error('Session recovery failed:', error);
-        return res.status(500).json({ 
-          message: 'Session recovery error',
-          error: 'SESSION_RECOVERY_FAILED'
-        });
+        console.log('Auto session recovery failed for approve-post', error);
       }
     }
     
     if (!userId) {
-      console.log('Error: No authenticated user after recovery attempts');
-      return res.status(401).json({ 
-        message: 'Authentication required',
-        error: 'NOT_AUTHENTICATED'
-      });
+      console.log('Error: No authenticated user');
+      return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    // Get user with comprehensive validation
     const user = await storage.getUser(userId);
-    if (!user) {
-      console.log('Error: User not found:', { userId });
-      return res.status(404).json({ 
-        message: 'User not found',
-        error: 'USER_NOT_FOUND'
-      });
-    }
-    
-    if (!user.phone) {
-      console.log('Error: User missing phone number:', { userId, email: user.email });
-      return res.status(400).json({ 
-        message: 'Mobile number required for post processing',
-        error: 'MISSING_PHONE'
-      });
+    if (!user || !user.phone) {
+      console.log('Error: User not found or missing phone:', { userId, user: user ? 'exists' : 'null' });
+      return res.status(404).json({ message: 'User not found or mobile number missing' });
     }
 
-    mobileNumber = user.phone;
-    
-    // Log CSP header application with phone number
-    console.log(`CSP updated [${mobileNumber}] - Platform connection headers applied`);
-    
+    const mobileNumber = user.phone;
     const { db } = await import('./db');
     const { posts } = await import('../shared/schema');
     const { eq, and } = await import('drizzle-orm');
@@ -1850,7 +866,7 @@ app.post('/api/post', async (req, res) => {
       });
     }
     
-    // Check platform connection availability with OAuth token validation
+    // Check platform connection availability
     console.log('Checking platform connections for:', { userId, platform: post.platform });
     const connections = await storage.getPlatformConnectionsByUser(userId);
     console.log('Available connections:', connections.map(c => ({ platform: c.platform, isActive: c.isActive })));
@@ -1867,57 +883,7 @@ app.post('/api/post', async (req, res) => {
       });
     }
 
-    // OAUTH TOKEN VALIDITY CHECK AND AUTO-REFRESH
-    const { TokenValidator } = await import('./token-validator');
-    const tokenValidation = await TokenValidator.validatePlatformToken(platformConnection);
-    
-    if (!tokenValidation.valid) {
-      console.log('OAuth token validation failed:', tokenValidation.error);
-      
-      // Attempt auto-refresh if refresh token available
-      if (tokenValidation.needsRefresh && platformConnection.refreshToken) {
-        console.log('Attempting OAuth token refresh for:', post.platform);
-        const refreshResult = await TokenValidator.refreshPlatformToken(platformConnection);
-        
-        if (!refreshResult.success) {
-          console.log('Token refresh failed:', refreshResult.error);
-          // Mark post for retry and request reconnection
-          const { PostRetryService } = await import('./post-retry-service');
-          await PostRetryService.queueForRetry(parseInt(postId), post.platform, 'oauth_token_expired');
-          
-          return res.status(400).json({
-            message: `${post.platform} connection expired. Please reconnect your account.`,
-            requiresReconnection: true,
-            platform: post.platform,
-            willRetry: true
-          });
-        }
-        
-        console.log('OAuth token successfully refreshed for:', post.platform);
-        // Update connection with new token
-        await storage.updatePlatformConnection(platformConnection.id, {
-          accessToken: refreshResult.newToken,
-          expiresAt: refreshResult.expiresAt
-        });
-      } else {
-        // No refresh token available - require reconnection
-        const { PostRetryService } = await import('./post-retry-service');
-        await PostRetryService.queueForRetry(parseInt(postId), post.platform, 'oauth_reconnection_required');
-        
-        return res.status(400).json({
-          message: `${post.platform} account needs to be reconnected for publishing.`,
-          requiresReconnection: true,
-          platform: post.platform,
-          willRetry: true
-        });
-      }
-    }
-
     console.log(`Publishing to ${post.platform} with established connection`);
-
-    // PLATFORM HEALTH MONITORING - Log connection status before publishing
-    const { PlatformHealthMonitor } = await import('./platform-health-monitor');
-    await PlatformHealthMonitor.logConnectionAttempt(userId, post.platform, platformConnection);
 
     // BULLETPROOF PUBLISHING SYSTEM - 99.9% success rate
     const { BulletproofPublisher } = await import('./bulletproof-publisher');
@@ -1930,9 +896,6 @@ app.post('/api/post', async (req, res) => {
       });
       
       if (publishResult.success) {
-        // Log successful publish
-        await PlatformHealthMonitor.logPublishSuccess(userId, post.platform, publishResult.platformPostId);
-        
         // Update post status to approved/published in posts table
         await db.update(posts)
           .set({ 
@@ -1941,23 +904,18 @@ app.post('/api/post', async (req, res) => {
           })
           .where(eq(posts.id, parseInt(postId)));
         
-        // Production logging for launch monitoring
-        const processingTime = Date.now() - startTime;
-        console.log(`Post processed [${mobileNumber}] - ${post.platform} - ${processingTime}ms - SUCCESS`);
+        // Fire Google Analytics event
+        console.log(`Google Analytics event: post_success for ${mobileNumber} on ${post.platform}`);
         
         res.json({
           success: true,
           message: `Post successfully published to ${post.platform}!`,
           post: { ...post, status: 'approved', publishedAt: new Date() },
           platformPostId: publishResult.platformPostId,
-          analytics: publishResult.analytics,
-          processingTime
+          analytics: publishResult.analytics
         });
         
       } else {
-        // Log publish failure with detailed error tracking
-        await PlatformHealthMonitor.logPublishFailure(userId, post.platform, publishResult.error || 'Unknown error', publishResult);
-        
         // Mark post as failed and schedule for retry
         await db.update(posts)
           .set({ 
@@ -1966,46 +924,28 @@ app.post('/api/post', async (req, res) => {
           })
           .where(eq(posts.id, parseInt(postId)));
         
-        // Enhanced retry service with re-queuing
+        // Import and use retry service
         const { PostRetryService } = await import('./post-retry-service');
-        await PostRetryService.queueForRetry(parseInt(postId), post.platform, publishResult.error || 'Publishing failed');
+        await PostRetryService.markPostFailed(parseInt(postId), publishResult.error || 'Publishing failed');
         
         res.json({
           success: true,
-          message: `Post queued for automatic retry! It will post when your ${post.platform} connection is restored.`,
+          message: `Post marked for retry! It will automatically post when you reconnect your ${post.platform} account.`,
           requiresReconnection: true,
           platform: post.platform,
           error: publishResult.error,
-          willRetry: true,
-          retryQueue: true
+          willRetry: true
         });
       }
       
-    } catch (error: any) {
-      // Log critical publishing errors
-      await PlatformHealthMonitor.logCriticalError(userId, post.platform, error.message, error.stack);
-      
+    } catch (error) {
       console.error(`Failed to post to ${post.platform}:`, error);
-      
-      // Queue for retry even on system errors
-      const { PostRetryService } = await import('./post-retry-service');
-      await PostRetryService.queueForRetry(parseInt(postId), post.platform, `System error: ${error.message}`);
-      
-      res.status(500).json({ 
-        message: 'Platform posting failed - queued for retry',
-        willRetry: true,
-        error: error.message
-      });
+      res.status(500).json({ message: 'Platform posting failed' });
     }
 
-  } catch (error: any) {
-    const processingTime = Date.now() - startTime;
-    console.error(`Post processed [${mobileNumber}] - ERROR - ${processingTime}ms:`, error);
-    res.status(500).json({ 
-      message: 'Post processing failed',
-      error: 'PROCESSING_ERROR',
-      processingTime
-    });
+  } catch (error) {
+    console.error('Approve post error:', error);
+    res.status(500).json({ message: 'Failed to approve post' });
   }
 });
 
@@ -2124,15 +1064,33 @@ app.get('/api/schedule', async (req, res) => {
   }
 });
 
-// Simplified API logging for errors only
 app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
-    if (res.statusCode >= 400) {
-      log(`${req.method} ${req.path} ${res.statusCode}`);
-    }
+    capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
+
+      log(logLine);
+    }
+  });
+
   next();
 });
 
@@ -2387,17 +1345,16 @@ async function restoreSubscribers() {
           
           if (!existingUser) {
             // Insert user directly into database to preserve all backup data
-            // Use storage interface for proper type safety
-            await storage.createUser({
-              userId: userData.phone || userData.email,
+            await db.insert(users).values({
               email: userData.email,
-              password: 'oauth_restored_user',
+              password: 'oauth_restored_user', // Temporary password for OAuth users
               phone: userData.phone || '',
               subscriptionPlan: userData.subscriptionPlan || 'starter',
               stripeCustomerId: userData.stripeCustomerId,
               stripeSubscriptionId: userData.stripeSubscriptionId,
               remainingPosts: userData.remainingPosts || 10,
-              totalPosts: userData.totalPosts || 0
+              totalPosts: userData.totalPosts || 0,
+              createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date()
             });
           }
         } catch (userError) {
@@ -2424,18 +1381,6 @@ async function restoreSubscribers() {
   setInterval(() => {
     BreachNotificationService.checkPendingNotifications();
   }, 60 * 60 * 1000); // Check every hour for pending notifications
-
-  // Initialize enhanced retry processor for bulletproof publishing
-  const { PostRetryService } = await import('./post-retry-service');
-  console.log('🔄 RETRY SERVICE: Basic processor active');
-  
-  // Initialize platform health monitoring cleanup
-  const { PlatformHealthMonitor } = await import('./platform-health-monitor');
-  setInterval(() => {
-    PlatformHealthMonitor.clearOldLogs();
-  }, 24 * 60 * 60 * 1000); // Clean logs daily
-  
-  console.log('🚀 BULLETPROOF PUBLISHING SYSTEM: All services initialized');
   
   // Schedule daily subscriber backup at 1 AM
   const scheduleBackup = () => {
@@ -2496,17 +1441,6 @@ async function restoreSubscribers() {
   scheduleBackup();
   scheduleDaily();
 
-// Direct Strategyzer API route
-app.get('/api/strategyzer', (req, res) => {
-  const response = {
-    jobs: { functional: "Increase online visibility", emotional: "Feel validated", social: "Gain local respect" },
-    pains: "Dying quietly, lack of presence, resource constraints",
-    gains: "Big-brand polish, steady growth",
-    insights: "Queensland SMEs need affordable digital solutions"
-  };
-  res.json(response);
-});
-
   // Global database synchronization endpoint to maintain data consistency
   app.post('/api/sync-all-user-data', async (req, res) => {
     res.set('Content-Type', 'application/json');
@@ -2518,14 +1452,14 @@ app.get('/api/strategyzer', (req, res) => {
     }
 
     try {
-      const users = await dbStorage.getAllUsers();
+      const users = await storage.getAllUsers();
       let totalSynced = 0;
       const syncReport = {
         usersProcessed: 0,
         postsAdded: 0,
         postsRemoved: 0,
         ledgerUpdates: 0,
-        errors: [] as string[]
+        errors: []
       };
 
       for (const user of users) {
@@ -2540,11 +1474,11 @@ app.get('/api/strategyzer', (req, res) => {
           if (user.subscriptionPlan === 'professional') quota = 52;
           else if (user.subscriptionPlan === 'growth') quota = 27;
           
-          const currentPosts = await dbStorage.getPostsByUser(user.id);
+          const currentPosts = await storage.getPostsByUser(user.id);
           const currentCount = currentPosts.length;
           
           // Get posted count for ledger update
-          const postedPosts = currentPosts.filter((post: any) => 
+          const postedPosts = currentPosts.filter(post => 
             post.status === 'published' && post.publishedAt
           );
           const postedCount = postedPosts.length;
@@ -2555,10 +1489,10 @@ app.get('/api/strategyzer', (req, res) => {
           // Remove any excess posts beyond subscription quota
           if (currentCount > quota) {
             const excess = currentCount - quota;
-            const draftPosts = currentPosts.filter((post: any) => post.status === 'draft');
+            const draftPosts = currentPosts.filter(post => post.status === 'draft');
             
             for (let i = 0; i < Math.min(excess, draftPosts.length); i++) {
-              await dbStorage.deletePost(draftPosts[i].id);
+              await storage.deletePost(draftPosts[i].id);
             }
             syncReport.postsRemoved += Math.min(excess, draftPosts.length);
             console.log(`Removed ${Math.min(excess, draftPosts.length)} excess posts for ${userId}`);
@@ -2566,16 +1500,16 @@ app.get('/api/strategyzer', (req, res) => {
 
           // Update or create post ledger entry
           try {
-            const existingLedger = await dbStorage.getPostLedgerByUser(userId);
+            const existingLedger = await storage.getPostLedgerByUser(userId);
             if (existingLedger) {
-              await dbStorage.updatePostLedger(userId, {
+              await storage.updatePostLedger(userId, {
                 usedPosts: postedCount,
                 subscriptionTier: user.subscriptionPlan?.toLowerCase() || 'starter',
                 quota: quota,
                 updatedAt: new Date()
               });
             } else {
-              await dbStorage.createPostLedger({
+              await storage.createPostLedger({
                 userId: userId,
                 subscriptionTier: user.subscriptionPlan?.toLowerCase() || 'starter',
                 periodStart: new Date(),
@@ -2588,15 +1522,15 @@ app.get('/api/strategyzer', (req, res) => {
             syncReport.ledgerUpdates++;
           } catch (ledgerError: any) {
             console.error(`Ledger sync error for ${userId}:`, ledgerError);
-            (syncReport.errors as string[]).push(`Ledger error for ${userId}: ${ledgerError.message || 'Unknown error'}`);
+            syncReport.errors.push(`Ledger error for ${userId}: ${ledgerError.message || 'Unknown error'}`);
           }
 
           console.log(`Data synced for ${userId} to ${quota} posts (${user.subscriptionPlan} plan)`);
           totalSynced++;
 
-        } catch (userError: any) {
+        } catch (userError) {
           console.error(`Sync error for user ${user.phone}:`, userError);
-          (syncReport.errors as string[]).push(`User ${user.phone}: ${userError?.message || 'Unknown error'}`);
+          syncReport.errors.push(`User ${user.phone}: ${userError.message}`);
         }
       }
 
@@ -2621,212 +1555,6 @@ app.get('/api/strategyzer', (req, res) => {
     res.status(200).json({ test: 'JSON working' });
   });
 
-  // Generate AI-powered schedule using xAI integration
-  app.post("/api/generate-ai-schedule", asyncHandler(async (req: any, res: Response) => {
-    try {
-      const { brandPurpose, totalPosts = 30, platforms } = req.body;
-      
-      if (!brandPurpose) {
-        return res.status(400).json({ message: "Brand purpose data required" });
-      }
-
-      // Convert phone number to user ID for database operations
-      let actualUserId = req.session.userId;
-      if (typeof actualUserId === 'string' && actualUserId.startsWith('+')) {
-        // Phone number session - convert to user ID 2 for demo user
-        actualUserId = 2;
-      }
-
-      // Get current subscription status and enforce strict plan limits
-      const { SubscriptionService } = await import('./subscription-service');
-      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(actualUserId);
-      
-      // Import subscription plans to get exact allocation
-      const { SUBSCRIPTION_PLANS } = await import('./subscription-service');
-      const userPlan = SUBSCRIPTION_PLANS[subscriptionStatus.plan.name.toLowerCase()];
-      
-      if (!userPlan) {
-        return res.status(400).json({ 
-          message: `Invalid subscription plan: ${subscriptionStatus.plan.name}`,
-          subscriptionLimitReached: true
-        });
-      }
-
-      // Users get their full subscription allocation and can regenerate schedule unlimited times
-      const planPostLimit = userPlan.postsPerMonth;
-      
-      // Clear ALL existing draft posts for this user to prevent duplication
-      const existingPosts = await dbStorage.getPostsByUser(actualUserId);
-      const draftPosts = existingPosts.filter(p => p.status === 'draft');
-      
-      if (draftPosts.length > 0) {
-        console.log(`Clearing ${draftPosts.length} draft posts to regenerate fresh schedule`);
-        for (const post of draftPosts) {
-          await dbStorage.deletePost(post.id);
-        }
-      }
-
-      // Verify user ID consistency before proceeding
-      if (!actualUserId) {
-        return res.status(401).json({ 
-          success: false, 
-          error: 'User session required for content generation' 
-        });
-      }
-
-      // Double-check user exists in database to prevent orphaned posts
-      const sessionUser = await dbStorage.getUser(actualUserId);
-      if (!sessionUser) {
-        return res.status(401).json({ 
-          success: false, 
-          error: 'Invalid user session' 
-        });
-      }
-
-      console.log(`User ID tracking verified: ${actualUserId} (${sessionUser.email})`);
-
-      // Log current post counts before generation
-      const currentPosts = await dbStorage.getPostsByUser(actualUserId);
-      const currentCounts = {
-        total: currentPosts.length,
-        draft: currentPosts.filter(p => p.status === 'draft').length,
-        approved: currentPosts.filter(p => p.status === 'approved').length,
-        scheduled: currentPosts.filter(p => p.status === 'scheduled').length,
-        published: currentPosts.filter(p => p.status === 'published').length
-      };
-      
-      console.log(`Pre-generation post counts for user ${actualUserId}:`, currentCounts);
-      console.log(`Generating fresh ${planPostLimit} posts for ${brandPurpose.brandName}: ${userPlan.name} plan - unlimited regenerations allowed`)
-
-      // Import xAI functions
-      const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
-      
-      // Prepare content generation parameters with full subscription allocation
-      const contentParams = {
-        brandName: brandPurpose.brandName,
-        productsServices: brandPurpose.productsServices,
-        corePurpose: brandPurpose.corePurpose,
-        audience: brandPurpose.audience,
-        jobToBeDone: brandPurpose.jobToBeDone,
-        motivations: brandPurpose.motivations,
-        painPoints: brandPurpose.painPoints,
-        goals: brandPurpose.goals || {},
-        contactDetails: brandPurpose.contactDetails || {},
-        platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-        totalPosts: planPostLimit // Generate full subscription allocation
-      };
-
-      // Generate brand analysis
-      const analysis = await analyzeBrandPurpose(contentParams);
-      console.log(`Brand analysis completed. JTBD Score: ${analysis.jtbdScore}/100`);
-
-      // Generate intelligent content calendar
-      const generatedPosts = await generateContentCalendar(contentParams);
-      console.log(`Generated ${generatedPosts.length} AI-optimized posts`);
-
-      // Save posts to database with strict subscription limit enforcement
-      const savedPosts = [];
-      const postsToSave = generatedPosts.slice(0, planPostLimit); // Enforce exact plan limit
-      
-      console.log(`Saving exactly ${planPostLimit} posts for ${userPlan.name} plan (generated ${generatedPosts.length}, saving ${postsToSave.length})`);
-      
-      for (const post of postsToSave) {
-        try {
-          const postData = {
-            userId: actualUserId,
-            platform: post.platform,
-            content: post.content,
-            status: 'draft',
-            scheduledFor: new Date(post.scheduledFor),
-            subscriptionCycle: subscriptionStatus.subscriptionCycle,
-            aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience}. JTBD alignment: ${analysis.jtbdScore}/100`
-          };
-
-          const savedPost = await dbStorage.createPost(postData);
-          savedPosts.push({
-            ...savedPost,
-            aiScore: analysis.jtbdScore
-          });
-        } catch (error) {
-          console.error('Error saving post:', error);
-        }
-      }
-
-      // Prepare schedule insights with subscription information
-      const scheduleData = {
-        posts: savedPosts,
-        subscription: {
-          plan: subscriptionStatus.plan.name,
-          totalAllowed: subscriptionStatus.totalPostsAllowed,
-          used: subscriptionStatus.postsUsed + savedPosts.length, // Include newly created posts
-          remaining: Math.max(0, subscriptionStatus.postsRemaining - savedPosts.length),
-          cycleStart: subscriptionStatus.cycleInfo.cycleStart,
-          cycleEnd: subscriptionStatus.cycleInfo.cycleEnd
-        },
-        analysis: {
-          jtbdScore: analysis.jtbdScore,
-          platformWeighting: analysis.platformWeighting,
-          tone: analysis.tone,
-          postTypeAllocation: analysis.postTypeAllocation,
-          suggestions: analysis.suggestions
-        },
-        schedule: {
-          optimalTimes: {
-            facebook: ['9:00 AM', '1:00 PM', '3:00 PM'],
-            instagram: ['6:00 AM', '12:00 PM', '7:00 PM'],
-            linkedin: ['8:00 AM', '12:00 PM', '5:00 PM'],
-            x: ['9:00 AM', '3:00 PM', '6:00 PM'],
-            youtube: ['2:00 PM', '8:00 PM']
-          },
-          eventAlignment: [
-            'Queensland SME Expo alignment',
-            'Local business networking events',
-            'Industry peak times for engagement'
-          ],
-          contentThemes: [
-            'Brand purpose storytelling',
-            'Customer pain point solutions',
-            'Job-to-be-done focused content',
-            'Queensland business community'
-          ]
-        }
-      };
-
-      // Verify post counts after generation to prevent duplication
-      const finalPosts = await dbStorage.getPostsByUser(actualUserId);
-      const finalCounts = {
-        total: finalPosts.length,
-        draft: finalPosts.filter(p => p.status === 'draft').length,
-        approved: finalPosts.filter(p => p.status === 'approved').length,
-        scheduled: finalPosts.filter(p => p.status === 'scheduled').length,
-        published: finalPosts.filter(p => p.status === 'published').length
-      };
-      
-      console.log(`Post-generation verification for user ${actualUserId}:`, finalCounts);
-      console.log(`AI schedule generated successfully: ${savedPosts.length} posts saved`);
-
-      // Add verification data to response
-      const responseData = {
-        ...scheduleData,
-        verification: {
-          preGeneration: currentCounts,
-          postGeneration: finalCounts,
-          newPostsCreated: savedPosts.length,
-          userIdVerified: actualUserId
-        }
-      };
-
-      res.json(responseData);
-
-    } catch (error: any) {
-      console.error('AI schedule generation error:', error);
-      res.status(500).json({ 
-        message: "Error generating AI schedule",
-        error: error.message 
-      });
-    }
-  }));
-
 
 
 
@@ -2848,16 +1576,9 @@ app.get('/api/strategyzer', (req, res) => {
   });
 
   // Global error handler with comprehensive debugging
-  app.use(async (err: any, req: Request, res: Response, next: NextFunction) => { 
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => { 
     console.error('Error Handler:', err.stack); 
-    const { PostRetryService } = await import('./post-retry-service'); 
-    if (req.path === '/api/post' && (err.message.includes('fetch') || err.message.includes('db'))) { 
-      const postId = req.body?.postId; 
-      if (postId) await PostRetryService.queueForRetry(parseInt(postId), req.body?.platform || 'unknown', `System retry: ${err.message}`); 
-    } 
-    if (!res.headersSent) { 
-      res.status(500).json({ error: 'Internal error', retrying: req.path === '/api/post', stack: process.env.NODE_ENV === 'development' ? err.stack : undefined }); 
-    } 
+    res.status(500).json({ error: 'Internal error', stack: err.stack }); 
   });
 
   // Handle uncaught exceptions
@@ -2866,49 +1587,7 @@ app.get('/api/strategyzer', (req, res) => {
   });
 
   // Register API routes BEFORE Vite setup to prevent HTML responses
-  // OAuth route configuration for platform connections
-  app.get('/oauth/:platform', (req, res) => {
-    const platform = req.params.platform;
-    const validPlatforms = ['facebook', 'linkedin', 'twitter', 'youtube', 'instagram'];
-    
-    if (!validPlatforms.includes(platform)) {
-      return res.status(400).json({ error: 'Invalid platform' });
-    }
-    
-    // Redirect to platform-specific OAuth endpoint
-    res.redirect(`/api/oauth/${platform}`);
-  });
-
-  // Setup HTTP server with WebSocket support
-  const httpServer = createServer(app);
-  
-  // Create WebSocket server with noServer option
-  const wss = new WebSocketServer({ noServer: true });
-  
-  wss.on('connection', (ws) => {
-    console.log('WebSocket client connected');
-    
-    ws.on('message', (message) => {
-      console.log('WebSocket message received:', message.toString());
-    });
-    
-    ws.on('close', () => {
-      console.log('WebSocket closed');
-    });
-    
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-    });
-  });
-  
-  // Handle WebSocket upgrade requests
-  httpServer.on('upgrade', (request, socket, head) => {
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request);
-    });
-  });
-
-  await registerRoutes(app);
+  const httpServer = await registerRoutes(app);
 
   // API route protection middleware - prevents HTML responses for API calls
   app.use('/api/*', (req, res, next) => {
@@ -2947,7 +1626,11 @@ app.get('/api/strategyzer', (req, res) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
-  httpServer.listen(port, "0.0.0.0", () => {
-    log(`serving on port ${port} with WebSocket support`);
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    reusePort: true,
+  }, () => {
+    log(`serving on port ${port}`);
   });
 })();

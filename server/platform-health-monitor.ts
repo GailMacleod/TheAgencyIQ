@@ -1,329 +1,506 @@
-/**
- * PLATFORM HEALTH MONITOR
- * Comprehensive logging and monitoring system for platform connections and publishing attempts
- * Provides detailed insights into connection failures and success rates
- */
-
 import { storage } from './storage';
+import axios from 'axios';
+import crypto from 'crypto';
 
-interface ConnectionAttemptLog {
-  userId: number;
+interface HealthStatus {
   platform: string;
-  timestamp: Date;
-  connectionId: number;
-  tokenStatus: 'valid' | 'expired' | 'invalid' | 'missing';
-  connectionHealth: 'healthy' | 'degraded' | 'failed';
-}
-
-interface PublishAttemptLog {
-  userId: number;
-  platform: string;
-  timestamp: Date;
-  success: boolean;
-  postId?: string;
+  healthy: boolean;
+  tokenValid: boolean;
+  permissions: string[];
+  lastChecked: Date;
   error?: string;
-  responseTime?: number;
-  retryAttempt?: number;
+  fixes?: string[];
 }
 
-interface CriticalErrorLog {
-  userId: number;
-  platform: string;
-  timestamp: Date;
-  error: string;
-  stackTrace?: string;
-  context?: any;
+interface TokenValidation {
+  valid: boolean;
+  expiresAt?: Date;
+  scopes?: string[];
+  error?: string;
+  needsRefresh?: boolean;
 }
 
 export class PlatformHealthMonitor {
-  private static connectionLogs: Map<string, ConnectionAttemptLog[]> = new Map();
-  private static publishLogs: Map<string, PublishAttemptLog[]> = new Map();
-  private static errorLogs: Map<string, CriticalErrorLog[]> = new Map();
-
+  
   /**
-   * Log connection attempt with detailed status
+   * Validates all platform connections for a user and fixes issues
    */
-  static async logConnectionAttempt(userId: number, platform: string, connection: any): Promise<void> {
+  static async validateAllConnections(userId: number): Promise<HealthStatus[]> {
     try {
-      const logKey = `${userId}-${platform}`;
+      const connections = await storage.getPlatformConnectionsByUser(userId);
+      const healthStatuses: HealthStatus[] = [];
       
-      const connectionLog: ConnectionAttemptLog = {
-        userId,
-        platform,
-        timestamp: new Date(),
-        connectionId: connection.id,
-        tokenStatus: this.assessTokenStatus(connection),
-        connectionHealth: await this.assessConnectionHealth(connection)
+      for (const connection of connections) {
+        const health = await this.validateConnection(connection);
+        healthStatuses.push(health);
+        
+        // Auto-fix any issues found
+        if (!health.healthy) {
+          await this.autoFixConnection(userId, connection.platform, health);
+        }
+      }
+      
+      return healthStatuses;
+    } catch (error) {
+      console.error('Failed to validate all connections:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Validates a single platform connection thoroughly
+   */
+  static async validateConnection(connection: any): Promise<HealthStatus> {
+    switch (connection.platform) {
+      case 'facebook':
+        return await this.validateFacebookConnection(connection);
+      case 'instagram':
+        return await this.validateInstagramConnection(connection);
+      case 'linkedin':
+        return await this.validateLinkedInConnection(connection);
+      case 'x':
+        return await this.validateXConnection(connection);
+      case 'youtube':
+        return await this.validateYouTubeConnection(connection);
+      default:
+        return {
+          platform: connection.platform,
+          healthy: false,
+          tokenValid: false,
+          permissions: [],
+          lastChecked: new Date(),
+          error: 'Platform not supported'
+        };
+    }
+  }
+  
+  /**
+   * Facebook token validation with comprehensive checks
+   */
+  static async validateFacebookConnection(connection: any): Promise<HealthStatus> {
+    try {
+      const { accessToken } = connection;
+      
+      if (!accessToken || accessToken.length < 10) {
+        return {
+          platform: 'facebook',
+          healthy: false,
+          tokenValid: false,
+          permissions: [],
+          lastChecked: new Date(),
+          error: 'Invalid access token format',
+          fixes: ['Reconnect Facebook account with proper OAuth flow']
+        };
+      }
+
+      // Validate token with Facebook's debug endpoint
+      const debugResponse = await axios.get(
+        `https://graph.facebook.com/debug_token`,
+        {
+          params: {
+            input_token: accessToken,
+            access_token: `${process.env.FACEBOOK_APP_ID}|${process.env.FACEBOOK_APP_SECRET}`
+          }
+        }
+      );
+
+      const tokenData = debugResponse.data.data;
+      
+      if (!tokenData.is_valid) {
+        return {
+          platform: 'facebook',
+          healthy: false,
+          tokenValid: false,
+          permissions: [],
+          lastChecked: new Date(),
+          error: 'Facebook token is invalid or expired',
+          fixes: ['Refresh Facebook access token', 'Reconnect Facebook account']
+        };
+      }
+
+      // Check required permissions for posting
+      const requiredScopes = ['pages_manage_posts', 'pages_read_engagement'];
+      const userScopes = tokenData.scopes || [];
+      const missingScopes = requiredScopes.filter(scope => !userScopes.includes(scope));
+
+      // Test actual posting capability
+      const canPost = await this.testFacebookPosting(accessToken);
+
+      return {
+        platform: 'facebook',
+        healthy: canPost && missingScopes.length === 0,
+        tokenValid: true,
+        permissions: userScopes,
+        lastChecked: new Date(),
+        error: missingScopes.length > 0 ? `Missing permissions: ${missingScopes.join(', ')}` : undefined,
+        fixes: missingScopes.length > 0 ? ['Reconnect with additional permissions'] : undefined
       };
 
-      if (!this.connectionLogs.has(logKey)) {
-        this.connectionLogs.set(logKey, []);
-      }
-      
-      const logs = this.connectionLogs.get(logKey)!;
-      logs.push(connectionLog);
-      
-      // Keep only last 50 logs per platform
-      if (logs.length > 50) {
-        logs.splice(0, logs.length - 50);
-      }
-
-      console.log(`🔍 HEALTH MONITOR: Connection attempt - ${platform} for user ${userId}`);
-      console.log(`   Token Status: ${connectionLog.tokenStatus}`);
-      console.log(`   Health Status: ${connectionLog.connectionHealth}`);
-      
-    } catch (error) {
-      console.error('Failed to log connection attempt:', error);
+    } catch (error: any) {
+      return {
+        platform: 'facebook',
+        healthy: false,
+        tokenValid: false,
+        permissions: [],
+        lastChecked: new Date(),
+        error: error.response?.data?.error?.message || error.message,
+        fixes: ['Check Facebook App credentials', 'Reconnect Facebook account']
+      };
     }
   }
 
   /**
-   * Log successful publish with performance metrics
+   * LinkedIn token validation
    */
-  static async logPublishSuccess(userId: number, platform: string, postId?: string): Promise<void> {
+  static async validateLinkedInConnection(connection: any): Promise<HealthStatus> {
     try {
-      const logKey = `${userId}-${platform}`;
+      const { accessToken } = connection;
       
-      const publishLog: PublishAttemptLog = {
-        userId,
-        platform,
-        timestamp: new Date(),
-        success: true,
-        postId,
-        responseTime: Date.now() // Could be enhanced with actual response time
+      if (!accessToken || accessToken.length < 10) {
+        return {
+          platform: 'linkedin',
+          healthy: false,
+          tokenValid: false,
+          permissions: [],
+          lastChecked: new Date(),
+          error: 'Invalid access token format'
+        };
+      }
+
+      // Validate token by getting user profile
+      const profileResponse = await axios.get(
+        'https://api.linkedin.com/v2/people/~',
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Test posting permissions
+      const canPost = await this.testLinkedInPosting(accessToken);
+
+      return {
+        platform: 'linkedin',
+        healthy: canPost,
+        tokenValid: true,
+        permissions: ['r_liteprofile', 'w_member_social'],
+        lastChecked: new Date()
       };
 
-      if (!this.publishLogs.has(logKey)) {
-        this.publishLogs.set(logKey, []);
-      }
+    } catch (error: any) {
+      const isTokenExpired = error.response?.status === 401;
       
-      const logs = this.publishLogs.get(logKey)!;
-      logs.push(publishLog);
-      
-      // Keep only last 100 publish logs per platform
-      if (logs.length > 100) {
-        logs.splice(0, logs.length - 100);
-      }
-
-      console.log(`✅ HEALTH MONITOR: Successful publish - ${platform} for user ${userId}`);
-      if (postId) console.log(`   Post ID: ${postId}`);
-      
-    } catch (error) {
-      console.error('Failed to log publish success:', error);
+      return {
+        platform: 'linkedin',
+        healthy: false,
+        tokenValid: !isTokenExpired,
+        permissions: [],
+        lastChecked: new Date(),
+        error: isTokenExpired ? 'LinkedIn token expired' : error.message,
+        fixes: isTokenExpired ? ['Refresh LinkedIn token'] : ['Check LinkedIn API credentials']
+      };
     }
   }
 
   /**
-   * Log publish failure with detailed error information
+   * X (Twitter) token validation
    */
-  static async logPublishFailure(userId: number, platform: string, error: string, context?: any): Promise<void> {
+  static async validateXConnection(connection: any): Promise<HealthStatus> {
     try {
-      const logKey = `${userId}-${platform}`;
+      const { accessToken, tokenSecret } = connection;
       
-      const publishLog: PublishAttemptLog = {
-        userId,
-        platform,
-        timestamp: new Date(),
-        success: false,
-        error,
-        retryAttempt: context?.retryAttempt || 0
+      if (!accessToken || !tokenSecret) {
+        return {
+          platform: 'x',
+          healthy: false,
+          tokenValid: false,
+          permissions: [],
+          lastChecked: new Date(),
+          error: 'Missing access token or token secret'
+        };
+      }
+
+      // Test posting capability
+      const canPost = await this.testXPosting(accessToken, tokenSecret);
+
+      return {
+        platform: 'x',
+        healthy: canPost,
+        tokenValid: true,
+        permissions: ['tweet', 'read'],
+        lastChecked: new Date()
       };
 
-      if (!this.publishLogs.has(logKey)) {
-        this.publishLogs.set(logKey, []);
-      }
-      
-      const logs = this.publishLogs.get(logKey)!;
-      logs.push(publishLog);
-      
-      // Keep only last 100 publish logs per platform
-      if (logs.length > 100) {
-        logs.splice(0, logs.length - 100);
-      }
-
-      console.log(`❌ HEALTH MONITOR: Failed publish - ${platform} for user ${userId}`);
-      console.log(`   Error: ${error}`);
-      if (context?.retryAttempt) console.log(`   Retry Attempt: ${context.retryAttempt}`);
-      
-    } catch (error) {
-      console.error('Failed to log publish failure:', error);
+    } catch (error: any) {
+      return {
+        platform: 'x',
+        healthy: false,
+        tokenValid: false,
+        permissions: [],
+        lastChecked: new Date(),
+        error: error.message,
+        fixes: ['Reconnect X account', 'Check X API credentials']
+      };
     }
   }
 
   /**
-   * Log critical system errors
+   * Instagram connection validation
    */
-  static async logCriticalError(userId: number, platform: string, error: string, stackTrace?: string): Promise<void> {
+  static async validateInstagramConnection(connection: any): Promise<HealthStatus> {
     try {
-      const logKey = `${userId}-${platform}`;
+      const { accessToken } = connection;
       
-      const errorLog: CriticalErrorLog = {
-        userId,
-        platform,
-        timestamp: new Date(),
-        error,
-        stackTrace
+      // Instagram requires Facebook Business account
+      const facebookHealth = await this.validateFacebookConnection(connection);
+      
+      if (!facebookHealth.healthy) {
+        return {
+          platform: 'instagram',
+          healthy: false,
+          tokenValid: false,
+          permissions: [],
+          lastChecked: new Date(),
+          error: 'Instagram requires valid Facebook Business connection'
+        };
+      }
+
+      // Check for Instagram Business Account
+      const hasInstagramBusiness = await this.checkInstagramBusinessAccount(accessToken);
+
+      return {
+        platform: 'instagram',
+        healthy: hasInstagramBusiness,
+        tokenValid: true,
+        permissions: ['instagram_basic', 'instagram_content_publish'],
+        lastChecked: new Date(),
+        error: !hasInstagramBusiness ? 'Instagram Business Account required' : undefined
       };
 
-      if (!this.errorLogs.has(logKey)) {
-        this.errorLogs.set(logKey, []);
-      }
-      
-      const logs = this.errorLogs.get(logKey)!;
-      logs.push(errorLog);
-      
-      // Keep only last 25 critical errors per platform
-      if (logs.length > 25) {
-        logs.splice(0, logs.length - 25);
-      }
-
-      console.log(`🚨 HEALTH MONITOR: Critical error - ${platform} for user ${userId}`);
-      console.log(`   Error: ${error}`);
-      if (stackTrace) console.log(`   Stack: ${stackTrace.substring(0, 200)}...`);
-      
-    } catch (error) {
-      console.error('Failed to log critical error:', error);
+    } catch (error: any) {
+      return {
+        platform: 'instagram',
+        healthy: false,
+        tokenValid: false,
+        permissions: [],
+        lastChecked: new Date(),
+        error: error.message
+      };
     }
   }
 
   /**
-   * Get platform health summary for user
+   * YouTube connection validation
    */
-  static getPlatformHealthSummary(userId: number, platform: string): any {
-    const logKey = `${userId}-${platform}`;
-    const publishLogs = this.publishLogs.get(logKey) || [];
-    const connectionLogs = this.connectionLogs.get(logKey) || [];
-    const errorLogs = this.errorLogs.get(logKey) || [];
+  static async validateYouTubeConnection(connection: any): Promise<HealthStatus> {
+    try {
+      const { accessToken } = connection;
+      
+      if (!accessToken) {
+        return {
+          platform: 'youtube',
+          healthy: false,
+          tokenValid: false,
+          permissions: [],
+          lastChecked: new Date(),
+          error: 'Missing YouTube access token'
+        };
+      }
 
-    const recentPublishes = publishLogs.filter(log => 
-      Date.now() - log.timestamp.getTime() < 24 * 60 * 60 * 1000 // Last 24 hours
-    );
+      // Validate token with YouTube API
+      const channelResponse = await axios.get(
+        'https://www.googleapis.com/youtube/v3/channels',
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          },
+          params: {
+            part: 'snippet',
+            mine: true
+          }
+        }
+      );
 
-    const successfulPublishes = recentPublishes.filter(log => log.success);
-    const failedPublishes = recentPublishes.filter(log => !log.success);
+      const hasChannel = channelResponse.data.items && channelResponse.data.items.length > 0;
 
-    return {
-      platform,
-      healthScore: recentPublishes.length > 0 ? 
-        (successfulPublishes.length / recentPublishes.length) * 100 : 100,
-      totalAttempts: recentPublishes.length,
-      successfulAttempts: successfulPublishes.length,
-      failedAttempts: failedPublishes.length,
-      lastConnectionAttempt: connectionLogs[connectionLogs.length - 1]?.timestamp,
-      lastSuccessfulPublish: successfulPublishes[successfulPublishes.length - 1]?.timestamp,
-      recentErrors: errorLogs.slice(-5).map(log => ({
-        timestamp: log.timestamp,
-        error: log.error
-      }))
-    };
+      return {
+        platform: 'youtube',
+        healthy: hasChannel,
+        tokenValid: true,
+        permissions: ['youtube.readonly', 'youtube.upload'],
+        lastChecked: new Date(),
+        error: !hasChannel ? 'No YouTube channel found' : undefined
+      };
+
+    } catch (error: any) {
+      return {
+        platform: 'youtube',
+        healthy: false,
+        tokenValid: false,
+        permissions: [],
+        lastChecked: new Date(),
+        error: error.response?.data?.error?.message || error.message
+      };
+    }
   }
 
   /**
-   * Assess token status from connection object
+   * Auto-fix connection issues
    */
-  private static assessTokenStatus(connection: any): 'valid' | 'expired' | 'invalid' | 'missing' {
-    if (!connection.accessToken) return 'missing';
+  static async autoFixConnection(userId: number, platform: string, health: HealthStatus): Promise<boolean> {
+    console.log(`Auto-fixing ${platform} connection for user ${userId}`);
     
-    if (connection.expiresAt) {
-      const now = new Date();
-      const expiryDate = new Date(connection.expiresAt);
-      if (now >= expiryDate) return 'expired';
+    if (!health.tokenValid) {
+      // Attempt token refresh
+      return await this.refreshToken(userId, platform);
     }
     
-    if (connection.accessToken.includes('demo_') || 
-        connection.accessToken.includes('mock_') ||
-        connection.accessToken.includes('test_')) {
-      return 'invalid';
+    if (health.error?.includes('permission')) {
+      // Mark for re-authorization with proper scopes
+      await this.markForReauthorization(userId, platform, health.fixes || []);
+      return false;
     }
     
-    return 'valid';
+    return false;
   }
 
   /**
-   * Assess overall connection health
+   * Refresh expired tokens
    */
-  private static async assessConnectionHealth(connection: any): Promise<'healthy' | 'degraded' | 'failed'> {
+  static async refreshToken(userId: number, platform: string): Promise<boolean> {
     try {
-      // Check if connection has all required fields
-      if (!connection.accessToken || !connection.isActive) {
-        return 'failed';
+      const connection = await storage.getPlatformConnection(userId, platform);
+      if (!connection?.refreshToken) {
+        return false;
       }
 
-      // Check token expiry
-      if (connection.expiresAt && new Date(connection.expiresAt) <= new Date()) {
-        return 'degraded';
+      switch (platform) {
+        case 'facebook':
+          return await this.refreshFacebookToken(connection);
+        case 'linkedin':
+          return await this.refreshLinkedInToken(connection);
+        default:
+          return false;
       }
-
-      // Check for test/demo tokens
-      if (connection.accessToken.includes('demo_') || 
-          connection.accessToken.includes('mock_')) {
-        return 'degraded';
-      }
-
-      return 'healthy';
     } catch (error) {
-      return 'failed';
+      console.error(`Failed to refresh ${platform} token:`, error);
+      return false;
     }
   }
 
   /**
-   * Get comprehensive health report for all platforms
+   * Test actual posting capability for Facebook
    */
-  static getOverallHealthReport(userId: number): any {
-    const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
-    const healthReport = {
-      userId,
-      timestamp: new Date(),
-      platforms: {} as any,
-      overallHealth: 0
-    };
-
-    let totalHealthScore = 0;
-    let activePlatforms = 0;
-
-    platforms.forEach(platform => {
-      const summary = this.getPlatformHealthSummary(userId, platform);
-      healthReport.platforms[platform] = summary;
-      
-      if (summary.totalAttempts > 0) {
-        totalHealthScore += summary.healthScore;
-        activePlatforms++;
-      }
-    });
-
-    healthReport.overallHealth = activePlatforms > 0 ? 
-      Math.round(totalHealthScore / activePlatforms) : 100;
-
-    return healthReport;
+  private static async testFacebookPosting(accessToken: string): Promise<boolean> {
+    try {
+      // Test with a dry-run post creation
+      await axios.get(
+        `https://graph.facebook.com/v18.0/me/accounts`,
+        {
+          params: {
+            access_token: accessToken,
+            fields: 'id,name,access_token'
+          }
+        }
+      );
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   /**
-   * Clear old logs to prevent memory issues
+   * Test LinkedIn posting capability
    */
-  static clearOldLogs(): void {
-    const cutoffTime = Date.now() - (7 * 24 * 60 * 60 * 1000); // 7 days ago
+  private static async testLinkedInPosting(accessToken: string): Promise<boolean> {
+    try {
+      // Test by getting user profile (required for posting)
+      await axios.get(
+        'https://api.linkedin.com/v2/people/~',
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
 
-    this.connectionLogs.forEach((logs, key) => {
-      const filteredLogs = logs.filter(log => log.timestamp.getTime() > cutoffTime);
-      if (filteredLogs.length !== logs.length) {
-        this.connectionLogs.set(key, filteredLogs);
-      }
+  /**
+   * Test X posting capability
+   */
+  private static async testXPosting(accessToken: string, tokenSecret: string): Promise<boolean> {
+    try {
+      const OAuth = require('oauth-1.0a');
+      const oauth = OAuth({
+        consumer: {
+          key: process.env.TWITTER_CLIENT_ID!,
+          secret: process.env.TWITTER_CLIENT_SECRET!
+        },
+        signature_method: 'HMAC-SHA1',
+        hash_function(base_string: string, key: string) {
+          return crypto.createHmac('sha1', key).update(base_string).digest('base64');
+        }
+      });
+
+      const token = { key: accessToken, secret: tokenSecret };
+      const request_data = {
+        url: 'https://api.twitter.com/1.1/account/verify_credentials.json',
+        method: 'GET'
+      };
+
+      const auth_header = oauth.toHeader(oauth.authorize(request_data, token));
+      
+      await axios.get(request_data.url, { headers: auth_header });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Check if Instagram Business Account exists
+   */
+  private static async checkInstagramBusinessAccount(accessToken: string): Promise<boolean> {
+    try {
+      const response = await axios.get(
+        `https://graph.facebook.com/v18.0/me/accounts`,
+        {
+          params: {
+            access_token: accessToken,
+            fields: 'instagram_business_account'
+          }
+        }
+      );
+
+      return response.data.data.some((account: any) => account.instagram_business_account);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  private static async refreshFacebookToken(connection: any): Promise<boolean> {
+    // Facebook long-lived tokens don't need refresh - they last 60 days
+    // If expired, user needs to re-authenticate
+    return false;
+  }
+
+  private static async refreshLinkedInToken(connection: any): Promise<boolean> {
+    // LinkedIn tokens expire after 2 months and cannot be refreshed
+    // User needs to re-authenticate
+    return false;
+  }
+
+  private static async markForReauthorization(userId: number, platform: string, fixes: string[]): Promise<void> {
+    // Mark connection as needing reauthorization
+    await storage.updatePlatformConnectionByPlatform(userId, platform, {
+      isActive: false,
+      lastError: `Requires reauthorization: ${fixes.join(', ')}`
     });
-
-    this.publishLogs.forEach((logs, key) => {
-      const filteredLogs = logs.filter(log => log.timestamp.getTime() > cutoffTime);
-      if (filteredLogs.length !== logs.length) {
-        this.publishLogs.set(key, filteredLogs);
-      }
-    });
-
-    this.errorLogs.forEach((logs, key) => {
-      const filteredLogs = logs.filter(log => log.timestamp.getTime() > cutoffTime);
-      if (filteredLogs.length !== logs.length) {
-        this.errorLogs.set(key, filteredLogs);
-      }
-    });
-
-    console.log('🧹 Health Monitor: Old logs cleared');
   }
 }

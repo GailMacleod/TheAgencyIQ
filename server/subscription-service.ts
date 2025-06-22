@@ -97,35 +97,20 @@ export class SubscriptionService {
   static async getSubscriptionStatus(userId: number) {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     if (!user || !user.subscriptionStart || !user.subscriptionPlan) {
-      // For demo user, return default professional subscription
-      if (userId === 2) {
-        const demoUser = {
-          id: 2,
-          subscriptionPlan: 'professional',
-          subscriptionStart: new Date('2025-01-01'),
-          email: 'demo@theagencyiq.com'
-        };
-        return this.getSubscriptionStatusForUser(demoUser);
-      }
       throw new Error('No active subscription found');
     }
     
-    return this.getSubscriptionStatusForUser(user);
-  }
-
-  // Helper method to get subscription status for a user object
-  static async getSubscriptionStatusForUser(user: any) {
     const { cycleName } = this.getCurrentCycle(user.subscriptionStart);
     
     // Get or create current cycle analytics
-    let analytics = await this.initializeSubscriptionCycle(user.id, user.subscriptionPlan, user.subscriptionStart);
+    let analytics = await this.initializeSubscriptionCycle(userId, user.subscriptionPlan, user.subscriptionStart);
     
     // Count actual posts used in current cycle
     const postsInCycle = await db
       .select()
       .from(posts)
       .where(and(
-        eq(posts.userId, user.id),
+        eq(posts.userId, userId),
         eq(posts.subscriptionCycle, cycleName),
         eq(posts.status, 'published')
       ));

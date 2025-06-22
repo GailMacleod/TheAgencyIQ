@@ -77,8 +77,6 @@ export default function ConnectPlatforms() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
-  const [testing, setTesting] = useState(false);
-  const [testResults, setTestResults] = useState<any>(null);
 
   // Fetch platform connections
   const { data: connections = [], isLoading } = useQuery<PlatformConnection[]>({
@@ -116,82 +114,23 @@ export default function ConnectPlatforms() {
         return;
       }
       
-      // Direct connection for Facebook to avoid OAuth redirect issues
-      if (platform === 'facebook') {
-        const response = await fetch('/api/auth/facebook', {
-          method: 'GET',
-          credentials: 'include'
-        });
-        
-        if (response.redirected) {
-          // Handle the redirect result
-          window.location.href = response.url;
-          return;
-        }
-        
-        const result = await response.text();
-        if (result.includes('connected=facebook')) {
-          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-          toast({
-            title: "Facebook Connected",
-            description: "Facebook connection established successfully"
-          });
-        }
-        
-        setConnecting(prev => ({ ...prev, [platform]: false }));
-        return;
-      }
-
-      // Direct connection for LinkedIn to avoid OAuth issues
+      // Try LinkedIn OAuth directly - let's see if the credentials work
       if (platform === 'linkedin') {
-        const response = await fetch('/api/auth/linkedin', {
-          method: 'GET',
-          credentials: 'include'
-        });
-        
-        if (response.redirected) {
-          // Handle the redirect result
-          window.location.href = response.url;
-          return;
-        }
-        
-        const result = await response.text();
-        if (result.includes('success')) {
-          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-          toast({
-            title: "LinkedIn Connected",
-            description: "LinkedIn connection established successfully"
-          });
-        }
-        
-        setConnecting(prev => ({ ...prev, [platform]: false }));
-        return;
+        console.log('Attempting LinkedIn OAuth with existing credentials');
       }
       
-      // Map platform names to OAuth routes (Facebook uses direct connection above)
+      // Map platform names to OAuth routes
       const oauthRoutes: { [key: string]: string } = {
-        'x': '/auth/twitter',
-        'youtube': '/auth/youtube',
-        'instagram': '/auth/instagram'
+        'facebook': '/api/auth/facebook',
+        'linkedin': '/api/auth/linkedin',
+        'x': '/api/auth/x',
+        'youtube': '/api/auth/youtube'
       };
       
       const oauthUrl = oauthRoutes[platform];
       if (!oauthUrl) {
         throw new Error(`OAuth not configured for ${platform}`);
       }
-      
-      // Add timeout for OAuth redirects to prevent getting stuck
-      const redirectTimer = setTimeout(() => {
-        setConnecting(prev => ({ ...prev, [platform]: false }));
-        toast({
-          title: "Connection Timeout",
-          description: "OAuth connection timed out. Please try again.",
-          variant: "destructive"
-        });
-      }, 10000); // 10 second timeout
-      
-      // Store timer reference to clear it if successful
-      window.sessionStorage.setItem('oauthTimer', redirectTimer.toString());
       
       // Redirect to OAuth flow
       window.location.href = oauthUrl;
@@ -214,42 +153,20 @@ export default function ConnectPlatforms() {
         credentials: 'include',
         body: JSON.stringify({ platform })
       });
-      if (!response.ok) {
-        throw new Error('Failed to disconnect platform');
-      }
       return response.json();
     },
-    onMutate: async (platform: string) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['/api/platform-connections'] });
-      
-      // Snapshot the previous value
-      const previousConnections = queryClient.getQueryData(['/api/platform-connections']);
-      
-      // Optimistically update to remove the connection
-      queryClient.setQueryData(['/api/platform-connections'], (old: PlatformConnection[] = []) => {
-        return old.filter(conn => conn.platform !== platform);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+      toast({
+        title: "Platform Disconnected",
+        description: "Platform has been successfully disconnected"
       });
-      
-      return { previousConnections };
     },
-    onError: (err, platform, context) => {
-      // If the mutation fails, use the context to roll back
-      if (context?.previousConnections) {
-        queryClient.setQueryData(['/api/platform-connections'], context.previousConnections);
-      }
+    onError: () => {
       toast({
         title: "Disconnect Failed", 
         description: "Failed to disconnect platform. Please try again.",
         variant: "destructive"
-      });
-    },
-    onSuccess: (data, platform) => {
-      // Refetch to ensure data consistency
-      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-      toast({
-        title: "Platform Disconnected",
-        description: `${platform} has been successfully disconnected`
       });
     }
   });
@@ -297,74 +214,7 @@ export default function ConnectPlatforms() {
           <p className="text-gray-600 text-lg">
             Connect your social media accounts to enable automated posting with real API credentials
           </p>
-          
-          {/* OAuth Testing and Navigation */}
-          <div className="flex justify-center space-x-4 mt-6">
-            <Button
-              onClick={async () => {
-                setTesting(true);
-                try {
-                  const response = await fetch('/api/test-oauth-platforms', {
-                    credentials: 'include'
-                  });
-                  const data = await response.json();
-                  setTestResults(data);
-                  toast({
-                    title: "OAuth Test Complete",
-                    description: `Tested ${Object.keys(data.platforms).length} platforms`
-                  });
-                } catch (error) {
-                  toast({
-                    title: "Test Failed",
-                    description: "Could not test OAuth platforms",
-                    variant: "destructive"
-                  });
-                } finally {
-                  setTesting(false);
-                }
-              }}
-              variant="outline"
-              className="text-sm"
-              disabled={testing}
-            >
-              {testing ? 'Testing...' : 'Test All Platforms'}
-            </Button>
-            <Button
-              onClick={() => setLocation("/intelligent-schedule")}
-              variant="outline"
-              className="text-sm"
-            >
-              Test AI Schedule →
-            </Button>
-            <Button
-              onClick={() => setLocation("/brand-purpose")}
-              variant="outline"
-              className="text-sm"
-            >
-              ← Back to Brand Purpose
-            </Button>
-          </div>
         </div>
-
-        {/* OAuth Test Results Display */}
-        {testResults && (
-          <div className="mb-8 bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Platform Test Results</h3>
-            <div className="grid gap-3">
-              {testResults.summary.map((result: any) => (
-                <div key={result.platform} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${result.status === 'working' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="font-medium capitalize">{result.platform}</span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {result.status === 'working' ? '✅ Ready' : '❌ ' + result.message}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Object.entries(platformConfig).map(([platform, config]) => {
@@ -447,30 +297,13 @@ export default function ConnectPlatforms() {
                           <p className="text-sm text-gray-600 mb-4">
                             Connect using secure OAuth authentication
                           </p>
-                          <div className="space-y-2">
-                            <Button
-                              onClick={() => handleOAuthConnect(platform)}
-                              className="w-full"
-                              disabled={connecting[platform]}
-                            >
-                              {connecting[platform] ? 'Connecting...' : 'CONNECT'}
-                            </Button>
-                            {platform === 'linkedin' && (
-                              <Button
-                                onClick={() => {
-                                  setConnecting(prev => ({ ...prev, [platform]: false }));
-                                  toast({
-                                    title: "LinkedIn Skipped",
-                                    description: "You can test other platforms and return to LinkedIn later"
-                                  });
-                                }}
-                                variant="outline"
-                                className="w-full text-xs"
-                              >
-                                Skip for Now
-                              </Button>
-                            )}
-                          </div>
+                          <Button
+                            onClick={() => handleOAuthConnect(platform)}
+                            className="w-full"
+                            disabled={connecting[platform]}
+                          >
+                            {connecting[platform] ? 'Connecting...' : 'CONNECT'}
+                          </Button>
                         </div>
                       )}
                     </div>

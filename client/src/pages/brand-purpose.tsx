@@ -10,12 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
-import { Bot, Lightbulb, Sparkles } from "lucide-react";
+import { Bot, Lightbulb } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const brandPurposeSchema = z.object({
@@ -62,9 +62,6 @@ export default function BrandPurpose() {
   const [guidance, setGuidance] = useState<string>("");
   const [showGuidance, setShowGuidance] = useState(false);
   const [isGeneratingGuidance, setIsGeneratingGuidance] = useState(false);
-  const [analysisTriggered, setAnalysisTriggered] = useState(false);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load existing brand purpose data
   const { data: existingBrandPurpose, isLoading: isLoadingBrandPurpose } = useQuery({
@@ -180,9 +177,9 @@ export default function BrandPurpose() {
     if (brandName && brandName.length >= 2 && 
         productsServices && productsServices.length >= 10 && 
         corePurpose && corePurpose.length >= 10 &&
-        !isGeneratingGuidance && !showGuidance && !isExistingData && !analysisTriggered) {
+        !isGeneratingGuidance && !showGuidance && !isExistingData) {
       
-      setAnalysisTriggered(true);
+      console.log('Triggering Grok API waterfall content generation...');
       setIsGeneratingGuidance(true);
       
       // Generate strategic guidance based on Strategyzer methodology
@@ -192,7 +189,7 @@ export default function BrandPurpose() {
         corePurpose
       });
     }
-  }, [brandName, productsServices, corePurpose, isGeneratingGuidance, showGuidance, isExistingData, analysisTriggered]);
+  }, [brandName, productsServices, corePurpose, isGeneratingGuidance, showGuidance, isExistingData]);
 
   // Auto-save for better user experience
   const autoSaveMutation = useMutation({
@@ -217,36 +214,20 @@ export default function BrandPurpose() {
   // Generate guidance mutation with proper error handling
   const guidanceMutation = useMutation({
     mutationFn: async (formData: Partial<BrandPurposeForm>) => {
-      try {        
-        const response = await fetch('/api/strategyzer');
-        const strategyzerData = await response.json();
-        
-        // Format the response as guidance text
-        const guidanceText = `## STRATEGYZER VALUE PROPOSITION ANALYSIS
-
-**Customer Jobs Analysis:**
-- Functional Job: ${strategyzerData.jobs.functional}
-- Emotional Job: ${strategyzerData.jobs.emotional}  
-- Social Job: ${strategyzerData.jobs.social}
-
-**Customer Pains:**
-${strategyzerData.pains}
-
-**Customer Gains:**
-${strategyzerData.gains}
-
-**Strategic Insights:**
-${strategyzerData.insights}
-
-**Recommendations:**
-1. Focus on local Queensland market positioning
-2. Emphasize digital presence and professional credibility
-3. Address resource constraints with cost-effective solutions
-4. Build community connections for sustained growth`;
-
-        return guidanceText;
+      try {
+        const response = await apiRequest("POST", "/api/generate-guidance", {
+          brandName: formData.brandName,
+          productsServices: formData.productsServices,
+          corePurpose: formData.corePurpose,
+          audience: formData.audience,
+          jobToBeDone: formData.jobToBeDone,
+          motivations: formData.motivations,
+          painPoints: formData.painPoints
+        });
+        const result = await response.json();
+        return result.guidance;
       } catch (error) {
-        console.error("Strategyzer API request failed:", error);
+        console.error("Guidance API request failed:", error);
         return null;
       }
     },
@@ -255,134 +236,15 @@ ${strategyzerData.insights}
         setGuidance(guidance);
         setShowGuidance(true);
       }
-      setAnalysisTriggered(false);
     },
     onError: (error) => {
       console.error("Failed to generate guidance:", error);
-      setAnalysisTriggered(false);
+      // Silently fail guidance generation
     },
     onSettled: () => {
       setIsGeneratingGuidance(false);
-      setAnalysisTriggered(false);
     },
   });
-
-
-
-  // Waterfall autofill system - fills fields progressively
-  const waterfallAutofill = async () => {
-    const formData = form.getValues();
-    
-    // Check if first three fields are complete enough to trigger autofill
-    if (!formData.brandName || !formData.productsServices || !formData.corePurpose) {
-      toast({
-        title: "Complete Required Fields",
-        description: "Please fill in Brand Name, Products/Services, and Core Purpose to unlock autofill",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsGeneratingGuidance(true);
-      
-      // Get Strategyzer analysis first
-      const strategyzerResponse = await fetch('/api/strategyzer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brandName: formData.brandName,
-          productsServices: formData.productsServices,
-          corePurpose: formData.corePurpose
-        }),
-        credentials: 'include'
-      });
-      
-      if (!strategyzerResponse.ok) {
-        throw new Error('Failed to get Strategyzer analysis');
-      }
-      
-      const analysis = await strategyzerResponse.json();
-      
-      // Waterfall fill: progressively populate empty fields
-      const updates: any = {};
-      
-      // Target Audience (if empty)
-      if (!formData.audience || formData.audience.trim() === '') {
-        updates.audience = analysis.recommendations.targetAudience;
-      }
-      
-      // Job to be Done (if empty)
-      if (!formData.jobToBeDone || formData.jobToBeDone.trim() === '') {
-        updates.jobToBeDone = "Growing their business sustainably while maintaining work-life balance and building strong customer relationships";
-      }
-      
-      // Motivations (if empty)
-      if (!formData.motivations || formData.motivations.trim() === '') {
-        updates.motivations = "Achieving financial security, building a legacy business, making a positive impact in their community, and gaining recognition as industry leaders";
-      }
-      
-      // Pain Points (if empty)
-      if (!formData.painPoints || formData.painPoints.trim() === '') {
-        updates.painPoints = "Limited marketing budget, lack of time for strategic planning, difficulty measuring ROI, keeping up with digital trends, and competing with larger businesses";
-      }
-      
-      // Key Message (if empty)
-      if (!formData.goals?.keyMessage || formData.goals.keyMessage.trim() === '') {
-        updates['goals.keyMessage'] = `${formData.brandName} delivers ${formData.productsServices} to help Queensland small businesses ${formData.corePurpose.toLowerCase()}`;
-      }
-      
-      // Education Target (if empty)
-      if (!formData.goals?.educationTarget || formData.goals.educationTarget.trim() === '') {
-        updates['goals.educationTarget'] = "Educate Queensland SMEs about effective marketing strategies, digital transformation, and sustainable business growth practices";
-      }
-      
-      // Apply updates to form
-      Object.keys(updates).forEach(key => {
-        if (key.includes('.')) {
-          const [parent, child] = key.split('.');
-          form.setValue(`${parent}.${child}` as any, updates[key]);
-        } else {
-          form.setValue(key as any, updates[key]);
-        }
-      });
-      
-      // Show guidance with analysis
-      const guidanceText = `
-## Strategyzer Analysis Complete
-
-**Value Proposition Insights:**
-${analysis.valueProposition.gainCreators.map((item: string) => `- ${item}`).join('\n')}
-
-**Customer Insights:**
-${analysis.customerSegment.jobs.map((item: string) => `- ${item}`).join('\n')}
-
-**Market Differentiators:**
-${analysis.recommendations.differentiators.map((item: string) => `- ${item}`).join('\n')}
-
-## Autofilled Fields
-${Object.keys(updates).length} fields have been automatically populated based on your brand inputs. Review and adjust as needed.
-      `;
-      
-      setGuidance(guidanceText);
-      setShowGuidance(true);
-      
-      toast({
-        title: "Autofill Complete",
-        description: `${Object.keys(updates).length} fields populated with Strategyzer insights`,
-      });
-      
-    } catch (error: any) {
-      console.error('Waterfall autofill error:', error);
-      toast({
-        title: "Autofill Failed",
-        description: "Unable to generate field suggestions. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingGuidance(false);
-    }
-  };
 
   // Manual guidance generation on demand
   const generateGuidanceManually = () => {
@@ -471,73 +333,6 @@ ${Object.keys(updates).length} fields have been automatically populated based on
     };
   };
 
-  // Auto-save function using waterfall API
-  const saveProgress = async (formData: any) => {
-    try {
-      setAutoSaveStatus('saving');
-      
-      // Use existing logo URL if already uploaded
-      let logoUrl = "";
-      if (logoPreview && logoPreview.startsWith('/uploads/')) {
-        logoUrl = logoPreview.split('?')[0]; // Remove timestamp parameter
-      }
-      
-      const saveData = {
-        ...formData,
-        logoUrl,
-      };
-      
-      const response = await fetch('/api/waterfall?step=save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveData),
-        credentials: 'include' // Include session cookies
-      });
-      
-      const result = await response.json();
-      console.log('Auto-saved:', result);
-      
-      if (result.success) {
-        setAutoSaveStatus('saved');
-        setTimeout(() => setAutoSaveStatus('idle'), 2000);
-      } else {
-        setAutoSaveStatus('idle');
-      }
-      
-      return result.success;
-    } catch (error) {
-      console.error('Auto-save error:', error);
-      setAutoSaveStatus('idle');
-      return false;
-    }
-  };
-
-  // Auto-save with proper debouncing
-  useEffect(() => {
-    const subscription = form.watch((value, { name, type }) => {
-      if (type === 'change' && name) {
-        // Clear previous timeout
-        if (debounceTimeoutRef.current) {
-          clearTimeout(debounceTimeoutRef.current);
-        }
-        
-        // Only auto-save if we have some basic data
-        if (value.brandName || value.productsServices || value.corePurpose) {
-          debounceTimeoutRef.current = setTimeout(() => {
-            saveProgress(value);
-          }, 8000); // Auto-save 8 seconds after typing stops
-        }
-      }
-    });
-    
-    return () => {
-      subscription.unsubscribe();
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, []);
-
   const onSubmit = async (data: BrandPurposeForm) => {
     try {
       setLoading(true);
@@ -553,10 +348,15 @@ ${Object.keys(updates).length} fields have been automatically populated based on
         return;
       }
       
-      // Use existing logo URL if already uploaded
+      // Upload logo if provided
       let logoUrl = "";
-      if (logoPreview && logoPreview.startsWith('/uploads/')) {
-        logoUrl = logoPreview.split('?')[0]; // Remove timestamp parameter
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append('logo', logoFile);
+        
+        const logoResponse = await apiRequest("POST", "/api/upload-logo", formData);
+        const logoData = await logoResponse.json();
+        logoUrl = logoData.logoUrl;
       }
       
       const brandData = {
@@ -605,7 +405,7 @@ ${Object.keys(updates).length} fields have been automatically populated based on
         console.log('File rejected: invalid format', file.type);
         toast({
           title: "Invalid Format",
-          description: "Logo must be PNG, JPG, JPEG, or WEBP format",
+          description: "Logo must be PNG, JPG, or WEBP format",
           variant: "destructive",
         });
         return;
@@ -622,35 +422,35 @@ ${Object.keys(updates).length} fields have been automatically populated based on
         const response = await fetch('/api/upload-logo', {
           method: 'POST',
           headers: {
-            'Authorization': 'valid-token',
+            'Authorization': localStorage.getItem('token') || '',
           },
           body: formData,
         });
         
         if (response.ok) {
           const responseData = await response.json();
-          
-          // Set file state for form submission
+          const url = URL.createObjectURL(file);
           setLogoFile(file);
-          
-          // Use server URL for preview (adds timestamp to avoid caching)
-          const serverUrl = `${responseData.logoUrl}?t=${Date.now()}`;
-          setLogoPreview(serverUrl);
+          setLogoPreview(url);
           
           console.log('Logo uploaded successfully:', file.name, file.size);
           console.log('Server response:', responseData);
-          console.log('Preview URL set:', serverUrl);
+          console.log('Preview URL set:', url);
+          
+          // Force re-render
+          setTimeout(() => {
+            setLogoPreview(url);
+          }, 100);
           
           toast({
             title: "Logo Uploaded",
-            description: `Logo "${file.name}" uploaded successfully`,
+            description: `Logo "${file.name}" uploaded successfully and preview updated.`,
           });
         } else {
-          const errorData = await response.json().catch(() => ({}));
-          console.log('Upload failed:', response.status, errorData);
+          console.log('Upload failed:', response.status);
           toast({
             title: "Upload Failed",
-            description: errorData.message || "Failed to upload logo. Please try again.",
+            description: "Failed to upload logo. Please try again.",
             variant: "destructive",
           });
         }
@@ -695,43 +495,9 @@ ${Object.keys(updates).length} fields have been automatically populated based on
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8">
-          <div className="flex items-center justify-center mb-4">
-            <h2 className="text-2xl font-normal" style={{ color: '#333333' }}>
-              {isExistingData ? 'update your brand purpose' : 'define your brand purpose'}
-            </h2>
-            {autoSaveStatus !== 'idle' && (
-              <div className="ml-4 flex items-center space-x-2">
-                {autoSaveStatus === 'saving' && (
-                  <>
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-blue-600">Saving...</span>
-                  </>
-                )}
-                {autoSaveStatus === 'saved' && (
-                  <>
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm text-green-600">Saved</span>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-          
-          <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-white text-sm font-bold">💡</span>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-blue-900 mb-2">Unlock Smart Suggestions</h3>
-                <p className="text-sm text-blue-800 leading-relaxed">
-                  Complete the first three fields (Brand Name, Products/Services, Core Purpose) with detailed, high-quality content to achieve "Strong" ratings. 
-                  This will automatically trigger our Strategyzer analysis and unlock intelligent suggestions for the remaining fields, 
-                  making it easier to complete your brand purpose with expert guidance.
-                </p>
-              </div>
-            </div>
-          </div>
+          <h2 className="text-2xl font-normal text-center mb-8" style={{ color: '#333333' }}>
+            {isExistingData ? 'update your brand purpose' : 'define your brand purpose'}
+          </h2>
           
           {isExistingData && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -750,7 +516,7 @@ ${Object.keys(updates).length} fields have been automatically populated based on
             {/* Brand Name */}
             <div>
               <Label htmlFor="brandName" className="text-sm font-medium text-gray-700">What's your brand name?</Label>
-              <div className="relative">
+              <div className="relative group">
                 <Input
                   id="brandName"
                   {...form.register('brandName')}
@@ -758,13 +524,13 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   className="mt-1"
                   autoComplete="organization"
                 />
-              </div>
-              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
-                <div className="flex items-start space-x-2">
-                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
-                    <p className="text-xs text-purple-800">Your brand name should connect to your value proposition and target customer segment.</p>
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Your brand name should connect to your value proposition and target customer segment. Strong names communicate what you do and who you serve.</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -811,7 +577,7 @@ ${Object.keys(updates).length} fields have been automatically populated based on
             {/* Products/Services */}
             <div>
               <Label htmlFor="productsServices" className="text-sm font-medium text-gray-700">What products or services does your brand offer?</Label>
-              <div className="relative">
+              <div className="relative group">
                 <Textarea
                   id="productsServices"
                   {...form.register('productsServices')}
@@ -820,13 +586,13 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   rows={3}
                   autoComplete="off"
                 />
-              </div>
-              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
-                <div className="flex items-start space-x-2">
-                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
-                    <p className="text-xs text-purple-800">Define your value proposition - what specific gain do you create or pain do you relieve? Include pricing and packages for clarity.</p>
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Define your value proposition - what specific gain do you create or pain do you relieve? Include pricing and packages for clarity.</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -873,7 +639,7 @@ ${Object.keys(updates).length} fields have been automatically populated based on
             {/* Core Purpose */}
             <div>
               <Label htmlFor="corePurpose" className="text-sm font-medium text-gray-700">What's your brand's core purpose?</Label>
-              <div className="relative">
+              <div className="relative group">
                 <Textarea
                   id="corePurpose"
                   {...form.register('corePurpose')}
@@ -882,13 +648,13 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   rows={3}
                   autoComplete="off"
                 />
-              </div>
-              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
-                <div className="flex items-start space-x-2">
-                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
-                    <p className="text-xs text-purple-800">Your core purpose defines your mission - focus on the customer jobs you help complete. Strong purposes connect emotionally to customer outcomes.</p>
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Your core purpose defines your mission - focus on the customer jobs you help complete. Strong purposes connect emotionally to customer outcomes.</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -932,52 +698,6 @@ ${Object.keys(updates).length} fields have been automatically populated based on
               )}
             </div>
 
-            {/* Waterfall Autofill Trigger */}
-            {(() => {
-              const formData = form.getValues();
-              const hasRequiredFields = formData.brandName && formData.productsServices && formData.corePurpose;
-              const hasStrongFields = formData.brandName?.length > 10 && 
-                                     formData.productsServices?.length > 50 && 
-                                     formData.corePurpose?.length > 100;
-              
-              if (hasRequiredFields && hasStrongFields) {
-                return (
-                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mb-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
-                          <Bot className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-semibold text-purple-900">Ready for Strategyzer Autofill</h3>
-                          <p className="text-xs text-purple-700">Your core brand inputs qualify for intelligent field completion</p>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        onClick={waterfallAutofill}
-                        disabled={isGeneratingGuidance}
-                        className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-6 py-2 rounded-lg shadow-lg transition-all duration-200"
-                      >
-                        {isGeneratingGuidance ? (
-                          <div className="flex items-center space-x-2">
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            <span>Analyzing...</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-2">
-                            <Sparkles className="w-4 h-4" />
-                            <span>Autofill Fields</span>
-                          </div>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            })()}
-
             {/* Supercharged Strategyzer Analysis Display */}
             {(showGuidance || isGeneratingGuidance) && (
               <Card className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 border-indigo-200 shadow-lg">
@@ -1018,14 +738,9 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                       </div>
                       {isGeneratingGuidance ? (
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-base text-indigo-800 font-medium">
-                              Performing comprehensive Value Proposition Canvas analysis...
-                            </p>
-                            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg animate-pulse">
-                              Analyzing...
-                            </div>
-                          </div>
+                          <p className="text-base text-indigo-800 font-medium">
+                            Performing comprehensive Value Proposition Canvas analysis...
+                          </p>
                           <div className="space-y-2 text-sm text-indigo-700">
                             <div className="flex items-center space-x-2">
                               <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
@@ -1043,11 +758,6 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                               <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse delay-500"></div>
                               <span>Generating Queensland market insights</span>
                             </div>
-                          </div>
-                          <div className="w-full bg-indigo-100 rounded-full h-2 mt-3">
-                            <div 
-                              className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full animate-pulse"
-                            ></div>
                           </div>
                         </div>
                       ) : showGuidance && guidance ? (
@@ -1091,7 +801,7 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   </Button>
                 )}
               </div>
-              <div className="relative">
+              <div className="relative group">
                 <Textarea
                   id="audience"
                   {...form.register('audience')}
@@ -1100,13 +810,13 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   rows={3}
                   autoComplete="off"
                 />
-              </div>
-              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
-                <div className="flex items-start space-x-2">
-                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
-                    <p className="text-xs text-purple-800">Define your customer segment - demographics, behaviors, and needs they share</p>
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Define your customer segment - demographics, behaviors, and needs they share</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1153,7 +863,7 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   </Button>
                 )}
               </div>
-              <div className="relative">
+              <div className="relative group">
                 <Textarea
                   id="jobToBeDone"
                   {...form.register('jobToBeDone')}
@@ -1162,13 +872,13 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   rows={3}
                   autoComplete="off"
                 />
-              </div>
-              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
-                <div className="flex items-start space-x-2">
-                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
-                    <p className="text-xs text-purple-800">Customer job-to-be-done - what functional, emotional, or social job do customers hire you for?</p>
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Customer job-to-be-done - what functional, emotional, or social job do customers hire you for?</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1215,7 +925,7 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   </Button>
                 )}
               </div>
-              <div className="relative">
+              <div className="relative group">
                 <Textarea
                   id="motivations"
                   {...form.register('motivations')}
@@ -1224,13 +934,13 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   rows={3}
                   autoComplete="off"
                 />
-              </div>
-              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
-                <div className="flex items-start space-x-2">
-                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
-                    <p className="text-xs text-purple-800">Customer gains - what benefits, outcomes, and characteristics your customers want</p>
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Customer gains - what benefits, outcomes, and characteristics your customers want</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1277,7 +987,7 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   </Button>
                 )}
               </div>
-              <div className="relative">
+              <div className="relative group">
                 <Textarea
                   id="painPoints"
                   {...form.register('painPoints')}
@@ -1286,13 +996,13 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   rows={3}
                   autoComplete="off"
                 />
-              </div>
-              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
-                <div className="flex items-start space-x-2">
-                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
-                    <p className="text-xs text-purple-800">Customer pains - frustrations, obstacles, and risks your customers experience</p>
+                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <div className="flex items-start space-x-2">
+                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs text-purple-800">Customer pains - frustrations, obstacles, and risks your customers experience</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1483,7 +1193,7 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   <Input
                     id="logo"
                     type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    accept="image/png,image/jpeg,image/jpg"
                     onChange={handleLogoUpload}
                     className="hidden"
                   />
@@ -1497,7 +1207,7 @@ ${Object.keys(updates).length} fields have been automatically populated based on
                   {logoFile && (
                     <span className="text-sm text-gray-600 ml-3">{logoFile.name}</span>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">Max 5MB, PNG/JPG/WEBP formats supported</p>
+                  <p className="text-xs text-gray-500 mt-1">Max 500KB, 100x100px minimum, 1000x1000px maximum, PNG/JPG only</p>
                 </div>
                 {logoPreview && (
                   <div className="flex-shrink-0">
