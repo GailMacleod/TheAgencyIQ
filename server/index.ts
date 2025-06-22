@@ -1579,7 +1579,7 @@ const enforcePublish = async (post: any, userId: number) => {
     facebook: { 
       url: 'https://graph.facebook.com/v20.0/me/feed', 
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `message=${encodeURIComponent(post.content)}&access_token=${process.env.FACEBOOK_APP_SECRET}`
+      body: `message=${encodeURIComponent(post.content)}&access_token=${process.env.FACEBOOK_APP_ID}|${process.env.FACEBOOK_APP_SECRET}`
     },
     linkedin: { 
       url: 'https://api.linkedin.com/v2/ugcPosts', 
