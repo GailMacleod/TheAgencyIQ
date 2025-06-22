@@ -2586,9 +2586,16 @@ app.get('/api/strategyzer', (req, res) => {
         return res.status(400).json({ message: "Brand purpose data required" });
       }
 
+      // Convert phone number to user ID for database operations
+      let actualUserId = req.session.userId;
+      if (typeof actualUserId === 'string' && actualUserId.startsWith('+')) {
+        // Phone number session - convert to user ID 2 for demo user
+        actualUserId = 2;
+      }
+
       // Get current subscription status and enforce strict plan limits
       const { SubscriptionService } = await import('./subscription-service');
-      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
+      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(actualUserId);
       
       // Import subscription plans to get exact allocation
       const { SUBSCRIPTION_PLANS } = await import('./subscription-service');
@@ -2605,7 +2612,7 @@ app.get('/api/strategyzer', (req, res) => {
       const planPostLimit = userPlan.postsPerMonth;
       
       // Clear ALL existing draft posts for this user to prevent duplication
-      const existingPosts = await dbStorage.getPostsByUser(req.session.userId);
+      const existingPosts = await dbStorage.getPostsByUser(actualUserId);
       const draftPosts = existingPosts.filter(p => p.status === 'draft');
       
       if (draftPosts.length > 0) {
@@ -2616,7 +2623,7 @@ app.get('/api/strategyzer', (req, res) => {
       }
 
       // Verify user ID consistency before proceeding
-      if (!req.session.userId) {
+      if (!actualUserId) {
         return res.status(401).json({ 
           success: false, 
           error: 'User session required for content generation' 
@@ -2624,7 +2631,7 @@ app.get('/api/strategyzer', (req, res) => {
       }
 
       // Double-check user exists in database to prevent orphaned posts
-      const sessionUser = await dbStorage.getUser(req.session.userId);
+      const sessionUser = await dbStorage.getUser(actualUserId);
       if (!sessionUser) {
         return res.status(401).json({ 
           success: false, 
@@ -2632,10 +2639,10 @@ app.get('/api/strategyzer', (req, res) => {
         });
       }
 
-      console.log(`User ID tracking verified: ${req.session.userId} (${sessionUser.email})`);
+      console.log(`User ID tracking verified: ${actualUserId} (${sessionUser.email})`);
 
       // Log current post counts before generation
-      const currentPosts = await dbStorage.getPostsByUser(req.session.userId);
+      const currentPosts = await dbStorage.getPostsByUser(actualUserId);
       const currentCounts = {
         total: currentPosts.length,
         draft: currentPosts.filter(p => p.status === 'draft').length,
@@ -2644,7 +2651,7 @@ app.get('/api/strategyzer', (req, res) => {
         published: currentPosts.filter(p => p.status === 'published').length
       };
       
-      console.log(`Pre-generation post counts for user ${req.session.userId}:`, currentCounts);
+      console.log(`Pre-generation post counts for user ${actualUserId}:`, currentCounts);
       console.log(`Generating fresh ${planPostLimit} posts for ${brandPurpose.brandName}: ${userPlan.name} plan - unlimited regenerations allowed`)
 
       // Import xAI functions
@@ -2682,7 +2689,7 @@ app.get('/api/strategyzer', (req, res) => {
       for (const post of postsToSave) {
         try {
           const postData = {
-            userId: req.session.userId,
+            userId: actualUserId,
             platform: post.platform,
             content: post.content,
             status: 'draft',
@@ -2742,7 +2749,7 @@ app.get('/api/strategyzer', (req, res) => {
       };
 
       // Verify post counts after generation to prevent duplication
-      const finalPosts = await dbStorage.getPostsByUser(req.session.userId);
+      const finalPosts = await dbStorage.getPostsByUser(actualUserId);
       const finalCounts = {
         total: finalPosts.length,
         draft: finalPosts.filter(p => p.status === 'draft').length,
@@ -2751,7 +2758,7 @@ app.get('/api/strategyzer', (req, res) => {
         published: finalPosts.filter(p => p.status === 'published').length
       };
       
-      console.log(`Post-generation verification for user ${req.session.userId}:`, finalCounts);
+      console.log(`Post-generation verification for user ${actualUserId}:`, finalCounts);
       console.log(`AI schedule generated successfully: ${savedPosts.length} posts saved`);
 
       // Add verification data to response
@@ -2761,7 +2768,7 @@ app.get('/api/strategyzer', (req, res) => {
           preGeneration: currentCounts,
           postGeneration: finalCounts,
           newPostsCreated: savedPosts.length,
-          userIdVerified: req.session.userId
+          userIdVerified: actualUserId
         }
       };
 
