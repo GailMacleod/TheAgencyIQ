@@ -1186,7 +1186,15 @@ app.post('/api/brand-posts', async (req, res) => {
     Using Think mode, provide strategic insights and content recommendations that strictly adhere to these marketing essentials while addressing the brand purpose components.
     `;
 
-    const aiInsights = await getAIResponse(strategyzerPrompt, 'strategyzer-analysis', strategyzerComponents);
+    let aiInsights; 
+    try { 
+      const controller = new AbortController(); 
+      setTimeout(() => controller.abort(), 20000); 
+      aiInsights = await getAIResponse(strategyzerPrompt, 'strategyzer-analysis', strategyzerComponents, { signal: controller.signal }); 
+    } catch (error) { 
+      console.log(`Strategyzer analysis timed out for ${mobileNumber}: ${error.message}`); 
+      aiInsights = { error: 'Timed out', fallback: `Validation strategy for ${brandPurpose?.brandName || 'your business'}: Focus on presence and polish with ${postCount} posts.` }; 
+    }
 
     // Get existing posts for this user (limited by subscription) - PostgreSQL authoritative
     const posts = await storage.getPostsByUser(userId);
