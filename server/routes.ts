@@ -1558,27 +1558,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Approve individual post for scheduling
+  // Approve individual post for scheduling - FIXED FOR PERSISTENT APPROVAL
   app.post("/api/approve-post", requireAuth, async (req: any, res) => {
     try {
-      const { postId } = req.body;
+      const { postId, shouldPublishNow } = req.body;
       const userId = req.session.userId;
 
       if (!postId) {
         return res.status(400).json({ message: "Post ID is required" });
       }
 
-      // Update post status to approved
+      // Set approval status with future scheduling to prevent immediate autopost processing
+      const scheduledFor = shouldPublishNow ? new Date() : new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now if not immediate
+      
       const updatedPost = await storage.updatePost(postId, { 
-        status: 'approved'
+        status: 'approved',
+        scheduledFor: scheduledFor.toISOString()
       });
 
       if (!updatedPost) {
         return res.status(404).json({ message: "Post not found" });
       }
 
-      console.log(`Post ${postId} approved by user ${userId}`);
-      res.json({ success: true, post: updatedPost });
+      console.log(`Post ${postId} approved by user ${userId} - scheduled for ${scheduledFor.toISOString()}`);
+      res.json({ 
+        success: true, 
+        post: updatedPost,
+        message: shouldPublishNow ? 'Post approved and will publish immediately' : 'Post approved and scheduled'
+      });
     } catch (error) {
       console.error('Error approving post:', error);
       res.status(500).json({ message: "Failed to approve post" });

@@ -11,49 +11,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Register autopost API routes BEFORE Vite setup
-/**
- * DIRECT POST APPROVAL ENDPOINT
- * Immediately approves and triggers autopost for any post
- */
-app.post('/api/approve-post', async (req: Request, res: Response) => {
-  try {
-    const { postId } = req.body;
-
-    if (!postId) {
-      return res.status(400).json({ success: false, error: 'Post ID required' });
-    }
-
-    // Update post to approved status and schedule immediately
-    await db
-      .update(posts)
-      .set({
-        status: 'approved',
-        scheduledFor: new Date() // Immediate scheduling
-      })
-      .where(eq(posts.id, postId));
-
-    // Trigger immediate processing
-    const [post] = await db.select().from(posts).where(eq(posts.id, postId));
-    if (post) {
-      await publishPostWithFallback(post);
-    }
-
-    res.json({
-      success: true,
-      message: 'Post approved and published',
-      postId: postId
-    });
-
-  } catch (error: any) {
-    console.error('[APPROVE-POST] Error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to approve post',
-      details: error.message
-    });
-  }
-});
+// Autopost API routes handled by server/routes.ts to prevent conflicts
 
 /**
  * AI CONTENT GENERATION WITH XAI
@@ -186,31 +144,36 @@ function startAutopostEnforcer() {
 }
 
 /**
- * Process all approved posts immediately
- * Uses existing database connections with intelligent fallbacks
+ * Process all approved posts ready for publishing
+ * Only processes posts scheduled for current time or earlier
  */
 async function processApprovedPosts() {
   try {
-    // Get all approved posts ready for publishing
+    const now = new Date();
+    
+    // Only get approved posts that are actually scheduled to publish now
     const approvedPosts = await db
       .select()
       .from(posts)
       .where(
         and(
           eq(posts.status, 'approved'),
-          lte(posts.scheduledFor, new Date())
+          lte(posts.scheduledFor, now)
         )
       );
 
     if (approvedPosts.length === 0) {
-      return; // No posts to process
+      return; // No posts ready for publishing
     }
 
-    console.log(`[AUTOPOST] Processing ${approvedPosts.length} approved posts`);
+    console.log(`[AUTOPOST] Processing ${approvedPosts.length} posts ready for publishing`);
 
-    // Process each post
+    // Process each post that's actually due
     for (const post of approvedPosts) {
-      await publishPostWithFallback(post);
+      // Double-check the post is actually due before processing
+      if (new Date(post.scheduledFor) <= now) {
+        await publishPostWithFallback(post);
+      }
     }
 
   } catch (error: any) {
