@@ -2468,7 +2468,7 @@ app.get('/api/strategyzer', (req, res) => {
     }
 
     try {
-      const users = await storage.getAllUsers();
+      const users = await dbStorage.getAllUsers();
       let totalSynced = 0;
       const syncReport = {
         usersProcessed: 0,
@@ -2490,11 +2490,11 @@ app.get('/api/strategyzer', (req, res) => {
           if (user.subscriptionPlan === 'professional') quota = 52;
           else if (user.subscriptionPlan === 'growth') quota = 27;
           
-          const currentPosts = await storage.getPostsByUser(user.id);
+          const currentPosts = await dbStorage.getPostsByUser(user.id);
           const currentCount = currentPosts.length;
           
           // Get posted count for ledger update
-          const postedPosts = currentPosts.filter(post => 
+          const postedPosts = currentPosts.filter((post: any) => 
             post.status === 'published' && post.publishedAt
           );
           const postedCount = postedPosts.length;
@@ -2505,10 +2505,10 @@ app.get('/api/strategyzer', (req, res) => {
           // Remove any excess posts beyond subscription quota
           if (currentCount > quota) {
             const excess = currentCount - quota;
-            const draftPosts = currentPosts.filter(post => post.status === 'draft');
+            const draftPosts = currentPosts.filter((post: any) => post.status === 'draft');
             
             for (let i = 0; i < Math.min(excess, draftPosts.length); i++) {
-              await storage.deletePost(draftPosts[i].id);
+              await dbStorage.deletePost(draftPosts[i].id);
             }
             syncReport.postsRemoved += Math.min(excess, draftPosts.length);
             console.log(`Removed ${Math.min(excess, draftPosts.length)} excess posts for ${userId}`);
@@ -2516,16 +2516,16 @@ app.get('/api/strategyzer', (req, res) => {
 
           // Update or create post ledger entry
           try {
-            const existingLedger = await storage.getPostLedgerByUser(userId);
+            const existingLedger = await dbStorage.getPostLedgerByUser(userId);
             if (existingLedger) {
-              await storage.updatePostLedger(userId, {
+              await dbStorage.updatePostLedger(userId, {
                 usedPosts: postedCount,
                 subscriptionTier: user.subscriptionPlan?.toLowerCase() || 'starter',
                 quota: quota,
                 updatedAt: new Date()
               });
             } else {
-              await storage.createPostLedger({
+              await dbStorage.createPostLedger({
                 userId: userId,
                 subscriptionTier: user.subscriptionPlan?.toLowerCase() || 'starter',
                 periodStart: new Date(),
@@ -2569,6 +2569,205 @@ app.get('/api/strategyzer', (req, res) => {
   app.get('/api/test-json', (req, res) => {
     console.log('Test JSON sent');
     res.status(200).json({ test: 'JSON working' });
+  });
+
+  // Generate AI-powered schedule using xAI integration
+  app.post("/api/generate-ai-schedule", asyncHandler(async (req: any, res: Response) => {
+    try {
+      const { brandPurpose, totalPosts = 30, platforms } = req.body;
+      
+      if (!brandPurpose) {
+        return res.status(400).json({ message: "Brand purpose data required" });
+      }
+
+      // Get current subscription status and enforce strict plan limits
+      const { SubscriptionService } = await import('./subscription-service');
+      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
+      
+      // Import subscription plans to get exact allocation
+      const { SUBSCRIPTION_PLANS } = await import('./subscription-service');
+      const userPlan = SUBSCRIPTION_PLANS[subscriptionStatus.plan.name.toLowerCase()];
+      
+      if (!userPlan) {
+        return res.status(400).json({ 
+          message: `Invalid subscription plan: ${subscriptionStatus.plan.name}`,
+          subscriptionLimitReached: true
+        });
+      }
+
+      // Users get their full subscription allocation and can regenerate schedule unlimited times
+      const planPostLimit = userPlan.postsPerMonth;
+      
+      // Clear ALL existing draft posts for this user to prevent duplication
+      const existingPosts = await dbStorage.getPostsByUser(req.session.userId);
+      const draftPosts = existingPosts.filter(p => p.status === 'draft');
+      
+      if (draftPosts.length > 0) {
+        console.log(`Clearing ${draftPosts.length} draft posts to regenerate fresh schedule`);
+        for (const post of draftPosts) {
+          await dbStorage.deletePost(post.id);
+        }
+      }
+
+      // Verify user ID consistency before proceeding
+      if (!req.session.userId) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'User session required for content generation' 
+        });
+      }
+
+      // Double-check user exists in database to prevent orphaned posts
+      const sessionUser = await dbStorage.getUser(req.session.userId);
+      if (!sessionUser) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Invalid user session' 
+        });
+      }
+
+      console.log(`User ID tracking verified: ${req.session.userId} (${sessionUser.email})`);
+
+      // Log current post counts before generation
+      const currentPosts = await dbStorage.getPostsByUser(req.session.userId);
+      const currentCounts = {
+        total: currentPosts.length,
+        draft: currentPosts.filter(p => p.status === 'draft').length,
+        approved: currentPosts.filter(p => p.status === 'approved').length,
+        scheduled: currentPosts.filter(p => p.status === 'scheduled').length,
+        published: currentPosts.filter(p => p.status === 'published').length
+      };
+      
+      console.log(`Pre-generation post counts for user ${req.session.userId}:`, currentCounts);
+      console.log(`Generating fresh ${planPostLimit} posts for ${brandPurpose.brandName}: ${userPlan.name} plan - unlimited regenerations allowed`)
+
+      // Import xAI functions
+      const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
+      
+      // Prepare content generation parameters with full subscription allocation
+      const contentParams = {
+        brandName: brandPurpose.brandName,
+        productsServices: brandPurpose.productsServices,
+        corePurpose: brandPurpose.corePurpose,
+        audience: brandPurpose.audience,
+        jobToBeDone: brandPurpose.jobToBeDone,
+        motivations: brandPurpose.motivations,
+        painPoints: brandPurpose.painPoints,
+        goals: brandPurpose.goals || {},
+        contactDetails: brandPurpose.contactDetails || {},
+        platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
+        totalPosts: planPostLimit // Generate full subscription allocation
+      };
+
+      // Generate brand analysis
+      const analysis = await analyzeBrandPurpose(contentParams);
+      console.log(`Brand analysis completed. JTBD Score: ${analysis.jtbdScore}/100`);
+
+      // Generate intelligent content calendar
+      const generatedPosts = await generateContentCalendar(contentParams);
+      console.log(`Generated ${generatedPosts.length} AI-optimized posts`);
+
+      // Save posts to database with strict subscription limit enforcement
+      const savedPosts = [];
+      const postsToSave = generatedPosts.slice(0, planPostLimit); // Enforce exact plan limit
+      
+      console.log(`Saving exactly ${planPostLimit} posts for ${userPlan.name} plan (generated ${generatedPosts.length}, saving ${postsToSave.length})`);
+      
+      for (const post of postsToSave) {
+        try {
+          const postData = {
+            userId: req.session.userId,
+            platform: post.platform,
+            content: post.content,
+            status: 'draft',
+            scheduledFor: new Date(post.scheduledFor),
+            subscriptionCycle: subscriptionStatus.subscriptionCycle,
+            aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience}. JTBD alignment: ${analysis.jtbdScore}/100`
+          };
+
+          const savedPost = await dbStorage.createPost(postData);
+          savedPosts.push({
+            ...savedPost,
+            aiScore: analysis.jtbdScore
+          });
+        } catch (error) {
+          console.error('Error saving post:', error);
+        }
+      }
+
+      // Prepare schedule insights with subscription information
+      const scheduleData = {
+        posts: savedPosts,
+        subscription: {
+          plan: subscriptionStatus.plan.name,
+          totalAllowed: subscriptionStatus.totalPostsAllowed,
+          used: subscriptionStatus.postsUsed + savedPosts.length, // Include newly created posts
+          remaining: Math.max(0, subscriptionStatus.postsRemaining - savedPosts.length),
+          cycleStart: subscriptionStatus.cycleInfo.cycleStart,
+          cycleEnd: subscriptionStatus.cycleInfo.cycleEnd
+        },
+        analysis: {
+          jtbdScore: analysis.jtbdScore,
+          platformWeighting: analysis.platformWeighting,
+          tone: analysis.tone,
+          postTypeAllocation: analysis.postTypeAllocation,
+          suggestions: analysis.suggestions
+        },
+        schedule: {
+          optimalTimes: {
+            facebook: ['9:00 AM', '1:00 PM', '3:00 PM'],
+            instagram: ['6:00 AM', '12:00 PM', '7:00 PM'],
+            linkedin: ['8:00 AM', '12:00 PM', '5:00 PM'],
+            x: ['9:00 AM', '3:00 PM', '6:00 PM'],
+            youtube: ['2:00 PM', '8:00 PM']
+          },
+          eventAlignment: [
+            'Queensland SME Expo alignment',
+            'Local business networking events',
+            'Industry peak times for engagement'
+          ],
+          contentThemes: [
+            'Brand purpose storytelling',
+            'Customer pain point solutions',
+            'Job-to-be-done focused content',
+            'Queensland business community'
+          ]
+        }
+      };
+
+      // Verify post counts after generation to prevent duplication
+      const finalPosts = await dbStorage.getPostsByUser(req.session.userId);
+      const finalCounts = {
+        total: finalPosts.length,
+        draft: finalPosts.filter(p => p.status === 'draft').length,
+        approved: finalPosts.filter(p => p.status === 'approved').length,
+        scheduled: finalPosts.filter(p => p.status === 'scheduled').length,
+        published: finalPosts.filter(p => p.status === 'published').length
+      };
+      
+      console.log(`Post-generation verification for user ${req.session.userId}:`, finalCounts);
+      console.log(`AI schedule generated successfully: ${savedPosts.length} posts saved`);
+
+      // Add verification data to response
+      const responseData = {
+        ...scheduleData,
+        verification: {
+          preGeneration: currentCounts,
+          postGeneration: finalCounts,
+          newPostsCreated: savedPosts.length,
+          userIdVerified: req.session.userId
+        }
+      };
+
+      res.json(responseData);
+
+    } catch (error: any) {
+      console.error('AI schedule generation error:', error);
+      res.status(500).json({ 
+        message: "Error generating AI schedule",
+        error: error.message 
+      });
+    }
   });
 
 
