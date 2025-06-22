@@ -118,14 +118,14 @@ export class SubscriptionService {
     const { cycleName } = this.getCurrentCycle(user.subscriptionStart);
     
     // Get or create current cycle analytics
-    let analytics = await this.initializeSubscriptionCycle(userId, user.subscriptionPlan, user.subscriptionStart);
+    let analytics = await this.initializeSubscriptionCycle(user.id, user.subscriptionPlan, user.subscriptionStart);
     
     // Count actual posts used in current cycle
     const postsInCycle = await db
       .select()
       .from(posts)
       .where(and(
-        eq(posts.userId, userId),
+        eq(posts.userId, user.id),
         eq(posts.subscriptionCycle, cycleName),
         eq(posts.status, 'published')
       ));
