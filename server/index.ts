@@ -130,9 +130,9 @@ app.post('/api/oauth/facebook', asyncHandler(async (req: Request, res: Response)
       name: profile.name 
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Facebook OAuth error:', error);
-    ResponseHandler.oauthError(res, 'Facebook', error.message);
+    ResponseHandler.oauthError(res, 'Facebook', error?.message || 'Unknown error');
   }
 }));
 
@@ -204,9 +204,9 @@ app.post('/api/oauth/linkedin', asyncHandler(async (req: Request, res: Response)
       userId: profile.id 
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('LinkedIn OAuth error:', error);
-    ResponseHandler.oauthError(res, 'LinkedIn', error.message);
+    ResponseHandler.oauthError(res, 'LinkedIn', error?.message || 'Unknown error');
   }
 }));
 
@@ -262,9 +262,9 @@ app.post('/api/oauth/twitter', asyncHandler(async (req: Request, res: Response) 
       username: profile.screen_name
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Twitter OAuth error:', error);
-    ResponseHandler.oauthError(res, 'Twitter', error.message);
+    ResponseHandler.oauthError(res, 'Twitter', error?.message || 'Unknown error');
   }
 }));
 
@@ -344,9 +344,9 @@ app.post('/api/oauth/youtube', asyncHandler(async (req: Request, res: Response) 
       channelTitle: channel.snippet.title
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('YouTube OAuth error:', error);
-    ResponseHandler.oauthError(res, 'YouTube', error.message);
+    ResponseHandler.oauthError(res, 'YouTube', error?.message || 'Unknown error');
   }
 }));
 
@@ -1105,8 +1105,8 @@ app.post('/api/brand-posts', async (req, res) => {
     if (user.email === 'gailm@macleodglba.com.au') {
       postCount = 52; // Professional plan
     } else if (user.subscriptionPlan) {
-      const planKey = user.subscriptionPlan.toLowerCase();
-      postCount = subscriptionQuotas[planKey] || 12;
+      const planKey = user.subscriptionPlan.toLowerCase() as keyof typeof subscriptionQuotas;
+      postCount = subscriptionQuotas[planKey] || subscriptionQuotas.starter;
     }
     
     // Sync with quota and clear unapproved posts to prevent doubling

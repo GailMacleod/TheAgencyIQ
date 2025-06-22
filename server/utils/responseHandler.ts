@@ -55,4 +55,20 @@ export class ResponseHandler {
       message
     });
   }
+
+  static validation(res: Response, message: string = 'Validation failed') {
+    return res.status(400).json({
+      success: false,
+      message,
+      type: 'validation_error'
+    });
+  }
+
+  static platformError(res: Response, platform: string, message: string = 'Platform connection failed') {
+    return res.status(500).json({
+      success: false,
+      message: `${platform}: ${message}`,
+      platform: platform.toLowerCase()
+    });
+  }
 }
