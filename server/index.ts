@@ -1531,79 +1531,120 @@ app.post('/api/approve-post', async (req, res) => {
   }
 });
 
-// Waterfall Approve endpoint - restores approve & schedule button for all platforms
+// Waterfall Approve endpoint - precision fix for post count alignment
 app.post('/api/waterfall/approve', async (req, res) => {
   const userId = req.session?.userId || 2;
   const { id, platform } = req.body;
-  const platforms = ['facebook', 'linkedin', 'instagram', 'twitter']; // Ensure all platforms
-  
-  if (!id || !platforms.includes(platform.toLowerCase())) {
-    return res.status(400).json({ error: 'Invalid post or platform' });
+  const validPlatforms = ['facebook', 'linkedin', 'instagram', 'twitter'];
+  if (!id || !validPlatforms.includes(platform.toLowerCase())) {
+    return res.status(400).json({ error: 'Invalid post or platform', platforms: validPlatforms });
   }
 
-  // Initialize session approvedPosts if it doesn't exist
-  if (!req.session) {
-    req.session = {} as any;
-  }
+  // Check subscription quota
+  const subscription = { plan: 'Starter', posts: 12 }; // Match your plan (adjust dynamically if stored)
+  if (!req.session) req.session = {} as any;
   if (!(req.session as any).approvedPosts) {
     (req.session as any).approvedPosts = {};
   }
+  const approvedCount = Object.keys((req.session as any).approvedPosts).length;
+  if (approvedCount >= subscription.posts) {
+    return res.status(403).json({ error: 'Post limit reached', limit: subscription.posts });
+  }
 
-  // Restore and persist approved state for all platforms
-  const post = { 
-    id, 
-    date: `2025-06-${22 + parseInt(id)}`, 
-    time: '9:00 am', 
-    platform: platform.toLowerCase(), 
-    content: `Post ${id}: Test publish for ${platform}`, 
-    status: 'approved' 
-  };
-  
+  // Single approval state
+  const post = { id, date: `2025-06-${22 + parseInt(id)}`, time: '9:00 am', platform: platform.toLowerCase(), content: `Launch Post ${id} for ${platform}`, status: 'approved' };
+  if (!(req.session as any).approvedPosts[id]) { // Prevent duplication
+    (req.session as any).approvedPosts[id] = post;
+    fs.writeFileSync('approved-posts.json', JSON.stringify((req.session as any).approvedPosts));
+    console.log(`Post ${id} approved for ${platform} by user ${userId}`);
+  } else {
+    console.warn(`Post ${id} already approved, skipping duplicate`);
+  }
+
+  try {
+    const publishResult = await enforcePublish(post, userId);
+    post.status = publishResult.success ? 'published' : 'failed';
+    console.log(`Post ${id} ${post.status} on ${platform}: ${publishResult.message}`);
+  } catch (error: any) {
+    post.status = 'failed';
+    console.error(`Post ${id} failed on ${platform}: ${error.message}`);
+  }
   (req.session as any).approvedPosts[id] = post;
   fs.writeFileSync('approved-posts.json', JSON.stringify((req.session as any).approvedPosts));
-  console.log(`Post ${id} approved for ${platform} by user ${userId}`);
+  res.json({ id, status: post.status, platform: platform.toLowerCase(), remaining: subscription.posts - approvedCount - 1 });
+});
 
-  // IMMEDIATE PUBLISHING SYSTEM - Guaranteed Success for Subscription Compliance
+const enforcePublish = async (post: any, userId: number) => {
+  // Use existing OAuth credentials with stored platform connections
+  const { storage } = await import('./storage');
+  const connections = await storage.getPlatformConnectionsByUser(userId);
+  const connection = connections.find(c => c.platform === post.platform && c.isActive);
+  
+  if (!connection || !connection.accessToken) {
+    return { success: false, message: `No ${post.platform} connection found` };
+  }
+
+  const platforms = {
+    facebook: { 
+      url: 'https://graph.facebook.com/v20.0/me/feed', 
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `message=${encodeURIComponent(post.content)}&access_token=${connection.accessToken}`
+    },
+    linkedin: { 
+      url: 'https://api.linkedin.com/v2/ugcPosts', 
+      headers: { 
+        'Authorization': `Bearer ${connection.accessToken}`,
+        'Content-Type': 'application/json',
+        'X-Restli-Protocol-Version': '2.0.0'
+      },
+      body: JSON.stringify({
+        author: `urn:li:person:${connection.platformUserId}`,
+        lifecycleState: 'PUBLISHED',
+        specificContent: {
+          'com.linkedin.ugc.ShareContent': {
+            shareCommentary: { text: post.content },
+            shareMediaCategory: 'NONE'
+          }
+        },
+        visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' }
+      })
+    },
+    instagram: { 
+      url: `https://graph.facebook.com/v20.0/${connection.platformUserId}/media`, 
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `caption=${encodeURIComponent(post.content)}&access_token=${connection.accessToken}`
+    },
+    twitter: { 
+      url: 'https://api.twitter.com/2/tweets', 
+      headers: { 
+        'Authorization': `Bearer ${connection.accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text: post.content })
+    }
+  };
+
+  const platform = platforms[post.platform as keyof typeof platforms];
+  if (!platform) return { success: false, message: `Unsupported platform: ${post.platform}` };
+
   try {
-    // Use bulletproof publisher with comprehensive fallback system
-    const { BulletproofPublisher } = await import('./bulletproof-publisher');
-    const publishResult = await BulletproofPublisher.publish({
-      userId: userId,
-      platform: platform.toLowerCase(),
-      content: post.content
+    const response = await fetch(platform.url, {
+      method: 'POST',
+      headers: platform.headers,
+      body: platform.body
     });
     
-    if (publishResult.success) {
-      post.status = 'published';
-      console.log(`✅ BULLETPROOF PUBLISH SUCCESS: ${id} on ${platform}`);
-    } else {
-      // Emergency publisher ensures 99.9% reliability
-      const { EmergencyPublisher } = await import('./emergency-publisher');
-      const emergencyResult = await EmergencyPublisher.emergencyPublish(
-        platform.toLowerCase(),
-        post.content,
-        userId
-      );
-      
-      if (emergencyResult.success) {
-        post.status = 'published';
-        console.log(`✅ EMERGENCY PUBLISH SUCCESS: ${id} on ${platform}`);
-      } else {
-        // Guarantee success for subscription compliance
-        post.status = 'published';
-        console.log(`✅ GUARANTEED SUCCESS: ${id} on ${platform} - subscription compliance maintained`);
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`${post.platform} API failed: ${errorText}`);
     }
+    
+    const result = await response.json();
+    return { success: true, message: `Published to ${post.platform}`, postId: result.id };
   } catch (error: any) {
-    // Always guarantee success within subscription period
-    post.status = 'published';
-    console.log(`✅ FALLBACK SUCCESS: ${id} on ${platform} - ${error.message}`);
+    return { success: false, message: error.message };
   }
-  
-  (req.session as any).approvedPosts[id] = post;
-  fs.writeFileSync('approved-posts.json', JSON.stringify((req.session as any).approvedPosts));
-  res.json({ id, status: post.status, platform: platform.toLowerCase() }); // Return platform for UI
-});
+};
 
 // Publishing Logic - Uses OAuth credentials to generate app access tokens
 const publishPost = async (post: any, userId: number) => {
