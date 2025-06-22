@@ -565,7 +565,7 @@ ${strategyzerData.insights}
             {/* Brand Name */}
             <div>
               <Label htmlFor="brandName" className="text-sm font-medium text-gray-700">What's your brand name?</Label>
-              <div className="relative group">
+              <div className="relative">
                 <Input
                   id="brandName"
                   {...form.register('brandName')}
@@ -573,13 +573,13 @@ ${strategyzerData.insights}
                   className="mt-1"
                   autoComplete="organization"
                 />
-                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                  <div className="flex items-start space-x-2">
-                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
-                      <p className="text-xs text-purple-800">Your brand name should connect to your value proposition and target customer segment. Strong names communicate what you do and who you serve.</p>
-                    </div>
+              </div>
+              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
+                    <p className="text-xs text-purple-800">Your brand name should connect to your value proposition and target customer segment.</p>
                   </div>
                 </div>
               </div>
@@ -871,7 +871,7 @@ ${strategyzerData.insights}
                   </Button>
                 )}
               </div>
-              <div className="relative group">
+              <div className="relative">
                 <Textarea
                   id="audience"
                   {...form.register('audience')}
@@ -880,13 +880,13 @@ ${strategyzerData.insights}
                   rows={3}
                   autoComplete="off"
                 />
-                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                  <div className="flex items-start space-x-2">
-                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
-                      <p className="text-xs text-purple-800">Define your customer segment - demographics, behaviors, and needs they share</p>
-                    </div>
+              </div>
+              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
+                    <p className="text-xs text-purple-800">Define your customer segment - demographics, behaviors, and needs they share</p>
                   </div>
                 </div>
               </div>
@@ -933,7 +933,7 @@ ${strategyzerData.insights}
                   </Button>
                 )}
               </div>
-              <div className="relative group">
+              <div className="relative">
                 <Textarea
                   id="jobToBeDone"
                   {...form.register('jobToBeDone')}
@@ -942,13 +942,13 @@ ${strategyzerData.insights}
                   rows={3}
                   autoComplete="off"
                 />
-                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                  <div className="flex items-start space-x-2">
-                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
-                      <p className="text-xs text-purple-800">Customer job-to-be-done - what functional, emotional, or social job do customers hire you for?</p>
-                    </div>
+              </div>
+              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
+                    <p className="text-xs text-purple-800">Customer job-to-be-done - what functional, emotional, or social job do customers hire you for?</p>
                   </div>
                 </div>
               </div>
@@ -995,7 +995,7 @@ ${strategyzerData.insights}
                   </Button>
                 )}
               </div>
-              <div className="relative group">
+              <div className="relative">
                 <Textarea
                   id="motivations"
                   {...form.register('motivations')}
@@ -1004,13 +1004,13 @@ ${strategyzerData.insights}
                   rows={3}
                   autoComplete="off"
                 />
-                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                  <div className="flex items-start space-x-2">
-                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
-                      <p className="text-xs text-purple-800">Customer gains - what benefits, outcomes, and characteristics your customers want</p>
-                    </div>
+              </div>
+              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
+                    <p className="text-xs text-purple-800">Customer gains - what benefits, outcomes, and characteristics your customers want</p>
                   </div>
                 </div>
               </div>
@@ -1057,7 +1057,7 @@ ${strategyzerData.insights}
                   </Button>
                 )}
               </div>
-              <div className="relative group">
+              <div className="relative">
                 <Textarea
                   id="painPoints"
                   {...form.register('painPoints')}
@@ -1066,13 +1066,13 @@ ${strategyzerData.insights}
                   rows={3}
                   autoComplete="off"
                 />
-                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                  <div className="flex items-start space-x-2">
-                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
-                      <p className="text-xs text-purple-800">Customer pains - frustrations, obstacles, and risks your customers experience</p>
-                    </div>
+              </div>
+              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
+                    <p className="text-xs text-purple-800">Customer pains - frustrations, obstacles, and risks your customers experience</p>
                   </div>
                 </div>
               </div>
