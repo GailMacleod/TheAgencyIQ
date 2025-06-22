@@ -2342,9 +2342,16 @@ async function restoreSubscribers() {
   });
 
   // Global error handler with comprehensive debugging
-  app.use((err: any, req: Request, res: Response, next: NextFunction) => { 
+  app.use(async (err: any, req: Request, res: Response, next: NextFunction) => { 
     console.error('Error Handler:', err.stack); 
-    res.status(500).json({ error: 'Internal error', stack: err.stack }); 
+    const { PostRetryService } = await import('./post-retry-service'); 
+    if (req.path === '/api/post' && (err.message.includes('fetch') || err.message.includes('db'))) { 
+      const postId = req.body?.postId; 
+      if (postId) await PostRetryService.queueForRetry(parseInt(postId), req.body?.platform || 'unknown', `System retry: ${err.message}`); 
+    } 
+    if (!res.headersSent) { 
+      res.status(500).json({ error: 'Internal error', retrying: req.path === '/api/post', stack: process.env.NODE_ENV === 'development' ? err.stack : undefined }); 
+    } 
   });
 
   // Handle uncaught exceptions

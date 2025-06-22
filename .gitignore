@@ -1,6 +1,30 @@
-node_modules
-dist
+# Node.js
+node_modules/
+dist/
+
+# macOS system files
 .DS_Store
-server/public
+
+# Server static files
+server/public/
+
+# Vite build configurations
 vite.config.ts.*
+
+# Archives
 *.tar.gz
+
+# Environment variables
+.env
+
+# Replit-specific files
+.replit
+.replit.*
+*.replit
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Build artifacts
+build/
