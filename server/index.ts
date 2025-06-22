@@ -416,9 +416,9 @@ app.post('/api/oauth/instagram', asyncHandler(async (req: Request, res: Response
       accountId: instagramData.instagram_business_account.id 
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Instagram OAuth error:', error);
-    ResponseHandler.oauthError(res, 'Instagram', error.message);
+    ResponseHandler.oauthError(res, 'Instagram', error?.message || 'Unknown error');
   }
 }));
 
@@ -1139,7 +1139,7 @@ app.post('/api/brand-posts', async (req, res) => {
     try {
       const [postsCacheRecord] = await db.select().from(postsCache).where(eq(postsCache.userPhone, mobileNumber));
       if (postsCacheRecord && postsCacheRecord.cacheData) {
-        cacheData = postsCacheRecord.cacheData;
+        cacheData = Array.isArray(postsCacheRecord.cacheData) ? postsCacheRecord.cacheData as any[] : [];
         console.log(`PostgreSQL cache found: ${cacheData.length} cached posts for ${mobileNumber}`);
       } else {
         // Fallback to direct posts table query
@@ -1202,9 +1202,9 @@ app.post('/api/brand-posts', async (req, res) => {
     try { 
       const controller = new AbortController(); 
       setTimeout(() => controller.abort(), 20000); 
-      aiInsights = await getAIResponse(strategyzerPrompt, 'strategyzer-analysis', strategyzerComponents, { signal: controller.signal }); 
-    } catch (error) { 
-      console.log(`Strategyzer analysis timed out for ${mobileNumber}: ${error.message}`); 
+      aiInsights = await getAIResponse(strategyzerPrompt, 'strategyzer-analysis', strategyzerComponents); 
+    } catch (error: any) { 
+      console.log(`Strategyzer analysis timed out for ${mobileNumber}: ${error?.message || 'Unknown error'}`); 
       aiInsights = { error: 'Timed out', fallback: `Validation strategy for ${brandPurpose?.brandName || 'your business'}: Focus on presence and polish with ${postCount} posts.` }; 
     }
 
