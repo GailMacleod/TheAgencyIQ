@@ -2838,58 +2838,29 @@ app.get('/api/strategyzer', (req, res) => {
   // Setup HTTP server with WebSocket support
   const httpServer = createServer(app);
   
-  // WebSocket server for real-time updates with proper error handling
-  const wss = new WebSocketServer({ 
-    server: httpServer,
-    perMessageDeflate: false
-  });
+  // Create WebSocket server with noServer option
+  const wss = new WebSocketServer({ noServer: true });
   
   wss.on('connection', (ws) => {
     console.log('WebSocket client connected');
     
-    // Track connection state
-    let isAlive = true;
-    
     ws.on('message', (message) => {
-      try {
-        console.log('WebSocket message received:', message.toString());
-      } catch (error) {
-        console.error('WebSocket message error:', error);
-      }
+      console.log('WebSocket message received:', message.toString());
     });
     
-    // WebSocket close handler with proper state checking
-    ws.on('close', (code, reason) => {
-      isAlive = false;
-      console.log(`WebSocket client disconnected - Code: ${code}, Reason: ${reason}`);
+    ws.on('close', () => {
+      console.log('WebSocket closed');
     });
     
     ws.on('error', (error) => {
-      isAlive = false;
       console.error('WebSocket error:', error);
     });
-    
-    // Ping/pong heartbeat to detect dead connections
-    ws.on('pong', () => {
-      isAlive = true;
-    });
-    
-    // Periodic ping to keep connection alive
-    const pingInterval = setInterval(() => {
-      if (!isAlive) {
-        clearInterval(pingInterval);
-        return ws.terminate();
-      }
-      
-      isAlive = false;
-      if (ws.readyState === ws.OPEN) {
-        ws.ping();
-      }
-    }, 30000);
-    
-    // Clean up on close
-    ws.on('close', () => {
-      clearInterval(pingInterval);
+  });
+  
+  // Handle WebSocket upgrade requests
+  httpServer.on('upgrade', (request, socket, head) => {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
     });
   });
 
