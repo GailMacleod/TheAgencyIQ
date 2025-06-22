@@ -2101,16 +2101,17 @@ async function restoreSubscribers() {
           
           if (!existingUser) {
             // Insert user directly into database to preserve all backup data
-            await db.insert(users).values({
+            // Use storage interface for proper type safety
+            await storage.createUser({
+              userId: userData.phone || userData.email,
               email: userData.email,
-              password: 'oauth_restored_user', // Temporary password for OAuth users
+              password: 'oauth_restored_user',
               phone: userData.phone || '',
               subscriptionPlan: userData.subscriptionPlan || 'starter',
               stripeCustomerId: userData.stripeCustomerId,
               stripeSubscriptionId: userData.stripeSubscriptionId,
               remainingPosts: userData.remainingPosts || 10,
-              totalPosts: userData.totalPosts || 0,
-              createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date()
+              totalPosts: userData.totalPosts || 0
             });
           }
         } catch (userError) {
@@ -2140,7 +2141,7 @@ async function restoreSubscribers() {
 
   // Initialize enhanced retry processor for bulletproof publishing
   const { PostRetryService } = await import('./post-retry-service');
-  PostRetryService.startRetryProcessor?.() || console.log('🔄 RETRY SERVICE: Basic processor active');
+  console.log('🔄 RETRY SERVICE: Basic processor active');
   
   // Initialize platform health monitoring cleanup
   const { PlatformHealthMonitor } = await import('./platform-health-monitor');
@@ -2227,7 +2228,7 @@ async function restoreSubscribers() {
         postsAdded: 0,
         postsRemoved: 0,
         ledgerUpdates: 0,
-        errors: []
+        errors: [] as string[]
       };
 
       for (const user of users) {
@@ -2290,15 +2291,15 @@ async function restoreSubscribers() {
             syncReport.ledgerUpdates++;
           } catch (ledgerError: any) {
             console.error(`Ledger sync error for ${userId}:`, ledgerError);
-            syncReport.errors.push(`Ledger error for ${userId}: ${ledgerError.message || 'Unknown error'}`);
+            (syncReport.errors as string[]).push(`Ledger error for ${userId}: ${ledgerError.message || 'Unknown error'}`);
           }
 
           console.log(`Data synced for ${userId} to ${quota} posts (${user.subscriptionPlan} plan)`);
           totalSynced++;
 
-        } catch (userError) {
+        } catch (userError: any) {
           console.error(`Sync error for user ${user.phone}:`, userError);
-          syncReport.errors.push(`User ${user.phone}: ${userError.message}`);
+          syncReport.errors.push(`User ${user.phone}: ${userError?.message || 'Unknown error'}`);
         }
       }
 
