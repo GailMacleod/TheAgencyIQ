@@ -21,6 +21,10 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
+// Essential middleware for JSON parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
 // Content Security Policy headers to allow Facebook scripts
 app.use((req, res, next) => {
   const existingCSP = res.getHeader('Content-Security-Policy') as string;
