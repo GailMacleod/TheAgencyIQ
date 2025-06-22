@@ -1079,6 +1079,14 @@ app.post('/api/brand-posts', async (req, res) => {
       }
     }
 
+    // Ensure userId is valid integer after session recovery
+    if (!userId || typeof userId !== 'number') {
+      return res.status(401).json({ 
+        message: 'Authentication required',
+        error: 'NOT_AUTHENTICATED'
+      });
+    }
+
     const { storage } = await import('./storage');
     const user = await storage.getUser(userId);
     
