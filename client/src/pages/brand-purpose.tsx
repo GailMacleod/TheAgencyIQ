@@ -260,17 +260,14 @@ ${strategyzerData.insights}
         setShowGuidance(true);
       }
       setCountdownActive(false);
-      setStartTime(null);
     },
     onError: (error) => {
       console.error("Failed to generate guidance:", error);
       setCountdownActive(false);
-      setStartTime(null);
     },
     onSettled: () => {
       setIsGeneratingGuidance(false);
       setCountdownActive(false);
-      setStartTime(null);
     },
   });
 
