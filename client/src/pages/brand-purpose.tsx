@@ -354,6 +354,50 @@ ${strategyzerData.insights}
     };
   };
 
+  // Auto-save function using waterfall API
+  const saveProgress = async (formData: any) => {
+    try {
+      // Use existing logo URL if already uploaded
+      let logoUrl = "";
+      if (logoPreview && logoPreview.startsWith('/uploads/')) {
+        logoUrl = logoPreview.split('?')[0]; // Remove timestamp parameter
+      }
+      
+      const saveData = {
+        ...formData,
+        logoUrl,
+      };
+      
+      const response = await fetch('/api/waterfall?step=save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(saveData)
+      });
+      
+      const result = await response.json();
+      console.log('Auto-saved:', result);
+      
+      return result.success;
+    } catch (error) {
+      console.error('Auto-save error:', error);
+      return false;
+    }
+  };
+
+  // Auto-save on form changes
+  useEffect(() => {
+    const formData = form.getValues();
+    
+    // Only auto-save if we have some basic data
+    if (formData.brandName || formData.productsServices || formData.corePurpose) {
+      const timeoutId = setTimeout(() => {
+        saveProgress(formData);
+      }, 2000); // Auto-save 2 seconds after typing stops
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [form.watch()]);
+
   const onSubmit = async (data: BrandPurposeForm) => {
     try {
       setLoading(true);

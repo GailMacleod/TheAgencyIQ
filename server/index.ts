@@ -134,35 +134,113 @@ app.post("/api/upload-logo", upload.single("logo"), asyncHandler(async (req: any
   }
 }));
 
-// Brand purpose endpoints
-app.get("/api/brand-purpose", asyncHandler(async (req: Request, res: Response) => {
+// Brand purpose endpoints with session persistence
+app.get("/api/brand-purpose", asyncHandler(async (req: any, res: Response) => {
   try {
-    // For now, return empty data - this will be enhanced with database storage
-    res.json(null);
+    // Return data from session or default empty state
+    const savedData = req.session.brandPurpose || null;
+    
+    // Also check for saved file
+    const progressFile = './progress.json';
+    let fileData = null;
+    if (fs.existsSync(progressFile)) {
+      try {
+        const fileContent = fs.readFileSync(progressFile, 'utf8');
+        fileData = JSON.parse(fileContent);
+      } catch (error) {
+        console.log('No valid progress file found');
+      }
+    }
+    
+    // Return session data or file data
+    const result = savedData || fileData;
+    console.log('Brand purpose loaded:', result ? 'Data found' : 'No data');
+    
+    res.json(result);
   } catch (error: any) {
     console.error('Brand purpose fetch error:', error);
     res.status(500).json({ message: "Failed to fetch brand purpose" });
   }
 }));
 
-app.post("/api/brand-purpose", asyncHandler(async (req: Request, res: Response) => {
+app.post("/api/brand-purpose", asyncHandler(async (req: any, res: Response) => {
   try {
     const brandData = req.body;
     
-    // For now, just acknowledge receipt - this will be enhanced with database storage
+    // Save to session
+    req.session.brandPurpose = brandData;
+    
+    // Also save to file for persistence
+    const progressFile = './progress.json';
+    fs.writeFileSync(progressFile, JSON.stringify(brandData, null, 2));
+    
     console.log('Brand purpose saved:', {
       brandName: brandData.brandName,
       logoUrl: brandData.logoUrl,
-      fieldsCompleted: Object.keys(brandData).length
+      fieldsCompleted: Object.keys(brandData).length,
+      sessionId: req.sessionID
     });
 
     res.json({ 
       message: "Brand purpose saved successfully",
-      data: brandData
+      data: brandData,
+      saved: true
     });
   } catch (error: any) {
     console.error('Brand purpose save error:', error);
     res.status(500).json({ message: "Failed to save brand purpose" });
+  }
+}));
+
+// Waterfall API endpoint for progressive saving
+app.get('/api/waterfall', asyncHandler(async (req: any, res: Response) => {
+  try {
+    const step = req.query.step || 'purpose';
+    
+    if (step === 'purpose') {
+      // Return current session data or defaults
+      const savedData = req.session.brandPurpose || {
+        brandName: "The AgencyIQ",
+        corePurpose: "Stop good local businesses from failing due to poor marketing and give them the tools to thrive",
+        productsServices: "Starter: 12 posts + 2 Free connections, Growth: 27 posts + 4 connections, Pro: 52 posts + 6 connections",
+        targetAudience: "Queensland SMEs, 1-50 employees, $100K-$2M revenue"
+      };
+      
+      res.json(savedData);
+    } else {
+      res.json({ error: 'Invalid step' });
+    }
+  } catch (error: any) {
+    console.error('Waterfall API error:', error);
+    res.status(500).json({ message: "Failed to load waterfall data" });
+  }
+}));
+
+app.post('/api/waterfall', asyncHandler(async (req: any, res: Response) => {
+  try {
+    const step = req.query.step;
+    
+    if (step === 'save') {
+      // Save the brand purpose data
+      req.session.brandPurpose = req.body;
+      
+      // Also save to file for persistence
+      const progressFile = './progress.json';
+      fs.writeFileSync(progressFile, JSON.stringify(req.body, null, 2));
+      
+      console.log('Waterfall save:', {
+        step,
+        fieldsCount: Object.keys(req.body).length,
+        sessionId: req.sessionID
+      });
+      
+      res.json({ success: true, saved: true });
+    } else {
+      res.json({ success: false, error: 'Invalid save step' });
+    }
+  } catch (error: any) {
+    console.error('Waterfall save error:', error);
+    res.status(500).json({ message: "Failed to save waterfall data" });
   }
 }));
 
