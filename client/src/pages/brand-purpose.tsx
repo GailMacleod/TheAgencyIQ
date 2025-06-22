@@ -64,6 +64,7 @@ export default function BrandPurpose() {
   const [isGeneratingGuidance, setIsGeneratingGuidance] = useState(false);
   const [countdown, setCountdown] = useState(20);
   const [countdownActive, setCountdownActive] = useState(false);
+  const [startTime, setStartTime] = useState<number | null>(null);
 
   // Load existing brand purpose data
   const { data: existingBrandPurpose, isLoading: isLoadingBrandPurpose } = useQuery({
@@ -181,12 +182,10 @@ export default function BrandPurpose() {
         corePurpose && corePurpose.length >= 10 &&
         !isGeneratingGuidance && !showGuidance && !isExistingData) {
       
-      console.log('Triggering Grok API waterfall content generation...');
       setIsGeneratingGuidance(true);
-      console.log('Starting countdown timer...');
       setCountdown(20);
+      setStartTime(Date.now());
       setCountdownActive(true);
-      console.log('Countdown initialized: 20s, active:', true);
       
       // Generate strategic guidance based on Strategyzer methodology
       guidanceMutation.mutate({
@@ -247,39 +246,50 @@ export default function BrandPurpose() {
         setShowGuidance(true);
       }
       setCountdownActive(false);
+      setStartTime(null);
     },
     onError: (error) => {
       console.error("Failed to generate guidance:", error);
       setCountdownActive(false);
+      setStartTime(null);
     },
     onSettled: () => {
       setIsGeneratingGuidance(false);
       setCountdownActive(false);
+      setStartTime(null);
     },
   });
 
-  // Countdown timer effect with debug logging
+  // Real-time countdown using requestAnimationFrame
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (countdownActive && countdown > 0) {
-      console.log(`Countdown active: ${countdown}s remaining`);
-      interval = setInterval(() => {
-        setCountdown(prev => {
-          const newValue = prev - 1;
-          console.log(`Countdown: ${newValue}s`);
-          return newValue;
-        });
-      }, 1000);
-    } else if (countdown === 0) {
-      console.log('Countdown finished');
-      setCountdownActive(false);
+    let animationFrame: number;
+    
+    if (countdownActive && startTime) {
+      const updateCountdown = () => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        const remaining = Math.max(0, Math.ceil(20 - elapsed));
+        
+        if (remaining !== countdown) {
+          setCountdown(remaining);
+        }
+        
+        if (remaining > 0) {
+          animationFrame = requestAnimationFrame(updateCountdown);
+        } else {
+          setCountdownActive(false);
+          setStartTime(null);
+        }
+      };
+      
+      animationFrame = requestAnimationFrame(updateCountdown);
     }
+    
     return () => {
-      if (interval) {
-        clearInterval(interval);
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
       }
     };
-  }, [countdownActive, countdown]);
+  }, [countdownActive, startTime, countdown]);
 
   // Manual guidance generation on demand
   const generateGuidanceManually = () => {
@@ -807,8 +817,8 @@ export default function BrandPurpose() {
                           </div>
                           <Button 
                             onClick={() => {
-                              console.log('Manual countdown test');
                               setCountdown(10);
+                              setStartTime(Date.now());
                               setCountdownActive(true);
                             }}
                             className="mt-2 text-xs bg-red-500 hover:bg-red-600"
