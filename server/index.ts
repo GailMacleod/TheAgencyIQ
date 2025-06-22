@@ -56,10 +56,14 @@ app.use((req, res, next) => {
 
 // Environment stabilization check
 app.use((req, res, next) => { 
-  console.log('Environment check:', process.env.NODE_ENV); 
-  if (process.env.NODE_ENV !== 'production') {
-    console.warn('Development mode detected');
-  }
+  process.env.NODE_ENV = process.env.NODE_ENV || 'production'; 
+  console.log('Environment set to:', process.env.NODE_ENV); 
+  if (req.path === '/api/user' && req.method === 'GET') { 
+    if (res.getHeader('Cache-Control') !== 'no-store, no-cache, must-revalidate') { 
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate'); 
+      return res.status(304).end(); 
+    } 
+  } 
   next(); 
 });
 
