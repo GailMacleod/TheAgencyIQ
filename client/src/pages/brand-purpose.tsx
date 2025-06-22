@@ -63,6 +63,7 @@ export default function BrandPurpose() {
   const [showGuidance, setShowGuidance] = useState(false);
   const [isGeneratingGuidance, setIsGeneratingGuidance] = useState(false);
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Load existing brand purpose data
   const { data: existingBrandPurpose, isLoading: isLoadingBrandPurpose } = useQuery({
@@ -357,6 +358,8 @@ ${strategyzerData.insights}
   // Auto-save function using waterfall API
   const saveProgress = async (formData: any) => {
     try {
+      setAutoSaveStatus('saving');
+      
       // Use existing logo URL if already uploaded
       let logoUrl = "";
       if (logoPreview && logoPreview.startsWith('/uploads/')) {
@@ -371,15 +374,24 @@ ${strategyzerData.insights}
       const response = await fetch('/api/waterfall?step=save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saveData)
+        body: JSON.stringify(saveData),
+        credentials: 'include' // Include session cookies
       });
       
       const result = await response.json();
       console.log('Auto-saved:', result);
       
+      if (result.success) {
+        setAutoSaveStatus('saved');
+        setTimeout(() => setAutoSaveStatus('idle'), 2000);
+      } else {
+        setAutoSaveStatus('idle');
+      }
+      
       return result.success;
     } catch (error) {
       console.error('Auto-save error:', error);
+      setAutoSaveStatus('idle');
       return false;
     }
   };
@@ -555,9 +567,27 @@ ${strategyzerData.insights}
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8">
-          <h2 className="text-2xl font-normal text-center mb-4" style={{ color: '#333333' }}>
-            {isExistingData ? 'update your brand purpose' : 'define your brand purpose'}
-          </h2>
+          <div className="flex items-center justify-center mb-4">
+            <h2 className="text-2xl font-normal" style={{ color: '#333333' }}>
+              {isExistingData ? 'update your brand purpose' : 'define your brand purpose'}
+            </h2>
+            {autoSaveStatus !== 'idle' && (
+              <div className="ml-4 flex items-center space-x-2">
+                {autoSaveStatus === 'saving' && (
+                  <>
+                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-blue-600">Saving...</span>
+                  </>
+                )}
+                {autoSaveStatus === 'saved' && (
+                  <>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-green-600">Saved</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
           
           <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start space-x-3">
