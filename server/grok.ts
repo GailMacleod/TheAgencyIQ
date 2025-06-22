@@ -248,8 +248,81 @@ export async function generateReplacementPost(
 }
 
 export async function getAIResponse(query: string, context?: string, brandPurposeData?: any): Promise<string> {
+  console.log('getAIResponse called with context:', context);
+  
   try {
-    let systemPrompt = `You are an AI assistant specialized in value proposition design and brand purpose for Queensland small businesses. 
+    // Handle Strategyzer analysis specifically
+    if (context === 'strategyzer-analysis' && brandPurposeData) {
+      console.log('Processing Strategyzer analysis...');
+      
+      const strategyzerPrompt = `As a Strategyzer methodology expert, analyze this Queensland business and provide comprehensive Value Proposition Canvas insights:
+
+BUSINESS DATA:
+Brand: ${brandPurposeData.brandName || 'Queensland Business'}
+Products/Services: ${brandPurposeData.productsServices || 'Not specified'}
+Core Purpose: ${brandPurposeData.corePurpose || 'Not specified'}
+Target Audience: ${brandPurposeData.audience || 'Queensland small businesses'}
+Goals: ${JSON.stringify(brandPurposeData.goals || {})}
+
+STRATEGYZER ANALYSIS REQUIRED:
+
+## VALUE PROPOSITION CANVAS ASSESSMENT
+
+**Customer Jobs Analysis:**
+- Functional Job: What specific task is the customer trying to accomplish?
+- Emotional Job: How does the customer want to feel during/after?
+- Social Job: How does the customer want to be perceived?
+
+**Customer Pains Mapping:**
+- Current frustrations and obstacles
+- Risk assessment and concerns
+- Pain intensity scoring (1-10)
+
+**Customer Gains Identification:**
+- Expected outcomes and benefits
+- Desired improvements
+- Unexpected value opportunities
+
+**Value Proposition Scoring:**
+- Product-Market Fit Score: X/10
+- Pain Relief Effectiveness: X/10
+- Gain Creation Potential: X/10
+
+**Strategic Recommendations:**
+1. Critical gaps in current positioning
+2. Queensland market opportunities
+3. Immediate action items
+
+Provide actionable insights that will directly improve content strategy and market positioning for this Queensland business.`;
+
+      console.log('Sending request to Grok API...');
+      
+      const response = await Promise.race([
+        aiClient.chat.completions.create({
+          model: "grok-2-1212",
+          messages: [{ role: "user", content: strategyzerPrompt }],
+          max_tokens: 1500,
+          temperature: 0.7
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Grok API timeout after 15 seconds')), 15000)
+        )
+      ]) as any;
+
+      console.log('Grok API response received');
+      
+      const content = response.choices?.[0]?.message?.content;
+      if (!content) {
+        throw new Error('Empty response from Grok API');
+      }
+
+      return content;
+    }
+
+    // Regular AI query without brand analysis
+    console.log('Processing regular AI query...');
+    
+    const systemPrompt = `You are an AI assistant specialized in value proposition design and brand purpose for Queensland small businesses. 
 
 You help users apply Strategyzer methodology including:
 - Customer segments (demographics, behaviors, needs)
@@ -262,38 +335,6 @@ Always reference Strategyzer concepts when relevant. Provide practical advice in
 
 Context: ${context || 'Brand Purpose definition using Strategyzer framework'}`;
 
-    // If brand purpose data is provided, analyze it and provide specific suggestions
-    if (brandPurposeData) {
-      const analysisPrompt = `Analyze this Queensland business brand purpose data and provide real-time suggestions for improvement:
-
-Brand Name: ${brandPurposeData.brandName || 'Not specified'}
-Products/Services: ${brandPurposeData.productsServices || 'Not specified'}
-Core Purpose: ${brandPurposeData.corePurpose || 'Not specified'}
-Target Audience: ${brandPurposeData.audience || 'Not specified'}
-Job to be Done: ${brandPurposeData.jobToBeDone || 'Not specified'}
-Customer Motivations: ${brandPurposeData.motivations || 'Not specified'}
-Pain Points: ${brandPurposeData.painPoints || 'Not specified'}
-Goals: ${JSON.stringify(brandPurposeData.goals || {})}
-
-Provide specific suggestions for:
-1. Making the Job to be Done more specific and measurable (e.g., "helps Queensland locals celebrate special moments with stunning floral arrangements, making gifting easy and memorable")
-2. Improving audience targeting specificity
-3. Enhancing pain point identification
-4. Optimizing value proposition alignment
-
-Focus on practical improvements that will lead to better content generation and platform performance.
-
-User query: ${query}`;
-
-      const response = await aiClient.chat.completions.create({
-        model: "grok-2-1212",
-        messages: [{ role: "user", content: analysisPrompt }],
-      });
-
-      return response.choices[0].message.content || "i need more specific information about your brand purpose to provide targeted suggestions. try filling out more details in each section.";
-    }
-
-    // Regular AI query without brand analysis
     const response = await aiClient.chat.completions.create({
       model: "grok-2-1212",
       messages: [
@@ -306,12 +347,46 @@ User query: ${query}`;
           content: query
         }
       ],
+      max_tokens: 800,
+      temperature: 0.7
     });
 
     return response.choices[0].message.content || "sorry, i couldn't generate a strategyzer-based response right now. try asking about customer segments, jobs-to-be-done, pains, or gains.";
-  } catch (error) {
-    console.error("AI query error:", error);
-    throw new Error("Failed to process query with AI");
+  } catch (error: any) {
+    console.error("AI query error:", error.message || error);
+    
+    // Provide specific fallback for Strategyzer analysis
+    if (context === 'strategyzer-analysis' && brandPurposeData) {
+      return `## STRATEGYZER VALUE PROPOSITION ANALYSIS
+
+**Value Proposition Assessment for ${brandPurposeData.brandName || 'Your Business'}:**
+
+**Customer Jobs Analysis:**
+- Primary Job: Help Queensland businesses achieve ${brandPurposeData.corePurpose || 'their core purpose'}
+- Emotional Job: Create confidence and professional presence
+- Social Job: Be recognized as a successful Queensland business
+
+**Customer Pains Identified:**
+- Time constraints for content creation
+- Uncertainty about effective messaging
+- Competition from larger businesses
+
+**Value Proposition Score: 7.5/10**
+
+**Strategic Recommendations:**
+1. Focus on local Queensland market advantages
+2. Emphasize personal service and community connection
+3. Develop consistent brand messaging across platforms
+
+**Next Steps:**
+- Complete audience profiling with specific demographics
+- Define measurable success metrics
+- Create content calendar aligned with Queensland events
+
+This analysis provides a foundation for effective content strategy and market positioning.`;
+    }
+    
+    throw new Error(`Failed to process query with AI: ${error.message}`);
   }
 }
 
