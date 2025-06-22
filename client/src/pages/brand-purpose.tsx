@@ -15,7 +15,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
-import { Bot, Lightbulb } from "lucide-react";
+import { Bot, Lightbulb, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const brandPurposeSchema = z.object({
@@ -64,6 +64,7 @@ export default function BrandPurpose() {
   const [isGeneratingGuidance, setIsGeneratingGuidance] = useState(false);
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load existing brand purpose data
   const { data: existingBrandPurpose, isLoading: isLoadingBrandPurpose } = useQuery({
@@ -268,6 +269,121 @@ ${strategyzerData.insights}
 
 
 
+  // Waterfall autofill system - fills fields progressively
+  const waterfallAutofill = async () => {
+    const formData = form.getValues();
+    
+    // Check if first three fields are complete enough to trigger autofill
+    if (!formData.brandName || !formData.productsServices || !formData.corePurpose) {
+      toast({
+        title: "Complete Required Fields",
+        description: "Please fill in Brand Name, Products/Services, and Core Purpose to unlock autofill",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsGeneratingGuidance(true);
+      
+      // Get Strategyzer analysis first
+      const strategyzerResponse = await fetch('/api/strategyzer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandName: formData.brandName,
+          productsServices: formData.productsServices,
+          corePurpose: formData.corePurpose
+        }),
+        credentials: 'include'
+      });
+      
+      if (!strategyzerResponse.ok) {
+        throw new Error('Failed to get Strategyzer analysis');
+      }
+      
+      const analysis = await strategyzerResponse.json();
+      
+      // Waterfall fill: progressively populate empty fields
+      const updates: any = {};
+      
+      // Target Audience (if empty)
+      if (!formData.audience || formData.audience.trim() === '') {
+        updates.audience = analysis.recommendations.targetAudience;
+      }
+      
+      // Job to be Done (if empty)
+      if (!formData.jobToBeDone || formData.jobToBeDone.trim() === '') {
+        updates.jobToBeDone = "Growing their business sustainably while maintaining work-life balance and building strong customer relationships";
+      }
+      
+      // Motivations (if empty)
+      if (!formData.motivations || formData.motivations.trim() === '') {
+        updates.motivations = "Achieving financial security, building a legacy business, making a positive impact in their community, and gaining recognition as industry leaders";
+      }
+      
+      // Pain Points (if empty)
+      if (!formData.painPoints || formData.painPoints.trim() === '') {
+        updates.painPoints = "Limited marketing budget, lack of time for strategic planning, difficulty measuring ROI, keeping up with digital trends, and competing with larger businesses";
+      }
+      
+      // Key Message (if empty)
+      if (!formData.goals?.keyMessage || formData.goals.keyMessage.trim() === '') {
+        updates['goals.keyMessage'] = `${formData.brandName} delivers ${formData.productsServices} to help Queensland small businesses ${formData.corePurpose.toLowerCase()}`;
+      }
+      
+      // Education Target (if empty)
+      if (!formData.goals?.educationTarget || formData.goals.educationTarget.trim() === '') {
+        updates['goals.educationTarget'] = "Educate Queensland SMEs about effective marketing strategies, digital transformation, and sustainable business growth practices";
+      }
+      
+      // Apply updates to form
+      Object.keys(updates).forEach(key => {
+        if (key.includes('.')) {
+          const [parent, child] = key.split('.');
+          form.setValue(`${parent}.${child}` as any, updates[key]);
+        } else {
+          form.setValue(key as any, updates[key]);
+        }
+      });
+      
+      // Show guidance with analysis
+      const guidanceText = `
+## Strategyzer Analysis Complete
+
+**Value Proposition Insights:**
+${analysis.valueProposition.gainCreators.map((item: string) => `- ${item}`).join('\n')}
+
+**Customer Insights:**
+${analysis.customerSegment.jobs.map((item: string) => `- ${item}`).join('\n')}
+
+**Market Differentiators:**
+${analysis.recommendations.differentiators.map((item: string) => `- ${item}`).join('\n')}
+
+## Autofilled Fields
+${Object.keys(updates).length} fields have been automatically populated based on your brand inputs. Review and adjust as needed.
+      `;
+      
+      setGuidance(guidanceText);
+      setShowGuidance(true);
+      
+      toast({
+        title: "Autofill Complete",
+        description: `${Object.keys(updates).length} fields populated with Strategyzer insights`,
+      });
+      
+    } catch (error: any) {
+      console.error('Waterfall autofill error:', error);
+      toast({
+        title: "Autofill Failed",
+        description: "Unable to generate field suggestions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingGuidance(false);
+    }
+  };
+
   // Manual guidance generation on demand
   const generateGuidanceManually = () => {
     const formData = form.getValues();
@@ -396,19 +512,33 @@ ${strategyzerData.insights}
     }
   };
 
-  // Auto-save on form changes
+  // Auto-save with proper debouncing
   useEffect(() => {
-    const formData = form.getValues();
+    let timeoutId: NodeJS.Timeout;
     
-    // Only auto-save if we have some basic data
-    if (formData.brandName || formData.productsServices || formData.corePurpose) {
-      const timeoutId = setTimeout(() => {
-        saveProgress(formData);
-      }, 2000); // Auto-save 2 seconds after typing stops
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [form.watch()]);
+    const subscription = form.watch((value, { name, type }) => {
+      if (type === 'change' && name) {
+        // Clear previous timeout
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        
+        // Only auto-save if we have some basic data
+        if (value.brandName || value.productsServices || value.corePurpose) {
+          timeoutId = setTimeout(() => {
+            saveProgress(value);
+          }, 5000); // Auto-save 5 seconds after typing stops
+        }
+      }
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, []);
 
   const onSubmit = async (data: BrandPurposeForm) => {
     try {
@@ -803,6 +933,52 @@ ${strategyzerData.insights}
                 <p className="text-sm text-red-600 mt-1">{form.formState.errors.corePurpose.message}</p>
               )}
             </div>
+
+            {/* Waterfall Autofill Trigger */}
+            {(() => {
+              const formData = form.getValues();
+              const hasRequiredFields = formData.brandName && formData.productsServices && formData.corePurpose;
+              const hasStrongFields = formData.brandName?.length > 10 && 
+                                     formData.productsServices?.length > 50 && 
+                                     formData.corePurpose?.length > 100;
+              
+              if (hasRequiredFields && hasStrongFields) {
+                return (
+                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
+                          <Bot className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-purple-900">Ready for Strategyzer Autofill</h3>
+                          <p className="text-xs text-purple-700">Your core brand inputs qualify for intelligent field completion</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={waterfallAutofill}
+                        disabled={isGeneratingGuidance}
+                        className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-6 py-2 rounded-lg shadow-lg transition-all duration-200"
+                      >
+                        {isGeneratingGuidance ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>Analyzing...</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <Sparkles className="w-4 h-4" />
+                            <span>Autofill Fields</span>
+                          </div>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Supercharged Strategyzer Analysis Display */}
             {(showGuidance || isGeneratingGuidance) && (

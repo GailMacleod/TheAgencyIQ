@@ -1,5 +1,32 @@
 {
-  "brandName": "Test Company",
-  "corePurpose": "Test purpose",
-  "productsServices": "Test services"
+  "brandName": "The AgencyIQ ",
+  "productsServices": "Value proposition:  You’re invisible, that not good.  AgencyIQ gives you a beacon that's always on.\n\nThe pain:\nYou’re invisible, and silence is killing your growth.\nThe gain:\nYou show up.\nWeek in, week out.\nProfessionally. Strategically. Automatically.\n \nStarter Subscription, 10 posts + 2 Free:  $19.99/30 days\nGrowth Subscription, 25 posts + 2 Free:  $41.99/30 days\nProfessional Subscription, 45 posts + 2 Free:  $99.99/30 days\n",
+  "corePurpose": "To stop good local businesses from dying quietly,  to \"Keep me visible even when I am too busy to show up, not just visibility, but validation. For those who want what the big brands have: presence, polish, and power, without the army it takes to get there.”",
+  "audience": "",
+  "jobToBeDone": "",
+  "motivations": "",
+  "painPoints": "",
+  "goals": {
+    "driveTraffic": false,
+    "websiteUrl": "",
+    "trafficTarget": "",
+    "buildBrand": false,
+    "followerTarget": "",
+    "reachTarget": "",
+    "makeSales": false,
+    "salesUrl": "",
+    "salesTarget": "",
+    "conversionTarget": "",
+    "generateLeads": false,
+    "leadTarget": "",
+    "engagementTarget": "",
+    "informEducate": false,
+    "keyMessage": "",
+    "educationTarget": ""
+  },
+  "contactDetails": {
+    "email": "",
+    "phone": ""
+  },
+  "logoUrl": "/uploads/logo.png"
 }
