@@ -26,6 +26,12 @@ const app = express();
 // Trust proxy for secure cookies in production
 app.set('trust proxy', 1);
 
+// Add CSP header to resolve Content Security Policy violations
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:; frame-ancestors 'self'");
+  next();
+});
+
 // Configure multer for logo uploads
 const multerStorage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -2825,23 +2831,58 @@ app.get('/api/strategyzer', (req, res) => {
   // Setup HTTP server with WebSocket support
   const httpServer = createServer(app);
   
-  // WebSocket server for real-time updates
-  const wss = new WebSocketServer({ server: httpServer });
+  // WebSocket server for real-time updates with proper error handling
+  const wss = new WebSocketServer({ 
+    server: httpServer,
+    perMessageDeflate: false
+  });
   
   wss.on('connection', (ws) => {
     console.log('WebSocket client connected');
     
+    // Track connection state
+    let isAlive = true;
+    
     ws.on('message', (message) => {
-      console.log('WebSocket message received:', message.toString());
+      try {
+        console.log('WebSocket message received:', message.toString());
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
     });
     
-    // WebSocket close handler
+    // WebSocket close handler with proper state checking
     ws.on('close', (code, reason) => {
+      isAlive = false;
       console.log(`WebSocket client disconnected - Code: ${code}, Reason: ${reason}`);
     });
     
     ws.on('error', (error) => {
+      isAlive = false;
       console.error('WebSocket error:', error);
+    });
+    
+    // Ping/pong heartbeat to detect dead connections
+    ws.on('pong', () => {
+      isAlive = true;
+    });
+    
+    // Periodic ping to keep connection alive
+    const pingInterval = setInterval(() => {
+      if (!isAlive) {
+        clearInterval(pingInterval);
+        return ws.terminate();
+      }
+      
+      isAlive = false;
+      if (ws.readyState === ws.OPEN) {
+        ws.ping();
+      }
+    }, 30000);
+    
+    // Clean up on close
+    ws.on('close', () => {
+      clearInterval(pingInterval);
     });
   });
 
