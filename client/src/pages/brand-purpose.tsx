@@ -183,6 +183,8 @@ export default function BrandPurpose() {
       
       console.log('Triggering Grok API waterfall content generation...');
       setIsGeneratingGuidance(true);
+      setCountdown(20);
+      setCountdownActive(true);
       
       // Generate strategic guidance based on Strategyzer methodology
       guidanceMutation.mutate({
@@ -217,6 +219,10 @@ export default function BrandPurpose() {
   const guidanceMutation = useMutation({
     mutationFn: async (formData: Partial<BrandPurposeForm>) => {
       try {
+        // Start countdown immediately when request begins
+        setCountdown(20);
+        setCountdownActive(true);
+        
         const response = await apiRequest("POST", "/api/generate-guidance", {
           brandName: formData.brandName,
           productsServices: formData.productsServices,
@@ -238,10 +244,11 @@ export default function BrandPurpose() {
         setGuidance(guidance);
         setShowGuidance(true);
       }
+      setCountdownActive(false);
     },
     onError: (error) => {
       console.error("Failed to generate guidance:", error);
-      // Silently fail guidance generation
+      setCountdownActive(false);
     },
     onSettled: () => {
       setIsGeneratingGuidance(false);
@@ -267,8 +274,6 @@ export default function BrandPurpose() {
     const formData = form.getValues();
     if (formData.brandName && formData.productsServices && formData.corePurpose) {
       setIsGeneratingGuidance(true);
-      setCountdown(20);
-      setCountdownActive(true);
       guidanceMutation.mutate(formData);
     }
   };
