@@ -62,8 +62,6 @@ export default function BrandPurpose() {
   const [guidance, setGuidance] = useState<string>("");
   const [showGuidance, setShowGuidance] = useState(false);
   const [isGeneratingGuidance, setIsGeneratingGuidance] = useState(false);
-  const [countdown, setCountdown] = useState(20);
-  const [countdownActive, setCountdownActive] = useState(false);
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
 
   // Load existing brand purpose data
@@ -184,8 +182,6 @@ export default function BrandPurpose() {
       
       setAnalysisTriggered(true);
       setIsGeneratingGuidance(true);
-      setCountdown(20);
-      setCountdownActive(true);
       
       // Generate strategic guidance based on Strategyzer methodology
       guidanceMutation.mutate({
@@ -257,44 +253,19 @@ ${strategyzerData.insights}
         setGuidance(guidance);
         setShowGuidance(true);
       }
-      setCountdownActive(false);
       setAnalysisTriggered(false);
     },
     onError: (error) => {
       console.error("Failed to generate guidance:", error);
-      setCountdownActive(false);
       setAnalysisTriggered(false);
     },
     onSettled: () => {
       setIsGeneratingGuidance(false);
-      setCountdownActive(false);
       setAnalysisTriggered(false);
     },
   });
 
-  // Simple countdown timer
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (countdownActive && countdown > 0) {
-      interval = setInterval(() => {
-        setCountdown(prev => {
-          const newValue = prev - 1;
-          if (newValue <= 0) {
-            setCountdownActive(false);
-            return 0;
-          }
-          return newValue;
-        });
-      }, 1000);
-    }
-    
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [countdownActive]);
+
 
   // Manual guidance generation on demand
   const generateGuidanceManually = () => {
@@ -793,7 +764,7 @@ ${strategyzerData.insights}
                               Performing comprehensive Value Proposition Canvas analysis...
                             </p>
                             <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg animate-pulse">
-                              {countdown}s {countdownActive ? '🔴' : '⚪'}
+                              Analyzing...
                             </div>
                           </div>
                           <div className="space-y-2 text-sm text-indigo-700">
@@ -816,23 +787,9 @@ ${strategyzerData.insights}
                           </div>
                           <div className="w-full bg-indigo-100 rounded-full h-2 mt-3">
                             <div 
-                              className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all duration-1000"
-                              style={{ width: `${((20 - countdown) / 20) * 100}%` }}
+                              className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full animate-pulse"
                             ></div>
                           </div>
-                          <Button 
-                            onClick={() => {
-                              if (!countdownActive) {
-                                setCountdown(10);
-                                setCountdownActive(true);
-                              }
-                            }}
-                            className="mt-2 text-xs bg-red-500 hover:bg-red-600"
-                            size="sm"
-                            disabled={countdownActive}
-                          >
-                            Test Countdown
-                          </Button>
                         </div>
                       ) : showGuidance && guidance ? (
                         <div className="bg-white/60 rounded-lg p-4 border border-indigo-100">
