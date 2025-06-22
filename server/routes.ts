@@ -1568,13 +1568,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Post ID is required" });
       }
 
-      // Set approval status with future scheduling to prevent immediate autopost processing
-      const scheduledFor = shouldPublishNow ? new Date() : new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now if not immediate
+      // Direct database update to avoid storage layer type issues
+      const scheduledFor = shouldPublishNow ? new Date() : new Date(Date.now() + 24 * 60 * 60 * 1000);
       
-      const updatedPost = await storage.updatePost(postId, { 
-        status: 'approved',
-        scheduledFor: scheduledFor.toISOString()
-      });
+      const [updatedPost] = await db
+        .update(posts)
+        .set({
+          status: 'approved',
+          scheduledFor: scheduledFor
+        })
+        .where(eq(posts.id, postId))
+        .returning();
 
       if (!updatedPost) {
         return res.status(404).json({ message: "Post not found" });
