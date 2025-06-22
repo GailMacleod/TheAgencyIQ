@@ -1,56 +1,58 @@
 import { Response } from 'express';
 
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: {
-    message: string;
-    code?: string;
-    statusCode?: number;
-  };
-  timestamp: string;
-}
-
 export class ResponseHandler {
-  static success<T>(res: Response, data: T, statusCode = 200): void {
-    const response: ApiResponse<T> = {
+  static success(res: Response, data: any, message?: string) {
+    return res.status(200).json({
       success: true,
       data,
-      timestamp: new Date().toISOString()
-    };
-    res.status(statusCode).json(response);
+      message: message || 'Operation successful'
+    });
   }
 
-  static error(res: Response, message: string, statusCode = 500, code?: string): void {
-    const response: ApiResponse = {
+  static error(res: Response, message: string, statusCode: number = 500, details?: any) {
+    return res.status(statusCode).json({
       success: false,
-      error: {
-        message,
-        code: code || 'UNKNOWN_ERROR',
-        statusCode
-      },
-      timestamp: new Date().toISOString()
-    };
-    res.status(statusCode).json(response);
+      message,
+      details
+    });
   }
 
-  static unauthorized(res: Response, message = 'Unauthorized'): void {
-    this.error(res, message, 401, 'UNAUTHORIZED');
+  static oauthError(res: Response, platform: string, reason: string) {
+    return res.status(400).json({
+      success: false,
+      message: `${platform} connection failed`,
+      error: reason,
+      platform: platform.toLowerCase()
+    });
   }
 
-  static notFound(res: Response, message = 'Resource not found'): void {
-    this.error(res, message, 404, 'NOT_FOUND');
+  static oauthSuccess(res: Response, platform: string, data: any) {
+    return res.status(200).json({
+      success: true,
+      message: `${platform} connected successfully`,
+      platform: platform.toLowerCase(),
+      data
+    });
   }
 
-  static validation(res: Response, message = 'Validation failed'): void {
-    this.error(res, message, 400, 'VALIDATION_ERROR');
+  static unauthorized(res: Response, message: string = 'Authentication required') {
+    return res.status(401).json({
+      success: false,
+      message
+    });
   }
 
-  static platformError(res: Response, platform: string, message = 'Platform connection failed'): void {
-    this.error(res, `${platform}: ${message}`, 502, 'PLATFORM_ERROR');
+  static notFound(res: Response, resource: string = 'Resource') {
+    return res.status(404).json({
+      success: false,
+      message: `${resource} not found`
+    });
   }
 
-  static oauthError(res: Response, platform: string, message = 'OAuth authentication failed'): void {
-    this.error(res, `${platform} OAuth: ${message}`, 401, 'OAUTH_ERROR');
+  static badRequest(res: Response, message: string = 'Invalid request') {
+    return res.status(400).json({
+      success: false,
+      message
+    });
   }
 }

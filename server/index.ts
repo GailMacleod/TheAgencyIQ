@@ -56,18 +56,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Environment stabilization check
-app.use((req, res, next) => { 
-  process.env.NODE_ENV = process.env.NODE_ENV || 'production'; 
-  console.log('Environment set to:', process.env.NODE_ENV); 
-  if (req.path === '/api/user' && req.method === 'GET') { 
-    if (res.getHeader('Cache-Control') !== 'no-store, no-cache, must-revalidate') { 
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate'); 
-      return res.status(304).end(); 
-    } 
-  } 
-  next(); 
-});
+// Environment configuration (run once)
+process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 
 // Parse JSON and URL-encoded bodies
 app.use(express.json());
@@ -734,16 +724,7 @@ app.use('/api', (req, res, next) => {
     return res.status(404).json({ error: 'API endpoint not found' });
   };
   
-  console.log('API Request:', req.method, req.url);
   next();
-});
-
-// Global logging for non-API requests
-app.use((req, res, next) => { 
-  if (!req.url.startsWith('/api')) {
-    console.log('Request:', req.method, req.url); 
-  }
-  next(); 
 });
 
 // Global error handler to ensure JSON responses
@@ -1857,33 +1838,15 @@ app.get('/api/schedule', async (req, res) => {
   }
 });
 
+// Simplified API logging for errors only
 app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
+    if (res.statusCode >= 400) {
+      log(`${req.method} ${req.path} ${res.statusCode}`);
+    }
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
   next();
 });
 
