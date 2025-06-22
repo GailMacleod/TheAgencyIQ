@@ -2210,6 +2210,17 @@ async function restoreSubscribers() {
   scheduleBackup();
   scheduleDaily();
 
+// Direct Strategyzer API route
+app.get('/api/strategyzer', (req, res) => {
+  const response = {
+    jobs: { functional: "Increase online visibility", emotional: "Feel validated", social: "Gain local respect" },
+    pains: "Dying quietly, lack of presence, resource constraints",
+    gains: "Big-brand polish, steady growth",
+    insights: "Queensland SMEs need affordable digital solutions"
+  };
+  res.json(response);
+});
+
   // Global database synchronization endpoint to maintain data consistency
   app.post('/api/sync-all-user-data', async (req, res) => {
     res.set('Content-Type', 'application/json');

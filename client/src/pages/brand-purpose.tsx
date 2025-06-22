@@ -64,7 +64,6 @@ export default function BrandPurpose() {
   const [isGeneratingGuidance, setIsGeneratingGuidance] = useState(false);
   const [countdown, setCountdown] = useState(20);
   const [countdownActive, setCountdownActive] = useState(false);
-  const [startTime, setStartTime] = useState<number | null>(null);
 
   // Load existing brand purpose data
   const { data: existingBrandPurpose, isLoading: isLoadingBrandPurpose } = useQuery({
@@ -184,7 +183,6 @@ export default function BrandPurpose() {
       
       setIsGeneratingGuidance(true);
       setCountdown(20);
-      setStartTime(Date.now());
       setCountdownActive(true);
       
       // Generate strategic guidance based on Strategyzer methodology
@@ -224,19 +222,35 @@ export default function BrandPurpose() {
         setCountdown(20);
         setCountdownActive(true);
         
-        const response = await apiRequest("POST", "/api/generate-guidance", {
-          brandName: formData.brandName,
-          productsServices: formData.productsServices,
-          corePurpose: formData.corePurpose,
-          audience: formData.audience,
-          jobToBeDone: formData.jobToBeDone,
-          motivations: formData.motivations,
-          painPoints: formData.painPoints
-        });
-        const result = await response.json();
-        return result.guidance;
+        const response = await fetch('/api/strategyzer');
+        const strategyzerData = await response.json();
+        
+        // Format the response as guidance text
+        const guidanceText = `## STRATEGYZER VALUE PROPOSITION ANALYSIS
+
+**Customer Jobs Analysis:**
+- Functional Job: ${strategyzerData.jobs.functional}
+- Emotional Job: ${strategyzerData.jobs.emotional}  
+- Social Job: ${strategyzerData.jobs.social}
+
+**Customer Pains:**
+${strategyzerData.pains}
+
+**Customer Gains:**
+${strategyzerData.gains}
+
+**Strategic Insights:**
+${strategyzerData.insights}
+
+**Recommendations:**
+1. Focus on local Queensland market positioning
+2. Emphasize digital presence and professional credibility
+3. Address resource constraints with cost-effective solutions
+4. Build community connections for sustained growth`;
+
+        return guidanceText;
       } catch (error) {
-        console.error("Guidance API request failed:", error);
+        console.error("Strategyzer API request failed:", error);
         return null;
       }
     },
@@ -260,36 +274,29 @@ export default function BrandPurpose() {
     },
   });
 
-  // Real-time countdown using requestAnimationFrame
+  // Simple countdown timer
   useEffect(() => {
-    let animationFrame: number;
+    let interval: NodeJS.Timeout;
     
-    if (countdownActive && startTime) {
-      const updateCountdown = () => {
-        const elapsed = (Date.now() - startTime) / 1000;
-        const remaining = Math.max(0, Math.ceil(20 - elapsed));
-        
-        if (remaining !== countdown) {
-          setCountdown(remaining);
-        }
-        
-        if (remaining > 0) {
-          animationFrame = requestAnimationFrame(updateCountdown);
-        } else {
-          setCountdownActive(false);
-          setStartTime(null);
-        }
-      };
-      
-      animationFrame = requestAnimationFrame(updateCountdown);
+    if (countdownActive && countdown > 0) {
+      interval = setInterval(() => {
+        setCountdown(prev => {
+          const newValue = prev - 1;
+          if (newValue <= 0) {
+            setCountdownActive(false);
+            return 0;
+          }
+          return newValue;
+        });
+      }, 1000);
     }
     
     return () => {
-      if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
+      if (interval) {
+        clearInterval(interval);
       }
     };
-  }, [countdownActive, startTime, countdown]);
+  }, [countdownActive, countdown]);
 
   // Manual guidance generation on demand
   const generateGuidanceManually = () => {
@@ -818,7 +825,6 @@ export default function BrandPurpose() {
                           <Button 
                             onClick={() => {
                               setCountdown(10);
-                              setStartTime(Date.now());
                               setCountdownActive(true);
                             }}
                             className="mt-2 text-xs bg-red-500 hover:bg-red-600"
