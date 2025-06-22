@@ -626,7 +626,7 @@ ${strategyzerData.insights}
             {/* Products/Services */}
             <div>
               <Label htmlFor="productsServices" className="text-sm font-medium text-gray-700">What products or services does your brand offer?</Label>
-              <div className="relative group">
+              <div className="relative">
                 <Textarea
                   id="productsServices"
                   {...form.register('productsServices')}
@@ -635,13 +635,13 @@ ${strategyzerData.insights}
                   rows={3}
                   autoComplete="off"
                 />
-                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                  <div className="flex items-start space-x-2">
-                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
-                      <p className="text-xs text-purple-800">Define your value proposition - what specific gain do you create or pain do you relieve? Include pricing and packages for clarity.</p>
-                    </div>
+              </div>
+              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
+                    <p className="text-xs text-purple-800">Define your value proposition - what specific gain do you create or pain do you relieve? Include pricing and packages for clarity.</p>
                   </div>
                 </div>
               </div>
@@ -688,7 +688,7 @@ ${strategyzerData.insights}
             {/* Core Purpose */}
             <div>
               <Label htmlFor="corePurpose" className="text-sm font-medium text-gray-700">What's your brand's core purpose?</Label>
-              <div className="relative group">
+              <div className="relative">
                 <Textarea
                   id="corePurpose"
                   {...form.register('corePurpose')}
@@ -697,13 +697,13 @@ ${strategyzerData.insights}
                   rows={3}
                   autoComplete="off"
                 />
-                <div className="absolute inset-x-0 top-full mt-1 bg-purple-50 border border-purple-200 rounded-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                  <div className="flex items-start space-x-2">
-                    <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
-                      <p className="text-xs text-purple-800">Your core purpose defines your mission - focus on the customer jobs you help complete. Strong purposes connect emotionally to customer outcomes.</p>
-                    </div>
+              </div>
+              <div className="mt-1 p-2 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <Bot className="w-3 h-3 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-purple-900 mb-1">Strategyzer tip:</p>
+                    <p className="text-xs text-purple-800">Your core purpose defines your mission - focus on the customer jobs you help complete. Strong purposes connect emotionally to customer outcomes.</p>
                   </div>
                 </div>
               </div>
