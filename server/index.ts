@@ -1045,14 +1045,16 @@ app.post('/api/brand-posts', async (req, res) => {
     const { goals, targets, text, brandPurpose } = req.body;
     let userId = req.session?.userId;
     
-    if (!userId) {
+    if (!userId || typeof userId === 'string') {
       try {
         const { storage } = await import('./storage');
-        const existingUser = await storage.getUser(2);
+        // If userId is a phone number string, convert to database ID
+        let sessionPhone = typeof userId === 'string' ? userId : '+61411223344';
+        const existingUser = await storage.getUserByPhone(sessionPhone);
         if (existingUser) {
-          userId = 2;
+          userId = existingUser.id;
           if (req.session) {
-            req.session.userId = 2;
+            req.session.userId = existingUser.id;
             await new Promise<void>((resolve) => req.session.save((err) => {
               resolve();
             }));
@@ -1060,13 +1062,20 @@ app.post('/api/brand-posts', async (req, res) => {
           }
         } else {
           console.log('No fallback user found, forcing guest mode');
-          userId = 2;
-          req.session.userId = 2;
+          const fallbackUser = await storage.getUserByPhone('+61411223344');
+          if (fallbackUser) {
+            userId = fallbackUser.id;
+            req.session.userId = fallbackUser.id;
+          }
         }
       } catch (error) {
         console.error('Session recovery error:', error);
-        userId = 2;
-        req.session.userId = 2;
+        const { storage } = await import('./storage');
+        const fallbackUser = await storage.getUserByPhone('+61411223344');
+        if (fallbackUser) {
+          userId = fallbackUser.id;
+          req.session.userId = fallbackUser.id;
+        }
       }
     }
 
