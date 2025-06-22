@@ -183,8 +183,10 @@ export default function BrandPurpose() {
       
       console.log('Triggering Grok API waterfall content generation...');
       setIsGeneratingGuidance(true);
+      console.log('Starting countdown timer...');
       setCountdown(20);
       setCountdownActive(true);
+      console.log('Countdown initialized: 20s, active:', true);
       
       // Generate strategic guidance based on Strategyzer methodology
       guidanceMutation.mutate({
@@ -256,17 +258,27 @@ export default function BrandPurpose() {
     },
   });
 
-  // Countdown timer effect
+  // Countdown timer effect with debug logging
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (countdownActive && countdown > 0) {
+      console.log(`Countdown active: ${countdown}s remaining`);
       interval = setInterval(() => {
-        setCountdown(prev => prev - 1);
+        setCountdown(prev => {
+          const newValue = prev - 1;
+          console.log(`Countdown: ${newValue}s`);
+          return newValue;
+        });
       }, 1000);
     } else if (countdown === 0) {
+      console.log('Countdown finished');
       setCountdownActive(false);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [countdownActive, countdown]);
 
   // Manual guidance generation on demand
@@ -765,8 +777,8 @@ export default function BrandPurpose() {
                             <p className="text-base text-indigo-800 font-medium">
                               Performing comprehensive Value Proposition Canvas analysis...
                             </p>
-                            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                              {countdownActive ? `${countdown}s` : '20s'}
+                            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg animate-pulse">
+                              {countdown}s {countdownActive ? '🔴' : '⚪'}
                             </div>
                           </div>
                           <div className="space-y-2 text-sm text-indigo-700">
@@ -787,14 +799,23 @@ export default function BrandPurpose() {
                               <span>Generating Queensland market insights</span>
                             </div>
                           </div>
-                          {countdownActive && (
-                            <div className="w-full bg-indigo-100 rounded-full h-2 mt-3">
-                              <div 
-                                className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all duration-1000"
-                                style={{ width: `${((20 - countdown) / 20) * 100}%` }}
-                              ></div>
-                            </div>
-                          )}
+                          <div className="w-full bg-indigo-100 rounded-full h-2 mt-3">
+                            <div 
+                              className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all duration-1000"
+                              style={{ width: `${((20 - countdown) / 20) * 100}%` }}
+                            ></div>
+                          </div>
+                          <Button 
+                            onClick={() => {
+                              console.log('Manual countdown test');
+                              setCountdown(10);
+                              setCountdownActive(true);
+                            }}
+                            className="mt-2 text-xs bg-red-500 hover:bg-red-600"
+                            size="sm"
+                          >
+                            Test Countdown
+                          </Button>
                         </div>
                       ) : showGuidance && guidance ? (
                         <div className="bg-white/60 rounded-lg p-4 border border-indigo-100">
