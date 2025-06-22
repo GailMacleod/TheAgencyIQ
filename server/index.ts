@@ -11,6 +11,8 @@ import fs from "fs";
 import path from "path";
 import { errorHandler, asyncHandler } from "./middleware/errorHandler";
 import { ResponseHandler } from "./utils/responseHandler";
+import { createServer } from "http";
+import { WebSocketServer } from "ws";
 
 // Global uncaught exception handler
 process.on('uncaughtException', (err) => { 
@@ -1054,7 +1056,7 @@ app.post('/api/brand-posts', async (req, res) => {
           userId = user.id;
           if (req.session) {
             req.session.userId = user.id;
-            await new Promise((resolve) => req.session.save((err) => { if (!err) resolve(); }));
+            await new Promise<void>((resolve) => req.session.save((err) => { resolve(); }));
           }
           console.log(`Session forced for phone ${phone} with userId ${user.id}`);
         } else {
@@ -2397,7 +2399,43 @@ async function restoreSubscribers() {
   });
 
   // Register API routes BEFORE Vite setup to prevent HTML responses
-  const httpServer = await registerRoutes(app);
+  // OAuth route configuration for platform connections
+  app.get('/oauth/:platform', (req, res) => {
+    const platform = req.params.platform;
+    const validPlatforms = ['facebook', 'linkedin', 'twitter', 'youtube', 'instagram'];
+    
+    if (!validPlatforms.includes(platform)) {
+      return res.status(400).json({ error: 'Invalid platform' });
+    }
+    
+    // Redirect to platform-specific OAuth endpoint
+    res.redirect(`/api/oauth/${platform}`);
+  });
+
+  // Setup HTTP server with WebSocket support
+  const httpServer = createServer(app);
+  
+  // WebSocket server for real-time updates
+  const wss = new WebSocketServer({ server: httpServer });
+  
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    
+    ws.on('message', (message) => {
+      console.log('WebSocket message received:', message.toString());
+    });
+    
+    // WebSocket close handler
+    ws.on('close', (code, reason) => {
+      console.log(`WebSocket client disconnected - Code: ${code}, Reason: ${reason}`);
+    });
+    
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+    });
+  });
+
+  await registerRoutes(app);
 
   // API route protection middleware - prevents HTML responses for API calls
   app.use('/api/*', (req, res, next) => {
@@ -2436,11 +2474,7 @@ async function restoreSubscribers() {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  httpServer.listen(port, "0.0.0.0", () => {
+    log(`serving on port ${port} with WebSocket support`);
   });
 })();
