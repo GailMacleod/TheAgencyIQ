@@ -64,6 +64,7 @@ export default function BrandPurpose() {
   const [isGeneratingGuidance, setIsGeneratingGuidance] = useState(false);
   const [countdown, setCountdown] = useState(20);
   const [countdownActive, setCountdownActive] = useState(false);
+  const [analysisTriggered, setAnalysisTriggered] = useState(false);
 
   // Load existing brand purpose data
   const { data: existingBrandPurpose, isLoading: isLoadingBrandPurpose } = useQuery({
@@ -179,8 +180,9 @@ export default function BrandPurpose() {
     if (brandName && brandName.length >= 2 && 
         productsServices && productsServices.length >= 10 && 
         corePurpose && corePurpose.length >= 10 &&
-        !isGeneratingGuidance && !showGuidance && !isExistingData) {
+        !isGeneratingGuidance && !showGuidance && !isExistingData && !analysisTriggered) {
       
+      setAnalysisTriggered(true);
       setIsGeneratingGuidance(true);
       setCountdown(20);
       setCountdownActive(true);
@@ -192,7 +194,7 @@ export default function BrandPurpose() {
         corePurpose
       });
     }
-  }, [brandName, productsServices, corePurpose, isGeneratingGuidance, showGuidance, isExistingData]);
+  }, [brandName, productsServices, corePurpose, isGeneratingGuidance, showGuidance, isExistingData, analysisTriggered]);
 
   // Auto-save for better user experience
   const autoSaveMutation = useMutation({
@@ -217,11 +219,7 @@ export default function BrandPurpose() {
   // Generate guidance mutation with proper error handling
   const guidanceMutation = useMutation({
     mutationFn: async (formData: Partial<BrandPurposeForm>) => {
-      try {
-        // Start countdown immediately when request begins
-        setCountdown(20);
-        setCountdownActive(true);
-        
+      try {        
         const response = await fetch('/api/strategyzer');
         const strategyzerData = await response.json();
         
@@ -260,14 +258,17 @@ ${strategyzerData.insights}
         setShowGuidance(true);
       }
       setCountdownActive(false);
+      setAnalysisTriggered(false);
     },
     onError: (error) => {
       console.error("Failed to generate guidance:", error);
       setCountdownActive(false);
+      setAnalysisTriggered(false);
     },
     onSettled: () => {
       setIsGeneratingGuidance(false);
       setCountdownActive(false);
+      setAnalysisTriggered(false);
     },
   });
 
@@ -293,7 +294,7 @@ ${strategyzerData.insights}
         clearInterval(interval);
       }
     };
-  }, [countdownActive, countdown]);
+  }, [countdownActive]);
 
   // Manual guidance generation on demand
   const generateGuidanceManually = () => {
@@ -821,11 +822,14 @@ ${strategyzerData.insights}
                           </div>
                           <Button 
                             onClick={() => {
-                              setCountdown(10);
-                              setCountdownActive(true);
+                              if (!countdownActive) {
+                                setCountdown(10);
+                                setCountdownActive(true);
+                              }
                             }}
                             className="mt-2 text-xs bg-red-500 hover:bg-red-600"
                             size="sm"
+                            disabled={countdownActive}
                           >
                             Test Countdown
                           </Button>
