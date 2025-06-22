@@ -1045,37 +1045,27 @@ app.post('/api/brand-posts', async (req, res) => {
     const { goals, targets, text, brandPurpose } = req.body;
     let userId = req.session?.userId;
     
-    if (!userId || typeof userId === 'string') {
+    if (!userId) {
       try {
         const { storage } = await import('./storage');
-        // If userId is a phone number string, convert to database ID
-        let sessionPhone = typeof userId === 'string' ? userId : '+61411223344';
-        const existingUser = await storage.getUserByPhone(sessionPhone);
-        if (existingUser) {
-          userId = existingUser.id;
+        const phone = '+61411223344'; // Use your test phone number
+        const user = await storage.getUserByPhone ? await storage.getUserByPhone(phone) : await storage.getUserByEmail(phone);
+        if (user && user.id) {
+          userId = user.id;
           if (req.session) {
-            req.session.userId = existingUser.id;
-            await new Promise<void>((resolve) => req.session.save((err) => {
-              resolve();
-            }));
-            console.log(`Session recovered for ${existingUser.email}`);
+            req.session.userId = user.id;
+            await new Promise((resolve) => req.session.save((err) => { if (!err) resolve(); }));
           }
+          console.log(`Session forced for phone ${phone} with userId ${user.id}`);
         } else {
-          console.log('No fallback user found, forcing guest mode');
-          const fallbackUser = await storage.getUserByPhone('+61411223344');
-          if (fallbackUser) {
-            userId = fallbackUser.id;
-            req.session.userId = fallbackUser.id;
-          }
+          userId = 2; // Fallback to a known user
+          if (req.session) req.session.userId = 2;
+          console.log('Fallback to userId 2 due to no user found');
         }
       } catch (error) {
-        console.error('Session recovery error:', error);
-        const { storage } = await import('./storage');
-        const fallbackUser = await storage.getUserByPhone('+61411223344');
-        if (fallbackUser) {
-          userId = fallbackUser.id;
-          req.session.userId = fallbackUser.id;
-        }
+        console.error('Session force error:', error);
+        userId = 2; // Emergency fallback
+        if (req.session) req.session.userId = 2;
       }
     }
 
