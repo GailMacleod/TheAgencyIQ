@@ -62,6 +62,8 @@ export default function BrandPurpose() {
   const [guidance, setGuidance] = useState<string>("");
   const [showGuidance, setShowGuidance] = useState(false);
   const [isGeneratingGuidance, setIsGeneratingGuidance] = useState(false);
+  const [countdown, setCountdown] = useState(20);
+  const [countdownActive, setCountdownActive] = useState(false);
 
   // Load existing brand purpose data
   const { data: existingBrandPurpose, isLoading: isLoadingBrandPurpose } = useQuery({
@@ -243,14 +245,30 @@ export default function BrandPurpose() {
     },
     onSettled: () => {
       setIsGeneratingGuidance(false);
+      setCountdownActive(false);
     },
   });
+
+  // Countdown timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (countdownActive && countdown > 0) {
+      interval = setInterval(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+    } else if (countdown === 0) {
+      setCountdownActive(false);
+    }
+    return () => clearInterval(interval);
+  }, [countdownActive, countdown]);
 
   // Manual guidance generation on demand
   const generateGuidanceManually = () => {
     const formData = form.getValues();
     if (formData.brandName && formData.productsServices && formData.corePurpose) {
       setIsGeneratingGuidance(true);
+      setCountdown(20);
+      setCountdownActive(true);
       guidanceMutation.mutate(formData);
     }
   };
@@ -738,9 +756,14 @@ export default function BrandPurpose() {
                       </div>
                       {isGeneratingGuidance ? (
                         <div className="space-y-3">
-                          <p className="text-base text-indigo-800 font-medium">
-                            Performing comprehensive Value Proposition Canvas analysis...
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-base text-indigo-800 font-medium">
+                              Performing comprehensive Value Proposition Canvas analysis...
+                            </p>
+                            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                              {countdownActive ? `${countdown}s` : '20s'}
+                            </div>
+                          </div>
                           <div className="space-y-2 text-sm text-indigo-700">
                             <div className="flex items-center space-x-2">
                               <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
@@ -759,6 +782,14 @@ export default function BrandPurpose() {
                               <span>Generating Queensland market insights</span>
                             </div>
                           </div>
+                          {countdownActive && (
+                            <div className="w-full bg-indigo-100 rounded-full h-2 mt-3">
+                              <div 
+                                className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all duration-1000"
+                                style={{ width: `${((20 - countdown) / 20) * 100}%` }}
+                              ></div>
+                            </div>
+                          )}
                         </div>
                       ) : showGuidance && guidance ? (
                         <div className="bg-white/60 rounded-lg p-4 border border-indigo-100">
