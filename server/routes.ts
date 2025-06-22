@@ -1558,38 +1558,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Approve individual post for scheduling - FIXED FOR PERSISTENT APPROVAL
+  // Approve individual post for scheduling
   app.post("/api/approve-post", requireAuth, async (req: any, res) => {
     try {
-      const { postId, shouldPublishNow } = req.body;
+      const { postId } = req.body;
       const userId = req.session.userId;
 
       if (!postId) {
         return res.status(400).json({ message: "Post ID is required" });
       }
 
-      // Direct database update to avoid storage layer type issues
-      const scheduledFor = shouldPublishNow ? new Date() : new Date(Date.now() + 24 * 60 * 60 * 1000);
-      
-      const [updatedPost] = await db
-        .update(posts)
-        .set({
-          status: 'approved',
-          scheduledFor: scheduledFor
-        })
-        .where(eq(posts.id, postId))
-        .returning();
+      // Update post status to approved
+      const updatedPost = await storage.updatePost(postId, { 
+        status: 'approved'
+      });
 
       if (!updatedPost) {
         return res.status(404).json({ message: "Post not found" });
       }
 
-      console.log(`Post ${postId} approved by user ${userId} - scheduled for ${scheduledFor.toISOString()}`);
-      res.json({ 
-        success: true, 
-        post: updatedPost,
-        message: shouldPublishNow ? 'Post approved and will publish immediately' : 'Post approved and scheduled'
-      });
+      console.log(`Post ${postId} approved by user ${userId}`);
+      res.json({ success: true, post: updatedPost });
     } catch (error) {
       console.error('Error approving post:', error);
       res.status(500).json({ message: "Failed to approve post" });
