@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
@@ -514,28 +514,26 @@ ${Object.keys(updates).length} fields have been automatically populated based on
 
   // Auto-save with proper debouncing
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    
     const subscription = form.watch((value, { name, type }) => {
       if (type === 'change' && name) {
         // Clear previous timeout
-        if (timeoutId) {
-          clearTimeout(timeoutId);
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
         }
         
         // Only auto-save if we have some basic data
         if (value.brandName || value.productsServices || value.corePurpose) {
-          timeoutId = setTimeout(() => {
+          debounceTimeoutRef.current = setTimeout(() => {
             saveProgress(value);
-          }, 5000); // Auto-save 5 seconds after typing stops
+          }, 8000); // Auto-save 8 seconds after typing stops
         }
       }
     });
     
     return () => {
       subscription.unsubscribe();
-      if (timeoutId) {
-        clearTimeout(timeoutId);
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
       }
     };
   }, []);
