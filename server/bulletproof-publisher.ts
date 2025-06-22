@@ -128,7 +128,7 @@ export class BulletproofPublisher {
   }
   
   /**
-   * Auto-repair connection issues
+   * Auto-repair connection issues with live OAuth credentials
    */
   private static async autoRepairConnection(userId: number, platform: string, healthStatus: any): Promise<boolean> {
     console.log(`🔧 AUTO-REPAIRING ${platform} connection...`);
