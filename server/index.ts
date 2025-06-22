@@ -2768,7 +2768,7 @@ app.get('/api/strategyzer', (req, res) => {
         error: error.message 
       });
     }
-  });
+  }));
 
 
 
