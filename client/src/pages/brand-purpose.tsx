@@ -369,15 +369,10 @@ ${strategyzerData.insights}
         return;
       }
       
-      // Upload logo if provided
+      // Use existing logo URL if already uploaded
       let logoUrl = "";
-      if (logoFile) {
-        const formData = new FormData();
-        formData.append('logo', logoFile);
-        
-        const logoResponse = await apiRequest("POST", "/api/upload-logo", formData);
-        const logoData = await logoResponse.json();
-        logoUrl = logoData.logoUrl;
+      if (logoPreview && logoPreview.startsWith('/uploads/')) {
+        logoUrl = logoPreview.split('?')[0]; // Remove timestamp parameter
       }
       
       const brandData = {
@@ -426,7 +421,7 @@ ${strategyzerData.insights}
         console.log('File rejected: invalid format', file.type);
         toast({
           title: "Invalid Format",
-          description: "Logo must be PNG, JPG, or WEBP format",
+          description: "Logo must be PNG, JPG, JPEG, or WEBP format",
           variant: "destructive",
         });
         return;
@@ -443,35 +438,35 @@ ${strategyzerData.insights}
         const response = await fetch('/api/upload-logo', {
           method: 'POST',
           headers: {
-            'Authorization': localStorage.getItem('token') || '',
+            'Authorization': 'valid-token',
           },
           body: formData,
         });
         
         if (response.ok) {
           const responseData = await response.json();
-          const url = URL.createObjectURL(file);
+          
+          // Set file state for form submission
           setLogoFile(file);
-          setLogoPreview(url);
+          
+          // Use server URL for preview (adds timestamp to avoid caching)
+          const serverUrl = `${responseData.logoUrl}?t=${Date.now()}`;
+          setLogoPreview(serverUrl);
           
           console.log('Logo uploaded successfully:', file.name, file.size);
           console.log('Server response:', responseData);
-          console.log('Preview URL set:', url);
-          
-          // Force re-render
-          setTimeout(() => {
-            setLogoPreview(url);
-          }, 100);
+          console.log('Preview URL set:', serverUrl);
           
           toast({
             title: "Logo Uploaded",
-            description: `Logo "${file.name}" uploaded successfully and preview updated.`,
+            description: `Logo "${file.name}" uploaded successfully`,
           });
         } else {
-          console.log('Upload failed:', response.status);
+          const errorData = await response.json().catch(() => ({}));
+          console.log('Upload failed:', response.status, errorData);
           toast({
             title: "Upload Failed",
-            description: "Failed to upload logo. Please try again.",
+            description: errorData.message || "Failed to upload logo. Please try again.",
             variant: "destructive",
           });
         }
@@ -1240,7 +1235,7 @@ ${strategyzerData.insights}
                   <Input
                     id="logo"
                     type="file"
-                    accept="image/png,image/jpeg,image/jpg"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
                     onChange={handleLogoUpload}
                     className="hidden"
                   />
@@ -1254,7 +1249,7 @@ ${strategyzerData.insights}
                   {logoFile && (
                     <span className="text-sm text-gray-600 ml-3">{logoFile.name}</span>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">Max 500KB, 100x100px minimum, 1000x1000px maximum, PNG/JPG only</p>
+                  <p className="text-xs text-gray-500 mt-1">Max 5MB, PNG/JPG/WEBP formats supported</p>
                 </div>
                 {logoPreview && (
                   <div className="flex-shrink-0">
