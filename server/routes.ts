@@ -605,6 +605,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           </script>
         `);
+      } else if (state.toString().includes('youtube')) {
+        res.send(`
+          <h1>YouTube Authorization Successful</h1>
+          <p>Authorization code received for YouTube integration.</p>
+          <script>
+            // Auto-submit to YouTube callback endpoint
+            fetch('/api/youtube/callback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: '${code}', state: '${state}' })
+            }).then(r => r.json()).then(data => {
+              if (data.success) {
+                document.body.innerHTML = '<h1>YouTube Integration Complete!</h1><p>You can now close this window.</p>';
+              } else {
+                document.body.innerHTML = '<h1>YouTube Integration Failed</h1><p>Error: ' + JSON.stringify(data.error) + '</p>';
+              }
+            }).catch(err => {
+              document.body.innerHTML = '<h1>YouTube Integration Error</h1><p>' + err.message + '</p>';
+            });
+          </script>
+        `);
       } else {
         // Default to X platform
         res.send(`
@@ -3083,6 +3104,99 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({
         success: false,
         message: "Instagram test post failed",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // YouTube OAuth Callback
+  app.post("/api/youtube/callback", async (req: any, res) => {
+    try {
+      const { code, state } = req.body;
+      const userId = req.session?.userId || 2;
+      
+      if (!code) {
+        return res.status(400).json({
+          success: false,
+          message: "Authorization code missing"
+        });
+      }
+
+      const clientId = process.env.YOUTUBE_CLIENT_ID;
+      const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+      const redirectUri = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/';
+
+      // Exchange authorization code for access token
+      const tokenParams = new URLSearchParams();
+      tokenParams.append('grant_type', 'authorization_code');
+      tokenParams.append('code', code);
+      tokenParams.append('redirect_uri', redirectUri);
+      tokenParams.append('client_id', clientId!);
+      tokenParams.append('client_secret', clientSecret!);
+
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: tokenParams
+      });
+
+      const tokenData = await tokenResponse.json();
+
+      if (!tokenResponse.ok) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to exchange authorization code",
+          error: tokenData
+        });
+      }
+
+      // Get YouTube channel information
+      const channelResponse = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`
+        }
+      });
+
+      const channelData = await channelResponse.json();
+
+      if (!channelResponse.ok || !channelData.items || channelData.items.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to retrieve YouTube channel information",
+          error: channelData
+        });
+      }
+
+      const channel = channelData.items[0];
+
+      // Create or update YouTube connection
+      const connection = await storage.createPlatformConnection({
+        userId,
+        platform: 'youtube',
+        platformUserId: channel.id,
+        platformUsername: channel.snippet.title,
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token || null,
+        expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+        isActive: true
+      });
+
+      res.json({
+        success: true,
+        connectionId: connection.id,
+        message: 'YouTube integration completed successfully',
+        channelId: channel.id,
+        channelTitle: channel.snippet.title,
+        channelDescription: channel.snippet.description
+      });
+
+    } catch (error) {
+      console.error('YouTube callback error:', error);
+      res.status(500).json({
+        success: false,
+        message: "YouTube integration failed",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
