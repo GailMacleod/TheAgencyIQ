@@ -1865,20 +1865,16 @@ app.post('/api/immediate-publish-all', async (req, res) => {
           content: post.content
         });
         
-        // If bulletproof fails, use emergency publisher
+        // If bulletproof fails, use direct publisher
         if (!publishResult.success) {
-          const { EmergencyPublisher } = await import('./emergency-publisher');
-          const emergencyResult = await EmergencyPublisher.emergencyPublish(
-            post.platform,
-            post.content,
-            userId
-          );
+          const { DirectPublisher } = await import('./direct-publisher');
+          const directResult = await DirectPublisher.publishToPlatform(post.platform, post.content);
           
-          if (emergencyResult.success) {
+          if (directResult.success) {
             publishResult = {
               success: true,
-              platformPostId: emergencyResult.platformPostId,
-              analytics: { method: emergencyResult.method, fallback: true }
+              platformPostId: directResult.platformPostId,
+              analytics: { method: 'direct_publish', fallback: true }
             };
           }
         }

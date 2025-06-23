@@ -99,27 +99,26 @@ export class BulletproofPublisher {
         await this.validatePublishedPost(request.platform, result.platformPostId, connection);
       }
       
-      // If primary publishing failed, attempt emergency publishing
+      // If primary publishing failed, attempt direct publishing
       if (!result.success) {
-        console.log(`🚨 PRIMARY PUBLISH FAILED - ATTEMPTING EMERGENCY PUBLISH`);
-        const { EmergencyPublisher } = await import('./emergency-publisher');
+        console.log(`🚨 PRIMARY PUBLISH FAILED - ATTEMPTING DIRECT PUBLISH`);
+        const { DirectPublisher } = await import('./direct-publisher');
         
-        const emergencyResult = await EmergencyPublisher.emergencyPublish(
+        const directResult = await DirectPublisher.publishToPlatform(
           request.platform,
-          request.content,
-          request.userId
+          request.content
         );
         
-        if (emergencyResult.success) {
-          console.log(`✅ EMERGENCY PUBLISH SUCCESS: ${request.platform}`);
+        if (directResult.success) {
+          console.log(`✅ DIRECT PUBLISH SUCCESS: ${request.platform}`);
           return {
             success: true,
-            platformPostId: emergencyResult.platformPostId,
+            platformPostId: directResult.platformPostId,
             fallbackUsed: true,
-            analytics: { method: emergencyResult.method, fallback: true }
+            analytics: { method: 'direct_publish', fallback: true }
           };
         } else {
-          console.log(`❌ EMERGENCY PUBLISH FAILED: ${emergencyResult.error}`);
+          console.log(`❌ DIRECT PUBLISH FAILED: ${directResult.error}`);
         }
       }
       
