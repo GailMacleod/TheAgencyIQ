@@ -1,102 +1,81 @@
 /**
- * X Platform Integration Service
- * Handles X OAuth 2.0 and posting functionality
+ * X Platform Integration using OAuth 1.0a
+ * Handles posting to X with proper authentication
  */
 
 import crypto from 'crypto';
 
-interface XAuthResult {
-  authUrl: string;
-  codeVerifier: string;
-  state: string;
-}
-
-interface XTokenResult {
-  access_token: string;
-  refresh_token?: string;
-  expires_in: number;
-}
-
-export class XIntegrationService {
-  private clientId: string;
-  private clientSecret: string;
-  private redirectUri: string;
+export class XIntegration {
+  private consumerKey: string;
+  private consumerSecret: string;
+  private accessToken: string;
+  private accessTokenSecret: string;
 
   constructor() {
-    this.clientId = process.env.X_0AUTH_CLIENT_ID!;
-    this.clientSecret = process.env.X_0AUTH_CLIENT_SECRET!;
-    this.redirectUri = process.env.REPLIT_DOMAINS 
-      ? `https://${process.env.REPLIT_DOMAINS}/` 
-      : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/';
+    this.consumerKey = process.env.X_0AUTH_CLIENT_ID!;
+    this.consumerSecret = process.env.X_0AUTH_CLIENT_SECRET!;
+    this.accessToken = process.env.X_ACCESS_TOKEN!;
+    this.accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET!;
   }
 
-  generateAuthUrl(): XAuthResult {
-    // Generate PKCE parameters
-    const codeVerifier = crypto.randomBytes(32).toString('base64url');
-    const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
-    const state = crypto.randomBytes(16).toString('hex');
+  private generateOAuthSignature(method: string, url: string, params: Record<string, string>): string {
+    // Sort parameters
+    const sortedParams = Object.keys(params)
+      .sort()
+      .map(key => `${this.percentEncode(key)}=${this.percentEncode(params[key])}`)
+      .join('&');
 
-    const authParams = new URLSearchParams({
-      response_type: 'code',
-      client_id: this.clientId,
-      redirect_uri: this.redirectUri,
-      scope: 'tweet.read tweet.write users.read offline.access',
-      state: state,
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256'
-    });
+    // Create signature base string
+    const baseString = `${method}&${this.percentEncode(url)}&${this.percentEncode(sortedParams)}`;
+    
+    // Create signing key
+    const signingKey = `${this.percentEncode(this.consumerSecret)}&${this.percentEncode(this.accessTokenSecret)}`;
+    
+    // Generate signature
+    const signature = crypto
+      .createHmac('sha1', signingKey)
+      .update(baseString)
+      .digest('base64');
 
-    const authUrl = `https://twitter.com/i/oauth2/authorize?${authParams}`;
+    return signature;
+  }
 
-    return {
-      authUrl,
-      codeVerifier,
-      state
+  private percentEncode(str: string): string {
+    return encodeURIComponent(str)
+      .replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+  }
+
+  async postTweet(text: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    const url = 'https://api.twitter.com/2/tweets';
+    const method = 'POST';
+    
+    // OAuth 1.0a parameters
+    const oauthParams: Record<string, string> = {
+      oauth_consumer_key: this.consumerKey,
+      oauth_token: this.accessToken,
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+      oauth_nonce: crypto.randomBytes(16).toString('hex'),
+      oauth_version: '1.0'
     };
-  }
 
-  async exchangeCodeForToken(authCode: string, codeVerifier: string): Promise<XTokenResult | null> {
-    const tokenParams = new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: this.clientId,
-      code: authCode,
-      redirect_uri: this.redirectUri,
-      code_verifier: codeVerifier
-    });
+    // Generate signature
+    const signature = this.generateOAuthSignature(method, url, oauthParams);
+    oauthParams.oauth_signature = signature;
+
+    // Create authorization header
+    const authHeader = 'OAuth ' + Object.keys(oauthParams)
+      .map(key => `${key}="${this.percentEncode(oauthParams[key])}"`)
+      .join(', ');
 
     try {
-      const response = await fetch('https://api.twitter.com/2/oauth2/token', {
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Basic ${Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64')}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: tokenParams
-      });
-
-      if (response.ok) {
-        return await response.json();
-      } else {
-        console.error('Token exchange failed:', await response.text());
-        return null;
-      }
-    } catch (error) {
-      console.error('Token exchange error:', error);
-      return null;
-    }
-  }
-
-  async postTweet(accessToken: string, content: string): Promise<{ success: boolean; tweetId?: string; error?: string }> {
-    try {
-      const response = await fetch('https://api.twitter.com/2/tweets', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          text: content
-        })
+        body: JSON.stringify({ text })
       });
 
       const result = await response.json();
@@ -104,50 +83,37 @@ export class XIntegrationService {
       if (response.ok) {
         return {
           success: true,
-          tweetId: result.data.id
+          data: {
+            id: result.data.id,
+            text: result.data.text,
+            url: `https://twitter.com/i/web/status/${result.data.id}`
+          }
         };
       } else {
         return {
           success: false,
-          error: result.detail || result.title || 'Unknown error'
+          error: `X API Error: ${response.status} - ${JSON.stringify(result)}`
         };
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Network error'
+        error: `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
   }
 
-  async refreshToken(refreshToken: string): Promise<XTokenResult | null> {
-    const tokenParams = new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      client_id: this.clientId
-    });
-
+  async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await fetch('https://api.twitter.com/2/oauth2/token', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64')}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: tokenParams
-      });
-
-      if (response.ok) {
-        return await response.json();
-      } else {
-        console.error('Token refresh failed:', await response.text());
-        return null;
-      }
+      const result = await this.postTweet('TheAgencyIQ X integration test - connection verified!');
+      return { success: result.success, error: result.error };
     } catch (error) {
-      console.error('Token refresh error:', error);
-      return null;
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   }
 }
 
-export const xIntegration = new XIntegrationService();
+export const xIntegration = new XIntegration();
