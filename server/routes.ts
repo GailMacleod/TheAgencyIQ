@@ -3804,6 +3804,68 @@ Continue building your Value Proposition Canvas systematically.`;
     });
   });
 
+  // Debug Post Generation/Status Logic
+  app.post('/auto-generate-content-schedule', async (req, res) => {
+    const userId = '2'; // Use actual user ID instead of phone number
+    
+    try {
+      // Get user data
+      const user = await storage.getUser(parseInt(userId));
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // Define quotas based on subscription plan
+      const quotas = { starter: 12, growth: 27, professional: 52 };
+      const quota = quotas[user.subscriptionPlan?.toLowerCase()] || 52; // Default to professional
+      
+      // Count current successful posts in last 30 days
+      const allPosts = await storage.getPostsByUser(parseInt(userId));
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const successfulPosts = allPosts.filter(p => 
+        p.status === 'success' && 
+        p.publishedAt && 
+        new Date(p.publishedAt) > thirtyDaysAgo
+      );
+      
+      const remaining = Math.max(0, quota - successfulPosts.length);
+      
+      console.log('[DEBUG] User:', userId, 'Plan:', user.subscriptionPlan, 'Quota:', quota, 'Current Successes:', successfulPosts.length, 'Remaining:', remaining);
+      
+      // Get current posts before deletion
+      const current = await storage.getPostsByUser(parseInt(userId));
+      console.log('[DEBUG] Before count:', current.length, 'Statuses:', current.map(p => p.status));
+      
+      // Delete non-successful posts through storage
+      const nonSuccessfulPosts = current.filter(p => p.status !== 'success');
+      for (const post of nonSuccessfulPosts) {
+        await storage.deletePost(post.id);
+      }
+      
+      // Generate new posts for remaining quota
+      const newPosts = [];
+      for (let i = 0; i < remaining; i++) {
+        const post = await storage.createPost({
+          userId: parseInt(userId),
+          content: `Post ${i + 1} - Generated for ${user.subscriptionPlan} plan`,
+          status: 'pending',
+          platform: 'x'
+        });
+        newPosts.push(post);
+      }
+      
+      // Get posts after generation
+      const after = await storage.getPostsByUser(parseInt(userId));
+      console.log('[DEBUG] After count:', after.length, 'New Statuses:', after.map(p => p.status));
+      
+      res.send('Schedule generated');
+      
+    } catch (error) {
+      console.error('[DEBUG] Generation error:', error);
+      res.status(500).json({ error: 'Failed to generate schedule' });
+    }
+  });
+
   // Step 2: Generate Content Within Quota
   app.post('/api/generate-schedule', async (req, res) => {
     const userId = req.body.phone;

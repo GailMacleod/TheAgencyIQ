@@ -1,0 +1,47 @@
+Let’s focus on stabilizing the post count and ledger logic, as this might expose the token refresh issue. The bug likely lies in the generation and status update process.
+
+Step: Debug and Fix Post Generation/Status Logic
+Goal: Ensure post count aligns with the user’s subscription and statuses update correctly.
+Action:
+Update server/routes.ts to debug generation:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+app.post('/auto-generate-content-schedule', async (req, res) => {
+  const userId = req.body.phone || '+61424835189';
+  const subscription = await db.select({ plan: subscriptions.plan }).from(subscriptions).where(eq(subscriptions.userId, userId)).get();
+  const quotas = { starter: 12, growth: 27, professional: 52 };
+  const quota = quotas[subscription.plan.toLowerCase()] || 12;
+  const currentQuota = await db.select({ count: sql`COUNT(*)` }).from(posts).where(sql`${posts.userId} = ${userId} AND ${posts.status} = 'success' AND ${posts.publishedAt} > NOW() - INTERVAL '30 days'`).get();
+  const remaining = Math.max(0, quota - currentQuota.count);
+  console.log('[DEBUG] User:', userId, 'Plan:', subscription.plan, 'Quota:', quota, 'Current Successes:', currentQuota.count, 'Remaining:', remaining);
+  const current = await db.select().from(posts).where(eq(posts.userId, userId));
+  console.log('[DEBUG] Before count:', current.length, 'Statuses:', current.map(p => p.status));
+  await db.delete(posts).where(sql`${posts.userId} = ${userId} AND ${posts.status} != 'success'`);
+  const newPosts = Array.from({ length: remaining }, (_, i) => ({
+    id: Date.now() + i,
+    userId,
+    content: `Post ${i}`,
+    status: 'pending',
+    publishedAt: null,
+    platform: 'x'
+  }));
+  await db.insert(posts).values(newPosts);
+  const after = await db.select().from(posts).where(eq(posts.userId, userId));
+  console.log('[DEBUG] After count:', after.length, 'New Statuses:', after.map(p => p.status));
+  res.send('Schedule generated');
+});
+Trigger /auto-generate-content-schedule, check logs for count and status changes.
+Query: SELECT COUNT(*) FROM posts WHERE user_id = '+61424835189' GROUP BY status;
+Share logs and query result.
+Why: Pinpoints if generation oversteps the quota or if status updates fail, potentially revealing a ledger bug driving token issues.
+Why This Approach
+Addresses the post count anomaly first, which might cascade to token behavior.
+Avoids daily token updates by uncovering a systemic refresh or config issue.
+Fits the tight timeline by focusing on server logic.
