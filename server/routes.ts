@@ -3088,6 +3088,127 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // LinkedIn OAuth Callback
+  app.post("/api/linkedin/callback", async (req: any, res) => {
+    try {
+      const { code, state } = req.body;
+      const userId = req.session?.userId || 2;
+      
+      if (!code) {
+        return res.status(400).json({
+          success: false,
+          message: "Authorization code missing"
+        });
+      }
+
+      const clientId = process.env.LINKEDIN_CLIENT_ID;
+      const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+      const redirectUri = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/';
+
+      // Exchange authorization code for access token
+      const tokenParams = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: redirectUri,
+        client_id: clientId,
+        client_secret: clientSecret
+      });
+
+      const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: tokenParams
+      });
+
+      const tokenData = await tokenResponse.json();
+
+      if (!tokenResponse.ok) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to exchange authorization code",
+          error: tokenData
+        });
+      }
+
+      // Get LinkedIn profile information
+      const profileResponse = await fetch('https://api.linkedin.com/v2/people/~', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`
+        }
+      });
+
+      const profileData = await profileResponse.json();
+
+      if (!profileResponse.ok) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to retrieve LinkedIn profile",
+          error: profileData
+        });
+      }
+
+      // Create or update LinkedIn connection
+      const connection = await storage.createPlatformConnection({
+        userId,
+        platform: 'linkedin',
+        platformUserId: profileData.id,
+        platformUsername: 'LinkedIn Professional',
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token || null,
+        expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+        isActive: true
+      });
+
+      // Test LinkedIn posting capability
+      const testPost = {
+        author: `urn:li:person:${profileData.id}`,
+        lifecycleState: 'PUBLISHED',
+        specificContent: {
+          'com.linkedin.ugc.ShareContent': {
+            shareCommentary: {
+              text: 'LinkedIn integration for TheAgencyIQ is now operational! Professional networking automation ready for Queensland small businesses. #TheAgencyIQ #LinkedInReady'
+            },
+            shareMediaCategory: 'NONE'
+          }
+        },
+        visibility: {
+          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+        }
+      };
+
+      const postResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
+          'X-Restli-Protocol-Version': '2.0.0'
+        },
+        body: JSON.stringify(testPost)
+      });
+
+      const postResult = await postResponse.json();
+
+      res.json({
+        success: true,
+        connectionId: connection.id,
+        message: 'LinkedIn integration completed successfully',
+        profileId: profileData.id,
+        testPost: postResponse.ok ? 'Success' : 'Failed',
+        postId: postResponse.ok ? postResult.id : null
+      });
+
+    } catch (error) {
+      console.error('LinkedIn callback error:', error);
+      res.status(500).json({
+        success: false,
+        message: "LinkedIn integration failed",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // X.AI Credentials Test - Direct API test
   app.post("/api/grok-test", async (req: any, res) => {
     try {
