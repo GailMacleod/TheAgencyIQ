@@ -1576,62 +1576,32 @@ app.post('/api/waterfall/approve', async (req, res) => {
 
 const enforcePublish = async (post: any, userId: number) => {
   const platforms = {
-    facebook: { 
-      url: 'https://graph.facebook.com/v20.0/me/feed', 
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `message=${encodeURIComponent(post.content)}&access_token=${process.env.FACEBOOK_APP_ID}|${process.env.FACEBOOK_APP_SECRET}`
-    },
-    linkedin: { 
-      url: 'https://api.linkedin.com/v2/ugcPosts', 
-      headers: { 
-        'Authorization': `Bearer ${process.env.LINKEDIN_CLIENT_SECRET}`,
-        'Content-Type': 'application/json',
-        'X-Restli-Protocol-Version': '2.0.0'
-      },
-      body: JSON.stringify({
-        author: `urn:li:person:me`,
-        lifecycleState: 'PUBLISHED',
-        specificContent: {
-          'com.linkedin.ugc.ShareContent': {
-            shareCommentary: { text: post.content },
-            shareMediaCategory: 'NONE'
-          }
-        },
-        visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' }
-      })
-    },
-    instagram: { 
-      url: 'https://graph.facebook.com/v20.0/me/media', 
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `caption=${encodeURIComponent(post.content)}&access_token=${process.env.INSTAGRAM_CLIENT_SECRET}`
-    },
-    twitter: { 
-      url: 'https://api.twitter.com/2/tweets', 
-      headers: { 
-        'Authorization': `Bearer ${process.env.TWITTER_CLIENT_SECRET}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ text: post.content })
-    }
+    facebook: { url: 'https://graph.facebook.com/v20.0/me/feed', secret: process.env.FACEBOOK_USER_ACCESS_TOKEN, payload: { message: post.content } }, // User access token for posting
+    linkedin: { url: 'https://api.linkedin.com/v2/ugcPosts', secret: process.env.LINKEDIN_CLIENT_SECRET, payload: { author: 'urn:li:person:me', lifecycleState: 'PUBLISHED', specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text: post.content }, shareMediaCategory: 'NONE' } } } },
+    instagram: { url: 'https://graph.instagram.com/v20.0/me/media', secret: process.env.INSTAGRAM_CLIENT_SECRET, payload: { caption: post.content, access_token: process.env.INSTAGRAM_CLIENT_SECRET } },
+    twitter: { url: 'https://api.twitter.com/2/tweets', secret: process.env.TWITTER_CLIENT_SECRET, payload: { text: post.content } }
   };
-
   const platform = platforms[post.platform as keyof typeof platforms];
-  if (!platform) return { success: false, message: `Unsupported platform: ${post.platform}` };
+  if (!platform || !platform.secret) return { success: false, message: `No secret for ${post.platform}` };
 
   try {
+    // Validate Facebook API response
     const response = await fetch(platform.url, {
       method: 'POST',
-      headers: platform.headers,
-      body: platform.body
+      headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Bearer ${platform.secret}`
+      },
+      body: new URLSearchParams(platform.payload).toString()
     });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`${post.platform} API failed: ${errorText}`);
-    }
-    
     const result = await response.json();
-    return { success: true, message: `Published to ${post.platform}`, postId: result.id };
+    if (!response.ok) {
+      const errorMsg = `API error ${response.status}: ${result.error?.message || await response.text()}`;
+      console.error(`Publish failed for ${post.platform} [${userId}]: ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
+    console.log(`Publish succeeded for ${post.platform} [${userId}]: Post ID ${result.id}`);
+    return { success: true, message: `Published with ID ${result.id}` };
   } catch (error: any) {
     return { success: false, message: error.message };
   }

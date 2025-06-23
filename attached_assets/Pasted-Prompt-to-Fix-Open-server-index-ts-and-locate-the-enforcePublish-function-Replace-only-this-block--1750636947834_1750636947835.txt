@@ -1,0 +1,54 @@
+Prompt to Fix:
+Open server/index.ts and locate the enforcePublish function. Replace only this block with a fix to use the correct Facebook user/page access token and ensure successful publishing, preserving all other code:
+
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const enforcePublish = async (post, userId) => {
+  const platforms = {
+    facebook: { url: 'https://graph.facebook.com/v20.0/me/feed', secret: process.env.FB_SECRET, payload: { message: post.content }, isPage: false }, // Adjust to page if needed
+    linkedin: { url: 'https://api.linkedin.com/v2/ugcPosts', secret: process.env.LI_SECRET, payload: { author: 'urn:li:person:me', lifecycleState: 'PUBLISHED', specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text: post.content }, shareMediaCategory: 'NONE' } } } },
+    instagram: { url: 'https://graph.instagram.com/v20.0/me/media', secret: process.env.IG_SECRET, payload: { caption: post.content, access_token: process.env.IG_SECRET } },
+    twitter: { url: 'https://api.twitter.com/2/tweets', secret: process.env.TW_SECRET, payload: { text: post.content } }
+  };
+  const platform = platforms[post.platform];
+  if (!platform.secret) return { success: false, message: `No secret for ${post.platform}` };
+
+  let token = platform.secret;
+  try {
+    // Validate and refresh token if Facebook
+    if (post.platform.toLowerCase() === 'facebook') {
+      const response = await fetch('https://graph.facebook.com/debug_token', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (!data.data || !data.data.is_valid) {
+        console.warn(`Facebook token invalid for user ${userId}, attempting refresh`);
+        token = await refreshFacebookToken(userId); // Implement refresh
+      }
+    }
+
+    const response = await fetch(platform.url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(platform.payload)
+    });
+    if (!response.ok) throw new Error(`API failed: ${await response.text()}`);
+    return { success: true, message: `Published to ${post.platform}` };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+const refreshFacebookToken = async (userId) => {
+  // Placeholder: Replace with actual Facebook OAuth refresh logic using app ID, secret, and user ID
+  // Example: Use Facebook Graph API /oauth/access_token with refresh token
+  return `refreshed_fb_user_token_${userId}`; // Update with real implementation
+};
