@@ -1,20 +1,14 @@
 /**
- * Final X OAuth 2.0 Test - Using Your Premium Credentials
- * Tests X posting with OAuth 2.0 Bearer token authentication
+ * Test X Integration Using Database Token
  */
 
-async function testXOAuth2Final() {
-  console.log('🔄 TESTING X OAUTH 2.0 FINAL INTEGRATION');
-  console.log('========================================');
+const accessToken = 'MVF0RGxvd1VBYWFOcEtVNDlXRFN3d2d3eC1PcVZkVnk1TVBidkJCZVUydlEtOjE3NTA2NjE4MTg1MzE6MToxOmF0OjE';
 
-  // Check if we have an OAuth 2.0 access token stored
-  const accessToken = process.env.X_OAUTH2_ACCESS_TOKEN;
-  
-  if (!accessToken) {
-    console.log('❌ No X OAuth 2.0 access token found');
-    console.log('Integration should have stored the token in secrets');
-    return false;
-  }
+async function testXDatabaseToken() {
+  console.log('🔄 TESTING X DATABASE TOKEN');
+  console.log('===========================');
+  console.log('Connection ID: 132');
+  console.log('Platform: X (OAuth 2.0)');
 
   try {
     const tweetResponse = await fetch('https://api.twitter.com/2/tweets', {
@@ -24,7 +18,7 @@ async function testXOAuth2Final() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        text: 'TheAgencyIQ X OAuth 2.0 FINAL TEST - Platform operational for 9:00 AM JST launch! 🚀'
+        text: 'TheAgencyIQ X platform CONFIRMED! OAuth 2.0 token working from database - ready for 9:00 AM JST launch!'
       })
     });
 
@@ -34,9 +28,9 @@ async function testXOAuth2Final() {
     if (tweetResponse.ok) {
       console.log('✅ TWEET POSTED SUCCESSFULLY');
       console.log('Tweet ID:', tweetResult.data.id);
-      console.log('Tweet Text:', tweetResult.data.text);
       console.log('Tweet URL: https://twitter.com/i/web/status/' + tweetResult.data.id);
-      console.log('✅ X PLATFORM OAUTH 2.0 OPERATIONAL');
+      console.log('✅ X PLATFORM OAUTH 2.0 CONFIRMED WORKING');
+      console.log('✅ DATABASE TOKEN OPERATIONAL');
       console.log('✅ READY FOR 9:00 AM JST LAUNCH');
       return true;
     } else {
@@ -49,4 +43,4 @@ async function testXOAuth2Final() {
   }
 }
 
-testXOAuth2Final();
+testXDatabaseToken();
