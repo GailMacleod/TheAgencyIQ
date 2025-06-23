@@ -3662,28 +3662,48 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Debug 'Auto Generate Content Schedule' - Identify why post count increases
+  // Step 1: Enforce Quota Before Generation
   app.post('/api/auto-generate-content-schedule', async (req, res) => {
     const userId = req.body.phone || '+61424835189';
-    const current = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
-    console.log('Before generation count:', current.length);
-    const successfulPosts = current.filter(p => p.status === 'published' && p.publishedAt && new Date(p.publishedAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-    const remaining = 12 - successfulPosts.length;
-    console.log('Remaining quota:', remaining);
-    if (remaining > 0) {
-      const newPosts = Array.from({ length: remaining }, (_, i) => ({
-        userId: parseInt(userId.replace('+', '')),
-        platform: 'facebook',
-        content: `Generated Post ${i}`,
-        status: 'pending'
-      }));
-      for (const post of newPosts) {
-        await storage.createPost(post);
-      }
-      console.log('Added posts:', newPosts.length);
+    const userIdInt = parseInt(userId.replace('+', ''));
+    
+    // Get successful posts in last 30 days
+    const allPosts = await storage.getPostsByUser(userIdInt);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const successfulPosts = allPosts.filter(p => 
+      p.status === 'published' && 
+      p.publishedAt && 
+      new Date(p.publishedAt) > thirtyDaysAgo
+    );
+    
+    const remaining = 12 - successfulPosts.length; // Starter quota
+    console.log('Current successes:', successfulPosts.length, 'Remaining:', remaining);
+    
+    if (remaining <= 0) return res.status(400).send('Quota exceeded');
+    
+    const current = await storage.getPostsByUser(userIdInt);
+    console.log('Before count:', current.length);
+    
+    // Delete pending posts
+    const pendingPosts = current.filter(p => p.status === 'pending');
+    for (const post of pendingPosts) {
+      await storage.deletePost(post.id);
     }
-    const after = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
-    console.log('After generation count:', after.length);
+    
+    // Generate new posts up to remaining quota
+    const newPosts = Array.from({ length: remaining }, (_, i) => ({
+      userId: userIdInt,
+      platform: 'facebook',
+      content: `Generated Post ${i}`,
+      status: 'pending'
+    }));
+    
+    for (const post of newPosts) {
+      await storage.createPost(post);
+    }
+    
+    const after = await storage.getPostsByUser(userIdInt);
+    console.log('After count:', after.length, 'Added:', newPosts.length);
     res.send('Schedule generated');
   });
 
