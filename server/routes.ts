@@ -2885,7 +2885,7 @@ Continue building your Value Proposition Canvas systematically.`;
         redirectUri = `${req.protocol}://${host}/api/auth/facebook/callback`;
       }
       
-      // Include all necessary permissions for publishing
+      // Include all necessary permissions for publishing  
       const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement';
       const state = Buffer.from(JSON.stringify({ 
         userId: req.session.userId,

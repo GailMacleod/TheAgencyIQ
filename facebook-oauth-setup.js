@@ -15,7 +15,7 @@ async function generateFacebookAuthUrl() {
   }
 
   // Required permissions for posting to Facebook
-  const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement,publish_to_groups';
+  const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement';
   const state = 'facebook_oauth_' + Date.now();
 
   const authParams = new URLSearchParams({
