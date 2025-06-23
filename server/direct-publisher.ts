@@ -95,33 +95,15 @@ export class DirectPublisher {
    */
   static async publishToLinkedIn(content: string): Promise<DirectPublishResult> {
     try {
-      const accessToken = process.env.LINKEDIN_ACCESS_TOKEN;
+      const accessToken = process.env.LINKEDIN_TOKEN || process.env.LINKEDIN_ACCESS_TOKEN;
       
       if (!accessToken) {
         return { success: false, error: 'LinkedIn access token not configured' };
       }
 
-      // First get the user profile to get the correct user ID
-      const profileResponse = await fetch('https://api.linkedin.com/v2/me', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!profileResponse.ok) {
-        const profileError = await profileResponse.json();
-        return { 
-          success: false, 
-          error: `LinkedIn profile: ${profileError.message || 'Token invalid or expired'}` 
-        };
-      }
-
-      const profile = await profileResponse.json();
-      
-      // Create post with proper user URN
+      // Use simplified posting without profile lookup
       const postData = {
-        author: `urn:li:person:${profile.id}`,
+        author: 'urn:li:person:me',
         lifecycleState: 'PUBLISHED',
         specificContent: {
           'com.linkedin.ugc.ShareContent': {

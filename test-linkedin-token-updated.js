@@ -6,7 +6,7 @@
 async function testLinkedInTokenUpdated() {
   console.log('Testing updated LinkedIn access token...\n');
   
-  const accessToken = process.env.LINKEDIN_ACCESS_TOKEN;
+  const accessToken = process.env.LINKEDIN_TOKEN || process.env.LINKEDIN_ACCESS_TOKEN;
   
   if (!accessToken) {
     console.log('❌ No LinkedIn access token found');
