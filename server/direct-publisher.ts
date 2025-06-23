@@ -5,6 +5,7 @@
  */
 
 import crypto from 'crypto';
+import OAuth from 'oauth-1.0a';
 
 export interface DirectPublishResult {
   success: boolean;
@@ -145,20 +146,60 @@ export class DirectPublisher {
   }
 
   /**
-   * Publish to Twitter using app credentials
+   * Publish to X using OAuth 1.0a credentials
    */
   static async publishToTwitter(content: string): Promise<DirectPublishResult> {
     try {
-      const bearerToken = process.env.TWITTER_CLIENT_SECRET; // Should be bearer token
+      const clientId = process.env.TWITTER_CLIENT_ID;
+      const clientSecret = process.env.TWITTER_CLIENT_SECRET;
+      const accessToken = process.env.X_ACCESS_TOKEN;
+      const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
       
-      if (!bearerToken) {
-        return { success: false, error: 'Twitter credentials not configured' };
+      if (!clientId || !clientSecret || !accessToken || !accessTokenSecret) {
+        return { success: false, error: 'X credentials not configured' };
       }
+
+      // Generate OAuth 1.0a signature
+      const timestamp = Math.floor(Date.now() / 1000).toString();
+      const nonce = crypto.randomBytes(16).toString('hex');
+      
+      const params = {
+        oauth_consumer_key: clientId,
+        oauth_token: accessToken,
+        oauth_signature_method: 'HMAC-SHA1',
+        oauth_timestamp: timestamp,
+        oauth_nonce: nonce,
+        oauth_version: '1.0'
+      };
+
+      // Create signature base string
+      const paramString = Object.entries(params)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+        .join('&');
+      
+      const baseString = `POST&${encodeURIComponent('https://api.twitter.com/2/tweets')}&${encodeURIComponent(paramString)}`;
+      
+      // Create signing key
+      const signingKey = `${encodeURIComponent(clientSecret)}&${encodeURIComponent(accessTokenSecret)}`;
+      
+      // Generate signature
+      const signature = crypto.createHmac('sha1', signingKey).update(baseString).digest('base64');
+      
+      // Create authorization header
+      const authParams = {
+        ...params,
+        oauth_signature: signature
+      };
+      
+      const authHeader = 'OAuth ' + Object.entries(authParams)
+        .map(([k, v]) => `${k}="${encodeURIComponent(v)}"`)
+        .join(', ');
 
       const response = await fetch('https://api.twitter.com/2/tweets', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${bearerToken}`,
+          'Authorization': authHeader,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ text: content })
@@ -167,13 +208,13 @@ export class DirectPublisher {
       const result = await response.json();
 
       if (!response.ok) {
-        return { success: false, error: `Twitter: ${result.detail || result.title || 'API error'}` };
+        return { success: false, error: `X: ${result.detail || result.title || 'API error'}` };
       }
 
-      return { success: true, platformPostId: result.data.id };
+      return { success: true, platformPostId: result.data?.id };
       
     } catch (error: any) {
-      return { success: false, error: `Twitter error: ${error.message}` };
+      return { success: false, error: `X error: ${error.message}` };
     }
   }
 
