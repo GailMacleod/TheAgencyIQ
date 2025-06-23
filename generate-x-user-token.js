@@ -9,8 +9,8 @@ async function generateXUserToken() {
   console.log('🔥 X OAUTH 2.0 USER CONTEXT TOKEN GENERATOR');
   console.log('==========================================');
 
-  const clientId = process.env.X_CLIENT_ID;
-  const clientSecret = process.env.X_CLIENT_SECRET;
+  const clientId = process.env.X_0AUTH_CLIENT_ID;
+  const clientSecret = process.env.X_0AUTH_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
     console.log('❌ Missing X OAuth 2.0 credentials');
@@ -59,8 +59,8 @@ async function generateXUserToken() {
 async function exchangeCodeForToken(authCode, codeVerifier) {
   console.log('\n🔄 EXCHANGING CODE FOR ACCESS TOKEN');
   
-  const clientId = process.env.X_CLIENT_ID;
-  const clientSecret = process.env.X_CLIENT_SECRET;
+  const clientId = process.env.X_0AUTH_CLIENT_ID;
+  const clientSecret = process.env.X_0AUTH_CLIENT_SECRET;
 
   const tokenParams = new URLSearchParams({
     grant_type: 'authorization_code',

@@ -127,8 +127,8 @@ passport.use(new LinkedInStrategy({
 
 // X (Twitter) OAuth Strategy
 passport.use(new TwitterStrategy({
-  consumerKey: process.env.X_CLIENT_ID!,
-  consumerSecret: process.env.X_CLIENT_SECRET!,
+  consumerKey: process.env.X_0AUTH_CLIENT_ID!,
+  consumerSecret: process.env.X_0AUTH_CLIENT_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`,
   userProfileURL: "https://api.twitter.com/1.1/account/verify_credentials.json?include_email=true",
   passReqToCallback: true

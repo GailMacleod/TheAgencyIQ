@@ -150,8 +150,8 @@ export class DirectPublisher {
    */
   static async publishToTwitter(content: string): Promise<DirectPublishResult> {
     try {
-      const clientId = process.env.X_CLIENT_ID;
-      const clientSecret = process.env.X_CLIENT_SECRET;
+      const clientId = process.env.X_0AUTH_CLIENT_ID;
+      const clientSecret = process.env.X_0AUTH_CLIENT_SECRET;
       const accessToken = process.env.X_ACCESS_TOKEN;
       const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
       

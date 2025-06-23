@@ -7,8 +7,8 @@ async function testXOAuth2Final() {
   console.log('🔥 TESTING X OAUTH 2.0 WITH YOUR PREMIUM CREDENTIALS');
   console.log('================================================');
 
-  const clientId = process.env.X_CLIENT_ID;
-  const clientSecret = process.env.X_CLIENT_SECRET;
+  const clientId = process.env.X_0AUTH_CLIENT_ID;
+  const clientSecret = process.env.X_0AUTH_CLIENT_SECRET;
   const accessToken = process.env.X_ACCESS_TOKEN;
 
   console.log('✅ Client ID:', clientId ? `${clientId.substring(0, 8)}...` : 'MISSING');
