@@ -1,0 +1,58 @@
+Step 1: Dynamically Enforce User-Selected Quota
+Goal: Ensure generation respects the user’s chosen subscription.
+Code:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+// server/routes.ts
+app.post('/auto-generate-content-schedule', async (req, res) => {
+  const userId = req.body.phone || '+61424835189';
+  const subscription = await db
+    .select({ plan: subscriptions.plan })
+    .from(subscriptions)
+    .where(eq(subscriptions.userId, userId))
+    .get(); // Fetch from subscriptions table
+  const quotas = { starter: 12, growth: 27, professional: 52 };
+  const quota = quotas[subscription.plan.toLowerCase()] || 12; // Default to Starter if invalid
+  const currentQuota = await db
+    .select({ count: sql`COUNT(*)` })
+    .from(posts)
+    .where(sql`${posts.userId} = ${userId} AND ${posts.status} = 'success' AND ${posts.publishedAt} > NOW() - INTERVAL '30 days'`)
+    .get();
+  const remaining = Math.max(0, quota - currentQuota.count);
+  console.log('[DEBUG] User:', userId, 'Plan:', subscription.plan, 'Quota:', quota, 'Remaining:', remaining);
+  if (remaining === 0) return res.status(400).send('Quota exceeded');
+  const current = await db.select().from(posts).where(eq(posts.userId, userId));
+  console.log('[DEBUG] Before count:', current.length);
+  await db.delete(posts).where(sql`${posts.userId} = ${userId} AND ${posts.status} != 'success'`);
+  const newPosts = Array.from({ length: remaining }, (_, i) => ({
+    id: Date.now() + i,
+    userId,
+    content: `Post ${i}`,
+    status: 'pending',
+    publishedAt: null,
+    platform: 'x' // Default, adjust dynamically
+  }));
+  await db.insert(posts).values(newPosts);
+  const after = await db.select().from(posts).where(eq(posts.userId, userId));
+  console.log('[DEBUG] After count:', after.length, 'Added:', newPosts.length);
+  res.send('Schedule generated');
+});
+Action:
+Ensure a subscriptions table exists (e.g., CREATE TABLE subscriptions (userId INT, plan VARCHAR(20))) or fetch from /api/subscription-usage.
+Save, run, trigger 'auto generate content schedule', query:
+text
+
+Collapse
+
+Wrap
+
+Copy
+SELECT COUNT(*) FROM posts WHERE user_id = '+61424835189';
+Share logs and result.

@@ -3706,10 +3706,19 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Step 2: Enforce Quota and Clean Ledger
+  // Step 1: Dynamically Enforce User-Selected Quota
   app.post('/api/auto-generate-content-schedule', async (req, res) => {
     const userId = req.body.phone || '+61424835189';
     const userIdInt = parseInt(userId.replace('+', ''));
+    
+    // Get user's subscription plan
+    const user = await storage.getUser(userIdInt);
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+    
+    const quotas = { starter: 12, growth: 27, professional: 52 };
+    const quota = quotas[user.subscriptionPlan?.toLowerCase() || 'starter'] || 12;
     
     // Get successful posts in last 30 days
     const allPosts = await storage.getPostsByUser(userIdInt);
@@ -3720,8 +3729,8 @@ Continue building your Value Proposition Canvas systematically.`;
       new Date(p.publishedAt) > thirtyDaysAgo
     );
     
-    const remaining = Math.max(0, 12 - successfulPosts.length);
-    console.log('[DEBUG] Current successes:', successfulPosts.length, 'Remaining:', remaining);
+    const remaining = Math.max(0, quota - successfulPosts.length);
+    console.log('[DEBUG] User:', userId, 'Plan:', user.subscriptionPlan, 'Quota:', quota, 'Remaining:', remaining);
     
     if (remaining === 0) return res.status(400).send('Quota exceeded');
     
@@ -3748,7 +3757,16 @@ Continue building your Value Proposition Canvas systematically.`;
     
     const after = await storage.getPostsByUser(userIdInt);
     console.log('[DEBUG] After count:', after.length, 'Added:', newPosts.length);
-    res.send('Schedule generated');
+    res.json({
+      success: true,
+      message: 'Schedule generated',
+      user: userId,
+      plan: user.subscriptionPlan,
+      quota: quota,
+      remaining: remaining,
+      generated: newPosts.length,
+      totalPosts: after.length
+    });
   });
 
   // Step 2: Generate Content Within Quota
