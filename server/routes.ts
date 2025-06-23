@@ -2942,6 +2942,152 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Instagram Business API Integration
+  app.post("/api/instagram/setup", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId || 2;
+      const { facebookConnectionId } = req.body;
+      
+      // Get Facebook connection
+      const facebookConnection = await storage.getPlatformConnection(userId, 'facebook');
+      if (!facebookConnection) {
+        return res.status(400).json({
+          success: false,
+          message: "Active Facebook connection required for Instagram setup"
+        });
+      }
+
+      // Get Facebook pages and associated Instagram accounts
+      const pagesUrl = `https://graph.facebook.com/v20.0/me/accounts?access_token=${facebookConnection.accessToken}&fields=id,name,instagram_business_account`;
+      
+      const pagesResponse = await fetch(pagesUrl);
+      const pagesData = await pagesResponse.json();
+      
+      if (pagesData.error) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to retrieve Facebook pages",
+          error: pagesData.error
+        });
+      }
+
+      // Find page with Instagram Business Account
+      let instagramBusinessAccount = null;
+      let parentPage = null;
+      
+      for (const page of pagesData.data || []) {
+        if (page.instagram_business_account) {
+          instagramBusinessAccount = page.instagram_business_account;
+          parentPage = page;
+          break;
+        }
+      }
+
+      if (!instagramBusinessAccount) {
+        return res.status(400).json({
+          success: false,
+          message: "No Instagram Business Account found. Please connect your Instagram account to your Facebook page first."
+        });
+      }
+
+      // Get Instagram account details
+      const instagramUrl = `https://graph.facebook.com/v20.0/${instagramBusinessAccount.id}?access_token=${facebookConnection.accessToken}&fields=id,username,account_type`;
+      
+      const instagramResponse = await fetch(instagramUrl);
+      const instagramData = await instagramResponse.json();
+      
+      if (instagramData.error) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to retrieve Instagram account details",
+          error: instagramData.error
+        });
+      }
+
+      // Create Instagram connection
+      const instagramConnection = await storage.createPlatformConnection({
+        userId,
+        platform: 'instagram',
+        platformUsername: instagramData.username || 'Instagram Business',
+        platformUserId: instagramData.id,
+        accessToken: facebookConnection.accessToken,
+        refreshToken: facebookConnection.refreshToken,
+        expiresAt: facebookConnection.expiresAt,
+        isActive: true
+      });
+
+      res.json({
+        success: true,
+        connectionId: instagramConnection.id,
+        instagramUsername: instagramData.username,
+        instagramId: instagramData.id,
+        accountType: instagramData.account_type,
+        parentPage: parentPage.name
+      });
+
+    } catch (error) {
+      console.error('Instagram setup failed:', error);
+      res.status(500).json({
+        success: false,
+        message: "Instagram setup failed",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Instagram Test Post
+  app.post("/api/instagram/test-post", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId || 2;
+      const { content } = req.body;
+      
+      const instagramConnection = await storage.getPlatformConnection(userId, 'instagram');
+      if (!instagramConnection) {
+        return res.status(400).json({
+          success: false,
+          message: "Instagram connection not found"
+        });
+      }
+
+      // Create Instagram media container
+      const mediaUrl = `https://graph.facebook.com/v20.0/${instagramConnection.platformUserId}/media`;
+      const mediaParams = new URLSearchParams({
+        caption: content || 'Test post from TheAgencyIQ',
+        access_token: instagramConnection.accessToken
+      });
+
+      const mediaResponse = await fetch(mediaUrl, {
+        method: 'POST',
+        body: mediaParams
+      });
+
+      const mediaData = await mediaResponse.json();
+      
+      if (mediaData.error) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to create Instagram media",
+          error: mediaData.error
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Instagram test successful",
+        mediaId: mediaData.id,
+        note: "Media container created (would be published in production)"
+      });
+
+    } catch (error) {
+      console.error('Instagram test post failed:', error);
+      res.status(500).json({
+        success: false,
+        message: "Instagram test post failed",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // X.AI Credentials Test - Direct API test
   app.post("/api/grok-test", async (req: any, res) => {
     try {
