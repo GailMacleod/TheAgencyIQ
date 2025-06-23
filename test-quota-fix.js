@@ -12,12 +12,23 @@ async function testQuotaFix() {
     // Step 5: Test and Verify
     console.log('\n=== Testing Post Approval for +61424835189 ===');
     
-    // Test 1: Approve first post
-    console.log('\n1. Approving first post...');
+    // Test 1: Create sample post first
+    console.log('\n1. Creating sample post...');
+    const createPost = await axios.post('http://localhost:5000/api/create-sample-post', {
+      platform: 'facebook',
+      useAI: false
+    }, {
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    console.log('Sample post created:', createPost.data.post?.id);
+    
+    // Test 2: Approve first post
+    console.log('\n2. Approving first post...');
     const firstPost = await axios.post('http://localhost:5000/api/waterfall/approve', {
       phone: '+61424835189',
-      postId: 1,
-      platform: 'facebook'
+      postId: createPost.data.post.id
     }, {
       withCredentials: true,
       headers: { 'Content-Type': 'application/json' }
