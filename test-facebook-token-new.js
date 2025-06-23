@@ -23,9 +23,13 @@ async function testNewFacebookToken() {
   console.log(`Token prefix: ${pageToken.substring(0, 20)}...\n`);
   
   try {
+    // Generate app secret proof for Facebook API calls
+    const { createHmac } = await import('crypto');
+    const appSecretProof = createHmac('sha256', appSecret).update(pageToken).digest('hex');
+    
     // Test 1: Token validation
     console.log('1. Testing token validation...');
-    const debugResponse = await fetch(`https://graph.facebook.com/debug_token?input_token=${pageToken}&access_token=${pageToken}`);
+    const debugResponse = await fetch(`https://graph.facebook.com/debug_token?input_token=${pageToken}&access_token=${pageToken}&appsecret_proof=${appSecretProof}`);
     const debugData = await debugResponse.json();
     
     if (debugData.data) {
@@ -39,7 +43,7 @@ async function testNewFacebookToken() {
     
     // Test 2: Get page info
     console.log('\n2. Testing page access...');
-    const pageResponse = await fetch(`https://graph.facebook.com/me?access_token=${pageToken}`);
+    const pageResponse = await fetch(`https://graph.facebook.com/me?access_token=${pageToken}&appsecret_proof=${appSecretProof}`);
     const pageData = await pageResponse.json();
     
     if (pageData.id) {
@@ -51,7 +55,7 @@ async function testNewFacebookToken() {
     
     // Test 3: Check posting permissions
     console.log('\n3. Testing posting permissions...');
-    const permResponse = await fetch(`https://graph.facebook.com/me/permissions?access_token=${pageToken}`);
+    const permResponse = await fetch(`https://graph.facebook.com/me/permissions?access_token=${pageToken}&appsecret_proof=${appSecretProof}`);
     const permData = await permResponse.json();
     
     if (permData.data) {
