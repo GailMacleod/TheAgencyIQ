@@ -146,24 +146,35 @@ export class DirectPublisher {
   }
 
   /**
-   * Publish to X using OAuth 2.0 User Context
+   * Publish to X using OAuth 2.0 User Context from database
    */
   static async publishToTwitter(content: string): Promise<DirectPublishResult> {
     try {
-      const clientId = process.env.X_0AUTH_CLIENT_ID;
-      const clientSecret = process.env.X_0AUTH_CLIENT_SECRET;
-      const accessToken = process.env.X_ACCESS_TOKEN;
-      const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
+      // Import database connection
+      const { db } = await import('./db');
+      const { platformConnections } = await import('../shared/schema');
+      const { eq, and } = await import('drizzle-orm');
       
-      if (!clientId || !clientSecret || !accessToken) {
-        return { success: false, error: 'X OAuth 2.0 credentials not configured' };
+      // Get active X connection from database
+      const [connection] = await db
+        .select()
+        .from(platformConnections)
+        .where(and(
+          eq(platformConnections.platform, 'x'),
+          eq(platformConnections.isActive, true)
+        ))
+        .orderBy(platformConnections.connectedAt)
+        .limit(1);
+
+      if (!connection) {
+        return { success: false, error: 'No active X connection found. Please complete OAuth 2.0 authorization first.' };
       }
 
-      // Use OAuth 2.0 User Context authentication for X platform
+      // Use the database-stored OAuth 2.0 User Context token
       const response = await fetch('https://api.twitter.com/2/tweets', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${connection.accessToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ text: content })
