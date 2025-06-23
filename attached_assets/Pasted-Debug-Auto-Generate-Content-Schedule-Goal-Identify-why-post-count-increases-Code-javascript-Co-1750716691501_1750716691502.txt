@@ -1,0 +1,119 @@
+Debug 'Auto Generate Content Schedule'
+Goal: Identify why post count increases.
+Code:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+// server/routes.ts
+app.post('/auto-generate-content-schedule', async (req, res) => {
+  const userId = req.body.phone || '+61424835189';
+  const quota = 12; // Starter, adjust dynamically later
+  console.log(`Generating schedule for ${userId}, quota: ${quota}`);
+  const posts = await db.select().from(posts).where(eq(posts.userId, userId));
+  console.log('Existing posts:', posts.length);
+  // Existing generation logic
+  res.send('Schedule generated');
+});
+Action: Save, run, click 'auto generate content schedule', check Replit logs for post count before/after.
+Why: Pinpoints if generation duplicates entries.
+Step 2: Enforce Publishing Fix
+Goal: Activate auto-posting for scheduled posts.
+Code:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+// auto-post.ts
+const enforcePublishing = async () => {
+  const posts = await db.select().from(posts).where(eq(posts.status, 'pending'));
+  for (const post of posts) {
+    const success = await publishPost(post); // Use existing publish function
+    await db.update(posts).set({ status: success ? 'success' : 'failed' }).where(eq(posts.id, post.id));
+    console.log(`Enforce ${post.id} status: ${success ? 'success' : 'failed'}`);
+  }
+};
+setInterval(enforcePublishing, 30000); // Every 30 seconds for testing
+Action: Save, run, wait 30 seconds, check logs and query:
+text
+
+Collapse
+
+Wrap
+
+Copy
+SELECT id, status FROM posts WHERE user_id = '+61424835189';
+Why: Forces pending posts to publish, updates status.
+Step 3: Cap Post Count at Quota
+Goal: Limit to 12 posts.
+Code:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+// server/routes.ts
+app.post('/auto-generate-content-schedule', async (req, res) => {
+  const userId = req.body.phone || '+61424835189';
+  const currentQuota = await db
+    .select({ count: sql`COUNT(*)` })
+    .from(posts)
+    .where(sql`${posts.userId} = ${userId} AND ${posts.status} = 'success' AND ${posts.publishedAt} > NOW() - INTERVAL '30 days'`)
+    .get();
+  const quota = 12 - currentQuota.count;
+  console.log(`Remaining quota for ${userId}: ${quota}`);
+  if (quota <= 0) return res.status(400).send('Quota exceeded');
+  // Generate only quota number of posts
+  res.send('Schedule generated with quota limit');
+});
+Action: Save, run, trigger schedule, check logs and query post count.
+Why: Prevents over-generation within 30-day cycle.
+Step 4: Fix UI Navigation and Status
+Goal: Enable screen transitions, correct 'published' display.
+Code:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+// server/routes.ts
+app.get('/post-status', async (req, res) => {
+  const userId = req.query.phone || '+61424835189';
+  const posts = await db.select().from(posts).where(eq(posts.userId, userId));
+  const status = posts.reduce((acc, p) => ({ ...acc, [p.id]: p.status }), {});
+  console.log('Post statuses:', status);
+  res.send(status);
+});
+// frontend (React)
+// Update to fetch /post-status, show 'published' only if status === 'success'
+Action: Save, run, navigate via hamburger menu, verify status on UI.
+Why: Aligns UI with ledger, fixes navigation if backend routes are mislinked.
+Step 5: Quick Launch Check
+Goal: Validate before 09:00 AM.
+Action:
+Trigger 'auto generate content schedule'.
+Query: SELECT COUNT(*) FROM posts WHERE user_id = '+61424835189' AND status = 'success';
+Check UI and platforms.
+Why: Ensures flow within 1.5 hours.
+Why This Works
+Subscription-Driven: Quota (12) ties to schedule generation.
+Surgical: Targets schedule/ publishing, spares OAuth.
+Replit-Ready: Short, focused updates.

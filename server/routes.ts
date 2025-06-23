@@ -3662,6 +3662,17 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Debug 'Auto Generate Content Schedule' - Identify why post count increases
+  app.post('/api/auto-generate-content-schedule', async (req, res) => {
+    const userId = req.body.phone || '+61424835189';
+    const quota = 12; // Starter, adjust dynamically later
+    console.log(`Generating schedule for ${userId}, quota: ${quota}`);
+    const posts = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
+    console.log('Existing posts:', posts.length);
+    // Existing generation logic
+    res.send('Schedule generated');
+  });
+
   // Step 2: Generate Content Within Quota
   app.post('/api/generate-schedule', async (req, res) => {
     const userId = req.body.phone;
