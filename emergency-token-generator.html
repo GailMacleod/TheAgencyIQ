@@ -1,237 +1,257 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emergency Token Generator - TheAgencyIQ Launch Fix</title>
+    <title>X OAuth 2.0 Configuration & Token Generator</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
-        .urgent { background: #dc3545; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
-        .platform { background: white; border: 2px solid #dc3545; margin: 15px 0; padding: 20px; border-radius: 8px; }
-        .operational { border-color: #28a745; }
-        .step { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 10px 0; }
-        .link-button { display: inline-block; background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 10px 5px; }
-        .link-button:hover { background: #0056b3; }
-        .urgent-button { background: #dc3545; }
-        .urgent-button:hover { background: #c82333; }
-        .token-input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; }
-        .status { padding: 10px; border-radius: 4px; margin: 10px 0; }
-        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .section { background: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .error { background: #ffe6e6; border-left: 4px solid #ff0000; }
+        .success { background: #e6ffe6; border-left: 4px solid #00aa00; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; }
+        code { background: #e8e8e8; padding: 2px 4px; border-radius: 3px; font-family: monospace; }
+        .url-box { background: white; padding: 10px; border: 1px solid #ddd; word-break: break-all; }
+        button { background: #1da1f2; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0d8bd9; }
+        .step { margin: 10px 0; padding: 10px; background: white; border-left: 3px solid #1da1f2; }
     </style>
 </head>
 <body>
-    <div class="urgent">
-        <h1>EMERGENCY TOKEN REGENERATION - LAUNCH BLOCKED</h1>
-        <p>Target Launch: 9:00 AM JST - June 23, 2025 | Current Status: 0/4 Platforms Operational</p>
+    <h1>X OAuth 2.0 Emergency Configuration</h1>
+    
+    <div class="section error">
+        <h2>Current Issue: X Developer Portal Misconfiguration</h2>
+        <p>Your X app is not properly configured for OAuth 2.0, causing 400 errors on authorization requests.</p>
     </div>
 
-    <!-- X Platform Emergency Fix -->
-    <div class="platform">
-        <h2>🚨 X Platform - CRITICAL FAILURE</h2>
-        <p><strong>Issue:</strong> OAuth 2.0 App-only token detected. X requires User Context for posting.</p>
-        
+    <div class="section warning">
+        <h2>Step 1: Configure X Developer Portal</h2>
         <div class="step">
-            <h3>URGENT: Generate X User Context Token</h3>
-            <ol>
-                <li>Open <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank">X Developer Portal</a></li>
-                <li>Select your app → "Keys and tokens" tab</li>
-                <li>Under "Authentication Tokens" → Click "Regenerate"</li>
-                <li>Ensure app permissions: "Read and write"</li>
-                <li>Copy the new Access Token (starts with your user ID)</li>
-            </ol>
-            <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank" class="link-button urgent-button">Open X Developer Portal</a>
+            <strong>1.</strong> Go to <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank">X Developer Portal</a>
         </div>
-        
-        <textarea class="token-input" placeholder="Paste new X_ACCESS_TOKEN here and add to Replit Secrets"></textarea>
-        <button onclick="testXToken()" class="link-button">Test X Token</button>
-        <div id="x-status"></div>
-    </div>
-
-    <!-- Facebook Platform Emergency Fix -->
-    <div class="platform">
-        <h2>🚨 Facebook Platform - CRITICAL FAILURE</h2>
-        <p><strong>Issue:</strong> Page token missing admin permissions and app secret proof validation.</p>
-        
         <div class="step">
-            <h3>URGENT: Generate Facebook Page Access Token</h3>
-            <ol>
-                <li>Open <a href="https://developers.facebook.com/tools/explorer/" target="_blank">Graph API Explorer</a></li>
-                <li>Select your app from dropdown</li>
-                <li>Click "Get Token" → "Get Page Access Token"</li>
-                <li>Select your business page</li>
-                <li>Grant permissions: pages_manage_posts, pages_read_engagement</li>
-                <li>Click "Generate Access Token"</li>
-            </ol>
-            <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="link-button urgent-button">Open Graph API Explorer</a>
+            <strong>2.</strong> Select your app from the dashboard
         </div>
-        
-        <textarea class="token-input" placeholder="Paste new FACEBOOK_PAGE_ACCESS_TOKEN here and add to Replit Secrets"></textarea>
-        <button onclick="testFacebookToken()" class="link-button">Test Facebook Token</button>
-        <div id="facebook-status"></div>
-    </div>
-
-    <!-- LinkedIn Platform Emergency Fix -->
-    <div class="platform">
-        <h2>🚨 LinkedIn Platform - CRITICAL FAILURE</h2>
-        <p><strong>Issue:</strong> Access token revoked by user. Complete OAuth flow required.</p>
-        
         <div class="step">
-            <h3>URGENT: Generate LinkedIn Access Token</h3>
-            <ol>
-                <li>Open <a href="https://www.linkedin.com/developers/apps" target="_blank">LinkedIn Developer Portal</a></li>
-                <li>Select your app → "Auth" tab</li>
-                <li>Copy OAuth 2.0 settings</li>
-                <li>Complete authorization flow for posting permissions</li>
-                <li>Exchange authorization code for access token</li>
-            </ol>
-            <a href="https://www.linkedin.com/developers/apps" target="_blank" class="link-button urgent-button">Open LinkedIn Developers</a>
+            <strong>3.</strong> Click "App settings" → "User authentication settings"
         </div>
-        
-        <textarea class="token-input" placeholder="Paste new LINKEDIN_ACCESS_TOKEN here and add to Replit Secrets"></textarea>
-        <button onclick="testLinkedInToken()" class="link-button">Test LinkedIn Token</button>
-        <div id="linkedin-status"></div>
-    </div>
-
-    <!-- Instagram Platform Emergency Fix -->
-    <div class="platform">
-        <h2>🚨 Instagram Platform - CRITICAL FAILURE</h2>
-        <p><strong>Issue:</strong> Instagram Business Account not connected to Facebook Page.</p>
-        
         <div class="step">
-            <h3>URGENT: Connect Instagram Business Account</h3>
-            <ol>
-                <li>Open <a href="https://business.facebook.com/" target="_blank">Facebook Business Manager</a></li>
-                <li>Go to Business Settings → Accounts → Instagram Accounts</li>
-                <li>Click "Add" → "Connect an Instagram Account"</li>
-                <li>Log into your Instagram Business Account</li>
-                <li>Connect it to your Facebook Page</li>
-            </ol>
-            <a href="https://business.facebook.com/" target="_blank" class="link-button urgent-button">Open Facebook Business</a>
+            <strong>4.</strong> Enable <strong>"OAuth 2.0"</strong> (critical - must be enabled)
         </div>
-        
-        <button onclick="testInstagramConnection()" class="link-button">Test Instagram Connection</button>
-        <div id="instagram-status"></div>
+        <div class="step">
+            <strong>5.</strong> Set App permissions to <strong>"Read and write"</strong>
+        </div>
+        <div class="step">
+            <strong>6.</strong> Set Type of App to <strong>"Web App"</strong>
+        </div>
+        <div class="step">
+            <strong>7.</strong> Add Callback URI:<br>
+            <code>https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/</code>
+        </div>
+        <div class="step">
+            <strong>8.</strong> Add Website URL:<br>
+            <code>https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/</code>
+        </div>
+        <div class="step">
+            <strong>9.</strong> Save all settings
+        </div>
     </div>
 
-    <!-- Launch Status Dashboard -->
-    <div class="platform">
-        <h2>🎯 Launch Readiness Dashboard</h2>
-        <button onclick="checkAllPlatforms()" class="link-button urgent-button">Check All Platforms</button>
-        <div id="launch-status"></div>
-        
-        <div style="margin-top: 20px; text-align: center;">
-            <p><strong>Time until launch: <span id="countdown"></span></strong></p>
+    <div class="section">
+        <h2>Step 2: Generate OAuth 2.0 Authorization URL</h2>
+        <button onclick="generateOAuth2URL()">Generate New OAuth 2.0 URL</button>
+        <div id="oauth-result" style="margin-top: 15px;"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 3: Exchange Authorization Code</h2>
+        <div>
+            <label>Authorization Code (from callback):</label><br>
+            <input type="text" id="auth-code" style="width: 100%; padding: 5px; margin: 5px 0;">
         </div>
+        <div>
+            <label>Code Verifier (from step 2):</label><br>
+            <input type="text" id="code-verifier" style="width: 100%; padding: 5px; margin: 5px 0;">
+        </div>
+        <button onclick="exchangeCode()">Exchange for Access Token</button>
+        <div id="token-result" style="margin-top: 15px;"></div>
     </div>
 
     <script>
-        // Countdown to 9:00 AM JST
-        function updateCountdown() {
-            const now = new Date();
-            const launchTime = new Date('2025-06-23T09:00:00+09:00');
-            const diff = launchTime - now;
-            
-            if (diff > 0) {
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                document.getElementById('countdown').textContent = `${hours}h ${minutes}m ${seconds}s`;
-            } else {
-                document.getElementById('countdown').textContent = 'LAUNCH TIME PASSED';
-            }
-        }
-        
-        setInterval(updateCountdown, 1000);
-        updateCountdown();
+        const clientId = 'cW5vZXdCQjZwSmVsM24wYVpCV3Y6MTpjaQ';
+        const clientSecret = 'r42KnW89z7YpVBNaTuVTKjLOkqfLdlOdBJzPNLQGYt8pYVdLH0';
+        const redirectUri = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/';
 
-        // Platform testing functions
-        async function testXToken() {
-            const status = document.getElementById('x-status');
-            status.innerHTML = '<div class="status">Testing X token...</div>';
-            
+        let currentCodeVerifier = '';
+
+        // Generate code verifier and challenge for PKCE
+        function base64URLEncode(str) {
+            return str.toString('base64')
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        async function sha256(plain) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(plain);
+            return window.crypto.subtle.digest('SHA-256', data);
+        }
+
+        function generateRandomString(length) {
+            const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+            let text = '';
+            for (let i = 0; i < length; i++) {
+                text += possible.charAt(Math.floor(Math.random() * possible.length));
+            }
+            return text;
+        }
+
+        async function generateOAuth2URL() {
+            // Generate PKCE parameters
+            currentCodeVerifier = generateRandomString(128);
+            const codeChallenge = base64URLEncode(await sha256(currentCodeVerifier));
+            const state = generateRandomString(32);
+
+            const params = new URLSearchParams({
+                response_type: 'code',
+                client_id: clientId,
+                redirect_uri: redirectUri,
+                scope: 'tweet.read tweet.write users.read offline.access',
+                state: state,
+                code_challenge: codeChallenge,
+                code_challenge_method: 'S256'
+            });
+
+            const authUrl = `https://twitter.com/i/oauth2/authorize?${params}`;
+
+            document.getElementById('oauth-result').innerHTML = `
+                <div class="success">
+                    <h3>OAuth 2.0 Authorization URL Generated</h3>
+                    <div class="url-box">
+                        <a href="${authUrl}" target="_blank">${authUrl}</a>
+                    </div>
+                    <p><strong>Code Verifier (save this):</strong></p>
+                    <div class="url-box">
+                        <code>${currentCodeVerifier}</code>
+                    </div>
+                    <p>Click the URL above to authorize. After authorization, copy the code from the callback URL.</p>
+                </div>
+            `;
+
+            // Pre-fill the code verifier
+            document.getElementById('code-verifier').value = currentCodeVerifier;
+        }
+
+        async function exchangeCode() {
+            const authCode = document.getElementById('auth-code').value;
+            const codeVerifier = document.getElementById('code-verifier').value;
+
+            if (!authCode || !codeVerifier) {
+                alert('Please provide both authorization code and code verifier');
+                return;
+            }
+
+            const tokenParams = new URLSearchParams({
+                grant_type: 'authorization_code',
+                client_id: clientId,
+                code: authCode,
+                redirect_uri: redirectUri,
+                code_verifier: codeVerifier
+            });
+
             try {
-                const response = await fetch('/api/test-x-token', { method: 'POST' });
-                const data = await response.json();
-                
-                if (data.success) {
-                    status.innerHTML = '<div class="status success">✅ X Platform Operational!</div>';
+                const response = await fetch('https://api.twitter.com/2/oauth2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: tokenParams
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('token-result').innerHTML = `
+                        <div class="success">
+                            <h3>Access Token Generated Successfully!</h3>
+                            <p><strong>Access Token:</strong></p>
+                            <div class="url-box">
+                                <code>${result.access_token}</code>
+                            </div>
+                            ${result.refresh_token ? `
+                            <p><strong>Refresh Token:</strong></p>
+                            <div class="url-box">
+                                <code>${result.refresh_token}</code>
+                            </div>
+                            ` : ''}
+                            <p><strong>Add to Replit Secrets:</strong></p>
+                            <div class="url-box">
+                                X_USER_ACCESS_TOKEN = ${result.access_token}<br>
+                                ${result.refresh_token ? `X_REFRESH_TOKEN = ${result.refresh_token}` : ''}
+                            </div>
+                        </div>
+                    `;
+
+                    // Test posting capability
+                    testTweetPosting(result.access_token);
                 } else {
-                    status.innerHTML = `<div class="status error">❌ X Platform Failed: ${data.error}</div>`;
+                    document.getElementById('token-result').innerHTML = `
+                        <div class="error">
+                            <h3>Token Exchange Failed</h3>
+                            <p>Status: ${response.status}</p>
+                            <p>Error: ${JSON.stringify(result, null, 2)}</p>
+                            <p>This indicates OAuth 2.0 is still not properly configured in X Developer Portal.</p>
+                        </div>
+                    `;
                 }
             } catch (error) {
-                status.innerHTML = `<div class="status error">❌ Test Error: ${error.message}</div>`;
+                document.getElementById('token-result').innerHTML = `
+                    <div class="error">
+                        <h3>Network Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
             }
         }
 
-        async function testFacebookToken() {
-            const status = document.getElementById('facebook-status');
-            status.innerHTML = '<div class="status">Testing Facebook token...</div>';
-            
+        async function testTweetPosting(accessToken) {
             try {
-                const response = await fetch('/api/test-facebook-token', { method: 'POST' });
-                const data = await response.json();
-                
-                if (data.success) {
-                    status.innerHTML = '<div class="status success">✅ Facebook Platform Operational!</div>';
+                const response = await fetch('https://api.twitter.com/2/tweets', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: 'TheAgencyIQ X integration test - OAuth 2.0 working! 🚀'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('token-result').innerHTML += `
+                        <div class="success">
+                            <h3>Tweet Posted Successfully!</h3>
+                            <p>Tweet ID: ${result.data.id}</p>
+                            <p>URL: <a href="https://twitter.com/i/web/status/${result.data.id}" target="_blank">View Tweet</a></p>
+                            <p><strong>X OAuth 2.0 Integration Complete!</strong></p>
+                        </div>
+                    `;
                 } else {
-                    status.innerHTML = `<div class="status error">❌ Facebook Platform Failed: ${data.error}</div>`;
+                    document.getElementById('token-result').innerHTML += `
+                        <div class="warning">
+                            <h3>Token Valid, But Posting Failed</h3>
+                            <p>The token works, but posting failed. This may be due to app permissions.</p>
+                            <p>Error: ${JSON.stringify(result, null, 2)}</p>
+                        </div>
+                    `;
                 }
             } catch (error) {
-                status.innerHTML = `<div class="status error">❌ Test Error: ${error.message}</div>`;
+                console.error('Test posting error:', error);
             }
         }
-
-        async function testLinkedInToken() {
-            const status = document.getElementById('linkedin-status');
-            status.innerHTML = '<div class="status">Testing LinkedIn token...</div>';
-            status.innerHTML = '<div class="status error">❌ LinkedIn testing not implemented in interface</div>';
-        }
-
-        async function testInstagramConnection() {
-            const status = document.getElementById('instagram-status');
-            status.innerHTML = '<div class="status">Testing Instagram connection...</div>';
-            status.innerHTML = '<div class="status error">❌ Instagram testing not implemented in interface</div>';
-        }
-
-        async function checkAllPlatforms() {
-            const status = document.getElementById('launch-status');
-            status.innerHTML = '<div class="status">Checking all platforms...</div>';
-            
-            try {
-                const response = await fetch('/api/launch-readiness', { method: 'POST' });
-                const data = await response.json();
-                
-                let statusHtml = '<h3>Platform Status:</h3><ul>';
-                let operationalCount = 0;
-                const totalPlatforms = Object.keys(data.platforms).length;
-                
-                for (const [platform, result] of Object.entries(data.platforms)) {
-                    const statusIcon = result.operational ? '✅' : '❌';
-                    statusHtml += `<li>${statusIcon} ${platform.toUpperCase()}: ${result.operational ? 'OPERATIONAL' : 'NEEDS FIXING'}</li>`;
-                    if (result.operational) operationalCount++;
-                }
-                
-                statusHtml += '</ul>';
-                statusHtml += `<h3>PLATFORMS OPERATIONAL: ${operationalCount}/${totalPlatforms}</h3>`;
-                
-                if (operationalCount === totalPlatforms) {
-                    statusHtml = `<div class="status success">${statusHtml}<h2>🎯 ALL PLATFORMS READY - LAUNCH APPROVED!</h2></div>`;
-                } else {
-                    statusHtml = `<div class="status error">${statusHtml}<h2>⚠️ LAUNCH BLOCKED - FIX REQUIRED PLATFORMS</h2></div>`;
-                }
-                
-                status.innerHTML = statusHtml;
-                
-            } catch (error) {
-                status.innerHTML = `<div class="status error">❌ Check Error: ${error.message}</div>`;
-            }
-        }
-
-        // Auto-check on page load
-        window.onload = function() {
-            checkAllPlatforms();
-        };
     </script>
 </body>
 </html>
