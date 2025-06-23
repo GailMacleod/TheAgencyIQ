@@ -73,7 +73,7 @@ app.post('/api/connect-instagram', async (req: any, res) => {
     console.log(`[INSTAGRAM-FB-API] Direct connection attempt`);
     
     // Use Facebook Access Token from environment
-    const facebookToken = process.env.FACEBOOK_ACCESS_TOKEN;
+    const facebookToken = process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
     if (!facebookToken) {
       return res.status(400).json({
         success: false,
