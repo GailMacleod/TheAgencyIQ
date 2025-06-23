@@ -3,20 +3,20 @@
  * Supports both OAuth 2.0 and OAuth 1.0a with automatic fallback
  */
 
-import crypto from 'crypto';
-
 class XLaunchReadyIntegration {
   constructor() {
+    this.oauth2Token = process.env.X_OAUTH2_ACCESS_TOKEN;
     this.consumerKey = process.env.X_0AUTH_CLIENT_ID;
     this.consumerSecret = process.env.X_0AUTH_CLIENT_SECRET;
     this.accessToken = process.env.X_ACCESS_TOKEN;
-    this.accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
-    this.userAccessToken = process.env.X_USER_ACCESS_TOKEN;
+    this.tokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
   }
 
   percentEncode(str) {
     return encodeURIComponent(str)
-      .replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+      .replace(/[!'()*]/g, function(c) {
+        return '%' + c.charCodeAt(0).toString(16);
+      });
   }
 
   generateOAuthSignature(method, url, params) {
@@ -25,22 +25,26 @@ class XLaunchReadyIntegration {
       .map(key => `${this.percentEncode(key)}=${this.percentEncode(params[key])}`)
       .join('&');
 
-    const baseString = `${method}&${this.percentEncode(url)}&${this.percentEncode(sortedParams)}`;
-    const signingKey = `${this.percentEncode(this.consumerSecret)}&${this.percentEncode(this.accessTokenSecret)}`;
+    const signatureBaseString = [
+      method.toUpperCase(),
+      this.percentEncode(url),
+      this.percentEncode(sortedParams)
+    ].join('&');
+
+    const signingKey = `${this.percentEncode(this.consumerSecret)}&${this.percentEncode(this.tokenSecret)}`;
     
-    return crypto.createHmac('sha1', signingKey).update(baseString).digest('base64');
+    const crypto = require('crypto');
+    return crypto.createHmac('sha1', signingKey).update(signatureBaseString).digest('base64');
   }
 
   async postTweetOAuth2(text) {
-    if (!this.userAccessToken) {
-      return { success: false, error: 'OAuth 2.0 token not available' };
-    }
-
+    console.log('Attempting OAuth 2.0 posting...');
+    
     try {
       const response = await fetch('https://api.twitter.com/2/tweets', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.userAccessToken}`,
+          'Authorization': `Bearer ${this.oauth2Token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ text })
@@ -49,55 +53,46 @@ class XLaunchReadyIntegration {
       const result = await response.json();
       
       if (response.ok) {
+        console.log('✅ OAuth 2.0 posting successful');
         return {
           success: true,
-          method: 'OAuth 2.0',
-          data: {
-            id: result.data.id,
-            text: result.data.text,
-            url: `https://twitter.com/i/web/status/${result.data.id}`
-          }
+          tweetId: result.data.id,
+          method: 'OAuth 2.0'
         };
       } else {
-        return {
-          success: false,
-          error: `OAuth 2.0 Error: ${response.status} - ${JSON.stringify(result)}`
-        };
+        console.log('❌ OAuth 2.0 failed:', result);
+        return { success: false, error: result };
       }
     } catch (error) {
-      return {
-        success: false,
-        error: `OAuth 2.0 Network Error: ${error.message}`
-      };
+      console.log('❌ OAuth 2.0 error:', error.message);
+      return { success: false, error: error.message };
     }
   }
 
   async postTweetOAuth1(text) {
-    if (!this.consumerKey || !this.consumerSecret || !this.accessToken || !this.accessTokenSecret) {
-      return { success: false, error: 'OAuth 1.0a credentials not available' };
-    }
-
-    const url = 'https://api.twitter.com/1.1/statuses/update.json';
-    const method = 'POST';
+    console.log('Attempting OAuth 1.0a posting...');
     
+    const url = 'https://api.twitter.com/1.1/statuses/update.json';
+    const timestamp = Math.floor(Date.now() / 1000);
+    const crypto = require('crypto');
+    const nonce = crypto.randomBytes(16).toString('hex');
+
     const oauthParams = {
       oauth_consumer_key: this.consumerKey,
       oauth_token: this.accessToken,
       oauth_signature_method: 'HMAC-SHA1',
-      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
-      oauth_nonce: crypto.randomBytes(16).toString('hex'),
+      oauth_timestamp: timestamp,
+      oauth_nonce: nonce,
       oauth_version: '1.0',
       status: text
     };
 
-    const signature = this.generateOAuthSignature(method, url, oauthParams);
-    
-    const authParams = { ...oauthParams };
-    delete authParams.status;
-    authParams.oauth_signature = signature;
+    const signature = this.generateOAuthSignature('POST', url, oauthParams);
+    oauthParams.oauth_signature = signature;
 
-    const authHeader = 'OAuth ' + Object.keys(authParams)
-      .map(key => `${key}="${this.percentEncode(authParams[key])}"`)
+    const authHeader = 'OAuth ' + Object.keys(oauthParams)
+      .filter(key => key.startsWith('oauth_'))
+      .map(key => `${key}="${this.percentEncode(oauthParams[key])}"`)
       .join(', ');
 
     try {
@@ -113,84 +108,80 @@ class XLaunchReadyIntegration {
       const result = await response.json();
       
       if (response.ok) {
+        console.log('✅ OAuth 1.0a posting successful');
         return {
           success: true,
-          method: 'OAuth 1.0a',
-          data: {
-            id: result.id_str,
-            text: result.text,
-            url: `https://twitter.com/i/web/status/${result.id_str}`
-          }
+          tweetId: result.id_str,
+          method: 'OAuth 1.0a'
         };
       } else {
-        return {
-          success: false,
-          error: `OAuth 1.0a Error: ${response.status} - ${JSON.stringify(result)}`
-        };
+        console.log('❌ OAuth 1.0a failed:', result);
+        return { success: false, error: result };
       }
     } catch (error) {
-      return {
-        success: false,
-        error: `OAuth 1.0a Network Error: ${error.message}`
-      };
+      console.log('❌ OAuth 1.0a error:', error.message);
+      return { success: false, error: error.message };
     }
   }
 
   async postTweet(text) {
-    console.log('🔄 X Platform Posting Attempt');
-    
+    console.log('🔄 X Platform Integration Test');
+    console.log('==============================');
+
     // Try OAuth 2.0 first (preferred method)
-    const oauth2Result = await this.postTweetOAuth2(text);
-    if (oauth2Result.success) {
-      console.log(`✅ Posted via ${oauth2Result.method}`);
-      return oauth2Result;
+    if (this.oauth2Token) {
+      const oauth2Result = await this.postTweetOAuth2(text);
+      if (oauth2Result.success) {
+        return oauth2Result;
+      }
     }
-    
-    console.log('OAuth 2.0 failed, trying OAuth 1.0a...');
-    
+
     // Fallback to OAuth 1.0a
-    const oauth1Result = await this.postTweetOAuth1(text);
-    if (oauth1Result.success) {
-      console.log(`✅ Posted via ${oauth1Result.method}`);
-      return oauth1Result;
+    if (this.consumerKey && this.consumerSecret && this.accessToken && this.tokenSecret) {
+      const oauth1Result = await this.postTweetOAuth1(text);
+      if (oauth1Result.success) {
+        return oauth1Result;
+      }
     }
-    
-    console.log('❌ Both authentication methods failed');
+
     return {
       success: false,
-      error: `All methods failed. OAuth 2.0: ${oauth2Result.error}. OAuth 1.0a: ${oauth1Result.error}`
+      error: 'Both OAuth 2.0 and OAuth 1.0a failed'
     };
   }
 
   async testConnection() {
-    return await this.postTweet(`TheAgencyIQ X integration test - ${new Date().toISOString()}`);
+    const testText = 'TheAgencyIQ X platform connection test - verifying launch readiness!';
+    return await this.postTweet(testText);
   }
 
   getStatus() {
     return {
-      oauth2Available: !!this.userAccessToken,
-      oauth1Available: !!(this.consumerKey && this.consumerSecret && this.accessToken && this.accessTokenSecret),
-      ready: !!(this.userAccessToken || (this.consumerKey && this.consumerSecret && this.accessToken && this.accessTokenSecret))
+      oauth2Available: !!this.oauth2Token,
+      oauth1Available: !!(this.consumerKey && this.consumerSecret && this.accessToken && this.tokenSecret),
+      preferredMethod: this.oauth2Token ? 'OAuth 2.0' : 'OAuth 1.0a'
     };
   }
 }
 
 // Test the integration
-const xIntegration = new XLaunchReadyIntegration();
-const status = xIntegration.getStatus();
-
-console.log('🔍 X PLATFORM STATUS CHECK');
-console.log('==========================');
-console.log('OAuth 2.0 Available:', status.oauth2Available);
-console.log('OAuth 1.0a Available:', status.oauth1Available);
-console.log('Platform Ready:', status.ready);
-
-if (status.ready) {
-  console.log('🧪 Testing X posting...');
-  xIntegration.testConnection();
-} else {
-  console.log('⚠️  X platform not ready - credentials needed');
-  console.log('Required: X_USER_ACCESS_TOKEN (OAuth 2.0) OR X_ACCESS_TOKEN + X_ACCESS_TOKEN_SECRET (OAuth 1.0a)');
+async function testXIntegration() {
+  const xIntegration = new XLaunchReadyIntegration();
+  
+  console.log('X Platform Status:', xIntegration.getStatus());
+  
+  const result = await xIntegration.testConnection();
+  
+  if (result.success) {
+    console.log(`✅ X PLATFORM OPERATIONAL (${result.method})`);
+    console.log(`Tweet ID: ${result.tweetId}`);
+    console.log('✅ READY FOR 9:00 AM JST LAUNCH');
+  } else {
+    console.log('❌ X PLATFORM FAILED');
+    console.log('Error:', result.error);
+  }
+  
+  return result;
 }
 
-export default XLaunchReadyIntegration;
+testXIntegration();
