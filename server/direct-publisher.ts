@@ -30,60 +30,24 @@ export class DirectPublisher {
       // Generate app secret proof for secure server-side calls
       const proof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
       
-      // First, try to get user's pages
-      const pagesResponse = await fetch(`https://graph.facebook.com/v20.0/me/accounts?access_token=${accessToken}&appsecret_proof=${proof}`);
-      const pagesData = await pagesResponse.json();
-      
-      if (pagesData.error) {
-        // If pages call fails, try posting to user timeline directly
-        const response = await fetch(`https://graph.facebook.com/v20.0/me/feed`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            message: content,
-            access_token: accessToken,
-            appsecret_proof: proof
-          }).toString()
-        });
+      // Try posting directly to the page using the page token
+      const response = await fetch(`https://graph.facebook.com/v20.0/me/feed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          message: content,
+          access_token: accessToken,
+          appsecret_proof: proof
+        }).toString()
+      });
 
-        const result = await response.json();
+      const result = await response.json();
 
-        if (result.error) {
-          return { success: false, error: `Facebook: ${result.error.message}` };
-        }
-
-        return { success: true, platformPostId: result.id };
+      if (result.error) {
+        return { success: false, error: `Facebook: ${result.error.message}` };
       }
-      
-      if (pagesData.data && pagesData.data.length > 0) {
-        // Use the first available page
-        const page = pagesData.data[0];
-        const pageId = page.id;
-        const pageAccessToken = page.access_token;
-        
-        // Generate proof for page token
-        const pageProof = crypto.createHmac('sha256', appSecret).update(pageAccessToken).digest('hex');
-        
-        const response = await fetch(`https://graph.facebook.com/v20.0/${pageId}/feed`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            message: content,
-            access_token: pageAccessToken,
-            appsecret_proof: pageProof
-          }).toString()
-        });
 
-        const result = await response.json();
-
-        if (result.error) {
-          return { success: false, error: `Facebook: ${result.error.message}` };
-        }
-
-        return { success: true, platformPostId: result.id };
-      } else {
-        return { success: false, error: 'No Facebook pages found. Please create a Facebook business page first.' };
-      }
+      return { success: true, platformPostId: result.id };
       
     } catch (error: any) {
       return { success: false, error: `Facebook error: ${error.message}` };
