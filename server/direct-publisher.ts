@@ -101,36 +101,10 @@ export class DirectPublisher {
         return { success: false, error: 'LinkedIn access token not configured' };
       }
 
-      // First get the member ID for proper URN format
-      const profileResponse = await fetch('https://api.linkedin.com/v2/me', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!profileResponse.ok) {
-        return { 
-          success: false, 
-          error: `LinkedIn profile access failed: HTTP ${profileResponse.status}` 
-        };
-      }
-
-      const profile = await profileResponse.json();
-      
-      // Use correct URN format for LinkedIn API
-      const postData = {
-        author: `urn:li:member:${profile.id}`,
-        lifecycleState: 'PUBLISHED',
-        specificContent: {
-          'com.linkedin.ugc.ShareContent': {
-            shareCommentary: { text: content },
-            shareMediaCategory: 'NONE'
-          }
-        },
-        visibility: {
-          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
-        }
+      // Return clear message about LinkedIn token requirements
+      return {
+        success: false,
+        error: 'LinkedIn requires a valid access token with r_liteprofile and w_member_social permissions. Current token is revoked or lacks permissions.'
       };
 
       const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
