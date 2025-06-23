@@ -1575,8 +1575,14 @@ app.post('/api/waterfall/approve', async (req, res) => {
 });
 
 const enforcePublish = async (post: any, userId: number) => {
+  // Generate Facebook appsecret_proof for page token
+  const { createHmac } = await import('crypto');
+  const appSecret = process.env.FACEBOOK_APP_SECRET || '';
+  const pageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || '';
+  const appsecretProof = createHmac('sha256', appSecret).update(pageToken).digest('hex');
+  
   const platforms = {
-    facebook: { url: 'https://graph.facebook.com/v20.0/me/feed', secret: process.env.FACEBOOK_USER_ACCESS_TOKEN, payload: { message: post.content } }, // User access token for posting
+    facebook: { url: 'https://graph.facebook.com/v20.0/me/feed', secret: process.env.FACEBOOK_PAGE_ACCESS_TOKEN, payload: { message: post.content, access_token: pageToken, appsecret_proof: appsecretProof } }, // Page access token with proof
     linkedin: { url: 'https://api.linkedin.com/v2/ugcPosts', secret: process.env.LINKEDIN_CLIENT_SECRET, payload: { author: 'urn:li:person:me', lifecycleState: 'PUBLISHED', specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text: post.content }, shareMediaCategory: 'NONE' } } } },
     instagram: { url: 'https://graph.instagram.com/v20.0/me/media', secret: process.env.INSTAGRAM_CLIENT_SECRET, payload: { caption: post.content, access_token: process.env.INSTAGRAM_CLIENT_SECRET } },
     twitter: { url: 'https://api.twitter.com/2/tweets', secret: process.env.TWITTER_CLIENT_SECRET, payload: { text: post.content } }
@@ -1585,15 +1591,24 @@ const enforcePublish = async (post: any, userId: number) => {
   if (!platform || !platform.secret) return { success: false, message: `No secret for ${post.platform}` };
 
   try {
-    // Validate Facebook API response
-    const response = await fetch(platform.url, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Bearer ${platform.secret}`
-      },
-      body: new URLSearchParams(platform.payload).toString()
-    });
+    // Validate Facebook API response - use form data for Facebook
+    let response;
+    if (post.platform === 'facebook') {
+      response = await fetch(platform.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(platform.payload).toString()
+      });
+    } else {
+      response = await fetch(platform.url, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${platform.secret}`
+        },
+        body: JSON.stringify(platform.payload)
+      });
+    }
     const result = await response.json();
     if (!response.ok) {
       const errorMsg = `API error ${response.status}: ${result.error?.message || await response.text()}`;
