@@ -146,60 +146,25 @@ export class DirectPublisher {
   }
 
   /**
-   * Publish to X using OAuth 1.0a credentials
+   * Publish to X using OAuth 2.0 User Context
    */
   static async publishToTwitter(content: string): Promise<DirectPublishResult> {
     try {
       const clientId = process.env.TWITTER_CLIENT_ID;
       const clientSecret = process.env.TWITTER_CLIENT_SECRET;
       const accessToken = process.env.X_ACCESS_TOKEN;
-      const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
       
-      if (!clientId || !clientSecret || !accessToken || !accessTokenSecret) {
-        return { success: false, error: 'X credentials not configured' };
+      if (!clientId || !clientSecret || !accessToken) {
+        return { success: false, error: 'X OAuth 2.0 credentials not configured' };
       }
 
-      // Generate OAuth 1.0a signature
-      const timestamp = Math.floor(Date.now() / 1000).toString();
-      const nonce = crypto.randomBytes(16).toString('hex');
-      
-      const params = {
-        oauth_consumer_key: clientId,
-        oauth_token: accessToken,
-        oauth_signature_method: 'HMAC-SHA1',
-        oauth_timestamp: timestamp,
-        oauth_nonce: nonce,
-        oauth_version: '1.0'
-      };
-
-      // Create signature base string
-      const paramString = Object.entries(params)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-        .join('&');
-      
-      const baseString = `POST&${encodeURIComponent('https://api.twitter.com/2/tweets')}&${encodeURIComponent(paramString)}`;
-      
-      // Create signing key
-      const signingKey = `${encodeURIComponent(clientSecret)}&${encodeURIComponent(accessTokenSecret)}`;
-      
-      // Generate signature
-      const signature = crypto.createHmac('sha1', signingKey).update(baseString).digest('base64');
-      
-      // Create authorization header
-      const authParams = {
-        ...params,
-        oauth_signature: signature
-      };
-      
-      const authHeader = 'OAuth ' + Object.entries(authParams)
-        .map(([k, v]) => `${k}="${encodeURIComponent(v)}"`)
-        .join(', ');
+      // Generate Basic Auth header for OAuth 2.0
+      const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
       const response = await fetch('https://api.twitter.com/2/tweets', {
         method: 'POST',
         headers: {
-          'Authorization': authHeader,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ text: content })
@@ -208,6 +173,13 @@ export class DirectPublisher {
       const result = await response.json();
 
       if (!response.ok) {
+        // If bearer token fails, try OAuth 2.0 User Context flow
+        if (result.title === 'Unsupported Authentication') {
+          return { 
+            success: false, 
+            error: 'X requires OAuth 2.0 User Context token. Please regenerate your access token with User Context permissions.' 
+          };
+        }
         return { success: false, error: `X: ${result.detail || result.title || 'API error'}` };
       }
 
