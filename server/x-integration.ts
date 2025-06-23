@@ -46,26 +46,57 @@ export class XIntegration {
   }
 
   async postTweet(text: string): Promise<{ success: boolean; data?: any; error?: string }> {
-    const url = 'https://api.twitter.com/2/tweets';
+    // Try OAuth 2.0 Bearer token first if available
+    if (process.env.X_USER_ACCESS_TOKEN) {
+      try {
+        const response = await fetch('https://api.twitter.com/2/tweets', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.X_USER_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ text })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          return {
+            success: true,
+            data: {
+              id: result.data.id,
+              text: result.data.text,
+              url: `https://twitter.com/i/web/status/${result.data.id}`
+            }
+          };
+        }
+      } catch (error) {
+        console.log('OAuth 2.0 Bearer token failed, trying OAuth 1.0a...');
+      }
+    }
+
+    // Fallback to OAuth 1.0a
+    const url = 'https://api.twitter.com/1.1/statuses/update.json';
     const method = 'POST';
     
-    // OAuth 1.0a parameters
     const oauthParams: Record<string, string> = {
       oauth_consumer_key: this.consumerKey,
       oauth_token: this.accessToken,
       oauth_signature_method: 'HMAC-SHA1',
       oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
       oauth_nonce: crypto.randomBytes(16).toString('hex'),
-      oauth_version: '1.0'
+      oauth_version: '1.0',
+      status: text
     };
 
-    // Generate signature
     const signature = this.generateOAuthSignature(method, url, oauthParams);
-    oauthParams.oauth_signature = signature;
+    
+    const authParams = { ...oauthParams };
+    delete authParams.status;
+    authParams.oauth_signature = signature;
 
-    // Create authorization header
-    const authHeader = 'OAuth ' + Object.keys(oauthParams)
-      .map(key => `${key}="${this.percentEncode(oauthParams[key])}"`)
+    const authHeader = 'OAuth ' + Object.keys(authParams)
+      .map(key => `${key}="${this.percentEncode(authParams[key])}"`)
       .join(', ');
 
     try {
@@ -73,9 +104,9 @@ export class XIntegration {
         method: 'POST',
         headers: {
           'Authorization': authHeader,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: JSON.stringify({ text })
+        body: `status=${encodeURIComponent(text)}`
       });
 
       const result = await response.json();
@@ -84,9 +115,9 @@ export class XIntegration {
         return {
           success: true,
           data: {
-            id: result.data.id,
-            text: result.data.text,
-            url: `https://twitter.com/i/web/status/${result.data.id}`
+            id: result.id_str,
+            text: result.text,
+            url: `https://twitter.com/i/web/status/${result.id_str}`
           }
         };
       } else {
