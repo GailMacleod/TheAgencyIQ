@@ -1,1 +1,1 @@
-{"1410":{"id":"1410","date":"2025-06-1432","time":"9:00 am","platform":"linkedin","content":"Launch Post 1410 for linkedin","status":"failed","error":"LinkedIn requires user OAuth token","setupRequired":"Complete LinkedIn OAuth flow for user access token"}}
+{"1412":{"id":"1412","date":"2025-06-1434","time":"9:00 am","platform":"facebook","content":"Launch Post 1412 for facebook","status":"failed","error":"No Facebook business pages found","setupRequired":"Create a Facebook business page","setupUrl":"https://www.facebook.com/pages/create"}}

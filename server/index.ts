@@ -1562,45 +1562,25 @@ app.post('/api/waterfall/approve', async (req, res) => {
   }
 
   try {
-    const { EmergencyPublisher } = await import('./emergency-publisher');
-    const publishReport = await EmergencyPublisher.publishWithFallback(
-      parseInt(id), 
-      platform.toLowerCase(), 
-      post.content
-    );
+    const { DirectPublisher } = await import('./direct-publisher');
+    const publishResult = await DirectPublisher.publishToPlatform(platform.toLowerCase(), post.content);
     
-    post.status = publishReport.result.success ? 'published' : 'failed';
-    if (publishReport.result.error) {
-      post.error = publishReport.result.error;
-    }
-    if (publishReport.result.setupRequired) {
-      post.setupRequired = publishReport.result.setupRequired;
-      post.setupUrl = publishReport.result.setupUrl;
-    }
-    
-    console.log(`Post ${id} ${post.status} on ${platform}: ${publishReport.result.error || 'Success'}`);
+    post.status = publishResult.success ? 'published' : 'failed';
+    console.log(`Post ${id} ${post.status} on ${platform}: ${publishResult.error || 'Success'}`);
   } catch (error: any) {
     post.status = 'failed';
-    post.error = error.message;
     console.error(`Post ${id} failed on ${platform}: ${error.message}`);
   }
   
   (req.session as any).approvedPosts[id] = post;
   fs.writeFileSync('approved-posts.json', JSON.stringify((req.session as any).approvedPosts));
   
-  const response: any = { 
+  res.json({ 
     id, 
     status: post.status, 
     platform: platform.toLowerCase(), 
     remaining: subscription.posts - Object.keys((req.session as any).approvedPosts).length 
-  };
-  
-  if (post.setupRequired) {
-    response.setupRequired = post.setupRequired;
-    response.setupUrl = post.setupUrl;
-  }
-  
-  res.json(response);
+  });
 });
 
 const enforcePublish = async (post: any, userId: number) => {
