@@ -5714,6 +5714,81 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Token testing endpoints for launch preparation
+  app.post("/api/test-x-token", requireAuth, async (req: any, res) => {
+    try {
+      const { DirectPublisher } = await import('./direct-publisher');
+      const result = await DirectPublisher.publishToTwitter('Test from TheAgencyIQ - X token working! DELETE THIS POST');
+      
+      if (result.success) {
+        res.json({ success: true, postId: result.platformPostId });
+      } else {
+        res.json({ success: false, error: result.error });
+      }
+    } catch (error: any) {
+      res.json({ success: false, error: error.message });
+    }
+  });
+
+  app.post("/api/test-facebook-token", requireAuth, async (req: any, res) => {
+    try {
+      const { DirectPublisher } = await import('./direct-publisher');
+      const result = await DirectPublisher.publishToFacebook('Test from TheAgencyIQ - Facebook token working! DELETE THIS POST');
+      
+      if (result.success) {
+        res.json({ success: true, postId: result.platformPostId });
+      } else {
+        res.json({ success: false, error: result.error });
+      }
+    } catch (error: any) {
+      res.json({ success: false, error: error.message });
+    }
+  });
+
+  app.post("/api/launch-readiness", requireAuth, async (req: any, res) => {
+    try {
+      const { DirectPublisher } = await import('./direct-publisher');
+      
+      const platforms = {
+        x: { operational: false, error: '' },
+        facebook: { operational: false, error: '' },
+        linkedin: { operational: false, error: '' },
+        instagram: { operational: false, error: '' }
+      };
+
+      // Test X
+      const xResult = await DirectPublisher.publishToTwitter('Launch readiness test - X platform');
+      platforms.x.operational = xResult.success;
+      platforms.x.error = xResult.error || '';
+
+      // Test Facebook
+      const fbResult = await DirectPublisher.publishToFacebook('Launch readiness test - Facebook platform');
+      platforms.facebook.operational = fbResult.success;
+      platforms.facebook.error = fbResult.error || '';
+
+      // Test LinkedIn
+      const liResult = await DirectPublisher.publishToLinkedIn('Launch readiness test - LinkedIn platform');
+      platforms.linkedin.operational = liResult.success;
+      platforms.linkedin.error = liResult.error || '';
+
+      // Test Instagram
+      const igResult = await DirectPublisher.publishToInstagram('Launch readiness test - Instagram platform');
+      platforms.instagram.operational = igResult.success;
+      platforms.instagram.error = igResult.error || '';
+
+      const allOperational = Object.values(platforms).every(p => p.operational);
+      
+      res.json({ 
+        platforms, 
+        allOperational,
+        launchReady: allOperational,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      res.json({ success: false, error: error.message });
+    }
+  });
+
   // Direct publishing endpoint - bypasses all validation
   app.post("/api/direct-publish", requireAuth, async (req: any, res) => {
     try {

@@ -153,15 +153,14 @@ export class DirectPublisher {
       const clientId = process.env.TWITTER_CLIENT_ID;
       const clientSecret = process.env.TWITTER_CLIENT_SECRET;
       const accessToken = process.env.X_ACCESS_TOKEN;
+      const refreshToken = process.env.X_REFRESH_TOKEN;
       
       if (!clientId || !clientSecret || !accessToken) {
         return { success: false, error: 'X OAuth 2.0 credentials not configured' };
       }
 
-      // Generate Basic Auth header for OAuth 2.0
-      const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-
-      const response = await fetch('https://api.twitter.com/2/tweets', {
+      // First try with current access token
+      let response = await fetch('https://api.twitter.com/2/tweets', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -170,14 +169,48 @@ export class DirectPublisher {
         body: JSON.stringify({ text: content })
       });
 
-      const result = await response.json();
+      let result = await response.json();
+
+      // If token is invalid or expired, try to refresh
+      if (!response.ok && refreshToken && (result.title === 'Unauthorized' || result.status === 401)) {
+        console.log('X token expired, attempting refresh...');
+        
+        const refreshResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken
+          })
+        });
+
+        const refreshResult = await refreshResponse.json();
+
+        if (refreshResponse.ok && refreshResult.access_token) {
+          console.log('X token refreshed successfully');
+          
+          // Retry posting with new token
+          response = await fetch('https://api.twitter.com/2/tweets', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${refreshResult.access_token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ text: content })
+          });
+
+          result = await response.json();
+        }
+      }
 
       if (!response.ok) {
-        // If bearer token fails, try OAuth 2.0 User Context flow
         if (result.title === 'Unsupported Authentication') {
           return { 
             success: false, 
-            error: 'X requires OAuth 2.0 User Context token. Please regenerate your access token with User Context permissions.' 
+            error: 'X requires OAuth 2.0 User Context token. Current token is App-only. Please regenerate with User Context permissions.' 
           };
         }
         return { success: false, error: `X: ${result.detail || result.title || 'API error'}` };
