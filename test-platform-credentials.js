@@ -3,7 +3,7 @@
  * Tests all social media platform credentials and provides detailed diagnostics
  */
 
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 async function testPlatformCredentials() {
   console.log('🔧 Testing all platform credentials...\n');
