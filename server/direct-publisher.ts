@@ -150,40 +150,23 @@ export class DirectPublisher {
    */
   static async publishToTwitter(content: string): Promise<DirectPublishResult> {
     try {
-      const clientId = process.env.TWITTER_CLIENT_ID;
-      const clientSecret = process.env.TWITTER_CLIENT_SECRET;
+      const clientId = process.env.X_CLIENT_ID;
+      const clientSecret = process.env.X_CLIENT_SECRET;
       const accessToken = process.env.X_ACCESS_TOKEN;
       const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
       
-      if (!clientId || !clientSecret || !accessToken || !accessTokenSecret) {
-        return { success: false, error: 'X OAuth 1.0a credentials not configured' };
+      if (!clientId || !clientSecret || !accessToken) {
+        return { success: false, error: 'X OAuth 2.0 credentials not configured' };
       }
 
-      // Use OAuth 1.0a authentication for X platform
-      const oauth = new OAuth({
-        consumer: { key: clientId, secret: clientSecret },
-        signature_method: 'HMAC-SHA1',
-        hash_function(base_string: string, key: string) {
-          return crypto.createHmac('sha1', key).update(base_string).digest('base64');
-        }
-      });
-
-      const token = { key: accessToken, secret: accessTokenSecret };
-      const requestData = { text: content };
-      const url = 'https://api.twitter.com/2/tweets';
-
-      const authHeader = oauth.toHeader(oauth.authorize({
-        url,
-        method: 'POST'
-      }, token));
-
-      const response = await fetch(url, {
+      // Use OAuth 2.0 User Context authentication for X platform
+      const response = await fetch('https://api.twitter.com/2/tweets', {
         method: 'POST',
         headers: {
-          ...authHeader,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify({ text: content })
       });
 
       const result = await response.json();
