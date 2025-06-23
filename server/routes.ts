@@ -1302,9 +1302,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Facebook data deletion URL validation (GET)
   app.get("/api/facebook/data-deletion", (req, res) => {
     res.status(200).json({
-      status: "active",
-      message: "Facebook data deletion endpoint ready",
-      timestamp: new Date().toISOString()
+      url: "https://app.theagencyiq.ai/data-deletion-status",
+      confirmation_code: "endpoint_active"
     });
   });
 
