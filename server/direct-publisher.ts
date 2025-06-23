@@ -101,9 +101,26 @@ export class DirectPublisher {
         return { success: false, error: 'LinkedIn access token not configured' };
       }
 
-      // Use simplified posting without profile lookup
+      // First get the member ID for proper URN format
+      const profileResponse = await fetch('https://api.linkedin.com/v2/me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!profileResponse.ok) {
+        return { 
+          success: false, 
+          error: `LinkedIn profile access failed: HTTP ${profileResponse.status}` 
+        };
+      }
+
+      const profile = await profileResponse.json();
+      
+      // Use correct URN format for LinkedIn API
       const postData = {
-        author: 'urn:li:person:me',
+        author: `urn:li:member:${profile.id}`,
         lifecycleState: 'PUBLISHED',
         specificContent: {
           'com.linkedin.ugc.ShareContent': {
