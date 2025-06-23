@@ -30,8 +30,8 @@ export class DirectPublisher {
       // Generate app secret proof for secure server-side calls
       const proof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
       
-      // Try posting to user's personal timeline first
-      const response = await fetch(`https://graph.facebook.com/v20.0/me/feed`, {
+      // Post directly to the business page using the admin token
+      const response = await fetch(`https://graph.facebook.com/v20.0/4127481330818969/feed`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
@@ -44,13 +44,6 @@ export class DirectPublisher {
       const result = await response.json();
 
       if (result.error) {
-        // If personal timeline fails, try as page admin
-        if (result.error.code === 200) {
-          return { 
-            success: false, 
-            error: 'Facebook token needs admin permissions for business page posting. Generate a new token with pages_manage_posts permission.' 
-          };
-        }
         return { success: false, error: `Facebook: ${result.error.message}` };
       }
 
