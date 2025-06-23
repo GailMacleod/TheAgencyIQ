@@ -24,11 +24,11 @@ async function generateFixedXAuth() {
   const codeVerifier = crypto.randomBytes(32).toString('base64url');
   const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
 
-  // Use a simple redirect URI
+  // Use the actual Replit domain
   const authParams = new URLSearchParams({
     response_type: 'code',
     client_id: clientId,
-    redirect_uri: 'https://theagencyiq.replit.app/',
+    redirect_uri: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
     scope: 'tweet.read tweet.write users.read offline.access',
     state: crypto.randomBytes(16).toString('hex'),
     code_challenge: codeChallenge,
@@ -64,7 +64,7 @@ async function exchangeCodeForUserToken(authCode, codeVerifier) {
     grant_type: 'authorization_code',
     client_id: clientId,
     code: authCode,
-    redirect_uri: 'https://theagencyiq.replit.app/',
+    redirect_uri: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
     code_verifier: codeVerifier
   });
 
