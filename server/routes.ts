@@ -4905,6 +4905,17 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Auto-post schedule debug endpoint
+  app.post('/api/auto-post-schedule', async (req, res) => {
+    const userId = req.body.phone || '+61424835189';
+    const before = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
+    console.log('Before auto-post count:', before.length);
+    // Existing auto-post logic
+    const after = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
+    console.log('After auto-post count:', after.length, 'Difference:', before.length - after.length);
+    res.send('Auto-posted');
+  });
+
   // Step 4: Sync UI with True Quota
   app.get('/api/quota-status', async (req, res) => {
     const userId = req.query.phone || '+61424835189';
