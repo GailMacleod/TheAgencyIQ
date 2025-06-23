@@ -3665,11 +3665,21 @@ Continue building your Value Proposition Canvas systematically.`;
   // Debug 'Auto Generate Content Schedule' - Identify why post count increases
   app.post('/api/auto-generate-content-schedule', async (req, res) => {
     const userId = req.body.phone || '+61424835189';
-    const quota = 12; // Starter, adjust dynamically later
-    console.log(`Generating schedule for ${userId}, quota: ${quota}`);
-    const posts = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
-    console.log('Existing posts:', posts.length);
+    const current = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
+    console.log('Before generation count:', current.length);
     // Existing generation logic
+    const newPosts = Array.from({ length: 12 }, (_, i) => ({ 
+      userId: parseInt(userId.replace('+', '')), 
+      platform: 'facebook', 
+      content: `Generated post ${i}`, 
+      status: 'draft' 
+    })); // Simulate generation
+    // await storage.createPost for each newPost - simulate insertion
+    for (const post of newPosts) {
+      await storage.createPost(post);
+    }
+    const after = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
+    console.log('After generation count:', after.length, 'Added:', newPosts.length);
     res.send('Schedule generated');
   });
 
