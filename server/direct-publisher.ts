@@ -30,7 +30,7 @@ export class DirectPublisher {
       // Generate app secret proof for secure server-side calls
       const proof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
       
-      // Try posting directly to the page using the page token
+      // Try posting to user's personal timeline first
       const response = await fetch(`https://graph.facebook.com/v20.0/me/feed`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -44,6 +44,13 @@ export class DirectPublisher {
       const result = await response.json();
 
       if (result.error) {
+        // If personal timeline fails, try as page admin
+        if (result.error.code === 200) {
+          return { 
+            success: false, 
+            error: 'Facebook token needs admin permissions for business page posting. Generate a new token with pages_manage_posts permission.' 
+          };
+        }
         return { success: false, error: `Facebook: ${result.error.message}` };
       }
 
@@ -70,27 +77,6 @@ export class DirectPublisher {
         success: false,
         error: 'LinkedIn requires a valid access token with r_liteprofile and w_member_social permissions. Current token is revoked or lacks permissions.'
       };
-
-      const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-          'X-Restli-Protocol-Version': '2.0.0'
-        },
-        body: JSON.stringify(postData)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        return { 
-          success: false, 
-          error: `LinkedIn posting: ${result.message || result.error_description || `HTTP ${response.status}`}` 
-        };
-      }
-
-      return { success: true, platformPostId: result.id };
       
     } catch (error: any) {
       return { success: false, error: `LinkedIn error: ${error.message}` };
