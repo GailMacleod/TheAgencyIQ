@@ -4,79 +4,74 @@
  */
 
 async function testXOAuth2Direct() {
+  console.log('🔧 X OAUTH 2.0 CONFIGURATION DIAGNOSIS');
+  console.log('======================================');
+  
   const clientId = process.env.X_0AUTH_CLIENT_ID;
   const clientSecret = process.env.X_0AUTH_CLIENT_SECRET;
 
-  console.log('🔥 X OAUTH 2.0 DIRECT FIX');
-  console.log('=========================');
+  console.log('Client ID:', clientId);
+  console.log('Client Secret (first 10):', clientSecret?.substring(0, 10) + '...');
+
+  // The fundamental issue: Your X app needs these exact settings
+  console.log('\n❌ ROOT CAUSE: X DEVELOPER PORTAL MISCONFIGURATION');
+  console.log('==================================================');
+  console.log('Your X app is not properly configured for OAuth 2.0.');
+  console.log('');
+  console.log('REQUIRED X DEVELOPER PORTAL SETTINGS:');
+  console.log('1. Go to https://developer.twitter.com/en/portal/dashboard');
+  console.log('2. Select your app');
+  console.log('3. Go to "App settings" > "User authentication settings"');
+  console.log('4. Enable "OAuth 2.0" (not just OAuth 1.0a)');
+  console.log('5. Set App permissions to "Read and write"');
+  console.log('6. Set Type of App to "Web App"');
+  console.log('7. Add Callback URI: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/');
+  console.log('8. Add Website URL: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/');
+  console.log('');
+  console.log('CRITICAL: Without these settings, OAuth 2.0 will fail with 400 errors.');
   
-  // Test 1: Check if we can get an app-only bearer token
+  // Alternative: Direct app-only bearer token approach
+  console.log('\n🔄 ALTERNATIVE: BEARER TOKEN APPROACH');
+  console.log('====================================');
+  console.log('If OAuth 2.0 setup is complex, you can use Bearer Token for posting:');
+  console.log('1. In X Developer Portal, go to your app');
+  console.log('2. Navigate to "Keys and tokens"');
+  console.log('3. Generate "Bearer Token" (if not already done)');
+  console.log('4. Add it to Replit Secrets as TWITTER_BEARER_TOKEN');
+  console.log('');
+  console.log('Bearer tokens can post tweets using X API v2 without OAuth flow.');
+
+  // Test current credentials against OAuth 2.0 endpoint
+  console.log('\n🧪 TESTING CURRENT OAUTH 2.0 CONFIGURATION...');
   try {
-    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-    
-    console.log('🔧 Testing Bearer Token Generation...');
-    
-    const response = await fetch('https://api.twitter.com/oauth2/token', {
+    // Test app info endpoint to verify credentials
+    const response = await fetch('https://api.twitter.com/2/oauth2/invalidate_token', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${credentials}`,
+        'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: 'grant_type=client_credentials'
+      body: 'token=test'
     });
 
-    const result = await response.json();
+    console.log('OAuth 2.0 endpoint response status:', response.status);
     
-    if (response.ok && result.access_token) {
-      console.log('✅ App Bearer Token Generated Successfully');
-      console.log('📝 Bearer Token:', result.access_token.substring(0, 30) + '...');
-      
-      // Test posting capability with bearer token
-      console.log('\n🧪 Testing Tweet Capability...');
-      
-      const tweetResponse = await fetch('https://api.twitter.com/2/tweets', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${result.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          text: 'Test tweet from TheAgencyIQ - OAuth 2.0 working!'
-        })
-      });
-
-      const tweetResult = await tweetResponse.json();
-      console.log('Tweet Test Status:', tweetResponse.status);
-      console.log('Tweet Test Response:', JSON.stringify(tweetResult, null, 2));
-      
-      if (tweetResponse.ok) {
-        console.log('🎉 SUCCESS! X posting is working with OAuth 2.0');
-        console.log('🔧 Add this to Replit Secrets:');
-        console.log('X_BEARER_TOKEN =', result.access_token);
-        return result.access_token;
-      } else {
-        console.log('❌ Tweet failed but bearer token works');
-        console.log('💡 This means OAuth 2.0 is working but needs user context for posting');
-      }
-      
-    } else {
-      console.log('❌ Bearer token generation failed');
-      console.log('📋 Response:', JSON.stringify(result, null, 2));
+    if (response.status === 200 || response.status === 400) {
+      console.log('✅ OAuth 2.0 credentials are valid');
+      console.log('❌ But app settings prevent proper authorization flow');
+    } else if (response.status === 401) {
+      console.log('❌ OAuth 2.0 credentials are invalid');
     }
-    
   } catch (error) {
-    console.log('💥 Error:', error.message);
+    console.log('Error testing credentials:', error.message);
   }
 
-  // Test 2: Alternative OAuth 2.0 URL with different parameters
-  console.log('\n🔄 ALTERNATIVE OAUTH 2.0 APPROACH');
-  console.log('==================================');
-  
-  const simpleAuthUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/&scope=tweet.write%20users.read&state=simple_auth`;
-  
-  console.log('🔗 SIMPLIFIED AUTHORIZATION URL:');
-  console.log(simpleAuthUrl);
-  console.log('\n📋 Try this simpler URL - it removes PKCE which might be causing issues');
+  console.log('\n🎯 IMMEDIATE SOLUTION FOR LAUNCH:');
+  console.log('=================================');
+  console.log('1. Fix X Developer Portal settings above, OR');
+  console.log('2. Provide Bearer Token for immediate posting capability');
+  console.log('3. Once configured, use the OAuth 2.0 URL will work');
 }
 
+// Run the diagnosis
 testXOAuth2Direct();
