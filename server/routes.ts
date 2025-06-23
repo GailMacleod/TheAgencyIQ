@@ -2782,6 +2782,34 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // X platform integration test (no auth required for testing)
+  app.post("/api/test-x-integration", async (req: any, res) => {
+    try {
+      const { xIntegration } = await import('./x-integration');
+      const result = await xIntegration.postTweet('TheAgencyIQ X integration test successful! Platform ready for 9:00 AM JST launch! 🚀');
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          message: "X integration working perfectly",
+          data: result.data
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: result.error || "X integration failed"
+        });
+      }
+    } catch (error: any) {
+      console.error('X integration test error:', error);
+      res.status(500).json({
+        success: false,
+        message: "X integration test failed",
+        error: error.message
+      });
+    }
+  });
+
   // Auto-posting enforcer - Ensures posts are published within 30-day subscription
   app.post("/api/enforce-auto-posting", requireAuth, async (req: any, res) => {
     try {
