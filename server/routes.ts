@@ -3804,23 +3804,22 @@ Continue building your Value Proposition Canvas systematically.`;
     });
   });
 
-  // Debug Post Generation/Status Logic
+  // Enforce Strict Post Quota - Step 1 Implementation
   app.post('/auto-generate-content-schedule', async (req, res) => {
-    const userId = '2'; // Use actual user ID instead of phone number
+    const userId = 2; // Professional user with +61424835189
     
     try {
-      // Get user data
-      const user = await storage.getUser(parseInt(userId));
+      const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-      
-      // Define quotas based on subscription plan
+
       const quotas = { starter: 12, growth: 27, professional: 52 };
-      const quota = quotas[user.subscriptionPlan?.toLowerCase()] || 52; // Default to professional
+      const plan = (user.subscriptionPlan?.toLowerCase() || 'professional') as keyof typeof quotas;
+      const quota = quotas[plan];
       
-      // Count current successful posts in last 30 days
-      const allPosts = await storage.getPostsByUser(parseInt(userId));
+      // Get current posts and analyze
+      const allPosts = await storage.getPostsByUser(userId);
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const successfulPosts = allPosts.filter(p => 
         p.status === 'success' && 
@@ -3831,34 +3830,48 @@ Continue building your Value Proposition Canvas systematically.`;
       const remaining = Math.max(0, quota - successfulPosts.length);
       
       console.log('[DEBUG] User:', userId, 'Plan:', user.subscriptionPlan, 'Quota:', quota, 'Current Successes:', successfulPosts.length, 'Remaining:', remaining);
+      console.log('[DEBUG] Before count:', allPosts.length, 'Statuses:', allPosts.map(p => p.status));
       
-      // Get current posts before deletion
-      const current = await storage.getPostsByUser(parseInt(userId));
-      console.log('[DEBUG] Before count:', current.length, 'Statuses:', current.map(p => p.status));
+      // CRITICAL: Clean up excess posts beyond quota
+      const excessCount = Math.max(0, allPosts.length - quota);
+      console.log('[DEBUG] Excess posts to remove:', excessCount);
       
-      // Delete non-successful posts through storage
-      const nonSuccessfulPosts = current.filter(p => p.status !== 'success');
-      for (const post of nonSuccessfulPosts) {
+      // Delete non-successful posts first
+      const nonSuccessfulPosts = allPosts.filter(p => p.status !== 'success');
+      let deletedCount = 0;
+      
+      for (const post of nonSuccessfulPosts.slice(0, excessCount)) {
         await storage.deletePost(post.id);
+        deletedCount++;
+        console.log('[DEBUG] Deleted excess post:', post.id, 'status:', post.status);
       }
       
-      // Generate new posts for remaining quota
+      // Generate only remaining quota posts
       const newPosts = [];
       for (let i = 0; i < remaining; i++) {
         const post = await storage.createPost({
-          userId: parseInt(userId),
-          content: `Post ${i + 1} - Generated for ${user.subscriptionPlan} plan`,
+          userId,
+          content: `Post ${i + 1} - Generated for ${user.subscriptionPlan} plan (Quota: ${quota})`,
           status: 'pending',
           platform: 'x'
         });
         newPosts.push(post);
       }
       
-      // Get posts after generation
-      const after = await storage.getPostsByUser(parseInt(userId));
+      const after = await storage.getPostsByUser(userId);
       console.log('[DEBUG] After count:', after.length, 'New Statuses:', after.map(p => p.status));
+      console.log('[DEBUG] Cleanup complete - Deleted:', deletedCount, 'Generated:', newPosts.length);
       
-      res.send('Schedule generated');
+      res.json({
+        message: 'Schedule generated successfully',
+        quota,
+        plan: user.subscriptionPlan,
+        beforeCount: allPosts.length,
+        afterCount: after.length,
+        deleted: deletedCount,
+        generated: newPosts.length,
+        remaining
+      });
       
     } catch (error) {
       console.error('[DEBUG] Generation error:', error);
