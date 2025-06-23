@@ -30,46 +30,42 @@ export class DirectPublisher {
       // Generate app secret proof for secure server-side calls
       const proof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
       
-      // Try posting to the page feed (this token represents the page itself)
-      const response = await fetch(`https://graph.facebook.com/v20.0/me/feed`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          message: content,
-          access_token: accessToken,
-          appsecret_proof: proof
-        }).toString()
-      });
+      // Use the user access token for posting if available
+      const userToken = process.env.FACEBOOK_USER_ACCESS_TOKEN;
+      const finalToken = userToken || accessToken;
+      const finalProof = crypto.createHmac('sha256', appSecret).update(finalToken).digest('hex');
+      
+      // Try posting to personal timeline with user token, then page with page token
+      const endpoints = [
+        { url: 'https://graph.facebook.com/v20.0/me/feed', token: finalToken },
+        { url: 'https://graph.facebook.com/v20.0/4127481330818969/feed', token: finalToken }
+      ];
+      
+      for (const endpoint of endpoints) {
+        const response = await fetch(endpoint.url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            message: content,
+            access_token: endpoint.token,
+            appsecret_proof: crypto.createHmac('sha256', appSecret).update(endpoint.token).digest('hex')
+          }).toString()
+        });
 
-      const result = await response.json();
-
-      if (result.error) {
-        // If that fails, try direct page posting with alternative approach
-        if (result.error.code === 200) {
-          const altResponse = await fetch(`https://graph.facebook.com/v20.0/4127481330818969/feed`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              message: content,
-              access_token: accessToken,
-              appsecret_proof: proof,
-              published: 'true'
-            }).toString()
-          });
-
-          const altResult = await altResponse.json();
-          
-          if (altResult.error) {
-            return { success: false, error: `Facebook: Page token may need regeneration. Error: ${altResult.error.message}` };
-          }
-          
-          return { success: true, platformPostId: altResult.id };
+        const result = await response.json();
+        
+        if (!result.error) {
+          return { success: true, platformPostId: result.id };
         }
         
-        return { success: false, error: `Facebook: ${result.error.message}` };
+        // Continue to next endpoint if this one fails
       }
-
-      return { success: true, platformPostId: result.id };
+      
+      // If all endpoints fail, return clear error message
+      return { 
+        success: false, 
+        error: 'Facebook: Token requires regeneration. Generate a new Page Access Token from Graph API Explorer with admin permissions.' 
+      };
       
     } catch (error: any) {
       return { success: false, error: `Facebook error: ${error.message}` };
