@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-06-12T01:00:00.046Z",
+  "timestamp": "2025-06-23T01:00:01.168Z",
   "users": [
     {
       "id": 2,
@@ -8,7 +8,7 @@
       "subscriptionPlan": "professional",
       "stripeCustomerId": "cus_SStznDRDVG32xg",
       "stripeSubscriptionId": "sub_1RXyC1S90ymeq6trOeP7IZeM",
-      "remainingPosts": 50,
+      "remainingPosts": 48,
       "totalPosts": 52,
       "createdAt": "2025-06-05T06:20:56.594Z"
     },
@@ -66,6 +66,28 @@
       "remainingPosts": 10,
       "totalPosts": 0,
       "createdAt": "2025-06-10T23:24:17.969Z"
+    },
+    {
+      "id": 14,
+      "email": "macmacangel@gmail.com",
+      "phone": "",
+      "subscriptionPlan": "starter",
+      "stripeCustomerId": "cus_SUIyp7KleXvukm",
+      "stripeSubscriptionId": "sub_1RZKN2S90ymeq6tryQ9FSAjA",
+      "remainingPosts": 10,
+      "totalPosts": 12,
+      "createdAt": "2025-06-12T23:17:38.674Z"
+    },
+    {
+      "id": 15,
+      "email": "test@theagencyiq.ai",
+      "phone": "+61411223344",
+      "subscriptionPlan": "professional",
+      "stripeCustomerId": null,
+      "stripeSubscriptionId": null,
+      "remainingPosts": 52,
+      "totalPosts": 52,
+      "createdAt": "2025-06-22T04:04:24.062Z"
     }
   ]
 }

@@ -101,7 +101,39 @@ export class DirectPublisher {
         return { success: false, error: 'LinkedIn access token not configured' };
       }
 
-      // Use simplified approach - post directly without profile lookup
+      // First get the user profile to get the correct user ID
+      const profileResponse = await fetch('https://api.linkedin.com/v2/me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!profileResponse.ok) {
+        const profileError = await profileResponse.json();
+        return { 
+          success: false, 
+          error: `LinkedIn profile: ${profileError.message || 'Token invalid or expired'}` 
+        };
+      }
+
+      const profile = await profileResponse.json();
+      
+      // Create post with proper user URN
+      const postData = {
+        author: `urn:li:person:${profile.id}`,
+        lifecycleState: 'PUBLISHED',
+        specificContent: {
+          'com.linkedin.ugc.ShareContent': {
+            shareCommentary: { text: content },
+            shareMediaCategory: 'NONE'
+          }
+        },
+        visibility: {
+          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+        }
+      };
+
       const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
         method: 'POST',
         headers: {
@@ -109,22 +141,16 @@ export class DirectPublisher {
           'Content-Type': 'application/json',
           'X-Restli-Protocol-Version': '2.0.0'
         },
-        body: JSON.stringify({
-          author: 'urn:li:person:me',
-          lifecycleState: 'PUBLISHED',
-          specificContent: {
-            'com.linkedin.ugc.ShareContent': {
-              shareCommentary: { text: content },
-              shareMediaCategory: 'NONE'
-            }
-          }
-        })
+        body: JSON.stringify(postData)
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        return { success: false, error: `LinkedIn: ${result.message || 'API error'}` };
+        return { 
+          success: false, 
+          error: `LinkedIn posting: ${result.message || result.error_description || `HTTP ${response.status}`}` 
+        };
       }
 
       return { success: true, platformPostId: result.id };
