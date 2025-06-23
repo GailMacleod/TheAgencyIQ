@@ -555,7 +555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Root route to handle OAuth callbacks (X and Facebook)
-  app.get('/', (req, res) => {
+  app.get('/', (req, res, next) => {
     const code = req.query.code;
     const state = req.query.state;
     
@@ -650,11 +650,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `);
       }
     } else {
-      res.send(`
-        <h1>TheAgencyIQ</h1>
-        <p>Social Media Management Platform</p>
-        <p>Server is running and ready for OAuth callbacks.</p>
-      `);
+      // No OAuth callback - let Vite serve the React app
+      next(); // Pass control to Vite middleware
     }
   });
 
