@@ -3667,19 +3667,23 @@ Continue building your Value Proposition Canvas systematically.`;
     const userId = req.body.phone || '+61424835189';
     const current = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
     console.log('Before generation count:', current.length);
-    // Existing generation logic
-    const newPosts = Array.from({ length: 12 }, (_, i) => ({ 
-      userId: parseInt(userId.replace('+', '')), 
-      platform: 'facebook', 
-      content: `Generated post ${i}`, 
-      status: 'draft' 
-    })); // Simulate generation
-    // await storage.createPost for each newPost - simulate insertion
-    for (const post of newPosts) {
-      await storage.createPost(post);
+    const successfulPosts = current.filter(p => p.status === 'published' && p.publishedAt && new Date(p.publishedAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+    const remaining = 12 - successfulPosts.length;
+    console.log('Remaining quota:', remaining);
+    if (remaining > 0) {
+      const newPosts = Array.from({ length: remaining }, (_, i) => ({
+        userId: parseInt(userId.replace('+', '')),
+        platform: 'facebook',
+        content: `Generated Post ${i}`,
+        status: 'pending'
+      }));
+      for (const post of newPosts) {
+        await storage.createPost(post);
+      }
+      console.log('Added posts:', newPosts.length);
     }
     const after = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
-    console.log('After generation count:', after.length, 'Added:', newPosts.length);
+    console.log('After generation count:', after.length);
     res.send('Schedule generated');
   });
 
