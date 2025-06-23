@@ -4022,6 +4022,14 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Step 1: Diagnose Quota Erraticism - Track approval patterns
+  app.post('/api/approve-post', (req, res) => {
+    const userId = req.body.phone; // +61424835189
+    console.log('Approval for', userId, 'at', new Date());
+    // Existing publish logic
+    res.send('Approved');
+  });
+
   // Approve and publish post with proper allocation tracking
   app.post("/api/schedule-post", requireAuth, async (req: any, res) => {
     try {
