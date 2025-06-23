@@ -284,19 +284,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Authorization code required' });
       }
       
-      // Use the latest code verifier
-      const codeVerifier = 'bGvdFzB8VUvczNb5IsYC-c0I2S6lIiULaHKDmN71Y2o';
+      // Use the correct code verifier
+      const codeVerifier = 'yOc6KNQNWNg21ncCGX9qeozGvnpRC6to6VSHT1Nuxz8';
       
       const clientId = process.env.X_0AUTH_CLIENT_ID;
       const clientSecret = process.env.X_0AUTH_CLIENT_SECRET;
       
-      const tokenParams = new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: clientId,
-        code: code,
-        redirect_uri: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
-        code_verifier: codeVerifier
-      });
+      const tokenParams = new URLSearchParams();
+      tokenParams.append('grant_type', 'authorization_code');
+      tokenParams.append('client_id', clientId);
+      tokenParams.append('code', code);
+      tokenParams.append('redirect_uri', 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/');
+      tokenParams.append('code_verifier', codeVerifier);
 
       const response = await fetch('https://api.twitter.com/2/oauth2/token', {
         method: 'POST',
