@@ -315,22 +315,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Facebook pages result:', pagesResult);
 
+      // Force a valid platform_user_id
+      let pageId = `fb_user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       let pageToken = finalToken;
-      let pageId = userResult.id || `fb_user_${Date.now()}`;
-      let pageName = userResult.name || 'Facebook User';
+      let pageName = 'Facebook User';
       
-      if (pagesResult.data && pagesResult.data.length > 0) {
-        pageToken = pagesResult.data[0].access_token;
-        pageId = pagesResult.data[0].id || pageId;
-        pageName = pagesResult.data[0].name || pageName;
+      // Try to get actual user data
+      if (userResult && userResult.id) {
+        pageId = userResult.id.toString();
+        pageName = userResult.name || pageName;
+      }
+      
+      // Check for pages and use the first one if available
+      if (pagesResult && pagesResult.data && pagesResult.data.length > 0) {
+        const firstPage = pagesResult.data[0];
+        if (firstPage.id && firstPage.access_token) {
+          pageId = firstPage.id.toString();
+          pageToken = firstPage.access_token;
+          pageName = firstPage.name || pageName;
+        }
       }
 
-      // Ensure pageId is always set
-      if (!pageId || pageId === 'undefined' || pageId === 'null') {
-        pageId = `fb_user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      }
-
-      console.log('Final Facebook connection details:', { pageId, pageName, hasToken: !!pageToken });
+      console.log('Final Facebook connection details:', { 
+        pageId, 
+        pageName, 
+        hasToken: !!pageToken,
+        pageIdLength: pageId ? pageId.length : 0
+      });
 
       // Store the connection in database
       const connection = await storage.createPlatformConnection({
