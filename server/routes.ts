@@ -256,6 +256,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // X OAuth endpoints
+  app.get('/api/x/auth', (req, res) => {
+    try {
+      const { xIntegration } = require('./x-integration');
+      const authResult = xIntegration.generateAuthUrl();
+      
+      // Store code verifier in session for later use
+      req.session.xCodeVerifier = authResult.codeVerifier;
+      req.session.xState = authResult.state;
+      
+      res.json({
+        authUrl: authResult.authUrl,
+        state: authResult.state
+      });
+    } catch (error) {
+      console.error('X auth error:', error);
+      res.status(500).json({ error: 'Failed to generate X auth URL' });
+    }
+  });
+
+  app.post('/api/x/callback', async (req, res) => {
+    try {
+      const { code, state } = req.body;
+      const { xIntegration } = require('./x-integration');
+      
+      if (!code) {
+        return res.status(400).json({ error: 'Authorization code required' });
+      }
+      
+      const codeVerifier = req.session.xCodeVerifier;
+      if (!codeVerifier) {
+        return res.status(400).json({ error: 'Missing code verifier' });
+      }
+      
+      const tokenResult = await xIntegration.exchangeCodeForToken(code, codeVerifier);
+      
+      if (tokenResult) {
+        // Store tokens securely
+        const connection = await storage.createPlatformConnection({
+          userId: req.session.userId || 2,
+          platform: 'x',
+          platformUserId: 'x_user_' + Date.now(),
+          platformUsername: 'X Account',
+          accessToken: tokenResult.access_token,
+          refreshToken: tokenResult.refresh_token || null,
+          isActive: true
+        });
+        
+        // Clean up session
+        delete req.session.xCodeVerifier;
+        delete req.session.xState;
+        
+        res.json({
+          success: true,
+          connectionId: connection.id,
+          message: 'X platform connected successfully'
+        });
+      } else {
+        res.status(400).json({ error: 'Failed to exchange authorization code' });
+      }
+    } catch (error) {
+      console.error('X callback error:', error);
+      res.status(500).json({ error: 'Failed to process X authorization' });
+    }
+  });
+
   // Root route to handle X OAuth callback
   app.get('/', (req, res) => {
     const code = req.query.code;
@@ -270,7 +336,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace;">
           ${code}
         </div>
-        <p>Provide this code to complete the X platform integration.</p>
+        <p>Use the code exchange endpoint to complete integration.</p>
+        <script>
+          // Auto-submit to callback endpoint
+          fetch('/api/x/callback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: '${code}', state: '${state}' })
+          }).then(r => r.json()).then(data => {
+            if (data.success) {
+              document.body.innerHTML = '<h1>X Integration Complete!</h1><p>You can now close this window.</p>';
+            }
+          });
+        </script>
       `);
     } else {
       res.send(`
