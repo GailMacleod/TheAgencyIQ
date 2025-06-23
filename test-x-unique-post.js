@@ -2,7 +2,7 @@
  * Test X Platform with Unique Content
  */
 
-const { Pool } = require('@neondatabase/serverless');
+import { Pool } from '@neondatabase/serverless';
 
 async function testXUniquePost() {
   console.log('🔄 TESTING X PLATFORM WITH UNIQUE CONTENT');
