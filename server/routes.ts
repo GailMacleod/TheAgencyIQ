@@ -256,6 +256,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Facebook OAuth callback endpoint
+  app.post('/api/facebook/callback', async (req, res) => {
+    try {
+      const { code, state } = req.body;
+      
+      if (!code) {
+        return res.status(400).json({ error: 'Authorization code required' });
+      }
+      
+      const clientId = process.env.FACEBOOK_APP_ID;
+      const clientSecret = process.env.FACEBOOK_APP_SECRET;
+      const redirectUri = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/';
+      
+      if (!clientId || !clientSecret) {
+        return res.status(500).json({ error: 'Facebook credentials not configured' });
+      }
+
+      // Exchange authorization code for access token
+      const tokenParams = new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        code: code
+      });
+
+      const tokenResponse = await fetch(`https://graph.facebook.com/v20.0/oauth/access_token?${tokenParams}`);
+      const tokenResult = await tokenResponse.json();
+      
+      if (tokenResult.error) {
+        return res.status(400).json({ 
+          error: 'Failed to exchange authorization code',
+          details: tokenResult.error 
+        });
+      }
+
+      // Get long-lived access token
+      const longLivedParams = new URLSearchParams({
+        grant_type: 'fb_exchange_token',
+        client_id: clientId,
+        client_secret: clientSecret,
+        fb_exchange_token: tokenResult.access_token
+      });
+
+      const longLivedResponse = await fetch(`https://graph.facebook.com/v20.0/oauth/access_token?${longLivedParams}`);
+      const longLivedResult = await longLivedResponse.json();
+      
+      const finalToken = longLivedResult.access_token || tokenResult.access_token;
+
+      // Get user info and pages
+      const userResponse = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${finalToken}`);
+      const userResult = await userResponse.json();
+
+      const pagesResponse = await fetch(`https://graph.facebook.com/v20.0/me/accounts?access_token=${finalToken}`);
+      const pagesResult = await pagesResponse.json();
+
+      let pageToken = finalToken;
+      let pageId = userResult.id;
+      
+      if (pagesResult.data && pagesResult.data.length > 0) {
+        pageToken = pagesResult.data[0].access_token;
+        pageId = pagesResult.data[0].id;
+      }
+
+      // Store the connection in database
+      const connection = await storage.createPlatformConnection({
+        userId: 2,
+        platform: 'facebook',
+        platformUserId: pageId,
+        platformUsername: userResult.name || 'Facebook User',
+        accessToken: pageToken,
+        refreshToken: null,
+        isActive: true
+      });
+      
+      // Test posting capability
+      const testResponse = await fetch(`https://graph.facebook.com/v20.0/${pageId}/feed`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          message: 'TheAgencyIQ Facebook integration complete - posting operational!',
+          access_token: pageToken
+        })
+      });
+
+      const testResult = await testResponse.json();
+      
+      res.json({
+        success: true,
+        connectionId: connection.id,
+        message: 'Facebook platform connected successfully',
+        username: userResult.name,
+        pageId: pageId,
+        testPosted: testResponse.ok,
+        testPostId: testResponse.ok ? testResult.id : null
+      });
+      
+    } catch (error) {
+      console.error('Facebook callback error:', error);
+      res.status(500).json({ error: 'Failed to process Facebook authorization' });
+    }
+  });
+
   // X OAuth endpoints
   app.get('/api/x/auth', (req, res) => {
     try {
@@ -354,34 +456,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Root route to handle X OAuth callback
+  // Root route to handle OAuth callbacks (X and Facebook)
   app.get('/', (req, res) => {
     const code = req.query.code;
     const state = req.query.state;
     
-    console.log('X OAuth Callback received:', { code: code ? 'Present' : 'Missing', state });
+    console.log('OAuth Callback received:', { code: code ? 'Present' : 'Missing', state });
     
-    if (code) {
-      res.send(`
-        <h1>X Authorization Successful</h1>
-        <p>Authorization code received. Copy the code below:</p>
-        <div style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace;">
-          ${code}
-        </div>
-        <p>Use the code exchange endpoint to complete integration.</p>
-        <script>
-          // Auto-submit to callback endpoint
-          fetch('/api/x/callback', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: '${code}', state: '${state}' })
-          }).then(r => r.json()).then(data => {
-            if (data.success) {
-              document.body.innerHTML = '<h1>X Integration Complete!</h1><p>You can now close this window.</p>';
-            }
-          });
-        </script>
-      `);
+    if (code && state) {
+      // Determine platform based on state parameter
+      if (state.toString().includes('facebook')) {
+        res.send(`
+          <h1>Facebook Authorization Successful</h1>
+          <p>Authorization code received for Facebook integration.</p>
+          <script>
+            // Auto-submit to Facebook callback endpoint
+            fetch('/api/facebook/callback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: '${code}', state: '${state}' })
+            }).then(r => r.json()).then(data => {
+              if (data.success) {
+                document.body.innerHTML = '<h1>Facebook Integration Complete!</h1><p>You can now close this window.</p>';
+              } else {
+                document.body.innerHTML = '<h1>Facebook Integration Failed</h1><p>Error: ' + JSON.stringify(data.error) + '</p>';
+              }
+            }).catch(err => {
+              document.body.innerHTML = '<h1>Facebook Integration Error</h1><p>' + err.message + '</p>';
+            });
+          </script>
+        `);
+      } else {
+        // Default to X platform
+        res.send(`
+          <h1>X Authorization Successful</h1>
+          <p>Authorization code received for X integration.</p>
+          <script>
+            // Auto-submit to X callback endpoint
+            fetch('/api/x/callback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: '${code}', state: '${state}' })
+            }).then(r => r.json()).then(data => {
+              if (data.success) {
+                document.body.innerHTML = '<h1>X Integration Complete!</h1><p>You can now close this window.</p>';
+              } else {
+                document.body.innerHTML = '<h1>X Integration Failed</h1><p>Error: ' + JSON.stringify(data.error) + '</p>';
+              }
+            }).catch(err => {
+              document.body.innerHTML = '<h1>X Integration Error</h1><p>' + err.message + '</p>';
+            });
+          </script>
+        `);
+      }
     } else {
       res.send(`
         <h1>TheAgencyIQ</h1>
