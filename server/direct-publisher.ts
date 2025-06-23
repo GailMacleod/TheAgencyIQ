@@ -19,8 +19,8 @@ export class DirectPublisher {
    */
   static async publishToFacebook(content: string): Promise<DirectPublishResult> {
     try {
-      // Try multiple token sources in order of preference
-      const accessToken = process.env.FACEBOOK_ACCESS_TOKEN || process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+      // Use working tokens (skip FACEBOOK_ACCESS_TOKEN as it contains text, not a token)
+      const accessToken = process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
       const appSecret = process.env.FACEBOOK_APP_SECRET;
       
       if (!accessToken || !appSecret) {
