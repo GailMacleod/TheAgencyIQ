@@ -113,4 +113,4 @@ generateXUserToken().then(result => {
 });
 
 // Export for manual use
-module.exports = { generateXUserToken, exchangeCodeForToken };
+export { generateXUserToken, exchangeCodeForToken };
