@@ -1562,16 +1562,45 @@ app.post('/api/waterfall/approve', async (req, res) => {
   }
 
   try {
-    const publishResult = await enforcePublish(post, userId);
-    post.status = publishResult.success ? 'published' : 'failed';
-    console.log(`Post ${id} ${post.status} on ${platform}: ${publishResult.message}`);
+    const { EmergencyPublisher } = await import('./emergency-publisher');
+    const publishReport = await EmergencyPublisher.publishWithFallback(
+      parseInt(id), 
+      platform.toLowerCase(), 
+      post.content
+    );
+    
+    post.status = publishReport.result.success ? 'published' : 'failed';
+    if (publishReport.result.error) {
+      post.error = publishReport.result.error;
+    }
+    if (publishReport.result.setupRequired) {
+      post.setupRequired = publishReport.result.setupRequired;
+      post.setupUrl = publishReport.result.setupUrl;
+    }
+    
+    console.log(`Post ${id} ${post.status} on ${platform}: ${publishReport.result.error || 'Success'}`);
   } catch (error: any) {
     post.status = 'failed';
+    post.error = error.message;
     console.error(`Post ${id} failed on ${platform}: ${error.message}`);
   }
+  
   (req.session as any).approvedPosts[id] = post;
   fs.writeFileSync('approved-posts.json', JSON.stringify((req.session as any).approvedPosts));
-  res.json({ id, status: post.status, platform: platform.toLowerCase(), remaining: subscription.posts - Object.keys((req.session as any).approvedPosts).length });
+  
+  const response: any = { 
+    id, 
+    status: post.status, 
+    platform: platform.toLowerCase(), 
+    remaining: subscription.posts - Object.keys((req.session as any).approvedPosts).length 
+  };
+  
+  if (post.setupRequired) {
+    response.setupRequired = post.setupRequired;
+    response.setupUrl = post.setupUrl;
+  }
+  
+  res.json(response);
 });
 
 const enforcePublish = async (post: any, userId: number) => {
@@ -1796,6 +1825,29 @@ const publishPost = async (post: any, userId: number) => {
 const refreshToken = async (platform: string, userId: number) => {
   return `refreshed_${platform}_secret`; // Placeholder
 };
+
+// Platform authentication status endpoint
+app.get('/api/platform-status', async (req, res) => {
+  try {
+    const { PlatformAuthManager } = await import('./platform-auth-manager');
+    const { EmergencyPublisher } = await import('./emergency-publisher');
+    
+    const statuses = await PlatformAuthManager.getAllPlatformStatus();
+    const setupRequirements = await EmergencyPublisher.getSetupRequirements();
+    
+    res.json({
+      platforms: statuses,
+      setupRequired: setupRequirements,
+      summary: {
+        total: statuses.length,
+        ready: statuses.filter(p => p.ready_to_post).length,
+        needsSetup: statuses.filter(p => !p.ready_to_post).length
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Immediate Publish All endpoint - publishes all failed/draft posts
 app.post('/api/immediate-publish-all', async (req, res) => {
