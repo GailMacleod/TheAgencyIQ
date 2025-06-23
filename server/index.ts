@@ -1575,14 +1575,32 @@ app.post('/api/waterfall/approve', async (req, res) => {
 });
 
 const enforcePublish = async (post: any, userId: number) => {
-  // Generate Facebook appsecret_proof for page token
-  const { createHmac } = await import('crypto');
-  const appSecret = process.env.FACEBOOK_APP_SECRET || '';
-  const pageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || '';
-  const appsecretProof = createHmac('sha256', appSecret).update(pageToken).digest('hex');
+  // Use FacebookSetupHelper for proper page-based posting
+  const { FacebookSetupHelper } = await import('./facebook-setup-helper');
+  
+  let facebookConfig = null;
+  if (post.platform === 'facebook') {
+    const fbHelper = new FacebookSetupHelper();
+    const bestPage = await fbHelper.getBestPageForPosting();
+    
+    if (!bestPage) {
+      const setup = await fbHelper.checkSetup();
+      throw new Error(setup.error || 'Facebook page setup required for posting');
+    }
+    
+    const { createHmac } = await import('crypto');
+    const appSecret = process.env.FACEBOOK_APP_SECRET || '';
+    const pageProof = createHmac('sha256', appSecret).update(bestPage.access_token).digest('hex');
+    
+    facebookConfig = {
+      url: `https://graph.facebook.com/v20.0/${bestPage.id}/feed`,
+      secret: bestPage.access_token,
+      payload: { message: post.content, access_token: bestPage.access_token, appsecret_proof: pageProof }
+    };
+  }
   
   const platforms = {
-    facebook: { url: 'https://graph.facebook.com/v20.0/me/feed', secret: process.env.FACEBOOK_PAGE_ACCESS_TOKEN, payload: { message: post.content, access_token: pageToken, appsecret_proof: appsecretProof } }, // Page access token with proof
+    facebook: facebookConfig,
     linkedin: { url: 'https://api.linkedin.com/v2/ugcPosts', secret: process.env.LINKEDIN_CLIENT_SECRET, payload: { author: 'urn:li:person:me', lifecycleState: 'PUBLISHED', specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text: post.content }, shareMediaCategory: 'NONE' } } } },
     instagram: { url: 'https://graph.instagram.com/v20.0/me/media', secret: process.env.INSTAGRAM_CLIENT_SECRET, payload: { caption: post.content, access_token: process.env.INSTAGRAM_CLIENT_SECRET } },
     twitter: { url: 'https://api.twitter.com/2/tweets', secret: process.env.TWITTER_CLIENT_SECRET, payload: { text: post.content } }

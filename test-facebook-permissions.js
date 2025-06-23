@@ -57,51 +57,49 @@ async function testFacebookPermissions() {
     const hasRequiredPerms = requiredPerms.every(perm => grantedPerms.includes(perm));
     console.log('Has required permissions:', hasRequiredPerms);
     
-    // Test 3: Try posting to user feed (this is a user token)
+    // Test 3: Get user's pages and try posting to managed page
     if (hasRequiredPerms) {
-      console.log('Testing post creation...');
-      const postUrl = `https://graph.facebook.com/v20.0/${userData.id}/feed`;
-      const postResponse = await fetch(postUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          message: 'Test post from TheAgencyIQ - verifying posting permissions',
-          access_token: pageToken,
-          appsecret_proof: proof
-        }).toString()
-      });
+      console.log('Getting user pages...');
+      const pagesUrl = `https://graph.facebook.com/v20.0/me/accounts?access_token=${pageToken}&appsecret_proof=${proof}`;
+      const pagesResponse = await fetch(pagesUrl);
+      const pagesData = await pagesResponse.json();
       
-      const postResult = await postResponse.json();
+      if (pagesData.error) {
+        console.error('Pages error:', pagesData.error);
+        return;
+      }
       
-      if (postResult.error) {
-        console.error('Post creation error:', postResult.error);
-        console.log('Trying alternative approach - posting to /me/feed...');
+      console.log('User pages:', pagesData.data.map(p => ({ id: p.id, name: p.name })));
+      
+      if (pagesData.data.length > 0) {
+        const page = pagesData.data[0]; // Use first page
+        console.log(`Testing post creation on page: ${page.name} (${page.id})`);
         
-        // Try alternative endpoint
-        const altPostUrl = `https://graph.facebook.com/v20.0/me/feed`;
-        const altResponse = await fetch(altPostUrl, {
+        const postUrl = `https://graph.facebook.com/v20.0/${page.id}/feed`;
+        const postResponse = await fetch(postUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             message: 'Test post from TheAgencyIQ - verifying posting permissions',
-            access_token: pageToken,
-            appsecret_proof: proof
+            access_token: page.access_token, // Use page's access token
+            appsecret_proof: crypto.createHmac('sha256', appSecret).update(page.access_token).digest('hex')
           }).toString()
         });
         
-        const altResult = await altResponse.json();
-        if (altResult.error) {
-          console.error('Alternative post creation error:', altResult.error);
+        const postResult = await postResponse.json();
+        
+        if (postResult.error) {
+          console.error('Page post creation error:', postResult.error);
         } else {
-          console.log('Alternative post created successfully:', altResult.id);
+          console.log('Page post created successfully:', postResult.id);
+          
+          // Delete the test post
+          const deleteUrl = `https://graph.facebook.com/v20.0/${postResult.id}?access_token=${page.access_token}&appsecret_proof=${crypto.createHmac('sha256', appSecret).update(page.access_token).digest('hex')}`;
+          await fetch(deleteUrl, { method: 'DELETE' });
+          console.log('Test post deleted');
         }
       } else {
-        console.log('Post created successfully:', postResult.id);
-        
-        // Delete the test post
-        const deleteUrl = `https://graph.facebook.com/v20.0/${postResult.id}?access_token=${pageToken}&appsecret_proof=${proof}`;
-        await fetch(deleteUrl, { method: 'DELETE' });
-        console.log('Test post deleted');
+        console.log('No pages found - user needs to manage a Facebook page to post');
       }
     }
     
