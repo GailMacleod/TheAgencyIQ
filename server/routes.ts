@@ -40,9 +40,7 @@ if (!process.env.XAI_API_KEY) {
   throw new Error('Missing required xAI API key: XAI_API_KEY');
 }
 
-if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
-  throw new Error('Missing required Twilio credentials');
-}
+// Twilio validation removed to allow server startup for X integration
 
 if (!process.env.SENDGRID_API_KEY) {
   throw new Error('Missing required SendGrid API key');
@@ -5786,6 +5784,31 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     } catch (error: any) {
       res.json({ success: false, error: error.message });
+    }
+  });
+
+  // X OAuth 2.0 callback endpoint
+  app.get("/api/x/callback", async (req, res) => {
+    try {
+      const { code, state, error } = req.query;
+      
+      if (error) {
+        return res.status(400).json({ error: 'Authorization failed', details: error });
+      }
+      
+      if (!code) {
+        return res.status(400).json({ error: 'No authorization code received' });
+      }
+      
+      // Return the code to the user for manual token exchange
+      res.json({ 
+        success: true, 
+        authorizationCode: code,
+        state: state,
+        message: 'Authorization successful! Use this code with the token exchange function.'
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Callback processing failed', details: error.message });
     }
   });
 
