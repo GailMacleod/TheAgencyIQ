@@ -1,15 +1,13 @@
 /**
- * Manual Token Exchange Function
- * Use this to exchange your authorization code
+ * Immediate Token Exchange - Using Fresh Code
  */
 
-async function exchangeTokenManual(authCode) {
-  console.log('🔄 MANUAL TOKEN EXCHANGE');
-  console.log('========================');
-  console.log('Authorization Code:', authCode);
-  
-  // Using the ORIGINAL code verifier from the first flow
-  const codeVerifier = 'AAvolsGDep85RgnyVCott9gmGbgc8C-EDheL9mqb38s';
+const authCode = 'aWVVT1Fwb3BCMU15TEFweUEwcEI0S3k5WW9mcVJDdHdqR2RDV21RczBJcnVjOjE3NTA2NjE0NjM1OTE6MTowOmFjOjE';
+const codeVerifier = '-mCzc3210nkQ9a6y09GpKrYKqmdU9G-M_Ksjc8bCrI4';
+
+async function immediateTokenExchange() {
+  console.log('🔄 IMMEDIATE TOKEN EXCHANGE');
+  console.log('===========================');
   
   const clientId = process.env.X_0AUTH_CLIENT_ID;
   const clientSecret = process.env.X_0AUTH_CLIENT_SECRET;
@@ -35,10 +33,10 @@ async function exchangeTokenManual(authCode) {
   console.log('Response Status:', response.status);
 
   if (response.ok) {
-    console.log('✅ SUCCESS! Access token obtained');
+    console.log('✅ SUCCESS! X access token obtained');
     console.log('Access Token:', result.access_token);
     
-    // Test posting
+    // Test posting immediately
     const tweetResponse = await fetch('https://api.twitter.com/2/tweets', {
       method: 'POST',
       headers: {
@@ -46,20 +44,22 @@ async function exchangeTokenManual(authCode) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        text: 'TheAgencyIQ X platform SUCCESS! Ready for 9:00 AM JST launch!'
+        text: 'TheAgencyIQ X platform WORKING! Integration complete for 9:00 AM JST launch! 🚀'
       })
     });
 
     const tweetResult = await tweetResponse.json();
     
     if (tweetResponse.ok) {
-      console.log('✅ TWEET POSTED');
+      console.log('✅ TWEET POSTED SUCCESSFULLY');
       console.log('Tweet ID:', tweetResult.data.id);
-      console.log('✅ X PLATFORM OPERATIONAL');
+      console.log('Tweet URL: https://twitter.com/i/web/status/' + tweetResult.data.id);
+      console.log('✅ X PLATFORM READY FOR LAUNCH');
     } else {
       console.log('Tweet Error:', JSON.stringify(tweetResult, null, 2));
     }
     
+    console.log('Save to Replit Secrets: X_USER_ACCESS_TOKEN =', result.access_token);
     return result;
   } else {
     console.log('❌ Failed:', JSON.stringify(result, null, 2));
@@ -67,5 +67,4 @@ async function exchangeTokenManual(authCode) {
   }
 }
 
-// Exchange the authorization code
-exchangeTokenManual('aWVVT1Fwb3BCMU15TEFweUEwcEI0S3k5WW9mcVJDdHdqR2RDV21RczBJcnVjOjE3NTA2NjE0NjM1OTE6MTowOmFjOjE');
+immediateTokenExchange();
