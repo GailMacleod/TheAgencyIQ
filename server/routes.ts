@@ -3662,8 +3662,18 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Step 2: Generate Content Within Quota
+  app.post('/api/generate-schedule', async (req, res) => {
+    const userId = req.body.phone;
+    const quota = 12; // Fetch from subscription or default
+    const posts = Array.from({ length: quota }, (_, i) => ({ id: i, content: `Post ${i}`, status: 'pending' }));
+    // await db.insert(posts).values(posts.map(p => ({ userId, ...p })));
+    console.log(`Generated ${quota} posts for ${userId}`);
+    res.send(posts);
+  });
+
   // Log Scheduling Trigger - Track when posts are generated/scheduled
-  app.post('/api/generate-schedule', (req, res) => {
+  app.post('/api/generate-schedule-log', (req, res) => {
     const userId = req.body.phone; // +61424835189
     console.log('Schedule generated for', userId, 'at', new Date());
     // Existing schedule logic
@@ -4028,6 +4038,15 @@ Continue building your Value Proposition Canvas systematically.`;
       console.error('Publish post error:', error);
       res.status(500).json({ message: "Error publishing post" });
     }
+  });
+
+  // Step 1: Tie Subscription to Quota Trigger
+  app.post('/api/subscribe', (req, res) => {
+    const userId = req.body.phone; // +61424835189
+    const plan = req.body.plan; // e.g., 'Starter'
+    const quota = { Starter: 12, Growth: 27, Professional: 52 }[plan];
+    console.log(`Subscribed ${userId} to ${plan}, quota: ${quota}`);
+    res.send({ quota });
   });
 
   // Step 1: Diagnose Quota Erraticism - Track approval patterns
@@ -4873,6 +4892,19 @@ Continue building your Value Proposition Canvas systematically.`;
         error: error.message 
       });
     }
+  });
+
+  // Step 4: Sync UI with True Quota
+  app.get('/api/quota-status', async (req, res) => {
+    const userId = req.query.phone || '+61424835189';
+    // const quota = await db
+    //   .select({ count: sql`COUNT(*)` })
+    //   .from(posts)
+    //   .where(sql`${posts.userId} = ${userId} AND ${posts.status} = 'success' AND ${posts.publishedAt} > NOW() - INTERVAL '30 days'`)
+    //   .get();
+    const quota = { count: 0 }; // Placeholder for now
+    console.log('Quota:', quota.count);
+    res.send({ quota: Math.min(quota.count, 12), max: 12 });
   });
 
   // Analytics dashboard data
