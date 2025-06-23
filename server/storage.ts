@@ -39,6 +39,7 @@ export interface IStorage {
 
   // Post operations
   getPostsByUser(userId: number): Promise<Post[]>;
+  getAllPosts(): Promise<Post[]>;
   createPost(post: InsertPost): Promise<Post>;
   updatePost(id: number, updates: Partial<InsertPost>): Promise<Post>;
   deletePost(id: number): Promise<void>;
@@ -191,6 +192,13 @@ export class DatabaseStorage implements IStorage {
 
   async deletePost(id: number): Promise<void> {
     await db.delete(posts).where(eq(posts.id, id));
+  }
+
+  async getAllPosts(): Promise<Post[]> {
+    return await db
+      .select()
+      .from(posts)
+      .orderBy(desc(posts.createdAt));
   }
 
   // Platform connection operations

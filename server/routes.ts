@@ -3706,7 +3706,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Step 1: Enforce Quota Before Generation
+  // Step 2: Enforce Quota and Clean Ledger
   app.post('/api/auto-generate-content-schedule', async (req, res) => {
     const userId = req.body.phone || '+61424835189';
     const userIdInt = parseInt(userId.replace('+', ''));
@@ -3715,30 +3715,30 @@ Continue building your Value Proposition Canvas systematically.`;
     const allPosts = await storage.getPostsByUser(userIdInt);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const successfulPosts = allPosts.filter(p => 
-      p.status === 'published' && 
+      p.status === 'success' && 
       p.publishedAt && 
       new Date(p.publishedAt) > thirtyDaysAgo
     );
     
-    const remaining = 12 - successfulPosts.length; // Starter quota
-    console.log('Current successes:', successfulPosts.length, 'Remaining:', remaining);
+    const remaining = Math.max(0, 12 - successfulPosts.length);
+    console.log('[DEBUG] Current successes:', successfulPosts.length, 'Remaining:', remaining);
     
-    if (remaining <= 0) return res.status(400).send('Quota exceeded');
+    if (remaining === 0) return res.status(400).send('Quota exceeded');
     
     const current = await storage.getPostsByUser(userIdInt);
-    console.log('Before count:', current.length);
+    console.log('[DEBUG] Before count:', current.length);
     
-    // Delete pending posts
-    const pendingPosts = current.filter(p => p.status === 'pending');
-    for (const post of pendingPosts) {
+    // Delete all non-success posts (pending/failed)
+    const nonSuccessPosts = current.filter(p => p.status !== 'success');
+    for (const post of nonSuccessPosts) {
       await storage.deletePost(post.id);
     }
     
     // Generate new posts up to remaining quota
     const newPosts = Array.from({ length: remaining }, (_, i) => ({
       userId: userIdInt,
-      platform: 'facebook',
-      content: `Generated Post ${i}`,
+      platform: 'x', // Default platform
+      content: `Post ${i}`,
       status: 'pending'
     }));
     
@@ -3747,7 +3747,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
     
     const after = await storage.getPostsByUser(userIdInt);
-    console.log('After count:', after.length, 'Added:', newPosts.length);
+    console.log('[DEBUG] After count:', after.length, 'Added:', newPosts.length);
     res.send('Schedule generated');
   });
 
