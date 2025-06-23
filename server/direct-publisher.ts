@@ -153,58 +153,40 @@ export class DirectPublisher {
       const clientId = process.env.TWITTER_CLIENT_ID;
       const clientSecret = process.env.TWITTER_CLIENT_SECRET;
       const accessToken = process.env.X_ACCESS_TOKEN;
-      const refreshToken = process.env.X_REFRESH_TOKEN;
+      const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
       
-      if (!clientId || !clientSecret || !accessToken) {
-        return { success: false, error: 'X OAuth 2.0 credentials not configured' };
+      if (!clientId || !clientSecret || !accessToken || !accessTokenSecret) {
+        return { success: false, error: 'X OAuth 1.0a credentials not configured' };
       }
 
-      // First try with current access token
-      let response = await fetch('https://api.twitter.com/2/tweets', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ text: content })
+      // Use OAuth 1.0a authentication for X platform
+      const oauth = new OAuth({
+        consumer: { key: clientId, secret: clientSecret },
+        signature_method: 'HMAC-SHA1',
+        hash_function(base_string: string, key: string) {
+          return crypto.createHmac('sha1', key).update(base_string).digest('base64');
+        }
       });
 
-      let result = await response.json();
+      const token = { key: accessToken, secret: accessTokenSecret };
+      const requestData = { text: content };
+      const url = 'https://api.twitter.com/2/tweets';
 
-      // If token is invalid or expired, try to refresh
-      if (!response.ok && refreshToken && (result.title === 'Unauthorized' || result.status === 401)) {
-        console.log('X token expired, attempting refresh...');
-        
-        const refreshResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: new URLSearchParams({
-            grant_type: 'refresh_token',
-            refresh_token: refreshToken
-          })
-        });
+      const authHeader = oauth.toHeader(oauth.authorize({
+        url,
+        method: 'POST'
+      }, token));
 
-        const refreshResult = await refreshResponse.json();
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      });
 
-        if (refreshResponse.ok && refreshResult.access_token) {
-          console.log('X token refreshed successfully');
-          
-          // Retry posting with new token
-          response = await fetch('https://api.twitter.com/2/tweets', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${refreshResult.access_token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ text: content })
-          });
-
-          result = await response.json();
-        }
-      }
+      const result = await response.json();
 
       if (!response.ok) {
         if (result.title === 'Unsupported Authentication') {
