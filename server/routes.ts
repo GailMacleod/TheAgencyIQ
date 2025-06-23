@@ -3662,6 +3662,14 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Log Scheduling Trigger - Track when posts are generated/scheduled
+  app.post('/api/generate-schedule', (req, res) => {
+    const userId = req.body.phone; // +61424835189
+    console.log('Schedule generated for', userId, 'at', new Date());
+    // Existing schedule logic
+    res.send('Scheduled');
+  });
+
   // Generate AI-powered schedule using xAI integration
   app.post("/api/generate-ai-schedule", requireAuth, async (req: any, res) => {
     try {
