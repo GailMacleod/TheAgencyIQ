@@ -3433,14 +3433,58 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Auto-posting enforcer - Ensures posts are published within 30-day subscription
+  // Step 1: Isolate and Log Auto-Post Failure - Granular logging to trace execution
   app.post("/api/enforce-auto-posting", requireAuth, async (req: any, res) => {
     try {
-      const { AutoPostingEnforcer } = await import('./auto-posting-enforcer');
+      console.log(`[AUTO-POST] Starting enforcement for user ${req.session.userId}`);
       
-      console.log(`Enforcing auto-posting for user ${req.session.userId}`);
+      // Log user data
+      const user = await storage.getUser(req.session.userId);
+      console.log(`[AUTO-POST] User data:`, {
+        id: user?.id,
+        phone: user?.phone,
+        plan: user?.subscriptionPlan,
+        remaining: user?.remainingPosts
+      });
+      
+      // Log posts before processing
+      const posts = await storage.getPostsByUser(req.session.userId);
+      console.log(`[AUTO-POST] Total posts found: ${posts.length}`);
+      
+      const postsByStatus = posts.reduce((acc, p) => {
+        acc[p.status] = (acc[p.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      console.log(`[AUTO-POST] Posts by status:`, postsByStatus);
+      
+      // Log platform connections
+      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      console.log(`[AUTO-POST] Platform connections:`, connections.map(c => ({
+        platform: c.platform,
+        active: c.isActive,
+        hasToken: !!c.accessToken
+      })));
+      
+      const { AutoPostingEnforcer } = await import('./auto-posting-enforcer');
+      console.log(`[AUTO-POST] Calling AutoPostingEnforcer.enforceAutoPosting`);
       
       const result = await AutoPostingEnforcer.enforceAutoPosting(req.session.userId);
+      
+      console.log(`[AUTO-POST] Result:`, {
+        success: result.success,
+        processed: result.postsProcessed,
+        published: result.postsPublished,
+        failed: result.postsFailed,
+        errors: result.errors?.length || 0
+      });
+      
+      // Log posts after processing
+      const postsAfter = await storage.getPostsByUser(req.session.userId);
+      const postsByStatusAfter = postsAfter.reduce((acc, p) => {
+        acc[p.status] = (acc[p.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      console.log(`[AUTO-POST] Posts by status after:`, postsByStatusAfter);
       
       res.json({
         success: result.success,
@@ -3454,7 +3498,7 @@ Continue building your Value Proposition Canvas systematically.`;
       });
       
     } catch (error) {
-      console.error('Auto-posting enforcer error:', error);
+      console.error('[AUTO-POST] Critical error:', error);
       res.status(500).json({
         success: false,
         message: "Auto-posting enforcement failed",
