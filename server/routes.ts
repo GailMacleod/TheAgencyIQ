@@ -3817,6 +3817,7 @@ Continue building your Value Proposition Canvas systematically.`;
           });
         } catch (error) {
           console.error('Error saving post:', error);
+          console.error('Post data that failed to save:', JSON.stringify(postData, null, 2));
         }
       }
 
