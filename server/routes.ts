@@ -3907,8 +3907,10 @@ Continue building your Value Proposition Canvas systematically.`;
   // Generate AI-powered schedule using xAI integration with strict quota enforcement
   app.post("/api/generate-ai-schedule", requireAuth, async (req: any, res) => {
     try {
-      const { brandPurpose, totalPosts = 30, platforms } = req.body;
+      const { totalPosts = 30, platforms } = req.body;
       
+      // STRATEGYZER: Fetch brand purpose from database
+      const brandPurpose = await storage.getBrandPurposeByUserId(req.session.userId);
       if (!brandPurpose) {
         return res.status(400).json({ message: "Brand purpose data required" });
       }
@@ -4064,9 +4066,9 @@ Continue building your Value Proposition Canvas systematically.`;
       const analysis = await analyzeBrandPurpose(contentParams);
       console.log(`Brand analysis completed. JTBD Score: ${analysis.jtbdScore}/100`);
 
-      // Generate intelligent content calendar
+      // STRATEGYZER: Generate strategic content calendar
       const generatedPosts = await generateContentCalendar(contentParams);
-      console.log(`Generated ${generatedPosts.length} AI-optimized posts`);
+      console.log(`Generated ${generatedPosts.length} strategic posts using Strategyzer methodology`);
 
       // LAUNCH MODE: Allow unlimited schedule regeneration
       // Clear existing draft posts to allow fresh schedule generation
