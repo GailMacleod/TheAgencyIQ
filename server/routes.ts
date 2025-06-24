@@ -3747,31 +3747,28 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Step 1: Dynamically Enforce User-Selected Quota
+  // LOCAL CONTENT GENERATION - No External APIs
   app.post('/api/auto-generate-content-schedule', async (req, res) => {
-    const userId = req.body.phone || '+61424835189';
-    const userIdInt = parseInt(userId.replace('+', ''));
-    
-    // Get user's subscription plan
-    const user = await storage.getUser(userIdInt);
-    if (!user) {
-      return res.status(404).send('User not found');
-    }
-    
-    const quotas = { starter: 12, growth: 27, professional: 52 };
-    const quota = (quotas as any)[user.subscriptionPlan?.toLowerCase() || 'starter'] || 12;
-    
-    // Get successful posts in last 30 days
-    const allPosts = await storage.getPostsByUser(userIdInt);
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const successfulPosts = allPosts.filter(p => 
-      p.status === 'success' && 
-      p.publishedAt && 
-      new Date(p.publishedAt) > thirtyDaysAgo
-    );
-    
-    const remaining = Math.max(0, quota - successfulPosts.length);
-    console.log('[DEBUG] User:', userId, 'Plan:', user.subscriptionPlan, 'Quota:', quota, 'Remaining:', remaining);
+    try {
+      const userId = 2; // Fixed user ID
+      
+      console.log(`[LOCAL-GEN] Starting local content generation for user ${userId}`);
+      
+      // Get user's subscription plan
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      const quotas = { starter: 12, growth: 27, professional: 52 };
+      const quota = (quotas as any)[user.subscriptionPlan?.toLowerCase() || 'starter'] || 52;
+      
+      // Get current published posts
+      const allPosts = await storage.getPostsByUser(userId);
+      const publishedPosts = allPosts.filter(p => p.status === 'published');
+      const remaining = Math.max(0, quota - publishedPosts.length);
+      
+      console.log(`[LOCAL-GEN] Plan: ${user.subscriptionPlan}, Quota: ${quota}, Published: ${publishedPosts.length}, Remaining: ${remaining}`);
     
     // LAUNCH MODE: Allow unlimited schedule generation
     console.log(`LAUNCH MODE: Allowing schedule generation despite quota (${remaining} remaining)`);
