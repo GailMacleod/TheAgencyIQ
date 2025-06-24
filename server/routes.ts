@@ -3897,13 +3897,29 @@ Continue building your Value Proposition Canvas systematically.`;
     res.send('Scheduled');
   });
 
-  // Generate AI-powered schedule using xAI integration
+  // Generate AI-powered schedule using xAI integration with strict quota enforcement
   app.post("/api/generate-ai-schedule", requireAuth, async (req: any, res) => {
     try {
       const { brandPurpose, totalPosts = 30, platforms } = req.body;
       
       if (!brandPurpose) {
         return res.status(400).json({ message: "Brand purpose data required" });
+      }
+
+      // CRITICAL: Check current post count before any generation
+      const currentPosts = await storage.getPostsByUser(req.session.userId);
+      const quotaLimits = { starter: 12, growth: 27, professional: 52 };
+      const currentUser = await storage.getUser(req.session.userId);
+      const currentUserPlan = currentUser?.subscriptionPlan?.toLowerCase() || 'professional';
+      const maxPosts = quotaLimits[currentUserPlan as keyof typeof quotaLimits] || 52;
+      
+      if (currentPosts.length >= maxPosts) {
+        return res.status(400).json({ 
+          error: "Post quota already reached. Cannot generate additional posts.",
+          current: currentPosts.length,
+          limit: maxPosts,
+          plan: currentUserPlan
+        });
       }
 
       // CRITICAL: Enforce live platform connections before any content generation
@@ -3942,9 +3958,9 @@ Continue building your Value Proposition Canvas systematically.`;
       
       // Import subscription plans to get exact allocation
       const { SUBSCRIPTION_PLANS } = await import('./subscription-service');
-      const userPlan = SUBSCRIPTION_PLANS[subscriptionStatus.plan.name.toLowerCase()];
+      const subscriptionPlan = SUBSCRIPTION_PLANS[subscriptionStatus.plan.name.toLowerCase()];
       
-      if (!userPlan) {
+      if (!subscriptionPlan) {
         return res.status(400).json({ 
           message: `Invalid subscription plan: ${subscriptionStatus.plan.name}`,
           subscriptionLimitReached: true
@@ -4024,11 +4040,24 @@ Continue building your Value Proposition Canvas systematically.`;
       const generatedPosts = await generateContentCalendar(contentParams);
       console.log(`Generated ${generatedPosts.length} AI-optimized posts`);
 
-      // Save posts to database with strict subscription limit enforcement
-      const savedPosts = [];
-      const postsToSave = generatedPosts.slice(0, planPostLimit); // Enforce exact plan limit
+      // CRITICAL: Check existing posts before generating new ones
+      const existingPosts = await storage.getPostsByUser(req.session.userId);
+      const remainingQuota = Math.max(0, planPostLimit - existingPosts.length);
       
-      console.log(`Saving exactly ${planPostLimit} posts for ${userPlan.name} plan (generated ${generatedPosts.length}, saving ${postsToSave.length})`);
+      if (remainingQuota === 0) {
+        return res.status(400).json({ 
+          error: 'Post quota already reached',
+          current: existingPosts.length,
+          limit: planPostLimit,
+          plan: userPlan.name
+        });
+      }
+      
+      // Save posts to database with strict quota enforcement
+      const savedPosts = [];
+      const postsToSave = generatedPosts.slice(0, remainingQuota); // Only save what fits in remaining quota
+      
+      console.log(`QUOTA CHECK: ${existingPosts.length} existing, ${planPostLimit} limit, ${remainingQuota} remaining. Saving ${postsToSave.length} new posts.`);
       
       for (const post of postsToSave) {
         try {
