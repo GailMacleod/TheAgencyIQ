@@ -4040,10 +4040,13 @@ Continue building your Value Proposition Canvas systematically.`;
       console.log(`Pre-generation post counts for user ${req.session.userId}:`, currentCounts);
       console.log(`Generating ${remainingSlots} posts for ${brandPurpose.brandName}: ${userPlan} plan`)
 
-      // Import xAI functions
+      // STRATEGYZER WATERFALL: Brand Purpose → Strategy → Multi-Platform Schedule
+      console.log('🎯 STRATEGYZER WATERFALL: Starting brand purpose analysis...');
+      
+      // Import AI strategy functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
       
-      // Prepare content generation parameters with full subscription allocation
+      // STRATEGYZER: Analyze brand purpose for strategic content generation
       const contentParams = {
         brandName: brandPurpose.brandName,
         productsServices: brandPurpose.productsServices,
@@ -4054,11 +4057,10 @@ Continue building your Value Proposition Canvas systematically.`;
         painPoints: brandPurpose.painPoints,
         goals: brandPurpose.goals || {},
         contactDetails: brandPurpose.contactDetails || {},
-        platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-        totalPosts: remainingSlots // Generate only remaining quota slots
+        platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
+        totalPosts: remainingSlots
       };
 
-      // Generate brand analysis
       const analysis = await analyzeBrandPurpose(contentParams);
       console.log(`Brand analysis completed. JTBD Score: ${analysis.jtbdScore}/100`);
 
