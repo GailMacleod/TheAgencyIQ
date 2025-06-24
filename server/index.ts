@@ -1531,6 +1531,44 @@ app.post('/api/approve-post', async (req, res) => {
   }
 });
 
+app.get('/api/waterfall', async (req, res) => {
+  const step = req.query.step || 'schedule';
+  const userId = req.session.userId || 2;
+  try {
+    if (step === 'schedule') {
+      const purpose = req.session.purpose || { products: "Starter: 10 posts + 2 Free", audience: "Queensland SMEs" };
+      const posts = parseInt(purpose.products.split('posts')[0]) || 10;
+      const schedule = [];
+      const startDate = new Date('2025-06-24'); // Current date
+      const localEvents = { '2025-06-24': 'Queensland Business Expo', '2025-06-26': 'SME Networking Day' };
+      for (let i = 0; i < posts; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i * 2); // Spread over days
+        const eventDay = localEvents[date.toISOString().split('T')[0]] || 'General Promotion';
+        schedule.push({
+          id: i + 1,
+          date: date.toISOString().split('T')[0],
+          time: '9:00 am',
+          platform: ['facebook', 'linkedin', 'instagram', 'twitter'][i % 4],
+          content: `${purpose.brand || 'TheAgencyIQ'} ${eventDay} tip`,
+          status: 'pending'
+        });
+      }
+      res.json({ schedule });
+    } else if (step === 'purpose' || step === 'save') {
+      res.json(req.session.purpose || { brand: "TheAgencyIQ", purpose: "Stop good local businesses...", products: "Starter: 10 posts + 2 Free...", audience: "Queensland SMEs, 1-50 employees" });
+      if (step === 'save') {
+        req.session.purpose = req.body;
+        fs.writeFileSync('progress.json', JSON.stringify(req.session.purpose));
+        res.json({ success: true });
+      }
+    }
+  } catch (error: any) {
+    console.error(`Waterfall error [${userId}]: ${error.message}, Stack: ${error.stack}`);
+    res.status(500).json({ error: 'Failed to generate schedule', details: error.message });
+  }
+});
+
 // Waterfall Approve endpoint - precision fix for post count alignment
 app.post('/api/waterfall/approve', async (req, res) => {
   const userId = req.session?.userId || 2;
@@ -1562,11 +1600,10 @@ app.post('/api/waterfall/approve', async (req, res) => {
   }
 
   try {
-    const { DirectPublisher } = await import('./direct-publisher');
-    const publishResult = await DirectPublisher.publishToPlatform(platform.toLowerCase(), post.content);
+    const publishResult = await enforcePublish(post, userId);
     
     post.status = publishResult.success ? 'published' : 'failed';
-    console.log(`Post ${id} ${post.status} on ${platform}: ${publishResult.error || 'Success'}`);
+    console.log(`Post ${id} ${post.status} on ${platform}: ${publishResult.message || 'Success'}`);
   } catch (error: any) {
     post.status = 'failed';
     console.error(`Post ${id} failed on ${platform}: ${error.message}`);
@@ -1584,70 +1621,38 @@ app.post('/api/waterfall/approve', async (req, res) => {
 });
 
 const enforcePublish = async (post: any, userId: number) => {
-  // Use FacebookSetupHelper for proper page-based posting
-  const { FacebookSetupHelper } = await import('./facebook-setup-helper');
-  
-  let facebookConfig = null;
-  if (post.platform === 'facebook') {
-    const fbHelper = new FacebookSetupHelper();
-    const bestPage = await fbHelper.getBestPageForPosting();
-    
-    if (!bestPage) {
-      const setup = await fbHelper.checkSetup();
-      throw new Error(setup.error || 'Facebook page setup required for posting');
-    }
-    
-    const { createHmac } = await import('crypto');
-    const appSecret = process.env.FACEBOOK_APP_SECRET || '';
-    const pageProof = createHmac('sha256', appSecret).update(bestPage.access_token).digest('hex');
-    
-    facebookConfig = {
-      url: `https://graph.facebook.com/v20.0/${bestPage.id}/feed`,
-      secret: bestPage.access_token,
-      payload: { message: post.content, access_token: bestPage.access_token, appsecret_proof: pageProof }
-    };
-  }
-  
   const platforms = {
-    facebook: facebookConfig,
-    linkedin: { url: 'https://api.linkedin.com/v2/ugcPosts', secret: process.env.LINKEDIN_CLIENT_SECRET, payload: { author: 'urn:li:person:me', lifecycleState: 'PUBLISHED', specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text: post.content }, shareMediaCategory: 'NONE' } } } },
-    instagram: { url: 'https://graph.instagram.com/v20.0/me/media', secret: process.env.INSTAGRAM_CLIENT_SECRET, payload: { caption: post.content, access_token: process.env.INSTAGRAM_CLIENT_SECRET } },
-    twitter: { url: 'https://api.twitter.com/2/tweets', secret: process.env.TWITTER_CLIENT_SECRET, payload: { text: post.content } }
+    facebook: { url: 'https://graph.facebook.com/v20.0/{page-id}/feed', secret: process.env.FACEBOOK_PAGE_ACCESS_TOKEN, payload: { message: post.content, access_token: process.env.FACEBOOK_PAGE_ACCESS_TOKEN } },
+    linkedin: { url: 'https://api.linkedin.com/v2/ugcPosts', secret: process.env.LINKEDIN_USER_ACCESS_TOKEN, payload: { author: 'urn:li:person:me', lifecycleState: 'PUBLISHED', specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text: post.content }, shareMediaCategory: 'NONE' } }, access_token: process.env.LINKEDIN_USER_ACCESS_TOKEN } },
+    instagram: { url: 'https://graph.instagram.com/v20.0/me/media', secret: process.env.INSTAGRAM_USER_ACCESS_TOKEN, payload: { caption: post.content, access_token: process.env.INSTAGRAM_USER_ACCESS_TOKEN } },
+    twitter: { url: 'https://api.twitter.com/2/tweets', secret: process.env.TWITTER_USER_ACCESS_TOKEN, payload: { text: post.content } }
   };
-  const platform = platforms[post.platform as keyof typeof platforms];
-  if (!platform || !platform.secret) return { success: false, message: `No secret for ${post.platform}` };
+  const platform = platforms[post.platform.toLowerCase() as keyof typeof platforms];
+  if (!platform.secret) return { success: false, message: `No credential for ${post.platform}` };
 
   try {
-    // Validate Facebook API response - use form data for Facebook
-    let response;
-    if (post.platform === 'facebook') {
-      response = await fetch(platform.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(platform.payload).toString()
-      });
-    } else {
-      response = await fetch(platform.url, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${platform.secret}`
-        },
-        body: JSON.stringify(platform.payload)
-      });
-    }
+    const url = post.platform.toLowerCase() === 'facebook' ? platform.url.replace('{page-id}', process.env.FACEBOOK_PAGE_ID || 'me') : platform.url;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${platform.secret}` },
+      body: JSON.stringify(platform.payload)
+    });
     const result = await response.json();
     if (!response.ok) {
-      const errorMsg = `API error ${response.status}: ${result.error?.message || await response.text()}`;
+      const errorMsg = `API ${response.status}: ${result.error?.message || await response.text()}`;
+      if (response.status === 403 && post.platform.toLowerCase() === 'linkedin') {
+        console.error(`403 Forbidden for LinkedIn [${userId}]: ${errorMsg}. Ensure rw_organization_admin scope with new token from app ID 223168597.`);
+      }
       console.error(`Publish failed for ${post.platform} [${userId}]: ${errorMsg}`);
-      throw new Error(errorMsg);
+      return { success: false, message: errorMsg };
     }
-    console.log(`Publish succeeded for ${post.platform} [${userId}]: Post ID ${result.id}`);
-    return { success: true, message: `Published with ID ${result.id}` };
+    console.log(`Publish succeeded for ${post.platform} [${userId}]: Post ID ${result.id || result.data?.id}`);
+    return { success: true, message: `Published with ID ${result.id || result.data?.id}` };
   } catch (error: any) {
+    console.error(`Publish error for ${post.platform} [${userId}]: ${error.message}, Stack: ${error.stack}`);
     return { success: false, message: error.message };
   }
-};
+};;
 
 // Publishing Logic - Uses OAuth credentials to generate app access tokens
 const publishPost = async (post: any, userId: number) => {
