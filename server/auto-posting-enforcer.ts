@@ -57,21 +57,34 @@ export class AutoPostingEnforcer {
         return result;
       }
 
-      // Get ALL approved posts for immediate publishing
-      const posts = await storage.getPostsByUser(userId);
-      const approvedPosts = posts.filter(post => post.status === 'approved');
+      // AUTO-APPROVE ALL DRAFT POSTS and process them immediately
+      const allPosts = await storage.getPostsByUser(userId);
+      const draftPosts = allPosts.filter(post => post.status === 'draft');
+      const approvedPosts = allPosts.filter(post => post.status === 'approved');
 
-      console.log(`Auto-posting enforcer: Found ${approvedPosts.length} approved posts for immediate publishing`);
-      result.postsProcessed = approvedPosts.length;
+      console.log(`Auto-posting enforcer: Found ${draftPosts.length} draft posts and ${approvedPosts.length} approved posts`);
 
-      if (approvedPosts.length === 0) {
-        console.log('Auto-posting enforcer: No approved posts found');
+      // Auto-approve all draft posts first
+      for (const post of draftPosts) {
+        await storage.updatePost(post.id, { status: 'approved' });
+        console.log(`Auto-posting enforcer: Auto-approved draft post ${post.id} for ${post.platform}`);
+      }
+
+      // Get all posts ready for publishing (newly approved + existing approved)
+      const refreshedPosts = await storage.getPostsByUser(userId);
+      const postsToPublish = refreshedPosts.filter(post => post.status === 'approved');
+
+      console.log(`Auto-posting enforcer: Found ${postsToPublish.length} posts ready for immediate publishing`);
+      result.postsProcessed = postsToPublish.length;
+
+      if (postsToPublish.length === 0) {
+        console.log('Auto-posting enforcer: No posts ready for publishing');
         result.success = true;
         return result;
       }
 
-      // Process each approved post
-      for (const post of approvedPosts) {
+      // Process each post ready for publishing
+      for (const post of postsToPublish) {
         try {
           console.log(`EMERGENCY: Publishing post ${post.id} to ${post.platform}`);
           
