@@ -3668,7 +3668,7 @@ Continue building your Value Proposition Canvas systematically.`;
       const { totalPosts = 52, platforms } = req.body;
       
       // Get brand purpose from database instead of requiring it in request
-      const brandPurpose = await storage.getBrandPurpose(req.session.userId);
+      const brandPurpose = await storage.getBrandPurposeByUser(req.session.userId);
       
       if (!brandPurpose) {
         return res.status(400).json({ message: "Brand purpose not found. Please complete your brand purpose setup first." });
