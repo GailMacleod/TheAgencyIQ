@@ -3747,92 +3747,92 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // LOCAL CONTENT GENERATION - No External APIs
-  app.post('/api/auto-generate-content-schedule', async (req, res) => {
+  // REPLIT-NATIVE AI CONTENT GENERATION
+  app.post('/auto-generate-content-schedule', async (req, res) => {
+    const userId = req.body.phone || '+61424835189';
+    const userIdInt = 2; // Fixed to user 2
+    
     try {
-      const userId = 2; // Fixed user ID
+      console.log('[REPLIT-AI] Starting AI content generation for user:', userIdInt);
       
-      console.log(`[LOCAL-GEN] Starting local content generation for user ${userId}`);
-      
-      // Get user's subscription plan
-      const user = await storage.getUser(userId);
+      // Get user subscription
+      const user = await storage.getUser(userIdInt);
       if (!user) {
-        return res.status(404).json({ error: 'User not found' });
+        return res.status(404).send('User not found');
       }
       
       const quotas = { starter: 12, growth: 27, professional: 52 };
-      const quota = (quotas as any)[user.subscriptionPlan?.toLowerCase() || 'starter'] || 52;
+      const quota = quotas[user.subscriptionPlan?.toLowerCase() as keyof typeof quotas] || 12;
       
-      // Get current published posts
-      const allPosts = await storage.getPostsByUser(userId);
-      const publishedPosts = allPosts.filter(p => p.status === 'published');
-      const remaining = Math.max(0, quota - publishedPosts.length);
+      // Count successful posts
+      const allPosts = await storage.getPostsByUser(userIdInt);
+      const successfulPosts = allPosts.filter(p => p.status === 'success' || p.status === 'published');
+      const remaining = Math.max(0, quota - successfulPosts.length);
       
-      console.log(`[LOCAL-GEN] Plan: ${user.subscriptionPlan}, Quota: ${quota}, Published: ${publishedPosts.length}, Remaining: ${remaining}`);
+      console.log('[REPLIT-AI] Remaining quota:', remaining);
       
-      // Clean non-published posts
-      const nonPublishedPosts = allPosts.filter(p => p.status !== 'published');
-      console.log(`[LOCAL-GEN] Cleaning ${nonPublishedPosts.length} non-published posts`);
-      
-      for (const post of nonPublishedPosts) {
+      // Clean non-successful posts
+      const nonSuccessPosts = allPosts.filter(p => p.status !== 'success' && p.status !== 'published');
+      for (const post of nonSuccessPosts) {
         await storage.deletePost(post.id);
       }
       
-      // LOCAL CONTENT GENERATION - Import local generator
-      const { LocalContentGenerator } = await import('./local-content-generator');
-      
-      // Generate posts locally (minimum 10 for stability)
-      const postsToGenerate = Math.max(Math.min(remaining, 20), 10);
-      console.log(`[LOCAL-GEN] Generating ${postsToGenerate} posts locally`);
-      
-      const generatedPosts = LocalContentGenerator.generateContentBatch(postsToGenerate);
       const newPosts = [];
       
-      for (let i = 0; i < generatedPosts.length; i++) {
-        const postData = generatedPosts[i];
+      if (remaining > 0) {
+        // Import AI generator
+        const { generateContent } = await import('./local-ai-generator');
         
-        try {
-          const post = await storage.createPost({
-            userId: userId,
-            platform: postData.platform,
-            content: postData.content,
-            status: 'draft',
-            scheduledFor: new Date(Date.now() + (i * 2 * 60 * 60 * 1000)) // Stagger by 2 hours
-          });
-          newPosts.push(post);
-          console.log(`[LOCAL-GEN] Created post ${post.id} for ${postData.platform}`);
-        } catch (error) {
-          console.error(`[LOCAL-GEN] Failed to create post ${i}:`, error);
+        const platforms = ['x', 'linkedin', 'facebook', 'instagram', 'youtube'];
+        
+        for (let i = 0; i < remaining; i++) {
+          const platform = platforms[i % platforms.length];
+          
+          try {
+            // Generate AI content
+            const aiContent = await generateContent(`Write a social media post for ${platform} about business automation and social media management for Queensland businesses.`);
+            
+            const post = {
+              id: Date.now() + i,
+              userId: userIdInt,
+              content: aiContent,
+              status: 'pending' as const,
+              publishedAt: null,
+              platform
+            };
+            
+            await storage.createPost(post);
+            newPosts.push(post);
+            
+          } catch (error) {
+            console.error(`[REPLIT-AI] Error generating post ${i}:`, error);
+          }
         }
       }
       
-      // Verify final state
-      const finalPosts = await storage.getPostsByUser(userId);
-      const finalCounts = {
-        total: finalPosts.length,
-        published: finalPosts.filter(p => p.status === 'published').length,
-        draft: finalPosts.filter(p => p.status === 'draft').length,
-        pending: finalPosts.filter(p => p.status === 'pending').length
-      };
+      const after = await storage.getPostsByUser(userIdInt);
+      console.log('[REPLIT-AI] After count:', after.length, 'Generated:', newPosts.length);
       
-      console.log(`[LOCAL-GEN] Final state:`, finalCounts);
+      if (newPosts.length > 0) {
+        console.log('[REPLIT-AI] Sample content:', newPosts[0]?.content?.substring(0, 100));
+      }
       
       res.json({
         success: true,
-        message: 'Local content generation completed successfully',
-        generated: newPosts.length,
-        finalCounts,
+        message: 'AI content schedule generated',
+        user: userId,
+        plan: user.subscriptionPlan,
         quota,
-        localGeneration: true,
-        noExternalAPI: true
+        remaining,
+        generated: newPosts.length,
+        totalPosts: after.length,
+        replit_native: true,
+        ai_powered: true
       });
       
     } catch (error) {
-      console.error('[LOCAL-GEN] Content generation error:', error);
-      res.status(500).json({ 
-        error: 'Local content generation failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
+      console.error('[REPLIT-AI] Generation error:', error);
+      res.status(500).json({ error: 'AI content generation failed' });
     }
   });
 
