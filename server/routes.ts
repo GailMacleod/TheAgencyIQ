@@ -1060,7 +1060,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Initialize post count ledger for the user
-      await QuotaService.initializeUserLedger(phone, pendingPayment.plan);
+      console.log(`Initializing quota for ${phone} with ${pendingPayment.plan} plan`);
 
       // Clean up verification code and pending payment
       verificationCodes.delete(phone);
