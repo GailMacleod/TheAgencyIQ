@@ -3804,11 +3804,13 @@ Continue building your Value Proposition Canvas systematically.`;
             userId: req.session.userId,
             platform: post.platform,
             content: post.content,
-            status: 'draft',
+            status: 'draft' as const,
             scheduledFor: new Date(post.scheduledFor),
             subscriptionCycle: subscriptionStatus.subscriptionCycle,
             aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience}. JTBD alignment: ${analysis.jtbdScore}/100`
           };
+          
+          console.log(`Saving post ${posts.indexOf(post) + 1}: ${post.platform} - ${post.content.substring(0, 50)}...`);
 
           const savedPost = await storage.createPost(postData);
           savedPosts.push({
