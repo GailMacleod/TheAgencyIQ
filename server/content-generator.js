@@ -1,31 +1,16 @@
-const { pipeline } = require('@xenova/transformers');
-let generator;
-
-(async () => {
-  try {
-    console.log('[GENERATOR] Initializing DistilGPT2...');
-    generator = await pipeline('text-generation', 'distilgpt2');
-    console.log('[GENERATOR] Ready');
-  } catch (error) {
-    console.error('[GENERATOR] Init failed:', error);
-  }
-})();
-
 const generateContent = async () => {
-  if (!generator) {
-    console.log('[GENERATOR] Not ready, using fallback');
-    return 'Tech update: AI in action! #tech';
-  }
-  try {
-    const output = await generator('Write a tech social media post.', { 
-      max_length: 50, 
-      num_return_sequences: 1 
-    });
-    return output[0].generated_text;
-  } catch (error) {
-    console.error('[GENERATOR] Error:', error);
-    return 'Tech update: AI in action! #tech';
-  }
+  // Simplified content generation - no external dependencies
+  const templates = [
+    'Transform your Queensland business with smart automation! Save time, increase engagement across all social platforms. #BusinessAutomation #Queensland',
+    'Ready to dominate social media? Our AI-powered automation ensures consistent posting while you focus on growth. #SocialMediaAutomation #DigitalTransformation',
+    'Stop struggling with daily social media tasks! Automated scheduling means more time for customers. #Productivity #BusinessGrowth',
+    'Queensland businesses discover the power of automated social media management. Join the revolution! #Queensland #BusinessInnovation',
+    'Your competitors use automation to stay ahead. Level the playing field with smart scheduling. #CompetitiveAdvantage #BusinessStrategy'
+  ];
+  
+  const content = templates[Math.floor(Math.random() * templates.length)];
+  console.log('[GENERATOR] Generated:', content.substring(0, 50) + '...');
+  return content;
 };
 
 module.exports = { generateContent };
