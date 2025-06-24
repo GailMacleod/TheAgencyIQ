@@ -3940,16 +3940,7 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Brand purpose data required" });
       }
 
-      // LAUNCH FIX: Allow unlimited draft post generation and regeneration
-      // Only published/successful posts count against quota - drafts are unlimited
-      const currentPosts = await storage.getPostsByUser(req.session.userId);
-      const currentPublishedPosts = currentPosts.filter(p => p.status === 'published' || p.status === 'success');
-      const quotaLimits = { starter: 12, growth: 27, professional: 52 };
-      const currentUser = await storage.getUser(req.session.userId);
-      const currentUserPlan = currentUser?.subscriptionPlan?.toLowerCase() || 'professional';
-      const maxPosts = quotaLimits[currentUserPlan as keyof typeof quotaLimits] || 52;
-      
-      console.log(`LAUNCH MODE: User ${req.session.userId} has ${currentPublishedPosts.length}/${maxPosts} published posts, ${currentPosts.length} total posts. Allowing schedule generation.`);
+      console.log(`AI Schedule Generation for user ${req.session.userId}: ${totalPosts} posts across platforms:`, platforms);
 
       // Skip platform validation for now - use direct generation
       console.log(`Platform connection validation bypassed for debug mode`);
@@ -4112,12 +4103,12 @@ Continue building your Value Proposition Canvas systematically.`;
       const scheduleData = {
         posts: savedPosts,
         subscription: {
-          plan: subscriptionStatus.plan.name,
-          totalAllowed: subscriptionStatus.totalPostsAllowed,
-          used: subscriptionStatus.postsUsed + savedPosts.length, // Include newly created posts
-          remaining: Math.max(0, subscriptionStatus.postsRemaining - savedPosts.length),
-          cycleStart: subscriptionStatus.cycleInfo.cycleStart,
-          cycleEnd: subscriptionStatus.cycleInfo.cycleEnd
+          plan: userPlan,
+          totalAllowed: maxAllowedPosts,
+          used: publishedPosts.length,
+          remaining: Math.max(0, maxAllowedPosts - publishedPosts.length),
+          cycleStart: new Date().toISOString(),
+          cycleEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
         },
         analysis: {
           jtbdScore: analysis.jtbdScore,
