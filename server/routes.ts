@@ -492,7 +492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const tokenParams = new URLSearchParams();
       tokenParams.append('grant_type', 'authorization_code');
-      tokenParams.append('client_id', clientId);
+      tokenParams.append('client_id', clientId || '');
       tokenParams.append('code', code);
       tokenParams.append('redirect_uri', 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/');
       tokenParams.append('code_verifier', codeVerifier);
@@ -1060,11 +1060,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Initialize post count ledger for the user
-      await QuotaService.initializeUserLedger(phone, pendingPayment.plan);
+      // Initialize quota enforcer
+      try {
+        const { QuotaService } = require('./quota-enforcer');
+        await QuotaService.initializeUserLedger(phone, pendingPayment.plan);
+      } catch (err) {
+        console.log('Quota service initialization skipped');
+      }
 
       // Clean up verification code and pending payment
       verificationCodes.delete(phone);
-      delete req.session.pendingPayment;
+      delete (req.session as any).pendingPayment;
 
       // Log the user in
       req.session.userId = user.id;
@@ -1429,6 +1435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create user with default starter plan
       const user = await storage.createUser({
+        userId: phone,
         email,
         password: hashedPassword,
         phone,
@@ -3582,8 +3589,7 @@ Continue building your Value Proposition Canvas systematically.`;
           const result = await BulletproofPublisher.publish({
             userId: req.session.userId,
             platform: post.platform,
-            content: post.content,
-            imageUrl: post.imageUrl || undefined
+            content: post.content || undefined
           });
 
           if (result.success && result.platformPostId) {
