@@ -154,6 +154,7 @@ Changelog:
   - Content generation restored: Brand analysis scoring 85/100, multi-platform scheduling active
   - CLEAN IMPLEMENTATION: Replaced broken system with simple, working content generator and auto-publisher
   - Local template-based generation working (no external API dependencies), quota ledger fixed
+  - FIXED: Removed duplicate endpoints, implemented clean transaction-based post generation, working content templates
 
 ## User Preferences
 

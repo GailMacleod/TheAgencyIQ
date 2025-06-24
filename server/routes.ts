@@ -3837,46 +3837,56 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Enforce Strict Post Quota - Step 1 Implementation
+  // CLEAN IMPLEMENTATION - Working auto-generate endpoint
   app.post('/auto-generate-content-schedule', async (req, res) => {
-    const userId = 2; // Professional user with +61424835189
+    const userId = 2;
     
     try {
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      const quotas = { starter: 12, growth: 27, professional: 52 };
-      const plan = (user.subscriptionPlan?.toLowerCase() || 'professional') as keyof typeof quotas;
-      const quota = quotas[plan];
+      const { db } = await import('./db');
+      const { posts, users } = await import('../shared/schema');
+      const { eq, sql } = await import('drizzle-orm');
       
-      // Get current posts and analyze
-      const allPosts = await storage.getPostsByUser(userId);
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const successfulPosts = allPosts.filter(p => 
-        p.status === 'success' && 
-        p.publishedAt && 
-        new Date(p.publishedAt) > thirtyDaysAgo
-      );
-      
-      const remaining = Math.max(0, quota - successfulPosts.length);
-      
-      console.log('[DEBUG] User:', userId, 'Plan:', user.subscriptionPlan, 'Quota:', quota, 'Current Successes:', successfulPosts.length, 'Remaining:', remaining);
-      console.log('[DEBUG] Before count:', allPosts.length, 'Statuses:', allPosts.map(p => p.status));
-      
-      // CRITICAL: Clean up excess posts beyond quota
-      const excessCount = Math.max(0, allPosts.length - quota);
-      console.log('[DEBUG] Excess posts to remove:', excessCount);
-      
-      // Delete non-successful posts first
-      const nonSuccessfulPosts = allPosts.filter(p => p.status !== 'success');
-      let deletedCount = 0;
-      
-      for (const post of nonSuccessfulPosts.slice(0, excessCount)) {
-        await storage.deletePost(post.id);
-        deletedCount++;
-        console.log('[DEBUG] Deleted excess post:', post.id, 'status:', post.status);
-      }
+      await db.transaction(async (tx) => {
+        // Get subscription plan
+        const user = await tx.select({ 
+          subscriptionPlan: users.subscriptionPlan 
+        }).from(users).where(eq(users.id, userId)).limit(1);
+        
+        const quotas = { starter: 12, growth: 27, professional: 52 };
+        const quota = quotas[user[0]?.subscriptionPlan?.toLowerCase() || 'professional'] || 52;
+        
+        // Count current successful posts
+        const currentQuota = await tx.select({ 
+          count: sql`COUNT(*)::int` 
+        }).from(posts).where(sql`${posts.userId} = ${userId} AND ${posts.status} = 'success'`);
+        
+        const successCount = currentQuota[0]?.count || 0;
+        const remaining = Math.max(0, quota - successCount);
+        console.log('[DEBUG] Remaining:', remaining);
+        
+        // Clean non-success posts
+        await tx.delete(posts).where(sql`${posts.userId} = ${userId} AND ${posts.status} != 'success'`);
+        
+        const newPosts = [];
+        if (remaining > 0) {
+          const { generateContent } = require('./content-generator');
+          const content = await generateContent();
+          
+          newPosts.push(...Array.from({ length: remaining }, (_, i) => ({
+            userId,
+            content,
+            status: 'pending',
+            publishedAt: null,
+            platform: req.body.platform || 'x',
+            scheduledFor: new Date(Date.now() + i * 60000)
+          })));
+          
+          await tx.insert(posts).values(newPosts);
+        }
+        
+        const after = await tx.select().from(posts).where(eq(posts.userId, userId));
+        console.log('[DEBUG] After count:', after.length, 'Sample:', newPosts[0]?.content);
+      });
       
       // Generate only remaining quota posts
       const newPosts = [];
