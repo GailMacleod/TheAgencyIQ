@@ -201,6 +201,8 @@ Distribute posts evenly across the connected platforms over 30 days starting Jun
 
 Return as JSON object with "posts" array containing objects with fields: platform, content, scheduledFor (ISO date string).
 
+CRITICAL: Ensure posts are distributed across facebook, instagram, linkedin, x, youtube platforms. Do NOT generate only instagram posts.
+
 Make content authentic to Queensland culture and specifically tailored to achieve the measurable targets for unpaid media success.`;
 
     const response = await aiClient.chat.completions.create({
@@ -210,7 +212,27 @@ Make content authentic to Queensland culture and specifically tailored to achiev
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
-    const posts = result.posts || [];
+    let posts = result.posts || [];
+    
+    // Check if AI only generated Instagram posts and fix distribution
+    const platformCounts = posts.reduce((acc: any, post: any) => {
+      acc[post.platform] = (acc[post.platform] || 0) + 1;
+      return acc;
+    }, {});
+    
+    console.log('AI Generated platform distribution:', platformCounts);
+    
+    // If AI only generated Instagram posts, redistribute across all platforms
+    if (Object.keys(platformCounts).length === 1 && platformCounts.instagram) {
+      console.log('FIXING: AI only generated Instagram posts, redistributing across all platforms...');
+      const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
+      posts = posts.map((post: any, index: number) => ({
+        ...post,
+        platform: platforms[index % platforms.length],
+        content: post.content.replace(/instagram/gi, post.platform === 'x' ? 'Twitter' : post.platform)
+      }));
+      console.log('Fixed platform distribution');
+    }
     
     // Enforce strict subscription limit - truncate to exact totalPosts
     return posts.slice(0, params.totalPosts);
