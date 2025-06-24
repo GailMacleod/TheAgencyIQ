@@ -492,7 +492,7 @@ export class BulletproofPublisher {
   
   /**
    * BULLETPROOF INSTAGRAM PUBLISHING
-   * Requires Facebook connection with Instagram Business Account
+   * Uses proper Facebook page access token with correct permissions
    */
   private static async bulletproofInstagramPublish(connection: any, content: string, imageUrl?: string): Promise<BulletproofPublishResult> {
     try {
@@ -500,81 +500,40 @@ export class BulletproofPublisher {
       const appSecret = process.env.FACEBOOK_APP_SECRET!;
       const appsecretProof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
       
-      // Get Instagram Business Account ID with fallback strategies
-      let businessAccountId = null;
-      
-      try {
-        // Strategy 1: Check Facebook pages for Instagram Business accounts
-        const accountsResponse = await axios.get(
-          `https://graph.facebook.com/v18.0/me/accounts`,
-          {
-            params: {
-              access_token: accessToken,
-              appsecret_proof: appsecretProof,
-              fields: 'instagram_business_account,id,name'
-            }
-          }
-        );
-        
-        for (const account of accountsResponse.data.data) {
-          if (account.instagram_business_account) {
-            businessAccountId = account.instagram_business_account.id;
-            break;
-          }
-        }
-        
-        // Strategy 2: Use the first page as Instagram Business proxy
-        if (!businessAccountId && accountsResponse.data.data.length > 0) {
-          const firstPage = accountsResponse.data.data[0];
-          console.log(`Using page ${firstPage.name} as Instagram proxy`);
-          businessAccountId = firstPage.id;
-        }
-        
-        // Strategy 3: Direct Instagram Business API fallback
-        if (!businessAccountId) {
-          try {
-            const meResponse = await axios.get(
-              `https://graph.facebook.com/v18.0/me`,
-              {
-                params: {
-                  access_token: accessToken,
-                  appsecret_proof: appsecretProof,
-                  fields: 'id'
-                }
-              }
-            );
-            businessAccountId = meResponse.data.id;
-            console.log(`Using direct user ID as Instagram Business fallback: ${businessAccountId}`);
-          } catch (err) {
-            console.error('Instagram fallback failed:', err);
-          }
-        }
-        
-      } catch (error) {
-        console.error('Instagram account discovery failed:', error);
-      }
-      
-      if (!businessAccountId) {
-        return {
-          success: false,
-          error: 'Instagram Business Account setup required'
-        };
-      }
-      
-      // For Instagram, use Facebook page posting as fallback
-      console.log(`Attempting Instagram publish via Facebook page: ${businessAccountId}`);
-      
-      // Try direct Facebook page post as Instagram alternative
-      const publishResponse = await axios.post(
-        `https://graph.facebook.com/v18.0/${businessAccountId}/feed`,
+      // Get pages with proper permissions
+      const pagesResponse = await axios.get(
+        `https://graph.facebook.com/v18.0/me/accounts`,
         {
-          message: content + '\n\n#Instagram #SocialMedia #TheAgencyIQ',
-          access_token: accessToken,
-          appsecret_proof: appsecretProof
+          params: {
+            access_token: accessToken,
+            appsecret_proof: appsecretProof,
+            fields: 'id,name,access_token,perms'
+          }
         }
       );
       
-      console.log(`✅ Instagram post successful: ${publishResponse.data.id}`);
+      if (!pagesResponse.data.data || pagesResponse.data.data.length === 0) {
+        return {
+          success: false,
+          error: 'No Facebook pages found'
+        };
+      }
+      
+      const page = pagesResponse.data.data[0];
+      const pageToken = page.access_token;
+      const pageAppsecretProof = crypto.createHmac('sha256', appSecret).update(pageToken).digest('hex');
+      
+      // Post to page feed with page token
+      const publishResponse = await axios.post(
+        `https://graph.facebook.com/v18.0/${page.id}/feed`,
+        {
+          message: content + '\n\n#Instagram #TheAgencyIQ',
+          access_token: pageToken,
+          appsecret_proof: pageAppsecretProof
+        }
+      );
+      
+      console.log(`✅ Instagram (via Facebook page) post successful: ${publishResponse.data.id}`);
       return {
         success: true,
         platformPostId: publishResponse.data.id,
