@@ -3665,10 +3665,13 @@ Continue building your Value Proposition Canvas systematically.`;
   // Generate AI-powered schedule using xAI integration
   app.post("/api/generate-ai-schedule", requireAuth, async (req: any, res) => {
     try {
-      const { brandPurpose, totalPosts = 30, platforms } = req.body;
+      const { totalPosts = 52, platforms } = req.body;
+      
+      // Get brand purpose from database instead of requiring it in request
+      const brandPurpose = await storage.getBrandPurpose(req.session.userId);
       
       if (!brandPurpose) {
-        return res.status(400).json({ message: "Brand purpose data required" });
+        return res.status(400).json({ message: "Brand purpose not found. Please complete your brand purpose setup first." });
       }
 
       // CRITICAL: Enforce live platform connections before any content generation
