@@ -3969,11 +3969,11 @@ Continue building your Value Proposition Canvas systematically.`;
 
       // Users get their full subscription allocation and can regenerate schedule unlimited times
       // Only actual posting/publishing counts against their limit
-      const planPostLimit = userPlan.postsPerMonth;
+      const planPostLimit = subscriptionPlan.postsPerMonth;
       
       // Clear ALL existing draft posts for this user to prevent duplication
-      const existingPosts = await storage.getPostsByUser(req.session.userId);
-      const draftPosts = existingPosts.filter(p => p.status === 'draft');
+      const allExistingPosts = await storage.getPostsByUser(req.session.userId);
+      const draftPosts = allExistingPosts.filter(p => p.status === 'draft');
       
       if (draftPosts.length > 0) {
         console.log(`Clearing ${draftPosts.length} draft posts to regenerate fresh schedule`);
@@ -4002,17 +4002,17 @@ Continue building your Value Proposition Canvas systematically.`;
       console.log(`User ID tracking verified: ${req.session.userId} (${sessionUser.email})`);
 
       // Log current post counts before generation
-      const currentPosts = await storage.getPostsByUser(req.session.userId);
+      const preGenerationPosts = await storage.getPostsByUser(req.session.userId);
       const currentCounts = {
-        total: currentPosts.length,
-        draft: currentPosts.filter(p => p.status === 'draft').length,
-        approved: currentPosts.filter(p => p.status === 'approved').length,
-        scheduled: currentPosts.filter(p => p.status === 'scheduled').length,
-        published: currentPosts.filter(p => p.status === 'published').length
+        total: preGenerationPosts.length,
+        draft: preGenerationPosts.filter(p => p.status === 'draft').length,
+        approved: preGenerationPosts.filter(p => p.status === 'approved').length,
+        scheduled: preGenerationPosts.filter(p => p.status === 'scheduled').length,
+        published: preGenerationPosts.filter(p => p.status === 'published').length
       };
       
       console.log(`Pre-generation post counts for user ${req.session.userId}:`, currentCounts);
-      console.log(`Generating fresh ${planPostLimit} posts for ${brandPurpose.brandName}: ${userPlan.name} plan - unlimited regenerations allowed`)
+      console.log(`Generating fresh ${planPostLimit} posts for ${brandPurpose.brandName}: ${subscriptionStatus.plan.name} plan - unlimited regenerations allowed`)
 
       // Import xAI functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
@@ -4041,15 +4041,15 @@ Continue building your Value Proposition Canvas systematically.`;
       console.log(`Generated ${generatedPosts.length} AI-optimized posts`);
 
       // CRITICAL: Check existing posts before generating new ones
-      const existingPosts = await storage.getPostsByUser(req.session.userId);
-      const remainingQuota = Math.max(0, planPostLimit - existingPosts.length);
+      const quotaCheckPosts = await storage.getPostsByUser(req.session.userId);
+      const remainingQuota = Math.max(0, planPostLimit - quotaCheckPosts.length);
       
       if (remainingQuota === 0) {
         return res.status(400).json({ 
           error: 'Post quota already reached',
-          current: existingPosts.length,
+          current: quotaCheckPosts.length,
           limit: planPostLimit,
-          plan: userPlan.name
+          plan: subscriptionStatus.plan.name
         });
       }
       
@@ -4057,7 +4057,7 @@ Continue building your Value Proposition Canvas systematically.`;
       const savedPosts = [];
       const postsToSave = generatedPosts.slice(0, remainingQuota); // Only save what fits in remaining quota
       
-      console.log(`QUOTA CHECK: ${existingPosts.length} existing, ${planPostLimit} limit, ${remainingQuota} remaining. Saving ${postsToSave.length} new posts.`);
+      console.log(`QUOTA CHECK: ${quotaCheckPosts.length} existing, ${planPostLimit} limit, ${remainingQuota} remaining. Saving ${postsToSave.length} new posts.`);
       
       for (const post of postsToSave) {
         try {
