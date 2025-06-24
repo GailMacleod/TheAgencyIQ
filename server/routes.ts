@@ -4002,32 +4002,45 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(401).json({ error: 'User not found' });
       }
 
-      // STRICT QUOTA ENFORCEMENT - Professional = 52 posts MAX
+      // SMART QUOTA MANAGEMENT - Only published posts count toward quota
       const hardQuotaLimits = { starter: 12, growth: 27, professional: 52 };
       const userPlan = quotaUser.subscriptionPlan?.toLowerCase() || 'starter';
       const maxAllowedPosts = hardQuotaLimits[userPlan as keyof typeof hardQuotaLimits] || 12;
       
-      // Check current total posts
+      // Check current published posts only
       const allExistingPosts = await storage.getPostsByUser(req.session.userId);
-      const currentTotal = allExistingPosts.length;
+      const publishedPosts = allExistingPosts.filter(p => p.status === 'published' || p.status === 'success');
+      const draftPosts = allExistingPosts.filter(p => p.status === 'draft' || p.status === 'pending');
       
-      console.log(`QUOTA CHECK: User has ${currentTotal}/${maxAllowedPosts} posts (${userPlan} plan)`);
+      console.log(`QUOTA CHECK: User has ${publishedPosts.length}/${maxAllowedPosts} published posts (${userPlan} plan)`);
+      console.log(`DRAFT MANAGEMENT: ${draftPosts.length} draft posts available for regeneration`);
       
-      if (currentTotal >= maxAllowedPosts) {
+      // Allow regeneration by cleaning old drafts
+      if (draftPosts.length > 0) {
+        console.log(`Cleaning ${draftPosts.length} existing draft posts for fresh generation`);
+        for (const draft of draftPosts) {
+          await storage.deletePost(draft.id);
+        }
+      }
+      
+      // Only block if published posts exceed quota
+      if (publishedPosts.length >= maxAllowedPosts) {
         return res.status(400).json({
-          error: `Quota limit reached. You have ${currentTotal} posts but your ${userPlan} plan allows only ${maxAllowedPosts} posts.`,
+          error: `Published post quota reached. You have ${publishedPosts.length} published posts but your ${userPlan} plan allows only ${maxAllowedPosts} published posts.`,
           quotaReached: true,
-          currentCount: currentTotal,
-          maxAllowed: maxAllowedPosts
+          currentCount: publishedPosts.length,
+          maxAllowed: maxAllowedPosts,
+          note: "Generate new draft content for approval and publishing"
         });
       }
       
-      // Calculate remaining posts we can generate
-      const remainingSlots = maxAllowedPosts - currentTotal;
-      console.log(`Can generate ${remainingSlots} more posts to reach quota limit`);
+      // Calculate draft posts we can generate (unlimited drafts, limited published)
+      const remainingPublishSlots = maxAllowedPosts - publishedPosts.length;
+      const draftsToGenerate = Math.min(totalPosts, 20); // Generate up to 20 drafts for approval
       
-      // Clear only draft posts if regenerating
-      const draftPosts = allExistingPosts.filter(p => p.status === 'draft');
+      console.log(`Can generate ${draftsToGenerate} draft posts (${remainingPublishSlots} publishing slots remaining)`);
+      
+      // Allow draft generation even at quota limit for content refresh
       if (draftPosts.length > 0) {
         console.log(`Clearing ${draftPosts.length} draft posts for regeneration`);
         for (const post of draftPosts) {
@@ -4114,13 +4127,13 @@ Continue building your Value Proposition Canvas systematically.`;
         await storage.deletePost(draft.id);
       }
       
-      console.log(`QUOTA ENFORCED: Cleared ${draftsToDelete.length} draft posts, generating ${remainingSlots} posts`);
+      console.log(`DRAFT GENERATION: Cleared ${draftsToDelete.length} old drafts, generating ${draftsToGenerate} new drafts`);
       
-      // Save posts to database with quota enforcement
+      // Save posts to database as drafts for approval
       const savedPosts = [];
-      const postsToSave = generatedPosts.slice(0, remainingSlots); // Only generate what's allowed
+      const postsToSave = generatedPosts.slice(0, draftsToGenerate);
       
-      console.log(`QUOTA ENFORCED: Generating ${postsToSave.length} posts for ${userPlan} plan`);
+      console.log(`DRAFT CREATION: Generating ${postsToSave.length} draft posts for ${userPlan} plan approval`);
       
       for (const post of postsToSave) {
         try {
