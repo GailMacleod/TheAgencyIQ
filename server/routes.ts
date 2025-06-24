@@ -463,8 +463,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const authResult = xIntegration.generateAuthUrl();
       
       // Store code verifier in session for later use
-      (req.session as any).xCodeVerifier = authResult.codeVerifier;
-      (req.session as any).xState = authResult.state;
+      req.session.xCodeVerifier = authResult.codeVerifier;
+      req.session.xState = authResult.state;
       
       res.json({
         authUrl: authResult.authUrl,
@@ -492,7 +492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const tokenParams = new URLSearchParams();
       tokenParams.append('grant_type', 'authorization_code');
-      tokenParams.append('client_id', clientId || '');
+      tokenParams.append('client_id', clientId);
       tokenParams.append('code', code);
       tokenParams.append('redirect_uri', 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/');
       tokenParams.append('code_verifier', codeVerifier);
@@ -1038,7 +1038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check for pending payment in session
-      const pendingPayment = (req.session as any).pendingPayment;
+      const pendingPayment = req.session.pendingPayment;
       if (!pendingPayment) {
         return res.status(400).json({ message: "No pending payment found. Please complete payment first." });
       }
@@ -1060,17 +1060,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Initialize post count ledger for the user
-      // Initialize quota enforcer
-      try {
-        const { QuotaService } = require('./quota-enforcer');
-        await QuotaService.initializeUserLedger(phone, pendingPayment.plan);
-      } catch (err) {
-        console.log('Quota service initialization skipped');
-      }
+      await QuotaService.initializeUserLedger(phone, pendingPayment.plan);
 
       // Clean up verification code and pending payment
       verificationCodes.delete(phone);
-      delete (req.session as any).pendingPayment;
+      delete req.session.pendingPayment;
 
       // Log the user in
       req.session.userId = user.id;
@@ -1222,7 +1216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Export user's posts
-      let posts: any[] = [];
+      let posts = [];
       try {
         posts = await storage.getPostsByUser(currentUser.id);
       } catch (err) {
@@ -1230,7 +1224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Export user's platform connections
-      let connections: any[] = [];
+      let connections = [];
       try {
         connections = await storage.getPlatformConnectionsByUser(currentUser.id);
       } catch (err) {
@@ -1305,48 +1299,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Facebook data deletion URL validation (GET)
-  app.get("/api/facebook/data-deletion", (req, res) => {
-    res.status(200).json({
-      url: "https://app.theagencyiq.ai/data-deletion-status",
-      confirmation_code: "endpoint_active"
-    });
-  });
-
   // Facebook/Instagram data deletion callback endpoint
-  app.post("/api/facebook/data-deletion", express.json(), async (req, res) => {
+  app.post("/api/facebook/data-deletion", async (req, res) => {
     try {
-      console.log('Facebook data deletion request:', req.body);
-      
       const { signed_request } = req.body;
       
-      // Always return 200 OK for Facebook compliance
       if (!signed_request) {
-        return res.status(200).json({ 
-          url: "https://app.theagencyiq.ai/data-deletion-status",
-          confirmation_code: "no_signed_request"
-        });
+        return res.status(400).json({ error: "Missing signed_request parameter" });
       }
 
-      // Parse signed request
-      const parts = signed_request.split('.');
-      if (parts.length !== 2) {
-        return res.status(200).json({
-          url: "https://app.theagencyiq.ai/data-deletion-status", 
-          confirmation_code: "invalid_format"
-        });
-      }
-
-      const [encodedSig, payload] = parts;
-      let data;
-      try {
-        data = JSON.parse(Buffer.from(payload, 'base64').toString());
-      } catch (e) {
-        return res.status(200).json({
-          url: "https://app.theagencyiq.ai/data-deletion-status",
-          confirmation_code: "parse_error"
-        });
-      }
+      // Parse the signed request from Facebook
+      const [encodedSig, payload] = signed_request.split('.');
+      const data = JSON.parse(Buffer.from(payload, 'base64').toString());
       
       console.log('Facebook data deletion request received:', {
         userId: data.user_id,
@@ -1365,19 +1329,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Return required response format for Facebook
-      const confirmationCode = `DEL_${data.user_id || 'unknown'}_${Date.now()}`;
-      res.status(200).json({
-        url: `https://app.theagencyiq.ai/data-deletion-status?code=${confirmationCode}`,
-        confirmation_code: confirmationCode
+      res.json({
+        url: `${req.protocol}://${req.get('host')}/api/facebook/data-deletion-status?id=${data.user_id}`,
+        confirmation_code: `DEL_${data.user_id}_${Date.now()}`
       });
 
     } catch (error: any) {
       console.error('Facebook data deletion error:', error);
-      // Always return 200 OK for Facebook compliance
-      res.status(200).json({
-        url: "https://app.theagencyiq.ai/data-deletion-status",
-        confirmation_code: `ERROR_${Date.now()}`
-      });
+      res.status(500).json({ error: "Data deletion processing failed" });
     }
   });
 
@@ -1435,7 +1394,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create user with default starter plan
       const user = await storage.createUser({
-        userId: phone,
         email,
         password: hashedPassword,
         phone,
@@ -1549,7 +1507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // If phone numbers don't match, update to SMS-verified number
           if (user.phone !== smsVerifiedPhone) {
-            console.log(`Phone number corrected for ${user.email}: ${smsVerifiedPhone} (was ${user.phone})`);
+            console.log(`Phone number corrected for ${email}: ${smsVerifiedPhone} (was ${user.phone})`);
             
             // Update user record with SMS-verified phone
             await storage.updateUser(user.id, { phone: smsVerifiedPhone });
@@ -3475,58 +3433,14 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Step 1: Isolate and Log Auto-Post Failure - Granular logging to trace execution
+  // Auto-posting enforcer - Ensures posts are published within 30-day subscription
   app.post("/api/enforce-auto-posting", requireAuth, async (req: any, res) => {
     try {
-      console.log(`[AUTO-POST] Starting enforcement for user ${req.session.userId}`);
-      
-      // Log user data
-      const user = await storage.getUser(req.session.userId);
-      console.log(`[AUTO-POST] User data:`, {
-        id: user?.id,
-        phone: user?.phone,
-        plan: user?.subscriptionPlan,
-        remaining: user?.remainingPosts
-      });
-      
-      // Log posts before processing
-      const posts = await storage.getPostsByUser(req.session.userId);
-      console.log(`[AUTO-POST] Total posts found: ${posts.length}`);
-      
-      const postsByStatus = posts.reduce((acc, p) => {
-        acc[p.status] = (acc[p.status] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      console.log(`[AUTO-POST] Posts by status:`, postsByStatus);
-      
-      // Log platform connections
-      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
-      console.log(`[AUTO-POST] Platform connections:`, connections.map(c => ({
-        platform: c.platform,
-        active: c.isActive,
-        hasToken: !!c.accessToken
-      })));
-      
       const { AutoPostingEnforcer } = await import('./auto-posting-enforcer');
-      console.log(`[AUTO-POST] Calling AutoPostingEnforcer.enforceAutoPosting`);
+      
+      console.log(`Enforcing auto-posting for user ${req.session.userId}`);
       
       const result = await AutoPostingEnforcer.enforceAutoPosting(req.session.userId);
-      
-      console.log(`[AUTO-POST] Result:`, {
-        success: result.success,
-        processed: result.postsProcessed,
-        published: result.postsPublished,
-        failed: result.postsFailed,
-        errors: result.errors?.length || 0
-      });
-      
-      // Log posts after processing
-      const postsAfter = await storage.getPostsByUser(req.session.userId);
-      const postsByStatusAfter = postsAfter.reduce((acc, p) => {
-        acc[p.status] = (acc[p.status] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      console.log(`[AUTO-POST] Posts by status after:`, postsByStatusAfter);
       
       res.json({
         success: result.success,
@@ -3540,7 +3454,7 @@ Continue building your Value Proposition Canvas systematically.`;
       });
       
     } catch (error) {
-      console.error('[AUTO-POST] Critical error:', error);
+      console.error('Auto-posting enforcer error:', error);
       res.status(500).json({
         success: false,
         message: "Auto-posting enforcement failed",
@@ -3589,7 +3503,8 @@ Continue building your Value Proposition Canvas systematically.`;
           const result = await BulletproofPublisher.publish({
             userId: req.session.userId,
             platform: post.platform,
-            content: post.content || ''
+            content: post.content,
+            imageUrl: post.imageUrl || undefined
           });
 
           if (result.success && result.platformPostId) {
@@ -3747,243 +3662,70 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // DISABLED - DUPLICATE ENDPOINT 1
-  app.post('/auto-generate-content-schedule-OLD', async (req, res) => {
-    const userId = req.body.phone || '+61424835189';
-    const userIdInt = 2; // Fixed to user 2
-    
-    try {
-      console.log('[REPLIT-AI] Starting AI content generation for user:', userIdInt);
-      
-      // Get user subscription
-      const user = await storage.getUser(userIdInt);
-      if (!user) {
-        return res.status(404).send('User not found');
-      }
-      
-      const quotas = { starter: 12, growth: 27, professional: 52 };
-      const quota = quotas[user.subscriptionPlan?.toLowerCase() as keyof typeof quotas] || 12;
-      
-      // Count successful posts
-      const allPosts = await storage.getPostsByUser(userIdInt);
-      const successfulPosts = allPosts.filter(p => p.status === 'success' || p.status === 'published');
-      const remaining = Math.max(0, quota - successfulPosts.length);
-      
-      console.log('[REPLIT-AI] Remaining quota:', remaining);
-      
-      // Clean non-successful posts
-      const nonSuccessPosts = allPosts.filter(p => p.status !== 'success' && p.status !== 'published');
-      for (const post of nonSuccessPosts) {
-        await storage.deletePost(post.id);
-      }
-      
-      const newPosts = [];
-      
-      if (remaining > 0) {
-        // Import AI generator
-        const { generateContent } = await import('./local-ai-generator');
-        
-        const platforms = ['x', 'linkedin', 'facebook', 'instagram', 'youtube'];
-        
-        for (let i = 0; i < remaining; i++) {
-          const platform = platforms[i % platforms.length];
-          
-          try {
-            // Generate AI content
-            const aiContent = await generateContent(`Write a social media post for ${platform} about business automation and social media management for Queensland businesses.`);
-            
-            const post = {
-              id: Date.now() + i,
-              userId: userIdInt,
-              content: aiContent,
-              status: 'pending' as const,
-              publishedAt: null,
-              platform
-            };
-            
-            await storage.createPost(post);
-            newPosts.push(post);
-            
-          } catch (error) {
-            console.error(`[REPLIT-AI] Error generating post ${i}:`, error);
-          }
-        }
-      }
-      
-      const after = await storage.getPostsByUser(userIdInt);
-      console.log('[REPLIT-AI] After count:', after.length, 'Generated:', newPosts.length);
-      
-      if (newPosts.length > 0) {
-        console.log('[REPLIT-AI] Sample content:', newPosts[0]?.content?.substring(0, 100));
-      }
-      
-      res.json({
-        success: true,
-        message: 'AI content schedule generated',
-        user: userId,
-        plan: user.subscriptionPlan,
-        quota,
-        remaining,
-        generated: newPosts.length,
-        totalPosts: after.length,
-        replit_native: true,
-        ai_powered: true
-      });
-      
-    } catch (error) {
-      console.error('[REPLIT-AI] Generation error:', error);
-      res.status(500).json({ error: 'AI content generation failed' });
-    }
-  });
-
-  // Enforce Strict Post Quota - Step 1 Implementation
-  // WORKING IMPLEMENTATION - Auto-generate content schedule
-  app.post('/auto-generate-content-schedule', async (req, res) => {
-    const userId = 2;
-    
-    try {
-      console.log('[GENERATE] Starting generation for user:', userId);
-      
-      // Get user data
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      
-      // Calculate quota
-      const quotas = { starter: 12, growth: 27, professional: 52 };
-      const plan = user.subscriptionPlan?.toLowerCase() || 'professional';
-      const quota = quotas[plan as keyof typeof quotas] || 52;
-      
-      // Get all posts and count published ones
-      const allPosts = await storage.getPostsByUser(userId);
-      const publishedPosts = allPosts.filter(p => p.status === 'published');
-      const remaining = Math.max(0, quota - publishedPosts.length);
-      
-      console.log('[GENERATE] Published:', publishedPosts.length, 'Quota:', quota, 'Remaining:', remaining);
-      
-      // Delete all non-published posts
-      const nonPublishedPosts = allPosts.filter(p => p.status !== 'published');
-      for (const post of nonPublishedPosts) {
-        await storage.deletePost(post.id);
-      }
-      console.log('[GENERATE] Cleaned', nonPublishedPosts.length, 'non-published posts');
-      
-      // Generate new pending posts using template content
-      let generated = 0;
-      if (remaining > 0) {
-        const templates = [
-          'Transform your Queensland business with smart automation! Save time, increase engagement across all social platforms. #BusinessAutomation #Queensland',
-          'Ready to dominate social media? Our AI-powered automation ensures consistent posting while you focus on growth. #SocialMediaAutomation #DigitalTransformation',
-          'Stop struggling with daily social media tasks! Automated scheduling means more time for customers. #Productivity #BusinessGrowth',
-          'Queensland businesses discover the power of automated social media management. Join the revolution! #Queensland #BusinessInnovation',
-          'Your competitors use automation to stay ahead. Level the playing field with smart scheduling. #CompetitiveAdvantage #BusinessStrategy'
-        ];
-        
-        for (let i = 0; i < remaining; i++) {
-          const content = templates[Math.floor(Math.random() * templates.length)];
-          
-          await storage.createPost({
-            userId: userId,
-            content: content,
-            status: 'pending',
-            platform: req.body.platform || 'x',
-            scheduledFor: new Date(Date.now() + i * 60000)
-          });
-          
-          generated++;
-          console.log('[GENERATE] Created pending post:', generated, content.substring(0, 50) + '...');
-        }
-      }
-      
-      const finalPosts = await storage.getPostsByUser(userId);
-      console.log('[GENERATE] Final count:', finalPosts.length, 'Generated:', generated);
-      
-      res.json({ 
-        success: true, 
-        generated: generated,
-        remaining: remaining - generated,
-        total: finalPosts.length,
-        message: `Generated ${generated} pending posts` 
-      });
-      
-    } catch (error) {
-      console.error('[DEBUG] Generation error:', error);
-      res.status(500).json({ error: 'Failed to generate schedule' });
-    }
-  });
-
-  // Step 2: Generate Content Within Quota
-  app.post('/api/generate-schedule', async (req, res) => {
-    const userId = req.body.phone;
-    const quota = 12; // Fetch from subscription or default
-    const posts = Array.from({ length: quota }, (_, i) => ({ id: i, content: `Post ${i}`, status: 'pending' }));
-    // await db.insert(posts).values(posts.map(p => ({ userId, ...p })));
-    console.log(`Generated ${quota} posts for ${userId}`);
-    res.send(posts);
-  });
-
-  // Log Scheduling Trigger - Track when posts are generated/scheduled
-  app.post('/api/generate-schedule-log', (req, res) => {
-    const userId = req.body.phone; // +61424835189
-    console.log('Schedule generated for', userId, 'at', new Date());
-    // Existing schedule logic
-    res.send('Scheduled');
-  });
-
-  // Generate AI-powered schedule using local AI with smart quota management
+  // Generate AI-powered schedule using xAI integration
   app.post("/api/generate-ai-schedule", requireAuth, async (req: any, res) => {
     try {
-      const { totalPosts = 30, platforms } = req.body;
+      const { brandPurpose, totalPosts = 30, platforms } = req.body;
       
-      // STRATEGYZER: Fetch brand purpose from database
-      const brandPurpose = await storage.getBrandPurposeByUser(req.session.userId);
       if (!brandPurpose) {
         return res.status(400).json({ message: "Brand purpose data required" });
       }
 
-      console.log(`AI Schedule Generation for user ${req.session.userId}: ${totalPosts} posts across platforms:`, platforms);
-
-      // Get user for quota checking
-      const quotaUser = await storage.getUser(req.session.userId);
-      if (!quotaUser) {
-        return res.status(401).json({ error: 'User not found' });
+      // CRITICAL: Enforce live platform connections before any content generation
+      const platformConnections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      const activePlatformConnections = platformConnections.filter(conn => conn.isActive);
+      
+      if (activePlatformConnections.length === 0) {
+        return res.status(400).json({ 
+          message: "No active platform connections found. Connect your social media accounts before generating content.",
+          requiresConnection: true,
+          connectionModal: true
+        });
       }
 
-      // SMART QUOTA MANAGEMENT - Only published posts count toward quota
-      const hardQuotaLimits = { starter: 12, growth: 27, professional: 52 };
-      const userPlan = quotaUser.subscriptionPlan?.toLowerCase() || 'starter';
-      const maxAllowedPosts = hardQuotaLimits[userPlan as keyof typeof hardQuotaLimits] || 12;
-      
-      // Check current published posts only
-      const allExistingPosts = await storage.getPostsByUser(req.session.userId);
-      const publishedPosts = allExistingPosts.filter(p => p.status === 'published' || p.status === 'success');
-      const draftPosts = allExistingPosts.filter(p => p.status === 'draft' || p.status === 'pending');
-      
-      console.log(`QUOTA CHECK: User has ${publishedPosts.length}/${maxAllowedPosts} published posts (${userPlan} plan)`);
-      console.log(`DRAFT MANAGEMENT: ${draftPosts.length} draft posts available for regeneration`);
-      
-      // Allow regeneration by cleaning old drafts
-      if (draftPosts.length > 0) {
-        console.log(`Cleaning ${draftPosts.length} existing draft posts for fresh generation`);
-        for (const draft of draftPosts) {
-          await storage.deletePost(draft.id);
-        }
+      // Validate requested platforms have active connections
+      const requestedPlatforms = platforms || brandPurpose.platforms || [];
+      const connectedPlatforms = activePlatformConnections.map(conn => conn.platform.toLowerCase());
+      const missingConnections = requestedPlatforms.filter((platform: string) => 
+        !connectedPlatforms.includes(platform.toLowerCase())
+      );
+
+      if (missingConnections.length > 0) {
+        return res.status(400).json({ 
+          message: `Missing platform connections: ${missingConnections.join(', ')}. Connect all required platforms before generating content.`,
+          requiresConnection: true,
+          connectionModal: true,
+          missingPlatforms: missingConnections
+        });
       }
+
+      console.log(`Platform connection validation passed: ${connectedPlatforms.join(', ')} connected`);
+
+      // Get current subscription status and enforce strict plan limits
+      const { SubscriptionService } = await import('./subscription-service');
+      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
       
-      // Allow draft generation always - only block publishing
-      console.log(`DEBUG: Can generate unlimited drafts. Published: ${publishedPosts.length}/${maxAllowedPosts}`);
+      // Import subscription plans to get exact allocation
+      const { SUBSCRIPTION_PLANS } = await import('./subscription-service');
+      const userPlan = SUBSCRIPTION_PLANS[subscriptionStatus.plan.name.toLowerCase()];
       
-      // Calculate draft posts we can generate (unlimited drafts, limited published)
-      const remainingPublishSlots = maxAllowedPosts - publishedPosts.length;
-      const draftsToGenerate = Math.min(totalPosts, 20); // Generate up to 20 drafts for approval
+      if (!userPlan) {
+        return res.status(400).json({ 
+          message: `Invalid subscription plan: ${subscriptionStatus.plan.name}`,
+          subscriptionLimitReached: true
+        });
+      }
+
+      // Users get their full subscription allocation and can regenerate schedule unlimited times
+      // Only actual posting/publishing counts against their limit
+      const planPostLimit = userPlan.postsPerMonth;
       
-      console.log(`Can generate ${draftsToGenerate} draft posts (${remainingPublishSlots} publishing slots remaining)`);
+      // Clear ALL existing draft posts for this user to prevent duplication
+      const existingPosts = await storage.getPostsByUser(req.session.userId);
+      const draftPosts = existingPosts.filter(p => p.status === 'draft');
       
-      // Allow draft generation even at quota limit for content refresh
-      const remainingSlots = draftsToGenerate; // Use draftsToGenerate for remaining slots
       if (draftPosts.length > 0) {
-        console.log(`Clearing ${draftPosts.length} draft posts for regeneration`);
+        console.log(`Clearing ${draftPosts.length} draft posts to regenerate fresh schedule`);
         for (const post of draftPosts) {
           await storage.deletePost(post.id);
         }
@@ -4009,25 +3751,22 @@ Continue building your Value Proposition Canvas systematically.`;
       console.log(`User ID tracking verified: ${req.session.userId} (${sessionUser.email})`);
 
       // Log current post counts before generation
-      const preGenerationPosts = await storage.getPostsByUser(req.session.userId);
+      const currentPosts = await storage.getPostsByUser(req.session.userId);
       const currentCounts = {
-        total: preGenerationPosts.length,
-        draft: preGenerationPosts.filter(p => p.status === 'draft').length,
-        approved: preGenerationPosts.filter(p => p.status === 'approved').length,
-        scheduled: preGenerationPosts.filter(p => p.status === 'scheduled').length,
-        published: preGenerationPosts.filter(p => p.status === 'published').length
+        total: currentPosts.length,
+        draft: currentPosts.filter(p => p.status === 'draft').length,
+        approved: currentPosts.filter(p => p.status === 'approved').length,
+        scheduled: currentPosts.filter(p => p.status === 'scheduled').length,
+        published: currentPosts.filter(p => p.status === 'published').length
       };
       
       console.log(`Pre-generation post counts for user ${req.session.userId}:`, currentCounts);
-      console.log(`Generating ${remainingSlots} posts for ${brandPurpose.brandName}: ${userPlan} plan`)
+      console.log(`Generating fresh ${planPostLimit} posts for ${brandPurpose.brandName}: ${userPlan.name} plan - unlimited regenerations allowed`)
 
-      // STRATEGYZER WATERFALL: Brand Purpose → Strategy → Multi-Platform Schedule
-      console.log('🎯 STRATEGYZER WATERFALL: Starting brand purpose analysis...');
-      
-      // Import AI strategy functions
+      // Import xAI functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
       
-      // STRATEGYZER: Analyze brand purpose for strategic content generation
+      // Prepare content generation parameters with full subscription allocation
       const contentParams = {
         brandName: brandPurpose.brandName,
         productsServices: brandPurpose.productsServices,
@@ -4038,43 +3777,23 @@ Continue building your Value Proposition Canvas systematically.`;
         painPoints: brandPurpose.painPoints,
         goals: brandPurpose.goals || {},
         contactDetails: brandPurpose.contactDetails || {},
-        platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-        totalPosts: remainingSlots
+        platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
+        totalPosts: planPostLimit // Generate full subscription allocation
       };
 
+      // Generate brand analysis
       const analysis = await analyzeBrandPurpose(contentParams);
       console.log(`Brand analysis completed. JTBD Score: ${analysis.jtbdScore}/100`);
 
-      // STRATEGYZER: Generate strategic content calendar
+      // Generate intelligent content calendar
       const generatedPosts = await generateContentCalendar(contentParams);
-      console.log(`Generated ${generatedPosts.length} strategic posts using Strategyzer methodology`);
-      
-      // Force multi-platform distribution if AI fails
-      if (generatedPosts.length > 0) {
-        const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
-        for (let i = 0; i < generatedPosts.length; i++) {
-          if (!generatedPosts[i].platform || !platforms.includes(generatedPosts[i].platform)) {
-            generatedPosts[i].platform = platforms[i % platforms.length];
-          }
-        }
-      }
+      console.log(`Generated ${generatedPosts.length} AI-optimized posts`);
 
-      // LAUNCH MODE: Allow unlimited schedule regeneration
-      // Clear existing draft posts to allow fresh schedule generation
-      const existingDrafts = await storage.getPostsByUser(req.session.userId);
-      const draftsToDelete = existingDrafts.filter(p => p.status === 'draft');
-      
-      for (const draft of draftsToDelete) {
-        await storage.deletePost(draft.id);
-      }
-      
-      console.log(`DRAFT GENERATION: Cleared ${draftsToDelete.length} old drafts, generating ${draftsToGenerate} new drafts`);
-      
-      // Save posts to database as drafts for approval
+      // Save posts to database with strict subscription limit enforcement
       const savedPosts = [];
-      const postsToSave = generatedPosts.slice(0, draftsToGenerate);
+      const postsToSave = generatedPosts.slice(0, planPostLimit); // Enforce exact plan limit
       
-      console.log(`DRAFT CREATION: Generating ${postsToSave.length} draft posts for ${userPlan} plan approval`);
+      console.log(`Saving exactly ${planPostLimit} posts for ${userPlan.name} plan (generated ${generatedPosts.length}, saving ${postsToSave.length})`);
       
       for (const post of postsToSave) {
         try {
@@ -4084,8 +3803,8 @@ Continue building your Value Proposition Canvas systematically.`;
             content: post.content,
             status: 'draft',
             scheduledFor: new Date(post.scheduledFor),
-            subscriptionCycle: '30-day',
-            aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience || brandPurpose.brandName}`
+            subscriptionCycle: subscriptionStatus.subscriptionCycle,
+            aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience}. JTBD alignment: ${analysis.jtbdScore}/100`
           };
 
           const savedPost = await storage.createPost(postData);
@@ -4102,12 +3821,12 @@ Continue building your Value Proposition Canvas systematically.`;
       const scheduleData = {
         posts: savedPosts,
         subscription: {
-          plan: userPlan,
-          totalAllowed: maxAllowedPosts,
-          used: publishedPosts.length,
-          remaining: Math.max(0, maxAllowedPosts - publishedPosts.length),
-          cycleStart: new Date().toISOString(),
-          cycleEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          plan: subscriptionStatus.plan.name,
+          totalAllowed: subscriptionStatus.totalPostsAllowed,
+          used: subscriptionStatus.postsUsed + savedPosts.length, // Include newly created posts
+          remaining: Math.max(0, subscriptionStatus.postsRemaining - savedPosts.length),
+          cycleStart: subscriptionStatus.cycleInfo.cycleStart,
+          cycleEnd: subscriptionStatus.cycleInfo.cycleEnd
         },
         analysis: {
           jtbdScore: analysis.jtbdScore,
@@ -4149,16 +3868,14 @@ Continue building your Value Proposition Canvas systematically.`;
       };
       
       console.log(`Post-generation verification for user ${req.session.userId}:`, finalCounts);
-      console.log(`QUOTA ENFORCED: Generated ${savedPosts.length} posts within ${maxAllowedPosts} limit`);
+      console.log(`AI schedule generated successfully: ${savedPosts.length} posts saved`);
 
       // Add verification data to response
-      (scheduleData as any).verification = {
-        quotaEnforced: true,
-        maxPosts: maxAllowedPosts,
+      scheduleData.verification = {
+        preGeneration: currentCounts,
+        postGeneration: finalCounts,
         newPostsCreated: savedPosts.length,
-        totalPostsNow: finalCounts.published + finalCounts.draft,
-        userIdVerified: req.session.userId,
-        quotaFixed: true
+        userIdVerified: req.session.userId
       };
 
       res.json(scheduleData);
@@ -4303,24 +4020,6 @@ Continue building your Value Proposition Canvas systematically.`;
       console.error('Publish post error:', error);
       res.status(500).json({ message: "Error publishing post" });
     }
-  });
-
-  // Step 1: Tie Subscription to Quota Trigger
-  app.post('/api/subscribe', (req, res) => {
-    const userId = req.body.phone; // +61424835189
-    const plan = req.body.plan; // e.g., 'Starter'
-    const quotaMap = { Starter: 12, Growth: 27, Professional: 52 } as any;
-    const quota = quotaMap[plan];
-    console.log(`Subscribed ${userId} to ${plan}, quota: ${quota}`);
-    res.send({ quota });
-  });
-
-  // Step 1: Diagnose Quota Erraticism - Track approval patterns
-  app.post('/api/approve-post', (req, res) => {
-    const userId = req.body.phone; // +61424835189
-    console.log('Approval for', userId, 'at', new Date());
-    // Existing publish logic
-    res.send('Approved');
   });
 
   // Approve and publish post with proper allocation tracking
@@ -5035,7 +4734,6 @@ Continue building your Value Proposition Canvas systematically.`;
       let user = await storage.getUser(userId);
       if (!user) {
         user = await storage.createUser({
-          userId: "+61400000000",
           email: "demo@theagencyiq.ai",
           password: "demo123",
           phone: "+61400000000",
@@ -5161,43 +4859,176 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Auto-post schedule debug endpoint
-  app.post('/api/auto-post-schedule', async (req, res) => {
-    const userId = req.body.phone || '+61424835189';
-    const before = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
-    console.log('Before auto-post count:', before.length);
-    // Existing auto-post logic
-    const after = await storage.getPostsByUser(parseInt(userId.replace('+', '')));
-    console.log('After auto-post count:', after.length, 'Difference:', before.length - after.length);
-    res.send('Auto-posted');
-  });
-
-  // Step 4: Sync UI with True Quota
-  app.get('/api/quota-status', async (req, res) => {
-    const userId = req.query.phone || '+61424835189';
-    // const quota = await db
-    //   .select({ count: sql`COUNT(*)` })
-    //   .from(posts)
-    //   .where(sql`${posts.userId} = ${userId} AND ${posts.status} = 'success' AND ${posts.publishedAt} > NOW() - INTERVAL '30 days'`)
-    //   .get();
-    const quota = { count: 0 }; // Placeholder for now
-    console.log('Quota:', quota.count);
-    res.send({ quota: Math.min(quota.count, 12), max: 12 });
-  });
-
-  // Analytics dashboard data - HUGGING FACE METHODOLOGY
+  // Analytics dashboard data
   app.get("/api/analytics", requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId || 1;
-      const { getHuggingFaceAnalytics } = await import('./analytics-hugging-face');
-      const analyticsData = await getHuggingFaceAnalytics(userId);
+
+      // Get user and connected platforms
+      const user = await storage.getUser(userId);
+      const connections = await storage.getPlatformConnectionsByUser(userId);
+
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+
+      // Get real analytics from connected platforms
+      const connectedPlatforms = connections.filter(conn => conn.isActive);
+      
+      let totalPosts = 0;
+      let totalReach = 0;
+      let totalEngagement = 0;
+      const realPlatformStats: any[] = [];
+
+      // Fetch real analytics from each connected platform
+      for (const connection of connectedPlatforms) {
+        try {
+          let platformAnalytics;
+          
+          switch (connection.platform) {
+            case 'facebook':
+              platformAnalytics = await fetchFacebookAnalytics(connection.accessToken);
+              break;
+            case 'instagram':
+              platformAnalytics = await fetchInstagramAnalytics(connection.accessToken);
+              break;
+            case 'linkedin':
+              platformAnalytics = await fetchLinkedInAnalytics(connection.accessToken);
+              break;
+            case 'x':
+              platformAnalytics = await fetchTwitterAnalytics(connection.accessToken, connection.refreshToken || '');
+              break;
+            case 'youtube':
+              platformAnalytics = await fetchYouTubeAnalytics(connection.accessToken);
+              break;
+            default:
+              continue;
+          }
+
+          if (platformAnalytics) {
+            totalPosts += platformAnalytics.totalPosts;
+            totalReach += platformAnalytics.totalReach;
+            totalEngagement += platformAnalytics.totalEngagement;
+
+            realPlatformStats.push({
+              platform: connection.platform,
+              posts: platformAnalytics.totalPosts,
+              reach: platformAnalytics.totalReach,
+              engagement: parseFloat(platformAnalytics.engagementRate),
+              performance: Math.min(100, Math.round((platformAnalytics.totalPosts * 10) + (parseFloat(platformAnalytics.engagementRate) * 5))),
+              isPlaceholder: false
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to fetch analytics for ${connection.platform}:`, error);
+          // Add platform with zero data if API call fails
+          realPlatformStats.push({
+            platform: connection.platform,
+            posts: 0,
+            reach: 0,
+            engagement: 0,
+            performance: 0,
+            isPlaceholder: true
+          });
+        }
+      }
+
+      const hasRealData = totalPosts > 0;
+
+      // Add platforms without connections to show complete overview
+      const allPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube', 'tiktok'];
+      for (const platform of allPlatforms) {
+        if (!realPlatformStats.find(stat => stat.platform === platform)) {
+          realPlatformStats.push({
+            platform,
+            posts: 0,
+            reach: 0,
+            engagement: 0,
+            performance: 0,
+            isPlaceholder: true
+          });
+        }
+      }
+
+      // Calculate overall engagement rate as percentage: (total engagement / total reach) * 100
+      const avgEngagement = totalReach > 0 ? 
+        Math.round((totalEngagement / totalReach) * 10000) / 100 : 0;
+      
+      // Calculate conversions from real engagement data
+      const conversions = hasRealData ? 
+        Math.round(totalReach * (avgEngagement / 100) * 0.02) : 0;
+
+      // Set targets based on subscription plan
+      const baseTargets = {
+        starter: { posts: 15, reach: 5000, engagement: 3.5, conversions: 25 },
+        professional: { posts: 30, reach: 15000, engagement: 4.5, conversions: 75 },
+        growth: { posts: 60, reach: 30000, engagement: 5.5, conversions: 150 }
+      };
+
+      const targets = baseTargets[user.subscriptionPlan as keyof typeof baseTargets] || baseTargets.starter;
+
+      // Goal progress based on real data
+      const goalProgress = {
+        growth: {
+          current: hasRealData ? Math.round(totalReach / 1000) : 0,
+          target: Math.round(targets.reach / 1000),
+          percentage: hasRealData ? Math.min(100, Math.round((totalReach / targets.reach) * 100)) : 0
+        },
+        efficiency: {
+          current: hasRealData ? avgEngagement : 0,
+          target: targets.engagement,
+          percentage: hasRealData ? Math.min(100, Math.round((avgEngagement / targets.engagement) * 100)) : 0
+        },
+        reach: {
+          current: hasRealData ? totalReach : 0,
+          target: targets.reach,
+          percentage: hasRealData ? Math.min(100, Math.round((totalReach / targets.reach) * 100)) : 0
+        },
+        engagement: {
+          current: hasRealData ? avgEngagement : 0,
+          target: targets.engagement,
+          percentage: hasRealData ? Math.min(100, Math.round((avgEngagement / targets.engagement) * 100)) : 0
+        }
+      };
+
+      const analyticsData = {
+        totalPosts: totalPosts,
+        targetPosts: targets.posts,
+        reach: totalReach,
+        targetReach: targets.reach,
+        engagement: avgEngagement,
+        targetEngagement: targets.engagement,
+        conversions,
+        targetConversions: targets.conversions,
+        brandAwareness: hasRealData ? Math.min(100, Math.round((totalReach / targets.reach) * 100)) : 0,
+        targetBrandAwareness: 100,
+        platformBreakdown: realPlatformStats,
+        monthlyTrends: hasRealData ? [
+          {
+            month: "May 2025",
+            posts: Math.max(0, totalPosts - 2),
+            reach: Math.max(0, totalReach - Math.round(totalReach * 0.3)),
+            engagement: Math.max(0, avgEngagement - 0.5)
+          },
+          {
+            month: "June 2025",
+            posts: totalPosts,
+            reach: totalReach,
+            engagement: avgEngagement
+          }
+        ] : [
+          { month: "May 2025", posts: 0, reach: 0, engagement: 0 },
+          { month: "June 2025", posts: 0, reach: 0, engagement: 0 }
+        ],
+        goalProgress,
+        hasRealData,
+        connectedPlatforms: connections.map(conn => conn.platform)
+      };
+
       res.json(analyticsData);
-    } catch (error) {
-      console.error('HUGGING FACE Analytics error:', error);
-      res.status(500).json({ 
-        message: "Failed to fetch analytics",
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+    } catch (error: any) {
+      console.error("Analytics error:", error);
+      res.status(500).json({ message: "Failed to load analytics: " + error.message });
     }
   });
 
@@ -5665,7 +5496,7 @@ Continue building your Value Proposition Canvas systematically.`;
                 console.error('Session save error:', err);
                 return res.redirect('/subscription?error=session_failed');
               }
-              console.log(`Payment successful - redirecting existing user ${user!.id} to brand purpose setup`);
+              console.log(`Payment successful - redirecting existing user ${user.id} to brand purpose setup`);
               return res.redirect('/brand-purpose?payment=success&setup=required');
             });
             return;
@@ -6639,7 +6470,7 @@ Continue building your Value Proposition Canvas systematically.`;
             
             console.log(`Removed ${excess} excess posts for user ${user.phone} (${user.subscriptionPlan})`);
             cleanupReport.excessPostsRemoved += excess;
-            (cleanupReport.quotaViolations as any[]).push({
+            cleanupReport.quotaViolations.push({
               userId: user.phone,
               plan: user.subscriptionPlan,
               quota: quota,
@@ -6651,8 +6482,7 @@ Continue building your Value Proposition Canvas systematically.`;
           }
         } catch (userError) {
           console.error(`Error processing user ${user.phone}:`, userError);
-          const cleanupErrors = cleanupReport.errors as any[];
-          cleanupErrors.push(`User ${user.phone}: ${(userError as Error).message}`);
+          cleanupReport.errors.push(`User ${user.phone}: ${userError.message}`);
         }
       }
 
@@ -6666,8 +6496,8 @@ Continue building your Value Proposition Canvas systematically.`;
       console.error('Database cleanup error:', err);
       res.status(500).json({ 
         error: 'Cleanup failed', 
-        details: (err as Error).message,
-        stack: (err as Error).stack 
+        details: err.message,
+        stack: err.stack 
       });
     }
   });

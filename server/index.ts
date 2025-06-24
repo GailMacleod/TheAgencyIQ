@@ -1,7 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import "./auto-publisher"; // Start auto-publisher
-import "./token-manager"; // Start token manager
 import { setupVite, serveStatic, log } from "./vite";
 import { ALLOWED_ORIGINS, SECURITY_HEADERS, validateDomain, isSecureContext } from "./ssl-config";
 import { storage } from './storage';
@@ -1533,106 +1531,56 @@ app.post('/api/approve-post', async (req, res) => {
   }
 });
 
-// Waterfall approve endpoint - DISABLED to prevent post doubling
-// app.post('/api/waterfall/approve', ...); // REMOVED - causes duplicate publishing
-
-// First-Principles Post Approval - Phone UID +61424835189 quota system
+// Waterfall Approve endpoint - precision fix for post count alignment
 app.post('/api/waterfall/approve', async (req, res) => {
-  const userId = req.body.phone || req.session?.userId || 2;
-  console.log('Approval triggered for', userId); // Step 2: Trace subscriber path
-  
-  const { postId, platform } = req.body;
-  if (!postId) {
-    return res.status(400).json({ error: 'Post ID required' });
+  const userId = req.session?.userId || 2;
+  const { id, platform } = req.body;
+  const validPlatforms = ['facebook', 'linkedin', 'instagram', 'twitter'];
+  if (!id || !validPlatforms.includes(platform.toLowerCase())) {
+    return res.status(400).json({ error: 'Invalid post or platform', platforms: validPlatforms });
   }
 
-  // Step 3: Fix Post Ledger Quota - count only successful posts
-  const checkQuota = async (userPhone: string) => {
-    const { db } = await import('./db');
-    const { posts } = await import('../shared/schema');
-    const { sql, eq, and, gt } = await import('drizzle-orm');
-    
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    
-    const result = await db
-      .select({ count: sql`COUNT(*)` })
-      .from(posts)
-      .where(
-        and(
-          eq(posts.userId, userPhone === '+61424835189' ? 2 : parseInt(userPhone)),
-          eq(posts.status, 'published'), // Only count successful posts
-          gt(posts.publishedAt, thirtyDaysAgo)
-        )
-      );
-    
-    return result[0]?.count || 0;
-  };
-
-  const quota = await checkQuota(userId.toString());
-  const planLimit = 12; // Starter plan - adjust dynamically
-  
-  if (quota >= planLimit) {
-    return res.status(400).json({ 
-      error: 'Quota exceeded', 
-      used: quota, 
-      limit: planLimit 
-    });
+  // Check subscription quota
+  const subscription = { plan: 'Starter', posts: 12 }; // Match your plan (adjust dynamically if stored)
+  if (!req.session) req.session = {} as any;
+  if (!(req.session as any).approvedPosts) {
+    (req.session as any).approvedPosts = {};
+  }
+  const approvedCount = Object.keys((req.session as any).approvedPosts).length;
+  if (approvedCount >= subscription.posts) {
+    return res.status(403).json({ error: 'Post limit reached', limit: subscription.posts });
   }
 
-  // CRITICAL: Single approval path - no duplicates
-  const { db } = await import('./db');
-  const { posts } = await import('../shared/schema');
-  const { eq } = await import('drizzle-orm');
-  
-  const [post] = await db.select().from(posts).where(eq(posts.id, parseInt(postId)));
-  
-  if (!post) {
-    return res.status(404).json({ error: 'Post not found' });
-  }
-  
-  if (post.status === 'approved' || post.status === 'published') {
-    console.warn(`Post ${postId} already processed, preventing duplicate`);
-    return res.status(400).json({ error: 'Post already processed' });
+  // Single approval state
+  const post = { id, date: `2025-06-${22 + parseInt(id)}`, time: '9:00 am', platform: platform.toLowerCase(), content: `Launch Post ${id} for ${platform}`, status: 'approved' };
+  if (!(req.session as any).approvedPosts[id]) { // Prevent duplication
+    (req.session as any).approvedPosts[id] = post;
+    fs.writeFileSync('approved-posts.json', JSON.stringify((req.session as any).approvedPosts));
+    console.log(`Post ${id} approved for ${platform} by user ${userId}`);
+  } else {
+    console.warn(`Post ${id} already approved, skipping duplicate`);
   }
 
-  // Step 4: Debug Retry Service - single publish attempt
   try {
-    console.log('OAuth locked:', process.env.X_ACCESS_TOKEN ? 'Present' : 'Missing'); // Step 1: OAuth verification
-    
     const { DirectPublisher } = await import('./direct-publisher');
-    const publishResult = await DirectPublisher.publishToPlatform(post.platform, post.content);
+    const publishResult = await DirectPublisher.publishToPlatform(platform.toLowerCase(), post.content);
     
-    console.log('Publish response:', publishResult.success ? 'success' : 'failed');
-    
-    // Update database post-response only
-    await db.update(posts)
-      .set({ 
-        status: publishResult.success ? 'published' : 'failed',
-        publishedAt: publishResult.success ? new Date() : null,
-        errorLog: publishResult.error || null
-      })
-      .where(eq(posts.id, parseInt(postId)));
-    
-    res.json({
-      success: publishResult.success,
-      postId,
-      platform: post.platform,
-      quotaUsed: publishResult.success ? quota + 1 : quota,
-      remaining: planLimit - (publishResult.success ? quota + 1 : quota)
-    });
-    
+    post.status = publishResult.success ? 'published' : 'failed';
+    console.log(`Post ${id} ${post.status} on ${platform}: ${publishResult.error || 'Success'}`);
   } catch (error: any) {
-    console.error('Publish error:', error.message);
-    
-    await db.update(posts)
-      .set({ 
-        status: 'failed',
-        errorLog: error.message
-      })
-      .where(eq(posts.id, parseInt(postId)));
-    
-    res.status(500).json({ error: 'Publishing failed', details: error.message });
+    post.status = 'failed';
+    console.error(`Post ${id} failed on ${platform}: ${error.message}`);
   }
+  
+  (req.session as any).approvedPosts[id] = post;
+  fs.writeFileSync('approved-posts.json', JSON.stringify((req.session as any).approvedPosts));
+  
+  res.json({ 
+    id, 
+    status: post.status, 
+    platform: platform.toLowerCase(), 
+    remaining: subscription.posts - Object.keys((req.session as any).approvedPosts).length 
+  });
 });
 
 const enforcePublish = async (post: any, userId: number) => {

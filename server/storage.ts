@@ -39,11 +39,9 @@ export interface IStorage {
 
   // Post operations
   getPostsByUser(userId: number): Promise<Post[]>;
-  getAllPosts(): Promise<Post[]>;
   createPost(post: InsertPost): Promise<Post>;
   updatePost(id: number, updates: Partial<InsertPost>): Promise<Post>;
   deletePost(id: number): Promise<void>;
-  getPost(id: number): Promise<Post | undefined>;
 
   // Platform connection operations
   getPlatformConnectionsByUser(userId: number): Promise<PlatformConnection[]>;
@@ -74,7 +72,7 @@ export interface IStorage {
   // Post ledger operations for synchronization
   getPostLedgerByUser(userId: string): Promise<any | undefined>;
   createPostLedger(ledger: any): Promise<any>;
-  updatePostLedger(userId: string, updates: any): Promise<any>;
+  updatePostLedger(id: number, updates: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -195,13 +193,6 @@ export class DatabaseStorage implements IStorage {
     await db.delete(posts).where(eq(posts.id, id));
   }
 
-  async getAllPosts(): Promise<Post[]> {
-    return await db
-      .select()
-      .from(posts)
-      .orderBy(desc(posts.createdAt));
-  }
-
   // Platform connection operations
   async getPlatformConnectionsByUser(userId: number): Promise<PlatformConnection[]> {
     return await db
@@ -252,11 +243,6 @@ export class DatabaseStorage implements IStorage {
 
   async deletePlatformConnection(id: number): Promise<void> {
     await db.delete(platformConnections).where(eq(platformConnections.id, id));
-  }
-
-  async getPost(id: number): Promise<Post | undefined> {
-    const [post] = await db.select().from(posts).where(eq(posts.id, id));
-    return post;
   }
 
   // Brand purpose operations

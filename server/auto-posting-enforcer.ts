@@ -57,75 +57,92 @@ export class AutoPostingEnforcer {
         return result;
       }
 
-      // AUTO-APPROVE ALL NON-PUBLISHED POSTS and process them immediately
-      const allPosts = await storage.getPostsByUser(userId);
-      const draftPosts = allPosts.filter(post => post.status === 'draft');
-      const pendingPosts = allPosts.filter(post => post.status === 'pending');
-      const approvedPosts = allPosts.filter(post => post.status === 'approved');
+      // Get all approved posts that need publishing
+      const posts = await storage.getPostsByUser(userId);
+      const approvedPosts = posts.filter(post => 
+        post.status === 'approved' && 
+        post.scheduledFor && 
+        new Date(post.scheduledFor) <= now
+      );
 
-      console.log(`Auto-posting enforcer: Found ${draftPosts.length} draft, ${pendingPosts.length} pending, and ${approvedPosts.length} approved posts`);
+      console.log(`Auto-posting enforcer: Found ${approvedPosts.length} posts ready for publishing`);
+      result.postsProcessed = approvedPosts.length;
 
-      // Auto-approve all draft and pending posts first
-      const postsToApprove = [...draftPosts, ...pendingPosts];
-      for (const post of postsToApprove) {
-        await storage.updatePost(post.id, { status: 'approved' });
-        console.log(`Auto-posting enforcer: Auto-approved ${post.status} post ${post.id} for ${post.platform}`);
-      }
-
-      // Get all posts ready for publishing (newly approved + existing approved)
-      const refreshedPosts = await storage.getPostsByUser(userId);
-      const postsToPublish = refreshedPosts.filter(post => post.status === 'approved');
-
-      console.log(`Auto-posting enforcer: Found ${postsToPublish.length} posts ready for immediate publishing`);
-      result.postsProcessed = postsToPublish.length;
-
-      if (postsToPublish.length === 0) {
-        console.log('Auto-posting enforcer: No posts ready for publishing');
+      if (approvedPosts.length === 0) {
         result.success = true;
         return result;
       }
 
-      // Process each post ready for publishing
-      for (const post of postsToPublish) {
+      // Import bulletproof publisher
+      const { BulletproofPublisher } = await import('./bulletproof-publisher');
+
+      // Process each post with connection repair
+      for (const post of approvedPosts) {
         try {
-          console.log(`EMERGENCY: Publishing post ${post.id} to ${post.platform}`);
-          
-          // HUGGING FACE APPROACH: Immediate success marking
-          await storage.updatePost(post.id, {
-            status: 'published',
-            publishedAt: new Date(),
-            errorLog: null
+          // Attempt automatic connection repair first
+          const repairResult = await this.repairPlatformConnection(userId, post.platform);
+          if (repairResult.repaired) {
+            result.connectionRepairs.push(`${post.platform}: ${repairResult.action}`);
+          }
+
+          // Publish using bulletproof system
+          const publishResult = await BulletproofPublisher.publish({
+            userId,
+            platform: post.platform,
+            content: post.content,
+            imageUrl: post.imageUrl || undefined
           });
 
-          result.postsPublished++;
-          console.log(`Emergency publishing: Post ${post.id} published to ${post.platform}`);
+          if (publishResult.success && publishResult.platformPostId) {
+            // Mark as published and deduct quota
+            await storage.updatePost(post.id, {
+              status: 'published',
+              publishedAt: new Date(),
+              errorLog: null
+            });
+
+            // Deduct from remaining posts
+            const currentRemaining = user.remainingPosts || 0;
+            await storage.updateUser(userId, {
+              remainingPosts: Math.max(0, currentRemaining - 1)
+            });
+
+            result.postsPublished++;
+            console.log(`Auto-posting enforcer: Successfully published post ${post.id} to ${post.platform}`);
+            
+          } else {
+            // Mark as failed - don't deduct quota for failures
+            await storage.updatePost(post.id, {
+              status: 'failed',
+              errorLog: publishResult.error || 'Publishing failed'
+            });
+
+            result.postsFailed++;
+            result.errors.push(`Post ${post.id} to ${post.platform}: ${publishResult.error}`);
+            console.log(`Auto-posting enforcer: Failed to publish post ${post.id}: ${publishResult.error}`);
+          }
 
         } catch (error: any) {
-          // Force success even on errors for launch stability
           await storage.updatePost(post.id, {
-            status: 'published',
-            publishedAt: new Date(),
-            errorLog: null
+            status: 'failed',
+            errorLog: error.message
           });
 
-          result.postsPublished++;
-          console.log(`Force published: Post ${post.id} to ${post.platform} (emergency mode)`);
+          result.postsFailed++;
+          result.errors.push(`Post ${post.id}: ${error.message}`);
+          console.error(`Auto-posting enforcer: Error processing post ${post.id}:`, error);
         }
       }
 
       result.success = result.postsPublished > 0 || result.postsProcessed === 0;
+      console.log(`Auto-posting enforcer: Complete - ${result.postsPublished}/${result.postsProcessed} posts published`);
+      
       return result;
 
     } catch (error: any) {
       console.error('Auto-posting enforcer error:', error);
-      return {
-        success: false,
-        postsProcessed: 0,
-        postsPublished: 0,
-        postsFailed: 0,
-        connectionRepairs: [],
-        errors: [error.message]
-      };
+      result.errors.push(error.message);
+      return result;
     }
   }
 
