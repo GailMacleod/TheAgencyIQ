@@ -3670,6 +3670,20 @@ Continue building your Value Proposition Canvas systematically.`;
     try {
       const { totalPosts = 52, platforms } = req.body;
       
+      // ANTI-BLOATING: Check existing posts before any generation
+      const existingPosts = await storage.getPostsByUser(req.session.userId);
+      const currentDraftCount = existingPosts.filter(p => p.status === 'draft').length;
+      
+      // Professional plan strict limit: 52 total posts maximum
+      if (existingPosts.length >= 52) {
+        return res.status(400).json({ 
+          message: "Post quota reached. Delete existing posts to generate new content.",
+          currentPosts: existingPosts.length,
+          quotaLimit: 52,
+          bloatingPrevented: true
+        });
+      }
+      
       // Get brand purpose from database instead of requiring it in request
       const brandPurpose = await storage.getBrandPurposeByUser(req.session.userId);
       
