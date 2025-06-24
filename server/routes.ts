@@ -463,8 +463,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const authResult = xIntegration.generateAuthUrl();
       
       // Store code verifier in session for later use
-      req.session.xCodeVerifier = authResult.codeVerifier;
-      req.session.xState = authResult.state;
+      (req.session as any).xCodeVerifier = authResult.codeVerifier;
+      (req.session as any).xState = authResult.state;
       
       res.json({
         authUrl: authResult.authUrl,
@@ -1038,7 +1038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check for pending payment in session
-      const pendingPayment = req.session.pendingPayment;
+      const pendingPayment = (req.session as any).pendingPayment;
       if (!pendingPayment) {
         return res.status(400).json({ message: "No pending payment found. Please complete payment first." });
       }
@@ -1216,7 +1216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Export user's posts
-      let posts = [];
+      let posts: any[] = [];
       try {
         posts = await storage.getPostsByUser(currentUser.id);
       } catch (err) {
@@ -1224,7 +1224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Export user's platform connections
-      let connections = [];
+      let connections: any[] = [];
       try {
         connections = await storage.getPlatformConnectionsByUser(currentUser.id);
       } catch (err) {

@@ -254,6 +254,11 @@ export class DatabaseStorage implements IStorage {
     await db.delete(platformConnections).where(eq(platformConnections.id, id));
   }
 
+  async getPost(id: number): Promise<Post | undefined> {
+    const [post] = await db.select().from(posts).where(eq(posts.id, id));
+    return post;
+  }
+
   // Brand purpose operations
   async getBrandPurposeByUser(userId: number): Promise<BrandPurpose | undefined> {
     const [brandPurposeRecord] = await db
