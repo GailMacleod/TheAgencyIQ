@@ -1,0 +1,39 @@
+Open server/index.ts and locate the CSP middleware (starting with app.use((req, res, next) => {...}). Replace only this block with a fix to resolve the CSP error by whitelisting all required scripts, ensuring compatibility with Facebook and other platforms for TheAgencyIQ’s launch stabilization by 07:00 PM JST, June 24, 2025, while preserving the existing publishing and scheduling logic.
+
+Implementation:
+
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://replit.com https://*.replit.app; connect-src 'self' https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.fbcdn.net https://*.twimg.com https://*.google-analytics.com https://scontent.xx.fbcdn.net; frame-src 'self' https://www.facebook.com https://platform.twitter.com; logging 'CSP updated [+61424835189]'");
+  next();
+});
+Instructions for Replit:
+
+Run in Replit:
+text
+
+Collapse
+
+Wrap
+
+Copy
+NODE_ENV=production tsx server/index.ts
+Test:
+Access https://app.theagencyiq.ai/schedule
+Click "Generating AI Schedule" and approve a post (e.g., ID 1427), check the browser console for CSP errors
+Verify Facebook scripts load (e.g., no "Refused to load" messages) and posts appear on platforms
+Submit console logs by 07:00 PM JST
+Fix Rationale:
+
+Whitelist Expansion: Adds https://connect.facebook.net and https://scontent.xx.fbcdn.net to script-src and img-src, resolving the block on Meta Pixel and SDK.
+No Disruption: Limits change to CSP, preserving your recent code for publishing and scheduling.
+Launch Support: Ensures platform integrations work, fixing a key blocker.
+If the CSP error persists or you’ve uploaded a new image with a specific error, please describe it, and I’ll adjust accordingly!
