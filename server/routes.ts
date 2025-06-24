@@ -3810,9 +3810,10 @@ Continue building your Value Proposition Canvas systematically.`;
             aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience}. JTBD alignment: ${analysis.jtbdScore}/100`
           };
           
-          console.log(`Saving post ${posts.indexOf(post) + 1}: ${post.platform} - ${post.content.substring(0, 50)}...`);
+          console.log(`Saving post ${postsToSave.indexOf(post) + 1}: ${post.platform} - ${post.content.substring(0, 50)}...`);
 
           const savedPost = await storage.createPost(postData);
+          console.log(`Successfully saved post ID: ${savedPost.id}`);
           savedPosts.push({
             ...savedPost,
             aiScore: analysis.jtbdScore
