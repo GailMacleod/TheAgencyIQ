@@ -9,7 +9,7 @@ const generateContent = async () => {
   ];
   
   const content = templates[Math.floor(Math.random() * templates.length)];
-  console.log('[GENERATOR] Generated:', content.substring(0, 50) + '...');
+  console.log('[GENERATOR] Generated content:', content.substring(0, 80) + '...');
   return content;
 };
 
