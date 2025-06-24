@@ -3837,57 +3837,75 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Enforce Strict Post Quota - Step 1 Implementation
-  // CLEAN IMPLEMENTATION - Working auto-generate endpoint
+  // WORKING IMPLEMENTATION - Auto-generate content schedule
   app.post('/auto-generate-content-schedule', async (req, res) => {
     const userId = 2;
     
     try {
-      const { db } = await import('./db');
-      const { posts, users } = await import('../shared/schema');
-      const { eq, sql } = await import('drizzle-orm');
+      console.log('[GENERATE] Starting generation for user:', userId);
       
-      await db.transaction(async (tx) => {
-        // Get subscription plan
-        const user = await tx.select({ 
-          subscriptionPlan: users.subscriptionPlan 
-        }).from(users).where(eq(users.id, userId)).limit(1);
+      // Get user data
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // Calculate quota
+      const quotas = { starter: 12, growth: 27, professional: 52 };
+      const plan = user.subscriptionPlan?.toLowerCase() || 'professional';
+      const quota = quotas[plan as keyof typeof quotas] || 52;
+      
+      // Get all posts and count published ones
+      const allPosts = await storage.getPostsByUser(userId);
+      const publishedPosts = allPosts.filter(p => p.status === 'published');
+      const remaining = Math.max(0, quota - publishedPosts.length);
+      
+      console.log('[GENERATE] Published:', publishedPosts.length, 'Quota:', quota, 'Remaining:', remaining);
+      
+      // Delete all non-published posts
+      const nonPublishedPosts = allPosts.filter(p => p.status !== 'published');
+      for (const post of nonPublishedPosts) {
+        await storage.deletePost(post.id);
+      }
+      console.log('[GENERATE] Cleaned', nonPublishedPosts.length, 'non-published posts');
+      
+      // Generate new pending posts using template content
+      let generated = 0;
+      if (remaining > 0) {
+        const templates = [
+          'Transform your Queensland business with smart automation! Save time, increase engagement across all social platforms. #BusinessAutomation #Queensland',
+          'Ready to dominate social media? Our AI-powered automation ensures consistent posting while you focus on growth. #SocialMediaAutomation #DigitalTransformation',
+          'Stop struggling with daily social media tasks! Automated scheduling means more time for customers. #Productivity #BusinessGrowth',
+          'Queensland businesses discover the power of automated social media management. Join the revolution! #Queensland #BusinessInnovation',
+          'Your competitors use automation to stay ahead. Level the playing field with smart scheduling. #CompetitiveAdvantage #BusinessStrategy'
+        ];
         
-        const quotas = { starter: 12, growth: 27, professional: 52 };
-        const quota = quotas[user[0]?.subscriptionPlan?.toLowerCase() || 'professional'] || 52;
-        
-        // Count current successful posts
-        const currentQuota = await tx.select({ 
-          count: sql`COUNT(*)::int` 
-        }).from(posts).where(sql`${posts.userId} = ${userId} AND ${posts.status} = 'success'`);
-        
-        const successCount = currentQuota[0]?.count || 0;
-        const remaining = Math.max(0, quota - successCount);
-        console.log('[DEBUG] Remaining:', remaining);
-        
-        // Clean non-success posts
-        await tx.delete(posts).where(sql`${posts.userId} = ${userId} AND ${posts.status} != 'success'`);
-        
-        const newPosts = [];
-        if (remaining > 0) {
-          const { generateContent } = require('./content-generator');
-          const content = await generateContent();
+        for (let i = 0; i < remaining; i++) {
+          const content = templates[Math.floor(Math.random() * templates.length)];
           
-          newPosts.push(...Array.from({ length: remaining }, (_, i) => ({
-            userId,
-            content,
+          await storage.createPost({
+            userId: userId,
+            content: content,
             status: 'pending',
-            publishedAt: null,
             platform: req.body.platform || 'x',
             scheduledFor: new Date(Date.now() + i * 60000)
-          })));
+          });
           
-          await tx.insert(posts).values(newPosts);
+          generated++;
+          console.log('[GENERATE] Created pending post:', generated, content.substring(0, 50) + '...');
         }
-        
-        const after = await tx.select().from(posts).where(eq(posts.userId, userId));
-        console.log('[DEBUG] After count:', after.length, 'Sample:', newPosts[0]?.content);
+      }
+      
+      const finalPosts = await storage.getPostsByUser(userId);
+      console.log('[GENERATE] Final count:', finalPosts.length, 'Generated:', generated);
+      
+      res.json({ 
+        success: true, 
+        generated: generated,
+        remaining: remaining - generated,
+        total: finalPosts.length,
+        message: `Generated ${generated} pending posts` 
       });
-      res.send('Schedule generated');
       
     } catch (error) {
       console.error('[DEBUG] Generation error:', error);

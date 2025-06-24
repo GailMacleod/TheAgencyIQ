@@ -73,13 +73,14 @@ const publishPost = async (post) => {
 const enforcePublishing = async () => {
   try {
     const pendingPosts = await db.select().from(posts).where(eq(posts.status, 'pending'));
-    console.log(`[PUBLISHER] Found ${pendingPosts.length} pending posts`);
+    console.log(`[PUBLISHER] Found ${pendingPosts.length} pending posts for publishing`);
     
-    for (const post of pendingPosts) {
-      postQueue.push(post);
+    if (pendingPosts.length > 0) {
+      for (const post of pendingPosts) {
+        postQueue.push(post);
+      }
+      processQueue();
     }
-    
-    processQueue();
   } catch (error) {
     console.error('[PUBLISHER] Enforcement error:', error);
   }

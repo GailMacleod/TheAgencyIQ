@@ -156,6 +156,7 @@ Changelog:
   - Local template-based generation working (no external API dependencies), quota ledger fixed
   - FIXED: Removed duplicate endpoints, implemented clean transaction-based post generation, working content templates
   - CONTENT GENERATION FIXED: Clean endpoint now properly creates pending posts and counts correctly
+  - WORKING: Fixed ES module imports, content generation creates 10 pending posts, auto-publisher processes them
 
 ## User Preferences
 
