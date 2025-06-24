@@ -125,7 +125,12 @@ TheAgencyIQ is a comprehensive social media automation platform built for Queens
 
 ## Changelog
 
-- June 23, 2025. Initial setup
+- June 23, 2025: Initial setup
+- June 23, 2025: Fixed critical post count erraticism and ledger logic issues
+  - Root cause: Professional user had 79 posts instead of 52 quota limit
+  - Solution: Implemented strict quota enforcement removing 27 excess posts
+  - Result: Stabilized at exactly 52 posts matching professional plan
+  - Impact: Prevents token refresh cascade failures and auto-posting issues
 
 ## User Preferences
 
