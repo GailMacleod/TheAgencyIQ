@@ -4069,6 +4069,16 @@ Continue building your Value Proposition Canvas systematically.`;
       // STRATEGYZER: Generate strategic content calendar
       const generatedPosts = await generateContentCalendar(contentParams);
       console.log(`Generated ${generatedPosts.length} strategic posts using Strategyzer methodology`);
+      
+      // Force multi-platform distribution if AI fails
+      if (generatedPosts.length > 0) {
+        const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
+        for (let i = 0; i < generatedPosts.length; i++) {
+          if (!generatedPosts[i].platform || !platforms.includes(generatedPosts[i].platform)) {
+            generatedPosts[i].platform = platforms[i % platforms.length];
+          }
+        }
+      }
 
       // LAUNCH MODE: Allow unlimited schedule regeneration
       // Clear existing draft posts to allow fresh schedule generation
