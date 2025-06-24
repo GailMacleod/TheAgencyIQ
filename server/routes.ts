@@ -4038,7 +4038,7 @@ Continue building your Value Proposition Canvas systematically.`;
       };
       
       console.log(`Pre-generation post counts for user ${req.session.userId}:`, currentCounts);
-      console.log(`Generating fresh ${planPostLimit} posts for ${brandPurpose.brandName}: ${subscriptionStatus.plan.name} plan - unlimited regenerations allowed`)
+      console.log(`Generating ${remainingSlots} posts for ${brandPurpose.brandName}: ${userPlan} plan`)
 
       // Import xAI functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
@@ -4055,7 +4055,7 @@ Continue building your Value Proposition Canvas systematically.`;
         goals: brandPurpose.goals || {},
         contactDetails: brandPurpose.contactDetails || {},
         platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-        totalPosts: planPostLimit // Generate full subscription allocation
+        totalPosts: remainingSlots // Generate only remaining quota slots
       };
 
       // Generate brand analysis
@@ -4315,7 +4315,8 @@ Continue building your Value Proposition Canvas systematically.`;
   app.post('/api/subscribe', (req, res) => {
     const userId = req.body.phone; // +61424835189
     const plan = req.body.plan; // e.g., 'Starter'
-    const quota = { Starter: 12, Growth: 27, Professional: 52 }[plan];
+    const quotaMap = { Starter: 12, Growth: 27, Professional: 52 } as any;
+    const quota = quotaMap[plan];
     console.log(`Subscribed ${userId} to ${plan}, quota: ${quota}`);
     res.send({ quota });
   });
@@ -6801,7 +6802,7 @@ Continue building your Value Proposition Canvas systematically.`;
             
             console.log(`Removed ${excess} excess posts for user ${user.phone} (${user.subscriptionPlan})`);
             cleanupReport.excessPostsRemoved += excess;
-            cleanupReport.quotaViolations.push({
+            (cleanupReport.quotaViolations as any[]).push({
               userId: user.phone,
               plan: user.subscriptionPlan,
               quota: quota,
