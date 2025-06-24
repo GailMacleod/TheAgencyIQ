@@ -104,9 +104,6 @@ export class AutoPostingEnforcer {
 
           result.postsPublished++;
           console.log(`Auto-posting enforcer: Successfully published post ${post.id} to ${post.platform}`);
-            result.errors.push(`Post ${post.id} to ${post.platform}: ${publishResult.error}`);
-            console.log(`Auto-posting enforcer: Failed to publish post ${post.id}: ${publishResult.error}`);
-          }
 
         } catch (error: any) {
           await storage.updatePost(post.id, {
