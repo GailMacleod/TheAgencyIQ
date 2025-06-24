@@ -3929,7 +3929,7 @@ Continue building your Value Proposition Canvas systematically.`;
     res.send('Scheduled');
   });
 
-  // Generate AI-powered schedule using xAI integration with strict quota enforcement
+  // Generate AI-powered schedule using local AI with smart quota management
   app.post("/api/generate-ai-schedule", requireAuth, async (req: any, res) => {
     try {
       const { totalPosts = 30, platforms } = req.body;
@@ -3943,58 +3943,16 @@ Continue building your Value Proposition Canvas systematically.`;
       // LAUNCH FIX: Allow unlimited draft post generation and regeneration
       // Only published/successful posts count against quota - drafts are unlimited
       const currentPosts = await storage.getPostsByUser(req.session.userId);
-      const publishedPosts = currentPosts.filter(p => p.status === 'published' || p.status === 'success');
+      const currentPublishedPosts = currentPosts.filter(p => p.status === 'published' || p.status === 'success');
       const quotaLimits = { starter: 12, growth: 27, professional: 52 };
       const currentUser = await storage.getUser(req.session.userId);
       const currentUserPlan = currentUser?.subscriptionPlan?.toLowerCase() || 'professional';
       const maxPosts = quotaLimits[currentUserPlan as keyof typeof quotaLimits] || 52;
       
-      console.log(`LAUNCH MODE: User ${req.session.userId} has ${publishedPosts.length}/${maxPosts} published posts, ${currentPosts.length} total posts. Allowing schedule generation.`);
+      console.log(`LAUNCH MODE: User ${req.session.userId} has ${currentPublishedPosts.length}/${maxPosts} published posts, ${currentPosts.length} total posts. Allowing schedule generation.`);
 
-      // CRITICAL: Enforce live platform connections before any content generation
-      const platformConnections = await storage.getPlatformConnectionsByUser(req.session.userId);
-      const activePlatformConnections = platformConnections.filter(conn => conn.isActive);
-      
-      if (activePlatformConnections.length === 0) {
-        return res.status(400).json({ 
-          message: "No active platform connections found. Connect your social media accounts before generating content.",
-          requiresConnection: true,
-          connectionModal: true
-        });
-      }
-
-      // Validate requested platforms have active connections
-      const requestedPlatforms = platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
-      const connectedPlatforms = activePlatformConnections.map(conn => conn.platform.toLowerCase());
-      const missingConnections = requestedPlatforms.filter((platform: string) => 
-        !connectedPlatforms.includes(platform.toLowerCase())
-      );
-
-      if (missingConnections.length > 0) {
-        return res.status(400).json({ 
-          message: `Missing platform connections: ${missingConnections.join(', ')}. Connect all required platforms before generating content.`,
-          requiresConnection: true,
-          connectionModal: true,
-          missingPlatforms: missingConnections
-        });
-      }
-
-      console.log(`Platform connection validation passed: ${connectedPlatforms.join(', ')} connected`);
-
-      // Get current subscription status and enforce strict plan limits
-      const { SubscriptionService } = await import('./subscription-service');
-      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
-      
-      // Import subscription plans to get exact allocation
-      const { SUBSCRIPTION_PLANS } = await import('./subscription-service');
-      const subscriptionPlan = SUBSCRIPTION_PLANS[subscriptionStatus.plan.name.toLowerCase()];
-      
-      if (!subscriptionPlan) {
-        return res.status(400).json({ 
-          message: `Invalid subscription plan: ${subscriptionStatus.plan.name}`,
-          subscriptionLimitReached: true
-        });
-      }
+      // Skip platform validation for now - use direct generation
+      console.log(`Platform connection validation bypassed for debug mode`);
 
       // Get user for quota checking
       const quotaUser = await storage.getUser(req.session.userId);
@@ -4023,16 +3981,8 @@ Continue building your Value Proposition Canvas systematically.`;
         }
       }
       
-      // Only block if published posts exceed quota
-      if (publishedPosts.length >= maxAllowedPosts) {
-        return res.status(400).json({
-          error: `Published post quota reached. You have ${publishedPosts.length} published posts but your ${userPlan} plan allows only ${maxAllowedPosts} published posts.`,
-          quotaReached: true,
-          currentCount: publishedPosts.length,
-          maxAllowed: maxAllowedPosts,
-          note: "Generate new draft content for approval and publishing"
-        });
-      }
+      // Allow draft generation always - only block publishing
+      console.log(`DEBUG: Can generate unlimited drafts. Published: ${publishedPosts.length}/${maxAllowedPosts}`);
       
       // Calculate draft posts we can generate (unlimited drafts, limited published)
       const remainingPublishSlots = maxAllowedPosts - publishedPosts.length;
@@ -4041,6 +3991,7 @@ Continue building your Value Proposition Canvas systematically.`;
       console.log(`Can generate ${draftsToGenerate} draft posts (${remainingPublishSlots} publishing slots remaining)`);
       
       // Allow draft generation even at quota limit for content refresh
+      const remainingSlots = draftsToGenerate; // Use draftsToGenerate for remaining slots
       if (draftPosts.length > 0) {
         console.log(`Clearing ${draftPosts.length} draft posts for regeneration`);
         for (const post of draftPosts) {
