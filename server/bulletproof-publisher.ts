@@ -497,6 +497,8 @@ export class BulletproofPublisher {
   private static async bulletproofInstagramPublish(connection: any, content: string, imageUrl?: string): Promise<BulletproofPublishResult> {
     try {
       const { accessToken } = connection;
+      const appSecret = process.env.FACEBOOK_APP_SECRET!;
+      const appsecretProof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
       
       // Get Instagram Business Account ID
       const accountsResponse = await axios.get(
@@ -504,6 +506,7 @@ export class BulletproofPublisher {
         {
           params: {
             access_token: accessToken,
+            appsecret_proof: appsecretProof,
             fields: 'instagram_business_account'
           }
         }
@@ -533,7 +536,8 @@ export class BulletproofPublisher {
         {
           image_url: finalImageUrl,
           caption: content,
-          access_token: accessToken
+          access_token: accessToken,
+          appsecret_proof: appsecretProof
         }
       );
       
@@ -542,7 +546,8 @@ export class BulletproofPublisher {
         `https://graph.facebook.com/v18.0/${businessAccountId}/media_publish`,
         {
           creation_id: mediaResponse.data.id,
-          access_token: accessToken
+          access_token: accessToken,
+          appsecret_proof: appsecretProof
         }
       );
       
