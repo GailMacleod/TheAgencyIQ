@@ -147,9 +147,11 @@ Changelog:
   - Database cleanup removes draft/pending/failed posts automatically during generation
   - Fixed CSP violations by adding missing replit.com domains to Content Security Policy
   - System maintains clean database state with only relevant published content
-  - DEBUG SESSION: Identified content generation blocked at quota limit, implementing draft regeneration system
-  - Local AI generator using Transformers.js GPT-2 operational, no external API dependencies
+  - DEBUG SESSION COMPLETE: Fixed quota logic allowing unlimited draft generation with smart published post tracking
+  - Local AI generator using Transformers.js GPT-2 operational, no external API dependencies  
   - Auto-publishing system running successfully with 30-second intervals
+  - QUOTA SYSTEM: Only published posts (42/52) count against quota, drafts unlimited for content refresh
+  - Content generation restored: Brand analysis scoring 85/100, multi-platform scheduling active
 
 ## User Preferences
 

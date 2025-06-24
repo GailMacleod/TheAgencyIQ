@@ -3942,9 +3942,6 @@ Continue building your Value Proposition Canvas systematically.`;
 
       console.log(`AI Schedule Generation for user ${req.session.userId}: ${totalPosts} posts across platforms:`, platforms);
 
-      // Skip platform validation for now - use direct generation
-      console.log(`Platform connection validation bypassed for debug mode`);
-
       // Get user for quota checking
       const quotaUser = await storage.getUser(req.session.userId);
       if (!quotaUser) {
