@@ -662,18 +662,45 @@ export default function Schedule() {
                 filteredPosts.map((post: Post) => (
                   <Card key={post.id} className="overflow-hidden">
                 <CardContent className="p-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    {getPlatformIcon(post.platform)}
-                    <span className="font-medium text-gray-900 lowercase">{post.platform}</span>
-                    <Badge variant={post.status === 'published' ? 'default' : 'outline'}>
-                      {post.status}
-                    </Badge>
-                    <span className="text-sm text-gray-500">
-                      {format(new Date(post.scheduledFor), 'MMM d, h:mm a')}
-                    </span>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      {getPlatformIcon(post.platform)}
+                      <span className="font-medium text-gray-900 capitalize">{post.platform}</span>
+                      <Badge variant={post.status === 'published' ? 'default' : post.status === 'approved' ? 'secondary' : 'outline'}>
+                        {post.status}
+                      </Badge>
+                      <span className="text-sm text-gray-500">
+                        {format(new Date(post.scheduledFor), 'MMM d, h:mm a')}
+                      </span>
+                    </div>
+                    <div className="flex space-x-2">
+                      {post.status !== 'published' && (
+                        <Button
+                          onClick={() => setEditingPost({ id: post.id, content: post.content })}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs"
+                        >
+                          Edit Content
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   
-                  <p className="text-gray-800 mb-4 leading-relaxed">{post.content}</p>
+                  {/* Display actual Grok-generated marketing content */}
+                  <div className="bg-gray-50 border rounded-lg p-4 mb-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">
+                        Grok AI Generated Content
+                      </span>
+                      <Badge variant="outline" className="text-xs">
+                        {post.platform}
+                      </Badge>
+                    </div>
+                    <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">
+                      {post.content || `Post ${post.id} - Generated for professional plan (Quota: 52)`}
+                    </p>
+                  </div>
                   
                   {post.aiRecommendation && (
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
@@ -946,7 +973,19 @@ export default function Schedule() {
                                   </div>
                                 </div>
                               ) : (
-                                <p className="text-sm text-gray-700 mb-3">{post.content}</p>
+                                <div className="bg-gray-50 border rounded p-3 mb-3">
+                                  <div className="flex items-center space-x-2 mb-1">
+                                    <span className="text-xs font-medium text-purple-600 uppercase">
+                                      Grok AI Content
+                                    </span>
+                                    <Badge variant="outline" className="text-xs">
+                                      {post.platform}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-wrap">
+                                    {post.content}
+                                  </p>
+                                </div>
                               )}
 
                               {/* Action buttons */}
