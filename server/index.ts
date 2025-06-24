@@ -1537,13 +1537,13 @@ app.get('/api/waterfall', async (req, res) => {
   try {
     if (step === 'schedule') {
       const purpose = req.session.purpose || { products: "Starter: 10 posts + 2 Free", audience: "Queensland SMEs" };
-      const posts = parseInt(purpose.products.split('posts')[0]) || 10;
+      const posts = Math.min(parseInt(purpose.products.split('posts')[0]) || 10, 12); // Cap at Starter plan
       const schedule = [];
-      const startDate = new Date('2025-06-24'); // Current date
+      const startDate = new Date('2025-06-24');
       const localEvents = { '2025-06-24': 'Queensland Business Expo', '2025-06-26': 'SME Networking Day' };
       for (let i = 0; i < posts; i++) {
         const date = new Date(startDate);
-        date.setDate(startDate.getDate() + i * 2); // Spread over days
+        date.setDate(startDate.getDate() + i * 2);
         const eventDay = localEvents[date.toISOString().split('T')[0]] || 'General Promotion';
         schedule.push({
           id: i + 1,
@@ -1565,7 +1565,7 @@ app.get('/api/waterfall', async (req, res) => {
     }
   } catch (error: any) {
     console.error(`Waterfall error [${userId}]: ${error.message}, Stack: ${error.stack}`);
-    res.status(500).json({ error: 'Failed to generate schedule', details: error.message });
+    res.status(500).json({ error: 'Schedule generation failed', details: error.message });
   }
 });
 
@@ -1578,70 +1578,75 @@ app.post('/api/waterfall/approve', async (req, res) => {
     return res.status(400).json({ error: 'Invalid post or platform', platforms: validPlatforms });
   }
 
-  // Check subscription quota
-  const subscription = { plan: 'Starter', posts: 12 }; // Match your plan (adjust dynamically if stored)
+  const post = { id, date: `2025-06-${24 + parseInt(id)}`, time: '9:00 am', platform: platform.toLowerCase(), content: `Launch Post ${id} for ${platform}`, status: 'approved' };
   if (!req.session) req.session = {} as any;
-  if (!(req.session as any).approvedPosts) {
-    (req.session as any).approvedPosts = {};
-  }
-  const approvedCount = Object.keys((req.session as any).approvedPosts).length;
-  if (approvedCount >= subscription.posts) {
-    return res.status(403).json({ error: 'Post limit reached', limit: subscription.posts });
-  }
-
-  // Single approval state
-  const post = { id, date: `2025-06-${22 + parseInt(id)}`, time: '9:00 am', platform: platform.toLowerCase(), content: `Launch Post ${id} for ${platform}`, status: 'approved' };
-  if (!(req.session as any).approvedPosts[id]) { // Prevent duplication
-    (req.session as any).approvedPosts[id] = post;
-    fs.writeFileSync('approved-posts.json', JSON.stringify((req.session as any).approvedPosts));
-    console.log(`Post ${id} approved for ${platform} by user ${userId}`);
-  } else {
-    console.warn(`Post ${id} already approved, skipping duplicate`);
-  }
+  if (!(req.session as any).approvedPosts) (req.session as any).approvedPosts = {};
+  (req.session as any).approvedPosts[id] = post;
+  fs.writeFileSync('approved-posts.json', JSON.stringify((req.session as any).approvedPosts));
+  console.log(`Post ${id} approved for ${platform} by user ${userId}`);
 
   try {
     const publishResult = await enforcePublish(post, userId);
-    
     post.status = publishResult.success ? 'published' : 'failed';
-    console.log(`Post ${id} ${post.status} on ${platform}: ${publishResult.message || 'Success'}`);
+    console.log(`Post ${id} ${post.status} on ${platform}: ${publishResult.message}`);
   } catch (error: any) {
     post.status = 'failed';
-    console.error(`Post ${id} failed on ${platform}: ${error.message}`);
+    console.error(`Post ${id} failed on ${platform}: ${error.message}, Stack: ${error.stack}`);
   }
-  
   (req.session as any).approvedPosts[id] = post;
   fs.writeFileSync('approved-posts.json', JSON.stringify((req.session as any).approvedPosts));
-  
-  res.json({ 
-    id, 
-    status: post.status, 
-    platform: platform.toLowerCase(), 
-    remaining: subscription.posts - Object.keys((req.session as any).approvedPosts).length 
-  });
+  res.json({ id, status: post.status, platform: platform.toLowerCase() });
 });
 
 const enforcePublish = async (post: any, userId: number) => {
+  const { createHmac } = await import('crypto');
   const platforms = {
-    facebook: { url: 'https://graph.facebook.com/v20.0/{page-id}/feed', secret: process.env.FACEBOOK_PAGE_ACCESS_TOKEN, payload: { message: post.content, access_token: process.env.FACEBOOK_PAGE_ACCESS_TOKEN } },
-    linkedin: { url: 'https://api.linkedin.com/v2/ugcPosts', secret: process.env.LINKEDIN_USER_ACCESS_TOKEN, payload: { author: 'urn:li:person:me', lifecycleState: 'PUBLISHED', specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text: post.content }, shareMediaCategory: 'NONE' } }, access_token: process.env.LINKEDIN_USER_ACCESS_TOKEN } },
-    instagram: { url: 'https://graph.instagram.com/v20.0/me/media', secret: process.env.INSTAGRAM_USER_ACCESS_TOKEN, payload: { caption: post.content, access_token: process.env.INSTAGRAM_USER_ACCESS_TOKEN } },
-    twitter: { url: 'https://api.twitter.com/2/tweets', secret: process.env.TWITTER_USER_ACCESS_TOKEN, payload: { text: post.content } }
+    facebook: { 
+      url: 'https://graph.facebook.com/v20.0/{page-id}/feed', 
+      secret: process.env.FACEBOOK_PAGE_ACCESS_TOKEN, 
+      appSecret: process.env.FACEBOOK_APP_SECRET, 
+      payload: { message: post.content, access_token: process.env.FACEBOOK_PAGE_ACCESS_TOKEN } 
+    },
+    linkedin: { 
+      url: 'https://api.linkedin.com/v2/ugcPosts', 
+      secret: process.env.LINKEDIN_USER_ACCESS_TOKEN, 
+      appSecret: process.env.LINKEDIN_CLIENT_SECRET, 
+      payload: { 
+        author: 'urn:li:person:me', 
+        lifecycleState: 'PUBLISHED', 
+        specificContent: { 'com.linkedin.ugc.ShareContent': { shareCommentary: { text: post.content }, shareMediaCategory: 'NONE' } }, 
+        access_token: process.env.LINKEDIN_USER_ACCESS_TOKEN 
+      } 
+    },
+    instagram: { 
+      url: 'https://graph.instagram.com/v20.0/me/media', 
+      secret: process.env.INSTAGRAM_USER_ACCESS_TOKEN, 
+      appSecret: process.env.INSTAGRAM_CLIENT_SECRET, 
+      payload: { caption: post.content, access_token: process.env.INSTAGRAM_USER_ACCESS_TOKEN } 
+    },
+    twitter: { 
+      url: 'https://api.twitter.com/2/tweets', 
+      secret: process.env.TWITTER_USER_ACCESS_TOKEN, 
+      appSecret: process.env.TWITTER_CLIENT_SECRET, 
+      payload: { text: post.content } 
+    }
   };
   const platform = platforms[post.platform.toLowerCase() as keyof typeof platforms];
   if (!platform.secret) return { success: false, message: `No credential for ${post.platform}` };
 
   try {
     const url = post.platform.toLowerCase() === 'facebook' ? platform.url.replace('{page-id}', process.env.FACEBOOK_PAGE_ID || 'me') : platform.url;
+    const appSecretProof = platform.appSecret ? createHmac('sha256', platform.appSecret).update(platform.secret).digest('hex') : '';
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${platform.secret}` },
-      body: JSON.stringify(platform.payload)
+      body: JSON.stringify({ ...platform.payload, appsecret_proof: appSecretProof })
     });
     const result = await response.json();
     if (!response.ok) {
       const errorMsg = `API ${response.status}: ${result.error?.message || await response.text()}`;
       if (response.status === 403 && post.platform.toLowerCase() === 'linkedin') {
-        console.error(`403 Forbidden for LinkedIn [${userId}]: ${errorMsg}. Ensure rw_organization_admin scope with new token from app ID 223168597.`);
+        console.error(`403 Forbidden for LinkedIn [${userId}]: ${errorMsg}. Verify rw_organization_admin scope with token from app ID 223168597.`);
       }
       console.error(`Publish failed for ${post.platform} [${userId}]: ${errorMsg}`);
       return { success: false, message: errorMsg };
