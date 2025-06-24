@@ -205,8 +205,19 @@ Make content authentic to Queensland culture and specifically tailored to achiev
 
     const response = await aiClient.chat.completions.create({
       model: "grok-2-1212",
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert Strategyzer Business Model Canvas consultant specializing in Queensland small business marketing. Transform brand purpose into high-converting social media content using jobs-to-be-done methodology. Always return valid JSON with exact post count requested."
+        },
+        { 
+          role: "user", 
+          content: prompt 
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 6000,
+      response_format: { type: "json_object" }
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
