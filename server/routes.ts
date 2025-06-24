@@ -3910,7 +3910,7 @@ Continue building your Value Proposition Canvas systematically.`;
       const { totalPosts = 30, platforms } = req.body;
       
       // STRATEGYZER: Fetch brand purpose from database
-      const brandPurpose = await storage.getBrandPurposeByUserId(req.session.userId);
+      const brandPurpose = await storage.getBrandPurposeByUser(req.session.userId);
       if (!brandPurpose) {
         return res.status(400).json({ message: "Brand purpose data required" });
       }
@@ -3939,7 +3939,7 @@ Continue building your Value Proposition Canvas systematically.`;
       }
 
       // Validate requested platforms have active connections
-      const requestedPlatforms = platforms || brandPurpose.platforms || [];
+      const requestedPlatforms = platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
       const connectedPlatforms = activePlatformConnections.map(conn => conn.platform.toLowerCase());
       const missingConnections = requestedPlatforms.filter((platform: string) => 
         !connectedPlatforms.includes(platform.toLowerCase())
