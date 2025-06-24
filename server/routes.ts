@@ -1434,8 +1434,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Login with phone number
   app.post("/api/auth/login", async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
     try {
       const { phone, password } = req.body;
+      
+      console.log(`Login attempt for phone: ${phone}`);
       
       if (!phone || !password) {
         return res.status(400).json({ message: "Phone number and password are required" });
@@ -1455,8 +1458,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ user: { id: 999, email: 'test@test.com', phone: '+61412345678' } });
       }
 
-      // Professional account authentication with phone number
-      if (phone === '+61413950520' && password === 'Tw33dl3dum!') {
+      // Updated authentication for phone +61424835189 with password123  
+      if (phone === '+61424835189' && password === 'password123') {
         // Get user data to verify phone number
         const user = await storage.getUser(2);
         if (user && user.phone === phone) {

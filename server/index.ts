@@ -16,31 +16,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Core API Routes
-app.post('/api/establish-session', async (req, res) => {
-  try {
-    const { storage } = await import('./storage');
-    let userId = req.session?.userId;
-    
-    if (!userId) {
-      const existingUser = await storage.getUser(2);
-      if (existingUser) {
-        userId = 2;
-        req.session.userId = 2;
-      }
-    }
-    
-    if (!userId) {
-      return res.status(401).json({ message: 'Session establishment failed' });
-    }
-    
-    const user = await storage.getUser(userId);
-    res.json({ success: true, user });
-  } catch (error) {
-    console.error('Session establishment error:', error);
-    res.status(500).json({ message: 'Failed to establish session' });
-  }
-});
+// Removed duplicate session establishment - handled in routes.ts
 
 // Robust Schedule Generation - Fixed hang and capped at 12 posts
 app.get('/api/waterfall', async (req, res) => {
@@ -312,10 +288,9 @@ app.get('/api/token-status', (req, res) => {
   });
 });
 
-// Import existing routes from original file
-import('./routes').then(({ registerRoutes }) => {
-  registerRoutes(app);
-}).catch(console.error);
+// Register routes BEFORE Vite setup to prevent interception
+const { registerRoutes } = await import('./routes');
+await registerRoutes(app);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -361,7 +336,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Setup Vite and static serving
+// Setup Vite and static serving AFTER routes
 await setupVite(app, server);
 serveStatic(app);
 
