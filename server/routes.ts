@@ -4202,8 +4202,9 @@ Continue building your Value Proposition Canvas systematically.`;
         quotaEnforced: true,
         maxPosts: maxAllowedPosts,
         newPostsCreated: savedPosts.length,
-        totalPostsNow: currentTotal - draftPosts.length + savedPosts.length,
-        userIdVerified: req.session.userId
+        totalPostsNow: finalCounts.published + finalCounts.draft,
+        userIdVerified: req.session.userId,
+        quotaFixed: true
       };
 
       res.json(scheduleData);
