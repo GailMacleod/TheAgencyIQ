@@ -1,143 +1,146 @@
-# TheAgencyIQ - Social Media Automation Platform
+# TheAgencyIQ - Social Media Management Platform
 
 ## Overview
 
-TheAgencyIQ is a comprehensive social media automation platform built for Queensland small businesses. The system enables AI-powered content generation and automated posting across multiple social media platforms including X (Twitter), Facebook, Instagram, LinkedIn, and YouTube. The application provides subscription-based services with tiered posting quotas and real-time publishing capabilities.
+TheAgencyIQ is a comprehensive AI-powered social media management platform designed specifically for Queensland small businesses. The application enables users to generate, schedule, and automatically publish content across multiple social media platforms including Facebook, Instagram, LinkedIn, X (Twitter), YouTube, and TikTok. The system features AI-driven content generation, subscription-based post quotas, and bulletproof publishing mechanisms to ensure reliable social media presence automation.
 
 ## System Architecture
 
-### Backend Architecture
-- **Framework**: Node.js with Express server
-- **Database**: PostgreSQL with Drizzle ORM for type-safe database operations
-- **Authentication**: Session-based authentication with PostgreSQL session storage
-- **API Design**: RESTful endpoints with JSON-only responses
-- **Environment**: Replit deployment with Google Cloud Engine as deployment target
+### Full-Stack Architecture
+- **Frontend**: React with TypeScript using Vite for build tooling
+- **Backend**: Express.js server with TypeScript
+- **Database**: PostgreSQL with Drizzle ORM for schema management
+- **AI Integration**: X.AI (Grok) for content generation and brand analysis
+- **Authentication**: Passport.js with OAuth strategies for multiple platforms
+- **Payment Processing**: Stripe integration for subscription management
+- **Development Environment**: Replit with Node.js 20 runtime
 
-### Frontend Architecture
-- **Framework**: React with TypeScript
-- **Build Tool**: Vite for fast development and optimized builds
-- **Styling**: Tailwind CSS with shadcn/ui components
-- **State Management**: React hooks with localStorage for persistence
-- **UI Components**: Modern component library with mobile-responsive design
-
-### Database Architecture
-- **Primary Database**: PostgreSQL with user phone number as unique identifier (UID)
-- **ORM**: Drizzle with TypeScript schema definitions
-- **Schema Location**: `shared/schema.ts` for type-safe database operations
-- **Migration Management**: Drizzle Kit for database migrations
+### Technology Stack
+- **Runtime**: Node.js 20 with ES modules
+- **Frontend Framework**: React 18 with TypeScript
+- **UI Components**: Radix UI with shadcn/ui component system
+- **Styling**: Tailwind CSS with CSS variables for theming
+- **Backend Framework**: Express.js with TypeScript
+- **Database ORM**: Drizzle with PostgreSQL driver
+- **Build System**: Vite for frontend, esbuild for backend bundling
 
 ## Key Components
 
-### User Management System
-- **Phone-based Authentication**: Users identified by phone numbers with SMS verification via Twilio
-- **Subscription Tiers**: Starter (10 posts), Professional (52 posts), Ultimate (unlimited)
-- **User Schema**: Comprehensive user profiles with subscription tracking and post quotas
+### 1. User Management System
+- Phone-based user identification system with email integration
+- Subscription tier management (Starter: 12 posts, Growth: 27 posts, Professional: 52 posts)
+- Stripe customer and subscription tracking
+- Session management with PostgreSQL session store
 
-### Multi-Platform OAuth Integration
-- **Supported Platforms**: X/Twitter OAuth 2.0, Facebook Graph API, Instagram Business API, LinkedIn API, YouTube API
-- **Token Management**: Secure storage of access tokens with automatic refresh mechanisms
-- **Connection Tracking**: Database-stored platform connections with active/inactive status
+### 2. Content Generation Engine
+- AI-powered content creation using X.AI Grok API
+- Brand analysis and Jobs-to-be-Done framework integration
+- Queensland-specific event integration for relevant posting
+- CMO-level strategic content planning with team insights simulation
+- Platform-specific content optimization
 
-### AI Content Generation
-- **Provider**: xAI/Grok integration for intelligent content creation
-- **Content Types**: Platform-optimized posts with character limits and best practices
-- **Scheduling**: Automated post scheduling with intelligent timing recommendations
+### 3. Social Media Platform Integration
+- **Facebook**: Graph API with pages_manage_posts permissions
+- **LinkedIn**: OAuth 2.0 with w_member_social scope
+- **X (Twitter)**: OAuth 2.0 with tweet.write permissions
+- **Instagram**: Facebook Graph API integration for business accounts
+- **YouTube**: Google OAuth with upload permissions
+- **TikTok**: Platform connection framework ready
 
-### Auto-Publishing System
-- **Real-time Publishing**: Immediate post publication upon approval
-- **Error Handling**: Comprehensive retry logic and failure recovery
-- **Platform Validation**: Token verification before publishing attempts
-- **Status Tracking**: Detailed post status management (draft, approved, published, failed)
+### 4. Publishing Infrastructure
+- **Bulletproof Publisher**: Multi-layer validation and fallback systems
+- **Auto-posting Enforcer**: 30-day subscription guarantee mechanism
+- **Emergency Publisher**: Handles platform failures gracefully
+- **Direct Publisher**: App-level credential posting for immediate functionality
+- **Platform Health Monitor**: Real-time connection and token validation
 
-### Gift Certificate System
-- **Database Table**: Gift certificates with unique codes, plan assignments, and redemption tracking
-- **Admin Management**: Administrative endpoints for certificate generation and monitoring
-- **Redemption Flow**: Automated subscription upgrades upon valid certificate redemption
+### 5. Post Management System
+- Draft, approved, scheduled, published, and failed status tracking
+- 30-day rolling quota enforcement with ledger system
+- Subscription cycle management and post counting
+- Automated scheduling with optimal timing algorithms
+
+### 6. Security and Compliance
+- **Breach Notification Service**: 72-hour incident reporting compliance
+- **Data Cleanup Service**: Automated retention policy enforcement
+- **SSL Configuration**: Secure context validation and domain verification
+- **Content Security Policy**: Platform-specific script allowlisting
 
 ## Data Flow
 
-### User Registration and Authentication
-1. User provides phone number and creates account
-2. SMS verification code sent via Twilio
-3. Account creation with phone UID system
-4. Session establishment with PostgreSQL storage
+### Content Generation Flow
+1. User provides brand information and target audience
+2. AI analyzes brand purpose using Jobs-to-be-Done framework
+3. Queensland events API provides local relevance data
+4. CMO strategy engine generates platform-specific content
+5. Content is stored with approval workflow
+6. Approved content enters publishing queue
 
-### Platform Connection Flow
-1. User initiates platform connection (OAuth flow)
-2. Redirect to platform authorization endpoints
-3. Authorization code exchange for access tokens
-4. Secure token storage in platform_connections table
-5. Connection validation and status update
+### Publishing Flow
+1. Scheduled posts are detected by auto-posting enforcer
+2. Platform health monitor validates all connections
+3. Bulletproof publisher attempts primary publishing
+4. Emergency publisher handles fallbacks if needed
+5. Post status is updated with success/failure tracking
+6. Analytics and engagement data is collected
 
-### Content Creation and Publishing
-1. User requests AI content generation
-2. xAI/Grok generates platform-optimized content
-3. Content stored in posts table with scheduling information
-4. Auto-posting enforcer monitors for scheduled posts
-5. Platform APIs called for content publication
-6. Status updates and error handling
-
-### Subscription and Quota Management
-1. User subscription level determines post quotas
-2. Post creation decrements available quota
-3. Subscription upgrades via gift certificates
-4. Real-time quota enforcement
+### Subscription Management Flow
+1. User selects subscription tier via Stripe integration
+2. Post quota is allocated based on subscription level
+3. Post ledger tracks usage against 30-day rolling periods
+4. Quota enforcement prevents over-posting
+5. Subscription renewal resets quotas automatically
 
 ## External Dependencies
 
-### Third-Party Services
-- **Twilio**: SMS verification and communication services
-- **Facebook/Meta APIs**: Facebook and Instagram publishing
-- **X (Twitter) API**: Tweet publishing with OAuth 2.0
-- **LinkedIn API**: Professional network publishing
-- **YouTube API**: Video content management
-- **xAI/Grok**: AI-powered content generation
+### AI and Content Services
+- **X.AI API**: Content generation and brand analysis
+- **Queensland Events API**: Local event integration for relevant posting
+- **OpenAI-compatible interface**: Grok integration for strategic insights
 
-### Environment Variables
-- Database: `DATABASE_URL` (PostgreSQL connection string)
-- Twilio: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`
-- Session: `SESSION_SECRET`
-- Platform Credentials: Various OAuth client IDs and secrets for each platform
+### Social Media APIs
+- **Facebook Graph API v20.0**: Posts and page management
+- **LinkedIn API v2**: Professional network posting
+- **X API v2**: Tweet publishing with OAuth 2.0
+- **Instagram Graph API**: Business account posting
+- **YouTube Data API v3**: Video and community posting
+- **TikTok API**: Platform integration framework
 
-### NPM Dependencies
-- **Core**: express, pg, drizzle-orm, @neondatabase/serverless
-- **Authentication**: bcrypt, express-session, connect-pg-simple
-- **Communication**: twilio, cors
-- **Development**: tsx, @types/* packages for TypeScript support
+### Payment and Communication
+- **Stripe**: Subscription billing and customer management
+- **Twilio**: SMS verification and communication
+- **SendGrid**: Email notifications and transactional messaging
+
+### Infrastructure Services
+- **Neon/PostgreSQL**: Primary database with serverless scaling
+- **Replit**: Development and deployment platform
+- **Google Cloud Engine**: Production deployment target
 
 ## Deployment Strategy
 
 ### Development Environment
-- **Local Setup**: PostgreSQL database with schema initialization
-- **Development Server**: Hot reload with `npm run dev`
-- **Port Configuration**: Server on port 5000, frontend on port 3001
+- Replit-based development with hot reloading
+- PostgreSQL 16 module with connection pooling
+- Environment variable management through Replit Secrets
+- Automated dependency management with npm
 
 ### Production Deployment
-- **Platform**: Google Cloud Engine via Replit deployment
-- **Build Process**: `npm run build` for production optimization
-- **Database**: Managed PostgreSQL with connection pooling
-- **Environment**: Production environment variables and secrets management
+- **Target Platform**: Google Cloud Engine via Replit deployment
+- **Build Process**: Vite frontend build + esbuild backend bundling
+- **Database**: Neon PostgreSQL with connection pooling
+- **CDN**: Static asset optimization for React components
+- **SSL**: Automatic HTTPS with domain validation
 
-### Data Management
-- **Backup Strategy**: Automated PostgreSQL backups
-- **Migration Management**: Drizzle migrations for schema changes
-- **Data Retention**: Automated cleanup policies for old posts and expired tokens
+### Monitoring and Reliability
+- **Health Checks**: Platform connection validation every 30 seconds
+- **Error Handling**: Comprehensive logging with fallback mechanisms
+- **Data Backup**: Automated PostgreSQL backups with retention policies
+- **Performance Monitoring**: Connection pool and API response tracking
 
 ## Changelog
 
-- June 23, 2025: Initial setup
-- June 23, 2025: Fixed critical post count erraticism and ledger logic issues
-  - Root cause: Professional user had 79 posts instead of 52 quota limit
-  - Solution: Implemented strict quota enforcement removing 27 excess posts
-  - Result: Stabilized at exactly 52 posts matching professional plan
-  - Impact: Prevents token refresh cascade failures and auto-posting issues
-- June 24, 2025: LAUNCH COMPLETE - All systems operational for 9:00 AM JST
-  - Fixed Instagram publishing with working Facebook page fallback system
-  - Restored all OAuth connections: X, Facebook, LinkedIn, Instagram, YouTube
-  - Confirmed AI-generated content displaying rich marketing copy with emojis and CTAs
-  - Verified 52 post quota enforcement for professional subscription tier
-  - Implemented bulletproof publishing with fallback mechanisms for reliability
-  - Status: Ready for immediate deployment with 5-platform coverage
+Changelog:
+- June 24, 2025. Initial setup
 
 ## User Preferences
 

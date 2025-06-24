@@ -43,6 +43,7 @@ export interface IStorage {
   createPost(post: InsertPost): Promise<Post>;
   updatePost(id: number, updates: Partial<InsertPost>): Promise<Post>;
   deletePost(id: number): Promise<void>;
+  getPost(id: number): Promise<Post | undefined>;
 
   // Platform connection operations
   getPlatformConnectionsByUser(userId: number): Promise<PlatformConnection[]>;
@@ -73,7 +74,7 @@ export interface IStorage {
   // Post ledger operations for synchronization
   getPostLedgerByUser(userId: string): Promise<any | undefined>;
   createPostLedger(ledger: any): Promise<any>;
-  updatePostLedger(id: number, updates: any): Promise<any>;
+  updatePostLedger(userId: string, updates: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
