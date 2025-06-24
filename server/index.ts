@@ -31,8 +31,8 @@ app.get('/api/waterfall', async (req, res) => {
         brand: "TheAgencyIQ"
       };
       
-      // Enforce 12-post cap for stability
-      const posts = Math.min(parseInt(purpose.products.split('posts')[0]) || 12, 12);
+      // ANTI-BLOATING: Hard limit to 10 posts for waterfall demo
+      const posts = Math.min(parseInt(purpose.products.split('posts')[0]) || 10, 10);
       const schedule = [];
       const startDate = new Date('2025-06-24');
       const localEvents = { 

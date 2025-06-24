@@ -49,13 +49,15 @@ export async function analyzeBrandPurpose(params: ContentGenerationParams): Prom
 export async function generateContentCalendar(params: ContentGenerationParams): Promise<GeneratedPost[]> {
   const openai = new OpenAI({ baseURL: "https://api.x.ai/v1", apiKey: process.env.XAI_API_KEY });
   
-  console.log(`Generating ${params.totalPosts} posts using Grok X.AI API`);
+  // ANTI-BLOATING: Strict cap at 52 posts maximum for Professional plan
+  const maxPosts = Math.min(params.totalPosts, 52);
+  console.log(`ANTI-BLOATING: Generating ${maxPosts} posts (requested: ${params.totalPosts}, capped: 52) using Grok X.AI API`);
   
   // Generate each post individually to avoid large JSON parsing issues
   const posts = [];
   const platforms = params.platforms;
   
-  for (let i = 0; i < params.totalPosts; i++) {
+  for (let i = 0; i < maxPosts; i++) {
     const platformIndex = i % platforms.length;
     const platform = platforms[platformIndex];
     
