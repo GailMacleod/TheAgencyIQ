@@ -3759,7 +3759,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
     
     const quotas = { starter: 12, growth: 27, professional: 52 };
-    const quota = quotas[user.subscriptionPlan?.toLowerCase() || 'starter'] || 12;
+    const quota = (quotas as any)[user.subscriptionPlan?.toLowerCase() || 'starter'] || 12;
     
     // Get successful posts in last 30 days
     const allPosts = await storage.getPostsByUser(userIdInt);
