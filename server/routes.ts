@@ -3969,28 +3969,34 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
+      // Get user for quota checking
+      const quotaUser = await storage.getUser(req.session.userId);
+      if (!quotaUser) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
       // STRICT QUOTA ENFORCEMENT - Professional = 52 posts MAX
-      const quotaLimits = { starter: 12, growth: 27, professional: 52 };
-      const currentPlan = user.subscriptionPlan?.toLowerCase() || 'starter';
-      const maxPosts = quotaLimits[currentPlan as keyof typeof quotaLimits] || 12;
+      const hardQuotaLimits = { starter: 12, growth: 27, professional: 52 };
+      const userPlan = quotaUser.subscriptionPlan?.toLowerCase() || 'starter';
+      const maxAllowedPosts = hardQuotaLimits[userPlan as keyof typeof hardQuotaLimits] || 12;
       
       // Check current total posts
       const allExistingPosts = await storage.getPostsByUser(req.session.userId);
       const currentTotal = allExistingPosts.length;
       
-      console.log(`QUOTA CHECK: User has ${currentTotal}/${maxPosts} posts (${currentPlan} plan)`);
+      console.log(`QUOTA CHECK: User has ${currentTotal}/${maxAllowedPosts} posts (${userPlan} plan)`);
       
-      if (currentTotal >= maxPosts) {
+      if (currentTotal >= maxAllowedPosts) {
         return res.status(400).json({
-          error: `Quota limit reached. You have ${currentTotal} posts but your ${currentPlan} plan allows only ${maxPosts} posts.`,
+          error: `Quota limit reached. You have ${currentTotal} posts but your ${userPlan} plan allows only ${maxAllowedPosts} posts.`,
           quotaReached: true,
           currentCount: currentTotal,
-          maxAllowed: maxPosts
+          maxAllowed: maxAllowedPosts
         });
       }
       
       // Calculate remaining posts we can generate
-      const remainingSlots = maxPosts - currentTotal;
+      const remainingSlots = maxAllowedPosts - currentTotal;
       console.log(`Can generate ${remainingSlots} more posts to reach quota limit`);
       
       // Clear only draft posts if regenerating
@@ -4069,13 +4075,13 @@ Continue building your Value Proposition Canvas systematically.`;
         await storage.deletePost(draft.id);
       }
       
-      console.log(`LAUNCH MODE: Cleared ${draftsToDelete.length} draft posts, generating fresh ${planPostLimit} post schedule`);
+      console.log(`QUOTA ENFORCED: Cleared ${draftsToDelete.length} draft posts, generating ${remainingSlots} posts`);
       
-      // Save posts to database for launch mode
+      // Save posts to database with quota enforcement
       const savedPosts = [];
-      const postsToSave = generatedPosts.slice(0, planPostLimit); // Generate full subscription allocation
+      const postsToSave = generatedPosts.slice(0, remainingSlots); // Only generate what's allowed
       
-      console.log(`LAUNCH MODE: Generating ${postsToSave.length} posts for ${currentUserPlan} plan`);
+      console.log(`QUOTA ENFORCED: Generating ${postsToSave.length} posts for ${userPlan} plan`);
       
       for (const post of postsToSave) {
         try {
@@ -4150,12 +4156,12 @@ Continue building your Value Proposition Canvas systematically.`;
       };
       
       console.log(`Post-generation verification for user ${req.session.userId}:`, finalCounts);
-      console.log(`QUOTA ENFORCED: Generated ${savedPosts.length} posts within ${maxPosts} limit`);
+      console.log(`QUOTA ENFORCED: Generated ${savedPosts.length} posts within ${maxAllowedPosts} limit`);
 
       // Add verification data to response
-      scheduleData.verification = {
+      (scheduleData as any).verification = {
         quotaEnforced: true,
-        maxPosts: maxPosts,
+        maxPosts: maxAllowedPosts,
         newPostsCreated: savedPosts.length,
         totalPostsNow: currentTotal - draftPosts.length + savedPosts.length,
         userIdVerified: req.session.userId
@@ -6807,7 +6813,8 @@ Continue building your Value Proposition Canvas systematically.`;
           }
         } catch (userError) {
           console.error(`Error processing user ${user.phone}:`, userError);
-          cleanupReport.errors.push(`User ${user.phone}: ${(userError as Error).message}`);
+          const cleanupErrors = cleanupReport.errors as any[];
+          cleanupErrors.push(`User ${user.phone}: ${(userError as Error).message}`);
         }
       }
 
