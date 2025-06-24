@@ -57,17 +57,19 @@ export class AutoPostingEnforcer {
         return result;
       }
 
-      // AUTO-APPROVE ALL DRAFT POSTS and process them immediately
+      // AUTO-APPROVE ALL NON-PUBLISHED POSTS and process them immediately
       const allPosts = await storage.getPostsByUser(userId);
       const draftPosts = allPosts.filter(post => post.status === 'draft');
+      const pendingPosts = allPosts.filter(post => post.status === 'pending');
       const approvedPosts = allPosts.filter(post => post.status === 'approved');
 
-      console.log(`Auto-posting enforcer: Found ${draftPosts.length} draft posts and ${approvedPosts.length} approved posts`);
+      console.log(`Auto-posting enforcer: Found ${draftPosts.length} draft, ${pendingPosts.length} pending, and ${approvedPosts.length} approved posts`);
 
-      // Auto-approve all draft posts first
-      for (const post of draftPosts) {
+      // Auto-approve all draft and pending posts first
+      const postsToApprove = [...draftPosts, ...pendingPosts];
+      for (const post of postsToApprove) {
         await storage.updatePost(post.id, { status: 'approved' });
-        console.log(`Auto-posting enforcer: Auto-approved draft post ${post.id} for ${post.platform}`);
+        console.log(`Auto-posting enforcer: Auto-approved ${post.status} post ${post.id} for ${post.platform}`);
       }
 
       // Get all posts ready for publishing (newly approved + existing approved)
