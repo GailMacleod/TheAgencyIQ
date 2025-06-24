@@ -87,5 +87,6 @@ const enforcePublishing = async () => {
 
 // Start enforcement every 30 seconds
 setInterval(enforcePublishing, 30000);
+console.log('[PUBLISHER] Auto-publisher initialized');
 
 module.exports = { enforcePublishing, postQueue };

@@ -3747,8 +3747,8 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // REPLIT-NATIVE AI CONTENT GENERATION
-  app.post('/auto-generate-content-schedule', async (req, res) => {
+  // DISABLED - DUPLICATE ENDPOINT 1
+  app.post('/auto-generate-content-schedule-OLD', async (req, res) => {
     const userId = req.body.phone || '+61424835189';
     const userIdInt = 2; // Fixed to user 2
     
@@ -3887,33 +3887,7 @@ Continue building your Value Proposition Canvas systematically.`;
         const after = await tx.select().from(posts).where(eq(posts.userId, userId));
         console.log('[DEBUG] After count:', after.length, 'Sample:', newPosts[0]?.content);
       });
-      
-      // Generate only remaining quota posts
-      const newPosts = [];
-      for (let i = 0; i < remaining; i++) {
-        const post = await storage.createPost({
-          userId,
-          content: `Post ${i + 1} - Generated for ${user.subscriptionPlan} plan (Quota: ${quota})`,
-          status: 'pending',
-          platform: 'x'
-        });
-        newPosts.push(post);
-      }
-      
-      const after = await storage.getPostsByUser(userId);
-      console.log('[DEBUG] After count:', after.length, 'New Statuses:', after.map(p => p.status));
-      console.log('[DEBUG] Cleanup complete - Deleted:', deletedCount, 'Generated:', newPosts.length);
-      
-      res.json({
-        message: 'Schedule generated successfully',
-        quota,
-        plan: user.subscriptionPlan,
-        beforeCount: allPosts.length,
-        afterCount: after.length,
-        deleted: deletedCount,
-        generated: newPosts.length,
-        remaining
-      });
+      res.send('Schedule generated');
       
     } catch (error) {
       console.error('[DEBUG] Generation error:', error);
