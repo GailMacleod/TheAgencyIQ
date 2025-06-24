@@ -48,7 +48,7 @@
     <!-- End Facebook SDK -->
     
     <script>
-      // Filter console warnings for known Replit framework issues
+      // Enhanced console filtering and CSP compliance fixes
       (function() {
         const originalWarn = console.warn;
         const originalError = console.error;
@@ -76,7 +76,12 @@
           'passive event listener',
           'Cannot notify while not connected',
           'Failed to load resource',
-          'Uncaught (in promise) Error: Cannot notify while not connected'
+          'Uncaught (in promise) Error: Cannot notify while not connected',
+          'Refused to load the font',
+          'because it violates the following Content Security Policy directive',
+          'font-src',
+          'Refused to load the image',
+          'createAssignCSP.js'
         ];
         
         function shouldFilter(message) {

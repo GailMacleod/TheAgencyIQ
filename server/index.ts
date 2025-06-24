@@ -17,16 +17,18 @@ app.use(session({
   cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
 }));
 
-// CSP Middleware for Facebook/Meta compliance
+// Enhanced CSP Middleware - Fixed font loading and data URIs
 app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', 
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://replit.com https://*.replit.app; " +
-    "connect-src 'self' https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com; " +
-    "style-src 'self' 'unsafe-inline'; " +
+    "default-src 'self' data:; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: https://connect.facebook.net https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://replit.com https://*.replit.app; " +
+    "connect-src 'self' https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com wss: ws:; " +
+    "style-src 'self' 'unsafe-inline' data:; " +
     "img-src 'self' data: https: blob:; " +
-    "font-src 'self' https:; " +
-    "frame-src 'self' https://checkout.stripe.com https://js.stripe.com https://connect.facebook.net;"
+    "font-src 'self' 'unsafe-inline' data: https: blob:; " +
+    "frame-src 'self' https://checkout.stripe.com https://js.stripe.com https://connect.facebook.net; " +
+    "worker-src 'self' blob:; " +
+    "media-src 'self' data: blob:;"
   );
   next();
 });
