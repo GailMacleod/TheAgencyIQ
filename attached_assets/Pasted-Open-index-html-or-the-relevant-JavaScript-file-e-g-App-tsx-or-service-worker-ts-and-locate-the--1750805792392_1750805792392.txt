@@ -1,0 +1,83 @@
+Open index.html or the relevant JavaScript file (e.g., App.tsx or service-worker.ts) and locate the beforeinstallprompt event listener. Replace or add only this block with a surgical fix to enable the install prompt, preserving all other code:
+
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent Chrome 67 and earlier from automatically showing the prompt
+  e.preventDefault();
+  // Stash the event so it can be triggered later
+  deferredPrompt = e;
+  // Show the install button or trigger prompt manually
+  showInstallPromotion();
+});
+
+function showInstallPromotion() {
+  const installButton = document.createElement('button');
+  installButton.textContent = 'Install TheAgencyIQ';
+  installButton.addEventListener('click', () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        deferredPrompt = null;
+      });
+    }
+  });
+  document.body.appendChild(installButton);
+}
+Instructions:
+
+If using a framework (e.g., React), integrate this into App.tsx within a useEffect hook:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+useEffect(() => {
+  let deferredPrompt;
+
+  const handleBeforeInstallPrompt = (e: Event) => {
+    e.preventDefault();
+    deferredPrompt = e as any;
+    showInstallPromotion();
+  };
+
+  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+  return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+}, []);
+
+function showInstallPromotion() {
+  // Same button logic as above, adjusted for React
+}
+Run in Replit:
+text
+
+Collapse
+
+Wrap
+
+Copy
+NODE_ENV=production tsx server/index.ts
+Test:
+Access https://app.theagencyiq.ai
+Verify the "Install TheAgencyIQ" button appears on load
+Click to install, check console for acceptance/dismissal logs
+Submit results by 08:00 AM JST.

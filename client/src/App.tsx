@@ -79,6 +79,65 @@ function App() {
     }
   }, []);
 
+  // PWA Install Prompt Handler
+  useEffect(() => {
+    let deferredPrompt: any;
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      deferredPrompt = e as any;
+      showInstallPromotion();
+    };
+
+    const showInstallPromotion = () => {
+      // Check if install button already exists
+      if (document.getElementById('pwa-install-button')) return;
+      
+      const installButton = document.createElement('button');
+      installButton.id = 'pwa-install-button';
+      installButton.textContent = 'Install TheAgencyIQ';
+      installButton.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: #3250fa;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      `;
+      
+      installButton.addEventListener('click', () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then((choiceResult: any) => {
+            if (choiceResult.outcome === 'accepted') {
+              console.log('User accepted the install prompt');
+            } else {
+              console.log('User dismissed the install prompt');
+            }
+            deferredPrompt = null;
+            installButton.remove();
+          });
+        }
+      });
+      
+      document.body.appendChild(installButton);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      const button = document.getElementById('pwa-install-button');
+      if (button) button.remove();
+    };
+  }, []);
+
   // Establish authentication session on app load with robust error handling
   useEffect(() => {
     const establishSession = async () => {

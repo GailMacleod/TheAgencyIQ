@@ -368,7 +368,7 @@ app.use((req, res, next) => {
 });
 
 // Setup Vite and static serving
-setupVite(app, server);
+await setupVite(app, server);
 serveStatic(app);
 
 const port = Number(process.env.PORT) || 5000;
