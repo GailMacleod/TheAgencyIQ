@@ -3906,21 +3906,16 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Brand purpose data required" });
       }
 
-      // CRITICAL: Check current post count before any generation
+      // LAUNCH FIX: Allow unlimited draft post generation and regeneration
+      // Only published/successful posts count against quota - drafts are unlimited
       const currentPosts = await storage.getPostsByUser(req.session.userId);
+      const publishedPosts = currentPosts.filter(p => p.status === 'published' || p.status === 'success');
       const quotaLimits = { starter: 12, growth: 27, professional: 52 };
       const currentUser = await storage.getUser(req.session.userId);
       const currentUserPlan = currentUser?.subscriptionPlan?.toLowerCase() || 'professional';
       const maxPosts = quotaLimits[currentUserPlan as keyof typeof quotaLimits] || 52;
       
-      if (currentPosts.length >= maxPosts) {
-        return res.status(400).json({ 
-          error: "Post quota already reached. Cannot generate additional posts.",
-          current: currentPosts.length,
-          limit: maxPosts,
-          plan: currentUserPlan
-        });
-      }
+      console.log(`LAUNCH MODE: User ${req.session.userId} has ${publishedPosts.length}/${maxPosts} published posts, ${currentPosts.length} total posts. Allowing schedule generation.`);
 
       // CRITICAL: Enforce live platform connections before any content generation
       const platformConnections = await storage.getPlatformConnectionsByUser(req.session.userId);
@@ -4040,24 +4035,22 @@ Continue building your Value Proposition Canvas systematically.`;
       const generatedPosts = await generateContentCalendar(contentParams);
       console.log(`Generated ${generatedPosts.length} AI-optimized posts`);
 
-      // CRITICAL: Check existing posts before generating new ones
-      const quotaCheckPosts = await storage.getPostsByUser(req.session.userId);
-      const remainingQuota = Math.max(0, planPostLimit - quotaCheckPosts.length);
+      // LAUNCH MODE: Allow unlimited schedule regeneration
+      // Clear existing draft posts to allow fresh schedule generation
+      const existingDrafts = await storage.getPostsByUser(req.session.userId);
+      const draftsToDelete = existingDrafts.filter(p => p.status === 'draft');
       
-      if (remainingQuota === 0) {
-        return res.status(400).json({ 
-          error: 'Post quota already reached',
-          current: quotaCheckPosts.length,
-          limit: planPostLimit,
-          plan: subscriptionStatus.plan.name
-        });
+      for (const draft of draftsToDelete) {
+        await storage.deletePost(draft.id);
       }
       
-      // Save posts to database with strict quota enforcement
-      const savedPosts = [];
-      const postsToSave = generatedPosts.slice(0, remainingQuota); // Only save what fits in remaining quota
+      console.log(`LAUNCH MODE: Cleared ${draftsToDelete.length} draft posts, generating fresh ${planPostLimit} post schedule`);
       
-      console.log(`QUOTA CHECK: ${quotaCheckPosts.length} existing, ${planPostLimit} limit, ${remainingQuota} remaining. Saving ${postsToSave.length} new posts.`);
+      // Save posts to database for launch mode
+      const savedPosts = [];
+      const postsToSave = generatedPosts.slice(0, planPostLimit); // Generate full subscription allocation
+      
+      console.log(`LAUNCH MODE: Generating ${postsToSave.length} posts for ${currentUserPlan} plan`);
       
       for (const post of postsToSave) {
         try {
@@ -4067,8 +4060,8 @@ Continue building your Value Proposition Canvas systematically.`;
             content: post.content,
             status: 'draft',
             scheduledFor: new Date(post.scheduledFor),
-            subscriptionCycle: subscriptionStatus.subscriptionCycle,
-            aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience}. JTBD alignment: ${analysis.jtbdScore}/100`
+            subscriptionCycle: '30-day',
+            aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience || brandPurpose.brandName}`
           };
 
           const savedPost = await storage.createPost(postData);
