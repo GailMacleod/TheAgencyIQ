@@ -3969,16 +3969,34 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      // Users get their full subscription allocation and can regenerate schedule unlimited times
-      // Only actual posting/publishing counts against their limit
-      const planPostLimit = subscriptionPlan.postsPerMonth;
+      // STRICT QUOTA ENFORCEMENT - Professional = 52 posts MAX
+      const quotaLimits = { starter: 12, growth: 27, professional: 52 };
+      const currentPlan = user.subscriptionPlan?.toLowerCase() || 'starter';
+      const maxPosts = quotaLimits[currentPlan as keyof typeof quotaLimits] || 12;
       
-      // Clear ALL existing draft posts for this user to prevent duplication
+      // Check current total posts
       const allExistingPosts = await storage.getPostsByUser(req.session.userId);
-      const draftPosts = allExistingPosts.filter(p => p.status === 'draft');
+      const currentTotal = allExistingPosts.length;
       
+      console.log(`QUOTA CHECK: User has ${currentTotal}/${maxPosts} posts (${currentPlan} plan)`);
+      
+      if (currentTotal >= maxPosts) {
+        return res.status(400).json({
+          error: `Quota limit reached. You have ${currentTotal} posts but your ${currentPlan} plan allows only ${maxPosts} posts.`,
+          quotaReached: true,
+          currentCount: currentTotal,
+          maxAllowed: maxPosts
+        });
+      }
+      
+      // Calculate remaining posts we can generate
+      const remainingSlots = maxPosts - currentTotal;
+      console.log(`Can generate ${remainingSlots} more posts to reach quota limit`);
+      
+      // Clear only draft posts if regenerating
+      const draftPosts = allExistingPosts.filter(p => p.status === 'draft');
       if (draftPosts.length > 0) {
-        console.log(`Clearing ${draftPosts.length} draft posts to regenerate fresh schedule`);
+        console.log(`Clearing ${draftPosts.length} draft posts for regeneration`);
         for (const post of draftPosts) {
           await storage.deletePost(post.id);
         }
@@ -4132,13 +4150,14 @@ Continue building your Value Proposition Canvas systematically.`;
       };
       
       console.log(`Post-generation verification for user ${req.session.userId}:`, finalCounts);
-      console.log(`AI schedule generated successfully: ${savedPosts.length} posts saved`);
+      console.log(`QUOTA ENFORCED: Generated ${savedPosts.length} posts within ${maxPosts} limit`);
 
       // Add verification data to response
       scheduleData.verification = {
-        preGeneration: currentCounts,
-        postGeneration: finalCounts,
+        quotaEnforced: true,
+        maxPosts: maxPosts,
         newPostsCreated: savedPosts.length,
+        totalPostsNow: currentTotal - draftPosts.length + savedPosts.length,
         userIdVerified: req.session.userId
       };
 
