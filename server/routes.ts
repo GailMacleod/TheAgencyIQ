@@ -3767,7 +3767,8 @@ Continue building your Value Proposition Canvas systematically.`;
     const remaining = Math.max(0, quota - successfulPosts.length);
     console.log('[DEBUG] User:', userId, 'Plan:', user.subscriptionPlan, 'Quota:', quota, 'Remaining:', remaining);
     
-    if (remaining === 0) return res.status(400).send('Quota exceeded');
+    // LAUNCH MODE: Allow unlimited schedule generation
+    console.log(`LAUNCH MODE: Allowing schedule generation despite quota (${remaining} remaining)`);
     
     const current = await storage.getPostsByUser(userIdInt);
     console.log('[DEBUG] Before count:', current.length);
