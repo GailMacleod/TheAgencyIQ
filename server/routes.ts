@@ -3797,8 +3797,10 @@ Continue building your Value Proposition Canvas systematically.`;
       const postsToSave = generatedPosts.slice(0, planPostLimit); // Enforce exact plan limit
       
       console.log(`Saving exactly ${planPostLimit} posts for ${userPlan.name} plan (generated ${generatedPosts.length}, saving ${postsToSave.length})`);
+      console.log(`First post content sample: ${generatedPosts[0]?.content?.substring(0, 100)}...`);
       
-      for (const post of postsToSave) {
+      for (let i = 0; i < postsToSave.length; i++) {
+        const post = postsToSave[i];
         try {
           const postData = {
             userId: req.session.userId,
@@ -3810,18 +3812,33 @@ Continue building your Value Proposition Canvas systematically.`;
             aiRecommendation: `AI-generated content optimized for ${brandPurpose.audience}. JTBD alignment: ${analysis.jtbdScore}/100`
           };
           
-          console.log(`Saving post ${postsToSave.indexOf(post) + 1}: ${post.platform} - ${post.content.substring(0, 50)}...`);
+          console.log(`Saving post ${i + 1}/${postsToSave.length}: ${post.platform} - ${post.content.substring(0, 50)}...`);
 
           const savedPost = await storage.createPost(postData);
-          console.log(`Successfully saved post ID: ${savedPost.id}`);
+          console.log(`Successfully saved post ID: ${savedPost.id} with content length: ${savedPost.content.length}`);
           savedPosts.push({
             ...savedPost,
             aiScore: analysis.jtbdScore
           });
         } catch (error) {
-          console.error('Error saving post:', error);
-          console.error('Post data that failed to save:', JSON.stringify(postData, null, 2));
+          console.error(`Error saving post ${i + 1}:`, error);
+          console.error('Post data that failed to save:', JSON.stringify({
+            platform: post.platform,
+            contentLength: post.content?.length || 0,
+            contentPreview: post.content?.substring(0, 100) || 'No content'
+          }, null, 2));
         }
+      }
+      
+      console.log(`Database save complete. Saved ${savedPosts.length} out of ${postsToSave.length} generated posts`);
+      
+      if (savedPosts.length === 0) {
+        console.error('CRITICAL: No posts were saved to database despite successful generation');
+        return res.status(500).json({ 
+          error: 'Post generation succeeded but database save failed',
+          generatedCount: generatedPosts.length,
+          savedCount: savedPosts.length
+        });
       }
 
       // Prepare schedule insights with subscription information
