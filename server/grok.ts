@@ -47,9 +47,11 @@ export async function analyzeBrandPurpose(params: ContentGenerationParams): Prom
 }
 
 export async function generateContentCalendar(params: ContentGenerationParams): Promise<GeneratedPost[]> {
-  console.log(`Generating ${params.totalPosts} posts using reliable fallback method`);
+  const openai = new OpenAI({ baseURL: "https://api.x.ai/v1", apiKey: process.env.XAI_API_KEY });
   
-  // Use direct fallback content generation to eliminate JSON parsing completely
+  console.log(`Generating ${params.totalPosts} posts using Grok X.AI API`);
+  
+  // Generate each post individually to avoid large JSON parsing issues
   const posts = [];
   const platforms = params.platforms;
   
@@ -59,20 +61,76 @@ export async function generateContentCalendar(params: ContentGenerationParams): 
     
     const baseDate = new Date('2025-06-25T09:00:00+10:00');
     const scheduledDate = new Date(baseDate);
-    scheduledDate.setHours(scheduledDate.getHours() + (i * 6)); // Space posts 6 hours apart
+    scheduledDate.setHours(scheduledDate.getHours() + (i * 6));
     
-    posts.push({
-      platform,
-      content: generateFallbackContent(params, platform, i + 1),
-      scheduledFor: scheduledDate.toISOString(),
-      postType: i % 4 === 0 ? 'sales' : i % 4 === 1 ? 'awareness' : i % 4 === 2 ? 'educational' : 'engagement',
-      aiScore: Math.floor(Math.random() * 20) + 80,
-      targetPainPoint: params.painPoints,
-      jtbdAlignment: params.jobToBeDone
-    });
+    const postPrompt = `Create a single compelling ${platform} marketing post for ${params.brandName}.
+
+Brand Details:
+- Core Purpose: ${params.corePurpose}
+- Products/Services: ${params.productsServices}
+- Target Audience: ${params.audience}
+- Pain Points: ${params.painPoints}
+- Job-to-be-Done: ${params.jobToBeDone}
+
+Requirements:
+- Platform: ${platform}
+- Professional Queensland business tone
+- Include relevant hashtags (#QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing)
+- Clear call-to-action
+- URL: https://app.theagencyiq.ai
+- ${platform === 'x' ? 'Maximum 280 characters' : 'Engaging, detailed content'}
+
+Return ONLY the post content, no extra formatting or JSON.`;
+
+    try {
+      const response = await openai.chat.completions.create({
+        model: "grok-2-1212",
+        messages: [
+          {
+            role: "system", 
+            content: "You are an expert Queensland small business marketing strategist. Create compelling social media content that drives engagement and conversions."
+          },
+          { 
+            role: "user", 
+            content: postPrompt 
+          }
+        ],
+        temperature: 0.8,
+        max_tokens: 400
+      });
+      
+      const content = response.choices[0].message.content?.trim();
+      
+      if (content && content.length > 10) {
+        posts.push({
+          platform,
+          content,
+          scheduledFor: scheduledDate.toISOString(),
+          postType: i % 4 === 0 ? 'sales' : i % 4 === 1 ? 'awareness' : i % 4 === 2 ? 'educational' : 'engagement',
+          aiScore: Math.floor(Math.random() * 20) + 80,
+          targetPainPoint: params.painPoints,
+          jtbdAlignment: params.jobToBeDone
+        });
+        console.log(`Generated Grok content for ${platform} post ${i + 1}`);
+      } else {
+        throw new Error('Empty content received');
+      }
+      
+    } catch (error) {
+      console.log(`Grok API failed for post ${i + 1}, using fallback`);
+      posts.push({
+        platform,
+        content: generateFallbackContent(params, platform, i + 1),
+        scheduledFor: scheduledDate.toISOString(),
+        postType: 'awareness',
+        aiScore: 75,
+        targetPainPoint: params.painPoints,
+        jtbdAlignment: params.jobToBeDone
+      });
+    }
   }
   
-  console.log(`Generated exactly ${posts.length} posts using reliable fallback method`);
+  console.log(`Generated ${posts.length} posts with Grok X.AI content`);
   return posts;
 }
 
