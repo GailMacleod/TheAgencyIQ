@@ -3769,43 +3769,71 @@ Continue building your Value Proposition Canvas systematically.`;
       const remaining = Math.max(0, quota - publishedPosts.length);
       
       console.log(`[LOCAL-GEN] Plan: ${user.subscriptionPlan}, Quota: ${quota}, Published: ${publishedPosts.length}, Remaining: ${remaining}`);
-    
-    // LAUNCH MODE: Allow unlimited schedule generation
-    console.log(`LAUNCH MODE: Allowing schedule generation despite quota (${remaining} remaining)`);
-    
-    const current = await storage.getPostsByUser(userIdInt);
-    console.log('[DEBUG] Before count:', current.length);
-    
-    // Delete all non-success posts (pending/failed)
-    const nonSuccessPosts = current.filter(p => p.status !== 'success');
-    for (const post of nonSuccessPosts) {
-      await storage.deletePost(post.id);
+      
+      // Clean non-published posts
+      const nonPublishedPosts = allPosts.filter(p => p.status !== 'published');
+      console.log(`[LOCAL-GEN] Cleaning ${nonPublishedPosts.length} non-published posts`);
+      
+      for (const post of nonPublishedPosts) {
+        await storage.deletePost(post.id);
+      }
+      
+      // LOCAL CONTENT GENERATION - Import local generator
+      const { LocalContentGenerator } = await import('./local-content-generator');
+      
+      // Generate posts locally (minimum 10 for stability)
+      const postsToGenerate = Math.max(Math.min(remaining, 20), 10);
+      console.log(`[LOCAL-GEN] Generating ${postsToGenerate} posts locally`);
+      
+      const generatedPosts = LocalContentGenerator.generateContentBatch(postsToGenerate);
+      const newPosts = [];
+      
+      for (let i = 0; i < generatedPosts.length; i++) {
+        const postData = generatedPosts[i];
+        
+        try {
+          const post = await storage.createPost({
+            userId: userId,
+            platform: postData.platform,
+            content: postData.content,
+            status: 'draft',
+            scheduledFor: new Date(Date.now() + (i * 2 * 60 * 60 * 1000)) // Stagger by 2 hours
+          });
+          newPosts.push(post);
+          console.log(`[LOCAL-GEN] Created post ${post.id} for ${postData.platform}`);
+        } catch (error) {
+          console.error(`[LOCAL-GEN] Failed to create post ${i}:`, error);
+        }
+      }
+      
+      // Verify final state
+      const finalPosts = await storage.getPostsByUser(userId);
+      const finalCounts = {
+        total: finalPosts.length,
+        published: finalPosts.filter(p => p.status === 'published').length,
+        draft: finalPosts.filter(p => p.status === 'draft').length,
+        pending: finalPosts.filter(p => p.status === 'pending').length
+      };
+      
+      console.log(`[LOCAL-GEN] Final state:`, finalCounts);
+      
+      res.json({
+        success: true,
+        message: 'Local content generation completed successfully',
+        generated: newPosts.length,
+        finalCounts,
+        quota,
+        localGeneration: true,
+        noExternalAPI: true
+      });
+      
+    } catch (error) {
+      console.error('[LOCAL-GEN] Content generation error:', error);
+      res.status(500).json({ 
+        error: 'Local content generation failed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
-    
-    // Generate new posts up to remaining quota
-    const newPosts = Array.from({ length: remaining }, (_, i) => ({
-      userId: userIdInt,
-      platform: 'x', // Default platform
-      content: `Post ${i}`,
-      status: 'pending'
-    }));
-    
-    for (const post of newPosts) {
-      await storage.createPost(post);
-    }
-    
-    const after = await storage.getPostsByUser(userIdInt);
-    console.log('[DEBUG] After count:', after.length, 'Added:', newPosts.length);
-    res.json({
-      success: true,
-      message: 'Schedule generated',
-      user: userId,
-      plan: user.subscriptionPlan,
-      quota: quota,
-      remaining: remaining,
-      generated: newPosts.length,
-      totalPosts: after.length
-    });
   });
 
   // Enforce Strict Post Quota - Step 1 Implementation
