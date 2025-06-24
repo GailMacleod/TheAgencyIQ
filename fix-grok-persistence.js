@@ -3,8 +3,11 @@
  * Direct database save solution for generated content
  */
 
-const { Pool } = require('@neondatabase/serverless');
-const OpenAI = require('openai').default;
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import OpenAI from 'openai';
+import ws from 'ws';
+
+neonConfig.webSocketConstructor = ws;
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const openai = new OpenAI({ baseURL: 'https://api.x.ai/v1', apiKey: process.env.XAI_API_KEY });
