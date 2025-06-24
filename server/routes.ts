@@ -1549,7 +1549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // If phone numbers don't match, update to SMS-verified number
           if (user.phone !== smsVerifiedPhone) {
-            console.log(`Phone number corrected for ${email}: ${smsVerifiedPhone} (was ${user.phone})`);
+            console.log(`Phone number corrected for ${user.email}: ${smsVerifiedPhone} (was ${user.phone})`);
             
             // Update user record with SMS-verified phone
             await storage.updateUser(user.id, { phone: smsVerifiedPhone });
@@ -3589,7 +3589,7 @@ Continue building your Value Proposition Canvas systematically.`;
           const result = await BulletproofPublisher.publish({
             userId: req.session.userId,
             platform: post.platform,
-            content: post.content || undefined
+            content: post.content || ''
           });
 
           if (result.success && result.platformPostId) {
@@ -5015,6 +5015,7 @@ Continue building your Value Proposition Canvas systematically.`;
       let user = await storage.getUser(userId);
       if (!user) {
         user = await storage.createUser({
+          userId: "+61400000000",
           email: "demo@theagencyiq.ai",
           password: "demo123",
           phone: "+61400000000",
@@ -5801,7 +5802,7 @@ Continue building your Value Proposition Canvas systematically.`;
                 console.error('Session save error:', err);
                 return res.redirect('/subscription?error=session_failed');
               }
-              console.log(`Payment successful - redirecting existing user ${user.id} to brand purpose setup`);
+              console.log(`Payment successful - redirecting existing user ${user!.id} to brand purpose setup`);
               return res.redirect('/brand-purpose?payment=success&setup=required');
             });
             return;
@@ -6787,7 +6788,7 @@ Continue building your Value Proposition Canvas systematically.`;
           }
         } catch (userError) {
           console.error(`Error processing user ${user.phone}:`, userError);
-          cleanupReport.errors.push(`User ${user.phone}: ${userError.message}`);
+          cleanupReport.errors.push(`User ${user.phone}: ${(userError as Error).message}`);
         }
       }
 
@@ -6801,8 +6802,8 @@ Continue building your Value Proposition Canvas systematically.`;
       console.error('Database cleanup error:', err);
       res.status(500).json({ 
         error: 'Cleanup failed', 
-        details: err.message,
-        stack: err.stack 
+        details: (err as Error).message,
+        stack: (err as Error).stack 
       });
     }
   });

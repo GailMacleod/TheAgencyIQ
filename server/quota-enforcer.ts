@@ -128,6 +128,6 @@ export class QuotaEnforcer {
     };
 
     const allowedNext = validTransitions[post.status as keyof typeof validTransitions] || [];
-    return allowedNext.includes(newStatus as any);
+    return (allowedNext as string[]).includes(newStatus);
   }
 }
