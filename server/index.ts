@@ -333,10 +333,8 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Setup Vite and static serving
+// Setup HTTP server first
 const server = createServer(app);
-setupVite(app, server);
-serveStatic(app);
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -368,6 +366,10 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Setup Vite and static serving
+setupVite(app, server);
+serveStatic(app);
 
 const port = Number(process.env.PORT) || 5000;
 server.listen(port, '0.0.0.0', () => {
