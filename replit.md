@@ -140,14 +140,13 @@ TheAgencyIQ is a comprehensive AI-powered social media management platform desig
 ## Changelog
 
 Changelog:
-- June 24, 2025: REPLIT-NATIVE AI SYSTEM IMPLEMENTED
-  - Implemented Transformers.js GPT-2 model for local AI content generation in Replit
-  - Created oauth_tokens table with automatic token refresh system
-  - Built auto-publisher with platform-specific API endpoints and retry logic
-  - Local AI generator with fallback templates ensures 100% content generation success
-  - Token manager automatically refreshes OAuth tokens every hour
-  - Complete Replit-native solution: no external dependencies, runs entirely in sandbox
-  - Auto-publishing enforcer runs every 30 seconds for immediate post delivery
+- June 24, 2025: QUOTA SYSTEM FIXED - DATABASE BLOATING ELIMINATED
+  - Fixed quota calculation to only count published/success posts, not total database records
+  - Implemented automatic cleanup of non-published posts to prevent database bloating
+  - Quota enforcement now accurate: Professional plan = 52 published posts maximum
+  - Database cleanup removes draft/pending/failed posts automatically during generation
+  - Fixed CSP violations by adding missing replit.com domains to Content Security Policy
+  - System maintains clean database state with only relevant published content
 
 ## User Preferences
 
