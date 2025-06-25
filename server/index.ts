@@ -351,7 +351,8 @@ app.post('/api/disconnect-platform', async (req, res) => {
   res.json({
     "success": true, 
     "platform": platform.toLowerCase(), 
-    "message": "Disconnected successfully"
+    "message": "Disconnected successfully",
+    "action": "refresh"
   });
 });
 
