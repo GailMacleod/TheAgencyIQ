@@ -307,11 +307,17 @@ const enforcePublish = async (post: any, userId: number) => {
       };
 
       let payload = { ...platform.payload };
+      
+      // Ensure current token is used
+      const currentToken = process.env[platform.secretKey];
+      if (currentToken) {
+        payload.access_token = currentToken;
+      }
 
       // Add appsecret_proof for Facebook and Instagram
       if (post.platform.toLowerCase() === 'facebook' || post.platform.toLowerCase() === 'instagram') {
         const appSecret = process.env.FACEBOOK_APP_SECRET;
-        const accessToken = payload.access_token || process.env[platform.secretKey];
+        const accessToken = payload.access_token;
         if (appSecret && accessToken) {
           const hmac = crypto.createHmac('sha256', appSecret);
           hmac.update(accessToken);
@@ -336,22 +342,14 @@ const enforcePublish = async (post: any, userId: number) => {
         console.log(`🔄 Token expired for ${post.platform}, attempting refresh...`);
         const refreshResult = await refreshToken(post.platform.toLowerCase(), userId);
         if (refreshResult.success) {
-          console.log(`✅ Token refreshed successfully, updating payload and retrying...`);
+          console.log(`✅ Token refreshed successfully for ${post.platform}, rebuilding request...`);
           
-          // Update payload with new token
+          // Rebuild payload completely with new token
+          payload = { ...platform.payload };
           payload.access_token = refreshResult.token;
           
           // Update headers authorization
           headers['Authorization'] = `Bearer ${refreshResult.token}`;
-          
-          // For Facebook/Instagram, replace message with access_token in payload
-          if (post.platform.toLowerCase() === 'facebook') {
-            payload.message = post.content;
-            payload.access_token = refreshResult.token;
-          } else if (post.platform.toLowerCase() === 'instagram') {
-            payload.caption = post.content;
-            payload.access_token = refreshResult.token;
-          }
           
           // Regenerate appsecret_proof with new token for Facebook/Instagram
           if (post.platform.toLowerCase() === 'facebook' || post.platform.toLowerCase() === 'instagram') {
@@ -363,7 +361,7 @@ const enforcePublish = async (post: any, userId: number) => {
             }
           }
           
-          console.log(`🔄 Retrying ${post.platform} publish with refreshed token...`);
+          console.log(`🔄 Retrying ${post.platform} publish with new token: ${refreshResult.token.substring(0, 20)}...`);
           continue; // Retry with new token
         } else {
           console.log(`❌ Token refresh failed: ${refreshResult.message}`);
