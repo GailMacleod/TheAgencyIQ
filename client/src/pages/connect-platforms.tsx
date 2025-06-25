@@ -85,18 +85,21 @@ export default function ConnectPlatforms() {
     retry: 2
   });
 
-  // Fetch session connection state
-  const { data: sessionState } = useQuery({
+  // Fetch live connection state with validation
+  const { data: liveState } = useQuery({
     queryKey: ['/api/get-connection-state'],
-    retry: 2
+    retry: 2,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
-  // Sync local state with session state
+  // Sync local state with live validation results
   useEffect(() => {
-    if (sessionState?.connectedPlatforms) {
-      setConnectedPlatforms(sessionState.connectedPlatforms);
+    if (liveState?.connectedPlatforms) {
+      console.log('Live connection state for connect-platforms:', liveState.connectedPlatforms);
+      setConnectedPlatforms(liveState.connectedPlatforms);
     }
-  }, [sessionState]);
+  }, [liveState]);
 
   // Check live platform status on component load
   useEffect(() => {

@@ -1,0 +1,35 @@
+adjust the backend to force a live status check on page load and update the UI sync, avoiding OAuth changes.
+
+Prompt:
+
+{
+"action": "replace",
+"file": "server/index.ts",
+"target": {
+"endpoint": "/api/get-connection-state"
+},
+"content": {
+"getConnectionState": {
+"code": "app.get('/api/get-connection-state', async (req, res) => {\n  const userId = req.session.userId || 2;\n  let state = req.session.connectedPlatforms || {};\n  try {\n    const { storage } = await import('./storage');\n    const dbState = await storage.getConnectedPlatforms(userId) || {};\n    state = { ...state, ...dbState };\n  } catch (dbError) {\n    console.warn(Database error, using session state: ${dbError.message});\n  }\n  // Live status check\n  const liveState = {};\n  for (const platform of ['facebook', 'instagram', 'linkedin', 'x', 'youtube']) {\n    const tokens = {\n      "facebook": process.env.FACEBOOK_PAGE_ACCESS_TOKEN,\n      "instagram": process.env.INSTAGRAM_USER_ACCESS_TOKEN,\n      "linkedin": process.env.LINKEDIN_USER_ACCESS_TOKEN,\n      "x": process.env.TWITTER_USER_ACCESS_TOKEN,\n      "youtube": process.env.YOUTUBE_ACCESS_TOKEN\n    };\n    const token = tokens[platform];\n    if (token) {\n      try {\n        const response = await fetch(getPlatformEndpoint(platform), {\n          method: 'GET',\n          headers: {'Authorization': Bearer ${token}}\n        });\n        liveState[platform] = response.ok;\n      } catch (error) {\n        liveState[platform] = false;\n        console.warn(Live check failed for ${platform}: ${error.message});\n      }\n    } else {\n      liveState[platform] = false;\n    }\n  }\n  req.session.connectedPlatforms = liveState;\n  await req.session.save();\n  console.log(Connection state for user ${userId}: ${JSON.stringify(liveState)});\n  res.json({"success": true, "connectedPlatforms": liveState});\n});\nfunction getPlatformEndpoint(platform) {\n  return {\n    "facebook": "https://graph.facebook.com/v20.0/me\",\n    "instagram": "https://graph.instagram.com/v20.0/me\",\n    "linkedin": "https://api.linkedin.com/v2/me\",\n    "x": "https://api.twitter.com/2/users/me\",\n    "youtube": "https://www.googleapis.com/youtube/v3/channels\"\n  }[platform];\n}"
+}
+},
+"instructions": {
+"run": "NODE_ENV=production tsx server/index.ts",
+"test": {
+"url": "https://app.theagencyiq.ai/connect",
+"action": "Refresh the connect page, verify buttons show 'Connect' for disconnected platforms (e.g., Facebook, X) and console logs live connection state",
+"submit": "Submit console logs and UI state immediately"
+},
+"notes": {
+"frontendHint": "Update connect.tsx: const [connectedPlatforms, setConnectedPlatforms] = useState({}); useEffect(() => { fetch('/api/get-connection-state').then(res => res.json()).then(data => setConnectedPlatforms(data.connectedPlatforms)); }, []); Use connectedPlatforms for button display.",
+"noDisruption": "Only updates /api/get-connection-state, preserves OAuth flow."
+}
+}
+}
+
+Precision Fix:
+
+Live Validation: /api/get-connection-state now pings each platform to check token validity, updating connectedPlatforms in the session.
+UI Sync: Forces the connect page to reflect live status, fixing the "Connected" display for expired tokens.
+No Disruption: Avoids OAuth endpoints, relying on existing tokens.
+Root Cause: Resolves the mismatch by prioritizing live checks over stale session state.

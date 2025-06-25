@@ -22,41 +22,27 @@ export default function PlatformConnections() {
     queryKey: ["/api/platform-connections"],
   });
 
-  // Fetch session connection state
-  const { data: sessionState } = useQuery({
+  // Fetch live connection state with validation
+  const { data: liveState, refetch: refetchLiveState } = useQuery({
     queryKey: ['/api/get-connection-state'],
-    retry: 2
+    retry: 2,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
-  // Initialize connection state from session
+  // Update connection state from live validation
   useEffect(() => {
-    if (sessionState?.connectedPlatforms) {
-      setConnectedPlatforms(sessionState.connectedPlatforms);
+    if (liveState?.connectedPlatforms) {
+      console.log('Live connection state updated:', liveState.connectedPlatforms);
+      setConnectedPlatforms(liveState.connectedPlatforms);
     }
-  }, [sessionState]);
+  }, [liveState]);
 
-  // Check live platform status on component load
+  // Force live status check on page load
   useEffect(() => {
-    const validPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
-    validPlatforms.forEach(plat => {
-      fetch('/api/check-live-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ platform: plat })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setConnectedPlatforms(prev => ({
-            ...prev,
-            [data.platform]: data.isConnected
-          }));
-        }
-      })
-      .catch(err => console.warn(`Live status check failed for ${plat}:`, err));
-    });
-  }, []);
+    console.log('Platform connections page loaded - forcing live status check');
+    refetchLiveState();
+  }, [refetchLiveState]);
 
   const connectedPlatformsList = Array.isArray(connections) ? connections.map((conn: any) => conn.platform) : [];
 
@@ -160,6 +146,9 @@ export default function PlatformConnections() {
             [data.platform]: data.isConnected
           }));
         }
+        
+        // Force live status refresh after disconnect
+        setTimeout(() => refetchLiveState(), 500);
         
         // Remove token from localStorage
         localStorage.removeItem(`token_${platformId}`);

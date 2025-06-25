@@ -9,6 +9,79 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Live connection state endpoint with platform validation
+app.get('/api/get-connection-state', async (req, res) => {
+  const userId = req.session.userId || 2;
+  let state = req.session.connectedPlatforms || {};
+  
+  try {
+    const { storage } = await import('./storage');
+    const connections = await storage.getPlatformConnectionsByUser(userId);
+    
+    // Live validation for each platform token
+    const liveState = {};
+    
+    for (const connection of connections) {
+      if (!connection.isActive) {
+        liveState[connection.platform] = false;
+        continue;
+      }
+      
+      let isValid = false;
+      
+      try {
+        if (connection.platform === 'facebook') {
+          const response = await fetch(`https://graph.facebook.com/me?access_token=${connection.accessToken}`);
+          isValid = response.ok;
+        } else if (connection.platform === 'x') {
+          const response = await fetch('https://api.twitter.com/2/users/me', {
+            headers: { 'Authorization': `Bearer ${connection.accessToken}` }
+          });
+          isValid = response.ok;
+        } else if (connection.platform === 'linkedin') {
+          const response = await fetch('https://api.linkedin.com/v2/people/~', {
+            headers: { 'Authorization': `Bearer ${connection.accessToken}` }
+          });
+          isValid = response.ok;
+        } else if (connection.platform === 'instagram') {
+          const response = await fetch(`https://graph.facebook.com/me?access_token=${connection.accessToken}`);
+          isValid = response.ok;
+        } else if (connection.platform === 'youtube') {
+          const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+            headers: { 'Authorization': `Bearer ${connection.accessToken}` }
+          });
+          isValid = response.ok;
+        }
+      } catch (error) {
+        console.warn(`Live validation failed for ${connection.platform}: ${error.message}`);
+        isValid = false;
+      }
+      
+      liveState[connection.platform] = isValid;
+    }
+    
+    // Update session with live state
+    req.session.connectedPlatforms = liveState;
+    
+    console.log('Live connection state:', liveState);
+    
+    res.json({
+      success: true,
+      connectedPlatforms: liveState,
+      lastChecked: new Date().toISOString()
+    });
+    
+  } catch (dbError) {
+    console.warn(`Database error, using session state: ${dbError.message}`);
+    res.json({
+      success: true,
+      connectedPlatforms: state,
+      lastChecked: new Date().toISOString(),
+      fallback: true
+    });
+  }
+});
+
 // Token refresh helper function
 const refreshToken = async (platform: string, userId: number) => {
   console.log(`🔄 Attempting to refresh ${platform} token for user ${userId}`);
