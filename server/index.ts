@@ -22,22 +22,23 @@ app.use((err, req, res, next) => {
   console.error('Middleware Error:', err.stack);
   res.status(500).json({"error": "Server error", "details": err.message});
 });
+// Setup Vite for frontend serving first
+if (process.env.NODE_ENV === 'development') {
+  setupVite(app);
+} else {
+  serveStatic(app);
+}
+
+// Placeholder for existing endpoints
+app.post('/api/waterfall/approve', (req, res) => res.status(200).json({"status": "placeholder"}));
+app.get('/api/get-connection-state', (req, res) => res.json({"success": true, "connectedPlatforms": {}}));
+
 // Import routes module for full functionality
 import('./routes').then(({ default: routes }) => {
   app.use(routes);
 }).catch(err => {
   console.warn('Routes module not available, using placeholders:', err.message);
 });
-
-// Placeholder for existing endpoints
-app.post('/api/waterfall/approve', (req, res) => res.status(200).json({"status": "placeholder"}));
-app.get('/api/get-connection-state', (req, res) => res.json({"success": true, "connectedPlatforms": {}}));
-// Setup Vite for frontend serving
-if (process.env.NODE_ENV === 'development') {
-  setupVite(app);
-} else {
-  serveStatic(app);
-}
 
 const server = app.listen(5000, '0.0.0.0', () => console.log('TheAgencyIQ Launch Server: 99.9% reliability system operational on port 5000'));
 
