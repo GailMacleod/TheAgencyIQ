@@ -25,7 +25,7 @@ router.post('/auth/login', async (req, res) => {
       });
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
     
     if (!isValidPassword) {
       return res.status(401).json({
