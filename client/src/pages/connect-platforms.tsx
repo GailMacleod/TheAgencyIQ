@@ -98,6 +98,29 @@ export default function ConnectPlatforms() {
     }
   }, [sessionState]);
 
+  // Check live platform status on component load
+  useEffect(() => {
+    const validPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
+    validPlatforms.forEach(plat => {
+      fetch('/api/check-live-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ platform: plat })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setConnectedPlatforms(prev => ({
+            ...prev,
+            [data.platform]: data.isConnected
+          }));
+        }
+      })
+      .catch(err => console.warn(`Live status check failed for ${plat}:`, err));
+    });
+  }, []);
+
   // OAuth connection for platforms
   const handleOAuthConnect = async (platform: string) => {
     try {

@@ -374,22 +374,92 @@ app.post('/api/disconnect-platform', async (req, res) => {
 // Get connection state endpoint
 app.get('/api/get-connection-state', async (req, res) => {
   const userId = req.session?.userId || 2;
+  let state = req.session?.connectedPlatforms || {};
   
   try {
-    const connectedPlatforms = req.session?.connectedPlatforms || {};
-    
-    res.json({
-      success: true,
-      userId: userId,
-      connectedPlatforms: connectedPlatforms
-    });
-  } catch (error: any) {
-    console.error('Get connection state error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
+    const { storage } = await import('./storage');
+    const dbState = await storage.getConnectedPlatforms(userId) || {};
+    state = { ...state, ...dbState };
+  } catch (dbError: any) {
+    console.warn(`Database error, using session state: ${dbError.message}`);
+  }
+  
+  res.json({
+    success: true,
+    userId: userId,
+    connectedPlatforms: state
+  });
+});
+
+// Check live platform status endpoint
+app.post('/api/check-live-status', async (req, res) => {
+  const userId = req.session?.userId || 2;
+  const { platform } = req.body;
+  const validPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
+  
+  if (!platform || !validPlatforms.includes(platform.toLowerCase())) {
+    return res.status(400).json({
+      error: "Invalid platform",
+      validPlatforms: validPlatforms
     });
   }
+  
+  const tokens = {
+    facebook: process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
+    linkedin: process.env.LINKEDIN_ACCESS_TOKEN,
+    x: process.env.X_ACCESS_TOKEN,
+    instagram: process.env.INSTAGRAM_ACCESS_TOKEN,
+    youtube: process.env.YOUTUBE_ACCESS_TOKEN
+  };
+  
+  const token = tokens[platform.toLowerCase()];
+  let isConnected = false;
+  let error = null;
+  
+  if (!token) {
+    error = `No token configured for ${platform}`;
+  } else {
+    try {
+      // Check live token validity by making API calls
+      switch (platform.toLowerCase()) {
+        case 'facebook':
+          const fbResponse = await fetch(`https://graph.facebook.com/me?access_token=${token}`);
+          isConnected = fbResponse.ok;
+          break;
+        case 'linkedin':
+          const liResponse = await fetch('https://api.linkedin.com/v2/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          isConnected = liResponse.ok;
+          break;
+        case 'x':
+          const xResponse = await fetch('https://api.twitter.com/2/users/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          isConnected = xResponse.ok;
+          break;
+        case 'instagram':
+          const igResponse = await fetch(`https://graph.facebook.com/me?access_token=${token}`);
+          isConnected = igResponse.ok;
+          break;
+        case 'youtube':
+          const ytResponse = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&access_token=${token}`);
+          isConnected = ytResponse.ok;
+          break;
+      }
+    } catch (apiError: any) {
+      error = `API check failed: ${apiError.message}`;
+      isConnected = false;
+    }
+  }
+  
+  res.json({
+    success: true,
+    platform: platform.toLowerCase(),
+    isConnected: isConnected,
+    error: error,
+    userId: userId
+  });
 });
 
 // Token refresh endpoint
