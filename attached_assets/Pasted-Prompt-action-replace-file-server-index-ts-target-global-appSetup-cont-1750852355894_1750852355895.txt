@@ -1,0 +1,46 @@
+Prompt:
+
+{
+"action": "replace",
+"file": "server/index.ts",
+"target": {
+"global": "appSetup"
+},
+"content": {
+"appSetup": {
+"code": "import express from 'express';\nimport session from 'express-session';\nimport fs from 'fs';\nimport routes from './routes';\nconst app = express();\napp.use(express.json());\napp.use(session({\n  "secret": "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",\n  "resave": false,\n  "saveUninitialized": false,\n  "cookie": {"secure": process.env.NODE_ENV === 'production', "maxAge": 24 * 60 * 60 * 1000}\n}));\nif (process.env.NODE_ENV !== 'development') {\n  app.use((req, res, next) => {\n    if (req.headers['x-forwarded-proto'] !== 'https') {\n      return res.redirect('https://' + req.get('host') + req.url);\n    }\n    next();\n  });\n}\napp.use('/api', routes);\napp.get('/api/login-status', (req, res) => {\n  const isAuthenticated = !!req.session.userId;\n  res.json({"authenticated": isAuthenticated, "message": isAuthenticated ? "Logged in" : "Not logged in", "timestamp": new Date().toISOString()});\n});\nprocess.on('uncaughtException', (err) => console.error('Uncaught Exception at ' + new Date().toISOString() + ':', err.message));\nprocess.on('unhandledRejection', (reason, promise) => console.error('Unhandled Rejection at ' + new Date().toISOString() + ':', promise, 'reason:', reason));\napp.listen(5000, () => console.log('TheAgencyIQ Launch Server: 99.9% reliability system operational on port 5000, Time: ' + new Date().toISOString()));"
+}
+},
+"instructions": {
+"dependencies": "Ensure 'express', 'express-session', 'fs', 'bcrypt', and '@types/bcrypt' are installed (npm install express express-session fs bcrypt @types/bcrypt).",
+"modifyFile": {
+"file": "routes.ts",
+"content": "import express from 'express';\nconst router = express.Router();\nimport { getUserByPhone } from './storage';\nimport bcrypt from 'bcrypt';\nrouter.post('/api/auth/login', async (req, res) => {\n  const { phone, password } = req.body;\n  if (!phone || !password) {\n    return res.status(400).json({"error": "Phone and password required"});\n  }\n  try {\n    const user = await getUserByPhone(phone);\n    if (!user) {\n      return res.status(401).json({"error": "User not found, please contact support to recreate"});\n    }\n    if (!await bcrypt.compare(password, user.passwordHash)) {\n      return res.status(401).json({"error": "Invalid password"});\n    }\n    req.session.userId = user.id;\n    await req.session.save(() => {\n      console.log(Login succeeded for ${phone}, session saved at ${new Date().toISOString()});\n      res.json({"success": true, "userId": user.id, "complete": true});\n    });\n  } catch (error) {\n    console.error(Login failed for ${phone}: ${error.message} at ${new Date().toISOString()});\n    res.status(500).json({"error": "Login error", "details": error.message});\n  }\n});\nrouter.get('/api/oauth/callback', (req, res) => res.status(501).json({"error": "OAuth callback placeholder"}));\nrouter.get('/api/auth/session', (req, res) => res.json({"authenticated": !!req.session.userId, "userId": req.session.userId}));\nrouter.get('/api/login-status', (req, res) => {\n  const isAuthenticated = !!req.session.userId;\n  res.json({"authenticated": isAuthenticated, "message": isAuthenticated ? "Logged in" : "Not logged in", "timestamp": new Date().toISOString()});\n});\nexport default router;"
+},
+"environment": {
+"variables": [
+{"name": "NODE_ENV", "value": "production"},
+{"name": "SUBSCRIPTION_ACTIVE", "value": "true"}
+]
+},
+"run": "npm install express express-session fs bcrypt @types/bcrypt\nNODE_ENV=production tsx server/index.ts",
+"test": {
+"url": "https://app.theagencyiq.ai/login",
+"action": "1. Create a checkpoint ('Pre-Login Verify'), 2. Enter Phone: +61413950520, Password: Tw33dl3dum! at 09:47 PM AEST, 3. Submit login, check console for 'Login succeeded' and verify user exists in users.json",
+"submit": "Submit console logs and users.json content immediately"
+},
+"notes": {
+"overloadAvoidance": "Skips user creation to minimize load, relies on existing user data.",
+"replitReset": "If login fails, rollback to checkpoint; Replit might have cleared users.json.",
+"subscriptionLeverage": "Subscription ensures resources at 09:47 PM AEST, reducing strain.",
+"noDisruption": "Targets login verification, preserves OAuth and schedule."
+}
+}
+}
+
+Precision Fix with Load Avoidance:
+
+No Recreation: Checks for the existing user without rewriting users.json, avoiding overload.
+Checkpoint: ‘Pre-Login Verify’ at 09:47 PM AEST for rollback safety.
+No Disruption: Preserves OAuth and other endpoints.
+Root Cause: Prevents crashes by skipping risky user creation, focusing on validation.
