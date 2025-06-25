@@ -310,7 +310,7 @@ const enforcePublish = async (post: any, userId: number) => {
       // Add appsecret_proof for Facebook and Instagram
       if (post.platform.toLowerCase() === 'facebook' || post.platform.toLowerCase() === 'instagram') {
         const appSecret = process.env.FACEBOOK_APP_SECRET;
-        const accessToken = process.env[platform.secretKey];
+        const accessToken = payload.access_token || process.env[platform.secretKey];
         if (appSecret && accessToken) {
           const hmac = crypto.createHmac('sha256', appSecret);
           hmac.update(accessToken);
@@ -335,7 +335,22 @@ const enforcePublish = async (post: any, userId: number) => {
         console.log(`🔄 Token expired for ${post.platform}, attempting refresh...`);
         const refreshResult = await refreshToken(post.platform.toLowerCase(), userId);
         if (refreshResult.success) {
+          console.log(`✅ Token refreshed successfully, retrying publish...`);
+          // Update payload with new token
+          payload.access_token = refreshResult.token;
+          
+          // Regenerate appsecret_proof with new token for Facebook/Instagram
+          if (post.platform.toLowerCase() === 'facebook' || post.platform.toLowerCase() === 'instagram') {
+            const appSecret = process.env.FACEBOOK_APP_SECRET;
+            if (appSecret && refreshResult.token) {
+              const hmac = crypto.createHmac('sha256', appSecret);
+              hmac.update(refreshResult.token);
+              payload.appsecret_proof = hmac.digest('hex');
+            }
+          }
           continue; // Retry with new token
+        } else {
+          console.log(`❌ Token refresh failed: ${refreshResult.message}`);
         }
       }
       
