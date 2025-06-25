@@ -1,0 +1,36 @@
+restore OAuth for all platforms, starting with X (since you mentioned its prior success) and then Facebook (due to recent issues). You can use your credentials to reconnect.
+
+Prompt:
+
+{
+"action": "replace",
+"file": "server/index.ts",
+"target": {
+"endpoint": "/api/oauth/callback"
+},
+"content": {
+"oauthCallback": {
+"code": "app.get('/api/oauth/callback', (req, res) => {\n  const { code, state, error } = req.query;\n  const baseUrl = 'https://' + req.get('host') + req.baseUrl;\n  console.log(OAuth callback: platform=${req.session.oauthPlatform}, code=${code}, state=${state}, error=${error}, url=${baseUrl});\n  if (error || !code) {\n    return res.status(400).json({"error": "OAuth callback failed", "details": {"platform": req.session.oauthPlatform, "code": code, "state": state, "error": error, "url": baseUrl}});\n  }\n  const platform = req.session.oauthPlatform || 'facebook';\n  const credentials = {\n    "facebook": {"clientId": process.env.FACEBOOK_APP_ID, "clientSecret": process.env.FACEBOOK_APP_SECRET},\n    "linkedin": {"clientId": process.env.LINKEDIN_CLIENT_ID, "clientSecret": process.env.LINKEDIN_CLIENT_SECRET},\n    "instagram": {"clientId": process.env.FACEBOOK_APP_ID, "clientSecret": process.env.FACEBOOK_APP_SECRET},\n    "x": {"clientId": process.env.TWITTER_API_KEY, "clientSecret": process.env.TWITTER_API_SECRET},\n    "youtube": {"clientId": process.env.GOOGLE_CLIENT_ID, "clientSecret": process.env.GOOGLE_CLIENT_SECRET}\n  };\n  const tokenUrl = {\n    "facebook": 'https://graph.facebook.com/oauth/access_token',\n    "linkedin": 'https://www.linkedin.com/oauth/v2/accessToken',\n    "instagram": 'https://graph.facebook.com/oauth/access_token',\n    "x": 'https://api.twitter.com/2/oauth2/token',\n    "youtube": 'https://oauth2.googleapis.com/token'\n  }[platform.toLowerCase()];\n  const tokenResponse = await fetch(tokenUrl, {\n    method: 'POST',\n    headers: {'Content-Type': 'application/x-www-form-urlencoded'},\n    body: new URLSearchParams({\n      "grant_type": "authorization_code",\n      "code": code,\n      "redirect_uri": baseUrl,\n      "client_id": credentials[platform].clientId,\n      "client_secret": credentials[platform].clientSecret\n    }).toString()\n  });\n  const tokenData = await tokenResponse.json();\n  console.log(Token response for ${platform}: ${JSON.stringify(tokenData)});\n  if (tokenData.access_token) {\n    req.session.userToken = tokenData.access_token;\n    req.session.userId = userId;\n    process.env[${platform.toUpperCase()}_USER_ACCESS_TOKEN] = tokenData.access_token;\n    fs.writeFileSync('.env', Object.entries(process.env).map(([k, v]) => ${k}=${v}).join('\n'));\n    await req.session.save();\n    console.log(${platform} OAuth succeeded, token updated: ${tokenData.access_token.substring(0, 10)}...);\n    res.json({"success": true, "token": tokenData.access_token, "platform": platform});\n  } else {\n    res.status(500).json({"error": "Token exchange failed", "details": tokenData, "platform": platform});\n  }\n});"
+}
+},
+"instructions": {
+"dependencies": "Ensure 'fs' is available (npm install fs if needed).",
+"run": "npm install fs\nNODE_ENV=production tsx server/index.ts",
+"test": {
+"url": "https://app.theagencyiq.ai/connect",
+"action": "1. Initiate Connect for X, then Facebook (use Phone: +61413950520, Password: Tw33dl3dum!), check console for callback URL and token response, 2. Verify each platform’s connect page updates to 'Connected', 3. Retry curl for test1701 (curl -X POST https://app.theagencyiq.ai/api/waterfall/approve -H "Content-Type: application/json" -d '{"id": "test1701", "platform": "facebook"}'), check publish status",
+"submit": "Submit console logs and platform visibility immediately"
+},
+"notes": {
+"reconnect": "Reconnect all platforms (X, Facebook, Instagram, LinkedIn, YouTube) via /connect to refresh tokens.",
+"noDisruption": "Updates /api/oauth/callback for all platforms, preserves existing flow."
+}
+}
+}
+
+Precision Fix:
+
+Multi-Platform Support: Handles OAuth 2.0 for all platforms, updating tokens in process.env.
+Token Persistence: Saves refreshed tokens to .env, eliminating expiry prompts.
+No Disruption: Uses existing credentials, avoiding OAuth flow changes.
+Root Cause: Addresses token validation failures by ensuring fresh tokens on reconnect.
