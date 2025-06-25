@@ -720,7 +720,7 @@ await setupVite(app, server);
 serveStatic(app);
 
 const port = Number(process.env.PORT) || 5000;
-// X callback endpoint
+// X callback endpoint - working version
 app.get('/x', async (req, res) => {
   const { code, error } = req.query;
   
@@ -730,27 +730,91 @@ app.get('/x', async (req, res) => {
         <div style="background:white;padding:30px;border-radius:8px;max-width:600px;margin:0 auto;">
           <h2>X Authorization Error</h2>
           <p>Error: ${error || 'No code received'}</p>
+          <p><a href="/">Return to App</a></p>
         </div>
       </body></html>
     `);
   }
   
-  res.send(`
-    <html>
-    <head><title>X Auth Code</title></head>
-    <body style="font-family:Arial;padding:40px;background:#f5f5f5;">
-      <div style="background:white;padding:30px;border-radius:8px;max-width:600px;margin:0 auto;">
-        <h2>X Authorization Code</h2>
-        <div style="background:#f8f9fa;padding:15px;border-radius:4px;font-family:monospace;word-break:break-all;" id="code">${code}</div>
-        <button onclick="navigator.clipboard.writeText('${code}');alert('Copied!')" 
-                style="background:#1d9bf0;color:white;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;margin-top:15px;">
-          Copy Code
-        </button>
-        <p style="margin-top:20px;"><strong>Next:</strong> Use this code in terminal to complete X integration.</p>
-      </div>
-    </body>
-    </html>
-  `);
+  // Auto-exchange token like it worked before
+  const clientId = process.env.X_0AUTH_CLIENT_ID;
+  const clientSecret = process.env.X_CLIENT_SECRET;
+  
+  try {
+    const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
+      },
+      body: new URLSearchParams({
+        code: code as string,
+        grant_type: 'authorization_code',
+        redirect_uri: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/x'
+      })
+    });
+    
+    const tokenData = await tokenResponse.json();
+    
+    if (tokenResponse.ok) {
+      // Store in environment like before
+      process.env.X_ACCESS_TOKEN = tokenData.access_token;
+      if (tokenData.refresh_token) {
+        process.env.X_REFRESH_TOKEN = tokenData.refresh_token;
+      }
+      
+      // Test the token
+      const userResponse = await fetch('https://api.twitter.com/2/users/me', {
+        headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+      });
+      
+      let userInfo = '';
+      if (userResponse.ok) {
+        const user = await userResponse.json();
+        userInfo = `@${user.data.username}`;
+      }
+      
+      res.send(`
+        <html>
+        <head><title>X Integration Complete</title></head>
+        <body style="font-family:Arial;padding:40px;background:#f5f5f5;">
+          <div style="background:white;padding:30px;border-radius:8px;max-width:600px;margin:0 auto;">
+            <h2>✅ X Integration Successful</h2>
+            <p>Token validated for: <strong>${userInfo}</strong></p>
+            <p>TheAgencyIQ can now post to X platform</p>
+            <div style="background:#f8f9fa;padding:15px;border-radius:4px;margin:15px 0;">
+              <strong>Add to Replit Secrets:</strong><br>
+              <code>X_ACCESS_TOKEN=${tokenData.access_token}</code>
+              ${tokenData.refresh_token ? `<br><code>X_REFRESH_TOKEN=${tokenData.refresh_token}</code>` : ''}
+            </div>
+            <a href="/" style="background:#1d9bf0;color:white;padding:10px 20px;text-decoration:none;border-radius:4px;">Return to App</a>
+          </div>
+        </body>
+        </html>
+      `);
+    } else {
+      res.send(`
+        <html><body style="font-family:Arial;padding:40px;background:#f5f5f5;">
+          <div style="background:white;padding:30px;border-radius:8px;max-width:600px;margin:0 auto;">
+            <h2>❌ Token Exchange Failed</h2>
+            <p>Error: ${tokenData.error || 'Unknown error'}</p>
+            <p><a href="/">Return to App</a></p>
+          </div>
+        </body></html>
+      `);
+    }
+    
+  } catch (error) {
+    res.send(`
+      <html><body style="font-family:Arial;padding:40px;background:#f5f5f5;">
+        <div style="background:white;padding:30px;border-radius:8px;max-width:600px;margin:0 auto;">
+          <h2>❌ Integration Error</h2>
+          <p>Error: ${error.message}</p>
+          <p><a href="/">Return to App</a></p>
+        </div>
+      </body></html>
+    `);
+  }
 });
 
 server.listen(port, '0.0.0.0', () => {
