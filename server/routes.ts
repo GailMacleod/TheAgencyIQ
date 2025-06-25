@@ -558,10 +558,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/', (req, res, next) => {
     const code = req.query.code;
     const state = req.query.state;
+    const currentUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     
     // Skip logging for empty callbacks to reduce noise
     if (code || state) {
-      console.log('OAuth Callback received:', { code: code ? 'Present' : 'Missing', state });
+      console.log(`OAuth callback URL: ${currentUrl}`);
+      console.log('OAuth Callback received:', { code: code ? 'Present' : 'Missing', state, url: currentUrl });
     }
     
     if (code && state) {
@@ -5647,6 +5649,8 @@ Continue building your Value Proposition Canvas systematically.`;
   app.get("/api/auth/facebook/callback", async (req, res) => {
     try {
       const { code, state, error } = req.query;
+      const currentUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
+      console.log(`Facebook OAuth callback URL: ${currentUrl}`);
       
       // Handle OAuth errors from Facebook
       if (error) {
