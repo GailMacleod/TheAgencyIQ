@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import session from 'express-session';
 
 const app = express();
@@ -16,21 +16,21 @@ app.use(session({
 }));
 
 // Request logging
-app.use((req: any, res: any, next: any) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
   next();
 });
 
 // Health check
-app.get('/health', (req: any, res: any) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
+app.get('/health', (req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok', time: new Date().toISOString() });
 });
 
 // Public bypass
-app.get('/public', (req: any, res: any) => {
-  req.session.userId = 2;
+app.get('/public', (req: Request, res: Response) => {
+  (req.session as any).userId = 2;
   console.log('Heroic fix bypass activated');
-  res.send(`<!DOCTYPE html>
+  res.status(200).send(`<!DOCTYPE html>
 <html>
 <head><title>TheAgencyIQ - Heroic Fix</title></head>
 <body>
@@ -43,8 +43,8 @@ app.get('/public', (req: any, res: any) => {
 });
 
 // X OAuth
-app.get('/connect/x', (req: any, res: any) => {
-  req.session.userId = 2;
+app.get('/connect/x', (req: Request, res: Response) => {
+  (req.session as any).userId = 2;
   const redirectUri = 'https://app.theagencyiq.ai/auth/x/callback';
   const clientId = process.env.TWITTER_API_KEY || process.env.X_CLIENT_ID || 'test-x-key';
   const xUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=tweet.read%20tweet.write%20users.read&state=x-${Date.now()}&code_challenge=challenge&code_challenge_method=plain`;
@@ -54,8 +54,8 @@ app.get('/connect/x', (req: any, res: any) => {
 });
 
 // YouTube OAuth  
-app.get('/connect/youtube', (req: any, res: any) => {
-  req.session.userId = 2;
+app.get('/connect/youtube', (req: Request, res: Response) => {
+  (req.session as any).userId = 2;
   const redirectUri = 'https://app.theagencyiq.ai/auth/youtube/callback';
   const clientId = process.env.GOOGLE_CLIENT_ID || 'test-google-key';
   const youtubeUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=https://www.googleapis.com/auth/youtube.upload&state=youtube-${Date.now()}`;
@@ -65,8 +65,8 @@ app.get('/connect/youtube', (req: any, res: any) => {
 });
 
 // Facebook OAuth
-app.get('/connect/facebook', (req: any, res: any) => {
-  req.session.userId = 2;
+app.get('/connect/facebook', (req: Request, res: Response) => {
+  (req.session as any).userId = 2;
   const redirectUri = 'https://app.theagencyiq.ai/auth/facebook/callback';
   const appId = process.env.FACEBOOK_APP_ID || '1409057863445071';
   const facebookUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=public_profile,pages_show_list,pages_manage_posts,pages_read_engagement&response_type=code&state=facebook-${Date.now()}`;
@@ -76,7 +76,7 @@ app.get('/connect/facebook', (req: any, res: any) => {
 });
 
 // OAuth callbacks
-app.get('/auth/:platform/callback', (req: any, res: any) => {
+app.get('/auth/:platform/callback', (req: Request, res: Response) => {
   const platform = req.params.platform;
   const { code, state } = req.query;
   
@@ -96,8 +96,8 @@ setTimeout(() => window.close(), 3000);
 });
 
 // Main page
-app.get('/', (req: any, res: any) => {
-  res.send(`<!DOCTYPE html>
+app.get('/', (req: Request, res: Response) => {
+  res.status(200).send(`<!DOCTYPE html>
 <html>
 <head>
 <title>TheAgencyIQ - Production OAuth Server</title>
@@ -134,7 +134,7 @@ h1 { color: #3250fa; }
 });
 
 // 404 handler
-app.use('*', (req: any, res: any) => {
+app.use('*', (req: Request, res: Response) => {
   res.status(404).send('Not Found');
 });
 
