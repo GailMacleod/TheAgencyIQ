@@ -9,9 +9,17 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+}));
+
 // Live connection state endpoint with platform validation and optimized error handling
 app.get('/api/get-connection-state', async (req, res) => {
-  const userId = req.session.userId || 2;
+  const userId = req.session?.userId || 2;
   let sessionState = req.session.connectedPlatforms || {};
   
   // Set response timeout to prevent hanging
@@ -33,7 +41,9 @@ app.get('/api/get-connection-state', async (req, res) => {
     if (!connections || connections.length === 0) {
       clearTimeout(timeout);
       // Clean up empty session state
-      req.session.connectedPlatforms = {};
+      if (req.session) {
+        req.session.connectedPlatforms = {};
+      }
       return res.json({
         success: true,
         connectedPlatforms: {},
@@ -113,7 +123,9 @@ app.get('/api/get-connection-state', async (req, res) => {
     });
     
     // Update session with cleaned state
-    req.session.connectedPlatforms = cleanState;
+    if (req.session) {
+      req.session.connectedPlatforms = cleanState;
+    }
     
     clearTimeout(timeout);
     
@@ -129,7 +141,9 @@ app.get('/api/get-connection-state', async (req, res) => {
     console.error(`Database error in connection state check: ${dbError.message}`);
     
     // Clean up corrupted session state
-    req.session.connectedPlatforms = {};
+    if (req.session) {
+      req.session.connectedPlatforms = {};
+    }
     
     res.json({
       success: false,
