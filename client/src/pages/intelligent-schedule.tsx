@@ -395,14 +395,21 @@ export default function IntelligentSchedule() {
     );
   }
 
-  if (!user) {
+  if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <p className="text-gray-600">Please wait while we authenticate your session...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your account...</p>
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    // Redirect to login instead of showing auth message
+    setLocation("/login");
+    return null;
   }
 
   return (
