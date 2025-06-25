@@ -2,6 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import fs from 'fs';
 import { setupVite, serveStatic } from './vite';
+import routes from './routes';
 
 const app = express();
 
@@ -15,17 +16,11 @@ app.use(session({
   "cookie": {"secure": process.env.NODE_ENV === 'production', "maxAge": 24 * 60 * 60 * 1000}
 }));
 
-// Import and mount routes with fallback
-async function setupRoutes() {
-  try {
-    const routesModule = await import('./routes');
-    app.use('/api', routesModule.default);
-    console.log('Routes module loaded successfully');
-  } catch (e) {
-    console.warn('Routes module not found, using built-in endpoints');
-  }
-}
-setupRoutes();
+
+// Mount API routes before Vite frontend
+app.use('/api', routes);
+console.log('Routes module loaded successfully');
+
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err.message);
   process.exit(1);
@@ -37,6 +32,13 @@ app.use((err, req, res, next) => {
   console.error('Middleware Error:', err.stack);
   res.status(500).json({"error": "Server error", "details": err.message});
 });
+
+// Setup Vite for frontend serving AFTER API routes
+if (process.env.NODE_ENV === 'development') {
+  setupVite(app);
+} else {
+  serveStatic(app);
+}
 // Setup Vite for frontend serving first
 if (process.env.NODE_ENV === 'development') {
   setupVite(app);
