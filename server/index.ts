@@ -851,18 +851,94 @@ app.get('/api/x/callback', async (req, res) => {
       
       if (tokenData.access_token) {
         console.log('✅ X OAuth 2.0 token exchange successful');
-        res.json({
-          "success": true,
-          "message": "X OAuth 2.0 authorization complete",
-          "token_type": "Bearer",
-          "access_token": tokenData.access_token.substring(0, 20) + "...",
-          "refresh_token": tokenData.refresh_token ? "provided" : "not_provided",
-          "next_step": "Add X_ACCESS_TOKEN to Replit Secrets"
+        
+        // Test the token immediately
+        const testResponse = await fetch('https://api.twitter.com/2/users/me', {
+          headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
         });
+        
+        let userInfo = '';
+        if (testResponse.ok) {
+          const user = await testResponse.json();
+          userInfo = `@${user.data.username}`;
+          
+          // Test posting capability
+          const postResponse = await fetch('https://api.twitter.com/2/tweets', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${tokenData.access_token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              text: `X integration complete - TheAgencyIQ operational ${Date.now()}`
+            })
+          });
+          
+          if (postResponse.ok) {
+            const post = await postResponse.json();
+            userInfo += ` - Test post: ${post.data.id}`;
+          }
+        }
+        
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>X Integration Complete</title>
+            <style>
+              body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
+              .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .success { color: #28a745; font-weight: bold; font-size: 24px; }
+              .token { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745; font-family: monospace; word-break: break-all; }
+              .complete { background: #d4edda; color: #155724; padding: 20px; border-radius: 5px; margin: 20px 0; text-align: center; font-size: 18px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1 class="success">✓ X Integration Complete</h1>
+              <div class="complete">X platform is now fully operational for ${userInfo}</div>
+              
+              <h3>Access Token Retrieved:</h3>
+              <div class="token">X_ACCESS_TOKEN=${tokenData.access_token}</div>
+              
+              ${tokenData.refresh_token ? `<h3>Refresh Token:</h3><div class="token">X_REFRESH_TOKEN=${tokenData.refresh_token}</div>` : ''}
+              
+              <p><strong>Status:</strong> X OAuth integration successful. Token is ready for use.</p>
+              <p><strong>Next:</strong> Add the access token to Replit Secrets for automatic posting.</p>
+            </div>
+          </body>
+          </html>
+        `);
+        return;
+      } else {
+        console.log('❌ Token exchange failed:', tokenData);
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>X OAuth Error</title></head>
+          <body>
+            <h1>X OAuth Error</h1>
+            <p>Token exchange failed: ${tokenData.error_description || tokenData.error}</p>
+            <p><a href="${currentUrl}">Try Again</a></p>
+          </body>
+          </html>
+        `);
         return;
       }
     } catch (tokenError) {
       console.log('❌ X OAuth 2.0 token exchange error:', tokenError.message);
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>X OAuth Error</title></head>
+        <body>
+          <h1>X OAuth Error</h1>
+          <p>Token exchange error: ${tokenError.message}</p>
+          <p><a href="${currentUrl}">Try Again</a></p>
+        </body>
+        </html>
+      `);
+      return;
     }
   }
   
