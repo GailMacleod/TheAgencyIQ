@@ -4,6 +4,9 @@ import fs from 'fs';
 import { setupVite, serveStatic } from './vite';
 
 const app = express();
+
+// Async wrapper to handle top-level await
+async function startServer() {
 app.use(express.json());
 app.use(session({
   "secret": "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
@@ -214,9 +217,13 @@ app.get('/api/get-connection-state', (req, res) => res.json({"success": true, "c
 
 
 
-// Force production environment for OAuth
-process.env.NODE_ENV = 'production';
+  // Force production environment for OAuth
+  process.env.NODE_ENV = 'production';
 
-const server = app.listen(5000, '0.0.0.0', () => console.log('TheAgencyIQ Launch Server: 99.9% reliability system operational on port 5000'));
+  const server = app.listen(5000, '0.0.0.0', () => console.log('TheAgencyIQ Launch Server: 99.9% reliability system operational on port 5000'));
+  
+  return { app, server };
+}
 
-export { app, server };
+// Start the server
+startServer().catch(console.error);
