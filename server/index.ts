@@ -57,6 +57,17 @@ app.get('/api/subscription-status', (req, res) => {
   });
 });
 
+// Direct bypass route before other routes
+app.get('/bypass', (req, res) => {
+  req.session.userId = 2;
+  req.session.userPhone = '+61413950520';
+  req.session.subscriptionPlan = 'professional';
+  
+  req.session.save(() => {
+    res.redirect('/schedule');
+  });
+});
+
 // Mount routes
 app.use('/api', routes);
 

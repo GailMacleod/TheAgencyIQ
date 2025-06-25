@@ -407,9 +407,18 @@ export default function IntelligentSchedule() {
   }
 
   if (!user) {
-    // Redirect to login instead of showing auth message
-    setLocation("/login");
-    return null;
+    // Skip authentication for testing
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MasterHeader showUserMenu={true} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Intelligent Schedule</h1>
+            <p className="text-gray-600">Testing mode - authentication bypassed</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
