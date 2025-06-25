@@ -323,37 +323,21 @@ const enforcePublish = async (post: any, userId: number) => {
   return { success: false, message: 'Max retries exceeded' };
 };
 
-// Disconnect platform endpoint
 app.post('/api/disconnect-platform', async (req, res) => {
   const userId = req.session?.userId || 2;
   const { platform } = req.body;
   const validPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
-  
   if (!platform || !validPlatforms.includes(platform.toLowerCase())) {
-    return res.status(400).json({
-      "error": "Invalid platform", 
-      "validPlatforms": validPlatforms
-    });
+    return res.status(400).json({"error": "Invalid platform", "validPlatforms": validPlatforms});
   }
-  
   if (req.session && req.session.connectedPlatforms) {
     delete req.session.connectedPlatforms[platform.toLowerCase()];
-    try {
-      fs.writeFileSync('connected-platforms.json', JSON.stringify(req.session.connectedPlatforms || {}));
-    } catch (writeError) {
-      console.warn('Failed to save connected platforms:', writeError);
-    }
+    fs.writeFileSync('connected-platforms.json', JSON.stringify(req.session.connectedPlatforms || {}));
     console.log(`Disconnected ${platform} for user ${userId}`);
   } else {
     console.log(`No active connection for ${platform} to disconnect`);
   }
-  
-  res.json({
-    "success": true, 
-    "platform": platform.toLowerCase(), 
-    "message": "Disconnected successfully",
-    "action": "refresh"
-  });
+  res.json({"success": true, "platform": platform.toLowerCase(), "message": "Disconnected successfully", "action": "refresh", "version": "1.0"});
 });
 
 // Token refresh endpoint
