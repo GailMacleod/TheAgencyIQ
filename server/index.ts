@@ -9,73 +9,132 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Live connection state endpoint with platform validation
+// Live connection state endpoint with platform validation and optimized error handling
 app.get('/api/get-connection-state', async (req, res) => {
   const userId = req.session.userId || 2;
-  let state = req.session.connectedPlatforms || {};
+  let sessionState = req.session.connectedPlatforms || {};
+  
+  // Set response timeout to prevent hanging
+  const timeout = setTimeout(() => {
+    if (!res.headersSent) {
+      res.status(408).json({
+        success: false,
+        error: 'Request timeout',
+        connectedPlatforms: sessionState,
+        lastChecked: new Date().toISOString()
+      });
+    }
+  }, 10000);
   
   try {
     const { storage } = await import('./storage');
     const connections = await storage.getPlatformConnectionsByUser(userId);
     
-    // Live validation for each platform token
-    const liveState = {};
+    if (!connections || connections.length === 0) {
+      clearTimeout(timeout);
+      // Clean up empty session state
+      req.session.connectedPlatforms = {};
+      return res.json({
+        success: true,
+        connectedPlatforms: {},
+        lastChecked: new Date().toISOString(),
+        message: 'No platform connections found'
+      });
+    }
     
-    for (const connection of connections) {
-      if (!connection.isActive) {
+    // Batch validation with promise concurrency control
+    const liveState = {};
+    const validationPromises = connections.map(async (connection) => {
+      if (!connection.isActive || !connection.accessToken || connection.accessToken.startsWith('pending_')) {
         liveState[connection.platform] = false;
-        continue;
+        return;
       }
       
       let isValid = false;
+      const platform = connection.platform;
       
       try {
-        if (connection.platform === 'facebook') {
-          const response = await fetch(`https://graph.facebook.com/me?access_token=${connection.accessToken}`);
-          isValid = response.ok;
-        } else if (connection.platform === 'x') {
-          const response = await fetch('https://api.twitter.com/2/users/me', {
-            headers: { 'Authorization': `Bearer ${connection.accessToken}` }
+        // Platform-specific validation with timeout
+        const controller = new AbortController();
+        const platformTimeout = setTimeout(() => controller.abort(), 3000);
+        
+        let response;
+        if (platform === 'facebook') {
+          response = await fetch(`https://graph.facebook.com/me?access_token=${connection.accessToken}`, {
+            signal: controller.signal
           });
-          isValid = response.ok;
-        } else if (connection.platform === 'linkedin') {
-          const response = await fetch('https://api.linkedin.com/v2/people/~', {
-            headers: { 'Authorization': `Bearer ${connection.accessToken}` }
+        } else if (platform === 'x') {
+          response = await fetch('https://api.twitter.com/2/users/me', {
+            headers: { 'Authorization': `Bearer ${connection.accessToken}` },
+            signal: controller.signal
           });
-          isValid = response.ok;
-        } else if (connection.platform === 'instagram') {
-          const response = await fetch(`https://graph.facebook.com/me?access_token=${connection.accessToken}`);
-          isValid = response.ok;
-        } else if (connection.platform === 'youtube') {
-          const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
-            headers: { 'Authorization': `Bearer ${connection.accessToken}` }
+        } else if (platform === 'linkedin') {
+          response = await fetch('https://api.linkedin.com/v2/people/~', {
+            headers: { 'Authorization': `Bearer ${connection.accessToken}` },
+            signal: controller.signal
           });
-          isValid = response.ok;
+        } else if (platform === 'instagram') {
+          response = await fetch(`https://graph.facebook.com/me?access_token=${connection.accessToken}`, {
+            signal: controller.signal
+          });
+        } else if (platform === 'youtube') {
+          response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+            headers: { 'Authorization': `Bearer ${connection.accessToken}` },
+            signal: controller.signal
+          });
         }
+        
+        clearTimeout(platformTimeout);
+        isValid = response?.ok || false;
+        
+        if (!isValid && response) {
+          console.warn(`${platform} token validation failed: ${response.status} ${response.statusText}`);
+        }
+        
       } catch (error) {
-        console.warn(`Live validation failed for ${connection.platform}: ${error.message}`);
+        if (error.name === 'AbortError') {
+          console.warn(`${platform} validation timeout`);
+        } else {
+          console.warn(`${platform} validation error: ${error.message}`);
+        }
         isValid = false;
       }
       
-      liveState[connection.platform] = isValid;
-    }
+      liveState[platform] = isValid;
+    });
     
-    // Update session with live state
-    req.session.connectedPlatforms = liveState;
+    // Wait for all validations with error handling
+    await Promise.allSettled(validationPromises);
     
-    console.log('Live connection state:', liveState);
+    // Clean up session state - remove stale entries
+    const cleanState = {};
+    Object.keys(liveState).forEach(platform => {
+      cleanState[platform] = liveState[platform];
+    });
+    
+    // Update session with cleaned state
+    req.session.connectedPlatforms = cleanState;
+    
+    clearTimeout(timeout);
     
     res.json({
       success: true,
-      connectedPlatforms: liveState,
-      lastChecked: new Date().toISOString()
+      connectedPlatforms: cleanState,
+      lastChecked: new Date().toISOString(),
+      validatedPlatforms: Object.keys(cleanState).length
     });
     
   } catch (dbError) {
-    console.warn(`Database error, using session state: ${dbError.message}`);
+    clearTimeout(timeout);
+    console.error(`Database error in connection state check: ${dbError.message}`);
+    
+    // Clean up corrupted session state
+    req.session.connectedPlatforms = {};
+    
     res.json({
-      success: true,
-      connectedPlatforms: state,
+      success: false,
+      error: 'Database connection failed',
+      connectedPlatforms: {},
       lastChecked: new Date().toISOString(),
       fallback: true
     });

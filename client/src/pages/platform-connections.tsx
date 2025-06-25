@@ -30,19 +30,37 @@ export default function PlatformConnections() {
     refetchOnWindowFocus: true
   });
 
-  // Update connection state from live validation
+  // Update connection state from live validation with error handling
   useEffect(() => {
-    if (liveState?.connectedPlatforms) {
+    if (liveState?.success && liveState?.connectedPlatforms) {
       console.log('Live connection state updated:', liveState.connectedPlatforms);
       setConnectedPlatforms(liveState.connectedPlatforms);
+    } else if (liveState?.error) {
+      console.warn('Live state check failed:', liveState.error);
+      // Keep existing state on error, don't reset
     }
   }, [liveState]);
 
-  // Force live status check on page load
+  // Force live status check on page load with error recovery
   useEffect(() => {
     console.log('Platform connections page loaded - forcing live status check');
-    refetchLiveState();
-  }, [refetchLiveState]);
+    const performCheck = async () => {
+      try {
+        await refetchLiveState();
+      } catch (error) {
+        console.warn('Live status refetch failed:', error);
+        // Fallback to database connections if live check fails
+        if (connections?.length > 0) {
+          const fallbackState = {};
+          connections.forEach(conn => {
+            fallbackState[conn.platform] = conn.isActive || false;
+          });
+          setConnectedPlatforms(fallbackState);
+        }
+      }
+    };
+    performCheck();
+  }, [refetchLiveState, connections]);
 
   const connectedPlatformsList = Array.isArray(connections) ? connections.map((conn: any) => conn.platform) : [];
 

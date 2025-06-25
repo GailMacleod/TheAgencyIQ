@@ -93,11 +93,14 @@ export default function ConnectPlatforms() {
     refetchOnWindowFocus: true
   });
 
-  // Sync local state with live validation results
+  // Sync local state with live validation results with error handling
   useEffect(() => {
-    if (liveState?.connectedPlatforms) {
+    if (liveState?.success && liveState?.connectedPlatforms) {
       console.log('Live connection state for connect-platforms:', liveState.connectedPlatforms);
       setConnectedPlatforms(liveState.connectedPlatforms);
+    } else if (liveState?.error) {
+      console.warn('Live state check failed in connect-platforms:', liveState.error);
+      // Maintain existing state on error
     }
   }, [liveState]);
 
