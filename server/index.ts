@@ -142,6 +142,7 @@ app.get('/auth/:platform/callback', (req, res) => {
     console.log(`OAuth succeeded for ${platform}, code received`);
     
     const codeStr = typeof code === 'string' ? code : (Array.isArray(code) ? code[0] : 'unknown');
+    const displayCode = typeof codeStr === 'string' ? codeStr.substring(0, 20) : 'unknown';
     
     const html = `<!DOCTYPE html>
 <html>
@@ -151,7 +152,7 @@ app.get('/auth/:platform/callback', (req, res) => {
 </head>
 <body>
   <h1>${platform.toUpperCase()} OAuth Success!</h1>
-  <p>✓ Authorization code received: ${codeStr.substring(0, 20)}...</p>
+  <p>✓ Authorization code received: ${displayCode}...</p>
   <p>✓ Platform: ${platform}</p>
   <p>✓ State: ${state}</p>
   <p>✓ Time: ${new Date().toISOString()}</p>
