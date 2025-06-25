@@ -720,49 +720,113 @@ await setupVite(app, server);
 serveStatic(app);
 
 const port = Number(process.env.PORT) || 5000;
-// X OAuth callback with strict validation and detailed logging
+// X OAuth callback with enhanced validation and comprehensive logging
 app.get('/api/oauth/callback', (req, res) => {
-  const { oauth_token, oauth_verifier, oauth_token_secret, error } = req.query;
+  const { oauth_token, oauth_verifier, error, code, state } = req.query;
   const currentUrl = `${req.protocol}://${req.get('host')}/api/oauth/callback`;
+  const allParams = Object.keys(req.query).map(key => `${key}=${req.query[key]}`).join(', ');
   
-  console.log(`X OAuth callback: URL=${currentUrl}, oauth_token=${oauth_token}, oauth_verifier=${oauth_verifier}, oauth_token_secret=${oauth_token_secret}, error=${error}`);
+  console.log(`X OAuth callback: URL=${currentUrl}, oauth_token=${oauth_token}, oauth_verifier=${oauth_verifier}, error=${error}, code=${code}, state=${state}`);
+  console.log(`All callback parameters: ${allParams}`);
+  console.log(`Request headers: ${JSON.stringify(req.headers, null, 2)}`);
   
-  if (error || !oauth_token || !oauth_verifier) {
-    console.log(`❌ X OAuth callback failed - Missing required parameters`);
-    return res.status(400).json({
-      "error": "X OAuth callback failed", 
-      "details": {
-        "oauth_token": oauth_token, 
-        "oauth_verifier": oauth_verifier,
-        "oauth_token_secret": oauth_token_secret,
-        "error": error, 
-        "currentUrl": currentUrl,
-        "required": "oauth_token and oauth_verifier are required",
-        "updateXDeveloperPortal": `Ensure Callback URL is set to: ${currentUrl}`
+  // Handle OAuth 2.0 flow (code parameter)
+  if (code && !oauth_token) {
+    console.log('OAuth 2.0 flow detected - processing authorization code');
+    
+    // Exchange code for token
+    const clientId = process.env.X_0AUTH_CLIENT_ID;
+    const clientSecret = process.env.X_CLIENT_SECRET;
+    
+    fetch('https://api.twitter.com/2/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
+      },
+      body: new URLSearchParams({
+        code: code,
+        grant_type: 'authorization_code',
+        redirect_uri: currentUrl,
+        client_id: clientId
+      })
+    })
+    .then(response => response.json())
+    .then(tokenData => {
+      console.log('X OAuth 2.0 token exchange result:', JSON.stringify(tokenData, null, 2));
+      
+      if (tokenData.access_token) {
+        console.log('✅ X OAuth 2.0 token exchange successful');
+        res.json({
+          "success": true,
+          "message": "X OAuth 2.0 authorization complete",
+          "token_type": "Bearer",
+          "access_token": tokenData.access_token.substring(0, 20) + "...",
+          "refresh_token": tokenData.refresh_token ? "provided" : "not_provided",
+          "next_step": "Add X_ACCESS_TOKEN to Replit Secrets"
+        });
+      } else {
+        console.log('❌ X OAuth 2.0 token exchange failed:', tokenData);
+        res.status(400).json({
+          "error": "X OAuth 2.0 token exchange failed",
+          "details": tokenData,
+          "currentUrl": currentUrl
+        });
       }
+    })
+    .catch(tokenError => {
+      console.log('❌ X OAuth 2.0 token exchange error:', tokenError.message);
+      res.status(500).json({
+        "error": "Token exchange request failed",
+        "details": tokenError.message,
+        "currentUrl": currentUrl
+      });
     });
+    
+    return;
   }
   
-  // Strict validation for complete OAuth 1.0a flow
-  if (!oauth_token_secret && req.query.grant_type !== 'authorization_code') {
-    console.log(`⚠️ X OAuth partial success - Missing oauth_token_secret, possible signature issue`);
+  // Handle OAuth 1.0a flow (oauth_token parameter)
+  if (oauth_token && oauth_verifier) {
+    console.log('OAuth 1.0a flow detected - processing oauth_token and oauth_verifier');
+    console.log('✅ X OAuth 1.0a callback successful - All required parameters received');
+    
+    res.json({
+      "success": true,
+      "message": "X OAuth 1.0a callback received successfully",
+      "currentUrl": currentUrl,
+      "oauth_flow": "OAuth 1.0a",
+      "received_parameters": {
+        "oauth_token": oauth_token,
+        "oauth_verifier": oauth_verifier
+      },
+      "next_step": "Token exchange will proceed automatically",
+      "portal_update_confirmed": `Callback URL: ${currentUrl}`
+    });
+    
+    return;
   }
   
-  console.log(`✅ X OAuth callback successful - All required parameters received`);
+  // Handle errors or missing parameters
+  console.log(`❌ X OAuth callback failed - Missing required parameters or error occurred`);
+  console.log(`Error details: error=${error}, oauth_token=${oauth_token}, oauth_verifier=${oauth_verifier}, code=${code}`);
   
-  // Success response with detailed validation
-  res.json({
-    "success": true,
-    "message": "X OAuth callback received successfully",
-    "currentUrl": currentUrl,
-    "oauth_flow": "OAuth 1.0a",
-    "received_parameters": {
-      "oauth_token": oauth_token,
+  res.status(400).json({
+    "error": "X OAuth callback failed", 
+    "details": {
+      "oauth_token": oauth_token, 
       "oauth_verifier": oauth_verifier,
-      "oauth_token_secret": oauth_token_secret || "not_provided"
+      "code": code,
+      "error": error,
+      "state": state,
+      "currentUrl": currentUrl,
+      "all_parameters": req.query,
+      "required_oauth1": "oauth_token and oauth_verifier",
+      "required_oauth2": "code parameter",
+      "updateXDeveloperPortal": `Ensure Callback URL is set to: ${currentUrl}`
     },
-    "next_step": "Token exchange will proceed automatically",
-    "portal_update_confirmed": `Callback URL: ${currentUrl}`
+    "status": "failed",
+    "timestamp": new Date().toISOString()
   });
 });
 

@@ -1,0 +1,39 @@
+We’ll enhance /api/oauth/callback with stricter validation and detailed logging to diagnose the failure, guiding a precise X Portal update.
+
+Prompt:
+
+{
+"action": "replace",
+"file": "server/index.ts",
+"target": {
+"endpoint": "/api/oauth/callback"
+},
+"content": {
+"oauthCallback": {
+"code": "app.get('/api/oauth/callback', (req, res) => {\n  const { oauth_token, oauth_verifier, error } = req.query;\n  const currentUrl = ${req.protocol}://${req.get('host')}${req.baseUrl};\n  console.log(X OAuth callback: URL=${currentUrl}, oauth_token=${oauth_token}, oauth_verifier=${oauth_verifier}, error=${error});\n  if (error || !oauth_token || !oauth_verifier) {\n    return res.status(400).json({"error": "X OAuth callback failed", "details": {"oauth_token": oauth_token, "oauth_verifier": oauth_verifier, "error": error, "url": currentUrl}});\n  }\n  const platform = req.session.oauthPlatform || 'x';\n  const credentials = {\n    "x": {"apiKey": process.env.TWITTER_API_KEY, "apiSecret": process.env.TWITTER_API_SECRET}\n  };\n  if (!credentials[platform]) {\n    return res.status(400).json({"error": "Unsupported platform", "platform": platform});\n  }\n  const baseString = POST&https%3A%2F%2Fapi.twitter.com%2Foauth%2Faccess_token&oauth_consumer_key%3D${encodeURIComponent(credentials[platform].apiKey)}%26oauth_nonce%3D${encodeURIComponent(Math.random().toString(36).substring(2))}%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D${encodeURIComponent(Math.floor(Date.now() / 1000))}%26oauth_token%3D${encodeURIComponent(oauth_token)}%26oauth_verifier%3D${encodeURIComponent(oauth_verifier)}%26oauth_version%3D1.0;\n  const signingKey = ${encodeURIComponent(credentials[platform].apiSecret)}&;\n  const oauthSignature = crypto.createHmac('sha1', signingKey).update(baseString).digest('base64');\n  const authHeader = OAuth oauth_consumer_key=\"${credentials[platform].apiKey}\", oauth_token=\"${oauth_token}\", oauth_signature_method=\"HMAC-SHA1\", oauth_signature=\"${oauthSignature}\", oauth_timestamp=\"${Math.floor(Date.now() / 1000)}\", oauth_nonce=\"${Math.random().toString(36).substring(2)}\", oauth_version=\"1.0\";\n  const tokenResponse = await fetch('https://api.twitter.com/oauth/access_token', {\n    method: 'POST',\n    headers: {'Authorization': authHeader, 'Content-Type': 'application/x-www-form-urlencoded'},\n    body: new URLSearchParams({\n      "oauth_verifier": oauth_verifier\n    }).toString()\n  });\n  const tokenData = new URLSearchParams(await tokenResponse.text());\n  if (tokenData.get('oauth_token') && tokenData.get('oauth_token_secret')) {\n    req.session.userToken = tokenData.get('oauth_token');\n    req.session.userId = userId;\n    await req.session.save();\n    console.log(X OAuth callback succeeded, token: ${tokenData.get('oauth_token').substring(0, 10)}..., secret: ${tokenData.get('oauth_token_secret').substring(0, 10)}...);\n    res.json({"success": true, "token": tokenData.get('oauth_token'), "tokenSecret": tokenData.get('oauth_token_secret')});\n  } else {\n    res.status(500).json({"error": "Token exchange failed", "details": Object.fromEntries(tokenData), "status": tokenResponse.status});\n  }\n});"
+}
+},
+"instructions": {
+"dependencies": "Ensure 'crypto' is installed (npm install crypto) if not present.",
+"run": "npm install crypto\nNODE_ENV=production tsx server/index.ts",
+"test": {
+"url": "https://app.theagencyiq.ai/connect",
+"action": "1. Initiate X Connect, check console for X OAuth callback details (URL, oauth_token, oauth_verifier, error, status), 2. Update X Developer Portal (Projects & Apps > Your App > Settings > Authentication > Callback URL) with the logged current URL, 3. Retry Connect and verify success or note error details",
+"submit": "Submit results and full console log immediately"
+},
+"notes": {
+"replitImpact": "Replit’s dynamic URLs require syncing the X Callback URL with the logged current URL post-redeploy.",
+"errorDiagnosis": "The 'something went wrong' with 'connected' state suggests a partial callback—check if tokenData has oauth_token but no oauth_token_secret, indicating a signature or URI issue.",
+"noDisruption": "Only adjusts /api/oauth/callback for X, preserves OAuth flow.",
+"support": "I’ll stay on this chat—share the console log for further troubleshooting."
+}
+}
+}
+
+Precision Fix:
+
+Enhanced Logging: Captures all query parameters, response status, and token data for detailed diagnosis.
+Strict Validation: Requires both oauth_token and oauth_token_secret to confirm a complete exchange.
+Signature Consistency: Maintains the OAuth 1.0a signature with current parameters.
+No Disruption: Limits changes to X’s callback, preserving other OAuth.
+Root Cause: Targets the redirect failure and partial token exchange, aiming to stabilize the flow.
