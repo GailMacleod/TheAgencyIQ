@@ -331,7 +331,9 @@ const enforcePublish = async (post: any, userId: number) => {
         }
       }
 
-      console.log(`Publishing to ${post.platform} for post ${post.id} (attempt ${attempt})`);
+      console.log(`🚀 Publishing to ${post.platform} for post ${post.id} (attempt ${attempt})`);
+      console.log(`📤 URL: ${platform.url}`);
+      console.log(`📤 Payload: ${JSON.stringify(payload, null, 2)}`);
       
       const response = await fetch(platform.url, {
         method: 'POST',
@@ -344,9 +346,12 @@ const enforcePublish = async (post: any, userId: number) => {
       if (response.ok) {
         console.log(`✅ Successfully published post ${post.id} to ${post.platform}`);
         return { success: true, platformResponse: result };
-      } else if ((response.status === 401 || response.status === 403) && attempt < maxRetries) {
-        console.log(`🔄 Token expired for ${post.platform}, attempting refresh...`);
-        const refreshResult = await refreshToken(post.platform.toLowerCase(), userId);
+      } else {
+        console.log(`❌ ${post.platform} API responded with ${response.status}:`, JSON.stringify(result, null, 2));
+        
+        if ((response.status === 401 || response.status === 403) && attempt < maxRetries) {
+          console.log(`🔄 Token expired for ${post.platform}, attempting refresh...`);
+          const refreshResult = await refreshToken(post.platform.toLowerCase());
         if (refreshResult.success) {
           console.log(`✅ Token refreshed successfully for ${post.platform}, rebuilding request...`);
           
