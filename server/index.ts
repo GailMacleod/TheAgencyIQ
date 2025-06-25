@@ -500,7 +500,17 @@ app.post('/api/check-live-status', async (req, res) => {
           const xResponse = await fetch('https://api.twitter.com/2/users/me', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          isConnected = xResponse.ok;
+          if (xResponse.ok) {
+            isConnected = true;
+          } else {
+            const xError = await xResponse.json();
+            if (xError.title === 'Unsupported Authentication') {
+              error = 'X requires OAuth 2.0 User Context - current token is Application-Only';
+            } else {
+              error = 'X token invalid';
+            }
+            isConnected = false;
+          }
           break;
         case 'instagram':
           const igResponse = await fetch(`https://graph.facebook.com/me?access_token=${token}`);
