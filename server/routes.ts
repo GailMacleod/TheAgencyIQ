@@ -4718,7 +4718,58 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-
+  // Bulk delete posts endpoint
+  app.delete("/api/posts/bulk", requireAuth, async (req: any, res) => {
+    try {
+      const { postIds, deleteAll = false } = req.body;
+      
+      if (deleteAll) {
+        const userPosts = await storage.getPostsByUser(req.session.userId);
+        let deletedCount = 0;
+        
+        for (const post of userPosts) {
+          await storage.deletePost(post.id);
+          deletedCount++;
+        }
+        
+        console.log(`Bulk deleted all ${deletedCount} posts for user ${req.session.userId}`);
+        res.json({ 
+          success: true, 
+          message: `Successfully deleted all ${deletedCount} posts`,
+          deletedCount 
+        });
+      } else if (postIds && Array.isArray(postIds)) {
+        let deletedCount = 0;
+        
+        for (const postId of postIds) {
+          try {
+            await storage.deletePost(parseInt(postId));
+            deletedCount++;
+          } catch (error) {
+            console.error(`Failed to delete post ${postId}:`, error);
+          }
+        }
+        
+        console.log(`Bulk deleted ${deletedCount} posts for user ${req.session.userId}`);
+        res.json({ 
+          success: true, 
+          message: `Successfully deleted ${deletedCount} posts`,
+          deletedCount 
+        });
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          message: "Either postIds array or deleteAll=true is required" 
+        });
+      }
+    } catch (error: any) {
+      console.error('Bulk delete error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error deleting posts" 
+      });
+    }
+  });
 
   // Replace failed post
   app.post("/api/replace-post", requireAuth, async (req: any, res) => {
@@ -6945,55 +6996,6 @@ async function fetchTwitterAnalytics(accessToken: string, refreshToken: string) 
   } catch (error) {
     console.error('Twitter API error:', error);
     throw new Error('Failed to fetch Twitter analytics');
-  }
-}
-
-async function fetchYouTubeAnalytics(accessToken: string) {
-  try {
-    // Get channel information
-    const channelResponse = await axios.get(
-      'https://www.googleapis.com/youtube/v3/channels?part=statistics&mine=true',
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/json'
-        }
-      }
-    );
-
-    // Get recent videos
-    const videosResponse = await axios.get(
-      'https://www.googleapis.com/youtube/v3/search?part=snippet&forMine=true&type=video&order=date&maxResults=50',
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/json'
-        }
-      }
-    );
-
-    const channel = channelResponse.data.items[0];
-    const videos = videosResponse.data.items || [];
-
-    // Calculate analytics from channel statistics
-    const totalViews = parseInt(channel?.statistics?.viewCount || '0');
-    const totalVideos = parseInt(channel?.statistics?.videoCount || '0');
-    const subscriberCount = parseInt(channel?.statistics?.subscriberCount || '0');
-    
-    // Estimate engagement based on subscriber to view ratio
-    const estimatedEngagement = subscriberCount > 0 ? Math.round((totalViews / subscriberCount) * 0.1) : 0;
-
-    return {
-      platform: 'youtube',
-      totalPosts: totalVideos,
-      totalReach: totalViews,
-      totalEngagement: estimatedEngagement,
-      engagementRate: totalViews > 0 ? ((estimatedEngagement / totalViews) * 100).toFixed(2) : '0',
-      subscriberCount
-    };
-  } catch (error) {
-    console.error('YouTube API error:', error);
-    throw new Error('Failed to fetch YouTube analytics');
   }
 }
 
