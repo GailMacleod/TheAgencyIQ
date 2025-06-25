@@ -55,10 +55,21 @@ router.post('/auth/login', async (req, res) => {
           });
         }
         
-        console.log('Login succeeded');
+        const timestamp = new Date().toLocaleString('en-AU', { 
+          timeZone: 'Australia/Brisbane',
+          hour12: true,
+          year: 'numeric',
+          month: '2-digit', 
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        console.log(`Login succeeded at ${timestamp} AEST`);
         res.json({
           "success": true,
           "complete": true,
+          "timestamp": timestamp,
           "user": {
             "id": user.id,
             "phone": user.userId,
@@ -69,10 +80,21 @@ router.post('/auth/login', async (req, res) => {
         });
       });
     } else {
-      console.log('Login succeeded');
+      const timestamp = new Date().toLocaleString('en-AU', { 
+        timeZone: 'Australia/Brisbane',
+        hour12: true,
+        year: 'numeric',
+        month: '2-digit', 
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      console.log(`Login succeeded at ${timestamp} AEST`);
       res.json({
         "success": true,
         "complete": true,
+        "timestamp": timestamp,
         "user": {
           "id": user.id,
           "phone": user.userId,
