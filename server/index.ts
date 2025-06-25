@@ -11,9 +11,9 @@ app.use(session({
   "cookie": {"secure": process.env.NODE_ENV === 'production', "maxAge": 24 * 60 * 60 * 1000}
 }));
 
-// CSP header fix for Replit
+// CSP header optimized for Replit
 app.use((req, res, next) => {
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self';");
+  res.setHeader('Content-Security-Policy', "default-src 'self' https://replit.com; script-src 'self' 'unsafe-inline' https://replit.com; connect-src 'self' wss: ws: https://replit.com; style-src 'self' 'unsafe-inline' https://replit.com; img-src 'self' data: https:; font-src 'self' https://replit.com;");
   next();
 });
 
@@ -23,7 +23,7 @@ app.use(express.static(path.join(process.cwd(), 'public')));
 // Public bypass route
 app.get('/public', (req, res) => {
   req.session.userId = 2;
-  console.log(`Proven bypass for OAuth setup at ${new Date().toISOString()}`);
+  console.log(`Optimized bypass for OAuth setup at ${new Date().toISOString()}`);
   res.redirect('/');
 });
 
