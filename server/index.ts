@@ -69,7 +69,7 @@ const refreshToken = async (platform: string, userId: number) => {
         const userData = await testResponse.json();
         if (platform === 'facebook') {
           process.env.FACEBOOK_PAGE_ACCESS_TOKEN = userToken;
-        } else {
+        } else if (platform === 'instagram') {
           process.env.INSTAGRAM_USER_ACCESS_TOKEN = userToken;
         }
         
@@ -109,7 +109,7 @@ const refreshToken = async (platform: string, userId: number) => {
       // Step 3: Update environment and persist
       if (platform === 'facebook') {
         process.env.FACEBOOK_PAGE_ACCESS_TOKEN = pageToken;
-      } else {
+      } else if (platform === 'instagram') {
         process.env.INSTAGRAM_USER_ACCESS_TOKEN = pageToken;
       }
       
