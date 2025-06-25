@@ -501,6 +501,9 @@ app.post('/api/check-live-status', async (req, res) => {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           isConnected = xResponse.ok;
+          if (!isConnected && xResponse.status === 403) {
+            error = 'X token requires OAuth 2.0 User Context (not Application-Only)';
+          }
           break;
         case 'instagram':
           const igResponse = await fetch(`https://graph.facebook.com/me?access_token=${token}`);
