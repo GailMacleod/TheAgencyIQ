@@ -715,6 +715,39 @@ await setupVite(app, server);
 serveStatic(app);
 
 const port = Number(process.env.PORT) || 5000;
+// X callback endpoint
+app.get('/x', async (req, res) => {
+  const { code, error } = req.query;
+  
+  if (error || !code) {
+    return res.send(`
+      <html><body style="font-family:Arial;padding:40px;background:#f5f5f5;">
+        <div style="background:white;padding:30px;border-radius:8px;max-width:600px;margin:0 auto;">
+          <h2>X Authorization Error</h2>
+          <p>Error: ${error || 'No code received'}</p>
+        </div>
+      </body></html>
+    `);
+  }
+  
+  res.send(`
+    <html>
+    <head><title>X Auth Code</title></head>
+    <body style="font-family:Arial;padding:40px;background:#f5f5f5;">
+      <div style="background:white;padding:30px;border-radius:8px;max-width:600px;margin:0 auto;">
+        <h2>X Authorization Code</h2>
+        <div style="background:#f8f9fa;padding:15px;border-radius:4px;font-family:monospace;word-break:break-all;" id="code">${code}</div>
+        <button onclick="navigator.clipboard.writeText('${code}');alert('Copied!')" 
+                style="background:#1d9bf0;color:white;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;margin-top:15px;">
+          Copy Code
+        </button>
+        <p style="margin-top:20px;"><strong>Next:</strong> Use this code in terminal to complete X integration.</p>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
 server.listen(port, '0.0.0.0', () => {
   console.log(`TheAgencyIQ Launch Server: 99.9% reliability system operational on port ${port}`);
   console.log(`Launch Target: 07:00 PM JST, June 24, 2025`);
