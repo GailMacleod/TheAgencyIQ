@@ -750,7 +750,8 @@ app.get('/x', async (req, res) => {
       body: new URLSearchParams({
         code: code as string,
         grant_type: 'authorization_code',
-        redirect_uri: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/x'
+        redirect_uri: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/x',
+        client_id: clientId
       })
     });
     
