@@ -501,8 +501,13 @@ app.post('/api/check-live-status', async (req, res) => {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           isConnected = xResponse.ok;
-          if (!isConnected && xResponse.status === 403) {
-            error = 'X token requires OAuth 2.0 User Context (not Application-Only)';
+          if (!isConnected) {
+            const xError = await xResponse.json().catch(() => ({}));
+            if (xResponse.status === 403 && xError.title === 'Unsupported Authentication') {
+              error = 'X token is Application-Only, need User Context token for posting';
+            } else {
+              error = `X authentication failed: ${xError.detail || 'Unknown error'}`;
+            }
           }
           break;
         case 'instagram':
