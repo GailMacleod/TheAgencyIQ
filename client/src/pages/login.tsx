@@ -49,21 +49,10 @@ export default function Login() {
           description: `Welcome back to AiQ at ${result.timestamp}`,
         });
         
-        // Verify session before redirecting
-        const sessionCheck = await fetch("/api/auth/session", {
-          credentials: "include"
-        });
-        const sessionData = await sessionCheck.json();
-        
-        console.log("Session verification:", sessionData);
-        
-        if (sessionData.authenticated) {
-          // Use redirect hint from server response if available
-          const redirectPath = result.redirect || "/schedule";
-          setLocation(redirectPath);
-        } else {
-          throw new Error("Session verification failed");
-        }
+        // Direct redirect without session verification to avoid hang
+        const redirectPath = result.redirect || "/schedule";
+        console.log("Redirecting to:", redirectPath);
+        setLocation(redirectPath);
       } else {
         throw new Error(result.error || "Login failed");
       }
