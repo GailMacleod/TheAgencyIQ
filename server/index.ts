@@ -371,6 +371,27 @@ app.post('/api/disconnect-platform', async (req, res) => {
   });
 });
 
+// Get connection state endpoint
+app.get('/api/get-connection-state', async (req, res) => {
+  const userId = req.session?.userId || 2;
+  
+  try {
+    const connectedPlatforms = req.session?.connectedPlatforms || {};
+    
+    res.json({
+      success: true,
+      userId: userId,
+      connectedPlatforms: connectedPlatforms
+    });
+  } catch (error: any) {
+    console.error('Get connection state error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Token refresh endpoint
 app.post('/api/refresh-tokens', async (req, res) => {
   const { platform } = req.body;

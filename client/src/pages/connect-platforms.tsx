@@ -77,12 +77,26 @@ export default function ConnectPlatforms() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
+  const [connectedPlatforms, setConnectedPlatforms] = useState<{[key: string]: boolean}>({});
 
-  // Fetch platform connections
+  // Fetch platform connections from database
   const { data: connections = [], isLoading } = useQuery<PlatformConnection[]>({
     queryKey: ['/api/platform-connections'],
     retry: 2
   });
+
+  // Fetch session connection state
+  const { data: sessionState } = useQuery({
+    queryKey: ['/api/get-connection-state'],
+    retry: 2
+  });
+
+  // Sync local state with session state
+  useEffect(() => {
+    if (sessionState?.connectedPlatforms) {
+      setConnectedPlatforms(sessionState.connectedPlatforms);
+    }
+  }, [sessionState]);
 
   // OAuth connection for platforms
   const handleOAuthConnect = async (platform: string) => {
@@ -155,8 +169,18 @@ export default function ConnectPlatforms() {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Update local state based on backend response
+      if (data.action === 'syncState' && data.version === '1.3') {
+        setConnectedPlatforms(prev => ({
+          ...prev,
+          [data.platform]: data.isConnected
+        }));
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/get-connection-state'] });
+      
       toast({
         title: "Platform Disconnected",
         description: "Platform has been successfully disconnected"
@@ -176,6 +200,11 @@ export default function ConnectPlatforms() {
 
 
   const isConnected = (platform: string) => {
+    // Check session state first (for UI sync), then database connections
+    if (connectedPlatforms.hasOwnProperty(platform)) {
+      return connectedPlatforms[platform] === true;
+    }
+    
     if (!connections || !Array.isArray(connections)) return false;
     return connections.some((conn: PlatformConnection) => 
       conn.platform === platform && conn.isActive

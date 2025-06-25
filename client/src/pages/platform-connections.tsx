@@ -15,13 +15,27 @@ export default function PlatformConnections() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
+  const [connectedPlatforms, setConnectedPlatforms] = useState<{[key: string]: boolean}>({});
 
   // Fetch existing platform connections
   const { data: connections = [], isLoading: connectionsLoading } = useQuery({
     queryKey: ["/api/platform-connections"],
   });
 
-  const connectedPlatforms = Array.isArray(connections) ? connections.map((conn: any) => conn.platform) : [];
+  // Fetch session connection state
+  const { data: sessionState } = useQuery({
+    queryKey: ['/api/get-connection-state'],
+    retry: 2
+  });
+
+  // Initialize connection state from session
+  useEffect(() => {
+    if (sessionState?.connectedPlatforms) {
+      setConnectedPlatforms(sessionState.connectedPlatforms);
+    }
+  }, [sessionState]);
+
+  const connectedPlatformsList = Array.isArray(connections) ? connections.map((conn: any) => conn.platform) : [];
 
   // Check localStorage tokens on page load
   useEffect(() => {
@@ -138,22 +152,37 @@ export default function PlatformConnections() {
   const disconnectPlatform = async (platformId: string) => {
     setLoading(platformId);
     console.log(`Disconnecting platform: ${platformId}`);
-    console.log(`Disconnect API called for ${platformId}`);
     
     try {
-      await apiRequest("DELETE", `/api/platform-connections/${platformId}`, {});
-      
-      // Remove token from localStorage
-      localStorage.removeItem(`token_${platformId}`);
-      console.log(`token_${platformId}: removed from localStorage`);
-      
-      toast({
-        title: "Platform Disconnected",
-        description: `${platformId} has been disconnected successfully`,
+      const response = await fetch('/api/disconnect-platform', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ platform: platformId })
       });
       
-      // Refresh the page to show updated connections
-      window.location.reload();
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update local state based on backend response
+        if (data.action === 'syncState' && data.version === '1.3') {
+          setConnectedPlatforms(prev => ({
+            ...prev,
+            [data.platform]: data.isConnected
+          }));
+        }
+        
+        // Remove token from localStorage
+        localStorage.removeItem(`token_${platformId}`);
+        console.log(`token_${platformId}: removed from localStorage`);
+        
+        toast({
+          title: "Platform Disconnected",
+          description: `${platformId} has been disconnected successfully`,
+        });
+      } else {
+        throw new Error(data.error || 'Disconnect failed');
+      }
       
     } catch (error: any) {
       console.log(`disconnect_${platformId}: error - ${error.message || 'disconnection failed'}`);
@@ -193,7 +222,7 @@ export default function PlatformConnections() {
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {platforms.map((platform) => {
-                const isConnected = connectedPlatforms.includes(platform.id);
+                const isConnected = connectedPlatforms[platform.id] === true || connectedPlatformsList.includes(platform.id);
                 const isLoading = loading === platform.id;
                 const Icon = platform.icon;
 
@@ -262,7 +291,7 @@ export default function PlatformConnections() {
               <Button
                 onClick={handleNext}
                 className="btn-secondary px-8 py-3"
-                disabled={connectedPlatforms.length === 0}
+                disabled={connectedPlatformsList.length === 0 && Object.values(connectedPlatforms).every(val => !val)}
               >
                 next
               </Button>
