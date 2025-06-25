@@ -849,64 +849,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       success: false, 
       message: 'Unable to establish session' 
     });
-  }); 
-            success: true, 
-            user: { id: (existingUser as any).id, email: (existingUser as any).email },
-            sessionId: req.session.id,
-            autoRecovered: true
-          });
-        }
-      } catch (autoError) {
-        console.error('Auto session recovery failed:', autoError);
-        // Don't fail completely, continue with normal flow
-      }
-      
-      console.log('400 Error: Missing userId in request body:', req.body);
-      return res.status(400).json({ success: false, message: 'User ID required' });
-    }
-
-    try {
-      // Set timeout for user lookup to prevent hanging
-      const userTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('User lookup timeout')), 2000)
-      );
-      
-      const userQuery = storage.getUser(userId);
-      const user = await Promise.race([userQuery, userTimeout]);
-      
-      if (!user) {
-        console.log('User not found for ID:', userId);
-        return res.status(404).json({ success: false, message: 'User not found' });
-      }
-
-      req.session.userId = userId;
-      
-      // Use timeout for session save to prevent hanging
-      const saveTimeout = new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Session save timeout')), 1000);
-        req.session.save((err: any) => {
-          clearTimeout(timeout);
-          if (err) {
-            console.error('Session save failed:', err);
-            reject(err);
-          } else {
-            console.log('Session saved successfully for user:', (user as any).email);
-            resolve();
-          }
-        });
-      });
-      
-      await saveTimeout;
-      
-      res.json({ 
-        success: true, 
-        user: { id: (user as any).id, email: (user as any).email },
-        sessionId: req.session.id
-      });
-    } catch (error: any) {
-      console.error('Session establishment failed:', error);
-      res.status(500).json({ success: false, message: 'Session establishment failed' });
-    }
   });
 
   // Manifest.json route with public access
