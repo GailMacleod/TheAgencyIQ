@@ -470,7 +470,7 @@ app.post('/api/check-live-status', async (req, res) => {
   
   const tokens = {
     facebook: process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
-    linkedin: process.env.LINKEDIN_ACCESS_TOKEN,
+    linkedin: process.env.LINKEDIN_USER_ACCESS_TOKEN,
     x: process.env.X_ACCESS_TOKEN,
     instagram: process.env.INSTAGRAM_ACCESS_TOKEN,
     youtube: process.env.YOUTUBE_ACCESS_TOKEN
