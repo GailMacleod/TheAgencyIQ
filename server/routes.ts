@@ -1,7 +1,96 @@
 import express from 'express';
 import fs from 'fs';
+import bcrypt from 'bcrypt';
 
 const router = express.Router();
+
+// Login endpoint with session handling
+router.post('/auth/login', async (req, res) => {
+  const { phone, password } = req.body;
+  
+  if (!phone || !password) {
+    return res.status(400).json({
+      "error": "Phone and password are required"
+    });
+  }
+
+  try {
+    // Import storage dynamically to avoid circular dependencies
+    const { getUserByPhone } = await import('./storage');
+    const user = await getUserByPhone(phone);
+    
+    if (!user) {
+      return res.status(401).json({
+        "error": "Invalid credentials"
+      });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({
+        "error": "Invalid credentials"
+      });
+    }
+
+    // Set session
+    if (req.session) {
+      req.session.userId = user.id;
+      req.session.userPhone = user.userId; // Phone number UID
+      req.session.subscriptionPlan = user.subscriptionPlan;
+    }
+
+    console.log(`Login successful for user: ${phone}`);
+    
+    res.json({
+      "success": true,
+      "user": {
+        "id": user.id,
+        "phone": user.userId,
+        "email": user.email,
+        "subscriptionPlan": user.subscriptionPlan,
+        "remainingPosts": user.remainingPosts
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      "error": "Internal server error",
+      "details": error.message
+    });
+  }
+});
+
+// Logout endpoint
+router.post('/auth/logout', (req, res) => {
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({"error": "Could not log out"});
+      }
+      res.json({"success": true, "message": "Logged out successfully"});
+    });
+  } else {
+    res.json({"success": true, "message": "Already logged out"});
+  }
+});
+
+// Session check endpoint
+router.get('/auth/session', (req, res) => {
+  if (req.session?.userId) {
+    res.json({
+      "authenticated": true,
+      "user": {
+        "id": req.session.userId,
+        "phone": req.session.userPhone,
+        "subscriptionPlan": req.session.subscriptionPlan
+      }
+    });
+  } else {
+    res.json({"authenticated": false});
+  }
+});
 
 // OAuth callback endpoint for all platforms
 router.get('/oauth/callback', async (req, res) => {
