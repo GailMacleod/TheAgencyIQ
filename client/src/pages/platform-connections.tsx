@@ -16,12 +16,17 @@ export default function PlatformConnections() {
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
 
+  // Local state to override backend state for immediate UI updates
+  const [localDisconnectedPlatforms, setLocalDisconnectedPlatforms] = useState<string[]>([]);
+
   // Fetch existing platform connections
   const { data: connections = [], isLoading: connectionsLoading } = useQuery({
     queryKey: ["/api/platform-connections"],
   });
 
-  const connectedPlatforms = Array.isArray(connections) ? connections.map((conn: any) => conn.platform) : [];
+  const connectedPlatforms = Array.isArray(connections) 
+    ? connections.map((conn: any) => conn.platform).filter(platform => !localDisconnectedPlatforms.includes(platform))
+    : [];
 
   // Check localStorage tokens on page load
   useEffect(() => {
@@ -150,6 +155,9 @@ export default function PlatformConnections() {
       const result = await response.json();
       
       if (result.success && result.action === 'refresh' && result.version === '1.0') {
+        // Immediately update local state to show disconnected UI
+        setLocalDisconnectedPlatforms(prev => [...prev, platformId]);
+        
         // Remove token from localStorage
         localStorage.removeItem(`token_${platformId}`);
         console.log(`token_${platformId}: removed from localStorage`);
@@ -159,8 +167,10 @@ export default function PlatformConnections() {
           description: `${platformId} has been disconnected successfully`,
         });
         
-        // Force page reload to update UI state
-        window.location.reload();
+        // Force page reload after short delay to ensure UI update is visible
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       } else {
         throw new Error(result.error || 'Disconnect failed');
       }
