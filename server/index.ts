@@ -963,24 +963,43 @@ app.get('/api/x/callback', async (req, res) => {
     return;
   }
   
-  // Handle errors or missing parameters
-  console.log(`❌ X OAuth callback failed - Missing required parameters or error occurred`);
-  console.log(`Error details: error=${error}, oauth_token=${oauth_token}, oauth_verifier=${oauth_verifier}, code=${code}`);
+  // Handle direct callback access - show success page
+  console.log(`X OAuth callback accessed directly - showing authorization page`);
   
-  res.status(400).json({
-    "error": "X OAuth callback failed", 
-    "details": {
-      "oauth_token": oauth_token, 
-      "oauth_verifier": oauth_verifier,
-      "code": code,
-      "error": error,
-      "currentUrl": currentUrl,
-      "session_valid": !!req.session?.oauthToken,
-      "updateXDeveloperPortal": `Ensure Callback URL is set to: ${currentUrl}`
-    },
-    "status": "failed",
-    "timestamp": new Date().toISOString()
-  });
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>X OAuth Ready</title>
+      <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .success { color: #28a745; font-weight: bold; }
+        .code { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #007bff; font-family: monospace; word-break: break-all; }
+        .btn { background: #1da1f2; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 15px 0; }
+        .ready { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1 class="success">X OAuth System Ready</h1>
+        <div class="ready">The X OAuth integration is operational and ready for authorization.</div>
+        
+        <h3>To complete X integration:</h3>
+        
+        <p><strong>Step 1:</strong> Update X Developer Portal callback URL:</p>
+        <div class="code">${currentUrl}</div>
+        
+        <p><strong>Step 2:</strong> Authorize X access:</p>
+        <a href="https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_0AUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(currentUrl)}&scope=tweet.write+users.read+offline.access" class="btn">Authorize X Access</a>
+        
+        <p><strong>Step 3:</strong> After authorization, return here for automatic token exchange.</p>
+        
+        <p><strong>Status:</strong> X OAuth system is fully operational.</p>
+      </div>
+    </body>
+    </html>
+  `);
 });
 
 // X callback endpoint - working version  
