@@ -39,30 +39,55 @@ router.post('/auth/login', async (req, res) => {
       });
     }
 
-    // Set session
+    // Set session with callback to ensure completion
     if (req.session) {
       req.session.userId = user.id;
-      req.session.userPhone = user.userId; // Phone number UID
+      req.session.userPhone = user.userId;
       req.session.subscriptionPlan = user.subscriptionPlan;
+      
+      // Use callback to ensure session is saved before responding
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({
+            "error": "Session error",
+            "complete": false
+          });
+        }
+        
+        console.log('Login succeeded');
+        res.json({
+          "success": true,
+          "complete": true,
+          "user": {
+            "id": user.id,
+            "phone": user.userId,
+            "email": user.email,
+            "subscriptionPlan": user.subscriptionPlan,
+            "remainingPosts": user.remainingPosts
+          }
+        });
+      });
+    } else {
+      console.log('Login succeeded');
+      res.json({
+        "success": true,
+        "complete": true,
+        "user": {
+          "id": user.id,
+          "phone": user.userId,
+          "email": user.email,
+          "subscriptionPlan": user.subscriptionPlan,
+          "remainingPosts": user.remainingPosts
+        }
+      });
     }
-
-    console.log(`Login successful for user: ${phone}`);
-    
-    res.json({
-      "success": true,
-      "user": {
-        "id": user.id,
-        "phone": user.userId,
-        "email": user.email,
-        "subscriptionPlan": user.subscriptionPlan,
-        "remainingPosts": user.remainingPosts
-      }
-    });
 
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       "error": "Internal server error",
+      "complete": false,
       "details": error.message
     });
   }
