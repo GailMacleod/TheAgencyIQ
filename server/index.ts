@@ -62,26 +62,128 @@ app.get('/auth/:platform/callback', async (req, res) => {
   }
   
   try {
-    if (!req.session.oauthTokens) req.session.oauthTokens = {};
-    req.session.oauthTokens[platform] = { code, state, timestamp: Date.now() };
-    
-    console.log(`OAuth succeeded for ${platform} at ${new Date().toISOString()}`);
-    res.send(`
-      <h1>${platform.toUpperCase()} OAuth Success!</h1>
-      <p>Authorization code received and stored.</p>
-      <p>Platform: ${platform}</p>
-      <p>Timestamp: ${new Date().toISOString()}</p>
-      <p><a href="/platform-connections">Return to Platform Connections</a></p>
-      <script>
-        console.log('OAuth succeeded for ${platform}');
-        setTimeout(() => window.close(), 3000);
-      </script>
-    `);
+    if (platform === 'facebook') {
+      // Handle Facebook OAuth directly
+      const success = await handleFacebookOAuth(code, state);
+      if (success) {
+        console.log(`Facebook OAuth completed successfully`);
+        res.send(`
+          <h1>Facebook OAuth Success!</h1>
+          <p>Connection established and verified.</p>
+          <p>Timestamp: ${new Date().toISOString()}</p>
+          <p><a href="/platform-connections">Return to Platform Connections</a></p>
+          <script>
+            console.log('Facebook OAuth succeeded');
+            setTimeout(() => { window.opener?.location.reload(); window.close(); }, 2000);
+          </script>
+        `);
+      } else {
+        throw new Error('Facebook OAuth processing failed');
+      }
+    } else {
+      // Handle other platforms
+      if (!req.session.oauthTokens) req.session.oauthTokens = {};
+      req.session.oauthTokens[platform] = { code, state, timestamp: Date.now() };
+      
+      console.log(`OAuth succeeded for ${platform} at ${new Date().toISOString()}`);
+      res.send(`
+        <h1>${platform.toUpperCase()} OAuth Success!</h1>
+        <p>Authorization code received and stored.</p>
+        <p>Platform: ${platform}</p>
+        <p>Timestamp: ${new Date().toISOString()}</p>
+        <p><a href="/platform-connections">Return to Platform Connections</a></p>
+        <script>
+          console.log('OAuth succeeded for ${platform}');
+          setTimeout(() => window.close(), 3000);
+        </script>
+      `);
+    }
   } catch (error) {
     console.error(`OAuth error for ${platform}:`, error);
     res.status(500).send(`${platform} OAuth error: ${error.message}`);
   }
 });
+
+// Facebook OAuth handler
+async function handleFacebookOAuth(code, state) {
+  const appId = process.env.FACEBOOK_APP_ID;
+  const appSecret = process.env.FACEBOOK_APP_SECRET;
+  const redirectUri = `${process.env.REPL_SLUG ? 'https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co' : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'}/auth/facebook/callback`;
+  
+  try {
+    // Exchange code for access token
+    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?` +
+      `client_id=${appId}&` +
+      `client_secret=${appSecret}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `code=${code}`;
+    
+    const tokenResponse = await fetch(tokenUrl);
+    const tokenData = await tokenResponse.json();
+    
+    if (tokenData.error) {
+      console.error('Facebook token exchange failed:', tokenData.error);
+      return false;
+    }
+    
+    // Get long-lived token
+    const longLivedUrl = `https://graph.facebook.com/v18.0/oauth/access_token?` +
+      `grant_type=fb_exchange_token&` +
+      `client_id=${appId}&` +
+      `client_secret=${appSecret}&` +
+      `fb_exchange_token=${tokenData.access_token}`;
+    
+    const longLivedResponse = await fetch(longLivedUrl);
+    const longLivedData = await longLivedResponse.json();
+    
+    const finalToken = longLivedData.access_token || tokenData.access_token;
+    
+    // Get user info and pages
+    const [userResponse, pagesResponse] = await Promise.all([
+      fetch(`https://graph.facebook.com/me?access_token=${finalToken}`),
+      fetch(`https://graph.facebook.com/me/accounts?access_token=${finalToken}`)
+    ]);
+    
+    const userData = await userResponse.json();
+    const pagesData = await pagesResponse.json();
+    
+    const pageInfo = pagesData.data?.[0];
+    
+    // Generate app secret proof
+    const crypto = await import('crypto');
+    const appSecretProof = crypto.createHmac('sha256', appSecret).update(finalToken).digest('hex');
+    
+    const profileData = {
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+      page_id: pageInfo?.id,
+      page_name: pageInfo?.name,
+      page_access_token: pageInfo?.access_token,
+      app_secret_proof: appSecretProof,
+      token_type: longLivedData.access_token ? 'long_lived' : 'standard',
+      expires_in: longLivedData.expires_in || 3600
+    };
+    
+    // Store connection using storage interface
+    const { storage } = await import('./storage');
+    await storage.createConnection({
+      userId: 2,
+      platform: 'facebook',
+      accessToken: finalToken,
+      refreshToken: finalToken,
+      expiresAt: new Date(Date.now() + (longLivedData.expires_in || 3600) * 1000),
+      profileData: profileData
+    });
+    
+    console.log('Facebook connection established successfully');
+    return true;
+    
+  } catch (error) {
+    console.error('Facebook OAuth processing failed:', error);
+    return false;
+  }
+}
 
 // Register routes BEFORE Vite
 const { registerRoutes } = await import('./routes');
