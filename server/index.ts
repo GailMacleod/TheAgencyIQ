@@ -353,37 +353,38 @@ const enforcePublish = async (post: any, userId: number) => {
         if ((response.status === 401 || response.status === 403) && attempt < maxRetries) {
           console.log(`🔄 Token expired for ${post.platform}, attempting refresh...`);
           const refreshResult = await refreshToken(post.platform.toLowerCase());
-        if (refreshResult.success) {
-          console.log(`✅ Token refreshed successfully for ${post.platform}, rebuilding request...`);
-          
-          // Rebuild payload completely with new token
-          payload = { ...platform.payload };
-          payload.access_token = refreshResult.token;
-          
-          // Update headers authorization
-          headers['Authorization'] = `Bearer ${refreshResult.token}`;
-          
-          // Regenerate appsecret_proof with new token for Facebook/Instagram
-          if (post.platform.toLowerCase() === 'facebook' || post.platform.toLowerCase() === 'instagram') {
-            const appSecret = process.env.FACEBOOK_APP_SECRET;
-            if (appSecret && refreshResult.token) {
-              payload.appsecret_proof = crypto.createHmac('sha256', appSecret).update(refreshResult.token).digest('hex');
-              payload.access_token = refreshResult.token;
+          if (refreshResult.success) {
+            console.log(`✅ Token refreshed successfully for ${post.platform}, rebuilding request...`);
+            
+            // Rebuild payload completely with new token
+            payload = { ...platform.payload };
+            payload.access_token = refreshResult.token;
+            
+            // Update headers authorization
+            headers['Authorization'] = `Bearer ${refreshResult.token}`;
+            
+            // Regenerate appsecret_proof with new token for Facebook/Instagram
+            if (post.platform.toLowerCase() === 'facebook' || post.platform.toLowerCase() === 'instagram') {
+              const appSecret = process.env.FACEBOOK_APP_SECRET;
+              if (appSecret && refreshResult.token) {
+                payload.appsecret_proof = crypto.createHmac('sha256', appSecret).update(refreshResult.token).digest('hex');
+                payload.access_token = refreshResult.token;
+              }
             }
+            
+            console.log(`🔄 Retrying ${post.platform} publish with new token: ${refreshResult.token.substring(0, 20)}...`);
+            continue; // Retry with new token
+          } else {
+            console.log(`❌ Token refresh failed: ${refreshResult.message}`);
           }
-          
-          console.log(`🔄 Retrying ${post.platform} publish with new token: ${refreshResult.token.substring(0, 20)}...`);
-          continue; // Retry with new token
-        } else {
-          console.log(`❌ Token refresh failed: ${refreshResult.message}`);
         }
-      }
       
-      console.error(`❌ Failed to publish post ${post.id} to ${post.platform}:`, result);
-      return { 
-        success: false, 
-        message: `${post.platform} API error: ${result.error?.message || JSON.stringify(result)}` 
-      };
+        console.error(`❌ Failed to publish post ${post.id} to ${post.platform}:`, result);
+        return { 
+          success: false, 
+          message: `${post.platform} API error: ${result.error?.message || JSON.stringify(result)}` 
+        };
+      }
     } catch (error: any) {
       console.error(`💥 Publishing error for post ${post.id} (attempt ${attempt}):`, error.message);
       if (attempt === maxRetries) {
