@@ -53,7 +53,14 @@ function Router() {
       <Route path="/bypass" component={() => {
         // Auto-bypass login for testing
         window.location.href = '/api/test-session';
-        return <div>Setting up test session...</div>;
+        return (
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Setting up your session...</p>
+            </div>
+          </div>
+        );
       }} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/redeem-certificate" component={RedeemCertificate} />

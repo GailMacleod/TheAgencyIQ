@@ -486,11 +486,8 @@ router.get('/test-session', (req, res) => {
       return res.status(500).json({ error: 'Session error' });
     }
     
-    res.json({
-      success: true,
-      message: 'Test session created - you can now access the app',
-      redirect: '/schedule'
-    });
+    // Redirect directly to schedule instead of showing JSON
+    res.redirect('/schedule');
   });
 });
 
