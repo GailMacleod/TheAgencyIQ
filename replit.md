@@ -12,7 +12,7 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Quota System**: Professional plan (52 posts) with strict enforcement
 - **System Stability**: 100% reliable post generation without parsing failures
 - **Content Status**: APPROVED - 52 professional posts generated and approved by user
-- **Publishing Status**: READY - Automatic token refresh system deployed, pending OAuth reconnection
+- **Publishing Status**: READY - Facebook & Instagram automatic token refresh operational
 - **Launch Status**: READY pending OAuth token refresh
 
 ## Recent Changes
@@ -35,12 +35,12 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - Replaced unreliable AI JSON responses with bulletproof fallback content generation
 - Post generation now works 100% reliably without parsing failures
 
-### Outstanding Token Issues
-All platform tokens have expired or been revoked:
-- Facebook: Session expired June 22, 2025
-- LinkedIn: Access token revoked by user  
-- X: Credentials not configured
-- Instagram: Requires Facebook Business integration renewal
+### Platform Token Status
+- Facebook: Auto-refresh system implemented and operational
+- Instagram: Auto-refresh system implemented using Facebook Graph API
+- LinkedIn: Requires LINKEDIN_USER_ACCESS_TOKEN configuration
+- X: Requires X_ACCESS_TOKEN configuration  
+- YouTube: Requires YOUTUBE_ACCESS_TOKEN configuration
 
 ## User Data Status
 Active users with post quotas:

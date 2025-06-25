@@ -259,7 +259,7 @@ const enforcePublish = async (post: any, userId: number) => {
       }
     },
     instagram: {
-      url: 'https://graph.instagram.com/v20.0/me/media',
+      url: 'https://graph.facebook.com/v20.0/me/media',
       secretKey: 'INSTAGRAM_USER_ACCESS_TOKEN',
       payload: {
         caption: post.content,
@@ -336,9 +336,22 @@ const enforcePublish = async (post: any, userId: number) => {
         console.log(`🔄 Token expired for ${post.platform}, attempting refresh...`);
         const refreshResult = await refreshToken(post.platform.toLowerCase(), userId);
         if (refreshResult.success) {
-          console.log(`✅ Token refreshed successfully, retrying publish...`);
+          console.log(`✅ Token refreshed successfully, updating payload and retrying...`);
+          
           // Update payload with new token
           payload.access_token = refreshResult.token;
+          
+          // Update headers authorization
+          headers['Authorization'] = `Bearer ${refreshResult.token}`;
+          
+          // For Facebook/Instagram, replace message with access_token in payload
+          if (post.platform.toLowerCase() === 'facebook') {
+            payload.message = post.content;
+            payload.access_token = refreshResult.token;
+          } else if (post.platform.toLowerCase() === 'instagram') {
+            payload.caption = post.content;
+            payload.access_token = refreshResult.token;
+          }
           
           // Regenerate appsecret_proof with new token for Facebook/Instagram
           if (post.platform.toLowerCase() === 'facebook' || post.platform.toLowerCase() === 'instagram') {
@@ -349,6 +362,8 @@ const enforcePublish = async (post: any, userId: number) => {
               payload.appsecret_proof = hmac.digest('hex');
             }
           }
+          
+          console.log(`🔄 Retrying ${post.platform} publish with refreshed token...`);
           continue; // Retry with new token
         } else {
           console.log(`❌ Token refresh failed: ${refreshResult.message}`);
