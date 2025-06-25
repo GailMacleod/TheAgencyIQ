@@ -40,7 +40,7 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 ### Platform Token Status
 - Facebook: Auto-refresh system implemented and operational
 - Instagram: Auto-refresh system implemented using Facebook Graph API
-- LinkedIn: Requires LINKEDIN_USER_ACCESS_TOKEN configuration
+- LinkedIn: App disabled - requires new LinkedIn app setup and OAuth flow
 - X: Requires X_ACCESS_TOKEN configuration  
 - YouTube: Requires YOUTUBE_ACCESS_TOKEN configuration
 
