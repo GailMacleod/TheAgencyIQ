@@ -23,9 +23,13 @@ async function initializeServer() {
     await setupVite(app, server);
     serveStatic(app);
     
-    console.log('TheAgencyIQ Launch Server: 99.9% reliability system operational on port 5000');
-    console.log('Launch Target: 07:00 PM JST, June 24, 2025');
-    console.log('Features: Robust scheduling, immediate publishing, 12-post cap, bi-monthly refresh');
+    // Start listening on port 5000
+    const port = Number(process.env.PORT) || 5000;
+    server.listen(port, '0.0.0.0', () => {
+      console.log(`TheAgencyIQ Launch Server: 99.9% reliability system operational on port ${port}`);
+      console.log('Launch Target: 07:00 PM JST, June 24, 2025');
+      console.log('Features: Robust scheduling, immediate publishing, 12-post cap, bi-monthly refresh');
+    });
     
     return server;
   } catch (error) {

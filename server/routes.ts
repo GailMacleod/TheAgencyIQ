@@ -7376,5 +7376,9 @@ async function fetchTwitterAnalytics(accessToken: string, refreshToken: string) 
     console.error('Twitter API error:', error);
     throw new Error('Failed to fetch Twitter analytics');
   }
-  return app;
+
+  // Create HTTP server without listening (will be handled by index.ts)
+  const server = createServer(app);
+  
+  return server;
 }
