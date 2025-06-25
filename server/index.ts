@@ -24,20 +24,20 @@ const refreshToken = async (platform: string, userId: number) => {
         return { success: false, message: 'Missing Facebook credentials for token refresh' };
       }
       
-      console.log(`📱 Exchanging Facebook token for long-lived version...`);
+      console.log(`📱 Exchanging ${platform} token for long-lived version...`);
       const longLivedResponse = await fetch(`https://graph.facebook.com/v23.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`);
       
       if (!longLivedResponse.ok) {
         const error = await longLivedResponse.json();
         console.error(`❌ Long-lived token exchange failed:`, error);
-        return { success: false, message: `Facebook token exchange failed: ${error.error?.message}` };
+        return { success: false, message: `${platform} token exchange failed: ${error.error?.message}` };
       }
       
       const longLivedData = await longLivedResponse.json();
       console.log(`✅ Long-lived user token obtained, expires in ${longLivedData.expires_in} seconds`);
       
       // Step 2: Get Page access token using long-lived user token with appsecret_proof
-      console.log(`📄 Fetching Facebook Page access token with app secret proof...`);
+      console.log(`📄 Fetching ${platform} page access token with app secret proof...`);
       
       // Generate appsecret_proof as required by Facebook
       const crypto = await import('crypto');
@@ -50,13 +50,13 @@ const refreshToken = async (platform: string, userId: number) => {
       if (!pagesResponse.ok) {
         const error = await pagesResponse.json();
         console.error(`❌ Page token fetch failed:`, error);
-        return { success: false, message: `Facebook page token failed: ${error.error?.message}` };
+        return { success: false, message: `${platform} page token failed: ${error.error?.message}` };
       }
       
       const pagesData = await pagesResponse.json();
       
       if (!pagesData.data || pagesData.data.length === 0) {
-        console.log('📱 No pages found, using user token for personal profile posting...');
+        console.log(`📱 No pages found for ${platform}, using user token for personal profile posting...`);
         // Use the long-lived user token for personal profile posting
         const userToken = longLivedData.access_token;
         
@@ -143,6 +143,7 @@ const refreshToken = async (platform: string, userId: number) => {
     }
     
     // For other platforms, return not implemented
+    console.log(`❌ Token refresh not implemented for ${platform}`);
     return {
       success: false,
       message: `Token refresh not implemented for ${platform}`
