@@ -22,9 +22,45 @@ if (process.env.NODE_ENV !== 'development') {
 
 // Setup Vite for proper frontend serving
 if (process.env.NODE_ENV === 'development') {
-  setupVite(app);
+  // Defer Vite setup until after server creation
+  const server = app.listen(5000, '0.0.0.0', async () => {
+    console.log('Emergency bypass server operational on port 5000');
+    console.log('Environment:', process.env.NODE_ENV || 'development');
+    console.log('SUBSCRIPTION_ACTIVE:', process.env.SUBSCRIPTION_ACTIVE || 'false');
+    
+    try {
+      await setupVite(app, server);
+      console.log('Vite middleware setup complete');
+    } catch (err) {
+      console.error('Vite setup failed:', err.message);
+      // Fallback to simple static serving
+      app.get('*', (req, res) => {
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>TheAgencyIQ</title></head>
+          <body>
+            <h1>TheAgencyIQ Emergency Access</h1>
+            <p>Vite setup failed, using fallback mode</p>
+            <a href="/schedule">Schedule</a>
+          </body>
+          </html>
+        `);
+      });
+    }
+  });
+  
+  // Export server for other modules
+  module.exports = { app, server };
 } else {
   serveStatic(app);
+  const server = app.listen(5000, '0.0.0.0', () => {
+    console.log('Emergency bypass server operational on port 5000');
+    console.log('Environment:', process.env.NODE_ENV || 'development');
+    console.log('SUBSCRIPTION_ACTIVE:', process.env.SUBSCRIPTION_ACTIVE || 'false');
+  });
+  
+  module.exports = { app, server };
 }
 
 // Basic API endpoints
@@ -53,16 +89,20 @@ app.get('/api/health', (req, res) => {
 
 process.on('uncaughtException', (err) => {
   console.error('Emergency bypass: Exception handled:', err.message);
+  console.error('Stack:', err.stack);
 });
 
-process.on('unhandledRejection', () => {
-  // Silently handle to prevent console spam
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
 });
 
-const server = app.listen(5000, '0.0.0.0', () => {
-  console.log('Emergency bypass server operational on port 5000');
-  console.log('Environment:', process.env.NODE_ENV || 'development');
-  console.log('SUBSCRIPTION_ACTIVE:', process.env.SUBSCRIPTION_ACTIVE || 'false');
+app.use((err, req, res, next) => {
+  console.error('Middleware Error:', err.stack);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
 
-export { app, server };
+// Server setup moved above
