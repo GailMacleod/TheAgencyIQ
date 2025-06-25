@@ -11,6 +11,14 @@ app.use(session({
   "saveUninitialized": false,
   "cookie": {"secure": process.env.NODE_ENV === 'production', "maxAge": 24 * 60 * 60 * 1000}
 }));
+
+// Import and mount routes
+import('./routes').then(({ default: routes }) => {
+  app.use('/api', routes);
+  console.log('Routes mounted successfully');
+}).catch(err => {
+  console.warn('Routes module not available, using built-in endpoints:', err.message);
+});
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err.message);
   process.exit(1);
@@ -32,7 +40,9 @@ if (process.env.NODE_ENV === 'development') {
 // OAuth callback endpoint for all platforms
 app.get('/api/oauth/callback', async (req, res) => {
   const { code, state, error } = req.query;
-  const baseUrl = 'https://' + req.get('host') + req.baseUrl;
+  const host = req.get('host');
+  const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 
+                  host?.includes('localhost') ? `http://${host}` : `https://${host}`;
   const platform = req.session.oauthPlatform || 'unknown';
   
   console.log(`OAuth callback: platform=${platform}, code=${code}, state=${state}, error=${error}, url=${baseUrl}`);
@@ -154,7 +164,9 @@ app.get('/api/oauth/callback', async (req, res) => {
 
 // Platform connection initiation endpoints
 app.get('/api/auth/x', (req, res) => {
-  const baseUrl = 'https://' + req.get('host') + req.baseUrl;
+  const host = req.get('host');
+  const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 
+                  host?.includes('localhost') ? `http://${host}` : `https://${host}`;
   const codeVerifier = Buffer.from(Math.random().toString()).toString('base64').substring(0, 128);
   const codeChallenge = Buffer.from(codeVerifier).toString('base64url').substring(0, 43);
   
@@ -164,21 +176,26 @@ app.get('/api/auth/x', (req, res) => {
   const authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID}&redirect_uri=${encodeURIComponent(baseUrl + '/api/oauth/callback')}&scope=tweet.read%20tweet.write%20users.read%20follows.read%20follows.write&state=x_auth&code_challenge=${codeChallenge}&code_challenge_method=S256`;
   
   console.log('X OAuth URL generated:', authUrl);
+  console.log('Redirect URI:', baseUrl + '/api/oauth/callback');
   res.redirect(authUrl);
 });
 
 app.get('/api/auth/facebook', (req, res) => {
-  const baseUrl = 'https://' + req.get('host') + req.baseUrl;
+  const host = req.get('host');
+  const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 
+                  host?.includes('localhost') ? `http://${host}` : `https://${host}`;
   req.session.oauthPlatform = 'facebook';
   
   const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(baseUrl + '/api/oauth/callback')}&scope=pages_manage_posts,pages_read_engagement,publish_to_groups,user_posts&state=facebook_auth`;
   
   console.log('Facebook OAuth URL generated:', authUrl);
+  console.log('Redirect URI:', baseUrl + '/api/oauth/callback');
   res.redirect(authUrl);
 });
 
 app.get('/api/auth/linkedin', (req, res) => {
-  const baseUrl = 'https://' + req.get('host') + req.baseUrl;
+  const host = req.get('host');
+  const baseUrl = host?.includes('localhost') ? `http://${host}` : `https://${host}`;
   req.session.oauthPlatform = 'linkedin';
   
   const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(baseUrl + '/api/oauth/callback')}&scope=w_member_social%20w_organization_social&state=linkedin_auth`;
@@ -191,12 +208,7 @@ app.get('/api/auth/linkedin', (req, res) => {
 app.post('/api/waterfall/approve', (req, res) => res.status(200).json({"status": "placeholder"}));
 app.get('/api/get-connection-state', (req, res) => res.json({"success": true, "connectedPlatforms": {}}));
 
-// Import routes module for full functionality
-import('./routes').then(({ default: routes }) => {
-  app.use(routes);
-}).catch(err => {
-  console.warn('Routes module not available, using placeholders:', err.message);
-});
+
 
 const server = app.listen(5000, '0.0.0.0', () => console.log('TheAgencyIQ Launch Server: 99.9% reliability system operational on port 5000'));
 
