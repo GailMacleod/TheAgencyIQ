@@ -1,5 +1,5 @@
-import express from 'express';
-import session from 'express-session';
+const express = require('express');
+const session = require('express-session');
 
 const app = express();
 
@@ -16,19 +16,19 @@ app.use(session({
 }));
 
 // CSP headers
-app.use((req: any, res: any, next: any) => {
+app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', "default-src 'self' https://app.theagencyiq.ai https://replit.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://connect.facebook.net https://www.googletagmanager.com; connect-src 'self' wss: ws: https://replit.com https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://www.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;");
   next();
 });
 
 // Request logging
-app.use((req: any, res: any, next: any) => {
+app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
   next();
 });
 
 // Public bypass route with 500-fix
-app.get('/public', (req: any, res: any) => {
+app.get('/public', (req, res) => {
   req.session.userId = 2;
   console.log('Heroic 500-fix bypass activated');
   res.send(`
@@ -47,7 +47,7 @@ app.get('/public', (req: any, res: any) => {
 });
 
 // X OAuth connection with 500-fix
-app.get('/connect/x', (req: any, res: any) => {
+app.get('/connect/x', (req, res) => {
   req.session.userId = 2;
   const redirectUri = `${req.protocol}://${req.get('host')}/auth/x/callback`;
   const apiKey = process.env.TWITTER_API_KEY || process.env.X_CLIENT_ID || 'your-twitter-api-key';
@@ -58,7 +58,7 @@ app.get('/connect/x', (req: any, res: any) => {
 });
 
 // YouTube OAuth connection with 500-fix
-app.get('/connect/youtube', (req: any, res: any) => {
+app.get('/connect/youtube', (req, res) => {
   req.session.userId = 2;
   const redirectUri = `${req.protocol}://${req.get('host')}/auth/youtube/callback`;
   const clientId = process.env.GOOGLE_CLIENT_ID || 'your-google-client-id';
@@ -69,7 +69,7 @@ app.get('/connect/youtube', (req: any, res: any) => {
 });
 
 // Facebook OAuth connection with 500-fix
-app.get('/connect/facebook', (req: any, res: any) => {
+app.get('/connect/facebook', (req, res) => {
   req.session.userId = 2;
   const redirectUri = `${req.protocol}://${req.get('host')}/auth/facebook/callback`;
   const appId = process.env.FACEBOOK_APP_ID || '1409057863445071';
@@ -80,7 +80,7 @@ app.get('/connect/facebook', (req: any, res: any) => {
 });
 
 // OAuth callback handlers with 500-fix
-app.get('/auth/:platform/callback', (req: any, res: any) => {
+app.get('/auth/:platform/callback', (req, res) => {
   const platform = req.params.platform;
   const { code, state } = req.query;
   
@@ -104,7 +104,7 @@ app.get('/auth/:platform/callback', (req: any, res: any) => {
 });
 
 // Main page with 500-fix
-app.get('/', (req: any, res: any) => {
+app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html>
@@ -135,11 +135,11 @@ app.get('/', (req: any, res: any) => {
 });
 
 // 404 handler
-app.use('*', (req: any, res: any) => {
+app.use('*', (req, res) => {
   res.status(404).send('Not Found');
 });
 
-const PORT = parseInt(process.env.PORT || '5000', 10);
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`TheAgencyIQ Production Server running on port ${PORT}`);
   console.log(`Deploy time: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);
