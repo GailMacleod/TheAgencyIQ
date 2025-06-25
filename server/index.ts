@@ -11,111 +11,98 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Token refresh helper function
 const refreshToken = async (platform: string, userId: number) => {
-  const credentials = {
-    facebook: {
-      clientId: process.env.FACEBOOK_APP_ID,
-      clientSecret: process.env.FACEBOOK_APP_SECRET
-    },
-    linkedin: {
-      clientId: process.env.LINKEDIN_CLIENT_ID,
-      clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-      refreshToken: process.env.LINKEDIN_REFRESH_TOKEN
-    },
-    instagram: {
-      clientId: process.env.FACEBOOK_APP_ID,
-      clientSecret: process.env.FACEBOOK_APP_SECRET
-    },
-    x: {
-      apiKey: process.env.TWITTER_API_KEY,
-      apiSecret: process.env.TWITTER_API_SECRET,
-      accessToken: process.env.TWITTER_USER_ACCESS_TOKEN,
-      accessTokenSecret: process.env.TWITTER_USER_ACCESS_TOKEN_SECRET
-    },
-    youtube: {
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      refreshToken: process.env.YOUTUBE_REFRESH_TOKEN
-    }
-  };
-
-  const creds = credentials[platform as keyof typeof credentials];
-  if (!creds) {
-    return { success: false, error: 'Platform not supported' };
-  }
-
+  console.log(`🔄 Attempting to refresh ${platform} token for user ${userId}`);
+  
   try {
-    switch (platform) {
-      case 'facebook':
-      case 'instagram':
-        // Facebook/Instagram long-lived token exchange
-        if (!creds.clientId || !creds.clientSecret) {
-          return { success: false, error: 'Missing Facebook credentials' };
-        }
-        
-        const fbResponse = await fetch(`https://graph.facebook.com/v20.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${creds.clientId}&client_secret=${creds.clientSecret}&fb_exchange_token=${process.env.FACEBOOK_PAGE_ACCESS_TOKEN}`);
-        const fbResult = await fbResponse.json();
-        
-        if (fbResult.access_token) {
-          return { success: true, token: fbResult.access_token };
-        }
-        return { success: false, error: fbResult.error?.message || 'Facebook token refresh failed' };
-
-      case 'linkedin':
-        // LinkedIn token refresh
-        if (!creds.refreshToken || !creds.clientId || !creds.clientSecret) {
-          return { success: false, error: 'Missing LinkedIn credentials' };
-        }
-        
-        const linkedinResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            grant_type: 'refresh_token',
-            refresh_token: creds.refreshToken,
-            client_id: creds.clientId,
-            client_secret: creds.clientSecret
-          })
-        });
-        const linkedinResult = await linkedinResponse.json();
-        
-        if (linkedinResult.access_token) {
-          return { success: true, token: linkedinResult.access_token };
-        }
-        return { success: false, error: linkedinResult.error_description || 'LinkedIn token refresh failed' };
-
-      case 'youtube':
-        // YouTube/Google token refresh
-        if (!creds.refreshToken || !creds.clientId || !creds.clientSecret) {
-          return { success: false, error: 'Missing YouTube credentials' };
-        }
-        
-        const youtubeResponse = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            grant_type: 'refresh_token',
-            refresh_token: creds.refreshToken,
-            client_id: creds.clientId,
-            client_secret: creds.clientSecret
-          })
-        });
-        const youtubeResult = await youtubeResponse.json();
-        
-        if (youtubeResult.access_token) {
-          return { success: true, token: youtubeResult.access_token };
-        }
-        return { success: false, error: youtubeResult.error_description || 'YouTube token refresh failed' };
-
-      case 'x':
-        // X (Twitter) uses OAuth 1.0a - requires re-authorization
-        return { success: false, error: 'X platform requires manual re-authorization' };
-
-      default:
-        return { success: false, error: 'Unsupported platform' };
+    if (platform === 'facebook') {
+      // Step 1: Exchange short-lived token for long-lived user token
+      const shortToken = process.env.FACEBOOK_REFRESH_TOKEN;
+      const appId = process.env.FACEBOOK_APP_ID;
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+      
+      if (!shortToken || !appId || !appSecret) {
+        return { success: false, message: 'Missing Facebook credentials for token refresh' };
+      }
+      
+      console.log(`📱 Exchanging Facebook token for long-lived version...`);
+      const longLivedResponse = await fetch(`https://graph.facebook.com/v23.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`);
+      
+      if (!longLivedResponse.ok) {
+        const error = await longLivedResponse.json();
+        console.error(`❌ Long-lived token exchange failed:`, error);
+        return { success: false, message: `Facebook token exchange failed: ${error.error?.message}` };
+      }
+      
+      const longLivedData = await longLivedResponse.json();
+      console.log(`✅ Long-lived user token obtained, expires in ${longLivedData.expires_in} seconds`);
+      
+      // Step 2: Get Page access token using long-lived user token with appsecret_proof
+      console.log(`📄 Fetching Facebook Page access token with app secret proof...`);
+      
+      // Generate appsecret_proof as required by Facebook
+      const crypto = await import('crypto');
+      const hmac = crypto.createHmac('sha256', appSecret);
+      hmac.update(longLivedData.access_token);
+      const appsecretProof = hmac.digest('hex');
+      
+      const pagesResponse = await fetch(`https://graph.facebook.com/v23.0/me/accounts?access_token=${longLivedData.access_token}&appsecret_proof=${appsecretProof}`);
+      
+      if (!pagesResponse.ok) {
+        const error = await pagesResponse.json();
+        console.error(`❌ Page token fetch failed:`, error);
+        return { success: false, message: `Facebook page token failed: ${error.error?.message}` };
+      }
+      
+      const pagesData = await pagesResponse.json();
+      
+      if (!pagesData.data || pagesData.data.length === 0) {
+        return { success: false, message: 'No Facebook pages found for this account' };
+      }
+      
+      // Use the first page's access token (long-lived, never expires)
+      const pageToken = pagesData.data[0].access_token;
+      const pageName = pagesData.data[0].name;
+      
+      // Step 3: Update environment and persist
+      process.env.FACEBOOK_PAGE_ACCESS_TOKEN = pageToken;
+      
+      // Save to .env file for persistence
+      const fs = await import('fs');
+      const envPath = '.env';
+      let envContent = '';
+      
+      if (fs.existsSync(envPath)) {
+        envContent = fs.readFileSync(envPath, 'utf8');
+      }
+      
+      const envLines = envContent.split('\n');
+      const tokenIndex = envLines.findIndex(line => line.startsWith('FACEBOOK_PAGE_ACCESS_TOKEN='));
+      
+      if (tokenIndex >= 0) {
+        envLines[tokenIndex] = `FACEBOOK_PAGE_ACCESS_TOKEN=${pageToken}`;
+      } else {
+        envLines.push(`FACEBOOK_PAGE_ACCESS_TOKEN=${pageToken}`);
+      }
+      
+      fs.writeFileSync(envPath, envLines.filter(line => line.trim()).join('\n') + '\n');
+      
+      console.log(`✅ Facebook token refreshed successfully for page: ${pageName}`);
+      return { 
+        success: true, 
+        token: pageToken,
+        message: `Facebook token refreshed for page: ${pageName}`
+      };
     }
+    
+    // For other platforms, return not implemented
+    return {
+      success: false,
+      message: `Token refresh not implemented for ${platform}`
+    };
+    
   } catch (error: any) {
-    console.error(`Token refresh error for ${platform}:`, error);
-    return { success: false, error: error.message };
+    console.error(`💥 Token refresh error for ${platform}:`, error.message);
+    return { success: false, message: error.message };
   }
 };
 
