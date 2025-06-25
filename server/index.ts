@@ -330,6 +330,7 @@ app.post('/api/disconnect-platform', async (req, res) => {
   if (!platform || !validPlatforms.includes(platform.toLowerCase())) {
     return res.status(400).json({"error": "Invalid platform", "validPlatforms": validPlatforms});
   }
+  const wasConnected = req.session?.connectedPlatforms && req.session.connectedPlatforms[platform.toLowerCase()];
   if (req.session && req.session.connectedPlatforms) {
     delete req.session.connectedPlatforms[platform.toLowerCase()];
     fs.writeFileSync('connected-platforms.json', JSON.stringify(req.session.connectedPlatforms || {}));
@@ -337,7 +338,14 @@ app.post('/api/disconnect-platform', async (req, res) => {
   } else {
     console.log(`No active connection for ${platform} to disconnect`);
   }
-  res.json({"success": true, "platform": platform.toLowerCase(), "message": "Disconnected successfully", "action": "refresh", "version": "1.0"});
+  res.json({"success": true, "platform": platform.toLowerCase(), "message": "Disconnected successfully", "action": "refresh", "version": "1.0", "wasConnected": wasConnected});
+});
+
+app.get('/api/get-connection-state', async (req, res) => {
+  const userId = req.session?.userId || 2;
+  const state = req.session?.connectedPlatforms || {};
+  console.log(`Connection state for user ${userId}: ${JSON.stringify(state)}`);
+  res.json({"success": true, "connectedPlatforms": state});
 });
 
 // Token refresh endpoint
