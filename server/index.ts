@@ -721,10 +721,10 @@ serveStatic(app);
 
 const port = Number(process.env.PORT) || 5000;
 // X OAuth login endpoint with xAuth flow initiation
-app.post('/api/auth/login', async (req, res) => {
-  const { username, password, platform } = req.body;
-  if (!username || !password || platform !== 'x') {
-    return res.status(400).json({"error": "Invalid input, platform must be 'x'"});
+app.post('/api/x/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({"error": "Username and password required for X authentication"});
   }
   
   try {
@@ -739,7 +739,7 @@ app.post('/api/auth/login', async (req, res) => {
     const crypto = require('crypto');
     const oauth_nonce = crypto.randomBytes(16).toString('hex');
     const oauth_timestamp = Math.floor(Date.now() / 1000);
-    const callback_url = `${req.protocol}://${req.get('host')}/api/oauth/callback`;
+    const callback_url = `${req.protocol}://${req.get('host')}/api/x/callback`;
     
     const oauth_params = {
       oauth_callback: callback_url,
@@ -817,9 +817,9 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // X OAuth callback with session validation and token exchange
-app.get('/api/oauth/callback', async (req, res) => {
+app.get('/api/x/callback', async (req, res) => {
   const { oauth_token, oauth_verifier, error, code } = req.query;
-  const currentUrl = `${req.protocol}://${req.get('host')}/api/oauth/callback`;
+  const currentUrl = `${req.protocol}://${req.get('host')}/api/x/callback`;
   
   console.log(`X OAuth callback: URL=${currentUrl}, oauth_token=${oauth_token}, oauth_verifier=${oauth_verifier}, error=${error}, code=${code}`);
   console.log(`Session oauth_token: ${req.session?.oauthToken}, Session username: ${req.session?.xUsername}`);
