@@ -19,13 +19,19 @@ router.post('/auth/login', async (req, res) => {
     const { getUserByPhone } = await import('./storage');
     const user = await getUserByPhone(phone);
     
+    console.log(`Login attempt for ${phone}, user found:`, !!user);
+    
     if (!user) {
+      console.log(`No user found for ${phone}`);
       return res.status(401).json({
         "error": "Invalid credentials"
       });
     }
 
+    console.log(`User object:`, user);
+    const { default: bcrypt } = await import('bcrypt');
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    console.log(`Password validation result:`, isValidPassword);
     
     if (!isValidPassword) {
       return res.status(401).json({
