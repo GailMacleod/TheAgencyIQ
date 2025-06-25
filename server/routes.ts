@@ -614,7 +614,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Root route to handle OAuth callbacks (X and Facebook)
+  // YouTube OAuth endpoints
+  app.get('/api/youtube/auth', (req, res) => {
+    try {
+      const clientId = process.env.YOUTUBE_CLIENT_ID;
+      
+      if (!clientId) {
+        return res.status(500).json({ error: 'YouTube OAuth not configured' });
+      }
+      
+      const state = crypto.randomBytes(16).toString('hex');
+      req.session.youtubeState = state;
+      
+      const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      authUrl.searchParams.set('client_id', clientId);
+      authUrl.searchParams.set('redirect_uri', 'https://app.theagencyiq.ai/api/oauth/youtube/callback');
+      authUrl.searchParams.set('scope', 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly');
+      authUrl.searchParams.set('response_type', 'code');
+      authUrl.searchParams.set('state', state);
+      authUrl.searchParams.set('access_type', 'offline');
+      authUrl.searchParams.set('prompt', 'consent');
+      
+      res.json({
+        authUrl: authUrl.toString(),
+        state: state
+      });
+    } catch (error) {
+      console.error('YouTube auth error:', error);
+      res.status(500).json({ error: 'Failed to generate YouTube auth URL' });
+    }
+  });
+
+  app.post('/api/youtube/callback', async (req, res) => {
+    try {
+      const { code, state } = req.body;
+      
+      if (!code) {
+        return res.status(400).json({ error: 'Authorization code required' });
+      }
+      
+      // Verify state parameter matches session
+      const storedState = req.session?.youtubeState;
+      if (!storedState || storedState !== state) {
+        console.error('YouTube OAuth state mismatch:', { stored: storedState, received: state });
+        return res.status(400).json({ error: 'Invalid state parameter' });
+      }
+      
+      const clientId = process.env.YOUTUBE_CLIENT_ID;
+      const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+      
+      if (!clientId || !clientSecret) {
+        return res.status(500).json({ error: 'YouTube OAuth credentials not configured' });
+      }
+      
+      const tokenParams = new URLSearchParams({
+        code: code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: 'https://app.theagencyiq.ai/api/oauth/youtube/callback',
+        grant_type: 'authorization_code'
+      });
+
+      const response = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: tokenParams
+      });
+
+      const tokenResult = await response.json();
+      
+      if (response.ok) {
+        // Clean up session data
+        delete req.session.youtubeState;
+        
+        // Get channel info
+        const channelResponse = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+          headers: { 'Authorization': `Bearer ${tokenResult.access_token}` }
+        });
+        
+        let platformUserId = 'youtube_user_' + Date.now();
+        let platformUsername = 'YouTube Channel';
+        
+        if (channelResponse.ok) {
+          const channelData = await channelResponse.json();
+          if (channelData.items && channelData.items.length > 0) {
+            const channel = channelData.items[0];
+            platformUserId = channel.id;
+            platformUsername = channel.snippet.title;
+          }
+        }
+        
+        // Store tokens securely
+        const connection = await storage.createPlatformConnection({
+          userId: req.session?.userId || 2,
+          platform: 'youtube',
+          platformUserId: platformUserId,
+          platformUsername: platformUsername,
+          accessToken: tokenResult.access_token,
+          refreshToken: tokenResult.refresh_token || null,
+          expiresAt: tokenResult.expires_in ? new Date(Date.now() + tokenResult.expires_in * 1000) : null,
+          isActive: true
+        });
+        
+        // Store in environment for immediate use
+        process.env.YOUTUBE_ACCESS_TOKEN = tokenResult.access_token;
+        if (tokenResult.refresh_token) {
+          process.env.YOUTUBE_REFRESH_TOKEN = tokenResult.refresh_token;
+        }
+        
+        res.json({
+          success: true,
+          connectionId: connection.id,
+          message: 'YouTube platform connected successfully',
+          username: platformUsername,
+          accessToken: tokenResult.access_token.substring(0, 20) + '...',
+          channelId: platformUserId
+        });
+      } else {
+        console.error('YouTube token exchange failed:', tokenResult);
+        res.status(400).json({ 
+          error: 'Failed to exchange authorization code',
+          details: tokenResult 
+        });
+      }
+    } catch (error) {
+      console.error('YouTube callback error:', error);
+      res.status(500).json({ error: 'Failed to process YouTube authorization' });
+    }
+  });
+
+  // Root route to handle OAuth callbacks (X, Facebook, and YouTube)
   app.get('/', (req, res, next) => {
     const code = req.query.code;
     const state = req.query.state;
@@ -711,6 +842,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }).catch(err => {
               document.body.innerHTML = '<h1>X Integration Error</h1><p>' + err.message + '</p>';
+            });
+          </script>
+        `);
+      } else if (state.toString().includes('youtube')) {
+        res.send(`
+          <h1>YouTube Authorization Successful</h1>
+          <p>Authorization code received for YouTube integration.</p>
+          <script>
+            // Auto-submit to YouTube callback endpoint
+            fetch('/api/youtube/callback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: '${code}', state: '${state}' })
+            }).then(r => r.json()).then(data => {
+              if (data.success) {
+                document.body.innerHTML = '<h1>YouTube Integration Complete!</h1><p>Connected to: ' + data.username + '</p><p>You can now close this window.</p>';
+              } else {
+                document.body.innerHTML = '<h1>YouTube Integration Failed</h1><p>Error: ' + JSON.stringify(data.error) + '</p>';
+              }
+            }).catch(err => {
+              document.body.innerHTML = '<h1>YouTube Integration Error</h1><p>' + err.message + '</p>';
             });
           </script>
         `);
