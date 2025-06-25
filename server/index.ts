@@ -11,17 +11,17 @@ app.use(session({
   cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
 }));
 
-app.use((req, res, next) => {
+app.use((req: any, res: any, next: any) => {
   res.setHeader('Content-Security-Policy', "default-src 'self' https://app.theagencyiq.ai https://replit.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://connect.facebook.net https://www.googletagmanager.com; connect-src 'self' wss: ws: https://replit.com https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://www.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;");
   next();
 });
 
-app.use((req, res, next) => {
+app.use((req: any, res: any, next: any) => {
   console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
   next();
 });
 
-app.get('/public', (req, res) => {
+app.get('/public', (req: any, res: any) => {
   req.session.userId = 2;
   console.log('Heroic 500-fix bypass activated');
   res.send(`<!DOCTYPE html>
@@ -37,7 +37,7 @@ app.get('/public', (req, res) => {
 </html>`);
 });
 
-app.get('/connect/x', (req, res) => {
+app.get('/connect/x', (req: any, res: any) => {
   req.session.userId = 2;
   const redirectUri = `${req.protocol}://${req.get('host')}/auth/x/callback`;
   const apiKey = process.env.TWITTER_API_KEY || process.env.X_CLIENT_ID || 'your-twitter-api-key';
@@ -47,7 +47,7 @@ app.get('/connect/x', (req, res) => {
   res.redirect(xUrl);
 });
 
-app.get('/connect/youtube', (req, res) => {
+app.get('/connect/youtube', (req: any, res: any) => {
   req.session.userId = 2;
   const redirectUri = `${req.protocol}://${req.get('host')}/auth/youtube/callback`;
   const clientId = process.env.GOOGLE_CLIENT_ID || 'your-google-client-id';
@@ -57,7 +57,7 @@ app.get('/connect/youtube', (req, res) => {
   res.redirect(youtubeUrl);
 });
 
-app.get('/connect/facebook', (req, res) => {
+app.get('/connect/facebook', (req: any, res: any) => {
   req.session.userId = 2;
   const redirectUri = `${req.protocol}://${req.get('host')}/auth/facebook/callback`;
   const appId = process.env.FACEBOOK_APP_ID || '1409057863445071';
@@ -67,7 +67,7 @@ app.get('/connect/facebook', (req, res) => {
   res.redirect(facebookUrl);
 });
 
-app.get('/auth/:platform/callback', (req, res) => {
+app.get('/auth/:platform/callback', (req: any, res: any) => {
   const platform = req.params.platform;
   const { code, state } = req.query;
   
@@ -88,7 +88,7 @@ setTimeout(() => window.close(), 3000);
 </script>`);
 });
 
-app.get('/', (req, res) => {
+app.get('/', (req: any, res: any) => {
   res.send(`<!DOCTYPE html>
 <html>
 <head>
@@ -116,11 +116,11 @@ console.log('TheAgencyIQ Production Server Ready');
 </html>`);
 });
 
-app.use('*', (req, res) => {
+app.use('*', (req: any, res: any) => {
   res.status(404).send('Not Found');
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = parseInt(process.env.PORT || '5000', 10);
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`TheAgencyIQ Production Server running on port ${PORT}`);
   console.log(`Deploy time: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);
