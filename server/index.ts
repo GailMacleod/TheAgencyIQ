@@ -336,22 +336,37 @@ app.post('/api/disconnect-platform', async (req, res) => {
     });
   }
   
-  if (req.session && req.session.connectedPlatforms) {
-    delete req.session.connectedPlatforms[platform.toLowerCase()];
-    try {
-      fs.writeFileSync('connected-platforms.json', JSON.stringify(req.session.connectedPlatforms || {}));
-    } catch (writeError) {
-      console.warn('Failed to save connected platforms:', writeError);
-    }
+  const wasConnected = req.session?.connectedPlatforms && req.session.connectedPlatforms[platform.toLowerCase()];
+  
+  if (!req.session) {
+    req.session = {};
+  }
+  if (!req.session.connectedPlatforms) {
+    req.session.connectedPlatforms = {};
+  }
+  
+  // Always set to disconnected state
+  req.session.connectedPlatforms[platform.toLowerCase()] = false;
+  
+  try {
+    fs.writeFileSync('connected-platforms.json', JSON.stringify(req.session.connectedPlatforms || {}));
+  } catch (writeError) {
+    console.warn('Failed to save connected platforms:', writeError);
+  }
+  
+  if (wasConnected) {
     console.log(`Disconnected ${platform} for user ${userId}`);
   } else {
-    console.log(`No active connection for ${platform} to disconnect`);
+    console.log(`Set to disconnected state for ${platform} (was already disconnected)`);
   }
   
   res.json({
-    "success": true, 
-    "platform": platform.toLowerCase(), 
-    "message": "Disconnected successfully"
+    "success": true,
+    "platform": platform.toLowerCase(),
+    "message": "Disconnected successfully",
+    "action": "updateState",
+    "version": "1.2",  
+    "isConnected": false
   });
 });
 
