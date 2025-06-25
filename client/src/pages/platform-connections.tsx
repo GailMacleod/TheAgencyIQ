@@ -138,22 +138,32 @@ export default function PlatformConnections() {
   const disconnectPlatform = async (platformId: string) => {
     setLoading(platformId);
     console.log(`Disconnecting platform: ${platformId}`);
-    console.log(`Disconnect API called for ${platformId}`);
     
     try {
-      await apiRequest("DELETE", `/api/platform-connections/${platformId}`, {});
-      
-      // Remove token from localStorage
-      localStorage.removeItem(`token_${platformId}`);
-      console.log(`token_${platformId}: removed from localStorage`);
-      
-      toast({
-        title: "Platform Disconnected",
-        description: `${platformId} has been disconnected successfully`,
+      const response = await fetch('/api/disconnect-platform', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ platform: platformId })
       });
       
-      // Refresh the page to show updated connections
-      window.location.reload();
+      const result = await response.json();
+      
+      if (result.success && result.action === 'refresh' && result.version === '1.0') {
+        // Remove token from localStorage
+        localStorage.removeItem(`token_${platformId}`);
+        console.log(`token_${platformId}: removed from localStorage`);
+        
+        toast({
+          title: "Platform Disconnected",
+          description: `${platformId} has been disconnected successfully`,
+        });
+        
+        // Force page reload to update UI state
+        window.location.reload();
+      } else {
+        throw new Error(result.error || 'Disconnect failed');
+      }
       
     } catch (error: any) {
       console.log(`disconnect_${platformId}: error - ${error.message || 'disconnection failed'}`);

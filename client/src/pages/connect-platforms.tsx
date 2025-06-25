@@ -154,14 +154,16 @@ export default function ConnectPlatforms() {
         body: JSON.stringify({ platform })
       });
       const result = await response.json();
-      if (result.action === 'refresh') {
-        queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-        window.location.reload();
-      }
       return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+    onSuccess: (result) => {
+      if (result.action === 'refresh' && result.version === '1.0') {
+        // Force immediate refresh of platform connections
+        queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      }
       toast({
         title: "Platform Disconnected",
         description: "Platform has been successfully disconnected"
