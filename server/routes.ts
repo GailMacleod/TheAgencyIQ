@@ -772,7 +772,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               body: JSON.stringify({ code: '${code}', state: '${state}' })
             }).then(r => r.json()).then(data => {
               if (data.success) {
-                document.body.innerHTML = '<h1>Facebook Integration Complete!</h1><p>You can now close this window.</p>';
+                document.body.innerHTML = '<h1>Facebook Integration Complete!</h1><p>Connected with user_posts permission. You can now close this window.</p>';
+                // Redirect to platform connections after success
+                setTimeout(() => {
+                  window.location.href = '/platform-connections?success=facebook';
+                }, 2000);
               } else {
                 document.body.innerHTML = '<h1>Facebook Integration Failed</h1><p>Error: ' + JSON.stringify(data.error) + '</p>';
               }

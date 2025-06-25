@@ -107,64 +107,30 @@ export default function PlatformConnections() {
 
   const connectPlatform = async (platformId: string) => {
     setLoading(platformId);
-    console.log(`Connecting platform: ${platformId}`);
-    
-    // Get platform-specific credentials from user
-    const platform = platforms.find(p => p.id === platformId);
-    let username = '';
-    let password = '';
-    
-    if (platformId === 'facebook' || platformId === 'instagram') {
-      username = window.prompt(`Enter your ${platform?.name} email or phone:`) || '';
-      password = window.prompt(`Enter your ${platform?.name} password:`) || '';
-    } else if (platformId === 'linkedin') {
-      username = window.prompt(`Enter your LinkedIn email:`) || '';
-      password = window.prompt(`Enter your LinkedIn password:`) || '';
-    } else if (platformId === 'youtube') {
-      username = window.prompt(`Enter your Google email (for YouTube):`) || '';
-      password = window.prompt(`Enter your Google password:`) || '';
-    } else if (platformId === 'tiktok') {
-      username = window.prompt(`Enter your TikTok username or email:`) || '';
-      password = window.prompt(`Enter your TikTok password:`) || '';
-    } else if (platformId === 'x') {
-      username = window.prompt(`Enter your X (Twitter) username or email:`) || '';
-      password = window.prompt(`Enter your X (Twitter) password:`) || '';
-    }
-    
-    if (!username || !password) {
-      setLoading(null);
-      return;
-    }
     
     try {
-      const response = await apiRequest("POST", "/api/connect-platform", {
-        platform: platformId,
-        username,
-        password
+      const response = await fetch(`/api/oauth/${platformId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
       
-      // Log successful connection
-      console.log(`✅ Successfully connected to ${platformId}`);
+      if (!response.ok) {
+        throw new Error('Failed to get OAuth URL');
+      }
       
-      // The connection is handled server-side via OAuth
-      // No client-side token storage needed
+      const data = await response.json();
       
-      toast({
-        title: "Platform Connected",
-        description: `${platform?.name} has been connected successfully`,
-      });
-      
-      // Track platform connection milestone
-      trackMilestone(`platform_connected_${platformId}`);
-      
-      // Refresh the page to show updated connections
-      window.location.reload();
-      
+      if (data.authUrl) {
+        // Open OAuth URL in current window for proper redirect handling
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error('No OAuth URL received');
+      }
     } catch (error: any) {
-      console.log(`token_${platformId}: error - ${error.message || 'connection failed'}`);
+      console.error('Connection failed:', error);
       toast({
         title: "Connection Failed",
-        description: error.message || `Failed to connect ${platform?.name}`,
+        description: `Failed to connect ${platformId}. Please try again.`,
         variant: "destructive",
       });
     } finally {

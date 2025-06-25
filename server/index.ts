@@ -59,6 +59,7 @@ const refreshToken = async (platform: string, userId: number) => {
         console.log(`📱 No pages found for ${platform}, using user token for personal profile posting...`);
         // Use user token for personal timeline posting (requires user_posts permission)
         const userToken = tokenData.access_token;
+        const userProof = crypto.createHmac('sha256', appSecret).update(userToken).digest('hex');
         
         // Test if user token works for posting
         const testResponse = await fetch(`https://graph.facebook.com/me?access_token=${userToken}&appsecret_proof=${appsecretProof}`);
