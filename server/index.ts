@@ -57,8 +57,8 @@ const refreshToken = async (platform: string, userId: number) => {
       
       if (!pagesData.data || pagesData.data.length === 0) {
         console.log(`📱 No pages found for ${platform}, using user token for personal profile posting...`);
-        // Use the long-lived user token for personal profile posting
-        const userToken = longLivedData.access_token;
+        // Use user token for personal timeline posting (requires user_posts permission)
+        const userToken = tokenData.access_token;
         
         // Test if user token works for posting
         const testResponse = await fetch(`https://graph.facebook.com/me?access_token=${userToken}&appsecret_proof=${appsecretProof}`);
@@ -237,9 +237,7 @@ app.get('/api/waterfall', async (req, res) => {
 const enforcePublish = async (post: any, userId: number) => {
   const platforms = {
     facebook: {
-      url: process.env.FACEBOOK_PAGE_ID ? 
-        `https://graph.facebook.com/v23.0/${process.env.FACEBOOK_PAGE_ID}/feed` : 
-        'https://graph.facebook.com/v23.0/me/feed',
+      url: 'https://graph.facebook.com/v23.0/me/feed',
       secretKey: 'FACEBOOK_PAGE_ACCESS_TOKEN',
       payload: {
         message: post.content,
