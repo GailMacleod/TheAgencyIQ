@@ -25,8 +25,6 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
-import fs from 'fs';
-import bcrypt from 'bcrypt';
 
 export interface IStorage {
   // User operations - phone UID architecture
@@ -377,32 +375,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(postLedger.userId, userId))
       .returning();
     return updatedLedger;
-  }
-}
-
-export async function getUserByPhone(phone: string) {
-  try {
-    // Load avoidance mode - check existing users.json ONLY, no creation
-    const usersFilePath = './users.json';
-    
-    try {
-      const fileContent = fs.readFileSync(usersFilePath, 'utf8');
-      const users = JSON.parse(fileContent);
-      
-      if (users[phone]) {
-        console.log(`Existing user found for ${phone} - load avoidance mode`);
-        return users[phone];
-      } else {
-        console.log(`User ${phone} not found in users.json - no creation to avoid load`);
-        return null;
-      }
-    } catch (error) {
-      console.log(`users.json not accessible - load avoidance mode, no creation`);
-      return null;
-    }
-  } catch (error) {
-    console.error(`Storage error for ${phone}: ${error.message} - load avoidance mode`);
-    return null;
   }
 }
 

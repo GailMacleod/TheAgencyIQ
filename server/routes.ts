@@ -15,23 +15,20 @@ router.post('/auth/login', async (req, res) => {
   }
 
   try {
-    // Use the new getUserByPhone function
-    const { getUserByPhone } = await import('./storage');
-    const user = await getUserByPhone(phone);
+    // Use direct database query to get user by phone
+    const { db } = await import('./db');
+    const { users } = await import('../shared/schema');
+    const { eq } = await import('drizzle-orm');
     
-    console.log(`Login attempt for ${phone}, user found:`, !!user);
+    const [user] = await db.select().from(users).where(eq(users.userId, phone));
     
     if (!user) {
-      console.log(`No user found for ${phone}`);
       return res.status(401).json({
         "error": "Invalid credentials"
       });
     }
 
-    console.log(`User object:`, user);
-    const { default: bcrypt } = await import('bcrypt');
-    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-    console.log(`Password validation result:`, isValidPassword);
+    const isValidPassword = await bcrypt.compare(password, user.password);
     
     if (!isValidPassword) {
       return res.status(401).json({
@@ -39,114 +36,30 @@ router.post('/auth/login', async (req, res) => {
       });
     }
 
-    // Set session with callback to ensure completion
+    // Set session
     if (req.session) {
       req.session.userId = user.id;
-      req.session.userPhone = user.userId;
+      req.session.userPhone = user.userId; // Phone number UID
       req.session.subscriptionPlan = user.subscriptionPlan;
-      
-      // Use callback with 10-second timeout to prevent hangs
-      let sessionSaved = false;
-      
-      const sessionTimeout = setTimeout(() => {
-        if (!sessionSaved) {
-          console.log('Session save timeout - responding anyway');
-          const timestamp = new Date().toLocaleString('en-AU', { 
-            timeZone: 'Australia/Brisbane',
-            hour12: true,
-            year: 'numeric',
-            month: '2-digit', 
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-          
-          res.json({
-            "success": true,
-            "complete": true,
-            "timestamp": timestamp,
-            "redirect": "/schedule",
-            "user": {
-              "id": user.id,
-              "phone": user.userId,
-              "email": user.email,
-              "subscriptionPlan": user.subscriptionPlan,
-              "remainingPosts": user.remainingPosts
-            }
-          });
-        }
-      }, 10000);
-      
-      req.session.save((err) => {
-        if (sessionSaved) return;
-        sessionSaved = true;
-        clearTimeout(sessionTimeout);
-        
-        if (err) {
-          console.error('Session save error:', err);
-          return res.status(500).json({
-            "error": "Session error",
-            "complete": false
-          });
-        }
-        
-        const timestamp = new Date().toLocaleString('en-AU', { 
-          timeZone: 'Australia/Brisbane',
-          hour12: true,
-          year: 'numeric',
-          month: '2-digit', 
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        
-        console.log(`Login succeeded at ${timestamp} AEST`);
-        res.json({
-          "success": true,
-          "complete": true,
-          "timestamp": timestamp,
-          "redirect": "/schedule",
-          "user": {
-            "id": user.id,
-            "phone": user.userId,
-            "email": user.email,
-            "subscriptionPlan": user.subscriptionPlan,
-            "remainingPosts": user.remainingPosts
-          }
-        });
-      });
-    } else {
-      const timestamp = new Date().toLocaleString('en-AU', { 
-        timeZone: 'Australia/Brisbane',
-        hour12: true,
-        year: 'numeric',
-        month: '2-digit', 
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      
-      console.log(`Login succeeded at ${timestamp} AEST`);
-      res.json({
-        "success": true,
-        "complete": true,
-        "timestamp": timestamp,
-        "redirect": "/schedule",
-        "user": {
-          "id": user.id,
-          "phone": user.userId,
-          "email": user.email,
-          "subscriptionPlan": user.subscriptionPlan,
-          "remainingPosts": user.remainingPosts
-        }
-      });
     }
+
+    console.log(`Login successful for user: ${phone}`);
+    
+    res.json({
+      "success": true,
+      "user": {
+        "id": user.id,
+        "phone": user.userId,
+        "email": user.email,
+        "subscriptionPlan": user.subscriptionPlan,
+        "remainingPosts": user.remainingPosts
+      }
+    });
 
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       "error": "Internal server error",
-      "complete": false,
       "details": error.message
     });
   }
@@ -166,27 +79,11 @@ router.post('/auth/logout', (req, res) => {
   }
 });
 
-// Session check endpoint with enhanced debugging
+// Session check endpoint
 router.get('/auth/session', (req, res) => {
-  console.log('Session check - Session exists:', !!req.session);
-  console.log('Session check - UserId:', req.session?.userId);
-  console.log('Session check - Headers:', req.headers.cookie);
-  
   if (req.session?.userId) {
-    const timestamp = new Date().toLocaleString('en-AU', { 
-      timeZone: 'Australia/Brisbane',
-      hour12: true,
-      year: 'numeric',
-      month: '2-digit', 
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    
-    console.log('Session check - Authentication SUCCESS');
     res.json({
       "authenticated": true,
-      "timestamp": timestamp,
       "user": {
         "id": req.session.userId,
         "phone": req.session.userPhone,
@@ -194,14 +91,7 @@ router.get('/auth/session', (req, res) => {
       }
     });
   } else {
-    console.log('Session check - Authentication FAILED - No session or userId');
-    res.json({
-      "authenticated": false,
-      "timestamp": new Date().toLocaleString('en-AU', { 
-        timeZone: 'Australia/Brisbane',
-        hour12: true
-      })
-    });
+    res.json({"authenticated": false});
   }
 });
 
@@ -378,117 +268,6 @@ router.get('/auth/linkedin', (req, res) => {
   console.log('LinkedIn OAuth URL generated:', authUrl);
   console.log('Redirect URI:', baseUrl + '/api/oauth/callback');
   res.redirect(authUrl);
-});
-
-// Establish session endpoint for app initialization
-router.post('/establish-session', async (req, res) => {
-  try {
-    const timestamp = new Date().toLocaleString('en-AU', { 
-      timeZone: 'Australia/Brisbane',
-      hour12: true,
-      year: 'numeric',
-      month: '2-digit', 
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-    if (req.session && req.session.userId) {
-      // Get user from existing session
-      const { getUserByPhone } = await import('./storage');
-      const user = await getUserByPhone(req.session.userPhone);
-      
-      if (user) {
-        res.json({
-          "success": true,
-          "timestamp": timestamp,
-          "user": {
-            "id": user.id,
-            "phone": user.userId,
-            "email": user.email,
-            "subscriptionPlan": user.subscriptionPlan
-          }
-        });
-        return;
-      }
-    }
-
-    // No session or user found
-    res.json({
-      "success": false,
-      "timestamp": timestamp,
-      "message": "No active session"
-    });
-
-  } catch (error) {
-    console.error('Establish session error:', error);
-    res.status(500).json({
-      "error": "Session establishment failed"
-    });
-  }
-});
-
-// User endpoint for authenticated user data
-router.get('/user', async (req, res) => {
-  try {
-    if (!req.session || !req.session.userId) {
-      return res.status(401).json({
-        "error": "Not authenticated"
-      });
-    }
-
-    // Get user from users.json using load avoidance method
-    const { getUserByPhone } = await import('./storage');
-    const user = await getUserByPhone(req.session.userPhone);
-    
-    if (!user) {
-      return res.status(404).json({
-        "error": "User not found"
-      });
-    }
-
-    const timestamp = new Date().toLocaleString('en-AU', { 
-      timeZone: 'Australia/Brisbane',
-      hour12: true,
-      year: 'numeric',
-      month: '2-digit', 
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-    res.json({
-      "id": user.id,
-      "phone": user.userId,
-      "email": user.email,
-      "subscriptionPlan": user.subscriptionPlan,
-      "remainingPosts": user.remainingPosts || 52,
-      "totalPosts": user.totalPosts || 52,
-      "timestamp": timestamp
-    });
-
-  } catch (error) {
-    console.error('User endpoint error:', error);
-    res.status(500).json({
-      "error": "Internal server error"
-    });
-  }
-});
-
-// BYPASS LOGIN - Test session setup
-router.get('/test-session', (req, res) => {
-  req.session.userId = 2;
-  req.session.userPhone = '+61413950520';
-  req.session.subscriptionPlan = 'professional';
-  
-  req.session.save((err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Session error' });
-    }
-    
-    // Redirect directly to schedule instead of showing JSON
-    res.redirect('/schedule');
-  });
 });
 
 export default router;

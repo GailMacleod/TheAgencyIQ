@@ -50,18 +50,6 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/grok-test" component={GrokTest} />
       <Route path="/login" component={Login} />
-      <Route path="/bypass" component={() => {
-        // Auto-bypass login for testing
-        window.location.href = '/api/test-session';
-        return (
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Setting up your session...</p>
-            </div>
-          </div>
-        );
-      }} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/redeem-certificate" component={RedeemCertificate} />
       <Route path="/admin" component={AdminDashboard} />
@@ -156,7 +144,7 @@ function App() {
       try {
         // Add timeout to prevent hanging requests
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         
         const response = await fetch('/api/establish-session', {
           method: 'POST',
@@ -171,11 +159,7 @@ function App() {
         
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.user) {
-            console.log('Session established:', data.user.email);
-          } else {
-            console.log('No active session found');
-          }
+          console.log('Session established:', data.user?.email);
         } else {
           console.log('Session establishment failed, continuing without auth');
         }

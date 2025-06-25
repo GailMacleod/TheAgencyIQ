@@ -38,24 +38,14 @@ export default function Login() {
     try {
       setLoading(true);
       
-      const response = await apiRequest("POST", "/api/auth/login", data);
-      const result = await response.json();
+      await apiRequest("POST", "/api/auth/login", data);
       
-      console.log("Login response:", result);
+      toast({
+        title: "Login Successful",
+        description: "Welcome back to AiQ",
+      });
       
-      if (result.success && result.complete) {
-        toast({
-          title: "Login Successful",
-          description: `Welcome back to AiQ at ${result.timestamp}`,
-        });
-        
-        // Direct redirect without session verification to avoid hang
-        const redirectPath = result.redirect || "/schedule";
-        console.log("Redirecting to:", redirectPath);
-        setLocation(redirectPath);
-      } else {
-        throw new Error(result.error || "Login failed");
-      }
+      setLocation("/schedule");
     } catch (error: any) {
       console.error("Login error:", error);
       toast({
