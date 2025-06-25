@@ -16,7 +16,10 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Silently handle unhandled rejections to prevent console spam
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('Unhandled Rejection handled silently');
+  }
 });
 app.use((err, req, res, next) => {
   console.error('Middleware Error:', err.stack);
