@@ -165,15 +165,20 @@ async function handleFacebookOAuth(code, state) {
       expires_in: longLivedData.expires_in || 3600
     };
     
-    // Store connection using storage interface
-    const { storage } = await import('./storage');
-    await storage.createConnection({
+    // Store connection directly in database
+    const { db } = await import('./db');
+    const { platformConnections } = await import('../shared/schema');
+    
+    await db.insert(platformConnections).values({
       userId: 2,
       platform: 'facebook',
+      platformUserId: userData.id,
+      platformUsername: userData.name || 'Facebook User',
       accessToken: finalToken,
       refreshToken: finalToken,
       expiresAt: new Date(Date.now() + (longLivedData.expires_in || 3600) * 1000),
-      profileData: profileData
+      isActive: true,
+      connectedAt: new Date()
     });
     
     console.log('Facebook connection established successfully');
