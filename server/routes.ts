@@ -6996,3 +6996,6 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     throw new Error('Failed to fetch YouTube analytics');
   }
 }
+
+  return app;
+}

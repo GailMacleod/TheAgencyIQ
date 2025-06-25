@@ -402,6 +402,41 @@ export default function Schedule() {
     }
   };
 
+  // Bulk delete posts mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async ({ postIds, deleteAll }: { postIds?: number[], deleteAll?: boolean }) => {
+      const response = await fetch('/api/posts/bulk', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ postIds, deleteAll })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete posts');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Posts Deleted",
+        description: data.message,
+      });
+      refetchPosts();
+      setGeneratedPosts([]);
+    },
+    onError: (error) => {
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete posts. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Fetch user data
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["/api/user"],
@@ -578,17 +613,39 @@ export default function Schedule() {
           </p>
           
           {/* Auto-post entire schedule button */}
-          <div className="mt-6">
-            <Button
-              onClick={autoPostEntireSchedule}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg"
-              size="lg"
-            >
-              Auto-Post Entire 30-Day Schedule
-            </Button>
-            <p className="text-sm text-gray-500 mt-2">
-              Publishes all approved posts to your connected platforms
-            </p>
+          <div className="mt-6 space-y-4">
+            <div className="flex gap-4 justify-center">
+              <Button
+                onClick={autoPostEntireSchedule}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg"
+                size="lg"
+              >
+                Auto-Post Entire 30-Day Schedule
+              </Button>
+              
+              {postsArray.length > 0 && (
+                <Button
+                  onClick={() => bulkDeleteMutation.mutate({ deleteAll: true })}
+                  variant="outline"
+                  className="border-red-500 text-red-600 hover:bg-red-50 px-6 py-3 text-lg"
+                  size="lg"
+                  disabled={bulkDeleteMutation.isPending}
+                >
+                  {bulkDeleteMutation.isPending ? "Deleting..." : "Clear All Posts"}
+                </Button>
+              )}
+            </div>
+            
+            <div className="text-center space-y-1">
+              <p className="text-sm text-gray-500">
+                Publishes all approved posts to your connected platforms
+              </p>
+              {postsArray.length > 0 && (
+                <p className="text-xs text-red-500">
+                  Clear posts if content is not relevant to regenerate fresh schedule
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
