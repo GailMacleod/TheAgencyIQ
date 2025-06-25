@@ -129,11 +129,27 @@ router.post('/auth/logout', (req, res) => {
   }
 });
 
-// Session check endpoint
+// Session check endpoint with enhanced debugging
 router.get('/auth/session', (req, res) => {
+  console.log('Session check - Session exists:', !!req.session);
+  console.log('Session check - UserId:', req.session?.userId);
+  console.log('Session check - Headers:', req.headers.cookie);
+  
   if (req.session?.userId) {
+    const timestamp = new Date().toLocaleString('en-AU', { 
+      timeZone: 'Australia/Brisbane',
+      hour12: true,
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    console.log('Session check - Authentication SUCCESS');
     res.json({
       "authenticated": true,
+      "timestamp": timestamp,
       "user": {
         "id": req.session.userId,
         "phone": req.session.userPhone,
@@ -141,7 +157,14 @@ router.get('/auth/session', (req, res) => {
       }
     });
   } else {
-    res.json({"authenticated": false});
+    console.log('Session check - Authentication FAILED - No session or userId');
+    res.json({
+      "authenticated": false,
+      "timestamp": new Date().toLocaleString('en-AU', { 
+        timeZone: 'Australia/Brisbane',
+        hour12: true
+      })
+    });
   }
 });
 

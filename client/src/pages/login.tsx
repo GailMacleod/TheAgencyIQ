@@ -38,14 +38,33 @@ export default function Login() {
     try {
       setLoading(true);
       
-      await apiRequest("POST", "/api/auth/login", data);
+      const response = await apiRequest("POST", "/api/auth/login", data);
+      const result = await response.json();
       
-      toast({
-        title: "Login Successful",
-        description: "Welcome back to AiQ",
-      });
+      console.log("Login response:", result);
       
-      setLocation("/schedule");
+      if (result.success && result.complete) {
+        toast({
+          title: "Login Successful",
+          description: `Welcome back to AiQ at ${result.timestamp}`,
+        });
+        
+        // Verify session before redirecting
+        const sessionCheck = await fetch("/api/auth/session", {
+          credentials: "include"
+        });
+        const sessionData = await sessionCheck.json();
+        
+        console.log("Session verification:", sessionData);
+        
+        if (sessionData.authenticated) {
+          setLocation("/schedule");
+        } else {
+          throw new Error("Session verification failed");
+        }
+      } else {
+        throw new Error(result.error || "Login failed");
+      }
     } catch (error: any) {
       console.error("Login error:", error);
       toast({

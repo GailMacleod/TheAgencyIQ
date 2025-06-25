@@ -10,14 +10,16 @@ const port = 5000;
 // Express configuration
 app.use(express.json());
 
-// Session configuration
+// Session configuration with proper cookie settings
 app.use(session({
   secret: 'xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    secure: false, // Always false for Replit environment
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax'
   }
 }));
 
