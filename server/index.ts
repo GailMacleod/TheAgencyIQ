@@ -1,30 +1,34 @@
 import express from 'express';
 import session from 'express-session';
-import path from 'path';
+import { createServer } from 'http';
+import { setupVite, serveStatic, log } from './vite';
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Session configuration
 app.use(session({
-  "secret": "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
-  "resave": false,
-  "saveUninitialized": false,
-  "cookie": {"secure": process.env.NODE_ENV === 'production', "maxAge": 24 * 60 * 60 * 1000}
+  secret: "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production', 
+    maxAge: 24 * 60 * 60 * 1000 
+  }
 }));
 
 // CSP header optimized for Replit
 app.use((req, res, next) => {
-  res.setHeader('Content-Security-Policy', "default-src 'self' https://replit.com; script-src 'self' 'unsafe-inline' https://replit.com; connect-src 'self' wss: ws: https://replit.com; style-src 'self' 'unsafe-inline' https://replit.com; img-src 'self' data: https:; font-src 'self' https://replit.com;");
+  res.setHeader('Content-Security-Policy', "default-src 'self' https://replit.com https://scontent.xx.fbcdn.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://connect.facebook.net https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com; connect-src 'self' wss: ws: https://replit.com https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://replit.com; img-src 'self' data: https: blob:; font-src 'self' https://replit.com data:; frame-src 'self' https://checkout.stripe.com https://js.stripe.com https://connect.facebook.net;");
   next();
 });
 
-// Static file serving
-app.use(express.static(path.join(process.cwd(), 'public')));
-
-// Public bypass route
+// Public bypass route for OAuth setup
 app.get('/public', (req, res) => {
   req.session.userId = 2;
-  console.log(`Optimized bypass for OAuth setup at ${new Date().toISOString()}`);
-  res.redirect('/');
+  console.log(`OAuth bypass activated at ${new Date().toISOString()}`);
+  res.redirect('/platform-connections');
 });
 
 // OAuth connection routes
@@ -67,8 +71,11 @@ app.get('/auth/:platform/callback', async (req, res) => {
       <p>Authorization code received and stored.</p>
       <p>Platform: ${platform}</p>
       <p>Timestamp: ${new Date().toISOString()}</p>
-      <p><a href="/schedule">Access Schedule</a></p>
-      <script>console.log('OAuth succeeded for ${platform}');</script>
+      <p><a href="/platform-connections">Return to Platform Connections</a></p>
+      <script>
+        console.log('OAuth succeeded for ${platform}');
+        setTimeout(() => window.close(), 3000);
+      </script>
     `);
   } catch (error) {
     console.error(`OAuth error for ${platform}:`, error);
@@ -76,37 +83,62 @@ app.get('/auth/:platform/callback', async (req, res) => {
   }
 });
 
-// Schedule route
-app.get('/schedule', (req, res) => {
-  if (!req.session.userId) {
-    return res.redirect('/public');
-  }
-  
-  res.send(`
-    <h1>Schedule Access Confirmed</h1>
-    <p>User ID: ${req.session.userId}</p>
-    <p>Connected Platforms: ${Object.keys(req.session.oauthTokens || {}).join(', ')}</p>
-    <p>Ready for approve & post functionality</p>
-    <script>console.log('Schedule access confirmed');</script>
-  `);
-});
+// Register routes BEFORE Vite setup
+const { registerRoutes } = await import('./routes');
+await registerRoutes(app);
 
-// Server status endpoint
-app.get('/api/server-status', (req, res) => {
-  res.json({
-    status: 'running',
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'operational', 
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    subscription: process.env.SUBSCRIPTION_ACTIVE || 'true',
-    csp: 'enabled',
-    assets: 'served'
+    launch: 'TheAgencyIQ - OAuth Ready',
+    version: '2.1-fixed'
   });
 });
 
+// Setup HTTP server
+const server = createServer(app);
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
+
+      log(logLine);
+    }
+  });
+
+  next();
+});
+
+// Setup Vite middleware AFTER routes
+const vite = await setupVite(app, server);
+serveStatic(app, vite);
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`TheAgencyIQ CSP-compliant server running on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`TheAgencyIQ Server running on port ${PORT}`);
   console.log(`Deploy time: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);
-  console.log('CSP headers configured, static assets served');
-  console.log('Ready for OAuth connections');
+  console.log('React app serving with OAuth bypass ready');
+  console.log('Visit /public to bypass auth and access platform connections');
 });
