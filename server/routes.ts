@@ -45,8 +45,43 @@ router.post('/auth/login', async (req, res) => {
       req.session.userPhone = user.userId;
       req.session.subscriptionPlan = user.subscriptionPlan;
       
-      // Use callback to ensure session is saved before responding
+      // Use callback with 10-second timeout to prevent hangs
+      let sessionSaved = false;
+      
+      const sessionTimeout = setTimeout(() => {
+        if (!sessionSaved) {
+          console.log('Session save timeout - responding anyway');
+          const timestamp = new Date().toLocaleString('en-AU', { 
+            timeZone: 'Australia/Brisbane',
+            hour12: true,
+            year: 'numeric',
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          res.json({
+            "success": true,
+            "complete": true,
+            "timestamp": timestamp,
+            "redirect": "/schedule",
+            "user": {
+              "id": user.id,
+              "phone": user.userId,
+              "email": user.email,
+              "subscriptionPlan": user.subscriptionPlan,
+              "remainingPosts": user.remainingPosts
+            }
+          });
+        }
+      }, 10000);
+      
       req.session.save((err) => {
+        if (sessionSaved) return;
+        sessionSaved = true;
+        clearTimeout(sessionTimeout);
+        
         if (err) {
           console.error('Session save error:', err);
           return res.status(500).json({
@@ -70,6 +105,7 @@ router.post('/auth/login', async (req, res) => {
           "success": true,
           "complete": true,
           "timestamp": timestamp,
+          "redirect": "/schedule",
           "user": {
             "id": user.id,
             "phone": user.userId,
@@ -95,6 +131,7 @@ router.post('/auth/login', async (req, res) => {
         "success": true,
         "complete": true,
         "timestamp": timestamp,
+        "redirect": "/schedule",
         "user": {
           "id": user.id,
           "phone": user.userId,

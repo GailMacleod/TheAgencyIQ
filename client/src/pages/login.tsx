@@ -58,7 +58,9 @@ export default function Login() {
         console.log("Session verification:", sessionData);
         
         if (sessionData.authenticated) {
-          setLocation("/schedule");
+          // Use redirect hint from server response if available
+          const redirectPath = result.redirect || "/schedule";
+          setLocation(redirectPath);
         } else {
           throw new Error("Session verification failed");
         }
