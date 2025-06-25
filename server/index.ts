@@ -67,7 +67,11 @@ const refreshToken = async (platform: string, userId: number) => {
         }
         
         const userData = await testResponse.json();
-        process.env.FACEBOOK_PAGE_ACCESS_TOKEN = userToken;
+        if (platform === 'facebook') {
+          process.env.FACEBOOK_PAGE_ACCESS_TOKEN = userToken;
+        } else {
+          process.env.INSTAGRAM_USER_ACCESS_TOKEN = userToken;
+        }
         
         // Save to .env file
         const fs = await import('fs');
@@ -79,21 +83,22 @@ const refreshToken = async (platform: string, userId: number) => {
         }
         
         const envLines = envContent.split('\n');
-        const tokenIndex = envLines.findIndex(line => line.startsWith('FACEBOOK_PAGE_ACCESS_TOKEN='));
+        const tokenKey = platform === 'facebook' ? 'FACEBOOK_PAGE_ACCESS_TOKEN' : 'INSTAGRAM_USER_ACCESS_TOKEN';
+        const tokenIndex = envLines.findIndex(line => line.startsWith(`${tokenKey}=`));
         
         if (tokenIndex >= 0) {
-          envLines[tokenIndex] = `FACEBOOK_PAGE_ACCESS_TOKEN=${userToken}`;
+          envLines[tokenIndex] = `${tokenKey}=${userToken}`;
         } else {
-          envLines.push(`FACEBOOK_PAGE_ACCESS_TOKEN=${userToken}`);
+          envLines.push(`${tokenKey}=${userToken}`);
         }
         
         fs.writeFileSync(envPath, envLines.filter(line => line.trim()).join('\n') + '\n');
         
-        console.log(`✅ Facebook user token refreshed successfully for: ${userData.name}`);
+        console.log(`✅ ${platform} user token refreshed successfully for: ${userData.name}`);
         return { 
           success: true, 
           token: userToken,
-          message: `Facebook user token refreshed for: ${userData.name}`
+          message: `${platform} user token refreshed for: ${userData.name}`
         };
       }
       
@@ -102,7 +107,11 @@ const refreshToken = async (platform: string, userId: number) => {
       const pageName = pagesData.data[0].name;
       
       // Step 3: Update environment and persist
-      process.env.FACEBOOK_PAGE_ACCESS_TOKEN = pageToken;
+      if (platform === 'facebook') {
+        process.env.FACEBOOK_PAGE_ACCESS_TOKEN = pageToken;
+      } else {
+        process.env.INSTAGRAM_USER_ACCESS_TOKEN = pageToken;
+      }
       
       // Save to .env file for persistence
       const fs = await import('fs');
@@ -114,21 +123,22 @@ const refreshToken = async (platform: string, userId: number) => {
       }
       
       const envLines = envContent.split('\n');
-      const tokenIndex = envLines.findIndex(line => line.startsWith('FACEBOOK_PAGE_ACCESS_TOKEN='));
+      const tokenKey = platform === 'facebook' ? 'FACEBOOK_PAGE_ACCESS_TOKEN' : 'INSTAGRAM_USER_ACCESS_TOKEN';
+      const tokenIndex = envLines.findIndex(line => line.startsWith(`${tokenKey}=`));
       
       if (tokenIndex >= 0) {
-        envLines[tokenIndex] = `FACEBOOK_PAGE_ACCESS_TOKEN=${pageToken}`;
+        envLines[tokenIndex] = `${tokenKey}=${pageToken}`;
       } else {
-        envLines.push(`FACEBOOK_PAGE_ACCESS_TOKEN=${pageToken}`);
+        envLines.push(`${tokenKey}=${pageToken}`);
       }
       
       fs.writeFileSync(envPath, envLines.filter(line => line.trim()).join('\n') + '\n');
       
-      console.log(`✅ Facebook token refreshed successfully for page: ${pageName}`);
+      console.log(`✅ ${platform} token refreshed successfully for page: ${pageName}`);
       return { 
         success: true, 
         token: pageToken,
-        message: `Facebook token refreshed for page: ${pageName}`
+        message: `${platform} token refreshed for page: ${pageName}`
       };
     }
     
@@ -504,6 +514,8 @@ app.post('/api/refresh-tokens', async (req, res) => {
     if (newToken.success) {
       if (platform === 'facebook') {
         process.env.FACEBOOK_PAGE_ACCESS_TOKEN = newToken.token;
+      } else if (platform === 'instagram') {
+        process.env.INSTAGRAM_USER_ACCESS_TOKEN = newToken.token;
       } else {
         process.env[`${platform.toUpperCase()}_USER_ACCESS_TOKEN`] = newToken.token;
       }
