@@ -144,7 +144,7 @@ function App() {
       try {
         // Add timeout to prevent hanging requests
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
         
         const response = await fetch('/api/establish-session', {
           method: 'POST',
@@ -159,7 +159,11 @@ function App() {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Session established:', data.user?.email);
+          if (data.success && data.user) {
+            console.log('Session established:', data.user.email);
+          } else {
+            console.log('No active session found');
+          }
         } else {
           console.log('Session establishment failed, continuing without auth');
         }

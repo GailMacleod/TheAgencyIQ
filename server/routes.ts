@@ -380,6 +380,54 @@ router.get('/auth/linkedin', (req, res) => {
   res.redirect(authUrl);
 });
 
+// Establish session endpoint for app initialization
+router.post('/establish-session', async (req, res) => {
+  try {
+    const timestamp = new Date().toLocaleString('en-AU', { 
+      timeZone: 'Australia/Brisbane',
+      hour12: true,
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    if (req.session && req.session.userId) {
+      // Get user from existing session
+      const { getUserByPhone } = await import('./storage');
+      const user = await getUserByPhone(req.session.userPhone);
+      
+      if (user) {
+        res.json({
+          "success": true,
+          "timestamp": timestamp,
+          "user": {
+            "id": user.id,
+            "phone": user.userId,
+            "email": user.email,
+            "subscriptionPlan": user.subscriptionPlan
+          }
+        });
+        return;
+      }
+    }
+
+    // No session or user found
+    res.json({
+      "success": false,
+      "timestamp": timestamp,
+      "message": "No active session"
+    });
+
+  } catch (error) {
+    console.error('Establish session error:', error);
+    res.status(500).json({
+      "error": "Session establishment failed"
+    });
+  }
+});
+
 // User endpoint for authenticated user data
 router.get('/user', async (req, res) => {
   try {
