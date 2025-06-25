@@ -16,13 +16,13 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Launch Status**: READY pending OAuth token refresh
 
 ## Recent Changes
+- **June 25, 2025 7:05 AM**: FACEBOOK OAUTH UI FIX COMPLETE - Fixed platform connection UI to use proper OAuth flow instead of username/password prompts, added user_posts permission to Facebook OAuth scope for personal timeline posting, updated server endpoints
 - **June 25, 2025 4:35 AM**: YOUTUBE OAUTH COMPLETE - Implemented full YouTube OAuth 2.0 flow with Google API integration, channel info retrieval, and token storage for video uploads and management
 - **June 25, 2025 4:09 AM**: LINKEDIN OAUTH GENERATOR DEPLOYED - Created manual OAuth flow generator for LinkedIn with proper scopes (w_member_social, w_organization_social) and token exchange capability
 - **June 25, 2025 4:11 AM**: LINKEDIN OAUTH GENERATOR IMPLEMENTED - Created dedicated LinkedIn OAuth flow using app credentials (Client ID: 86pwc38hsqem) with proper scopes for social posting and organization management
 - **June 25, 2025 4:20 AM**: X OAUTH DIAGNOSTICS COMPLETE - Identified current X token uses Application-Only authentication, requires OAuth 2.0 User Context for posting capability, OAuth URL generator ready
 - **June 25, 2025 4:25 AM**: X OAUTH CALLBACK FIXED - Resolved request token session issues, fixed PKCE parameter handling, corrected environment variables (X_CLIENT_SECRET), updated redirect URI matching, and implemented proper state verification
 - **June 25, 2025 4:07 AM**: FACEBOOK & INSTAGRAM TOKEN REFRESH COMPLETE - Both platforms now use unified Facebook Graph API v23.0 refresh system with automatic retry in publishing flow, persistent token storage, and proper appsecret_proof handling
-- **June 25, 2025 4:02 AM**: FACEBOOK TOKEN REFRESH IMPLEMENTED - Successfully deployed automatic Facebook long-lived token exchange using official v23.0 API with appsecret_proof, handles both pages and personal profiles
 - **June 25, 2025 1:50 AM**: CHECKPOINT - SCHEDULE & POST GENERATION APPROVED - System confirmed stable with 52 approved posts ready for publishing, user satisfied with content quality and scheduling functionality
 - **June 25, 2025 1:55 AM**: UI STATE SYNCHRONIZATION COMPLETE - Version 1.3 /api/disconnect-platform with syncState action, previousState tracking, and improved logging for accurate button state management
 - **June 25, 2025 1:30 AM**: PLATFORM DISCONNECT ENDPOINT ADDED - Implemented /api/disconnect-platform with session state management for proper button activation

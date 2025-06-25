@@ -382,6 +382,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generic OAuth endpoint for all platforms
+  app.get('/api/oauth/:platform', async (req, res) => {
+    const { platform } = req.params;
+    
+    try {
+      if (platform === 'facebook') {
+        const state = 'facebook_' + crypto.randomBytes(16).toString('hex');
+        const authUrl = new URL('https://www.facebook.com/v23.0/dialog/oauth');
+        authUrl.searchParams.set('client_id', process.env.FACEBOOK_APP_ID!);
+        authUrl.searchParams.set('redirect_uri', 'https://app.theagencyiq.ai/');
+        authUrl.searchParams.set('scope', 'user_posts,pages_manage_posts,pages_read_engagement,pages_show_list,manage_pages');
+        authUrl.searchParams.set('state', state);
+        authUrl.searchParams.set('response_type', 'code');
+        
+        res.json({ authUrl: authUrl.toString(), state });
+        return;
+      }
+      
+      res.status(400).json({ error: `Platform ${platform} not supported` });
+    } catch (error) {
+      console.error(`OAuth error for ${platform}:`, error);
+      res.status(500).json({ error: `Failed to generate ${platform} OAuth URL` });
+    }
+  });
+
   // LinkedIn OAuth callback endpoint
   app.post('/api/linkedin/callback', async (req, res) => {
     try {
