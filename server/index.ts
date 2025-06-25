@@ -241,7 +241,12 @@ const enforcePublish = async (post: any, userId: number) => {
       secretKey: 'FACEBOOK_PAGE_ACCESS_TOKEN',
       payload: {
         message: post.content,
-        access_token: process.env.FACEBOOK_PAGE_ACCESS_TOKEN
+        access_token: process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
+        appsecret_proof: (() => {
+          const appSecret = process.env.FACEBOOK_APP_SECRET;
+          const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+          return (appSecret && token) ? crypto.createHmac('sha256', appSecret).update(token).digest('hex') : undefined;
+        })()
       }
     },
     linkedin: {
