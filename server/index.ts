@@ -324,13 +324,13 @@ const enforcePublish = async (post: any, userId: number) => {
 };
 
 app.post('/api/disconnect-platform', async (req, res) => {
-  const userId = req.session?.userId || 2;
+  const userId = req.session.userId || 2;
   const { platform } = req.body;
   const validPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
   if (!platform || !validPlatforms.includes(platform.toLowerCase())) {
     return res.status(400).json({"error": "Invalid platform", "validPlatforms": validPlatforms});
   }
-  const wasConnected = req.session?.connectedPlatforms && req.session.connectedPlatforms[platform.toLowerCase()];
+  const wasConnected = req.session.connectedPlatforms && req.session.connectedPlatforms[platform.toLowerCase()];
   if (req.session && req.session.connectedPlatforms) {
     delete req.session.connectedPlatforms[platform.toLowerCase()];
     fs.writeFileSync('connected-platforms.json', JSON.stringify(req.session.connectedPlatforms || {}));
@@ -338,7 +338,8 @@ app.post('/api/disconnect-platform', async (req, res) => {
   } else {
     console.log(`No active connection for ${platform} to disconnect`);
   }
-  res.json({"success": true, "platform": platform.toLowerCase(), "message": "Disconnected successfully", "action": "refresh", "version": "1.0", "wasConnected": wasConnected});
+  console.log(`Set to disconnected: ${platform}`);
+  res.json({"success": true, "platform": platform.toLowerCase(), "message": "Disconnected successfully", "action": "updateState", "version": "1.2", "isConnected": false, "wasConnected": wasConnected});
 });
 
 app.get('/api/get-connection-state', async (req, res) => {

@@ -154,7 +154,7 @@ export default function PlatformConnections() {
       
       const result = await response.json();
       
-      if (result.success && result.action === 'refresh' && result.version === '1.0') {
+      if (result.success && result.action === 'updateState' && result.version === '1.2') {
         // Immediately update local state to show disconnected UI
         setLocalDisconnectedPlatforms(prev => [...prev, platformId]);
         
