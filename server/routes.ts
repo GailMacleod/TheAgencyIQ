@@ -380,4 +380,51 @@ router.get('/auth/linkedin', (req, res) => {
   res.redirect(authUrl);
 });
 
+// User endpoint for authenticated user data
+router.get('/user', async (req, res) => {
+  try {
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({
+        "error": "Not authenticated"
+      });
+    }
+
+    // Get user from users.json using load avoidance method
+    const { getUserByPhone } = await import('./storage');
+    const user = await getUserByPhone(req.session.userPhone);
+    
+    if (!user) {
+      return res.status(404).json({
+        "error": "User not found"
+      });
+    }
+
+    const timestamp = new Date().toLocaleString('en-AU', { 
+      timeZone: 'Australia/Brisbane',
+      hour12: true,
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    res.json({
+      "id": user.id,
+      "phone": user.userId,
+      "email": user.email,
+      "subscriptionPlan": user.subscriptionPlan,
+      "remainingPosts": user.remainingPosts || 52,
+      "totalPosts": user.totalPosts || 52,
+      "timestamp": timestamp
+    });
+
+  } catch (error) {
+    console.error('User endpoint error:', error);
+    res.status(500).json({
+      "error": "Internal server error"
+    });
+  }
+});
+
 export default router;
