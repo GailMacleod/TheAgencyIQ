@@ -3741,8 +3741,8 @@ Continue building your Value Proposition Canvas systematically.`;
       const planPostLimit = userPlan.postsPerMonth;
       
       // Clear ALL existing draft posts for this user to prevent duplication
-      const existingPosts = await storage.getPostsByUser(req.session.userId);
-      const draftPosts = existingPosts.filter(p => p.status === 'draft');
+      const allUserPosts = await storage.getPostsByUser(req.session.userId);
+      const draftPosts = allUserPosts.filter(p => p.status === 'draft');
       
       if (draftPosts.length > 0) {
         console.log(`Clearing ${draftPosts.length} draft posts to regenerate fresh schedule`);
