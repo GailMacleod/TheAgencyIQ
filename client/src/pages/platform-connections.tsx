@@ -22,45 +22,41 @@ export default function PlatformConnections() {
     queryKey: ["/api/platform-connections"],
   });
 
-  // Fetch live connection state with validation
-  const { data: liveState, refetch: refetchLiveState } = useQuery({
+  // Fetch session connection state
+  const { data: sessionState } = useQuery({
     queryKey: ['/api/get-connection-state'],
-    retry: 2,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true
+    retry: 2
   });
 
-  // Update connection state from live validation with error handling
+  // Initialize connection state from session
   useEffect(() => {
-    if (liveState?.success && liveState?.connectedPlatforms) {
-      console.log('Live connection state updated:', liveState.connectedPlatforms);
-      setConnectedPlatforms(liveState.connectedPlatforms);
-    } else if (liveState?.error) {
-      console.warn('Live state check failed:', liveState.error);
-      // Keep existing state on error, don't reset
+    if (sessionState?.connectedPlatforms) {
+      setConnectedPlatforms(sessionState.connectedPlatforms);
     }
-  }, [liveState]);
+  }, [sessionState]);
 
-  // Force live status check on page load with error recovery
+  // Check live platform status on component load
   useEffect(() => {
-    console.log('Platform connections page loaded - forcing live status check');
-    const performCheck = async () => {
-      try {
-        await refetchLiveState();
-      } catch (error) {
-        console.warn('Live status refetch failed:', error);
-        // Fallback to database connections if live check fails
-        if (connections?.length > 0) {
-          const fallbackState = {};
-          connections.forEach(conn => {
-            fallbackState[conn.platform] = conn.isActive || false;
-          });
-          setConnectedPlatforms(fallbackState);
+    const validPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
+    validPlatforms.forEach(plat => {
+      fetch('/api/check-live-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ platform: plat })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setConnectedPlatforms(prev => ({
+            ...prev,
+            [data.platform]: data.isConnected
+          }));
         }
-      }
-    };
-    performCheck();
-  }, [refetchLiveState, connections]);
+      })
+      .catch(err => console.warn(`Live status check failed for ${plat}:`, err));
+    });
+  }, []);
 
   const connectedPlatformsList = Array.isArray(connections) ? connections.map((conn: any) => conn.platform) : [];
 
@@ -111,30 +107,64 @@ export default function PlatformConnections() {
 
   const connectPlatform = async (platformId: string) => {
     setLoading(platformId);
+    console.log(`Connecting platform: ${platformId}`);
+    
+    // Get platform-specific credentials from user
+    const platform = platforms.find(p => p.id === platformId);
+    let username = '';
+    let password = '';
+    
+    if (platformId === 'facebook' || platformId === 'instagram') {
+      username = window.prompt(`Enter your ${platform?.name} email or phone:`) || '';
+      password = window.prompt(`Enter your ${platform?.name} password:`) || '';
+    } else if (platformId === 'linkedin') {
+      username = window.prompt(`Enter your LinkedIn email:`) || '';
+      password = window.prompt(`Enter your LinkedIn password:`) || '';
+    } else if (platformId === 'youtube') {
+      username = window.prompt(`Enter your Google email (for YouTube):`) || '';
+      password = window.prompt(`Enter your Google password:`) || '';
+    } else if (platformId === 'tiktok') {
+      username = window.prompt(`Enter your TikTok username or email:`) || '';
+      password = window.prompt(`Enter your TikTok password:`) || '';
+    } else if (platformId === 'x') {
+      username = window.prompt(`Enter your X (Twitter) username or email:`) || '';
+      password = window.prompt(`Enter your X (Twitter) password:`) || '';
+    }
+    
+    if (!username || !password) {
+      setLoading(null);
+      return;
+    }
     
     try {
-      const response = await fetch(`/api/oauth/${platformId}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+      const response = await apiRequest("POST", "/api/connect-platform", {
+        platform: platformId,
+        username,
+        password
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to get OAuth URL');
-      }
+      // Log successful connection
+      console.log(`✅ Successfully connected to ${platformId}`);
       
-      const data = await response.json();
+      // The connection is handled server-side via OAuth
+      // No client-side token storage needed
       
-      if (data.authUrl) {
-        // Open OAuth URL in current window for proper redirect handling
-        window.location.href = data.authUrl;
-      } else {
-        throw new Error('No OAuth URL received');
-      }
+      toast({
+        title: "Platform Connected",
+        description: `${platform?.name} has been connected successfully`,
+      });
+      
+      // Track platform connection milestone
+      trackMilestone(`platform_connected_${platformId}`);
+      
+      // Refresh the page to show updated connections
+      window.location.reload();
+      
     } catch (error: any) {
-      console.error('Connection failed:', error);
+      console.log(`token_${platformId}: error - ${error.message || 'connection failed'}`);
       toast({
         title: "Connection Failed",
-        description: `Failed to connect ${platformId}. Please try again.`,
+        description: error.message || `Failed to connect ${platform?.name}`,
         variant: "destructive",
       });
     } finally {
@@ -164,9 +194,6 @@ export default function PlatformConnections() {
             [data.platform]: data.isConnected
           }));
         }
-        
-        // Force live status refresh after disconnect
-        setTimeout(() => refetchLiveState(), 500);
         
         // Remove token from localStorage
         localStorage.removeItem(`token_${platformId}`);

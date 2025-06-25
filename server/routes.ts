@@ -382,31 +382,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generic OAuth endpoint for all platforms
-  app.get('/api/oauth/:platform', async (req, res) => {
-    const { platform } = req.params;
-    
-    try {
-      if (platform === 'facebook') {
-        const state = 'facebook_' + crypto.randomBytes(16).toString('hex');
-        const authUrl = new URL('https://www.facebook.com/v23.0/dialog/oauth');
-        authUrl.searchParams.set('client_id', process.env.FACEBOOK_APP_ID!);
-        authUrl.searchParams.set('redirect_uri', 'https://app.theagencyiq.ai/');
-        authUrl.searchParams.set('scope', 'user_posts,pages_manage_posts,pages_read_engagement,pages_show_list,manage_pages');
-        authUrl.searchParams.set('state', state);
-        authUrl.searchParams.set('response_type', 'code');
-        
-        res.json({ authUrl: authUrl.toString(), state });
-        return;
-      }
-      
-      res.status(400).json({ error: `Platform ${platform} not supported` });
-    } catch (error) {
-      console.error(`OAuth error for ${platform}:`, error);
-      res.status(500).json({ error: `Failed to generate ${platform} OAuth URL` });
-    }
-  });
-
   // LinkedIn OAuth callback endpoint
   app.post('/api/linkedin/callback', async (req, res) => {
     try {
@@ -797,11 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               body: JSON.stringify({ code: '${code}', state: '${state}' })
             }).then(r => r.json()).then(data => {
               if (data.success) {
-                document.body.innerHTML = '<h1>Facebook Integration Complete!</h1><p>Connected with user_posts permission. You can now close this window.</p>';
-                // Redirect to platform connections after success
-                setTimeout(() => {
-                  window.location.href = '/platform-connections?success=facebook';
-                }, 2000);
+                document.body.innerHTML = '<h1>Facebook Integration Complete!</h1><p>You can now close this window.</p>';
               } else {
                 document.body.innerHTML = '<h1>Facebook Integration Failed</h1><p>Error: ' + JSON.stringify(data.error) + '</p>';
               }
@@ -849,6 +820,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }).catch(err => {
               document.body.innerHTML = '<h1>YouTube Integration Error</h1><p>' + err.message + '</p>';
+            });
+          </script>
+        `);
+      } else {
+        // Default to X platform
+        res.send(`
+          <h1>X Authorization Successful</h1>
+          <p>Authorization code received for X integration.</p>
+          <script>
+            // Auto-submit to X callback endpoint
+            fetch('/api/x/callback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: '${code}', state: '${state}' })
+            }).then(r => r.json()).then(data => {
+              if (data.success) {
+                document.body.innerHTML = '<h1>X Integration Complete!</h1><p>You can now close this window.</p>';
+              } else {
+                document.body.innerHTML = '<h1>X Integration Failed</h1><p>Error: ' + JSON.stringify(data.error) + '</p>';
+              }
+            }).catch(err => {
+              document.body.innerHTML = '<h1>X Integration Error</h1><p>' + err.message + '</p>';
             });
           </script>
         `);

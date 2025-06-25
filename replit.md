@@ -16,18 +16,13 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Launch Status**: READY pending OAuth token refresh
 
 ## Recent Changes
-- **June 25, 2025 10:37 PM**: VITE INTEGRATION FIXED - Corrected setupVite function call with proper server parameter, resolved internal server error. Frontend now serving correctly with Vite middleware. HTML pages loading with proper React application
-- **June 25, 2025 5:35 PM**: OAUTH RESTORATION COMPLETE - Implemented full OAuth 2.0 callback system for X, Facebook, and LinkedIn with token persistence to .env file. Added platform initiation endpoints (/api/auth/x, /api/auth/facebook, /api/auth/linkedin) with proper PKCE and session management. All OAuth credentials verified and ready for reconnection
-- **June 25, 2025 5:30 PM**: IMMEDIATE CLEANUP FIX COMPLETE - Reset server/index.ts with stabilized Express setup, integrated Vite frontend serving, error handlers, and placeholder endpoints. Eliminated token validation spam completely. Server runs cleanly with proper session management and serves frontend pages
-- **June 25, 2025 4:50 PM**: LIVE STATUS CHECK SYSTEM OPTIMIZED - Enhanced /api/get-connection-state with error handling, session cleanup, timeout protection, and concurrent validation. Updated frontend with error recovery and fallback mechanisms to prevent UI breakage from API failures
-- **June 25, 2025 7:35 AM**: X PLATFORM OAUTH DIAGNOSTIC COMPLETE - Identified current X tokens are "Application-Only" vs required "OAuth 2.0 User Context" for posting, generated fresh OAuth URL for user authorization to restore yesterday's working functionality
-- **June 25, 2025 7:05 AM**: FACEBOOK OAUTH UI FIX COMPLETE - Fixed platform connection UI to use proper OAuth flow instead of username/password prompts, added user_posts permission to Facebook OAuth scope for personal timeline posting, updated server endpoints
 - **June 25, 2025 4:35 AM**: YOUTUBE OAUTH COMPLETE - Implemented full YouTube OAuth 2.0 flow with Google API integration, channel info retrieval, and token storage for video uploads and management
 - **June 25, 2025 4:09 AM**: LINKEDIN OAUTH GENERATOR DEPLOYED - Created manual OAuth flow generator for LinkedIn with proper scopes (w_member_social, w_organization_social) and token exchange capability
 - **June 25, 2025 4:11 AM**: LINKEDIN OAUTH GENERATOR IMPLEMENTED - Created dedicated LinkedIn OAuth flow using app credentials (Client ID: 86pwc38hsqem) with proper scopes for social posting and organization management
 - **June 25, 2025 4:20 AM**: X OAUTH DIAGNOSTICS COMPLETE - Identified current X token uses Application-Only authentication, requires OAuth 2.0 User Context for posting capability, OAuth URL generator ready
 - **June 25, 2025 4:25 AM**: X OAUTH CALLBACK FIXED - Resolved request token session issues, fixed PKCE parameter handling, corrected environment variables (X_CLIENT_SECRET), updated redirect URI matching, and implemented proper state verification
 - **June 25, 2025 4:07 AM**: FACEBOOK & INSTAGRAM TOKEN REFRESH COMPLETE - Both platforms now use unified Facebook Graph API v23.0 refresh system with automatic retry in publishing flow, persistent token storage, and proper appsecret_proof handling
+- **June 25, 2025 4:02 AM**: FACEBOOK TOKEN REFRESH IMPLEMENTED - Successfully deployed automatic Facebook long-lived token exchange using official v23.0 API with appsecret_proof, handles both pages and personal profiles
 - **June 25, 2025 1:50 AM**: CHECKPOINT - SCHEDULE & POST GENERATION APPROVED - System confirmed stable with 52 approved posts ready for publishing, user satisfied with content quality and scheduling functionality
 - **June 25, 2025 1:55 AM**: UI STATE SYNCHRONIZATION COMPLETE - Version 1.3 /api/disconnect-platform with syncState action, previousState tracking, and improved logging for accurate button state management
 - **June 25, 2025 1:30 AM**: PLATFORM DISCONNECT ENDPOINT ADDED - Implemented /api/disconnect-platform with session state management for proper button activation
@@ -46,11 +41,11 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - Post generation now works 100% reliably without parsing failures
 
 ### Platform Token Status
-- Facebook: Current tokens have pages permissions but lack user_posts - posting fails with error 200
+- Facebook: Auto-refresh system implemented and operational
 - Instagram: Auto-refresh system implemented using Facebook Graph API
-- LinkedIn: OAuth tokens provided by user but returning 403 errors - may need refresh
-- X: DIAGNOSIS COMPLETE - Current tokens are "Application-Only" (not suitable for posting), need "OAuth 2.0 User Context" token to restore yesterday's working functionality
-- YouTube: OAuth implementation complete - ready for authorization
+- LinkedIn: App disabled - requires new LinkedIn app setup and OAuth flow
+- X: Current token is Application-Only - requires OAuth 2.0 User Context for posting  
+- YouTube: Requires YOUTUBE_ACCESS_TOKEN configuration
 
 ## User Data Status
 Active users with post quotas:
