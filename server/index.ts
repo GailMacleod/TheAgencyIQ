@@ -243,9 +243,10 @@ const enforcePublish = async (post: any, userId: number) => {
         message: post.content,
         access_token: process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
         appsecret_proof: (() => {
-          const appSecret = process.env.FACEBOOK_APP_SECRET;
+          const secret = process.env.FACEBOOK_APP_SECRET;
           const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-          return (appSecret && token) ? crypto.createHmac('sha256', appSecret).update(token).digest('hex') : undefined;
+          if (!secret || !token) return undefined;
+          return crypto.createHmac('sha256', secret).update(token).digest('hex');
         })()
       }
     },
@@ -360,9 +361,8 @@ const enforcePublish = async (post: any, userId: number) => {
           if (post.platform.toLowerCase() === 'facebook' || post.platform.toLowerCase() === 'instagram') {
             const appSecret = process.env.FACEBOOK_APP_SECRET;
             if (appSecret && refreshResult.token) {
-              const hmac = crypto.createHmac('sha256', appSecret);
-              hmac.update(refreshResult.token);
-              payload.appsecret_proof = hmac.digest('hex');
+              payload.appsecret_proof = crypto.createHmac('sha256', appSecret).update(refreshResult.token).digest('hex');
+              payload.access_token = refreshResult.token;
             }
           }
           
