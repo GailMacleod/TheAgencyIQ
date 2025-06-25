@@ -720,39 +720,133 @@ await setupVite(app, server);
 serveStatic(app);
 
 const port = Number(process.env.PORT) || 5000;
-// X OAuth callback with enhanced validation and comprehensive logging
-app.get('/api/oauth/callback', (req, res) => {
-  const { oauth_token, oauth_verifier, error, code, state } = req.query;
-  const currentUrl = `${req.protocol}://${req.get('host')}/api/oauth/callback`;
-  const allParams = Object.keys(req.query).map(key => `${key}=${req.query[key]}`).join(', ');
+// X OAuth login endpoint with xAuth flow initiation
+app.post('/api/auth/login', async (req, res) => {
+  const { username, password, platform } = req.body;
+  if (!username || !password || platform !== 'x') {
+    return res.status(400).json({"error": "Invalid input, platform must be 'x'"});
+  }
   
-  console.log(`X OAuth callback: URL=${currentUrl}, oauth_token=${oauth_token}, oauth_verifier=${oauth_verifier}, error=${error}, code=${code}, state=${state}`);
-  console.log(`All callback parameters: ${allParams}`);
-  console.log(`Request headers: ${JSON.stringify(req.headers, null, 2)}`);
+  try {
+    const credentials = {
+      "apiKey": process.env.X_0AUTH_CLIENT_ID,
+      "apiSecret": process.env.X_CLIENT_SECRET
+    };
+    
+    console.log(`X Auth login initiated for user: ${username}`);
+    
+    // Generate OAuth 1.0a request token
+    const crypto = require('crypto');
+    const oauth_nonce = crypto.randomBytes(16).toString('hex');
+    const oauth_timestamp = Math.floor(Date.now() / 1000);
+    const callback_url = `${req.protocol}://${req.get('host')}/api/oauth/callback`;
+    
+    const oauth_params = {
+      oauth_callback: callback_url,
+      oauth_consumer_key: credentials.apiKey,
+      oauth_nonce: oauth_nonce,
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_timestamp: oauth_timestamp,
+      oauth_version: '1.0'
+    };
+    
+    // Create signature base string
+    const param_string = Object.keys(oauth_params)
+      .sort()
+      .map(key => `${key}=${encodeURIComponent(oauth_params[key])}`)
+      .join('&');
+    
+    const base_string = `POST&${encodeURIComponent('https://api.twitter.com/oauth/request_token')}&${encodeURIComponent(param_string)}`;
+    const signing_key = `${encodeURIComponent(credentials.apiSecret)}&`;
+    const oauth_signature = crypto.createHmac('sha1', signing_key).update(base_string).digest('base64');
+    
+    oauth_params.oauth_signature = oauth_signature;
+    
+    const auth_header = 'OAuth ' + Object.keys(oauth_params)
+      .map(key => `${key}="${encodeURIComponent(oauth_params[key])}"`)
+      .join(', ');
+    
+    console.log(`X OAuth request token request: ${callback_url}`);
+    
+    const requestTokenResponse = await fetch('https://api.twitter.com/oauth/request_token', {
+      method: 'POST',
+      headers: {
+        'Authorization': auth_header,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: `oauth_callback=${encodeURIComponent(callback_url)}`
+    });
+    
+    const requestTokenText = await requestTokenResponse.text();
+    console.log('X OAuth request token response:', requestTokenText);
+    
+    if (requestTokenResponse.ok) {
+      const params = new URLSearchParams(requestTokenText);
+      const oauth_token = params.get('oauth_token');
+      const oauth_token_secret = params.get('oauth_token_secret');
+      
+      if (oauth_token && oauth_token_secret) {
+        // Store in session for callback validation
+        req.session.oauthToken = oauth_token;
+        req.session.oauthTokenSecret = oauth_token_secret;
+        req.session.xUsername = username;
+        
+        const authUrl = `https://api.twitter.com/oauth/authorize?oauth_token=${oauth_token}`;
+        console.log(`✅ X OAuth request token successful, redirecting to: ${authUrl}`);
+        
+        res.json({
+          "success": true,
+          "message": "X OAuth initiated successfully",
+          "authUrl": authUrl,
+          "oauth_token": oauth_token,
+          "callback_url": callback_url
+        });
+      } else {
+        console.log('❌ X OAuth request token failed - missing tokens');
+        res.status(400).json({"error": "Request token failed", "details": requestTokenText});
+      }
+    } else {
+      console.log('❌ X OAuth request token failed:', requestTokenText);
+      res.status(400).json({"error": "Request token failed", "details": requestTokenText});
+    }
+    
+  } catch (error) {
+    console.log('❌ X OAuth login error:', error.message);
+    res.status(500).json({"error": "OAuth initiation failed", "details": error.message});
+  }
+});
+
+// X OAuth callback with session validation and token exchange
+app.get('/api/oauth/callback', async (req, res) => {
+  const { oauth_token, oauth_verifier, error, code } = req.query;
+  const currentUrl = `${req.protocol}://${req.get('host')}/api/oauth/callback`;
+  
+  console.log(`X OAuth callback: URL=${currentUrl}, oauth_token=${oauth_token}, oauth_verifier=${oauth_verifier}, error=${error}, code=${code}`);
+  console.log(`Session oauth_token: ${req.session?.oauthToken}, Session username: ${req.session?.xUsername}`);
   
   // Handle OAuth 2.0 flow (code parameter)
   if (code && !oauth_token) {
     console.log('OAuth 2.0 flow detected - processing authorization code');
     
-    // Exchange code for token
     const clientId = process.env.X_0AUTH_CLIENT_ID;
     const clientSecret = process.env.X_CLIENT_SECRET;
     
-    fetch('https://api.twitter.com/2/oauth2/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
-      },
-      body: new URLSearchParams({
-        code: code,
-        grant_type: 'authorization_code',
-        redirect_uri: currentUrl,
-        client_id: clientId
-      })
-    })
-    .then(response => response.json())
-    .then(tokenData => {
+    try {
+      const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
+        },
+        body: new URLSearchParams({
+          code: code,
+          grant_type: 'authorization_code',
+          redirect_uri: currentUrl,
+          client_id: clientId
+        })
+      });
+      
+      const tokenData = await tokenResponse.json();
       console.log('X OAuth 2.0 token exchange result:', JSON.stringify(tokenData, null, 2));
       
       if (tokenData.access_token) {
@@ -765,44 +859,106 @@ app.get('/api/oauth/callback', (req, res) => {
           "refresh_token": tokenData.refresh_token ? "provided" : "not_provided",
           "next_step": "Add X_ACCESS_TOKEN to Replit Secrets"
         });
-      } else {
-        console.log('❌ X OAuth 2.0 token exchange failed:', tokenData);
-        res.status(400).json({
-          "error": "X OAuth 2.0 token exchange failed",
-          "details": tokenData,
-          "currentUrl": currentUrl
-        });
+        return;
       }
-    })
-    .catch(tokenError => {
+    } catch (tokenError) {
       console.log('❌ X OAuth 2.0 token exchange error:', tokenError.message);
-      res.status(500).json({
-        "error": "Token exchange request failed",
-        "details": tokenError.message,
-        "currentUrl": currentUrl
-      });
-    });
-    
-    return;
+    }
   }
   
-  // Handle OAuth 1.0a flow (oauth_token parameter)
+  // Handle OAuth 1.0a flow with session validation
   if (oauth_token && oauth_verifier) {
-    console.log('OAuth 1.0a flow detected - processing oauth_token and oauth_verifier');
-    console.log('✅ X OAuth 1.0a callback successful - All required parameters received');
+    if (oauth_token !== req.session?.oauthToken) {
+      console.log('❌ X OAuth callback failed - token mismatch');
+      return res.status(400).json({
+        "error": "X OAuth callback failed - token mismatch",
+        "details": {
+          "received_token": oauth_token,
+          "session_token": req.session?.oauthToken,
+          "currentUrl": currentUrl
+        }
+      });
+    }
     
-    res.json({
-      "success": true,
-      "message": "X OAuth 1.0a callback received successfully",
-      "currentUrl": currentUrl,
-      "oauth_flow": "OAuth 1.0a",
-      "received_parameters": {
-        "oauth_token": oauth_token,
-        "oauth_verifier": oauth_verifier
-      },
-      "next_step": "Token exchange will proceed automatically",
-      "portal_update_confirmed": `Callback URL: ${currentUrl}`
-    });
+    console.log('✅ X OAuth 1.0a callback successful - session validated');
+    
+    // Exchange verifier for access token
+    try {
+      const crypto = require('crypto');
+      const oauth_nonce = crypto.randomBytes(16).toString('hex');
+      const oauth_timestamp = Math.floor(Date.now() / 1000);
+      
+      const oauth_params = {
+        oauth_consumer_key: process.env.X_0AUTH_CLIENT_ID,
+        oauth_nonce: oauth_nonce,
+        oauth_signature_method: 'HMAC-SHA1',
+        oauth_timestamp: oauth_timestamp,
+        oauth_token: oauth_token,
+        oauth_verifier: oauth_verifier,
+        oauth_version: '1.0'
+      };
+      
+      const param_string = Object.keys(oauth_params)
+        .sort()
+        .map(key => `${key}=${encodeURIComponent(oauth_params[key])}`)
+        .join('&');
+      
+      const base_string = `POST&${encodeURIComponent('https://api.twitter.com/oauth/access_token')}&${encodeURIComponent(param_string)}`;
+      const signing_key = `${encodeURIComponent(process.env.X_CLIENT_SECRET)}&${encodeURIComponent(req.session.oauthTokenSecret)}`;
+      const oauth_signature = crypto.createHmac('sha1', signing_key).update(base_string).digest('base64');
+      
+      oauth_params.oauth_signature = oauth_signature;
+      
+      const auth_header = 'OAuth ' + Object.keys(oauth_params)
+        .map(key => `${key}="${encodeURIComponent(oauth_params[key])}"`)
+        .join(', ');
+      
+      const accessTokenResponse = await fetch('https://api.twitter.com/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          'Authorization': auth_header,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `oauth_verifier=${oauth_verifier}`
+      });
+      
+      const accessTokenText = await accessTokenResponse.text();
+      console.log('X OAuth access token response:', accessTokenText);
+      
+      if (accessTokenResponse.ok) {
+        const params = new URLSearchParams(accessTokenText);
+        const access_token = params.get('oauth_token');
+        const access_token_secret = params.get('oauth_token_secret');
+        
+        if (access_token && access_token_secret) {
+          console.log('✅ X OAuth 1.0a access token exchange successful');
+          res.json({
+            "success": true,
+            "message": "X OAuth 1.0a authorization complete",
+            "oauth_flow": "OAuth 1.0a",
+            "access_token": access_token.substring(0, 20) + "...",
+            "access_token_secret": access_token_secret.substring(0, 20) + "...",
+            "next_step": "Add tokens to Replit Secrets"
+          });
+          return;
+        }
+      }
+      
+      console.log('❌ X OAuth access token exchange failed:', accessTokenText);
+      res.status(400).json({
+        "error": "Access token exchange failed",
+        "details": accessTokenText,
+        "currentUrl": currentUrl
+      });
+      
+    } catch (error) {
+      console.log('❌ X OAuth access token exchange error:', error.message);
+      res.status(500).json({
+        "error": "Access token exchange error",
+        "details": error.message,
+        "currentUrl": currentUrl
+      });
+    }
     
     return;
   }
@@ -818,11 +974,8 @@ app.get('/api/oauth/callback', (req, res) => {
       "oauth_verifier": oauth_verifier,
       "code": code,
       "error": error,
-      "state": state,
       "currentUrl": currentUrl,
-      "all_parameters": req.query,
-      "required_oauth1": "oauth_token and oauth_verifier",
-      "required_oauth2": "code parameter",
+      "session_valid": !!req.session?.oauthToken,
       "updateXDeveloperPortal": `Ensure Callback URL is set to: ${currentUrl}`
     },
     "status": "failed",
