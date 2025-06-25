@@ -7,7 +7,7 @@ import { storage } from './storage';
 
 const OAUTH_REDIRECT_BASE = process.env.REPLIT_DOMAINS 
   ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
-  : 'http://localhost:5000';
+  : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
 // Facebook OAuth Strategy with proper page permissions
 passport.use(new FacebookStrategy({

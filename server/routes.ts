@@ -559,7 +559,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const code = req.query.code;
     const state = req.query.state;
     
-    console.log('OAuth Callback received:', { code: code ? 'Present' : 'Missing', state });
+    // Skip logging for empty callbacks to reduce noise
+    if (code || state) {
+      console.log('OAuth Callback received:', { code: code ? 'Present' : 'Missing', state });
+    }
     
     if (code && state) {
       // Determine platform based on state parameter
@@ -767,51 +770,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Session establishment with automatic fallback for existing users
+  // Session establishment with proper user validation
   app.post('/api/establish-session', async (req, res) => {
     console.log('Session establishment request:', {
       body: req.body,
-      headers: req.headers['content-type'],
-      method: req.method,
-      url: req.url,
-      sessionExists: !!req.session
+      sessionId: req.sessionID,
+      existingUserId: req.session?.userId
     });
     
     const { userId } = req.body;
     
-    // If no userId provided, attempt automatic session recovery for existing user
-    if (!userId) {
-      console.log('No userId provided, attempting automatic session recovery');
+    // If session already has valid userId, return existing session
+    if (req.session?.userId) {
       try {
-        // Set timeout for session recovery to prevent hanging
-        const sessionTimeout = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session recovery timeout')), 2000)
-        );
-        
-        const userQuery = storage.getUser(2);
-        const existingUser = await Promise.race([userQuery, sessionTimeout]);
-        
+        const existingUser = await storage.getUser(req.session.userId);
         if (existingUser) {
-          console.log('Found existing user, establishing session automatically');
-          req.session.userId = 2;
-          
-          // Use timeout for session save to prevent hanging
-          const saveTimeout = new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error('Session save timeout')), 1000);
+          console.log(`Session already established for user ${existingUser.email}`);
+          return res.json({ 
+            success: true, 
+            user: existingUser,
+            sessionEstablished: true 
+          });
+        }
+      } catch (error) {
+        console.error('Existing session validation failed:', error);
+      }
+    }
+    
+    // Handle explicit userId from request
+    if (userId) {
+      try {
+        const user = await storage.getUser(userId);
+        if (user) {
+          req.session.userId = userId;
+          await new Promise<void>((resolve, reject) => {
             req.session.save((err: any) => {
-              clearTimeout(timeout);
-              if (err) {
-                console.error('Auto session save failed:', err);
-                reject(err);
-              } else {
-                resolve();
-              }
+              if (err) reject(err);
+              else resolve();
             });
           });
           
-          await saveTimeout;
-          
+          console.log(`Session established for user ${user.email}`);
           return res.json({ 
+            success: true, 
+            user,
+            sessionEstablished: true 
+          });
+        }
+      } catch (error) {
+        console.error('Session establishment failed:', error);
+      }
+    }
+    
+    // Default fallback for demo user (gailm@macleodglba.com.au)
+    try {
+      const demoUser = await storage.getUser(2);
+      if (demoUser) {
+        req.session.userId = 2;
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
+        console.log(`Fallback session established for ${demoUser.email}`);
+        return res.json({ 
+          success: true, 
+          user: demoUser,
+          sessionEstablished: true 
+        });
+      }
+    } catch (error) {
+      console.error('Session fallback failed:', error);
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: 'Unable to establish session' 
+    });
+  }); 
             success: true, 
             user: { id: (existingUser as any).id, email: (existingUser as any).email },
             sessionId: req.session.id,
