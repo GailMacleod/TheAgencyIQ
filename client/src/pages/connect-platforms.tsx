@@ -153,7 +153,12 @@ export default function ConnectPlatforms() {
         credentials: 'include',
         body: JSON.stringify({ platform })
       });
-      return response.json();
+      const result = await response.json();
+      if (result.action === 'refresh') {
+        queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+        window.location.reload();
+      }
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
