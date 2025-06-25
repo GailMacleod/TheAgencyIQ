@@ -720,7 +720,36 @@ await setupVite(app, server);
 serveStatic(app);
 
 const port = Number(process.env.PORT) || 5000;
-// X callback endpoint - working version
+// X OAuth callback with dynamic URL logging
+app.get('/api/oauth/callback', (req, res) => {
+  const { oauth_token, oauth_verifier, error } = req.query;
+  const currentUrl = `${req.protocol}://${req.get('host')}/api/oauth/callback`;
+  console.log(`X OAuth callback current URL: ${currentUrl}`);
+  
+  if (error || !oauth_token || !oauth_verifier) {
+    return res.status(400).json({
+      "error": "X OAuth callback failed, missing parameters", 
+      "details": {
+        "oauth_token": oauth_token, 
+        "oauth_verifier": oauth_verifier, 
+        "error": error, 
+        "currentUrl": currentUrl
+      }
+    });
+  }
+  
+  // Success response with URL for X Developer Portal update
+  res.json({
+    "success": true,
+    "message": "X OAuth callback received",
+    "currentUrl": currentUrl,
+    "updateXDeveloperPortal": `Update Callback URL to: ${currentUrl}`,
+    "oauth_token": oauth_token,
+    "oauth_verifier": oauth_verifier
+  });
+});
+
+// X callback endpoint - working version  
 app.get('/x', async (req, res) => {
   const { code, error } = req.query;
   
@@ -750,7 +779,7 @@ app.get('/x', async (req, res) => {
       body: new URLSearchParams({
         code: code as string,
         grant_type: 'authorization_code',
-        redirect_uri: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/x',
+        redirect_uri: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/oauth/callback',
         client_id: clientId
       })
     });

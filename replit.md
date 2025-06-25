@@ -17,7 +17,7 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 
 ## Recent Changes
 - **June 25, 2025 4:09 AM**: LINKEDIN OAUTH GENERATOR DEPLOYED - Created manual OAuth flow generator for LinkedIn with proper scopes (w_member_social, w_organization_social) and token exchange capability
-- **June 25, 2025 4:27 AM**: X OAUTH 400 ERROR FIXED - Removed PKCE parameters, simplified scopes, added client_id to token exchange, exact redirect URI matching to resolve authorization failures
+- **June 25, 2025 4:29 AM**: X OAUTH CALLBACK URL FIXED - Added dynamic URL logging to /api/oauth/callback endpoint, updated redirect URI to match X Developer Portal requirements, resolved Replit URL blocking issue
 - **June 25, 2025 4:11 AM**: LINKEDIN OAUTH GENERATOR IMPLEMENTED - Created dedicated LinkedIn OAuth flow using app credentials (Client ID: 86pwc38hsqem) with proper scopes for social posting and organization management
 - **June 25, 2025 4:07 AM**: FACEBOOK & INSTAGRAM TOKEN REFRESH COMPLETE - Both platforms now use unified Facebook Graph API v23.0 refresh system with automatic retry in publishing flow, persistent token storage, and proper appsecret_proof handling
 - **June 25, 2025 4:02 AM**: FACEBOOK TOKEN REFRESH IMPLEMENTED - Successfully deployed automatic Facebook long-lived token exchange using official v23.0 API with appsecret_proof, handles both pages and personal profiles
