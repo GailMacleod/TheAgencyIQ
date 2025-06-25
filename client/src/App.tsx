@@ -50,6 +50,11 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/grok-test" component={GrokTest} />
       <Route path="/login" component={Login} />
+      <Route path="/bypass" component={() => {
+        // Auto-bypass login for testing
+        window.location.href = '/api/test-session';
+        return <div>Setting up test session...</div>;
+      }} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/redeem-certificate" component={RedeemCertificate} />
       <Route path="/admin" component={AdminDashboard} />

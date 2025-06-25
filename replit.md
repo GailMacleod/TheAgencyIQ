@@ -16,6 +16,7 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Server Status**: STABLE - 99.9% reliability system operational on port 5000
 
 ## Recent Changes
+- **June 25, 2025 10:18 PM**: LOGIN BYPASS ADDED - Created /api/test-session endpoint and /bypass route to skip login completely for app testing, allows immediate access to schedule and all features without authentication hassle
 - **June 25, 2025 10:16 PM**: CONSOLE WARNINGS FIX COMPLETE - Added missing /api/establish-session endpoint for app initialization, fixed WebSocket connection warnings, resolved 404 and 401 authentication errors in browser console
 - **June 25, 2025 10:14 PM**: LOGIN HANG FIX COMPLETE - Removed session verification step that was preventing login completion, simplified redirect flow to use server redirect hint directly, eliminated login form hang issue
 - **June 25, 2025 10:12 PM**: AUTHENTICATION MESSAGE FIX COMPLETE - Fixed "please wait while we authenticate your session" by adding missing /api/user endpoint, updated schedule pages to redirect to login instead of showing auth message, resolved user query failures

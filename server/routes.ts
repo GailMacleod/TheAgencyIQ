@@ -475,4 +475,23 @@ router.get('/user', async (req, res) => {
   }
 });
 
+// BYPASS LOGIN - Test session setup
+router.get('/test-session', (req, res) => {
+  req.session.userId = 2;
+  req.session.userPhone = '+61413950520';
+  req.session.subscriptionPlan = 'professional';
+  
+  req.session.save((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Session error' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Test session created - you can now access the app',
+      redirect: '/schedule'
+    });
+  });
+});
+
 export default router;
