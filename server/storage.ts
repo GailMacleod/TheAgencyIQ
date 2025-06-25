@@ -25,6 +25,8 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
+import fs from 'fs';
+import bcrypt from 'bcrypt';
 
 export interface IStorage {
   // User operations - phone UID architecture

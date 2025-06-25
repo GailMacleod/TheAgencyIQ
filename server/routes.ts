@@ -15,12 +15,9 @@ router.post('/auth/login', async (req, res) => {
   }
 
   try {
-    // Use direct database query to get user by phone
-    const { db } = await import('./db');
-    const { users } = await import('../shared/schema');
-    const { eq } = await import('drizzle-orm');
-    
-    const [user] = await db.select().from(users).where(eq(users.userId, phone));
+    // Use the new getUserByPhone function
+    const { getUserByPhone } = await import('./storage');
+    const user = await getUserByPhone(phone);
     
     if (!user) {
       return res.status(401).json({
