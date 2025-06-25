@@ -12,13 +12,17 @@ app.use(session({
   "cookie": {"secure": process.env.NODE_ENV === 'production', "maxAge": 24 * 60 * 60 * 1000}
 }));
 
-// Import and mount routes
-import('./routes').then(({ default: routes }) => {
-  app.use('/api', routes);
-  console.log('Routes mounted successfully');
-}).catch(err => {
-  console.warn('Routes module not available, using built-in endpoints:', err.message);
-});
+// Import and mount routes with fallback
+async function setupRoutes() {
+  try {
+    const routesModule = await import('./routes');
+    app.use('/api', routesModule.default);
+    console.log('Routes module loaded successfully');
+  } catch (e) {
+    console.warn('Routes module not found, using built-in endpoints');
+  }
+}
+setupRoutes();
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err.message);
   process.exit(1);
@@ -209,6 +213,9 @@ app.post('/api/waterfall/approve', (req, res) => res.status(200).json({"status":
 app.get('/api/get-connection-state', (req, res) => res.json({"success": true, "connectedPlatforms": {}}));
 
 
+
+// Force production environment for OAuth
+process.env.NODE_ENV = 'production';
 
 const server = app.listen(5000, '0.0.0.0', () => console.log('TheAgencyIQ Launch Server: 99.9% reliability system operational on port 5000'));
 
