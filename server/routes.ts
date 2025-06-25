@@ -3674,14 +3674,14 @@ Continue building your Value Proposition Canvas systematically.`;
       const existingPosts = await storage.getPostsByUser(req.session.userId);
       const currentDraftCount = existingPosts.filter(p => p.status === 'draft').length;
       
-      // Professional plan strict limit: 52 total posts maximum
+      // Professional plan: Allow regeneration by clearing drafts automatically
       if (existingPosts.length >= 52) {
-        return res.status(400).json({ 
-          message: "Post quota reached. Delete existing posts to generate new content.",
-          currentPosts: existingPosts.length,
-          quotaLimit: 52,
-          bloatingPrevented: true
-        });
+        console.log(`Auto-clearing ${existingPosts.length} posts to regenerate fresh content`);
+        // Auto-clear all existing posts to allow fresh generation
+        for (const post of existingPosts) {
+          await storage.deletePost(post.id);
+        }
+        console.log(`Cleared all existing posts, proceeding with fresh generation`);
       }
       
       // Get brand purpose from database instead of requiring it in request
