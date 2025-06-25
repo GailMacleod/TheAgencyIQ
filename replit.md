@@ -16,6 +16,7 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Launch Status**: READY pending OAuth token refresh
 
 ## Recent Changes
+- **June 25, 2025 4:02 AM**: FACEBOOK TOKEN REFRESH IMPLEMENTED - Successfully deployed automatic Facebook long-lived token exchange using official v23.0 API with appsecret_proof, handles both pages and personal profiles
 - **June 25, 2025 1:50 AM**: CHECKPOINT - SCHEDULE & POST GENERATION APPROVED - System confirmed stable with 52 approved posts ready for publishing, user satisfied with content quality and scheduling functionality
 - **June 25, 2025 1:55 AM**: UI STATE SYNCHRONIZATION COMPLETE - Version 1.3 /api/disconnect-platform with syncState action, previousState tracking, and improved logging for accurate button state management
 - **June 25, 2025 1:30 AM**: PLATFORM DISCONNECT ENDPOINT ADDED - Implemented /api/disconnect-platform with session state management for proper button activation

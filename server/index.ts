@@ -56,7 +56,45 @@ const refreshToken = async (platform: string, userId: number) => {
       const pagesData = await pagesResponse.json();
       
       if (!pagesData.data || pagesData.data.length === 0) {
-        return { success: false, message: 'No Facebook pages found for this account' };
+        console.log('📱 No pages found, using user token for personal profile posting...');
+        // Use the long-lived user token for personal profile posting
+        const userToken = longLivedData.access_token;
+        
+        // Test if user token works for posting
+        const testResponse = await fetch(`https://graph.facebook.com/me?access_token=${userToken}&appsecret_proof=${appsecretProof}`);
+        if (!testResponse.ok) {
+          return { success: false, message: 'User token validation failed' };
+        }
+        
+        const userData = await testResponse.json();
+        process.env.FACEBOOK_PAGE_ACCESS_TOKEN = userToken;
+        
+        // Save to .env file
+        const fs = await import('fs');
+        const envPath = '.env';
+        let envContent = '';
+        
+        if (fs.existsSync(envPath)) {
+          envContent = fs.readFileSync(envPath, 'utf8');
+        }
+        
+        const envLines = envContent.split('\n');
+        const tokenIndex = envLines.findIndex(line => line.startsWith('FACEBOOK_PAGE_ACCESS_TOKEN='));
+        
+        if (tokenIndex >= 0) {
+          envLines[tokenIndex] = `FACEBOOK_PAGE_ACCESS_TOKEN=${userToken}`;
+        } else {
+          envLines.push(`FACEBOOK_PAGE_ACCESS_TOKEN=${userToken}`);
+        }
+        
+        fs.writeFileSync(envPath, envLines.filter(line => line.trim()).join('\n') + '\n');
+        
+        console.log(`✅ Facebook user token refreshed successfully for: ${userData.name}`);
+        return { 
+          success: true, 
+          token: userToken,
+          message: `Facebook user token refreshed for: ${userData.name}`
+        };
       }
       
       // Use the first page's access token (long-lived, never expires)
@@ -464,7 +502,11 @@ app.post('/api/refresh-tokens', async (req, res) => {
   try {
     const newToken = await refreshToken(platform, req.session?.userId || 2);
     if (newToken.success) {
-      process.env[`${platform.toUpperCase()}_USER_ACCESS_TOKEN`] = newToken.token;
+      if (platform === 'facebook') {
+        process.env.FACEBOOK_PAGE_ACCESS_TOKEN = newToken.token;
+      } else {
+        process.env[`${platform.toUpperCase()}_USER_ACCESS_TOKEN`] = newToken.token;
+      }
       console.log(`✅ Token refreshed for ${platform}`);
       res.json({
         success: true,
