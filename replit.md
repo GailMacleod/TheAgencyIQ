@@ -16,6 +16,7 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Launch Status**: READY pending OAuth token refresh
 
 ## Recent Changes
+- **June 25, 2025 10:33 PM**: EMERGENCY BYPASS DEPLOYED - Replaced complex OAuth system with minimal stable server configuration. Implemented emergency bypass endpoints (/public → /schedule) with error suppression and health monitoring. Created checkpoint for safe rollback if needed
 - **June 25, 2025 5:35 PM**: OAUTH RESTORATION COMPLETE - Implemented full OAuth 2.0 callback system for X, Facebook, and LinkedIn with token persistence to .env file. Added platform initiation endpoints (/api/auth/x, /api/auth/facebook, /api/auth/linkedin) with proper PKCE and session management. All OAuth credentials verified and ready for reconnection
 - **June 25, 2025 5:30 PM**: IMMEDIATE CLEANUP FIX COMPLETE - Reset server/index.ts with stabilized Express setup, integrated Vite frontend serving, error handlers, and placeholder endpoints. Eliminated token validation spam completely. Server runs cleanly with proper session management and serves frontend pages
 - **June 25, 2025 4:50 PM**: LIVE STATUS CHECK SYSTEM OPTIMIZED - Enhanced /api/get-connection-state with error handling, session cleanup, timeout protection, and concurrent validation. Updated frontend with error recovery and fallback mechanisms to prevent UI breakage from API failures
