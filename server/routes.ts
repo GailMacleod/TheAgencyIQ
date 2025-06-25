@@ -823,28 +823,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           </script>
         `);
-      } else {
-        // Default to X platform
-        res.send(`
-          <h1>X Authorization Successful</h1>
-          <p>Authorization code received for X integration.</p>
-          <script>
-            // Auto-submit to X callback endpoint
-            fetch('/api/x/callback', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ code: '${code}', state: '${state}' })
-            }).then(r => r.json()).then(data => {
-              if (data.success) {
-                document.body.innerHTML = '<h1>X Integration Complete!</h1><p>You can now close this window.</p>';
-              } else {
-                document.body.innerHTML = '<h1>X Integration Failed</h1><p>Error: ' + JSON.stringify(data.error) + '</p>';
-              }
-            }).catch(err => {
-              document.body.innerHTML = '<h1>X Integration Error</h1><p>' + err.message + '</p>';
-            });
-          </script>
-        `);
       } else if (state.toString().includes('youtube')) {
         res.send(`
           <h1>YouTube Authorization Successful</h1>
