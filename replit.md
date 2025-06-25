@@ -16,6 +16,7 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Launch Status**: READY pending OAuth token refresh
 
 ## Recent Changes
+- **June 25, 2025 10:49 PM**: STABILITY IMPROVEMENTS DEPLOYED - Added public bypass route (/public) and server status endpoint (/api/server-status) with zero disruption to existing functionality, maintaining current stable state
 - **June 25, 2025 4:35 AM**: YOUTUBE OAUTH COMPLETE - Implemented full YouTube OAuth 2.0 flow with Google API integration, channel info retrieval, and token storage for video uploads and management
 - **June 25, 2025 4:09 AM**: LINKEDIN OAUTH GENERATOR DEPLOYED - Created manual OAuth flow generator for LinkedIn with proper scopes (w_member_social, w_organization_social) and token exchange capability
 - **June 25, 2025 4:11 AM**: LINKEDIN OAUTH GENERATOR IMPLEMENTED - Created dedicated LinkedIn OAuth flow using app credentials (Client ID: 86pwc38hsqem) with proper scopes for social posting and organization management

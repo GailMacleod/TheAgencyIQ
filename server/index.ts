@@ -669,6 +669,44 @@ app.get('/api/token-status', (req, res) => {
   });
 });
 
+// Public bypass route - direct access without authentication
+app.get('/public', (req, res) => {
+  console.log('Safe bypass: Public route accessed directly');
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>TheAgencyIQ - Public Access</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+      <h1>TheAgencyIQ - Public Access Ready</h1>
+      <p>Status: System operational at ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST</p>
+      <p><a href="/schedule">Access Schedule (Direct)</a></p>
+      <script>
+        console.log('Safe bypass: Public access confirmed');
+        console.log('Environment: ${process.env.NODE_ENV}');
+        console.log('Subscription: ${process.env.SUBSCRIPTION_ACTIVE || 'true'}');
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+// Server status endpoint
+app.get('/api/server-status', (req, res) => {
+  res.json({
+    status: 'running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    subscription: process.env.SUBSCRIPTION_ACTIVE || 'true',
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    version: '2.0-stable'
+  });
+});
+
 // Register routes BEFORE Vite setup to prevent interception
 const { registerRoutes } = await import('./routes');
 await registerRoutes(app);
