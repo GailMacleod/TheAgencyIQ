@@ -1,9 +1,11 @@
-import express from 'express';
-import session from 'express-session';
+const express = require('express');
+const session = require('express-session');
 
 const app = express();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(session({
   secret: "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
   resave: false,
