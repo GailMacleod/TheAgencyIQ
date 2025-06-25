@@ -1,24 +1,18 @@
 import express from 'express';
 import session from 'express-session';
-import { createServer } from 'http';
-import { setupVite, serveStatic, log } from './vite';
+import path from 'path';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Session configuration
+app.use(express.json());
 app.use(session({
-  secret: "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production', 
-    maxAge: 24 * 60 * 60 * 1000 
-  }
+  "secret": "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
+  "resave": false,
+  "saveUninitialized": false,
+  "cookie": {"secure": process.env.NODE_ENV === 'production', "maxAge": 24 * 60 * 60 * 1000}
 }));
 
-// CSP header optimized for Replit
+// CSP header for React and OAuth
 app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', "default-src 'self' https://replit.com https://scontent.xx.fbcdn.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://connect.facebook.net https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com; connect-src 'self' wss: ws: https://replit.com https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://replit.com; img-src 'self' data: https: blob:; font-src 'self' https://replit.com data:; frame-src 'self' https://checkout.stripe.com https://js.stripe.com https://connect.facebook.net;");
   next();
@@ -27,7 +21,7 @@ app.use((req, res, next) => {
 // Public bypass route for OAuth setup
 app.get('/public', (req, res) => {
   req.session.userId = 2;
-  console.log(`OAuth bypass activated at ${new Date().toISOString()}`);
+  console.log(`React fix bypass activated at ${new Date().toISOString()}`);
   res.redirect('/platform-connections');
 });
 
@@ -83,62 +77,60 @@ app.get('/auth/:platform/callback', async (req, res) => {
   }
 });
 
-// Register routes BEFORE Vite setup
+// Register API routes BEFORE Vite proxy
 const { registerRoutes } = await import('./routes');
 await registerRoutes(app);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'operational', 
+app.get('/api/server-status', (req, res) => {
+  res.json({
+    status: 'running',
     timestamp: new Date().toISOString(),
-    launch: 'TheAgencyIQ - OAuth Ready',
-    version: '2.1-fixed'
+    environment: process.env.NODE_ENV || 'development',
+    frontend: 'vite-proxy',
+    oauth: 'ready'
   });
 });
 
-// Setup HTTP server
-const server = createServer(app);
-
-// Request logging middleware
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+// Vite proxy for development or static serving for production
+if (process.env.NODE_ENV === 'development') {
+  // In development, proxy to Vite dev server
+  const viteProxy = createProxyMiddleware({
+    target: 'http://localhost:5173',
+    changeOrigin: true,
+    ws: true,
+    pathRewrite: {
+      '^/': '/'
     }
   });
-
-  next();
-});
-
-// Setup Vite middleware AFTER routes
-const vite = await setupVite(app, server);
-serveStatic(app, vite);
+  
+  app.use('/', (req, res, next) => {
+    // Skip API routes and OAuth routes
+    if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/connect') || req.path === '/public') {
+      return next();
+    }
+    viteProxy(req, res, next);
+  });
+} else {
+  // In production, serve built files
+  const distPath = path.join(process.cwd(), 'dist');
+  app.use(express.static(distPath));
+  
+  // Fallback to index.html for SPA routing
+  app.get('*', (req, res, next) => {
+    // Skip API routes and OAuth routes
+    if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/connect') || req.path === '/public') {
+      return next();
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`TheAgencyIQ Server running on port ${PORT}`);
   console.log(`Deploy time: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);
-  console.log('React app serving with OAuth bypass ready');
+  console.log(`Mode: ${process.env.NODE_ENV === 'development' ? 'Vite proxy' : 'Static build'}`);
+  console.log('React frontend with OAuth bypass ready');
   console.log('Visit /public to bypass auth and access platform connections');
 });
