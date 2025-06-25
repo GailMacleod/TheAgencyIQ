@@ -14,9 +14,10 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Launch Status**: READY pending OAuth token refresh
 
 ## Recent Changes
+- **June 25, 2025 1:30 AM**: PLATFORM DISCONNECT ENDPOINT ADDED - Implemented /api/disconnect-platform with session state management for proper button activation
+- **June 25, 2025 1:15 AM**: AUTOMATIC TOKEN REFRESH SYSTEM DEPLOYED - Added refreshToken helper function, enhanced enforcePublish with retry logic, /api/refresh-tokens endpoint for manual refresh
 - **June 25, 2025 12:30 AM**: OAUTH & SESSION ISSUES RESOLVED - Fixed OAuth callback logging spam, session persistence hangs, redirect URI configuration, and authentication timeouts
 - **June 25, 2025 12:15 AM**: CONTENT GENERATION BLOCKER FIXED - Cleared 94 irrelevant posts, added bulk delete API endpoint and "Clear All Posts" button, modified quota logic to auto-clear instead of blocking
-- **June 24, 2025 11:30 PM**: CRITICAL SESSION FIX COMPLETE - Removed duplicate session middleware conflicts, updated login authentication for +61424835189/password123
 - **June 24, 2025**: Font fix complete - External Google Fonts removed, Helvetica/Arial system fonts applied for CSP compliance
 - **June 24, 2025**: PWA INSTALL CAPABILITY ADDED - Implemented beforeinstallprompt handler with styled install button
 - **June 24, 2025**: Added manifest.json for Progressive Web App functionality with proper AtomIQ branding
