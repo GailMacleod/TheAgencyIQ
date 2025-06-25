@@ -237,7 +237,9 @@ app.get('/api/waterfall', async (req, res) => {
 const enforcePublish = async (post: any, userId: number) => {
   const platforms = {
     facebook: {
-      url: 'https://graph.facebook.com/v23.0/me/feed',
+      url: process.env.FACEBOOK_PAGE_ID ? 
+        `https://graph.facebook.com/v23.0/${process.env.FACEBOOK_PAGE_ID}/feed` : 
+        'https://graph.facebook.com/v23.0/me/feed',
       secretKey: 'FACEBOOK_PAGE_ACCESS_TOKEN',
       payload: {
         message: post.content,

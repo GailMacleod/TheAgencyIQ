@@ -41,9 +41,9 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - Post generation now works 100% reliably without parsing failures
 
 ### Platform Token Status
-- Facebook: Tokens available but lack user_posts permission - requires fresh OAuth
+- Facebook: Current tokens have pages permissions but lack user_posts - posting fails with error 200
 - Instagram: Auto-refresh system implemented using Facebook Graph API
-- LinkedIn: OAuth tokens provided by user (LINKEDIN_ACCESS_TOKEN, LINKEDIN_REFRESH_TOKEN)
+- LinkedIn: OAuth tokens provided by user but returning 403 errors - may need refresh
 - X: OAuth 2.0 User Context callback implementation fixed and ready
 - YouTube: OAuth implementation complete - ready for authorization
 
