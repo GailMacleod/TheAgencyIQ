@@ -562,8 +562,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Skip logging for empty callbacks to reduce noise
     if (code || state) {
-      console.log(`OAuth callback URL: ${currentUrl}`);
-      console.log('OAuth Callback received:', { code: code ? 'Present' : 'Missing', state, url: currentUrl });
+      const baseUrl = req.protocol + '://' + req.get('host') + req.baseUrl;
+      console.log(`OAuth base callback URL: ${baseUrl}`);
+      console.log('OAuth Callback received:', { code: code ? 'Present' : 'Missing', state, url: baseUrl });
     }
     
     if (code && state) {
@@ -5649,8 +5650,8 @@ Continue building your Value Proposition Canvas systematically.`;
   app.get("/api/auth/facebook/callback", async (req, res) => {
     try {
       const { code, state, error } = req.query;
-      const currentUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-      console.log(`Facebook OAuth callback URL: ${currentUrl}`);
+      const baseUrl = req.protocol + '://' + req.get('host') + req.baseUrl;
+      console.log(`Facebook OAuth base callback URL: ${baseUrl}`);
       
       // Handle OAuth errors from Facebook
       if (error) {
@@ -5677,7 +5678,8 @@ Continue building your Value Proposition Canvas systematically.`;
         console.error('Facebook callback: Missing required parameters', { 
           hasCode: !!code, 
           hasClientId: !!clientId, 
-          hasClientSecret: !!clientSecret 
+          hasClientSecret: !!clientSecret,
+          url: baseUrl
         });
         return res.redirect('/connect-platforms?error=facebook_auth_failed');
       }

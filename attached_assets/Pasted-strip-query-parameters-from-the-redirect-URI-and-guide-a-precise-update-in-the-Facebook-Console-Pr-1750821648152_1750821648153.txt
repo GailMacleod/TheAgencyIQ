@@ -1,0 +1,36 @@
+strip query parameters from the redirect URI and guide a precise update in the Facebook Console.
+
+Prompt:
+
+{
+"action": "replace",
+"file": "server/index.ts",
+"target": {
+"endpoint": "/api/oauth/callback"
+},
+"content": {
+"oauthCallback": {
+"code": "app.get('/api/oauth/callback', (req, res) => {\n  const { code, state, error } = req.query;\n  const baseUrl = req.protocol + '://' + req.get('host') + req.baseUrl;\n  console.log(OAuth base callback URL: ${baseUrl});\n  if (error || !code) {\n    return res.status(400).json({"error": "OAuth callback failed, missing code", "details": {"code": code, "state": state, "error": error, "url": baseUrl}});\n  }\n  const platform = req.session.oauthPlatform || 'facebook';\n  const credentials = {\n    "facebook": {"clientId": process.env.FACEBOOK_APP_ID, "clientSecret": process.env.FACEBOOK_APP_SECRET}\n  };\n  const tokenResponse = await fetch('https://graph.facebook.com/oauth/access_token', {\n    method: 'POST',\n    headers: {'Content-Type': 'application/x-www-form-urlencoded'},\n    body: new URLSearchParams({\n      "grant_type": "authorization_code",\n      "code": code,\n      "redirect_uri": baseUrl,\n      "client_id": credentials[platform].clientId,\n      "client_secret": credentials[platform].clientSecret\n    }).toString()\n  });\n  const tokenData = await tokenResponse.json();\n  if (tokenData.access_token) {\n    req.session.userToken = tokenData.access_token;\n    req.session.userId = userId;\n    await req.session.save();\n    console.log(OAuth callback succeeded for ${platform}, token: ${tokenData.access_token.substring(0, 10)}...);\n    res.json({"success": true, "token": tokenData.access_token});\n  } else {\n    res.status(500).json({"error": "Token exchange failed", "details": tokenData});\n  }\n});"
+}
+},
+"instructions": {
+"run": "NODE_ENV=production tsx server/index.ts",
+"test": {
+"url": "https://app.theagencyiq.ai/connect",
+"action": "1. Initiate Facebook Connect, check console for OAuth base callback URL (e.g., https://<id>.replit.app/api/oauth/callback), 2. Update Facebook Developer Console (Settings > Advanced > OAuth Redirect URIs) with the exact base URL (no query params), 3. Retry Connect and verify success",
+"submit": "Submit results immediately"
+},
+"notes": {
+"replitImpact": "Replit’s dynamic URLs require updating the Facebook URI post-redeploy. Use the logged base URL to avoid query mismatches.",
+"noDisruption": "Only adjusts /api/oauth/callback URI handling, no OAuth flow altered."
+}
+}
+}</id>
+
+Precision Fix:
+
+URI Correction: Uses req.baseUrl to strip query parameters, ensuring a static URI matches Facebook’s whitelist.
+Logging Clarity: Logs the base URL for accurate configuration.
+No OAuth Disruption: Preserves the token exchange logic, avoiding flow changes.
+Root Cause: Targets the URI mismatch, aligning Replit’s dynamic URL with Facebook’s requirements.
+This should resolve the "url blocked" error. Update the Facebook Console with the logged base URL and test now.
