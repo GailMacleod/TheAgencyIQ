@@ -1,0 +1,130 @@
+Long-Lived Access Tokens
+Default User and Page access tokens are short-lived, expiring in hours, however, you can exchange a short-lived token for a long-lived token.
+
+When you use the iOS, Android, or JavaScript SDK, the SDK will automatically refresh tokens if the person has used your app within the last 90 days. Native mobile apps using Facebook's SDKs get long-lived User access tokens, good for about 60 days. These tokens are refreshed once per day, when the person using your app makes a request to Facebook's servers. If no requests are made, the token will expire after about 60 days and the person will have to go through the login flow again to get a new token.
+
+Latest Graph API Version: v23.0
+
+Get a Long-Lived User Access Token
+If you need a long-lived User access token you can generate one from a short-lived User access token. A long-lived token generally lasts about 60 days.
+
+You will need the following:
+
+A valid User Access Token
+Your App ID
+Your App Secret
+Query the GET oauth/access_token endpoint.
+
+curl -i -X GET "https://graph.facebook.com/{graph-api-version}/oauth/access_token?  
+    grant_type=fb_exchange_token&          
+    client_id={app-id}&
+    client_secret={app-secret}&
+    fb_exchange_token={your-access-token}" 
+Sample Response
+{
+  "access_token":"{long-lived-user-access-token}",
+  "token_type": "bearer",
+  "expires_in": 5183944            //The number of seconds until the token expires
+}
+The workflow for generating a long-lived User access token is as follows:
+
+
+Once you have retrieved the long-lived token, you can use it from your server or send it back to the client to use there.
+
+Caveats
+You can not use an expired token to request a long-lived token. If the token has expired, your app must send the user through the login flow again to regenerate a new short-lived access token.
+
+Make this call from your server, not a client. Your app secret is included in this API call, so you should never make the request client-side. Instead implement server-side code that makes the request, then pass the response containing the long-lived token back to your client-side code. This will be a different string than the original token, so if you're storing these tokens, replace the old one.
+
+Do not use the same long-lived tokens on more than one web client (i.e. if the person logs in from more than one computer). Instead, you should use the long-lived tokens on your server to generate a code and then use that to get a long-lived token on the client. Please see below for information Generating long-lived tokens from server-side long-lived tokens.
+
+Get a Long-Lived Page Access Token
+If you need a long-lived Page access token, you can generate one from a long-lived User access token. Long-lived Page access token do not have an expiration date and only expire or are invalidated under certain conditions.
+
+You will need the following:
+
+A valid long-lived User access token. The person requesting the token must have a role on the Page.
+Query the GET {app-scoped-user-id}?accounts endpoint.
+
+curl -i -X GET "https://graph.facebook.com/{graph-api-version}/{app-scoped-user-id}/accounts?
+  access_token={long-lived-user-access-token}"
+Sample Response
+{
+  "data":[
+    {
+      "access_token":"{long-lived-page-access-token}",
+      "category":"Brand",
+      "category_list":[
+        {
+          "id":"1605186416478696",
+          "name":"Brand"
+        }
+      ],
+      "name":"Cute Kitten Page",
+      "id":"{page-id}",
+      "tasks":[
+        "ANALYZE",
+        "ADVERTISE",
+        "MODERATE",
+        "CREATE_CONTENT",
+        "MANAGE"
+      ]
+    }
+  ],
+  "paging":{
+    "cursors":{
+      "before":"MTM1MzI2OTg2NDcyODg3OQZDZD",
+      "after":"MTM1MzI2OTg2NDcyODg3OQZDZD"
+    }
+  }
+}
+Get Long_lived Tokens for Clients
+Facebook has an option for getting long-lived access tokens for apps to avoid triggering Facebook's automated spam systems. Apps that:
+
+Have their own authentication system (use a username/password for example)
+Store a Facebook access token on their servers for people using different clients (browser or native mobile apps)
+Make API calls from all these different clients
+At a high level, you obtain a long-lived token for the client by:
+
+Using a valid, long-lived access token, your server sends a request to get a code from Facebook.
+Facebook sends a code back to your server and you securely send this code to the client.
+The client uses this code to request a long-lived token from Facebook.
+Facebook sends the client a long-lived token which is used to post stories or query data.
+Get a Code
+Query the GET oauth/client_code endpoint. The redirect URI must be the exact value you set in your app dashboard under the Facebook Login > Settings Client > OAuth Settings card.
+
+curl -i -X GET "https://graph.facebook.com/{graph-api-version}/oauth/client_code?             
+    client_id={app-id}&
+    client_secret={app-secret}&
+    redirect_uri={app-redirect-uri}&
+    access_token={long-lived-user-access-token}" 
+Sample Response
+{
+  "code":"{code-for-your-client}"
+}
+Redeem the Code for a Long-lived Access Token
+Once you've retrieved the code from Facebook's server you then need to ship it to the client via a secure channel. Once that's done, you need to make a request from the client to the /oauth/access_token endpoint:
+
+curl -i -X GET "https://graph.facebook.com/{graph-api-version}/oauth/access_token?   
+    code={code-for-your-client}&
+    client_id={app-id}&
+    redirect_uri={app-redirect-uri}&
+    machine_id= {your-client-machine-id}"
+The machine_id is an optional parameter that identifies and tracks clients and is used for security and spam prevention. It is a per client not per user value. If you have previously made calls to get a code and been provided a machine_id you should include in your code request.
+
+Sample Response
+{
+  "access_token":"{long-lived-access-token}", 
+  "expires_in":5183944,           //The number of seconds until the token expires
+  "machine_id":"{your-client-machine-id}"
+}
+The workflow for generating a long-lived token is as follows:
+
+
+On This Page
+Long-Lived Access Tokens
+Get a Long-Lived User Access Token
+Get a Long-Lived Page Access Token
+Get Long_lived Tokens for Clients
+Get a Code
+Redeem the Code for a Long-lived Access Token

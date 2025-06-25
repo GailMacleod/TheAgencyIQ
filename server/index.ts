@@ -505,22 +505,22 @@ app.post('/api/refresh-tokens', async (req, res) => {
 app.post('/api/waterfall/approve', async (req, res) => {
   const userId = req.session?.userId || 2;
   const { id, platform } = req.body;
-  const validPlatforms = ['facebook', 'linkedin', 'instagram', 'twitter'];
+  const validPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
   
   if (!id || !validPlatforms.includes(platform?.toLowerCase())) {
-    return res.status(400).json({ 
-      error: 'Invalid request', 
-      required: { id: 'number', platform: validPlatforms }
+    return res.status(400).json({
+      error: "Invalid post or platform",
+      validPlatforms: validPlatforms
     });
   }
 
   const post = {
     id,
-    date: `2025-06-${24 + parseInt(id)}`,
-    time: '9:00 am',
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toLocaleTimeString('en-US', { hour12: false }),
     platform: platform.toLowerCase(),
-    content: `TheAgencyIQ Launch Post ${id} for ${platform} - Queensland SME success story`,
-    status: 'approved'
+    content: `Test post ${id} for ${platform} - TheAgencyIQ functionality verification ${new Date().toISOString()}`,
+    userId: userId
   };
 
   // Initialize session storage
