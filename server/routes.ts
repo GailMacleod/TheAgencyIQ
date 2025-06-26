@@ -3547,16 +3547,8 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      const host = req.get('host');
-      let redirectUri;
-      
-      if (host?.includes('replit.dev')) {
-        redirectUri = `https://${host}/api/auth/facebook/callback`;
-      } else if (host?.includes('localhost')) {
-        redirectUri = `http://localhost:5000/api/auth/facebook/callback`;
-      } else {
-        redirectUri = `${req.protocol}://${host}/api/auth/facebook/callback`;
-      }
+      // Use unified callback URI
+      const redirectUri = 'https://app.theagencyiq.ai/callback';
       
       // Include all necessary permissions for publishing  
       const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement';
@@ -5801,20 +5793,8 @@ Continue building your Value Proposition Canvas systematically.`;
 
       const clientId = process.env.FACEBOOK_APP_ID;
       
-      // Use whitelisted redirect URI for Facebook OAuth
-      const host = req.get('host');
-      let redirectUri;
-      
-      if (host?.includes('replit.dev')) {
-        // Production Replit domain
-        redirectUri = `https://${host}/api/auth/facebook/callback`;
-      } else if (host?.includes('localhost')) {
-        // Local development
-        redirectUri = `http://localhost:5000/api/auth/facebook/callback`;
-      } else {
-        // Fallback to current protocol/host
-        redirectUri = `${req.protocol}://${host}/api/auth/facebook/callback`;
-      }
+      // Use unified callback URI
+      const redirectUri = 'https://app.theagencyiq.ai/callback';
       
       const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement';
       const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
@@ -5853,17 +5833,8 @@ Continue building your Value Proposition Canvas systematically.`;
       const clientId = process.env.FACEBOOK_APP_ID;
       const clientSecret = process.env.FACEBOOK_APP_SECRET;
       
-      // Use same whitelisted redirect URI logic as OAuth initiation
-      const host = req.get('host');
-      let redirectUri;
-      
-      if (host?.includes('replit.dev')) {
-        redirectUri = `https://${host}/api/auth/facebook/callback`;
-      } else if (host?.includes('localhost')) {
-        redirectUri = `http://localhost:5000/api/auth/facebook/callback`;
-      } else {
-        redirectUri = `${req.protocol}://${host}/api/auth/facebook/callback`;
-      }
+      // Use unified callback URI
+      const redirectUri = 'https://app.theagencyiq.ai/callback';
 
       if (!code || !clientId || !clientSecret) {
         console.error('Facebook callback: Missing required parameters', { 
