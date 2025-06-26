@@ -1,0 +1,45 @@
+Prompt:
+
+{
+"action": "replace",
+"file": "server/index.ts",
+"target": {
+"global": "appSetup"
+},
+"content": {
+"appSetup": {
+"code": "import express from 'express';\nimport session from 'express-session';\nconst app = express();\napp.use(express.json());\napp.use(session({\n  "secret": "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",\n  "resave": false,\n  "saveUninitialized": false,\n  "cookie": {"secure": true, "maxAge": 24 * 60 * 60 * 1000}\n}));\napp.use((req, res, next) => {\n  res.setHeader('Content-Security-Policy', "default-src 'self' https://app.theagencyiq.ai https://replit.com https://twitter.com https://www.facebook.com https://www.linkedin.com https://accounts.google.com; script-src 'self' 'unsafe-inline' https://replit.com https://app.theagencyiq.ai; connect-src 'self' https://app.theagencyiq.ai https://api.twitter.com https://graph.facebook.com https://www.linkedin.com https://oauth2.googleapis.com; style-src 'self' 'unsafe-inline'; font-src 'self' https://replit.com https://app.theagencyiq.ai; img-src 'self' data:;");\n  next();\n});\napp.get('/', (req, res) => {\n  if (!req.session.userId) req.session.userId = 2;\n  console.log(OAuth-master bypass at ${new Date().toISOString()});\n  res.send(<!DOCTYPE html><html><head><title>AgencyIQ</title></head><body><h1>Welcome to AgencyIQ</h1><a href='/connect/x'>Connect X</a><br><a href='/connect/facebook'>Connect Facebook</a><br><a href='/connect/instagram'>Connect Instagram</a><br><a href='/connect/youtube'>Connect YouTube</a><script>console.log('OAuth-master script');</script></body></html>);\n});\napp.get('/connect/:platform', (req, res) => {\n  const { platform } = req.params;\n  const callbackUrl = process.env.REPLIT_CALLBACK_URL || 'https://app.theagencyiq.ai/callback';\n  const authUrls = {\n    "x": https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.TWITTER_API_KEY}&redirect_uri=${callbackUrl}&scope=tweet.read+tweet.write+users.read&state=x,\n    "facebook": https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${callbackUrl}&scope=pages_manage_posts+pages_read_engagement&response_type=code&state=facebook,\n    "instagram": https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${callbackUrl}&scope=instagram_basic+instagram_content_publish&response_type=code&state=instagram,\n    "youtube": https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${callbackUrl}&scope=https://www.googleapis.com/auth/youtube&response_type=code&state=youtube\n  };\n  const url = authUrls[platform.toLowerCase()];\n  if (url) {\n    req.session.oauthPlatform = platform.toLowerCase();\n    console.log(Redirecting to ${platform} OAuth: ${url} at ${new Date().toISOString()});\n    res.redirect(url);\n  } else {\n    res.status(400).json({"error": "Unsupported platform"});\n  }\n});\napp.get('/callback', (req, res) => {\n  try {\n    const { code, state, error } = req.query;\n    const platform = req.session.oauthPlatform || 'unknown';\n    const callbackUrl = process.env.REPLIT_CALLBACK_URL || 'https://app.theagencyiq.ai/callback';\n    console.log(Callback for ${platform}: code=${code || 'none'}, error=${error || 'none'}, state=${state || 'none'}, callback=${callbackUrl} at ${new Date().toISOString()});\n    if (error || !code || state !== platform.toLowerCase()) throw new Error(OAuth failed for ${platform}: ${JSON.stringify(req.query)});\n    const credentials = {\n      "facebook": { "clientId": process.env.FACEBOOK_APP_ID, "clientSecret": process.env.FACEBOOK_APP_SECRET },\n      "instagram": { "clientId": process.env.FACEBOOK_APP_ID, "clientSecret": process.env.FACEBOOK_APP_SECRET },\n      "x": { "clientId": process.env.TWITTER_API_KEY, "clientSecret": process.env.TWITTER_API_SECRET },\n      "youtube": { "clientId": process.env.GOOGLE_CLIENT_ID, "clientSecret": process.env.GOOGLE_CLIENT_SECRET }\n    };\n    if (!credentials[platform].clientId || !credentials[platform].clientSecret) {\n      throw new Error(Missing credentials for ${platform}: verify Replit Secrets);\n    }\n    const tokenUrl = {\n      "facebook": 'https://graph.facebook.com/oauth/access_token',\n      "instagram": 'https://graph.facebook.com/oauth/access_token',\n      "x": 'https://api.twitter.com/2/oauth2/token',\n      "youtube": 'https://oauth2.googleapis.com/token'\n    }[platform];\n    fetch(tokenUrl, {\n      method: 'POST',\n      headers: {'Content-Type': 'application/x-www-form-urlencoded'},\n      body: new URLSearchParams({\n        "grant_type": "authorization_code",\n        "code": code,\n        "redirect_uri": callbackUrl,\n        "client_id": credentials[platform].clientId,\n        "client_secret": credentials[platform].clientSecret\n      }).toString()\n    }).then(response => {\n      if (!response.ok) throw new Error(HTTP error! status: ${response.status}, ${response.statusText});\n      return response.json();\n    }).then(data => {\n      if (data.access_token) {\n        req.session.userToken = data.access_token;\n        console.log(${platform} OAuth succeeded, token: ${data.access_token.substring(0, 10)} at ${new Date().toISOString()});\n        res.redirect('/');\n      } else {\n        throw new Error(No access_token in ${platform} response: ${JSON.stringify(data)});\n      }\n    }).catch(err => {\n      console.error(OAuth error for ${platform} at ${new Date().toISOString()}:, err.message);\n      res.status(500).json({"error": ${platform} OAuth failed, "details": err.message});\n    });\n  } catch (err) {\n    console.error(Callback error for ${req.session.oauthPlatform || 'unknown'} at ${new Date().toISOString()}:, err.message);\n    res.status(500).json({"error": Callback failed, "details": err.message});\n  }\n});\napp.listen(5000, () => console.log('TheAgencyIQ OAuth-Final Server: Running on port 5000, Time: ' + new Date().toISOString()));"
+}
+},
+"instructions": {
+"dependencies": "Run 'npm install express express-session' in Replit.",
+"environment": {
+"variables": [
+{"name": "NODE_ENV", "value": "production"},
+{"name": "SUBSCRIPTION_ACTIVE", "value": "true"},
+{"name": "FACEBOOK_APP_ID", "value": "1409057863445071"},
+{"name": "FACEBOOK_APP_SECRET", "value": "[your-facebook-secret]"},
+{"name": "TWITTER_API_KEY", "value": "[your-twitter-api-key]"},
+{"name": "TWITTER_API_SECRET", "value": "[your-twitter-secret]"},
+{"name": "GOOGLE_CLIENT_ID", "value": "[your-google-client-id]"},
+{"name": "GOOGLE_CLIENT_SECRET", "value": "[your-google-client-secret]"},
+{"name": "REPLIT_CALLBACK_URL", "value": "https://<your-replit-username>.<your-replit-domain>/callback"} // Update with actual URL
+]
+},
+"run": "npm install express express-session\nNODE_ENV=production tsx server/index.ts",
+"deploy": "In Replit, stop the current server (click 'Stop' or type 'pkill -f node' in the shell), reboot the environment (click 'Restart' in the sidebar or run 'kill 1' then 'run'), set workspace to 'Public' mode in Settings > Visibility for testing (revert to 'Private' later), save a checkpoint (export current code as 09:17 PM AEST version), update the REPLIT_CALLBACK_URL in Secrets with your current Replit deployment URL (e.g., <a href="https://your-username.theagencyiq.replit.app/callback">https://your-username.theagencyiq.replit.app/callback</a> from deploy logs), then manually deploy by clicking 'Deploy' after saving this code, targeting <a href="https://app.theagencyiq.ai/">https://app.theagencyiq.ai/</a>.",
+"test": {
+"url": "<a href="https://app.theagencyiq.ai/">https://app.theagencyiq.ai/</a>",
+"action": "1. Deploy at 06:11 PM JST, 2. Visit <a href="https://app.theagencyiq.ai/">https://app.theagencyiq.ai/</a>, 3. Check console for 'OAuth-master bypass' and confirm HTML load with Connect links, 4. Test <a href="https://app.theagencyiq.ai/connect/x">https://app.theagencyiq.ai/connect/x</a>, /connect/facebook, /connect/instagram, and /connect/youtube, verify 'OAuth succeeded' and no 403/400 errors",
+"submit": "Submit console logs and OAuth status immediately"
+},
+"notes": {
+"oauthFocus": "Shifts focus to OAuth connections post-design rollback, ensuring platform URI updates are effective.",
+"403Fix": "Reverify Google credentials in Google Cloud Console and Replit Secrets.",
+"400Mitigation": "CSP excludes sp.replit.com to minimize 400 impact.",
+"callbackSync": "Ensures REPLIT_CALLBACK_URL matches the latest Replit deploy URL.",
+"rebootViability": "Reboot clears server state, based on 09:54 PM AEST success.",
+"subscriptionLeverage": "Subscription ensures resources at 06:11 PM JST, aiding your launch."
+}
+}
+}</your-replit-domain></your-replit-username>
