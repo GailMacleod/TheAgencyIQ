@@ -53,8 +53,8 @@ app.get('/connect/:platform', (req, res) => {
     userId: req.session.userId
   })).toString('base64');
   
-  // Use the preferred domain for OAuth callbacks
-  const callbackUri = process.env.REPLIT_CALLBACK_URL || 'https://app.theagencyiq.ai/callback';
+  // Force development URL for OAuth callbacks
+  const callbackUri = 'https://workspace.GailMac.repl.co/callback';
   
   const redirectUrls = {
     facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=public_profile,pages_show_list,pages_manage_posts,pages_read_engagement,publish_actions&response_type=code&state=${state}`,
@@ -124,7 +124,7 @@ app.get('/callback', async (req, res) => {
             client_id: process.env.FACEBOOK_APP_ID || '1409057863445071',
             client_secret: process.env.FACEBOOK_APP_SECRET || '',
             code: code as string,
-            redirect_uri: process.env.REPLIT_CALLBACK_URL || 'https://app.theagencyiq.ai/callback'
+            redirect_uri: callbackUri
           })
         });
         
