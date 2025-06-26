@@ -1,0 +1,83 @@
+Re-Authentication
+Re-authentication enables your app to confirm a person's identity even if it was verified previously. Facebook Login lets your app ask a person to re-enter their Facebook password at any time. You can use this to prevent cases where a user leaves a device logged in or where a third-party hijacks someone's session with your app.
+
+Apps should build their own mechanisms for switching between different Facebook user accounts using log out functions and should not rely upon re-authentication for this.
+
+Note
+The Android and iOS SDKs don't currently support re-authentication.
+
+Enabling Re-Authentication
+During your login flow we show you how to use the Login Dialog and OAuth to authenticate someone and request permissions from them. To re-authenticate, you can use these same steps with additional parameters to force it:
+
+auth_type: this parameter specifies the requested authentication features (as a comma-separated list). Valid options are:
+reauthenticate - asks the person to re-authenticate unconditionally
+
+auth_nonce: includes an app generated alphanumeric nonce which can be used to provide replay protection. See how to check an auth_nonce for more.
+
+Here is an example using the JavaScript SDK that triggers re-authentication using an auth_type of reauthenticate:
+
+FB.login(function(response) {
+  // Original FB.login code
+}, { auth_type: 'reauthenticate' })
+The auth_nonce parameter
+The auth_nonce parameter is intended to be a completely arbitrary alphanumeric code that your app generates. The process of generation and format of this code is entirely up to you. For example, a hashed version of a timestamp and a secret string may be sufficient, as long as it's completely unique to each Login attempt. This value enables your app to determine whether a user has been re-authenticated.
+
+You will again need to modify your login flow to specify the auth_nonce parameter, for example:
+
+FB.login(function(response) {
+  // Original FB.login code
+}, { auth_type: 'reauthenticate', auth_nonce: '{random-nonce}' })
+In order to check that this nonce hasn't been used before, you need to create a function to communicate with code that checks your app's database to see if it already used a particular nonce.
+
+Below is an example using JavaScript (with the jQuery framework) and PHP as a guide that you can adapt to your own specific setup. For our example we will use a hard-coded string as the nonce. You should replace this with a dynamic call to a generated nonce.
+
+function checkNonce(access_token) {
+  $.post('checkNonce.php', {access_token: access_token}, function(data) {
+    if (data == 1) {
+      console.log('The user has been successfully re-authenticated.');
+      FB.api('/me', function(response) {
+  console.log('Good to see you, ' + response.name + '.');
+});
+    } else {
+      console.log('The nonce has been used before. Re-authentication failed.');
+    }
+  });
+}
+Note: This PHP file only implies, and does not include, the snippet of code which would compare the supplied nonce against the app's database. You should tailor this to your own database and code environment:
+
+<?php
+
+  $access_token = $_REQUEST['access_token'];
+  $graph_url = 'https://graph.facebook.com/oauth/access_token_info?'
+      . 'client_id=YOUR_APP_ID&amp;access_token=' . $access_token;
+  $access_token_info = json_decode(file_get_contents($graph_url));
+
+  function nonceHasBeenUsed($auth_nonce) {
+      // Here you would check your database to see if the nonce
+      // has been used before. For the sake of this example, we'll
+      // just assume the answer is "no".
+      return false;
+  }
+
+  if (nonceHasBeenUsed($access_token_info->auth_nonce) != true) {
+      echo '1';
+   } else {
+      echo '0';
+   }
+?>
+In this example, the checkNonce() JavaScript function would be called after receiving the access token response from the re-authentication login dialog. Using the JavaScript SDK as an example:
+
+FB.login(function(response) {
+  if (response.authResponse) {
+     // Login success, check auth_nonce...
+     checkNonce(response.authResponse.access_token);
+  } else {
+    // User cancelled
+  }
+}, { auth_type: 'reauthenticate', auth_nonce: '{random-nonce}' })
+Note that the auth_nonce is an optional part of re-authentication. Apps are strongly encouraged to use it, however, especially when requesting reauthenticate as auth_type.
+
+On This Page
+Re-Authentication
+Enabling Re-Authentication
+The auth_nonce parameter

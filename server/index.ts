@@ -60,7 +60,7 @@ app.get('/connect/:platform', (req, res) => {
     facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=public_profile,pages_show_list,pages_manage_posts,pages_read_engagement,publish_actions&response_type=code&state=${state}`,
     x: `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID || process.env.X_0AUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=tweet.read%20tweet.write%20users.read&state=${state}&code_challenge=challenge&code_challenge_method=plain`,
     linkedin: `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID || '86pwc38hsqem'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=r_liteprofile%20r_emailaddress%20w_member_social&state=${state}`,
-    instagram: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=instagram_basic,instagram_content_publish&response_type=code&state=${state}`,
+    instagram: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement&response_type=code&state=${state}`,
     youtube: `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=https://www.googleapis.com/auth/youtube.upload&state=${state}`
   };
   
@@ -111,7 +111,7 @@ app.get('/callback', async (req, res) => {
     console.log(`Platform ${platform} ready for token exchange`);
     
     // Immediately exchange code for access token and save to database
-    if (platform === 'facebook') {
+    if (platform === 'facebook' || platform === 'instagram') {
       try {
         const storage = await import('./storage');
         const { platformConnections } = await import('../shared/schema');
@@ -153,6 +153,80 @@ app.get('/callback', async (req, res) => {
         }
       } catch (error) {
         console.error('Error saving Facebook connection:', error);
+      }
+    }
+    
+    // Instagram token exchange and Instagram Business Account setup
+    if (platform === 'instagram') {
+      try {
+        const storage = await import('./storage');
+        const { platformConnections } = await import('../shared/schema');
+        const db = storage.db;
+        
+        // Exchange authorization code for access token
+        const tokenResponse = await fetch('https://graph.facebook.com/v20.0/oauth/access_token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: process.env.FACEBOOK_APP_ID || '1409057863445071',
+            client_secret: process.env.FACEBOOK_APP_SECRET || '',
+            code: code as string,
+            redirect_uri: 'https://workspace.GailMac.repl.co/callback'
+          })
+        });
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          
+          // Get Instagram Business Account information
+          let instagramBusinessId = null;
+          let pageId = null;
+          let pageName = null;
+          
+          try {
+            // Get user's Facebook pages
+            const pagesResponse = await fetch(`https://graph.facebook.com/v20.0/me/accounts?access_token=${tokenData.access_token}`);
+            const pagesData = await pagesResponse.json();
+            
+            // Find Instagram Business account connected to any page
+            for (const page of pagesData.data || []) {
+              const igResponse = await fetch(`https://graph.facebook.com/v20.0/${page.id}?fields=instagram_business_account&access_token=${tokenData.access_token}`);
+              const igData = await igResponse.json();
+              
+              if (igData.instagram_business_account) {
+                instagramBusinessId = igData.instagram_business_account.id;
+                pageId = page.id;
+                pageName = page.name;
+                break;
+              }
+            }
+          } catch (igError) {
+            console.log('Instagram Business Account lookup failed, using basic connection');
+          }
+          
+          // Save to database
+          await db.insert(platformConnections).values({
+            userId: userId,
+            platform: 'instagram',
+            accessToken: tokenData.access_token,
+            refreshToken: tokenData.refresh_token || null,
+            platformUserId: instagramBusinessId,
+            platformUsername: pageName,
+            connectedAt: new Date(),
+            expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+            isActive: true,
+            metadata: {
+              instagramBusinessId,
+              pageId,
+              pageName
+            }
+          });
+          
+          console.log(`Instagram connection saved to database for user ${userId}`);
+          console.log(`Instagram Business ID: ${instagramBusinessId}`);
+        }
+      } catch (error) {
+        console.error('Error saving Instagram connection:', error);
       }
     }
     
