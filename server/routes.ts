@@ -6794,48 +6794,43 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ error: 'Platform required' });
       }
 
-      // Quick status check for Facebook
-      if (platform === 'facebook') {
-        const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-        if (!token) {
-          return res.json({ 
-            platform: 'facebook',
-            status: 'disconnected',
-            error: 'No access token configured' 
-          });
-        }
-
-        try {
-          const response = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${token}`);
-          if (response.ok) {
-            const data = await response.json();
-            return res.json({ 
-              platform: 'facebook',
-              status: 'connected',
-              name: data.name || 'Facebook Page'
-            });
-          } else {
-            return res.json({ 
-              platform: 'facebook',
-              status: 'token_expired',
-              error: 'Token validation failed' 
-            });
-          }
-        } catch (error) {
-          return res.json({ 
-            platform: 'facebook',
-            status: 'error',
-            error: 'API request failed' 
-          });
-        }
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.json({ 
+          platform,
+          status: 'disconnected',
+          error: 'User not authenticated' 
+        });
       }
 
-      // Default response for other platforms
-      return res.json({ 
-        platform,
-        status: 'not_configured',
-        error: 'Platform not configured' 
-      });
+      // Check database for platform connections
+      const connections = await db.select()
+        .from(platformConnections)
+        .where(
+          eq(platformConnections.userId, userId)
+        )
+        .where(
+          eq(platformConnections.platform, platform)
+        )
+        .where(
+          eq(platformConnections.isActive, true)
+        );
+
+      if (connections.length > 0) {
+        const connection = connections[0];
+        return res.json({ 
+          platform,
+          status: 'connected',
+          name: connection.platformUsername || `${platform} account`,
+          connectedAt: connection.connectedAt
+        });
+      } else {
+        return res.json({ 
+          platform,
+          status: 'disconnected',
+          error: 'No active connection found' 
+        });
+      }
 
     } catch (error: any) {
       console.error('Live status check error:', error);

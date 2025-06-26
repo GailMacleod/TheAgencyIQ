@@ -110,6 +110,51 @@ app.get('/callback', async (req, res) => {
     console.log(`User ID: ${userId}, Code length: ${(code as string).length}`);
     console.log(`Platform ${platform} ready for token exchange`);
     
+    // Immediately exchange code for access token and save to database
+    if (platform === 'facebook') {
+      try {
+        const { db } = await import('./storage');
+        const { platformConnections } = await import('../shared/schema');
+        
+        // Exchange authorization code for access token
+        const tokenResponse = await fetch('https://graph.facebook.com/v20.0/oauth/access_token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: process.env.FACEBOOK_APP_ID || '1409057863445071',
+            client_secret: process.env.FACEBOOK_APP_SECRET || '',
+            code: code as string,
+            redirect_uri: process.env.REPLIT_CALLBACK_URL || 'https://app.theagencyiq.ai/callback'
+          })
+        });
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          
+          // Get user profile information
+          const profileResponse = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${tokenData.access_token}&fields=id,name`);
+          const profileData = await profileResponse.json();
+          
+          // Save to database
+          await db.insert(platformConnections).values({
+            userId: userId,
+            platform: 'facebook',
+            accessToken: tokenData.access_token,
+            refreshToken: tokenData.refresh_token || null,
+            platformUserId: profileData.id,
+            platformUsername: profileData.name,
+            connectedAt: new Date(),
+            expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+            isActive: true
+          });
+          
+          console.log(`Facebook connection saved to database for user ${userId}`);
+        }
+      } catch (error) {
+        console.error('Error saving Facebook connection:', error);
+      }
+    }
+    
     // Production success response with comprehensive tracking
     res.send(`
       <!DOCTYPE html>

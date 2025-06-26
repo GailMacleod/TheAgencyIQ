@@ -110,12 +110,13 @@ export default function ConnectPlatforms() {
       })
       .then(res => res.json())
       .then(data => {
-        if (data.success) {
-          setConnectedPlatforms(prev => ({
-            ...prev,
-            [data.platform]: data.isConnected
-          }));
-        }
+        // Update connection status based on API response
+        const isConnected = data.status === 'connected';
+        console.log(`Platform ${plat} status:`, data.status, 'Connected:', isConnected);
+        setConnectedPlatforms(prev => ({
+          ...prev,
+          [data.platform]: isConnected
+        }));
       })
       .catch(err => console.warn(`Live status check failed for ${plat}:`, err));
     });
