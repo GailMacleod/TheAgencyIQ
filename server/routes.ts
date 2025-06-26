@@ -5804,13 +5804,7 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(500).json({ message: "Facebook App ID not configured" });
       }
       
-      console.log(`Starting Facebook OAuth for user_id: ${userId}`);
-      console.log(`Facebook redirect URI: ${redirectUri}`);
-      console.log(`Facebook App ID: ${clientId}`);
-      console.log(`Facebook scope: ${scope}`);
-      
       const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
-      console.log(`Facebook OAuth URL: ${authUrl}`);
       res.redirect(authUrl);
     } catch (error) {
       console.error('Facebook OAuth initiation error:', error);
@@ -5821,43 +5815,29 @@ Continue building your Value Proposition Canvas systematically.`;
   app.get("/api/auth/facebook/callback", async (req, res) => {
     try {
       const { code, state, error } = req.query;
-      const baseUrl = req.protocol + '://' + req.get('host') + req.baseUrl;
-      console.log(`Facebook OAuth base callback URL: ${baseUrl}`);
       
-      // Handle OAuth errors from Facebook
       if (error) {
-        console.error('Facebook OAuth error response:', error);
         return res.redirect('/connect-platforms?error=facebook_oauth_denied');
       }
 
       const clientId = process.env.FACEBOOK_APP_ID;
       const clientSecret = process.env.FACEBOOK_APP_SECRET;
-      
-      // Use unified callback URI
       const redirectUri = 'https://app.theagencyiq.ai/callback';
 
       if (!code || !clientId || !clientSecret) {
-        console.error('Facebook callback: Missing required parameters', { 
-          hasCode: !!code, 
-          hasClientId: !!clientId, 
-          hasClientSecret: !!clientSecret,
-          url: baseUrl
-        });
         return res.redirect('/connect-platforms?error=facebook_auth_failed');
       }
 
-      // Decode state to get userId, defaulting to user_id: 2
-      let userId = 2; // Default to user_id: 2
+      let userId = 2;
       if (state) {
         try {
           const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
           userId = stateData.userId || 2;
         } catch (e) {
-          console.log('Could not decode Facebook OAuth state, using default user_id: 2');
+          // Use default userId
         }
       }
 
-      // Ensure session for user_id: 2
       if (!req.session.userId) {
         req.session.userId = userId;
         await new Promise((resolve) => {
@@ -5865,41 +5845,30 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      console.log(`Processing Facebook callback for user_id: ${userId}`);
-
       // Exchange code for access token
       const tokenResponse = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${clientSecret}&code=${code}`);
       const tokenData = await tokenResponse.json();
-      
-      console.log('Facebook token response:', { 
-        hasAccessToken: !!tokenData.access_token,
-        expiresIn: tokenData.expires_in 
-      });
 
       if (!tokenData.access_token) {
-        console.error('Facebook token exchange failed:', tokenData);
         return res.redirect('/connect-platforms?error=facebook_token_failed');
       }
 
       // Get user info
       const userResponse = await fetch(`https://graph.facebook.com/me?access_token=${tokenData.access_token}&fields=id,name,email`);
       const userData = await userResponse.json();
-      console.log('Facebook profile data:', userData);
 
-      // Calculate token expiration (Facebook tokens typically expire in 60 days)
       const expiresAt = tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null;
 
-      // Check for existing Facebook connection and remove it
+      // Remove existing Facebook connection
       const existingConnections = await storage.getPlatformConnectionsByUser(userId);
       const existingFacebook = existingConnections.find(conn => conn.platform === 'facebook');
       
       if (existingFacebook) {
-        console.log(`Removing existing Facebook connection for user_id: ${userId}`);
         await storage.deletePlatformConnection(existingFacebook.id);
       }
 
-      // Create new platform connection for user_id: 2
-      const connectionData = {
+      // Create new platform connection
+      await storage.createPlatformConnection({
         userId: userId,
         platform: 'facebook',
         platformUserId: userData.id || 'facebook_user',
@@ -5908,24 +5877,10 @@ Continue building your Value Proposition Canvas systematically.`;
         refreshToken: null,
         expiresAt,
         isActive: true
-      };
-
-      console.log('Creating Facebook platform connection:', { 
-        userId: connectionData.userId,
-        platform: connectionData.platform,
-        hasToken: !!connectionData.accessToken,
-        expiresAt: connectionData.expiresAt?.toISOString()
       });
 
-      await storage.createPlatformConnection(connectionData);
-      
-      console.log(`✅ Facebook connection successful for user_id: ${userId}`);
-      console.log(`✅ Token expires: ${expiresAt?.toISOString() || 'No expiration'}`);
-
-      // Redirect to dashboard on success
       res.redirect('/dashboard?connected=facebook');
     } catch (error) {
-      console.error('Facebook OAuth callback error:', error);
       res.redirect('/connect-platforms?error=facebook_callback_failed');
     }
   });
