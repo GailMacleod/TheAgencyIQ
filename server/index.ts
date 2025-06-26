@@ -113,8 +113,9 @@ app.get('/callback', async (req, res) => {
     // Immediately exchange code for access token and save to database
     if (platform === 'facebook') {
       try {
-        const { db } = await import('./storage');
+        const storage = await import('./storage');
         const { platformConnections } = await import('../shared/schema');
+        const db = storage.db;
         
         // Exchange authorization code for access token
         const tokenResponse = await fetch('https://graph.facebook.com/v20.0/oauth/access_token', {
@@ -124,7 +125,7 @@ app.get('/callback', async (req, res) => {
             client_id: process.env.FACEBOOK_APP_ID || '1409057863445071',
             client_secret: process.env.FACEBOOK_APP_SECRET || '',
             code: code as string,
-            redirect_uri: callbackUri
+            redirect_uri: 'https://workspace.GailMac.repl.co/callback'
           })
         });
         
