@@ -371,7 +371,9 @@ app.get('/health', (req, res) => {
   }
 });
 
-app.use('*', (req, res) => {
+// 404 handler for unmatched routes
+app.use((req, res) => {
+  console.log(`404 - Route not found: ${req.method} ${req.path}`);
   res.status(404).send('Not Found');
 });
 
