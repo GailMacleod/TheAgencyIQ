@@ -203,6 +203,11 @@ app.get('/api/get-connection-state', (req, res) => {
   }
 });
 
+// Debug route for testing
+app.get('/test', (req, res) => {
+  res.send('Test route working');
+});
+
 // Serve frontend routes
 app.get('/platform-connections', (req, res) => {
   (req.session as any).userId = 2;
@@ -378,16 +383,33 @@ app.use((req, res) => {
 });
 
 const PORT = parseInt(process.env.PORT || '5000', 10);
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n=== TheAgencyIQ OAuth Server (Bloat-Free) ===`);
-  console.log(`Port: ${PORT}`);
-  console.log(`Deploy: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);
-  console.log(`User: +61413950520/Tw33dl3dum!`);
-  console.log(`OAuth platforms: X, YouTube, Facebook, Instagram`);
-  console.log(`Endpoints: Streamlined and simplified`);
-  console.log(`Bloat: Removed based on past success`);
-  console.log(`400 Fix: Minimal redirects and parameters`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
-  console.log(`Status: Ready for OAuth connections`);
-  console.log(`===========================================\n`);
-});
+
+// Setup Vite in development mode only
+if (process.env.NODE_ENV === 'development') {
+  const { setupVite } = await import('./vite.js');
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n=== TheAgencyIQ OAuth Server (Frontend Connected) ===`);
+    console.log(`Port: ${PORT}`);
+    console.log(`Deploy: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);
+    console.log(`User: +61413950520/Tw33dl3dum!`);
+    console.log(`OAuth platforms: X, YouTube, Facebook, Instagram`);
+    console.log(`Frontend: Connected via Vite middleware`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
+    console.log(`Status: Ready for OAuth connections`);
+    console.log(`===============================================\n`);
+  });
+  
+  await setupVite(app, server);
+} else {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n=== TheAgencyIQ OAuth Server (Production) ===`);
+    console.log(`Port: ${PORT}`);
+    console.log(`Deploy: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);
+    console.log(`User: +61413950520/Tw33dl3dum!`);
+    console.log(`OAuth platforms: X, YouTube, Facebook, Instagram`);
+    console.log(`Frontend: Static files served`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
+    console.log(`Status: Ready for OAuth connections`);
+    console.log(`========================================\n`);
+  });
+}
