@@ -257,8 +257,14 @@ export default function ConnectPlatforms() {
       <MasterHeader showUserMenu={true} />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
+        <div className="mb-6 flex justify-between items-center">
           <BackButton to="/brand-purpose" label="Back to Brand Purpose" />
+          <Button 
+            onClick={() => setLocation('/schedule')}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Back to Dashboard
+          </Button>
         </div>
 
         <div className="text-center mb-8">
