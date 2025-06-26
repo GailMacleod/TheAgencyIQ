@@ -2,6 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createServer as createViteServer } from 'vite';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,7 +17,10 @@ app.use(session({
   cookie: {secure: true, maxAge: 24 * 60 * 60 * 1000}
 }));
 
-// Serve React build from client directory
+// Serve React app assets
+app.use('/src', express.static(path.join(__dirname, '..', 'client', 'src')));
+app.use('/public', express.static(path.join(__dirname, '..', 'client', 'public')));
+app.use('/attached_assets', express.static(path.join(__dirname, '..', 'attached_assets')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
 app.use((req, res, next) => {
@@ -47,29 +51,13 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "[your-google-client-id
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "[your-google-client-secret]";
 const REPLIT_CALLBACK_URL = process.env.REPLIT_CALLBACK_URL || "https://app.theagencyiq.ai/callback";
 
-// App-launch bypass - serve React directly
+// App-launch bypass - serve React app
 app.get('/', (req, res) => {
   (req.session as any).userId = 2;
   console.log('App-launch bypass');
   
-  // Force serve the React app HTML
-  const reactHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/agency_logo_verified_1749345637626.png" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TheAgencyIQ</title>
-  <link rel="manifest" href="/manifest.json">
-</head>
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
-</body>
-</html>`;
-  
-  res.send(reactHtml);
-
+  // Serve the actual React app HTML from client directory
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
 });
 
 // X Platform OAuth
@@ -143,25 +131,53 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Catch all for React routes
+// API routes for OAuth endpoints take priority
+
+// Catch all for React routes (excluding API routes)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'), (err) => {
-    if (err) {
-      res.status(404).send('React app not found');
-    }
-  });
+  // Skip React routing for OAuth and API endpoints
+  if (req.path.startsWith('/connect') || 
+      req.path.startsWith('/callback') || 
+      req.path.startsWith('/health') ||
+      req.path.startsWith('/api')) {
+    return res.status(404).send('API endpoint not found');
+  }
+  
+  // Serve React app for all other routes
+  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
 });
 
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n=== TheAgencyIQ React App Launch ===`);
-  console.log(`Port: ${PORT}`);
-  console.log(`Deploy: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);  
-  console.log(`User: +61413950520/Tw33dl3dum!`);
-  console.log(`OAuth platforms: X, Facebook, Instagram, YouTube`);
-  console.log(`UI Fix: React build serving from 'dist'`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
-  console.log(`Status: React app ready for launch`);
-  console.log(`====================================\n`);
-});
+async function createServer() {
+  if (process.env.NODE_ENV === 'development') {
+    // Create Vite server in middleware mode
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+      root: path.join(__dirname, '..', 'client')
+    });
+
+    // Use vite's connect instance as middleware
+    app.use(vite.middlewares);
+    
+    console.log(`\n=== TheAgencyIQ React App with Vite ===`);
+  } else {
+    console.log(`\n=== TheAgencyIQ React App Production ===`);
+  }
+  
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Port: ${PORT}`);
+    console.log(`Deploy: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);  
+    console.log(`User: +61413950520/Tw33dl3dum!`);
+    console.log(`OAuth platforms: X, Facebook, Instagram, YouTube`);
+    console.log(`React App: Vite integration active`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
+    console.log(`Status: React app ready for launch`);
+    console.log(`=======================================\n`);
+  });
+
+  return server;
+}
+
+createServer().catch(console.error);
