@@ -397,78 +397,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // X OAuth endpoints
-  app.get('/api/x/auth', (req, res) => {
-    try {
-      const clientId = process.env.X_0AUTH_CLIENT_ID;
-      
-      if (!clientId) {
-        return res.status(500).json({ error: 'X OAuth not configured' });
-      }
-      
-      // Generate PKCE parameters
-      const codeVerifier = crypto.randomBytes(32).toString('base64url');
-      const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
-      const state = crypto.randomBytes(16).toString('hex');
-      
-      // Store in session for callback verification
-      req.session.xCodeVerifier = codeVerifier;
-      req.session.xState = state;
-      
-      const authUrl = new URL('https://twitter.com/i/oauth2/authorize');
-      authUrl.searchParams.set('response_type', 'code');
-      authUrl.searchParams.set('client_id', clientId);
-      authUrl.searchParams.set('redirect_uri', 'https://app.theagencyiq.ai/api/oauth/x/callback');
-      authUrl.searchParams.set('scope', 'tweet.read tweet.write users.read offline.access');
-      authUrl.searchParams.set('state', state);
-      authUrl.searchParams.set('code_challenge', codeChallenge);
-      authUrl.searchParams.set('code_challenge_method', 'S256');
-      
-      res.json({
-        authUrl: authUrl.toString(),
-        state: state
-      });
-    } catch (error) {
-      console.error('X auth error:', error);
-      res.status(500).json({ error: 'Failed to generate X auth URL' });
-    }
-  });
+
 
   app.post('/api/x/callback', async (req, res) => {
     try {
-      const { code, state } = req.body;
-      
-      if (!code) {
-        return res.status(400).json({ error: 'Authorization code required' });
-      }
-      
-      // Verify state parameter matches session
-      const storedState = req.session?.xState;
-      if (!storedState || storedState !== state) {
-        console.error('X OAuth state mismatch:', { stored: storedState, received: state });
-        return res.status(400).json({ error: 'Invalid state parameter' });
-      }
-      
-      // Get code verifier from session
-      const codeVerifier = req.session?.xCodeVerifier;
-      if (!codeVerifier) {
-        console.error('No code verifier found in session');
-        return res.status(400).json({ error: 'Missing code verifier' });
-      }
+      const { code } = req.body;
+      if (!code) return res.status(400).json({ error: 'Authorization code required' });
       
       const clientId = process.env.X_0AUTH_CLIENT_ID;
-      const clientSecret = process.env.X_CLIENT_SECRET; // Fixed environment variable name
+      const clientSecret = process.env.X_CLIENT_SECRET;
       
       if (!clientId || !clientSecret) {
-        return res.status(500).json({ error: 'X OAuth credentials not configured' });
+        return res.status(500).json({ error: 'X OAuth not configured' });
       }
       
       const tokenParams = new URLSearchParams({
         grant_type: 'authorization_code',
         client_id: clientId,
         code: code,
-        redirect_uri: 'https://app.theagencyiq.ai/api/oauth/x/callback', // Fixed redirect URI
-        code_verifier: codeVerifier
+        redirect_uri: 'https://app.theagencyiq.ai/callback'
       });
 
       const response = await fetch('https://api.twitter.com/2/oauth2/token', {
@@ -481,74 +428,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const tokenResult = await response.json();
-      
-      if (response.ok) {
-        // Clean up session data
-        delete req.session.xCodeVerifier;
-        delete req.session.xState;
-        
-        // Get user info for proper storage
-        const userResponse = await fetch('https://api.twitter.com/2/users/me', {
-          headers: { 'Authorization': `Bearer ${tokenResult.access_token}` }
-        });
-        
-        let platformUserId = 'x_user_' + Date.now();
-        let platformUsername = 'X Account';
-        
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          platformUserId = userData.data.id;
-          platformUsername = userData.data.username;
-        }
-        
-        // Store tokens securely
-        const connection = await storage.createPlatformConnection({
-          userId: req.session?.userId || 2,
-          platform: 'x',
-          platformUserId: platformUserId,
-          platformUsername: platformUsername,
-          accessToken: tokenResult.access_token,
-          refreshToken: tokenResult.refresh_token || null,
-          expiresAt: tokenResult.expires_in ? new Date(Date.now() + tokenResult.expires_in * 1000) : null,
-          isActive: true
-        });
-        
-        // Store in environment for immediate use
-        process.env.X_ACCESS_TOKEN = tokenResult.access_token;
-        if (tokenResult.refresh_token) {
-          process.env.X_REFRESH_TOKEN = tokenResult.refresh_token;
-        }
-        
-        // Test posting capability
-        const tweetResponse = await fetch('https://api.twitter.com/2/tweets', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${tokenResult.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            text: 'X OAuth 2.0 User Context integration successful - TheAgencyIQ ready for posting'
-          })
-        });
-
-        const tweetResult = await tweetResponse.json();
-        
-        res.json({
-          success: true,
-          connectionId: connection.id,
-          message: 'X platform connected successfully',
-          username: platformUsername,
-          accessToken: tokenResult.access_token.substring(0, 20) + '...',
-          tweetPosted: tweetResponse.ok,
-          tweetId: tweetResponse.ok ? tweetResult.data.id : null
-        });
-      } else {
-        console.error('X token exchange failed:', tokenResult);
-        res.status(400).json({ 
-          error: 'Failed to exchange authorization code',
-          details: tokenResult 
-        });
+      if (!response.ok) {
+        return res.status(400).json({ error: 'Token exchange failed' });
       }
+
+      const userResponse = await fetch('https://api.twitter.com/2/users/me', {
+        headers: { 'Authorization': `Bearer ${tokenResult.access_token}` }
+      });
+      
+      let platformUserId = 'x_user_' + Date.now();
+      let platformUsername = 'X Account';
+      
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        platformUserId = userData.data.id;
+        platformUsername = userData.data.username;
+      }
+      
+      const connection = await storage.createPlatformConnection({
+        userId: 2,
+        platform: 'x',
+        platformUserId: platformUserId,
+        platformUsername: platformUsername,
+        accessToken: tokenResult.access_token,
+        refreshToken: tokenResult.refresh_token || null,
+        expiresAt: tokenResult.expires_in ? new Date(Date.now() + tokenResult.expires_in * 1000) : null,
+        isActive: true
+      });
+      
+      res.json({
+        success: true,
+        connectionId: connection.id,
+        message: 'X connected successfully'
+      });
     } catch (error) {
       console.error('X callback error:', error);
       res.status(500).json({ error: 'Failed to process X authorization' });
@@ -7052,5 +6964,6 @@ async function fetchTwitterAnalytics(accessToken: string, refreshToken: string) 
     console.error('Twitter API error:', error);
     throw new Error('Failed to fetch Twitter analytics');
   }
-  return app;
+
+  return server;
 }
