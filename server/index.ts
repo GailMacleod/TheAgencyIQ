@@ -448,14 +448,14 @@ fetch('/api/platform-connections')
 
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n=== TheAgencyIQ OAuth Server (Frontend Fixed) ===`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n=== TheAgencyIQ Rock-Solid Server ===`);
   console.log(`Port: ${PORT}`);
-  console.log(`Deploy: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);
+  console.log(`Deploy: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);  
   console.log(`User: +61413950520/Tw33dl3dum!`);
-  console.log(`OAuth platforms: X, YouTube, Facebook, Instagram`);
-  console.log(`Frontend Connection: FIXED - API routes operational`);
+  console.log(`OAuth platforms: X, Facebook, Instagram, YouTube`);
+  console.log(`Credentials: Refined and ready`);
   console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
-  console.log(`Status: Ready for OAuth connections`);
-  console.log(`========================================\n`);
+  console.log(`Status: Rock-solid and operational`);
+  console.log(`=====================================\n`);
 });
