@@ -6785,6 +6785,64 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Check live platform status
+  app.post("/api/check-live-status", async (req: any, res) => {
+    try {
+      const { platform } = req.body;
+      
+      if (!platform) {
+        return res.status(400).json({ error: 'Platform required' });
+      }
+
+      // Quick status check for Facebook
+      if (platform === 'facebook') {
+        const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+        if (!token) {
+          return res.json({ 
+            platform: 'facebook',
+            status: 'disconnected',
+            error: 'No access token configured' 
+          });
+        }
+
+        try {
+          const response = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${token}`);
+          if (response.ok) {
+            const data = await response.json();
+            return res.json({ 
+              platform: 'facebook',
+              status: 'connected',
+              name: data.name || 'Facebook Page'
+            });
+          } else {
+            return res.json({ 
+              platform: 'facebook',
+              status: 'token_expired',
+              error: 'Token validation failed' 
+            });
+          }
+        } catch (error) {
+          return res.json({ 
+            platform: 'facebook',
+            status: 'error',
+            error: 'API request failed' 
+          });
+        }
+      }
+
+      // Default response for other platforms
+      return res.json({ 
+        platform,
+        status: 'not_configured',
+        error: 'Platform not configured' 
+      });
+
+    } catch (error: any) {
+      console.error('Live status check error:', error);
+      res.status(500).json({ error: 'Status check failed' });
+    }
+  });
+
   // Get real platform analytics
   app.get("/api/platform-analytics/:platform", requireAuth, async (req: any, res) => {
     try {
