@@ -86,35 +86,7 @@ app.get('/callback', async (req, res) => {
   }
 });
 
-app.get('/auth/:platform/callback', async (req, res) => {
-  const platform = req.params.platform;
-  const { code, state } = req.query;
-  
-  if (!code) {
-    return res.status(400).send(`${platform} OAuth failed - no code received`);
-  }
-  
-  try {
-    if (!req.session.oauthTokens) req.session.oauthTokens = {};
-    req.session.oauthTokens[platform] = { code, state, timestamp: Date.now() };
-    
-    console.log(`OAuth succeeded for ${platform} at ${new Date().toISOString()}`);
-    res.send(`
-      <h1>${platform.toUpperCase()} OAuth Success!</h1>
-      <p>Authorization code received and stored.</p>
-      <p>Platform: ${platform}</p>
-      <p>Timestamp: ${new Date().toISOString()}</p>
-      <p><a href="/platform-connections">Return to Platform Connections</a></p>
-      <script>
-        console.log('OAuth succeeded for ${platform}');
-        setTimeout(() => window.close(), 3000);
-      </script>
-    `);
-  } catch (error) {
-    console.error(`OAuth error for ${platform}:`, error);
-    res.status(500).send(`${platform} OAuth error: ${error.message}`);
-  }
-});
+
 
 // Register routes BEFORE Vite
 const { registerRoutes } = await import('./routes');

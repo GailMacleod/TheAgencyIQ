@@ -259,25 +259,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Facebook OAuth callback endpoint
   app.post('/api/facebook/callback', async (req, res) => {
     try {
-      const { code, state } = req.body;
-      
-      if (!code) {
-        return res.status(400).json({ error: 'Authorization code required' });
-      }
+      const { code } = req.body;
+      if (!code) return res.status(400).json({ error: 'Authorization code required' });
       
       const clientId = process.env.FACEBOOK_APP_ID;
       const clientSecret = process.env.FACEBOOK_APP_SECRET;
-      const redirectUri = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/';
       
       if (!clientId || !clientSecret) {
         return res.status(500).json({ error: 'Facebook credentials not configured' });
       }
 
-      // Exchange authorization code for access token
       const tokenParams = new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: redirectUri,
+        redirect_uri: 'https://app.theagencyiq.ai/callback',
         code: code
       });
 
@@ -285,13 +280,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tokenResult = await tokenResponse.json();
       
       if (tokenResult.error) {
-        return res.status(400).json({ 
-          error: 'Failed to exchange authorization code',
-          details: tokenResult.error 
-        });
+        return res.status(400).json({ error: 'Token exchange failed' });
       }
 
-      // Get long-lived access token
       const longLivedParams = new URLSearchParams({
         grant_type: 'fb_exchange_token',
         client_id: clientId,
@@ -308,42 +299,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userResponse = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${finalToken}`);
       const userResult = await userResponse.json();
 
-      console.log('Facebook user result:', userResult);
-
       const pagesResponse = await fetch(`https://graph.facebook.com/v20.0/me/accounts?access_token=${finalToken}`);
       const pagesResult = await pagesResponse.json();
 
-      console.log('Facebook pages result:', pagesResult);
-
-      // Force a valid platform_user_id
-      let pageId = `fb_user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      let pageId = userResult?.id || `fb_user_${Date.now()}`;
       let pageToken = finalToken;
-      let pageName = 'Facebook User';
+      let pageName = userResult?.name || 'Facebook User';
       
-      // Try to get actual user data
-      if (userResult && userResult.id) {
-        pageId = userResult.id.toString();
-        pageName = userResult.name || pageName;
-      }
-      
-      // Check for pages and use the first one if available
-      if (pagesResult && pagesResult.data && pagesResult.data.length > 0) {
+      if (pagesResult?.data?.length > 0) {
         const firstPage = pagesResult.data[0];
         if (firstPage.id && firstPage.access_token) {
-          pageId = firstPage.id.toString();
+          pageId = firstPage.id;
           pageToken = firstPage.access_token;
           pageName = firstPage.name || pageName;
         }
       }
 
-      console.log('Final Facebook connection details:', { 
-        pageId, 
-        pageName, 
-        hasToken: !!pageToken,
-        pageIdLength: pageId ? pageId.length : 0
-      });
-
-      // Store the connection in database
       const connection = await storage.createPlatformConnection({
         userId: 2,
         platform: 'facebook',
@@ -354,26 +325,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true
       });
       
-      // Test posting capability
-      const testResponse = await fetch(`https://graph.facebook.com/v20.0/${pageId}/feed`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          message: 'TheAgencyIQ Facebook integration complete - posting operational!',
-          access_token: pageToken
-        })
-      });
-
-      const testResult = await testResponse.json();
-      
       res.json({
         success: true,
         connectionId: connection.id,
-        message: 'Facebook platform connected successfully',
-        username: userResult.name,
-        pageId: pageId,
-        testPosted: testResponse.ok,
-        testPostId: testResponse.ok ? testResult.id : null
+        message: 'Facebook connected successfully'
       });
       
     } catch (error) {
@@ -382,56 +337,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // LinkedIn OAuth callback endpoint
+  // LinkedIn OAuth callback endpoint  
   app.post('/api/linkedin/callback', async (req, res) => {
     try {
-      const { code, state } = req.body;
-      
-      if (!code) {
-        return res.status(400).json({ error: 'Authorization code required' });
-      }
+      const { code } = req.body;
+      if (!code) return res.status(400).json({ error: 'Authorization code required' });
       
       const clientId = process.env.LINKEDIN_CLIENT_ID;
       const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
-      const redirectUri = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/';
       
       if (!clientId || !clientSecret) {
         return res.status(500).json({ error: 'LinkedIn credentials not configured' });
       }
 
-      // Exchange authorization code for access token
       const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code: code,
-          redirect_uri: redirectUri,
+          redirect_uri: 'https://app.theagencyiq.ai/callback',
           client_id: clientId,
           client_secret: clientSecret
         })
       });
 
       const tokenResult = await tokenResponse.json();
-      
       if (tokenResult.error) {
-        return res.status(400).json({ 
-          error: 'Failed to exchange authorization code',
-          details: tokenResult.error 
-        });
+        return res.status(400).json({ error: 'Token exchange failed' });
       }
 
-      // Get user profile
       const profileResponse = await fetch('https://api.linkedin.com/v2/me', {
         headers: { 'Authorization': `Bearer ${tokenResult.access_token}` }
       });
-      
       const profileResult = await profileResponse.json();
       
       const userId = profileResult.id || `linkedin_user_${Date.now()}`;
       const username = `${profileResult.firstName?.localized?.en_US || ''} ${profileResult.lastName?.localized?.en_US || ''}`.trim() || 'LinkedIn User';
 
-      // Store the connection in database
       const connection = await storage.createPlatformConnection({
         userId: 2,
         platform: 'linkedin',
@@ -445,9 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         connectionId: connection.id,
-        message: 'LinkedIn platform connected successfully',
-        username: username,
-        userId: userId
+        message: 'LinkedIn connected successfully'
       });
       
     } catch (error) {
