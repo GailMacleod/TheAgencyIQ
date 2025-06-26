@@ -17,6 +17,15 @@ app.use(session({
   cookie: {secure: true, maxAge: 24 * 60 * 60 * 1000}
 }));
 
+// Configure MIME types for JavaScript modules
+express.static.mime.define({
+  'text/javascript': ['js', 'mjs'],
+  'application/javascript': ['js', 'mjs'],
+  'text/jsx': ['jsx'],
+  'text/typescript': ['ts'],
+  'text/tsx': ['tsx']
+});
+
 // Serve React app assets
 app.use('/src', express.static(path.join(__dirname, '..', 'client', 'src')));
 app.use('/public', express.static(path.join(__dirname, '..', 'client', 'public')));
@@ -51,14 +60,7 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "[your-google-client-id
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "[your-google-client-secret]";
 const REPLIT_CALLBACK_URL = process.env.REPLIT_CALLBACK_URL || "https://app.theagencyiq.ai/callback";
 
-// App-launch bypass - serve React app
-app.get('/', (req, res) => {
-  (req.session as any).userId = 2;
-  console.log('App-launch bypass');
-  
-  // Serve the actual React app HTML from client directory
-  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
-});
+// OAuth routes setup will be handled before Vite middleware
 
 // X Platform OAuth
 app.get('/connect/x', (req, res) => {
@@ -131,34 +133,41 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes for OAuth endpoints take priority
-
-// Catch all for React routes (excluding API routes)
-app.get('*', (req, res) => {
-  // Skip React routing for OAuth and API endpoints
-  if (req.path.startsWith('/connect') || 
-      req.path.startsWith('/callback') || 
-      req.path.startsWith('/health') ||
-      req.path.startsWith('/api')) {
-    return res.status(404).send('API endpoint not found');
-  }
-  
-  // Serve React app for all other routes
-  res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
-});
+// Vite will handle all routing automatically
 
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
 async function createServer() {
   if (process.env.NODE_ENV === 'development') {
-    // Create Vite server in middleware mode
+    // Create Vite server in middleware mode with proper configuration
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: {
+          port: 24678
+        }
+      },
       appType: 'spa',
-      root: path.join(__dirname, '..', 'client')
+      root: path.join(__dirname, '..', 'client'),
+      resolve: {
+        alias: {
+          '@': path.join(__dirname, '..', 'client', 'src'),
+          '@shared': path.join(__dirname, '..', 'shared'),
+          '@assets': path.join(__dirname, '..', 'attached_assets')
+        }
+      },
+      configFile: false,
+      esbuild: {
+        loader: 'tsx',
+        include: /src\/.*\.[tj]sx?$/,
+        exclude: []
+      }
     });
 
-    // Use vite's connect instance as middleware
+    // Add OAuth routes before Vite middleware
+    console.log('Setting up OAuth routes...');
+    
+    // Then use vite's connect instance as middleware for everything else
     app.use(vite.middlewares);
     
     console.log(`\n=== TheAgencyIQ React App with Vite ===`);
