@@ -86,9 +86,6 @@
           'Unable to preventDefault inside passive event listener invocation',
           'preventDefault inside passive event listener',
           'passive event listener',
-          'framework-6dd8dcfefd4c6abb.js',
-          'framework-',
-          'Uncaught TypeError: Cannot read properties',
           'Cannot notify while not connected',
           'Failed to load resource',
           'Uncaught (in promise) Error: Cannot notify while not connected',
@@ -96,12 +93,7 @@
           'because it violates the following Content Security Policy directive',
           'font-src',
           'Refused to load the image',
-          'createAssignCSP.js',
-          'Refused to display',
-          'in a frame because it set \'X-Frame-Options\'',
-          'chromesuperstore.js',
-          'workspace-iframe.html',
-          'TheAgencyIQ Production Server Ready'
+          'createAssignCSP.js'
         ];
         
         function shouldFilter(message) {
@@ -130,32 +122,6 @@
     /></noscript>
     
     <div id="root"></div>
-    <script>
-      // Fix passive event listener issues
-      (function() {
-        const addEventListenerOriginal = EventTarget.prototype.addEventListener;
-        const removeEventListenerOriginal = EventTarget.prototype.removeEventListener;
-        
-        EventTarget.prototype.addEventListener = function(type, listener, options) {
-          if (typeof options === 'boolean') {
-            options = {
-              capture: options,
-              passive: false
-            };
-          } else if (typeof options === 'object' && options !== null) {
-            if (options.passive === undefined) {
-              options.passive = false;
-            }
-          } else {
-            options = {
-              passive: false
-            };
-          }
-          
-          return addEventListenerOriginal.call(this, type, listener, options);
-        };
-      })();
-    </script>
     <script type="module" src="/src/main.tsx"></script>
     <!-- Replit banner script disabled to prevent HTML injection in API responses -->
     <!-- <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script> -->
