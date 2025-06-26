@@ -53,8 +53,8 @@ app.get('/connect/:platform', (req, res) => {
     userId: req.session.userId
   })).toString('base64');
   
-  // Use the current Replit dev URL for OAuth callbacks
-  const callbackUri = process.env.REPLIT_CALLBACK_URL || 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/callback';
+  // Use the preferred domain for OAuth callbacks
+  const callbackUri = process.env.REPLIT_CALLBACK_URL || 'https://app.theagencyiq.ai/callback';
   
   const redirectUrls = {
     facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=public_profile,pages_show_list,pages_manage_posts,pages_read_engagement,publish_actions&response_type=code&state=${state}`,

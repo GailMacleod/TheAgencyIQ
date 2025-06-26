@@ -16,7 +16,7 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Launch Status**: READY pending OAuth token refresh
 
 ## Recent Changes
-- **June 26, 2025 7:31 PM**: OAUTH CALLBACK URI UPDATED - Changed all platform OAuth connections to use current Replit dev URL (4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/callback) for proper Facebook OAuth functionality
+- **June 26, 2025 7:45 PM**: OAUTH CALLBACK DOMAIN RESTORED - OAuth callback returned to user's preferred domain (app.theagencyiq.ai/callback) to match existing Facebook app configuration and maintain domain consistency
 - **June 26, 2025 7:20 PM**: PRODUCTION OAUTH SYSTEM DEPLOYED - Implemented comprehensive OAuth system with enhanced CSP headers, secure state encoding, production callback handler, OAuth status endpoint, and professional success pages with automatic popup handling
 - **June 26, 2025 4:18 PM**: OAUTH ENDPOINTS CLEANED UP - Removed bloating from OAuth connections, eliminated duplicate handlers, excessive logging, and test posting code, streamlined all platform callbacks to use unified redirect URI with ~60% code reduction
 - **June 26, 2025 3:35 PM**: FACEBOOK OAUTH AUTHORIZATION CODE FIXED - Resolved "No authorization code received" issue by adding platform identifier to state parameter and updating universal callback to properly decode base64 state for Facebook platform detection
