@@ -760,7 +760,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     if (code && state) {
       // Determine platform based on state parameter
-      if (state.toString().includes('facebook')) {
+      let platformFromState = 'x'; // default
+      try {
+        const decoded = JSON.parse(Buffer.from(state.toString(), 'base64').toString());
+        platformFromState = decoded.platform || 'x';
+      } catch (e) {
+        // fallback to string check
+        if (state.toString().includes('facebook')) platformFromState = 'facebook';
+        else if (state.toString().includes('linkedin')) platformFromState = 'linkedin';
+        else if (state.toString().includes('youtube')) platformFromState = 'youtube';
+      }
+      
+      if (platformFromState === 'facebook') {
         res.send(`
           <h1>Facebook Authorization Successful</h1>
           <p>Authorization code received for Facebook integration.</p>
@@ -781,7 +792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           </script>
         `);
-      } else if (state.toString().includes('linkedin')) {
+      } else if (platformFromState === 'linkedin') {
         res.send(`
           <h1>LinkedIn Authorization Successful</h1>
           <p>Authorization code received for LinkedIn integration.</p>
@@ -802,7 +813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           </script>
         `);
-      } else if (state.toString().includes('youtube')) {
+      } else if (platformFromState === 'youtube') {
         res.send(`
           <h1>YouTube Authorization Successful</h1>
           <p>Authorization code received for YouTube integration.</p>
@@ -5797,7 +5808,7 @@ Continue building your Value Proposition Canvas systematically.`;
       const redirectUri = 'https://app.theagencyiq.ai/callback';
       
       const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement';
-      const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
+      const state = Buffer.from(JSON.stringify({ userId, platform: 'facebook' })).toString('base64');
       
       if (!clientId) {
         console.error('Facebook App ID not configured');

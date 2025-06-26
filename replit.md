@@ -16,7 +16,7 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Launch Status**: READY pending OAuth token refresh
 
 ## Recent Changes
-- **June 26, 2025 3:33 PM**: FACEBOOK OAUTH CLEANED UP - Removed all bloating from Facebook OAuth implementation, simplified callback handler, eliminated excessive logging, uses only universal callback URI https://app.theagencyiq.ai/callback
+- **June 26, 2025 3:35 PM**: FACEBOOK OAUTH AUTHORIZATION CODE FIXED - Resolved "No authorization code received" issue by adding platform identifier to state parameter and updating universal callback to properly decode base64 state for Facebook platform detection
 - **June 25, 2025 11:33 PM**: VITE DIRECT SERVER DEPLOYED - Removed proxy configuration, restored original Vite setup per user request, OAuth bypass active at /public, all platform connection endpoints operational
 - **June 25, 2025 10:49 PM**: STABILITY IMPROVEMENTS DEPLOYED - Added public bypass route (/public) and server status endpoint (/api/server-status) with zero disruption to existing functionality, maintaining current stable state
 - **June 25, 2025 4:35 AM**: YOUTUBE OAUTH COMPLETE - Implemented full YouTube OAuth 2.0 flow with Google API integration, channel info retrieval, and token storage for video uploads and management
