@@ -17,13 +17,16 @@ app.use(session({
   cookie: {secure: true, maxAge: 24 * 60 * 60 * 1000}
 }));
 
-// Configure MIME types for JavaScript modules
-express.static.mime.define({
-  'text/javascript': ['js', 'mjs'],
-  'application/javascript': ['js', 'mjs'],
-  'text/jsx': ['jsx'],
-  'text/typescript': ['ts'],
-  'text/tsx': ['tsx']
+// Configure proper MIME types for modules
+app.use((req, res, next) => {
+  if (req.path.endsWith('.js') || req.path.endsWith('.mjs')) {
+    res.setHeader('Content-Type', 'text/javascript');
+  } else if (req.path.endsWith('.tsx') || req.path.endsWith('.ts')) {
+    res.setHeader('Content-Type', 'application/typescript');
+  } else if (req.path.endsWith('.jsx')) {
+    res.setHeader('Content-Type', 'text/jsx');
+  }
+  next();
 });
 
 // Serve React app assets
@@ -139,40 +142,40 @@ const PORT = parseInt(process.env.PORT || '5000', 10);
 
 async function createServer() {
   if (process.env.NODE_ENV === 'development') {
-    // Create Vite server in middleware mode with proper configuration
-    const vite = await createViteServer({
-      server: { 
-        middlewareMode: true,
-        hmr: {
-          port: 24678
-        }
-      },
-      appType: 'spa',
-      root: path.join(__dirname, '..', 'client'),
-      resolve: {
-        alias: {
-          '@': path.join(__dirname, '..', 'client', 'src'),
-          '@shared': path.join(__dirname, '..', 'shared'),
-          '@assets': path.join(__dirname, '..', 'attached_assets')
-        }
-      },
-      configFile: false,
-      esbuild: {
-        loader: 'tsx',
-        include: /src\/.*\.[tj]sx?$/,
-        exclude: []
-      }
-    });
-
-    // Add OAuth routes before Vite middleware
-    console.log('Setting up OAuth routes...');
-    
-    // Then use vite's connect instance as middleware for everything else
-    app.use(vite.middlewares);
+    // Import the existing Vite setup
+    const { setupVite } = await import('./vite.js');
     
     console.log(`\n=== TheAgencyIQ React App with Vite ===`);
+    
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Port: ${PORT}`);
+      console.log(`Deploy: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);  
+      console.log(`User: +61413950520/Tw33dl3dum!`);
+      console.log(`OAuth platforms: X, Facebook, Instagram, YouTube`);
+      console.log(`React App: Vite integration active`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`Status: React app ready for launch`);
+      console.log(`=======================================\n`);
+    });
+
+    // Setup Vite middleware after server starts
+    await setupVite(app, server);
+    return server;
   } else {
     console.log(`\n=== TheAgencyIQ React App Production ===`);
+    
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Port: ${PORT}`);
+      console.log(`Deploy: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);  
+      console.log(`User: +61413950520/Tw33dl3dum!`);
+      console.log(`OAuth platforms: X, Facebook, Instagram, YouTube`);
+      console.log(`React App: Production mode`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
+      console.log(`Status: React app ready for launch`);
+      console.log(`=====================================\n`);
+    });
+    
+    return server;
   }
   
   const server = app.listen(PORT, '0.0.0.0', () => {
@@ -187,6 +190,3 @@ async function createServer() {
   });
 
   return server;
-}
-
-createServer().catch(console.error);
