@@ -20,16 +20,16 @@ app.use(session({
   }
 }));
 
-// Enhanced CSP for OAuth domains
+// Facebook-whitelisted CSP
 app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', [
-    "default-src 'self' https://app.theagencyiq.ai https://replit.com https://scontent.xx.fbcdn.net",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://connect.facebook.net https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://twitter.com https://accounts.google.com",
-    "connect-src 'self' wss: ws: https://replit.com https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com",
-    "style-src 'self' 'unsafe-inline' https://replit.com https://accounts.google.com",
-    "img-src 'self' data: https: blob:",
-    "font-src 'self' https://replit.com data:",
-    "frame-src 'self' https://checkout.stripe.com https://js.stripe.com https://connect.facebook.net https://accounts.google.com"
+    "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://twitter.com https://accounts.google.com",
+    "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com",
+    "style-src 'self' 'unsafe-inline' https://replit.com https://accounts.google.com https://*.facebook.com",
+    "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net",
+    "font-src 'self' https://replit.com data: https://*.facebook.com",
+    "frame-src 'self' https://checkout.stripe.com https://js.stripe.com https://connect.facebook.net https://accounts.google.com https://*.facebook.com"
   ].join('; '));
   next();
 });
