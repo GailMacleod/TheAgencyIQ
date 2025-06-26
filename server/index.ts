@@ -33,15 +33,15 @@ app.get('/public', (req, res) => {
 
 // OAuth connection routes
 app.get('/connect/:platform', (req, res) => {
-  const platform = req.params.platform.toLowerCase();
+  const platform = req.params.platform.toLowerCase() as keyof typeof redirectUrls;
   req.session.userId = 2;
   
   const redirectUrls = {
-    facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(`${req.protocol}://${req.get('host')}/auth/facebook/callback`)}&scope=public_profile,pages_show_list,pages_manage_posts,pages_read_engagement&response_type=code&state=facebook-${Date.now()}`,
-    x: `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${req.protocol}://${req.get('host')}/auth/x/callback`)}&scope=tweet.read%20tweet.write%20users.read&state=x-${Date.now()}&code_challenge=challenge&code_challenge_method=plain`,
-    linkedin: `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${req.protocol}://${req.get('host')}/auth/linkedin/callback`)}&scope=r_liteprofile%20r_emailaddress%20w_member_social&state=linkedin-${Date.now()}`,
-    instagram: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(`${req.protocol}://${req.get('host')}/auth/instagram/callback`)}&scope=instagram_basic,instagram_content_publish&response_type=code&state=instagram-${Date.now()}`,
-    youtube: `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${req.protocol}://${req.get('host')}/auth/youtube/callback`)}&scope=https://www.googleapis.com/auth/youtube.upload&state=youtube-${Date.now()}`
+    facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent('https://app.theagencyiq.ai/callback')}&scope=public_profile,pages_show_list,pages_manage_posts,pages_read_engagement&response_type=code&state=facebook-${Date.now()}`,
+    x: `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://app.theagencyiq.ai/callback')}&scope=tweet.read%20tweet.write%20users.read&state=x-${Date.now()}&code_challenge=challenge&code_challenge_method=plain`,
+    linkedin: `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://app.theagencyiq.ai/callback')}&scope=r_liteprofile%20r_emailaddress%20w_member_social&state=linkedin-${Date.now()}`,
+    instagram: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent('https://app.theagencyiq.ai/callback')}&scope=instagram_basic,instagram_content_publish&response_type=code&state=instagram-${Date.now()}`,
+    youtube: `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://app.theagencyiq.ai/callback')}&scope=https://www.googleapis.com/auth/youtube.upload&state=youtube-${Date.now()}`
   };
   
   if (redirectUrls[platform]) {
@@ -52,7 +52,40 @@ app.get('/connect/:platform', (req, res) => {
   }
 });
 
-// OAuth callback handlers
+// Universal OAuth callback handler
+app.get('/callback', async (req, res) => {
+  const { code, state } = req.query;
+  
+  if (!code) {
+    return res.status(400).send('OAuth failed - no code received');
+  }
+  
+  try {
+    // Determine platform from state parameter
+    const stateStr = state as string;
+    const platform = stateStr?.split('-')[0] || 'unknown';
+    
+    if (!(req.session as any).oauthTokens) (req.session as any).oauthTokens = {};
+    (req.session as any).oauthTokens[platform] = { code, state, timestamp: Date.now() };
+    
+    console.log(`${platform} OAuth succeeded at ${new Date().toISOString()}`);
+    res.send(`
+      <h1>${platform.toUpperCase()} OAuth Success!</h1>
+      <p>Authorization code received and stored.</p>
+      <p>Platform: ${platform}</p>
+      <p>Timestamp: ${new Date().toISOString()}</p>
+      <p><a href="/platform-connections">Return to Platform Connections</a></p>
+      <script>
+        console.log('OAuth succeeded for ${platform}');
+        setTimeout(() => window.close(), 3000);
+      </script>
+    `);
+  } catch (error) {
+    console.error('OAuth error:', error);
+    res.status(500).send(`OAuth error: ${(error as Error).message}`);
+  }
+});
+
 app.get('/auth/:platform/callback', async (req, res) => {
   const platform = req.params.platform;
   const { code, state } = req.query;
