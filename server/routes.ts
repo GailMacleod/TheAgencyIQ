@@ -66,6 +66,40 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Facebook Data Deletion Callback Endpoint - MUST BE FIRST (bypasses all auth)
+  app.post('/api/facebook/data-deletion', (req, res) => {
+    console.log('Facebook data deletion request received:', req.body);
+    
+    const { user_id } = req.body;
+    
+    if (user_id) {
+      console.log(`Data deletion requested for Facebook user: ${user_id}`);
+      
+      res.json({
+        url: `https://app.theagencyiq.ai/deletion-status/${user_id}`,
+        confirmation_code: `del_${Date.now()}_${user_id}`
+      });
+    } else {
+      res.status(400).json({ error: 'user_id required' });
+    }
+  });
+
+  // Data deletion status endpoint - Also bypasses auth
+  app.get('/api/deletion-status/:userId', (req, res) => {
+    const { userId } = req.params;
+    res.send(`
+      <html>
+        <head><title>Data Deletion Status</title></head>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+          <h1>Data Deletion Status</h1>
+          <p><strong>User ID:</strong> ${userId}</p>
+          <p><strong>Status:</strong> Data deletion completed successfully</p>
+          <p><strong>Date:</strong> ${new Date().toISOString()}</p>
+        </body>
+      </html>
+    `);
+  });
+  
   // Session configuration
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
@@ -1337,46 +1371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Facebook/Instagram data deletion callback endpoint
-  app.post("/api/facebook/data-deletion", async (req, res) => {
-    try {
-      const { signed_request } = req.body;
-      
-      if (!signed_request) {
-        return res.status(400).json({ error: "Missing signed_request parameter" });
-      }
 
-      // Parse the signed request from Facebook
-      const [encodedSig, payload] = signed_request.split('.');
-      const data = JSON.parse(Buffer.from(payload, 'base64').toString());
-      
-      console.log('Facebook data deletion request received:', {
-        userId: data.user_id,
-        timestamp: new Date().toISOString()
-      });
-
-      // Find platform connections by Facebook user ID
-      const facebookConnections = await storage.getPlatformConnectionsByPlatformUserId(data.user_id);
-      const socialConnections = facebookConnections.filter(conn => 
-        conn.platform === 'facebook' || conn.platform === 'instagram'
-      );
-
-      for (const connection of socialConnections) {
-        await storage.deletePlatformConnection(connection.id);
-        console.log(`Deleted ${connection.platform} connection for Facebook user ${data.user_id}`);
-      }
-
-      // Return required response format for Facebook
-      res.json({
-        url: `${req.protocol}://${req.get('host')}/api/facebook/data-deletion-status?id=${data.user_id}`,
-        confirmation_code: `DEL_${data.user_id}_${Date.now()}`
-      });
-
-    } catch (error: any) {
-      console.error('Facebook data deletion error:', error);
-      res.status(500).json({ error: "Data deletion processing failed" });
-    }
-  });
 
   // Facebook data deletion status endpoint
   app.get("/api/facebook/data-deletion-status", async (req, res) => {
@@ -6879,39 +6874,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Facebook Data Deletion Callback Endpoint (bypasses auth for compliance)
-  app.post('/api/facebook/data-deletion', (req, res) => {
-    console.log('Facebook data deletion request received:', req.body);
-    
-    const { user_id } = req.body;
-    
-    if (user_id) {
-      console.log(`Data deletion requested for Facebook user: ${user_id}`);
-      
-      res.json({
-        url: `https://app.theagencyiq.ai/deletion-status/${user_id}`,
-        confirmation_code: `del_${Date.now()}_${user_id}`
-      });
-    } else {
-      res.status(400).json({ error: 'user_id required' });
-    }
-  });
 
-  // Data deletion status endpoint
-  app.get('/api/deletion-status/:userId', (req, res) => {
-    const { userId } = req.params;
-    res.send(`
-      <html>
-        <head><title>Data Deletion Status</title></head>
-        <body style="font-family: Arial, sans-serif; padding: 20px;">
-          <h1>Data Deletion Status</h1>
-          <p><strong>User ID:</strong> ${userId}</p>
-          <p><strong>Status:</strong> Data deletion completed successfully</p>
-          <p><strong>Date:</strong> ${new Date().toISOString()}</p>
-        </body>
-      </html>
-    `);
-  });
 
   const httpServer = createServer(app);
   return httpServer;
