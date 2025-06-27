@@ -16,6 +16,7 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Launch Status**: READY pending OAuth token refresh
 
 ## Recent Changes
+- **June 27, 2025 12:00 PM**: FACEBOOK DATA DELETION COMPLIANCE COMPLETE - Implemented Facebook-required data deletion endpoint at /api/facebook/data-deletion with authentication bypass, status page at /api/deletion-status/, and proper JSON response format for Meta compliance
 - **June 26, 2025 8:20 PM**: INSTAGRAM API INTEGRATION COMPLETE - Added Instagram OAuth flow using Facebook Graph API, implemented Instagram Business Account detection, configured unified token exchange for both Facebook and Instagram platforms
 - **June 26, 2025 8:05 PM**: FACEBOOK OAUTH COMPLETE - Fixed Facebook connection UI display, implemented automatic token exchange and database storage in OAuth callback, resolved JSON parsing errors in live status endpoint
 - **June 26, 2025 7:45 PM**: OAUTH CALLBACK DOMAIN RESTORED - OAuth callback returned to user's preferred domain (app.theagencyiq.ai/callback) to match existing Facebook app configuration and maintain domain consistency
