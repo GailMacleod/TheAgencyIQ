@@ -1,6 +1,7 @@
 import express from 'express';
 import session from 'express-session';
 import { createServer } from 'http';
+import path from 'path';
 import { setupVite, serveStatic, log } from './vite';
 
 const app = express();
@@ -52,6 +53,31 @@ app.get('/facebook-data-deletion', facebookDataDeletion);
 app.post('/facebook-data-deletion', facebookDataDeletionPost);
 app.get('/api/facebook/data-deletion', facebookDataDeletion);
 app.post('/api/facebook/data-deletion', facebookDataDeletionPost);
+
+// Fix manifest.json 403 error - serve directly
+app.get('/manifest.json', (req, res) => {
+  res.json({
+    "name": "TheAgencyIQ",
+    "short_name": "AgencyIQ",
+    "description": "Complete 5-Platform Social Media Automation for Queensland Small Businesses",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#fcfcfc",
+    "theme_color": "#3250fa",
+    "icons": [
+      {
+        "src": "/attached_assets/agency_logo_1749083054761.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any maskable"
+      }
+    ],
+    "categories": ["business", "productivity", "social"],
+    "lang": "en",
+    "dir": "ltr",
+    "orientation": "portrait-primary"
+  });
+});
 
 // Data deletion status page
 app.get('/deletion-status/:userId', (req, res) => {
