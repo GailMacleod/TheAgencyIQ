@@ -7,39 +7,7 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Facebook Data Deletion Callback Endpoint (highest priority)
-app.post('/facebook/data-deletion', (req, res) => {
-  console.log('Facebook data deletion request received:', req.body);
-  
-  const { user_id } = req.body;
-  
-  if (user_id) {
-    console.log(`Data deletion requested for Facebook user: ${user_id}`);
-    
-    res.json({
-      url: `https://app.theagencyiq.ai/deletion-status/${user_id}`,
-      confirmation_code: `del_${Date.now()}_${user_id}`
-    });
-  } else {
-    res.status(400).json({ error: 'user_id required' });
-  }
-});
 
-// Data deletion status endpoint
-app.get('/deletion-status/:userId', (req, res) => {
-  const { userId } = req.params;
-  res.send(`
-    <html>
-      <head><title>Data Deletion Status</title></head>
-      <body style="font-family: Arial, sans-serif; padding: 20px;">
-        <h1>Data Deletion Status</h1>
-        <p><strong>User ID:</strong> ${userId}</p>
-        <p><strong>Status:</strong> Data deletion completed successfully</p>
-        <p><strong>Date:</strong> ${new Date().toISOString()}</p>
-      </body>
-    </html>
-  `);
-});
 
 // Production-ready session configuration
 app.use(session({
