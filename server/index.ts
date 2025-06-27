@@ -355,6 +355,8 @@ app.use((req, res, next) => {
   next();
 });
 
+
+
 // Setup Vite directly
 const vite = await setupVite(app, server);
 serveStatic(app, vite);
