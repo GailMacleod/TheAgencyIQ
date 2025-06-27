@@ -67,6 +67,16 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Facebook Data Deletion Callback Endpoint - MUST BE FIRST (bypasses all auth)
+  // Handle both GET (for Facebook validation) and POST (for actual deletion requests)
+  app.get('/api/facebook/data-deletion', (req, res) => {
+    // Facebook validation request - return simple success response
+    res.status(200).json({
+      status: 'ok',
+      message: 'Data deletion endpoint is ready',
+      url: 'https://app.theagencyiq.ai/api/facebook/data-deletion'
+    });
+  });
+
   app.post('/api/facebook/data-deletion', (req, res) => {
     console.log('Facebook data deletion request received:', req.body);
     
