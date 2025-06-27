@@ -4,12 +4,12 @@
 
 ### Production URL:
 ```
-https://app.theagencyiq.ai/facebook/data-deletion
+https://app.theagencyiq.ai/api/facebook/data-deletion
 ```
 
 ### Development URL:
 ```
-https://workspace.GailMac.repl.co/facebook/data-deletion
+https://workspace.GailMac.repl.co/api/facebook/data-deletion
 ```
 
 ## Facebook Developer Console Configuration
