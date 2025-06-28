@@ -66,43 +66,100 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Add global error handler for debugging 500 errors
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error('Global error handler caught:', err);
+    console.error('Error stack:', err.stack);
+    console.error('Request URL:', req.url);
+    console.error('Request method:', req.method);
+    
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Internal server error',
+        message: err.message,
+        timestamp: new Date().toISOString(),
+        url: req.url
+      });
+    }
+    next();
+  });
+
+  // Add body parsing middleware specifically for Facebook endpoints
+  app.use('/facebook-data-deletion', express.urlencoded({ extended: true }));
+  app.use('/facebook-data-deletion', express.json());
+  
   // Facebook Data Deletion Callback Endpoint - MUST BE FIRST (bypasses all auth)
   // Handle both GET (for Facebook validation) and POST (for actual deletion requests)
   
   // Root level endpoint for Facebook Developer Console
   app.get('/facebook-data-deletion', (req, res) => {
-    res.status(200).json({ status: 'ok' });
+    try {
+      console.log('Facebook data deletion GET request received');
+      res.status(200).json({ status: 'ok' });
+    } catch (error) {
+      console.error('Facebook GET error:', error);
+      res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
   });
 
   app.post('/facebook-data-deletion', express.urlencoded({ extended: true }), (req, res) => {
-    console.log('Facebook data deletion POST request received');
-    console.log('Request body:', req.body);
-    const { signed_request } = req.body;
-    
-    let userId = 'unknown_user';
-    if (signed_request) {
-      try {
-        const parts = signed_request.split('.');
-        if (parts.length === 2) {
-          const payload = Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString();
-          const data = JSON.parse(payload);
-          userId = data.user_id || 'parsed_user';
+    try {
+      console.log('Facebook data deletion POST request received');
+      console.log('Request body:', req.body);
+      console.log('Request headers:', req.headers);
+      
+      const { signed_request } = req.body;
+      let userId = 'unknown_user';
+      
+      if (signed_request && typeof signed_request === 'string') {
+        try {
+          const parts = signed_request.split('.');
+          if (parts.length === 2) {
+            // Add proper base64 padding if needed
+            let payload = parts[1];
+            payload += '='.repeat((4 - payload.length % 4) % 4);
+            payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+            
+            const decodedPayload = Buffer.from(payload, 'base64').toString();
+            console.log('Decoded payload:', decodedPayload);
+            
+            const data = JSON.parse(decodedPayload);
+            userId = data.user_id || data.userId || 'parsed_user';
+            console.log('Extracted user ID:', userId);
+          } else {
+            console.log('Invalid signed_request format - wrong number of parts:', parts.length);
+            userId = 'invalid_format_user';
+          }
+        } catch (parseError) {
+          console.error('Signed request parse error:', parseError);
+          userId = 'parse_error_user_' + Date.now();
         }
-      } catch (error) {
-        console.log('Signed request parse error:', error);
-        userId = 'parse_error_user';
+      } else if (!signed_request) {
+        console.log('No signed_request provided - generating test response');
+        userId = 'test_user_' + Date.now();
+      } else {
+        console.log('Invalid signed_request type:', typeof signed_request);
+        userId = 'invalid_type_user_' + Date.now();
       }
-    } else {
-      userId = 'test_user_' + Date.now();
+      
+      const confirmationCode = `del_${Date.now()}_${userId}`;
+      const statusUrl = `https://app.theagencyiq.ai/deletion-status/${userId}`;
+      
+      console.log('Responding with:', { url: statusUrl, confirmation_code: confirmationCode });
+      
+      res.status(200).json({
+        url: statusUrl,
+        confirmation_code: confirmationCode
+      });
+      
+    } catch (error) {
+      console.error('Facebook data deletion POST error:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
     }
-    
-    const confirmationCode = `del_${Date.now()}_${userId}`;
-    const statusUrl = `https://app.theagencyiq.ai/deletion-status/${userId}`;
-    
-    res.status(200).json({
-      url: statusUrl,
-      confirmation_code: confirmationCode
-    });
   });
 
   // API endpoint version

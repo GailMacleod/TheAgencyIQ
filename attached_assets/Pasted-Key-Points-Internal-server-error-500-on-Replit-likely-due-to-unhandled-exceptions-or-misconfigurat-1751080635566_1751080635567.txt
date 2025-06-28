@@ -1,0 +1,47 @@
+Key Points
+Internal server error (500) on Replit likely due to unhandled exceptions or misconfiguration in server/index.ts.
+Focus on debugging the Facebook data deletion endpoint for [invalid url, do not cite] without using prior prompt.
+Replit-Specific Guidance
+Check Logs
+In Replit, open the console (bottom pane). Look for error details (e.g., stack trace, file/line number).
+Common causes: Missing middleware, unparsed body, or database issues.
+Inspect server/index.ts
+Ensure /facebook-data-deletion routes handle GET and POST correctly:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const express = require('express');
+const bodyParser = require('body-parser');
+const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+app.get('/facebook-data-deletion', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+app.post('/facebook-data-deletion', (req, res) => {
+  try {
+    const { signed_request } = req.body;
+    if (!signed_request) throw new Error('Missing signed_request');
+    // Add signed_request parsing logic here
+    res.json({ url: '[invalid url, do not cite]', confirmation_code: 'del_123' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+app.use('*', (req, res) => res.sendFile('public/index.html'));
+Ensure body-parser is installed: Run npm install body-parser in Replit shell.
+Test Locally
+Test GET: curl -I http://localhost:5000/facebook-data-deletion (expect 200 OK).
+Test POST: curl -X POST http://localhost:5000/facebook-data-deletion -H "Content-Type: application/x-www-form-urlencoded" -d "signed_request=test.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTIzNDU2In0".
+If errors, note console output.
+Fix Common Issues
+Vite Interference: Ensure API routes are before catch-all in server/index.ts.
+Missing Dependencies: Check package.json. Add missing packages via npm install express body-parser.
+Port Config: Verify .replit runs node server/index.js and uses port 5000.
+Database Errors: If using a database, check connection in logs and ensure credentials are in Replit secrets.
