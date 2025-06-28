@@ -16,6 +16,7 @@ TheAgencyIQ is a comprehensive social media content management platform for Quee
 - **Launch Status**: READY pending OAuth token refresh
 
 ## Recent Changes
+- **June 28, 2025 1:50 PM**: CONSOLIDATED FACEBOOK ENDPOINTS IMPLEMENTED - Restructured all Facebook functionality under unified `/facebook` base path: `/facebook/data-deletion` for Meta compliance and `/facebook/callback` for OAuth. Simplified routing eliminates conflicts, uses environment-specific base URLs, includes comprehensive signed_request parsing with proper error handling. Development testing confirms all endpoints operational.
 - **June 28, 2025 1:10 PM**: FACEBOOK DATA DELETION PRODUCTION READY - Complete implementation deployed with root-level endpoints (/facebook-data-deletion) working correctly. GET returns {"status":"ok"}, POST handles signed_request parsing with proper URL/confirmation_code response. All Meta compliance requirements met and tested successfully.
 - **June 28, 2025 12:05 PM**: ROUTE REGISTRATION FIXED - Fixed missing registerRoutes() call in server startup that prevented API endpoints from being mounted. Facebook data deletion endpoints now properly registered before Vite middleware to ensure production accessibility.
 - **June 28, 2025 11:45 AM**: CORS BLOCKING ISSUES RESOLVED - Fixed cross-origin resource sharing errors blocking beacon.js and other public assets. Added comprehensive CORS headers, OPTIONS preflight handling, and dedicated beacon.js endpoint with proper content-type and caching headers.
