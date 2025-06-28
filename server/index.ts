@@ -151,11 +151,8 @@ async function startServer() {
     return Buffer.from(input, 'base64').toString('utf8');
   }
 
-  // Mount Facebook endpoints at ABSOLUTE highest priority
-  app.get('/facebook-data-deletion', facebookDataDeletionGet);
-  app.post('/facebook-data-deletion', facebookDataDeletionPost);
-  app.get('/api/facebook/data-deletion', facebookDataDeletionGet);
-  app.post('/api/facebook/data-deletion', facebookDataDeletionPost);
+  // Facebook endpoints are now handled in routes.ts
+  // Priority: app.get('/facebook-data-deletion') and app.get('/api/facebook/data-deletion')
 
   // Fix manifest.json 403 error - serve directly
   app.get('/manifest.json', (req, res) => {
@@ -586,6 +583,10 @@ async function startServer() {
 
     next();
   });
+
+  // Register all API routes BEFORE Vite setup
+  const { registerRoutes } = await import('./routes');
+  await registerRoutes(app);
 
   // Setup Vite directly
   const vite = await setupVite(app, httpServer);

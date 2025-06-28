@@ -68,13 +68,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Facebook Data Deletion Callback Endpoint - MUST BE FIRST (bypasses all auth)
   // Handle both GET (for Facebook validation) and POST (for actual deletion requests)
-  app.get('/api/facebook/data-deletion', (req, res) => {
-    // Facebook validation request - return simple success response
+  
+  // Root level endpoint for Facebook Developer Console
+  app.get('/facebook-data-deletion', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
+
+  app.post('/facebook-data-deletion', express.urlencoded({ extended: true }), (req, res) => {
+    console.log('Facebook data deletion POST request received');
+    console.log('Request body:', req.body);
+    const { signed_request } = req.body;
+    
+    let userId = 'unknown_user';
+    if (signed_request) {
+      try {
+        const parts = signed_request.split('.');
+        if (parts.length === 2) {
+          const payload = Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString();
+          const data = JSON.parse(payload);
+          userId = data.user_id || 'parsed_user';
+        }
+      } catch (error) {
+        console.log('Signed request parse error:', error);
+        userId = 'parse_error_user';
+      }
+    } else {
+      userId = 'test_user_' + Date.now();
+    }
+    
+    const confirmationCode = `del_${Date.now()}_${userId}`;
+    const statusUrl = `https://app.theagencyiq.ai/deletion-status/${userId}`;
+    
     res.status(200).json({
-      status: 'ok',
-      message: 'Data deletion endpoint is ready',
-      url: 'https://app.theagencyiq.ai/api/facebook/data-deletion'
+      url: statusUrl,
+      confirmation_code: confirmationCode
     });
+  });
+
+  // API endpoint version
+  app.get('/api/facebook/data-deletion', (req, res) => {
+    res.status(200).json({ status: 'ok' });
   });
 
   app.post('/api/facebook/data-deletion', (req, res) => {
