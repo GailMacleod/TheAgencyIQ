@@ -1,6 +1,7 @@
 import express from 'express';
 import session from 'express-session';
-import connectPg from 'connect-pg-simple';
+import Knex from 'knex';
+import connectSessionKnex from 'connect-session-knex';
 import passport from 'passport';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -53,28 +54,21 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Session configuration
-const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-const pgStore = connectPg(session);
-const sessionStore = new pgStore({
-  conString: process.env.DATABASE_URL,
-  createTableIfMissing: false,
-  ttl: sessionTtl,
-  tableName: "sessions",
+const KnexSessionStore = connectSessionKnex(session);
+const knex = Knex({
+  client: 'sqlite3',
+  connection: { filename: './sessions.db' },
+  useNullAsDefault: true,
 });
 
-app.use(session({
-  secret: process.env.SESSION_SECRET!,
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: false, // Allow non-HTTPS in development
-    maxAge: sessionTtl,
-    sameSite: 'lax',
-  },
-  name: 'connect.sid',
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET!,
+    resave: false,
+    saveUninitialized: false,
+    store: new KnexSessionStore({ knex, tablename: 'sessions' }),
+  })
+);
 
 // Configure Passport strategies and initialize
 configurePassportStrategies();
