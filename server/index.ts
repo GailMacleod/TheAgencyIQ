@@ -18,7 +18,7 @@ async function startServer() {
     : 'http://localhost:5000';
 
   // Facebook Data Deletion Endpoint
-  app.get('/facebook/data-deletion', (req, res) => {
+  app.get('/facebook-data-deletion', (req, res) => {
     try {
       console.log('Facebook data deletion GET request received');
       res.status(200).json({ status: 'ok' });
@@ -28,7 +28,7 @@ async function startServer() {
     }
   });
 
-  app.post('/facebook/data-deletion', (req, res) => {
+  app.post('/facebook-data-deletion', (req, res) => {
     try {
       console.log('Facebook data deletion POST request received');
       console.log('Request body:', req.body);
