@@ -7,9 +7,87 @@ import { setupVite, serveStatic, log } from './vite';
 async function startServer() {
   const app = express();
 
+  // COMPREHENSIVE CORS MIDDLEWARE - Handle all cross-origin requests
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    // Handle preflight OPTIONS requests
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(200);
+      return;
+    }
+    
+    next();
+  });
+
   // Add body parsing middleware FIRST
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
+
+  // SURGICAL FIX: Dedicated beacon.js endpoint with explicit CORS
+  app.get('/public/js/beacon.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    
+    const beaconContent = `// Beacon.js - Analytics and tracking
+console.log('Beacon.js loaded successfully');
+
+// Initialize tracking
+window.beacon = {
+  track: function(event, data) {
+    console.log('Tracking event:', event, data);
+  },
+  init: function() {
+    console.log('Beacon tracking initialized');
+  }
+};
+
+// Auto-initialize
+if (typeof window !== 'undefined') {
+  window.beacon.init();
+}`;
+    
+    res.send(beaconContent);
+  });
+
+  // SURGICAL FIX: Dedicated manifest.json endpoint with explicit CORS
+  app.get('/manifest.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    
+    const manifest = {
+      "name": "TheAgencyIQ",
+      "short_name": "AgencyIQ",
+      "description": "AI-powered social media automation platform",
+      "start_url": "/",
+      "display": "standalone",
+      "background_color": "#ffffff",
+      "theme_color": "#000000",
+      "icons": [
+        {
+          "src": "/public/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        },
+        {
+          "src": "/public/icon-512.png", 
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+      ]
+    };
+    
+    res.json(manifest);
+  });
 
   // Serve static files early to catch public assets
   app.use('/public', express.static('public', {
