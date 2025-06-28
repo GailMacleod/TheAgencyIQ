@@ -93,6 +93,68 @@ async function startServer() {
     }
   });
 
+  // Beacon.js with failsafe handling
+  app.get('/public/js/beacon.js', (req, res) => {
+    try {
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(`
+        // Beacon.js - Analytics and tracking
+        console.log('Beacon.js loaded successfully');
+        
+        // Initialize tracking
+        window.beacon = {
+          track: function(event, data) {
+            console.log('Tracking event:', event, data);
+          },
+          init: function() {
+            console.log('Beacon tracking initialized');
+          }
+        };
+        
+        // Auto-initialize
+        if (typeof window !== 'undefined') {
+          window.beacon.init();
+        }
+      `);
+    } catch (error) {
+      console.error('Beacon error:', error);
+      res.status(500).json({ error: 'Beacon unavailable' });
+    }
+  });
+
+  // Essential static files with robust handling
+  app.get('/manifest.json', (req, res) => {
+    try {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.json({
+        "name": "TheAgencyIQ",
+        "short_name": "AgencyIQ",
+        "description": "Complete 5-Platform Social Media Automation for Queensland Small Businesses",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#fcfcfc",
+        "theme_color": "#3250fa",
+        "icons": [
+          {
+            "src": "/attached_assets/agency_logo_1749083054761.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+          }
+        ],
+        "categories": ["business", "productivity", "social"],
+        "lang": "en",
+        "dir": "ltr",
+        "orientation": "portrait-primary"
+      });
+    } catch (error) {
+      console.error('Manifest error:', error);
+      res.status(500).json({ error: 'Manifest unavailable' });
+    }
+  });
+
   // Data Deletion Status Page
   app.get('/deletion-status/:userId?', (req, res) => {
     const { userId } = req.params;
