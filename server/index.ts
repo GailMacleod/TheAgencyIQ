@@ -8,7 +8,7 @@ const app = express();
 
 // FACEBOOK DATA DELETION - EMERGENCY BYPASS ALL MIDDLEWARE
 // This MUST work on production domain for Facebook validation
-const facebookDataDeletion = (req, res) => {
+const facebookDataDeletionGet = (req, res) => {
   res.writeHead(200, {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
@@ -16,9 +16,7 @@ const facebookDataDeletion = (req, res) => {
     'Access-Control-Allow-Headers': 'Content-Type'
   });
   res.end(JSON.stringify({
-    status: 'ok',
-    message: 'Data deletion endpoint is ready',
-    url: 'https://app.theagencyiq.ai/facebook-data-deletion'
+    status: 'ok'
   }));
 };
 
@@ -107,9 +105,9 @@ function base64UrlDecode(input) {
 }
 
 // Mount Facebook endpoints at ABSOLUTE highest priority
-app.get('/facebook-data-deletion', facebookDataDeletion);
+app.get('/facebook-data-deletion', facebookDataDeletionGet);
 app.post('/facebook-data-deletion', facebookDataDeletionPost);
-app.get('/api/facebook/data-deletion', facebookDataDeletion);
+app.get('/api/facebook/data-deletion', facebookDataDeletionGet);
 app.post('/api/facebook/data-deletion', facebookDataDeletionPost);
 
 // Fix manifest.json 403 error - serve directly
