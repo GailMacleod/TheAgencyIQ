@@ -13,7 +13,7 @@ if (!process.env.SESSION_SECRET) {
 }
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = parseInt(process.env.PORT || '5000', 10);
 
 // CORS configuration
 app.use(cors({
@@ -187,7 +187,8 @@ app.use('/attached_assets', express.static('attached_assets'));
 
 // Serve frontend
 app.get('*', (req, res) => {
-  res.sendFile('index.html', { root: 'client/dist' });
+  const path = require('path');
+  res.sendFile(path.join(__dirname, 'client/dist/index.html'));
 });
 
 // Start server
