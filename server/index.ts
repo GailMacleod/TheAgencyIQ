@@ -11,6 +11,17 @@ async function startServer() {
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
 
+  // Serve static files early to catch public assets
+  app.use('/public', express.static('public', {
+    setHeaders: (res, path) => {
+      if (path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+      }
+    }
+  }));
+
   // Environment-aware base URL (Single Truth Source)
   const baseUrl = process.env.NODE_ENV === 'production'
     ? 'https://app.theagencyiq.ai'
