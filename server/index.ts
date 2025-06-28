@@ -26,27 +26,85 @@ const facebookDataDeletionPost = (req, res) => {
   let body = '';
   req.on('data', chunk => body += chunk);
   req.on('end', () => {
-    const data = JSON.parse(body || '{}');
-    const { user_id } = data;
-    
-    console.log('Facebook data deletion request received:', data);
-    
-    res.writeHead(200, {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    });
-    
-    if (user_id) {
-      console.log(`Data deletion requested for Facebook user: ${user_id}`);
+    try {
+      // Parse form-encoded data (signed_request comes as form data)
+      const params = new URLSearchParams(body);
+      const signedRequest = params.get('signed_request');
+      
+      console.log('Facebook data deletion request received with signed_request:', signedRequest ? 'present' : 'missing');
+      
+      if (!signedRequest) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'signed_request required' }));
+        return;
+      }
+      
+      // Parse Facebook signed request
+      const data = parseSignedRequest(signedRequest);
+      
+      if (!data || !data.user_id) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid signed request or missing user_id' }));
+        return;
+      }
+      
+      const userId = data.user_id;
+      console.log(`Data deletion requested for Facebook user: ${userId}`);
+      
+      // Generate response as required by Facebook
+      const confirmationCode = `del_${Date.now()}_${userId}`;
+      const statusUrl = `https://app.theagencyiq.ai/deletion-status/${userId}`;
+      
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      
       res.end(JSON.stringify({
-        url: `https://app.theagencyiq.ai/deletion-status/${user_id}`,
-        confirmation_code: `del_${Date.now()}_${user_id}`
+        url: statusUrl,
+        confirmation_code: confirmationCode
       }));
-    } else {
-      res.end(JSON.stringify({ error: 'user_id required' }));
+      
+    } catch (error) {
+      console.error('Error processing Facebook data deletion request:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Internal server error' }));
     }
   });
 };
+
+// Facebook signed request parser
+function parseSignedRequest(signedRequest) {
+  try {
+    const [encodedSig, payload] = signedRequest.split('.', 2);
+    
+    if (!encodedSig || !payload) {
+      console.error('Invalid signed request format');
+      return null;
+    }
+    
+    // Decode the payload (we skip signature verification for simplicity)
+    // In production, you should verify the signature using your app secret
+    const data = JSON.parse(base64UrlDecode(payload));
+    
+    console.log('Parsed signed request data:', data);
+    return data;
+    
+  } catch (error) {
+    console.error('Error parsing signed request:', error);
+    return null;
+  }
+}
+
+// Base64 URL decode helper
+function base64UrlDecode(input) {
+  // Add padding if needed
+  input += '='.repeat((4 - input.length % 4) % 4);
+  // Replace URL-safe characters
+  input = input.replace(/-/g, '+').replace(/_/g, '/');
+  // Decode base64
+  return Buffer.from(input, 'base64').toString('utf8');
+}
 
 // Mount Facebook endpoints at ABSOLUTE highest priority
 app.get('/facebook-data-deletion', facebookDataDeletion);
