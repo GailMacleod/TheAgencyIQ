@@ -6,7 +6,9 @@ import { setupVite, serveStatic, log } from './vite';
 async function startServer() {
   const app = express();
 
-  // CORS middleware
+  // Essential middleware
+  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json());
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -19,10 +21,6 @@ async function startServer() {
     }
     next();
   });
-
-  // Body parsing
-  app.use(express.urlencoded({ extended: true }));
-  app.use(express.json());
 
   // Environment-aware base URL
   const baseUrl = process.env.NODE_ENV === 'production'
@@ -87,10 +85,6 @@ async function startServer() {
 
   // CSP for Facebook compliance
   app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-      res.status(200).end();
-      return;
-    }
     res.setHeader('Content-Security-Policy', [
       "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net",
@@ -223,46 +217,32 @@ async function startServer() {
     });
   });
 
-  // Serve static files
+  // Static assets - combined
   app.use('/public', express.static('public'));
-
-  // Manifest.json
-  app.get('/manifest.json', (req, res) => {
-    res.json({
-      "name": "TheAgencyIQ",
-      "short_name": "AgencyIQ",
-      "description": "AI-powered social media automation platform",
-      "start_url": "/",
-      "display": "standalone",
-      "background_color": "#ffffff",
-      "theme_color": "#000000",
-      "icons": [
-        {
-          "src": "/attached_assets/agency_logo_1749083054761.png",
-          "sizes": "512x512",
-          "type": "image/png"
-        }
-      ]
-    });
-  });
-
-  // Beacon.js
-  app.get('/public/js/beacon.js', (req, res) => {
-    res.setHeader('Content-Type', 'application/javascript');
-    res.send(`
-      console.log('Beacon.js loaded successfully');
-      window.beacon = {
-        track: function(event, data) { console.log('Tracking:', event, data); },
-        init: function() { console.log('Beacon tracking initialized'); }
-      };
-      if (typeof window !== 'undefined') { window.beacon.init(); }
-    `);
+  
+  // Combined asset endpoints
+  app.get(['/manifest.json', '/public/js/beacon.js'], (req, res) => {
+    if (req.path === '/manifest.json') {
+      res.json({
+        "name": "TheAgencyIQ",
+        "short_name": "AgencyIQ", 
+        "description": "AI-powered social media automation platform",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": "#000000",
+        "icons": [{ "src": "/attached_assets/agency_logo_1749083054761.png", "sizes": "512x512", "type": "image/png" }]
+      });
+    } else {
+      res.setHeader('Content-Type', 'application/javascript');
+      res.send(`console.log('Beacon.js loaded successfully');window.beacon={track:function(event,data){console.log('Tracking:',event,data);},init:function(){console.log('Beacon tracking initialized');}};if(typeof window!=='undefined'){window.beacon.init();}`);
+    }
   });
 
   // Create HTTP server
   const httpServer = createServer(app);
 
-  // Request logging
+  // Request logging and API registration
   app.use((req, res, next) => {
     const start = Date.now();
     res.on("finish", () => {
@@ -274,11 +254,9 @@ async function startServer() {
     next();
   });
 
-  // Register API routes
+  // Register API routes and setup Vite
   const { registerRoutes } = await import('./routes');
   await registerRoutes(app);
-
-  // Setup Vite
   const vite = await setupVite(app, httpServer);
   serveStatic(app);
 
