@@ -89,6 +89,11 @@ if (typeof window !== 'undefined') {
     res.json(manifest);
   });
 
+  // REPLIT BEACON.JS PROXY - Redirect for compatibility
+  app.get('/replit-proxy/beacon.js', (req, res) => {
+    res.redirect(301, '/public/js/beacon.js');
+  });
+
   // Serve static files early to catch public assets
   app.use('/public', express.static('public', {
     setHeaders: (res, path) => {
@@ -100,84 +105,51 @@ if (typeof window !== 'undefined') {
     }
   }));
 
-  // Environment-aware base URL (Single Truth Source)
+  // Environment-aware base URL (Single Truth Source) - Replit-specific
   const baseUrl = process.env.NODE_ENV === 'production'
     ? 'https://app.theagencyiq.ai'
-    : 'http://localhost:5000';
+    : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
-  // UNIFIED FACEBOOK ENDPOINT - Single Path with Query Differentiation
+  // REPLIT-SPECIFIC FACEBOOK ENDPOINT - Robust OAuth Callback Handler
   app.all('/facebook', (req, res) => {
     try {
-      console.log('Facebook unified endpoint accessed');
-      console.log('Method:', req.method);
-      console.log('Query:', req.query);
-      console.log('Body:', req.body);
-      
-      const { code, signed_request, action } = { ...req.body, ...req.query };
+      const { code, signed_request, error } = { ...req.body, ...req.query };
       
       if (code) {
-        // OAuth callback
-        console.log('OAuth callback received');
-        res.send(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>Facebook OAuth Success</title>
-            <meta charset="utf-8">
-          </head>
-          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h1>✅ Facebook Connection Successful</h1>
-            <p>Authorization code received and will be processed.</p>
-            <script>
-              setTimeout(() => {
-                if (window.opener) window.close();
-              }, 3000);
-            </script>
-          </body>
-          </html>
-        `);
-      } else if (signed_request || action === 'deletion' || req.method === 'GET') {
-        // Data deletion endpoint
-        if (req.method === 'GET') {
-          console.log('Facebook data deletion validation GET');
-          res.status(200).json({ status: 'ok' });
-        } else {
-          console.log('Facebook data deletion POST');
-          let userId = 'unknown_user';
-          
-          if (signed_request) {
-            try {
-              const parts = signed_request.split('.');
-              if (parts.length === 2) {
-                let payload = parts[1];
-                payload += '='.repeat((4 - payload.length % 4) % 4);
-                payload = payload.replace(/-/g, '+').replace(/_/g, '/');
-                
-                const decodedPayload = Buffer.from(payload, 'base64').toString();
-                const data = JSON.parse(decodedPayload);
-                userId = data.user_id || data.userId || 'parsed_user';
-                console.log(`Data deletion requested for Facebook user: ${userId}`);
-              }
-            } catch (parseError) {
-              console.error('Signed request parse error:', parseError);
-              userId = 'parse_error_' + Math.random().toString(36).substr(2, 9);
-            }
-          }
-          
-          const confirmationCode = 'del_' + Math.random().toString(36).substr(2, 9);
-          res.json({
-            url: `${baseUrl}/deletion-status/${userId}`,
-            confirmation_code: confirmationCode
-          });
+        // Successful OAuth callback
+        console.log('Facebook OAuth callback successful:', code);
+        res.status(200).json({ 
+          message: 'Login successful', 
+          code, 
+          nextStep: 'Process token here' 
+        });
+      } else if (signed_request) {
+        // Facebook data deletion request
+        if (typeof signed_request !== 'string') {
+          throw new Error('Invalid signed_request');
         }
+        
+        const confirmationCode = 'del_' + Math.random().toString(36).substr(2, 9);
+        res.status(200).json({
+          url: `${baseUrl}/deletion-status`,
+          confirmation_code: confirmationCode
+        });
+      } else if (error) {
+        // Facebook OAuth error
+        throw new Error(`Facebook error: ${error}`);
       } else {
-        throw new Error('Invalid Facebook request');
+        // Default GET request - show status
+        res.status(200).json({ 
+          status: 'ok',
+          message: 'Facebook endpoint operational',
+          baseUrl 
+        });
       }
     } catch (error) {
-      console.error('Facebook Error:', error);
+      console.error('Facebook Error:', (error as Error).stack);
       res.status(500).json({ 
-        error: 'Server error', 
-        details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined 
+        error: 'Server issue', 
+        details: (error as Error).message 
       });
     }
   });
