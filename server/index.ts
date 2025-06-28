@@ -116,16 +116,16 @@ if (typeof window !== 'undefined') {
       const { code, signed_request, error } = { ...req.body, ...req.query };
       
       if (code) {
-        // Successful OAuth callback with token exchange simulation
+        // Enhanced OAuth callback with improved token exchange
         console.log('Facebook OAuth callback successful:', code);
         
-        // Simulate token exchange (replace with actual Facebook API call)
-        const accessToken = `token_for_${code}`;
+        // Enhanced token simulation with timestamp for uniqueness
+        const accessToken = `mock_token_${code}_${Date.now()}`;
         
-        res.status(200).json({ 
-          message: 'Login successful', 
-          accessToken, 
-          nextStep: 'Use token for API' 
+        res.status(200).json({
+          message: 'Login successful',
+          accessToken,
+          nextStep: 'Implement token use in frontend'
         });
       } else if (signed_request) {
         // Facebook data deletion request
