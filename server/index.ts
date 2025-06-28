@@ -110,337 +110,62 @@ if (typeof window !== 'undefined') {
     ? 'https://app.theagencyiq.ai'
     : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
-  // COMPREHENSIVE FACEBOOK ENDPOINT - Enhanced API Error Handling & Real Token Exchange
+  // CLEAN FACEBOOK ENDPOINT - Minimal & Robust
   app.all('/facebook', async (req, res) => {
     try {
       const { code, signed_request, error, error_code, error_message } = { ...req.body, ...req.query };
       
       if (code) {
-        // REAL FACEBOOK TOKEN EXCHANGE - Replace mock with actual Graph API call
-        console.log('Facebook OAuth callback successful:', code);
+        console.log('Facebook OAuth callback:', code);
         
-        try {
-          // Import axios dynamically for real token exchange
-          const axios = (await import('axios')).default;
-          
-          // Check for Facebook credentials
-          const clientId = process.env.FB_CLIENT_ID;
-          const clientSecret = process.env.FB_CLIENT_SECRET;
-          
-          if (!clientId || !clientSecret) {
-            // Fallback to enhanced mock with timestamp for uniqueness
-            const accessToken = `mock_token_${code}_${Date.now()}`;
-            console.log('Using mock token - FB credentials not configured');
-            
-            res.status(200).json({
-              message: 'Login successful (mock)',
-              accessToken,
-              nextStep: 'Configure FB_CLIENT_ID and FB_CLIENT_SECRET for real API'
+        // Check for real Facebook credentials
+        const clientId = process.env.FB_CLIENT_ID;
+        const clientSecret = process.env.FB_CLIENT_SECRET;
+        
+        if (clientId && clientSecret) {
+          try {
+            const axios = (await import('axios')).default;
+            const response = await axios.get('https://graph.facebook.com/oauth/access_token', {
+              params: { client_id: clientId, client_secret: clientSecret, code, redirect_uri: `${baseUrl}/facebook` }
             });
-            return;
+            
+            res.json({ message: 'Login successful', accessToken: response.data.access_token });
+          } catch (tokenError: any) {
+            res.status(500).json({ error: 'Token exchange failed', details: tokenError.response?.data?.error?.message });
           }
-          
-          // REAL FACEBOOK GRAPH API TOKEN EXCHANGE
-          const response = await axios.get('https://graph.facebook.com/oauth/access_token', {
-            params: {
-              client_id: clientId,
-              client_secret: clientSecret,
-              code,
-              redirect_uri: `${baseUrl}/facebook`
-            }
-          });
-          
-          const accessToken = response.data.access_token;
-          console.log('Real Facebook token exchange successful');
-          
-          res.status(200).json({
-            message: 'Login successful',
-            accessToken,
-            nextStep: 'Token ready for Facebook API calls'
-          });
-          
-        } catch (tokenError: any) {
-          console.error('Token exchange error:', tokenError.response?.data || tokenError.message);
-          
-          // Enhanced error response with specific Facebook error handling
-          res.status(500).json({
-            error: 'Token exchange failed',
-            details: tokenError.response?.data?.error?.message || tokenError.message,
-            recovery: 'Check Facebook app configuration and credentials'
-          });
+        } else {
+          // Mock for development
+          res.json({ message: 'Login successful (mock)', accessToken: `mock_token_${code}_${Date.now()}` });
         }
         
       } else if (signed_request) {
-        // Facebook data deletion request with enhanced validation
-        if (typeof signed_request !== 'string') {
-          throw new Error('Invalid signed_request format');
-        }
-        
-        const confirmationCode = 'del_' + Math.random().toString(36).substr(2, 9);
-        res.status(200).json({
-          url: `${baseUrl}/deletion-status`,
-          confirmation_code: confirmationCode
-        });
+        // Data deletion
+        res.json({ url: `${baseUrl}/deletion-status`, confirmation_code: 'del_' + Math.random().toString(36).substr(2, 9) });
         
       } else if (error || error_code) {
-        // COMPREHENSIVE FACEBOOK API ERROR HANDLING
-        let recovery = 'Retry login';
-        const errorCodeNum = parseInt(error_code) || 0;
-        
-        switch (errorCodeNum) {
-          case 190: case 463: case 467:
-            recovery = 'Get new access token';
-            break;
-          case 458: case 459: case 464:
-            recovery = 'Reauthenticate user';
-            break;
-          case 4: case 17: case 341:
-            recovery = 'Wait and retry';
-            break;
-          case 200:
-            recovery = 'Check permissions';
-            break;
-          case 100:
-            recovery = 'Invalid parameter';
-            break;
-        }
-        
-        const errorMsg = `API Error: ${error_message || error} (Code: ${error_code}), Recovery: ${recovery}`;
-        console.error('Facebook API Error:', errorMsg);
-        
-        res.status(500).json({
-          error: 'Facebook API Error',
-          details: errorMsg,
-          error_code: error_code,
-          recovery
-        });
+        // Error handling
+        const recovery = error_code === '190' ? 'Get new access token' : 'Retry login';
+        res.status(500).json({ error: 'Facebook API Error', details: error_message || error, recovery });
         
       } else {
-        // Default GET request - show enhanced status
-        res.status(200).json({ 
-          status: 'ok',
-          message: 'Facebook endpoint operational with API error handling',
-          baseUrl,
-          features: ['OAuth callback', 'Token exchange', 'Data deletion', 'Error recovery']
-        });
+        // Status
+        res.json({ status: 'ok', message: 'Facebook endpoint operational', baseUrl });
       }
       
     } catch (error) {
-      console.error('Facebook Error:', (error as Error).stack);
-      res.status(500).json({ 
-        error: 'Server issue', 
-        details: (error as Error).message,
-        recovery: 'Check server logs and configuration'
-      });
+      res.status(500).json({ error: 'Server issue', details: (error as Error).message });
     }
   });
 
-  // Beacon.js with failsafe handling
-  app.get('/public/js/beacon.js', (req, res) => {
-    try {
-      res.setHeader('Content-Type', 'application/javascript');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.send(`
-        // Beacon.js - Analytics and tracking
-        console.log('Beacon.js loaded successfully');
-        
-        // Initialize tracking
-        window.beacon = {
-          track: function(event, data) {
-            console.log('Tracking event:', event, data);
-          },
-          init: function() {
-            console.log('Beacon tracking initialized');
-          }
-        };
-        
-        // Auto-initialize
-        if (typeof window !== 'undefined') {
-          window.beacon.init();
-        }
-      `);
-    } catch (error) {
-      console.error('Beacon error:', error);
-      res.status(500).json({ error: 'Beacon unavailable' });
-    }
-  });
 
-  // Essential static files with robust handling
-  app.get('/manifest.json', (req, res) => {
-    try {
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.json({
-        "name": "TheAgencyIQ",
-        "short_name": "AgencyIQ",
-        "description": "Complete 5-Platform Social Media Automation for Queensland Small Businesses",
-        "start_url": "/",
-        "display": "standalone",
-        "background_color": "#fcfcfc",
-        "theme_color": "#3250fa",
-        "icons": [
-          {
-            "src": "/attached_assets/agency_logo_1749083054761.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-          }
-        ],
-        "categories": ["business", "productivity", "social"],
-        "lang": "en",
-        "dir": "ltr",
-        "orientation": "portrait-primary"
-      });
-    } catch (error) {
-      console.error('Manifest error:', error);
-      res.status(500).json({ error: 'Manifest unavailable' });
-    }
-  });
 
-  // Data Deletion Status Page
+  // Data deletion status
   app.get('/deletion-status/:userId?', (req, res) => {
-    const { userId } = req.params;
-    const displayUserId = userId || 'anonymous';
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Data Deletion Status</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-      </head>
-      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
-        <h1>Data Deletion Request Status</h1>
-        <p><strong>User ID:</strong> ${displayUserId}</p>
-        <p><strong>Status:</strong> Your data deletion request has been processed successfully.</p>
-        <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
-        <hr>
-        <p style="color: #666; font-size: 14px;">
-          Your personal data associated with TheAgencyIQ has been permanently removed from our systems.
-          This action cannot be undone.
-        </p>
-      </body>
-      </html>
-    `);
+    const userId = req.params.userId || 'anonymous';
+    res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // Essential static assets with robust error handling
-  app.get('/manifest.json', (req, res) => {
-    try {
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.json({
-        "name": "TheAgencyIQ",
-        "short_name": "AgencyIQ",
-        "description": "Complete 5-Platform Social Media Automation for Queensland Small Businesses",
-        "start_url": "/",
-        "display": "standalone",
-        "background_color": "#fcfcfc",
-        "theme_color": "#3250fa",
-        "icons": [
-          {
-            "src": "/attached_assets/agency_logo_1749083054761.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-          }
-        ],
-        "categories": ["business", "productivity", "social"],
-        "lang": "en",
-        "dir": "ltr",
-        "orientation": "portrait-primary"
-      });
-    } catch (error) {
-      console.error('Manifest error:', error);
-      res.status(500).json({ error: 'Manifest unavailable' });
-    }
-  });
-
-  // Beacon.js with failsafe handling
-  app.get('/public/js/beacon.js', (req, res) => {
-    try {
-      res.setHeader('Content-Type', 'application/javascript');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.send(`
-        // Beacon.js - Analytics and tracking
-        console.log('Beacon.js loaded successfully');
-        
-        // Initialize tracking
-        window.beacon = {
-          track: function(event, data) {
-            console.log('Tracking event:', event, data);
-          },
-          init: function() {
-            console.log('Beacon tracking initialized');
-          }
-        };
-        
-        // Auto-initialize
-        if (typeof window !== 'undefined') {
-          window.beacon.init();
-        }
-      `);
-    } catch (error) {
-      console.error('Beacon error:', error);
-      res.status(500).json({ error: 'Beacon unavailable' });
-    }
-  });
-
-  // Generic handler for public assets
-  app.use('/public', (req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    next();
-  });
-
-  // Data deletion status page
-  app.get('/deletion-status/:userId', (req, res) => {
-    const { userId } = req.params;
-    res.send(`
-      <html>
-        <head><title>Data Deletion Status</title></head>
-        <body style="font-family: Arial, sans-serif; padding: 20px;">
-          <h1>Data Deletion Status</h1>
-          <p><strong>User ID:</strong> ${userId}</p>
-          <p><strong>Status:</strong> Data deletion completed successfully</p>
-          <p><strong>Date:</strong> ${new Date().toISOString()}</p>
-        </body>
-      </html>
-    `);
-  });
-
-  // Test endpoint for Facebook data deletion validation
-  app.get('/test-facebook-deletion', (req, res) => {
-    res.json({
-      status: 'success',
-      message: 'Facebook Data Deletion endpoints are operational',
-      endpoints: {
-        get_validation: {
-          url: 'https://app.theagencyiq.ai/facebook-data-deletion',
-          method: 'GET',
-          expected_response: '{"status":"ok"}'
-        },
-        post_deletion: {
-          url: 'https://app.theagencyiq.ai/facebook-data-deletion', 
-          method: 'POST',
-          content_type: 'application/x-www-form-urlencoded',
-          expected_body: 'signed_request=<facebook_signed_request>',
-          expected_response: '{"url":"<status_url>","confirmation_code":"<code>"}'
-        }
-      },
-      meta_requirements: {
-        get_response: 'Must return 200 OK with {"status": "ok"}',
-        post_response: 'Must parse signed_request and return status URL + confirmation code',
-        production_url: 'https://app.theagencyiq.ai/facebook-data-deletion'
-      }
-    });
-  });
-
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-  // Production-ready session configuration
+  // Session configuration
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     resave: false,
@@ -453,29 +178,19 @@ if (typeof window !== 'undefined') {
     }
   }));
 
-  // CORS and CSP configuration
+  // CSP for Facebook compliance
   app.use((req, res, next) => {
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    
-    // Handle preflight requests
     if (req.method === 'OPTIONS') {
       res.status(200).end();
       return;
     }
-
-    // Facebook-whitelisted CSP
     res.setHeader('Content-Security-Policy', [
       "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://twitter.com https://accounts.google.com",
-      "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com",
-      "style-src 'self' 'unsafe-inline' https://replit.com https://accounts.google.com https://*.facebook.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net",
+      "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com",
+      "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com",
       "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net",
-      "font-src 'self' https://replit.com data: https://*.facebook.com",
-      "frame-src 'self' https://checkout.stripe.com https://js.stripe.com https://connect.facebook.net https://accounts.google.com https://*.facebook.com"
+      "frame-src 'self' https://connect.facebook.net https://*.facebook.com"
     ].join('; '));
     next();
   });
