@@ -13,7 +13,15 @@ if (!process.env.SESSION_SECRET) {
 }
 
 const app = express();
+
+// Replit-compatible port configuration
 const port = parseInt(process.env.PORT || '5000', 10);
+
+// Validate port for Replit environment
+if (isNaN(port) || port < 1 || port > 65535) {
+  console.error(`Invalid port: ${process.env.PORT}. Using default port 5000.`);
+  process.exit(1);
+}
 
 // CORS configuration
 app.use(cors({
@@ -211,7 +219,15 @@ app.get('*', (req, res) => {
 const server = createServer(app);
 
 server.listen(port, '0.0.0.0', () => {
-  console.log(`TheAgencyIQ Server running on port ${port}`);
+  console.log(`TheAgencyIQ Server successfully started`);
+  console.log(`Running on port: ${port} (from ${process.env.PORT ? 'ENV' : 'default'})`);
+  console.log(`Host: 0.0.0.0 (Replit-compatible)`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  if (process.env.REPLIT_DOMAINS) {
+    console.log(`Replit domain: https://${process.env.REPLIT_DOMAINS.split(',')[0]}`);
+  }
+  
   console.log(`Deploy time: ${new Date().toLocaleString('en-AU', { 
     timeZone: 'Australia/Sydney',
     day: '2-digit',
@@ -222,15 +238,39 @@ server.listen(port, '0.0.0.0', () => {
     second: '2-digit',
     hour12: true
   })} AEST`);
+  
   console.log('React app with OAuth bypass ready');
   console.log('Visit /public to bypass auth and access platform connections');
 });
 
-// Graceful shutdown
+// Server error handling for Replit hosting
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${port} is already in use. Replit will assign a different port.`);
+    process.exit(1);
+  } else if (error.code === 'EACCES') {
+    console.error(`Permission denied for port ${port}. Check Replit configuration.`);
+    process.exit(1);
+  } else {
+    console.error('Server error:', error);
+    process.exit(1);
+  }
+});
+
+// Graceful shutdown for Replit deployment
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully');
   server.close(() => {
-    console.log('Process terminated');
+    console.log('TheAgencyIQ server terminated successfully');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('TheAgencyIQ server terminated successfully');
+    process.exit(0);
   });
 });
 
