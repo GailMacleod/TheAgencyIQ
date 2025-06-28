@@ -116,12 +116,16 @@ if (typeof window !== 'undefined') {
       const { code, signed_request, error } = { ...req.body, ...req.query };
       
       if (code) {
-        // Successful OAuth callback
+        // Successful OAuth callback with token exchange simulation
         console.log('Facebook OAuth callback successful:', code);
+        
+        // Simulate token exchange (replace with actual Facebook API call)
+        const accessToken = `token_for_${code}`;
+        
         res.status(200).json({ 
           message: 'Login successful', 
-          code, 
-          nextStep: 'Process token here' 
+          accessToken, 
+          nextStep: 'Use token for API' 
         });
       } else if (signed_request) {
         // Facebook data deletion request
@@ -697,6 +701,15 @@ if (typeof window !== 'undefined') {
     console.log('Visit /public to bypass auth and access platform connections');
   });
 }
+
+// Prevent server crashes from uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 // Start the server
 startServer().catch(console.error);

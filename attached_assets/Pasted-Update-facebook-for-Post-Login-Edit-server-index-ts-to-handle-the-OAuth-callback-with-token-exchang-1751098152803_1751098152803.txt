@@ -1,0 +1,68 @@
+Update /facebook for Post-Login
+Edit server/index.ts to handle the OAuth callback with token exchange (simplified) and avoid crashes:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
+const app = express();
+const baseUrl = process.env.NODE_ENV === 'production'
+  ? 'https://app.theagencyiq.ai'
+  : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use((req, res, next) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  next();
+});
+
+app.all('/facebook', (req, res) => {
+  try {
+    const { code, signed_request, error } = { ...req.body, ...req.query };
+    if (code) {
+      // Simulate token exchange (replace with actual API call)
+      const accessToken = `token_for_${code}`; // Placeholder
+      res.status(200).json({ message: 'Login successful', accessToken, nextStep: 'Use token for API' });
+    } else if (signed_request) {
+      if (typeof signed_request !== 'string') throw new Error('Invalid signed_request');
+      res.status(200).json({
+        url: `${baseUrl}/deletion-status`,
+        confirmation_code: 'del_' + Math.random().toString(36).substr(2, 9)
+      });
+    } else if (error) {
+      throw new Error(`Facebook error: ${error}`);
+    } else {
+      throw new Error('Invalid request');
+    }
+  } catch (error) {
+    console.error('Facebook Error:', error.stack);
+    res.status(500).json({ error: 'Server issue', details: error.message });
+  }
+});
+
+const publicDir = path.join(__dirname, 'dist', 'public');
+app.use(express.static(publicDir));
+app.get('/manifest.json', (req, res) => {
+  res.sendFile(path.join(publicDir, 'manifest.json'), (err) => err && res.status(404).json({ error: 'Manifest missing' }));
+});
+app.get('/public/js/beacon.js', (req, res) => {
+  res.sendFile(path.join(publicDir, 'js', 'beacon.js'), (err) => err && res.status(404).json({ error: 'Beacon missing' }));
+});
+app.get('/replit-proxy/beacon.js', (req, res) => {
+  res.redirect(301, '/public/js/beacon.js');
+});
+app.get('*', (req, res) => res.status(404).json({ error: 'Not found' }));
+
+process.on('uncaughtException', (error) => console.error('Uncaught:', error.stack));
+
+const PORT = 5000;
+app.listen(PORT, () => console.log(`Live on ${PORT}`));
+Install if needed: npm install express body-parser.
