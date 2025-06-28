@@ -5,11 +5,127 @@ import { Strategy as TwitterStrategy } from 'passport-twitter';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from './storage';
 
+// TypeScript interfaces for OAuth callback handling
+interface OAuthProfile {
+  id: string;
+  displayName?: string;
+  username?: string;
+  name?: {
+    givenName?: string;
+    familyName?: string;
+  };
+  emails?: Array<{ value: string }>;
+}
+
+interface OAuthTokens {
+  accessToken: string;
+  refreshToken?: string | null;
+  tokenSecret?: string; // For Twitter OAuth 1.0a
+}
+
+interface OAuthCallbackParams {
+  req: any;
+  profile: OAuthProfile;
+  tokens: OAuthTokens;
+  platform: string;
+}
+
+interface OAuthResult {
+  platform: string;
+  success: boolean;
+  error?: string;
+}
+
+// Unified OAuth callback handler with comprehensive error handling
+async function handleOAuthCallback(params: OAuthCallbackParams): Promise<OAuthResult> {
+  const { req, profile, tokens, platform } = params;
+  
+  try {
+    // Step 1: Validate user session
+    let userId = req.session?.userId;
+    
+    // LinkedIn session recovery - handle lost sessions during OAuth flow
+    if (!userId && platform === 'linkedin' && profile.emails?.[0]) {
+      const user = await storage.getUserByEmail(profile.emails[0].value);
+      if (user) {
+        userId = user.id;
+        req.session.userId = userId;
+        req.session.save();
+      }
+    }
+    
+    if (!userId) {
+      throw new Error(`User session lost during ${platform} OAuth - please log in again`);
+    }
+
+    // Step 2: Validate OAuth tokens (no mock/demo tokens)
+    const primaryToken = tokens.accessToken || tokens.tokenSecret;
+    if (!primaryToken || 
+        primaryToken.includes('demo') || 
+        primaryToken.includes('mock') || 
+        primaryToken.length < 10) {
+      throw new Error(`Invalid ${platform} OAuth token received`);
+    }
+
+    // Step 3: Extract platform-specific user data
+    const platformData = extractPlatformData(profile, platform);
+    
+    console.log(`${platform} OAuth successful:`, {
+      profileId: profile.id,
+      displayName: platformData.displayName,
+      userId: userId,
+      tokenType: 'live_oauth'
+    });
+
+    // Step 4: Store platform connection
+    await storage.createPlatformConnection({
+      userId,
+      platform,
+      platformUserId: profile.id,
+      platformUsername: platformData.displayName,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken || tokens.tokenSecret || null,
+      isActive: true
+    });
+
+    return { platform, success: true };
+    
+  } catch (error: any) {
+    console.error(`${platform} OAuth error:`, error);
+    return { 
+      platform, 
+      success: false, 
+      error: error.message 
+    };
+  }
+}
+
+// Extract platform-specific display name and user data
+function extractPlatformData(profile: OAuthProfile, platform: string): { displayName: string } {
+  switch (platform) {
+    case 'facebook':
+    case 'youtube':
+      return { displayName: profile.displayName || profile.id };
+    
+    case 'linkedin':
+      return { 
+        displayName: profile.displayName || 
+                    (profile.name ? `${profile.name.givenName} ${profile.name.familyName}` : profile.id)
+      };
+    
+    case 'x':
+      return { displayName: profile.username || profile.displayName || profile.id };
+    
+    default:
+      return { displayName: profile.displayName || profile.id };
+  }
+}
+
 const OAUTH_REDIRECT_BASE = process.env.REPLIT_DOMAINS 
   ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
   : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
-// Facebook OAuth Strategy with proper page permissions
+// Facebook OAuth Strategy with unified callback handling
 passport.use(new FacebookStrategy({
   clientID: process.env.FACEBOOK_APP_ID!,
   clientSecret: process.env.FACEBOOK_APP_SECRET!,
@@ -18,45 +134,22 @@ passport.use(new FacebookStrategy({
   scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_to_groups', 'pages_show_list', 'user_posts', 'publish_actions'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
-  try {
-    const userId = req.session.userId;
-    if (!userId) {
-      return done(new Error('User not authenticated'));
-    }
-
-    // Validate real OAuth token (no demo/mock tokens allowed)
-    if (!accessToken || accessToken.includes('demo') || accessToken.includes('mock') || accessToken.length < 10) {
-      return done(new Error('Invalid Facebook OAuth token received'));
-    }
-
-    console.log('Facebook OAuth successful:', {
-      profileId: profile.id,
-      displayName: profile.displayName,
-      tokenType: 'live_oauth'
-    });
-
-    // Store platform connection with real credentials only
-    await storage.createPlatformConnection({
-      userId,
-      platform: 'facebook',
-      platformUserId: profile.id,
-      platformUsername: profile.displayName,
-      accessToken,
-      refreshToken,
-      isActive: true
-    });
-
-    return done(null, { platform: 'facebook', success: true });
-  } catch (error) {
-    console.error('Facebook OAuth error:', error);
-    return done(error);
-  }
+  const result = await handleOAuthCallback({
+    req,
+    profile,
+    tokens: { accessToken, refreshToken },
+    platform: 'facebook'
+  });
+  
+  return result.success 
+    ? done(null, result) 
+    : done(new Error(result.error));
 }));
 
 // Instagram - Direct connection method (OAuth disabled due to app configuration issues)
 // Instagram connections are now handled via direct API endpoints in routes.ts
 
-// LinkedIn OAuth Strategy
+// LinkedIn OAuth Strategy with unified callback handling
 passport.use(new LinkedInStrategy({
   clientID: process.env.LINKEDIN_CLIENT_ID!,
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
@@ -64,68 +157,19 @@ passport.use(new LinkedInStrategy({
   scope: ['profile', 'w_member_social', 'email'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
-  try {
-    console.log('LinkedIn OAuth callback received:', {
-      profileId: profile.id,
-      displayName: profile.displayName,
-      sessionUserId: req.session?.userId,
-      hasAccessToken: !!accessToken
-    });
-
-    // For LinkedIn OAuth, we need to find the user differently since session might be lost
-    let userId = req.session?.userId;
-    
-    // If no session userId, try to find user by email from profile
-    if (!userId && profile.emails && profile.emails[0]) {
-      const user = await storage.getUserByEmail(profile.emails[0].value);
-      if (user) {
-        userId = user.id;
-        req.session.userId = userId; // Restore session
-        req.session.save(); // Ensure session is persisted
-      }
-    }
-
-    // Try one more recovery attempt using any available user identifier
-    if (!userId && profile.id) {
-      // Skip platform connection lookup for now - focus on session recovery
-      console.log('LinkedIn OAuth: Could not recover user session for profile ID:', profile.id);
-    }
-
-    if (!userId) {
-      console.error('LinkedIn OAuth: No user session found and cannot recover');
-      return done(new Error('User session lost during OAuth - please log in again'));
-    }
-
-    // Validate real OAuth token (no demo/mock tokens allowed)
-    if (!accessToken || accessToken.includes('demo') || accessToken.includes('mock') || accessToken.length < 10) {
-      return done(new Error('Invalid LinkedIn OAuth token received'));
-    }
-
-    console.log('LinkedIn OAuth successful:', {
-      profileId: profile.id,
-      displayName: profile.displayName,
-      userId: userId,
-      tokenType: 'live_oauth'
-    });
-
-    await storage.createPlatformConnection({
-      userId,
-      platform: 'linkedin',
-      platformUserId: profile.id,
-      platformUsername: profile.displayName || profile.name?.givenName + ' ' + profile.name?.familyName,
-      accessToken,
-      refreshToken: refreshToken || null,
-      isActive: true
-    });
-
-    return done(null, { platform: 'linkedin', success: true });
-  } catch (error) {
-    console.error('LinkedIn OAuth error:', error);
-    return done(error);
-  }
+  const result = await handleOAuthCallback({
+    req,
+    profile,
+    tokens: { accessToken, refreshToken },
+    platform: 'linkedin'
+  });
+  
+  return result.success 
+    ? done(null, result) 
+    : done(new Error(result.error));
 }));
 
-// X (Twitter) OAuth Strategy
+// X (Twitter) OAuth Strategy with unified callback handling
 passport.use(new TwitterStrategy({
   consumerKey: process.env.X_0AUTH_CLIENT_ID!,
   consumerSecret: process.env.X_0AUTH_CLIENT_SECRET!,
@@ -133,41 +177,19 @@ passport.use(new TwitterStrategy({
   userProfileURL: "https://api.twitter.com/1.1/account/verify_credentials.json?include_email=true",
   passReqToCallback: true
 }, async (req: any, token: string, tokenSecret: string, profile: any, done: any) => {
-  try {
-    const userId = req.session.userId;
-    if (!userId) {
-      return done(new Error('User not authenticated'));
-    }
-
-    // Validate real OAuth token (no demo/mock tokens allowed)
-    if (!token || token.includes('demo') || token.includes('mock') || token.length < 10) {
-      return done(new Error('Invalid X OAuth token received'));
-    }
-
-    console.log('X OAuth successful:', {
-      profileId: profile.id,
-      username: profile.username,
-      tokenType: 'live_oauth'
-    });
-
-    await storage.createPlatformConnection({
-      userId,
-      platform: 'x',
-      platformUserId: profile.id,
-      platformUsername: profile.username,
-      accessToken: token,
-      refreshToken: tokenSecret,
-      isActive: true
-    });
-
-    return done(null, { platform: 'x', success: true });
-  } catch (error) {
-    console.error('X OAuth error:', error);
-    return done(error);
-  }
+  const result = await handleOAuthCallback({
+    req,
+    profile,
+    tokens: { accessToken: token, tokenSecret },
+    platform: 'x'
+  });
+  
+  return result.success 
+    ? done(null, result) 
+    : done(new Error(result.error));
 }));
 
-// YouTube (Google) OAuth Strategy
+// YouTube (Google) OAuth Strategy with unified callback handling
 passport.use('youtube', new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID!,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -175,38 +197,16 @@ passport.use('youtube', new GoogleStrategy({
   scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
-  try {
-    const userId = req.session.userId;
-    if (!userId) {
-      return done(new Error('User not authenticated'));
-    }
-
-    // Validate real OAuth token (no demo/mock tokens allowed)
-    if (!accessToken || accessToken.includes('demo') || accessToken.includes('mock') || accessToken.length < 10) {
-      return done(new Error('Invalid YouTube OAuth token received'));
-    }
-
-    console.log('YouTube OAuth successful:', {
-      profileId: profile.id,
-      displayName: profile.displayName,
-      tokenType: 'live_oauth'
-    });
-
-    await storage.createPlatformConnection({
-      userId,
-      platform: 'youtube',
-      platformUserId: profile.id,
-      platformUsername: profile.displayName,
-      accessToken,
-      refreshToken,
-      isActive: true
-    });
-
-    return done(null, { platform: 'youtube', success: true });
-  } catch (error) {
-    console.error('YouTube OAuth error:', error);
-    return done(error);
-  }
+  const result = await handleOAuthCallback({
+    req,
+    profile,
+    tokens: { accessToken, refreshToken },
+    platform: 'youtube'
+  });
+  
+  return result.success 
+    ? done(null, result) 
+    : done(new Error(result.error));
 }));
 
 export { passport };
