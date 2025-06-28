@@ -4,520 +4,479 @@ import { createServer } from 'http';
 import path from 'path';
 import { setupVite, serveStatic, log } from './vite';
 
-const app = express();
+async function startServer() {
+  const app = express();
 
-// FACEBOOK DATA DELETION - EMERGENCY BYPASS ALL MIDDLEWARE
-// This MUST work on production domain for Facebook validation
-const facebookDataDeletionGet = (req, res) => {
-  res.writeHead(200, {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
-  });
-  res.end(JSON.stringify({
-    status: 'ok'
-  }));
-};
+  // FACEBOOK DATA DELETION - EMERGENCY BYPASS ALL MIDDLEWARE
+  // This MUST work on production domain for Facebook validation
+  const facebookDataDeletionGet = (req: any, res: any) => {
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    });
+    res.end(JSON.stringify({
+      status: 'ok'
+    }));
+  };
 
-const facebookDataDeletionPost = (req, res) => {
-  let body = '';
-  req.on('data', chunk => body += chunk);
-  req.on('end', () => {
+  const facebookDataDeletionPost = (req: any, res: any) => {
+    let body = '';
+    req.on('data', (chunk: any) => body += chunk);
+    req.on('end', () => {
+      try {
+        // Parse form-encoded data (signed_request comes as form data)
+        const params = new URLSearchParams(body);
+        const signedRequest = params.get('signed_request');
+        
+        console.log('Facebook data deletion request received with signed_request:', signedRequest ? 'present' : 'missing');
+        
+        if (!signedRequest) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'signed_request required' }));
+          return;
+        }
+        
+        // Parse Facebook signed request
+        const data = parseSignedRequest(signedRequest);
+        
+        if (!data || !data.user_id) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid signed request or missing user_id' }));
+          return;
+        }
+        
+        const userId = data.user_id;
+        console.log(`Data deletion requested for Facebook user: ${userId}`);
+        
+        // Generate response as required by Facebook
+        const confirmationCode = `del_${Date.now()}_${userId}`;
+        const statusUrl = `https://app.theagencyiq.ai/deletion-status/${userId}`;
+        
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        });
+        
+        res.end(JSON.stringify({
+          url: statusUrl,
+          confirmation_code: confirmationCode
+        }));
+        
+      } catch (error) {
+        console.error('Error processing Facebook data deletion request:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Internal server error' }));
+      }
+    });
+  };
+
+  // Facebook signed request parser
+  function parseSignedRequest(signedRequest: any) {
     try {
-      // Parse form-encoded data (signed_request comes as form data)
-      const params = new URLSearchParams(body);
-      const signedRequest = params.get('signed_request');
+      const [encodedSig, payload] = signedRequest.split('.', 2);
       
-      console.log('Facebook data deletion request received with signed_request:', signedRequest ? 'present' : 'missing');
-      
-      if (!signedRequest) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'signed_request required' }));
-        return;
+      if (!encodedSig || !payload) {
+        console.error('Invalid signed request format');
+        return null;
       }
       
-      // Parse Facebook signed request
-      const data = parseSignedRequest(signedRequest);
+      // Decode the payload (we skip signature verification for simplicity)
+      // In production, you should verify the signature using your app secret
+      const data = JSON.parse(base64UrlDecode(payload));
       
-      if (!data || !data.user_id) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid signed request or missing user_id' }));
-        return;
-      }
-      
-      const userId = data.user_id;
-      console.log(`Data deletion requested for Facebook user: ${userId}`);
-      
-      // Generate response as required by Facebook
-      const confirmationCode = `del_${Date.now()}_${userId}`;
-      const statusUrl = `https://app.theagencyiq.ai/deletion-status/${userId}`;
-      
-      res.writeHead(200, {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      });
-      
-      res.end(JSON.stringify({
-        url: statusUrl,
-        confirmation_code: confirmationCode
-      }));
+      console.log('Parsed signed request data:', data);
+      return data;
       
     } catch (error) {
-      console.error('Error processing Facebook data deletion request:', error);
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Internal server error' }));
-    }
-  });
-};
-
-// Facebook signed request parser
-function parseSignedRequest(signedRequest) {
-  try {
-    const [encodedSig, payload] = signedRequest.split('.', 2);
-    
-    if (!encodedSig || !payload) {
-      console.error('Invalid signed request format');
+      console.error('Error parsing signed request:', error);
       return null;
     }
-    
-    // Decode the payload (we skip signature verification for simplicity)
-    // In production, you should verify the signature using your app secret
-    const data = JSON.parse(base64UrlDecode(payload));
-    
-    console.log('Parsed signed request data:', data);
-    return data;
-    
-  } catch (error) {
-    console.error('Error parsing signed request:', error);
-    return null;
   }
-}
 
-// Base64 URL decode helper
-function base64UrlDecode(input) {
-  // Add padding if needed
-  input += '='.repeat((4 - input.length % 4) % 4);
-  // Replace URL-safe characters
-  input = input.replace(/-/g, '+').replace(/_/g, '/');
-  // Decode base64
-  return Buffer.from(input, 'base64').toString('utf8');
-}
+  // Base64 URL decode helper
+  function base64UrlDecode(input: any) {
+    // Add padding if needed
+    input += '='.repeat((4 - input.length % 4) % 4);
+    // Replace URL-safe characters
+    input = input.replace(/-/g, '+').replace(/_/g, '/');
+    // Decode base64
+    return Buffer.from(input, 'base64').toString('utf8');
+  }
 
-// Mount Facebook endpoints at ABSOLUTE highest priority
-app.get('/facebook-data-deletion', facebookDataDeletionGet);
-app.post('/facebook-data-deletion', facebookDataDeletionPost);
-app.get('/api/facebook/data-deletion', facebookDataDeletionGet);
-app.post('/api/facebook/data-deletion', facebookDataDeletionPost);
+  // Mount Facebook endpoints at ABSOLUTE highest priority
+  app.get('/facebook-data-deletion', facebookDataDeletionGet);
+  app.post('/facebook-data-deletion', facebookDataDeletionPost);
+  app.get('/api/facebook/data-deletion', facebookDataDeletionGet);
+  app.post('/api/facebook/data-deletion', facebookDataDeletionPost);
 
-// Fix manifest.json 403 error - serve directly
-app.get('/manifest.json', (req, res) => {
-  res.json({
-    "name": "TheAgencyIQ",
-    "short_name": "AgencyIQ",
-    "description": "Complete 5-Platform Social Media Automation for Queensland Small Businesses",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#fcfcfc",
-    "theme_color": "#3250fa",
-    "icons": [
-      {
-        "src": "/attached_assets/agency_logo_1749083054761.png",
-        "sizes": "512x512",
-        "type": "image/png",
-        "purpose": "any maskable"
-      }
-    ],
-    "categories": ["business", "productivity", "social"],
-    "lang": "en",
-    "dir": "ltr",
-    "orientation": "portrait-primary"
+  // Fix manifest.json 403 error - serve directly
+  app.get('/manifest.json', (req, res) => {
+    res.json({
+      "name": "TheAgencyIQ",
+      "short_name": "AgencyIQ",
+      "description": "Complete 5-Platform Social Media Automation for Queensland Small Businesses",
+      "start_url": "/",
+      "display": "standalone",
+      "background_color": "#fcfcfc",
+      "theme_color": "#3250fa",
+      "icons": [
+        {
+          "src": "/attached_assets/agency_logo_1749083054761.png",
+          "sizes": "512x512",
+          "type": "image/png",
+          "purpose": "any maskable"
+        }
+      ],
+      "categories": ["business", "productivity", "social"],
+      "lang": "en",
+      "dir": "ltr",
+      "orientation": "portrait-primary"
+    });
   });
-});
 
-// Data deletion status page
-app.get('/deletion-status/:userId', (req, res) => {
-  const { userId } = req.params;
-  res.send(`
-    <html>
-      <head><title>Data Deletion Status</title></head>
-      <body style="font-family: Arial, sans-serif; padding: 20px;">
-        <h1>Data Deletion Status</h1>
-        <p><strong>User ID:</strong> ${userId}</p>
-        <p><strong>Status:</strong> Data deletion completed successfully</p>
-        <p><strong>Date:</strong> ${new Date().toISOString()}</p>
-      </body>
-    </html>
-  `);
-});
+  // Data deletion status page
+  app.get('/deletion-status/:userId', (req, res) => {
+    const { userId } = req.params;
+    res.send(`
+      <html>
+        <head><title>Data Deletion Status</title></head>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+          <h1>Data Deletion Status</h1>
+          <p><strong>User ID:</strong> ${userId}</p>
+          <p><strong>Status:</strong> Data deletion completed successfully</p>
+          <p><strong>Date:</strong> ${new Date().toISOString()}</p>
+        </body>
+      </html>
+    `);
+  });
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+  // Production-ready session configuration
+  app.use(session({
+    secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+      secure: process.env.NODE_ENV === 'production', 
+      maxAge: 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      sameSite: 'lax'
+    }
+  }));
 
+  // Facebook-whitelisted CSP
+  app.use((req, res, next) => {
+    res.setHeader('Content-Security-Policy', [
+      "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://twitter.com https://accounts.google.com",
+      "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com",
+      "style-src 'self' 'unsafe-inline' https://replit.com https://accounts.google.com https://*.facebook.com",
+      "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net",
+      "font-src 'self' https://replit.com data: https://*.facebook.com",
+      "frame-src 'self' https://checkout.stripe.com https://js.stripe.com https://connect.facebook.net https://accounts.google.com https://*.facebook.com"
+    ].join('; '));
+    next();
+  });
 
-// Production-ready session configuration
-app.use(session({
-  secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production', 
-    maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    sameSite: 'lax'
-  }
-}));
+  // Public bypass route
+  app.get('/public', (req, res) => {
+    req.session.userId = 2;
+    console.log(`React fix bypass activated at ${new Date().toISOString()}`);
+    res.redirect('/platform-connections');
+  });
 
-// Facebook-whitelisted CSP
-app.use((req, res, next) => {
-  res.setHeader('Content-Security-Policy', [
-    "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://twitter.com https://accounts.google.com",
-    "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://api.linkedin.com https://api.twitter.com https://graph.instagram.com https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com",
-    "style-src 'self' 'unsafe-inline' https://replit.com https://accounts.google.com https://*.facebook.com",
-    "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net",
-    "font-src 'self' https://replit.com data: https://*.facebook.com",
-    "frame-src 'self' https://checkout.stripe.com https://js.stripe.com https://connect.facebook.net https://accounts.google.com https://*.facebook.com"
-  ].join('; '));
-  next();
-});
-
-
-
-// Public bypass route
-app.get('/public', (req, res) => {
-  req.session.userId = 2;
-  console.log(`React fix bypass activated at ${new Date().toISOString()}`);
-  res.redirect('/platform-connections');
-});
-
-
-
-// Production OAuth connection routes
-app.get('/connect/:platform', (req, res) => {
-  const platform = req.params.platform.toLowerCase() as keyof typeof redirectUrls;
-  req.session.userId = 2;
-  
-  // Generate secure state parameter
-  const state = Buffer.from(JSON.stringify({
-    platform,
-    timestamp: Date.now(),
-    userId: req.session.userId
-  })).toString('base64');
-  
-  // Force development URL for OAuth callbacks
-  const callbackUri = 'https://workspace.GailMac.repl.co/callback';
-  
-  const redirectUrls = {
-    facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=public_profile,pages_show_list,pages_manage_posts,pages_read_engagement,publish_actions&response_type=code&state=${state}`,
-    x: `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID || process.env.X_0AUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=tweet.read%20tweet.write%20users.read&state=${state}&code_challenge=challenge&code_challenge_method=plain`,
-    linkedin: `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID || '86pwc38hsqem'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=r_liteprofile%20r_emailaddress%20w_member_social&state=${state}`,
-    instagram: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement&response_type=code&state=${state}`,
-    youtube: `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=https://www.googleapis.com/auth/youtube.upload&state=${state}`
-  };
-  
-  if (redirectUrls[platform]) {
-    console.log(`OAuth-master bypass: ${platform} connection initiated`);
-    console.log(`State: ${state}`);
-    res.redirect(redirectUrls[platform]);
-  } else {
-    res.status(404).send(`Platform ${platform} not supported`);
-  }
-});
-
-// Production OAuth callback handler with comprehensive success tracking
-app.get('/callback', async (req, res) => {
-  const { code, state, error } = req.query;
-  
-  // Handle OAuth errors
-  if (error) {
-    console.log(`OAuth error received: ${error}`);
-    return res.redirect('/platform-connections?error=' + encodeURIComponent(error as string));
-  }
-  
-  // Validate required parameters
-  if (!code || !state) {
-    console.log('OAuth callback missing required parameters');
-    return res.redirect('/platform-connections?error=missing_parameters');
-  }
-  
-  try {
-    // Decode secure state parameter
-    const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
-    const platform = stateData.platform;
-    const userId = stateData.userId;
+  // Production OAuth connection routes
+  app.get('/connect/:platform', (req, res) => {
+    const platform = req.params.platform.toLowerCase();
+    req.session.userId = 2;
     
-    // Initialize OAuth session storage
-    if (!(req.session as any).oauthTokens) (req.session as any).oauthTokens = {};
-    (req.session as any).oauthTokens[platform] = { 
-      code, 
-      state, 
+    // Generate secure state parameter
+    const state = Buffer.from(JSON.stringify({
+      platform,
       timestamp: Date.now(),
-      userId,
-      status: 'authorization_received'
+      userId: req.session.userId
+    })).toString('base64');
+    
+    // Force development URL for OAuth callbacks
+    const callbackUri = 'https://workspace.GailMac.repl.co/callback';
+    
+    const redirectUrls: {[key: string]: string} = {
+      facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=public_profile,pages_show_list,pages_manage_posts,pages_read_engagement,publish_actions&response_type=code&state=${state}`,
+      x: `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID || process.env.X_0AUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=tweet.read%20tweet.write%20users.read&state=${state}&code_challenge=challenge&code_challenge_method=plain`,
+      linkedin: `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID || '86pwc38hsqem'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=r_liteprofile%20r_emailaddress%20w_member_social&state=${state}`,
+      instagram: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement&response_type=code&state=${state}`,
+      youtube: `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=https://www.googleapis.com/auth/youtube.upload&state=${state}`
     };
     
-    // Production success logging
-    console.log(`OAuth succeeded: ${platform} authorization code received`);
-    console.log(`User ID: ${userId}, Code length: ${(code as string).length}`);
-    console.log(`Platform ${platform} ready for token exchange`);
+    if (redirectUrls[platform]) {
+      console.log(`OAuth-master bypass: ${platform} connection initiated`);
+      console.log(`State: ${state}`);
+      res.redirect(redirectUrls[platform]);
+    } else {
+      res.status(404).send(`Platform ${platform} not supported`);
+    }
+  });
+
+  // Production OAuth callback handler with comprehensive success tracking
+  app.get('/callback', async (req, res) => {
+    const { code, state, error } = req.query;
     
-    // Immediately exchange code for access token and save to database
-    if (platform === 'facebook' || platform === 'instagram') {
-      try {
-        const storage = await import('./storage');
-        const { platformConnections } = await import('../shared/schema');
-        const db = storage.db;
-        
-        // Exchange authorization code for access token
-        const tokenResponse = await fetch('https://graph.facebook.com/v20.0/oauth/access_token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            client_id: process.env.FACEBOOK_APP_ID || '1409057863445071',
-            client_secret: process.env.FACEBOOK_APP_SECRET || '',
-            code: code as string,
-            redirect_uri: 'https://workspace.GailMac.repl.co/callback'
-          })
-        });
-        
-        if (tokenResponse.ok) {
-          const tokenData = await tokenResponse.json();
-          
-          // Get user profile information
-          const profileResponse = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${tokenData.access_token}&fields=id,name`);
-          const profileData = await profileResponse.json();
-          
-          // Save to database
-          await db.insert(platformConnections).values({
-            userId: userId,
-            platform: 'facebook',
-            accessToken: tokenData.access_token,
-            refreshToken: tokenData.refresh_token || null,
-            platformUserId: profileData.id,
-            platformUsername: profileData.name,
-            connectedAt: new Date(),
-            expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
-            isActive: true
-          });
-          
-          console.log(`Facebook connection saved to database for user ${userId}`);
-        }
-      } catch (error) {
-        console.error('Error saving Facebook connection:', error);
-      }
+    // Handle OAuth errors
+    if (error) {
+      console.log(`OAuth error received: ${error}`);
+      return res.redirect('/platform-connections?error=' + encodeURIComponent(error as string));
     }
     
-    // Instagram token exchange and Instagram Business Account setup
-    if (platform === 'instagram') {
-      try {
-        const storage = await import('./storage');
-        const { platformConnections } = await import('../shared/schema');
-        const db = storage.db;
-        
-        // Exchange authorization code for access token
-        const tokenResponse = await fetch('https://graph.facebook.com/v20.0/oauth/access_token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            client_id: process.env.FACEBOOK_APP_ID || '1409057863445071',
-            client_secret: process.env.FACEBOOK_APP_SECRET || '',
-            code: code as string,
-            redirect_uri: 'https://workspace.GailMac.repl.co/callback'
-          })
-        });
-        
-        if (tokenResponse.ok) {
-          const tokenData = await tokenResponse.json();
+    // Validate required parameters
+    if (!code || !state) {
+      console.log('OAuth callback missing required parameters');
+      return res.redirect('/platform-connections?error=missing_parameters');
+    }
+    
+    try {
+      // Decode secure state parameter
+      const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
+      const platform = stateData.platform;
+      const userId = stateData.userId;
+      
+      // Initialize OAuth session storage
+      if (!(req.session as any).oauthTokens) (req.session as any).oauthTokens = {};
+      (req.session as any).oauthTokens[platform] = { 
+        code, 
+        state, 
+        timestamp: Date.now(),
+        userId,
+        status: 'authorization_received'
+      };
+      
+      // Production success logging
+      console.log(`OAuth succeeded: ${platform} authorization code received`);
+      console.log(`User ID: ${userId}, Code length: ${(code as string).length}`);
+      console.log(`Platform ${platform} ready for token exchange`);
+      
+      // Immediately exchange code for access token and save to database
+      if (platform === 'facebook' || platform === 'instagram') {
+        try {
+          const storage = await import('./storage');
+          const { platformConnections } = await import('../shared/schema');
+          const { db } = await import('./db');
           
-          // Get Instagram Business Account information
-          let instagramBusinessId = null;
-          let pageId = null;
-          let pageName = null;
+          // Exchange authorization code for access token
+          const tokenResponse = await fetch('https://graph.facebook.com/v20.0/oauth/access_token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              client_id: process.env.FACEBOOK_APP_ID || '1409057863445071',
+              client_secret: process.env.FACEBOOK_APP_SECRET || '',
+              code: code as string,
+              redirect_uri: 'https://workspace.GailMac.repl.co/callback'
+            })
+          });
           
-          try {
-            // Get user's Facebook pages
-            const pagesResponse = await fetch(`https://graph.facebook.com/v20.0/me/accounts?access_token=${tokenData.access_token}`);
-            const pagesData = await pagesResponse.json();
+          if (tokenResponse.ok) {
+            const tokenData = await tokenResponse.json();
             
-            // Find Instagram Business account connected to any page
-            for (const page of pagesData.data || []) {
-              const igResponse = await fetch(`https://graph.facebook.com/v20.0/${page.id}?fields=instagram_business_account&access_token=${tokenData.access_token}`);
-              const igData = await igResponse.json();
-              
-              if (igData.instagram_business_account) {
-                instagramBusinessId = igData.instagram_business_account.id;
-                pageId = page.id;
-                pageName = page.name;
-                break;
-              }
-            }
-          } catch (igError) {
-            console.log('Instagram Business Account lookup failed, using basic connection');
+            // Get user profile information
+            const profileResponse = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${tokenData.access_token}&fields=id,name`);
+            const profileData = await profileResponse.json();
+            
+            // Save to database
+            await db.insert(platformConnections).values({
+              userId: userId,
+              platform: 'facebook',
+              accessToken: tokenData.access_token,
+              refreshToken: tokenData.refresh_token || null,
+              platformUserId: profileData.id,
+              platformUsername: profileData.name,
+              connectedAt: new Date(),
+              isActive: true
+            });
+            
+            console.log(`Facebook token exchanged and saved for user ${userId}`);
           }
+        } catch (error) {
+          console.error('Error exchanging Facebook token:', error);
+        }
+      }
+      
+      // Instagram token exchange (using same Facebook flow)
+      if (platform === 'instagram') {
+        try {
+          const storage = await import('./storage');
+          const { platformConnections } = await import('../shared/schema');
+          const { db } = await import('./db');
           
-          // Save to database
-          await db.insert(platformConnections).values({
-            userId: userId,
-            platform: 'instagram',
-            accessToken: tokenData.access_token,
-            refreshToken: tokenData.refresh_token || null,
-            platformUserId: instagramBusinessId,
-            platformUsername: pageName,
-            connectedAt: new Date(),
-            expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
-            isActive: true,
-            metadata: {
-              instagramBusinessId,
-              pageId,
-              pageName
-            }
+          // Use same access token for Instagram Business API
+          const tokenResponse = await fetch('https://graph.facebook.com/v20.0/oauth/access_token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              client_id: process.env.FACEBOOK_APP_ID || '1409057863445071',
+              client_secret: process.env.FACEBOOK_APP_SECRET || '',
+              code: code as string,
+              redirect_uri: 'https://workspace.GailMac.repl.co/callback'
+            })
           });
           
-          console.log(`Instagram connection saved to database for user ${userId}`);
-          console.log(`Instagram Business ID: ${instagramBusinessId}`);
-        }
-      } catch (error) {
-        console.error('Error saving Instagram connection:', error);
-      }
-    }
-    
-    // Production success response with comprehensive tracking
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${platform.toUpperCase()} OAuth Success - TheAgencyIQ</title>
-        <style>
-          body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
-          .success { color: #28a745; font-size: 24px; margin-bottom: 20px; }
-          .details { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
-          .button { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
-        </style>
-      </head>
-      <body>
-        <div class="success">✓ ${platform.toUpperCase()} OAuth Success!</div>
-        <div class="details">
-          <p><strong>Platform:</strong> ${platform}</p>
-          <p><strong>User ID:</strong> ${userId}</p>
-          <p><strong>Authorization Code:</strong> Received (${(code as string).length} characters)</p>
-          <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
-          <p><strong>Status:</strong> Ready for token exchange</p>
-        </div>
-        <a href="/platform-connections" class="button">Return to Platform Connections</a>
-        <script>
-          console.log('OAuth succeeded: ${platform} authorization code received');
-          console.log('Platform ${platform} ready for production use');
-          // Auto-close after 5 seconds if opened in popup
-          if (window.opener) {
-            setTimeout(() => {
-              window.opener.postMessage({type: 'oauth_success', platform: '${platform}'}, '*');
-              window.close();
-            }, 2000);
+          if (tokenResponse.ok) {
+            const tokenData = await tokenResponse.json();
+            
+            // Save Instagram connection
+            await db.insert(platformConnections).values({
+              userId: userId,
+              platform: 'instagram',
+              accessToken: tokenData.access_token,
+              refreshToken: tokenData.refresh_token || null,
+              platformUserId: 'instagram_business',
+              platformUsername: 'Instagram Business',
+              connectedAt: new Date(),
+              isActive: true
+            });
+            
+            console.log(`Instagram token exchanged and saved for user ${userId}`);
           }
-        </script>
-      </body>
-      </html>
-    `);
-  } catch (error) {
-    console.error('OAuth callback error:', error);
-    res.status(500).send(`
-      <!DOCTYPE html>
-      <html>
-      <head><title>OAuth Error - TheAgencyIQ</title></head>
-      <body>
-        <h1>OAuth Error</h1>
-        <p>Error processing OAuth callback: ${(error as Error).message}</p>
-        <p><a href="/platform-connections">Return to Platform Connections</a></p>
-      </body>
-      </html>
-    `);
-  }
-});
-
-// Production OAuth status endpoint
-app.get('/oauth-status', (req, res) => {
-  const oauthTokens = (req.session as any).oauthTokens || {};
-  const platforms = ['facebook', 'x', 'linkedin', 'instagram', 'youtube'];
-  
-  const status = platforms.map(platform => ({
-    platform,
-    connected: !!oauthTokens[platform],
-    hasCode: !!oauthTokens[platform]?.code,
-    timestamp: oauthTokens[platform]?.timestamp || null,
-    status: oauthTokens[platform]?.status || 'not_connected'
-  }));
-  
-  console.log('OAuth Status Check:', status);
-  res.json({
-    success: true,
-    platforms: status,
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-
-
-// Register routes BEFORE Vite
-const { registerRoutes } = await import('./routes');
-await registerRoutes(app);
-
-// Server status endpoint
-app.get('/api/server-status', (req, res) => {
-  res.json({
-    status: 'running',
-    timestamp: new Date().toISOString(),
-    oauth: 'ready',
-    frontend: 'vite-direct'
-  });
-});
-
-// Setup HTTP server
-const server = createServer(app);
-
-// Request logging
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        } catch (error) {
+          console.error('Error exchanging Instagram token:', error);
+        }
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+      
+      // Show success page
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${platform.toUpperCase()} OAuth Success - TheAgencyIQ</title>
+          <style>
+            body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+            .success { color: #2563eb; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+            .details { background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .details p { margin: 5px 0; }
+            .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="success">✓ ${platform.toUpperCase()} OAuth Success!</div>
+          <div class="details">
+            <p><strong>Platform:</strong> ${platform}</p>
+            <p><strong>User ID:</strong> ${userId}</p>
+            <p><strong>Authorization Code:</strong> Received (${(code as string).length} characters)</p>
+            <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+            <p><strong>Status:</strong> Ready for token exchange</p>
+          </div>
+          <a href="/platform-connections" class="button">Return to Platform Connections</a>
+          <script>
+            console.log('OAuth succeeded: ${platform} authorization code received');
+            console.log('Platform ${platform} ready for production use');
+            // Auto-close after 5 seconds if opened in popup
+            if (window.opener) {
+              setTimeout(() => {
+                window.opener.postMessage({type: 'oauth_success', platform: '${platform}'}, '*');
+                window.close();
+              }, 2000);
+            }
+          </script>
+        </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      res.status(500).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>OAuth Error - TheAgencyIQ</title></head>
+        <body>
+          <h1>OAuth Error</h1>
+          <p>Error processing OAuth callback: ${(error as Error).message}</p>
+          <p><a href="/platform-connections">Return to Platform Connections</a></p>
+        </body>
+        </html>
+      `);
     }
   });
 
-  next();
-});
+  // Production OAuth status endpoint
+  app.get('/oauth-status', (req, res) => {
+    const oauthTokens = (req.session as any).oauthTokens || {};
+    const platforms = ['facebook', 'x', 'linkedin', 'instagram', 'youtube'];
+    
+    const status = platforms.map(platform => ({
+      platform,
+      connected: !!oauthTokens[platform],
+      hasCode: !!oauthTokens[platform]?.code,
+      timestamp: oauthTokens[platform]?.timestamp || null,
+      status: oauthTokens[platform]?.status || 'not_connected'
+    }));
+    
+    console.log('OAuth Status Check:', status);
+    res.json({
+      success: true,
+      platforms: status,
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
 
+  // Register routes BEFORE Vite
+  const routes = await import('./routes');
+  const httpServer = await routes.registerRoutes(app);
 
+  // Server status endpoint
+  app.get('/api/server-status', (req, res) => {
+    res.json({
+      status: 'running',
+      timestamp: new Date().toISOString(),
+      oauth: 'ready',
+      frontend: 'vite-direct'
+    });
+  });
 
-// Setup Vite directly
-const vite = await setupVite(app, server);
-serveStatic(app, vite);
+  // Request logging
+  app.use((req, res, next) => {
+    const start = Date.now();
+    const path = req.path;
+    let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`TheAgencyIQ Server running on port ${PORT}`);
-  console.log(`Deploy time: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);
-  console.log('React app with OAuth bypass ready');
-  console.log('Visit /public to bypass auth and access platform connections');
-});
+    const originalResJson = res.json;
+    res.json = function (bodyJson, ...args) {
+      capturedJsonResponse = bodyJson;
+      return originalResJson.apply(res, [bodyJson, ...args]);
+    };
+
+    res.on("finish", () => {
+      const duration = Date.now() - start;
+      if (path.startsWith("/api")) {
+        let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+        if (capturedJsonResponse) {
+          logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        }
+
+        if (logLine.length > 80) {
+          logLine = logLine.slice(0, 79) + "…";
+        }
+
+        log(logLine);
+      }
+    });
+
+    next();
+  });
+
+  // Setup Vite directly
+  const vite = await setupVite(app, httpServer);
+  serveStatic(app);
+
+  const PORT = parseInt(process.env.PORT || '5000');
+  httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`TheAgencyIQ Server running on port ${PORT}`);
+    console.log(`Deploy time: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);
+    console.log('React app with OAuth bypass ready');
+    console.log('Visit /public to bypass auth and access platform connections');
+  });
+}
+
+// Start the server
+startServer().catch(console.error);
