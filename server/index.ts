@@ -11,117 +11,85 @@ async function startServer() {
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
 
-  // CONSOLIDATED FACEBOOK ENDPOINTS - PRODUCTION READY
-  // Base URL configuration for environment-specific URLs
+  // Environment-aware base URL (Single Truth Source)
   const baseUrl = process.env.NODE_ENV === 'production'
     ? 'https://app.theagencyiq.ai'
     : 'http://localhost:5000';
 
-  // Facebook Data Deletion Endpoint
-  app.get('/facebook-data-deletion', (req, res) => {
+  // UNIFIED FACEBOOK ENDPOINT - Single Path with Query Differentiation
+  app.all('/facebook', (req, res) => {
     try {
-      console.log('Facebook data deletion GET request received');
-      res.status(200).json({ status: 'ok' });
-    } catch (error) {
-      console.error('Facebook GET error:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
-  app.post('/facebook-data-deletion', (req, res) => {
-    try {
-      console.log('Facebook data deletion POST request received');
-      console.log('Request body:', req.body);
+      console.log('Facebook unified endpoint accessed');
+      console.log('Method:', req.method);
+      console.log('Query:', req.query);
+      console.log('Body:', req.body);
       
-      const { signed_request } = req.body;
-      
-      if (!signed_request) {
-        console.log('No signed_request provided - generating test response');
-        const confirmationCode = 'del_' + Math.random().toString(36).substr(2, 9);
-        res.json({
-          url: `${baseUrl}/deletion-status`,
-          confirmation_code: confirmationCode
-        });
-        return;
-      }
-      
-      // Parse Facebook signed request
-      let userId = 'unknown_user';
-      try {
-        const parts = signed_request.split('.');
-        if (parts.length === 2) {
-          let payload = parts[1];
-          payload += '='.repeat((4 - payload.length % 4) % 4);
-          payload = payload.replace(/-/g, '+').replace(/_/g, '/');
-          
-          const decodedPayload = Buffer.from(payload, 'base64').toString();
-          const data = JSON.parse(decodedPayload);
-          userId = data.user_id || data.userId || 'parsed_user';
-          console.log(`Data deletion requested for Facebook user: ${userId}`);
-        }
-      } catch (parseError) {
-        console.error('Signed request parse error:', parseError);
-        userId = 'parse_error_' + Math.random().toString(36).substr(2, 9);
-      }
-      
-      const confirmationCode = 'del_' + Math.random().toString(36).substr(2, 9);
-      res.json({
-        url: `${baseUrl}/deletion-status/${userId}`,
-        confirmation_code: confirmationCode
-      });
-      
-    } catch (error) {
-      console.error('Deletion Error:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
-  // Facebook OAuth Callback
-  app.get('/facebook/callback', (req, res) => {
-    try {
-      console.log('Facebook OAuth callback received');
-      console.log('Query params:', req.query);
-      
-      const { code, state, error } = req.query;
-      
-      if (error) {
-        console.error('Facebook OAuth error:', error);
-        res.status(400).send(`OAuth Error: ${error}`);
-        return;
-      }
+      const { code, signed_request, action } = { ...req.body, ...req.query };
       
       if (code) {
-        console.log('Authorization code received:', code);
+        // OAuth callback
+        console.log('OAuth callback received');
         res.send(`
           <!DOCTYPE html>
           <html>
           <head>
             <title>Facebook OAuth Success</title>
             <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
           </head>
           <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
             <h1>✅ Facebook Connection Successful</h1>
             <p>Authorization code received and will be processed.</p>
-            <p><small>You can close this window.</small></p>
             <script>
-              // Auto-close popup after 3 seconds
               setTimeout(() => {
-                if (window.opener) {
-                  window.close();
-                }
+                if (window.opener) window.close();
               }, 3000);
             </script>
           </body>
           </html>
         `);
+      } else if (signed_request || action === 'deletion' || req.method === 'GET') {
+        // Data deletion endpoint
+        if (req.method === 'GET') {
+          console.log('Facebook data deletion validation GET');
+          res.status(200).json({ status: 'ok' });
+        } else {
+          console.log('Facebook data deletion POST');
+          let userId = 'unknown_user';
+          
+          if (signed_request) {
+            try {
+              const parts = signed_request.split('.');
+              if (parts.length === 2) {
+                let payload = parts[1];
+                payload += '='.repeat((4 - payload.length % 4) % 4);
+                payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+                
+                const decodedPayload = Buffer.from(payload, 'base64').toString();
+                const data = JSON.parse(decodedPayload);
+                userId = data.user_id || data.userId || 'parsed_user';
+                console.log(`Data deletion requested for Facebook user: ${userId}`);
+              }
+            } catch (parseError) {
+              console.error('Signed request parse error:', parseError);
+              userId = 'parse_error_' + Math.random().toString(36).substr(2, 9);
+            }
+          }
+          
+          const confirmationCode = 'del_' + Math.random().toString(36).substr(2, 9);
+          res.json({
+            url: `${baseUrl}/deletion-status/${userId}`,
+            confirmation_code: confirmationCode
+          });
+        }
       } else {
-        res.status(400).send('Missing authorization code');
+        throw new Error('Invalid Facebook request');
       }
-      
     } catch (error) {
-      console.error('Facebook callback error:', error);
-      res.status(500).send('Internal server error');
+      console.error('Facebook Error:', error);
+      res.status(500).json({ 
+        error: 'Server error', 
+        details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined 
+      });
     }
   });
 
