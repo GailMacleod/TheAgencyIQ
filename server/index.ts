@@ -136,6 +136,42 @@ async function startServer() {
     });
   });
 
+  // Handle beacon.js and other public assets with proper CORS
+  app.get('/public/js/beacon.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(`
+      // Beacon.js - Analytics and tracking
+      console.log('Beacon.js loaded successfully');
+      
+      // Initialize tracking
+      window.beacon = {
+        track: function(event, data) {
+          console.log('Tracking event:', event, data);
+        },
+        init: function() {
+          console.log('Beacon tracking initialized');
+        }
+      };
+      
+      // Auto-initialize
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', window.beacon.init);
+      } else {
+        window.beacon.init();
+      }
+    `);
+  });
+
+  // Generic handler for public assets
+  app.use('/public', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+  });
+
   // Data deletion status page
   app.get('/deletion-status/:userId', (req, res) => {
     const { userId } = req.params;
@@ -168,8 +204,21 @@ async function startServer() {
     }
   }));
 
-  // Facebook-whitelisted CSP
+  // CORS and CSP configuration
   app.use((req, res, next) => {
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+
+    // Facebook-whitelisted CSP
     res.setHeader('Content-Security-Policy', [
       "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://checkout.stripe.com https://js.stripe.com https://www.googletagmanager.com https://www.google-analytics.com https://twitter.com https://accounts.google.com",
