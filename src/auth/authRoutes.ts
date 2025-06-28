@@ -132,25 +132,34 @@ function extractPlatformData(profile: OAuthProfile, platform: string): { display
 // Configure Passport strategies
 export function configurePassportStrategies() {
   // Facebook OAuth Strategy
-  passport.use(new FacebookStrategy({
-    clientID: process.env.FACEBOOK_APP_ID!,
-    clientSecret: process.env.FACEBOOK_APP_SECRET!,
-    callbackURL: `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`,
-    profileFields: ['id', 'displayName', 'email'],
-    scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_to_groups', 'pages_show_list', 'user_posts', 'publish_actions'],
-    passReqToCallback: true
-  }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
-    const result = await handleOAuthCallback({
-      req,
-      profile,
-      tokens: { accessToken, refreshToken },
-      platform: 'facebook'
-    });
-    
-    return result.success 
-      ? done(null, result) 
-      : done(new Error(result.error));
-  }));
+  if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+    passport.use(new FacebookStrategy({
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackURL: `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`,
+      profileFields: ['id', 'displayName', 'name', 'email'],
+      enableProof: true,
+      passReqToCallback: true
+    }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
+      try {
+        const result = await handleOAuthCallback({
+          req,
+          profile,
+          tokens: { accessToken, refreshToken },
+          platform: 'facebook'
+        });
+        
+        return result.success 
+          ? done(null, result) 
+          : done(new Error(result.error));
+      } catch (error: any) {
+        console.error('Facebook OAuth strategy error:', error);
+        return done(error);
+      }
+    }));
+  } else {
+    console.warn('Facebook OAuth disabled: Missing FACEBOOK_APP_ID or FACEBOOK_APP_SECRET');
+  }
 
   // LinkedIn OAuth Strategy
   passport.use(new LinkedInStrategy({
@@ -223,10 +232,21 @@ export function configurePassportStrategies() {
 }
 
 // OAuth route handlers
-authRouter.get('/facebook', passport.authenticate('facebook', { scope: ['email', 'pages_manage_posts'] }));
-authRouter.get('/facebook/callback', passport.authenticate('facebook', { failureRedirect: '/login' }), (req, res) => {
-  res.redirect('/dashboard?connected=facebook');
+authRouter.get('/facebook', (req, res, next) => {
+  if (!process.env.FACEBOOK_APP_ID) {
+    return res.status(400).json({ error: 'Facebook OAuth not configured' });
+  }
+  passport.authenticate('facebook', { 
+    scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_to_groups']
+  })(req, res, next);
 });
+
+authRouter.get('/facebook/callback', 
+  passport.authenticate('facebook', { 
+    failureRedirect: '/login?error=facebook_auth_failed',
+    successRedirect: '/dashboard?connected=facebook'
+  })
+);
 
 authRouter.get('/linkedin', passport.authenticate('linkedin', { scope: ['profile', 'w_member_social', 'email'] }));
 authRouter.get('/linkedin/callback', passport.authenticate('linkedin', { failureRedirect: '/login' }), (req, res) => {
