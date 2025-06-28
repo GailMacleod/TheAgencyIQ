@@ -263,4 +263,37 @@ authRouter.get('/youtube/callback', passport.authenticate('youtube', { failureRe
   res.redirect('/dashboard?connected=youtube');
 });
 
+// OAuth configuration test endpoint
+authRouter.get('/test-config', (req, res) => {
+  const config = {
+    timestamp: new Date().toISOString(),
+    baseUrl: OAUTH_REDIRECT_BASE,
+    strategies: {
+      facebook: {
+        configured: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
+        appId: process.env.FACEBOOK_APP_ID ? 'configured' : 'missing',
+        callbackUrl: `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`
+      },
+      linkedin: {
+        configured: !!(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET),
+        callbackUrl: `${OAUTH_REDIRECT_BASE}/auth/linkedin/callback`
+      },
+      twitter: {
+        configured: !!(process.env.X_0AUTH_CLIENT_ID && process.env.X_0AUTH_CLIENT_SECRET),
+        callbackUrl: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`
+      },
+      youtube: {
+        configured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+        callbackUrl: `${OAUTH_REDIRECT_BASE}/auth/youtube/callback`
+      }
+    },
+    packageVersions: {
+      passport: '0.7.0',
+      passportFacebook: '3.0.0'
+    }
+  };
+  
+  res.json(config);
+});
+
 export { authRouter };
