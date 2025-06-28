@@ -24,6 +24,22 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
+// Content Security Policy middleware
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com",
+    "connect-src 'self' https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: https: https://scontent.xx.fbcdn.net https://www.google-analytics.com",
+    "frame-src 'self' https://*.facebook.com",
+    "object-src 'none'",
+    "base-uri 'self'"
+  ].join('; '));
+  next();
+});
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
