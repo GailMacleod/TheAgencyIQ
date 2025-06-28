@@ -110,27 +110,70 @@ if (typeof window !== 'undefined') {
     ? 'https://app.theagencyiq.ai'
     : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
-  // REPLIT-SPECIFIC FACEBOOK ENDPOINT - Robust OAuth Callback Handler
-  app.all('/facebook', (req, res) => {
+  // COMPREHENSIVE FACEBOOK ENDPOINT - Enhanced API Error Handling & Real Token Exchange
+  app.all('/facebook', async (req, res) => {
     try {
-      const { code, signed_request, error } = { ...req.body, ...req.query };
+      const { code, signed_request, error, error_code, error_message } = { ...req.body, ...req.query };
       
       if (code) {
-        // Enhanced OAuth callback with improved token exchange
+        // REAL FACEBOOK TOKEN EXCHANGE - Replace mock with actual Graph API call
         console.log('Facebook OAuth callback successful:', code);
         
-        // Enhanced token simulation with timestamp for uniqueness
-        const accessToken = `mock_token_${code}_${Date.now()}`;
+        try {
+          // Import axios dynamically for real token exchange
+          const axios = (await import('axios')).default;
+          
+          // Check for Facebook credentials
+          const clientId = process.env.FB_CLIENT_ID;
+          const clientSecret = process.env.FB_CLIENT_SECRET;
+          
+          if (!clientId || !clientSecret) {
+            // Fallback to enhanced mock with timestamp for uniqueness
+            const accessToken = `mock_token_${code}_${Date.now()}`;
+            console.log('Using mock token - FB credentials not configured');
+            
+            res.status(200).json({
+              message: 'Login successful (mock)',
+              accessToken,
+              nextStep: 'Configure FB_CLIENT_ID and FB_CLIENT_SECRET for real API'
+            });
+            return;
+          }
+          
+          // REAL FACEBOOK GRAPH API TOKEN EXCHANGE
+          const response = await axios.get('https://graph.facebook.com/oauth/access_token', {
+            params: {
+              client_id: clientId,
+              client_secret: clientSecret,
+              code,
+              redirect_uri: `${baseUrl}/facebook`
+            }
+          });
+          
+          const accessToken = response.data.access_token;
+          console.log('Real Facebook token exchange successful');
+          
+          res.status(200).json({
+            message: 'Login successful',
+            accessToken,
+            nextStep: 'Token ready for Facebook API calls'
+          });
+          
+        } catch (tokenError: any) {
+          console.error('Token exchange error:', tokenError.response?.data || tokenError.message);
+          
+          // Enhanced error response with specific Facebook error handling
+          res.status(500).json({
+            error: 'Token exchange failed',
+            details: tokenError.response?.data?.error?.message || tokenError.message,
+            recovery: 'Check Facebook app configuration and credentials'
+          });
+        }
         
-        res.status(200).json({
-          message: 'Login successful',
-          accessToken,
-          nextStep: 'Implement token use in frontend'
-        });
       } else if (signed_request) {
-        // Facebook data deletion request
+        // Facebook data deletion request with enhanced validation
         if (typeof signed_request !== 'string') {
-          throw new Error('Invalid signed_request');
+          throw new Error('Invalid signed_request format');
         }
         
         const confirmationCode = 'del_' + Math.random().toString(36).substr(2, 9);
@@ -138,22 +181,56 @@ if (typeof window !== 'undefined') {
           url: `${baseUrl}/deletion-status`,
           confirmation_code: confirmationCode
         });
-      } else if (error) {
-        // Facebook OAuth error
-        throw new Error(`Facebook error: ${error}`);
+        
+      } else if (error || error_code) {
+        // COMPREHENSIVE FACEBOOK API ERROR HANDLING
+        let recovery = 'Retry login';
+        const errorCodeNum = parseInt(error_code) || 0;
+        
+        switch (errorCodeNum) {
+          case 190: case 463: case 467:
+            recovery = 'Get new access token';
+            break;
+          case 458: case 459: case 464:
+            recovery = 'Reauthenticate user';
+            break;
+          case 4: case 17: case 341:
+            recovery = 'Wait and retry';
+            break;
+          case 200:
+            recovery = 'Check permissions';
+            break;
+          case 100:
+            recovery = 'Invalid parameter';
+            break;
+        }
+        
+        const errorMsg = `API Error: ${error_message || error} (Code: ${error_code}), Recovery: ${recovery}`;
+        console.error('Facebook API Error:', errorMsg);
+        
+        res.status(500).json({
+          error: 'Facebook API Error',
+          details: errorMsg,
+          error_code: error_code,
+          recovery
+        });
+        
       } else {
-        // Default GET request - show status
+        // Default GET request - show enhanced status
         res.status(200).json({ 
           status: 'ok',
-          message: 'Facebook endpoint operational',
-          baseUrl 
+          message: 'Facebook endpoint operational with API error handling',
+          baseUrl,
+          features: ['OAuth callback', 'Token exchange', 'Data deletion', 'Error recovery']
         });
       }
+      
     } catch (error) {
       console.error('Facebook Error:', (error as Error).stack);
       res.status(500).json({ 
         error: 'Server issue', 
-        details: (error as Error).message 
+        details: (error as Error).message,
+        recovery: 'Check server logs and configuration'
       });
     }
   });
