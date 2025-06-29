@@ -142,6 +142,14 @@ export function configurePassportStrategies() {
       passReqToCallback: true
     }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
       try {
+        console.log(`🔍 Facebook OAuth callback received:`, {
+          profileId: profile.id,
+          displayName: profile.displayName,
+          accessToken: accessToken?.substring(0, 10) + '...',
+          sessionId: req.sessionID,
+          userId: req.session?.userId
+        });
+
         const result = await handleOAuthCallback({
           req,
           profile,
@@ -149,11 +157,13 @@ export function configurePassportStrategies() {
           platform: 'facebook'
         });
         
+        console.log(`✅ Facebook OAuth result:`, result);
+        
         return result.success 
           ? done(null, result) 
           : done(new Error(result.error));
       } catch (error: any) {
-        console.error('Facebook OAuth strategy error:', error);
+        console.error('❌ Facebook OAuth strategy error:', error);
         return done(error);
       }
     }));

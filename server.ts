@@ -53,23 +53,63 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session configuration - using memory store temporarily for testing
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'fallback-session-secret-for-development',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: false, // Allow non-HTTPS in development
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-      sameSite: 'lax',
-    },
-    name: 'theagencyiq.sid',
-  })
-);
+// Session configuration with SQLite persistent storage
+try {
+  const connectSessionKnex = require('connect-session-knex');
+  const SessionStore = connectSessionKnex(session);
+  const knex = require('knex');
 
-console.log('✅ Session middleware initialized (memory store)');
+  const knexInstance = knex({
+    client: 'sqlite3',
+    connection: {
+      filename: './data/sessions.db',
+    },
+    useNullAsDefault: true,
+  });
+
+  const store = new SessionStore({
+    knex: knexInstance,
+    tablename: 'sessions',
+    createtable: true,
+  });
+
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || 'fallback-session-secret-for-development',
+      resave: false,
+      saveUninitialized: false,
+      store: store,
+      cookie: {
+        httpOnly: true,
+        secure: false, // Allow non-HTTPS in development
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+        sameSite: 'lax',
+      },
+      name: 'theagencyiq.sid',
+    })
+  );
+
+  console.log('✅ Session middleware initialized (SQLite persistent store)');
+} catch (error) {
+  console.warn('⚠️ SQLite session store failed, falling back to memory store:', error.message);
+  
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || 'fallback-session-secret-for-development',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: false,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        sameSite: 'lax',
+      },
+      name: 'theagencyiq.sid',
+    })
+  );
+  
+  console.log('✅ Session middleware initialized (memory store fallback)');
+}
 
 // Initialize auth and API routes with dynamic imports
 async function initializeRoutes() {
@@ -106,7 +146,7 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 // Resilient session recovery middleware
 app.use(async (req: any, res: any, next: any) => {
-  const skipPaths = ['/api/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/facebook-data-deletion', '/api/deletion-status'];
+  const skipPaths = ['/api/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/facebook-data-deletion', '/api/deletion-status', '/auth/'];
   if (skipPaths.some(path => req.url.startsWith(path))) {
     return next();
   }
