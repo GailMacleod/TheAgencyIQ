@@ -2031,17 +2031,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // OAuth Authentication Routes
   
-  // Facebook OAuth
-  app.get('/auth/facebook', requireAuth, configuredPassport.authenticate('facebook', {
-    scope: ['pages_manage_posts', 'pages_read_engagement', 'business_management']
-  }));
-
-  app.get('/auth/facebook/callback',
-    configuredPassport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
-    (req, res) => {
-      res.redirect('/connect-platforms?success=facebook');
-    }
-  );
+  // Facebook OAuth - DISABLED (using custom implementation in authModule.ts)
+  // These routes were causing "Invalid verification code format" errors
+  // Custom Facebook OAuth implementation is in authModule.ts
+  console.log('Facebook OAuth routes at line 2035 disabled - using custom implementation');
 
   // Instagram Direct Connection - bypasses OAuth completely with priority routing
   app.get('/auth/instagram', requireAuth, async (req: any, res) => {
