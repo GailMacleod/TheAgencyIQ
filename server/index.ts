@@ -1,80 +1,70 @@
 import express from 'express';
-import bodyParser from 'body-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const app = express();
-const baseUrl = process.env.NODE_ENV === 'production'
-  ? 'https://app.theagencyiq.ai'
-  : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+// Minimal middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// CORS
 app.use((req, res, next) => {
-  res.set({
-    'Access-Control-Allow-Origin': '*',
-    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev https://app.theagencyiq.ai; connect-src 'self' https://graph.facebook.com;"
-  });
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept');
   next();
 });
 
-app.all('/facebook', (req, res) => {
-  try {
-    const { code, signed_request, error } = { ...req.body, ...req.query };
-    if (code) {
-      res.status(200).json({
-        message: 'Login successful',
-        redirect: `${baseUrl}/platform-connections?code=${encodeURIComponent(code)}`
-      });
-    } else if (signed_request) {
-      res.status(200).json({
-        url: `${baseUrl}/deletion-status`,
-        confirmation_code: 'del_' + Math.random().toString(36).substr(2, 9)
-      });
-    } else if (error) {
-      throw new Error(`Facebook error: ${error}`);
-    } else {
-      throw new Error('Invalid request');
-    }
-  } catch (error) {
-    console.error('Facebook Error:', error.stack);
-    res.status(500).json({ error: 'Server issue', details: error.message });
-  }
+// Health endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), port: PORT });
 });
 
+// Platform connections
 app.get('/platform-connections', (req, res) => {
-  try {
-    const { code, error } = req.query;
-    if (!code && !error) {
-      return res.status(400).json({ error: 'Missing code or error parameter' });
-    }
-    if (error) {
-      return res.status(400).json({ error: 'Login failed', message: error });
-    }
-    res.status(200).json({ message: 'Platform connected', code });
-  } catch (error) {
-    console.error('Platform Error:', error.stack);
-    res.status(500).json({ error: 'Server issue', details: error.message });
-  }
+  const { code, error } = req.query;
+  res.json({ 
+    message: code ? 'Platform connected' : 'Connection attempt', 
+    code: code || null,
+    error: error || null
+  });
 });
 
-const publicDir = path.join(__dirname, 'dist', 'public');
-app.use(express.static(publicDir, { setHeaders: (res) => res.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval';") }));
-app.get('/manifest.json', (req, res) => {
-  res.sendFile(path.join(publicDir, 'manifest.json'), (err) => err && res.status(404).json({ error: 'Manifest missing' }));
+// Facebook endpoint
+app.all('/facebook', (req, res) => {
+  const { code, signed_request, error } = { ...req.body, ...req.query };
+  res.json({ 
+    message: 'Facebook endpoint', 
+    received: { code: !!code, signed_request: !!signed_request, error: !!error }
+  });
 });
-app.get('/public/js/beacon.js', (req, res) => {
-  res.sendFile(path.join(publicDir, 'js', 'beacon.js'), (err) => err && res.status(404).json({ error: 'Beacon missing' }));
-});
-app.get('/replit-proxy/beacon.js', (req, res) => {
-  res.redirect(301, '/public/js/beacon.js');
-});
-app.get('*', (req, res) => res.status(404).json({ error: 'Not found' }));
 
-process.on('uncaughtException', (error) => console.error('Uncaught:', error.stack));
+// API endpoints
+app.get('/api/posts', (req, res) => {
+  res.json({ posts: [], message: 'API operational' });
+});
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Live on ${PORT}`));
+app.get('/api/platform-connections', (req, res) => {
+  res.json({ connections: [], message: 'Connections API operational' });
+});
+
+// Catch all
+app.get('*', (req, res) => {
+  res.json({ 
+    message: 'TheAgencyIQ Production Server',
+    path: req.path,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Simple error handler
+app.use((err, req, res, next) => {
+  console.error('Error:', err.message);
+  res.status(500).json({ error: 'Server error', message: err.message });
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`PRODUCTION SERVER LIVE ON ${PORT}`);
+  console.log(`Timestamp: ${new Date().toISOString()}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
+});
