@@ -1,11 +1,17 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+Fix Catch-All Routing
+Update server/index.ts to ensure the React app is served on the root in production:
+javascript
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
 const app = express();
 const baseUrl = process.env.NODE_ENV === 'production'
   ? 'https://app.theagencyiq.ai'
@@ -31,7 +37,7 @@ app.all('/facebook', (req, res) => {
       });
     } else if (signed_request) {
       res.status(200).json({
-        url: `${baseUrl}/deletion-status`,
+        url: `${baseUrl}/deletion-status',
         confirmation_code: 'del_' + Math.random().toString(36).substr(2, 9)
       });
     } else if (error) {
@@ -88,3 +94,4 @@ process.on('uncaughtException', (error) => console.error('Uncaught:', error.stac
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Live on ${PORT}`));
+Install if needed: npm install express body-parser.
