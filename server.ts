@@ -126,6 +126,24 @@ async function initializeRoutes() {
 
 await initializeRoutes();
 
+// Facebook OAuth specific error handler - must be before routes
+app.use('/auth/facebook/callback', (err: any, req: any, res: any, next: any) => {
+  console.error('🔧 Facebook OAuth specific error handler:', err.message);
+  
+  if (err.message && err.message.includes("domain of this URL isn't included")) {
+    console.error('❌ Facebook OAuth: Domain not configured');
+    return res.redirect('/login?error=domain_not_configured&message=Domain+configuration+required+in+Meta+Console');
+  }
+  
+  if (err.message && (err.message.includes("Invalid verification code") || err.message.includes("verification code"))) {
+    console.error('❌ Facebook OAuth: Invalid authorization code');
+    return res.redirect('/login?error=invalid_code&message=Facebook+authorization+expired+please+try+again');
+  }
+  
+  console.error('❌ Facebook OAuth: General error');
+  return res.redirect('/login?error=facebook_oauth_failed&message=' + encodeURIComponent(err.message || 'Facebook OAuth failed'));
+});
+
 // Global error handler
 app.use((err: any, req: any, res: any, next: any) => {
   console.error('Global error handler caught:', err.message || err);
