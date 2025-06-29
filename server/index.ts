@@ -90,7 +90,7 @@ async function startServer() {
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com",
       "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com",
       "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
+      "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
       "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net https://www.google-analytics.com",
       "frame-src 'self' https://connect.facebook.net https://*.facebook.com"
     ].join('; '));
@@ -204,17 +204,15 @@ async function startServer() {
         const userId = stateData.userId || req.session.userId || 2;
         
         // Save platform connection to database
-        await storage.savePlatformConnection({
+        await storage.createPlatformConnection({
           userId: userId,
           platform: platform,
-          accessToken: code as string,
-          refreshToken: null,
           platformUserId: `${platform}_user_${userId}`,
           platformUsername: `${platform}_account`,
-          isActive: true,
-          scopes: platform === 'facebook' ? 'public_profile,pages_manage_posts,pages_read_engagement' : '',
-          tokenExpiry: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
-          connectedAt: new Date()
+          accessToken: code as string,
+          refreshToken: null,
+          expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
+          isActive: true
         });
         
         console.log(`✅ OAuth success for ${platform} - stored in session AND database`);
