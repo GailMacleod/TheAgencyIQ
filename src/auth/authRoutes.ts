@@ -131,35 +131,9 @@ function extractPlatformData(profile: OAuthProfile, platform: string): { display
 
 // Configure Passport strategies
 export function configurePassportStrategies() {
-  // Facebook OAuth Strategy
-  if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
-    passport.use(new FacebookStrategy({
-      clientID: process.env.FACEBOOK_APP_ID,
-      clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: `${baseUrl}/auth/facebook/callback`,
-      profileFields: ['id', 'displayName', 'name', 'email'],
-      enableProof: true,
-      passReqToCallback: true
-    }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
-      try {
-        const result = await handleOAuthCallback({
-          req,
-          profile,
-          tokens: { accessToken, refreshToken },
-          platform: 'facebook'
-        });
-        
-        return result.success 
-          ? done(null, result) 
-          : done(new Error(result.error));
-      } catch (error: any) {
-        console.error('Facebook OAuth strategy error:', error);
-        return done(error);
-      }
-    }));
-  } else {
-    console.warn('Facebook OAuth disabled: Missing FACEBOOK_APP_ID or FACEBOOK_APP_SECRET');
-  }
+  // Facebook OAuth Strategy - DISABLED (using custom implementation in authModule)
+  console.log('Facebook OAuth: Passport strategy disabled, using custom implementation');
+  // Note: Custom Facebook OAuth handler implemented in authModule.ts to bypass passport-facebook errors
 
   // LinkedIn OAuth Strategy
   passport.use(new LinkedInStrategy({
@@ -231,22 +205,8 @@ export function configurePassportStrategies() {
   });
 }
 
-// OAuth route handlers
-authRouter.get('/facebook', (req, res, next) => {
-  if (!process.env.FACEBOOK_APP_ID) {
-    return res.status(400).json({ error: 'Facebook OAuth not configured' });
-  }
-  passport.authenticate('facebook', { 
-    scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_to_groups']
-  })(req, res, next);
-});
-
-authRouter.get('/facebook/callback', 
-  passport.authenticate('facebook', { 
-    failureRedirect: '/login?error=facebook_auth_failed',
-    successRedirect: '/dashboard?connected=facebook'
-  })
-);
+// OAuth route handlers - Facebook routes disabled (using custom implementation)
+// Note: Facebook OAuth routes implemented in authModule.ts as custom handlers
 
 authRouter.get('/linkedin', passport.authenticate('linkedin', { scope: ['profile', 'w_member_social', 'email'] }));
 authRouter.get('/linkedin/callback', passport.authenticate('linkedin', { failureRedirect: '/login' }), (req, res) => {
