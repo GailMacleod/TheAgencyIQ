@@ -8,9 +8,9 @@ import { storage } from '../../server/storage';
 
 const authRouter = Router();
 
-// OAuth redirect base URL configuration
-const OAUTH_REDIRECT_BASE = process.env.REPLIT_DOMAINS 
-  ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
+// OAuth redirect base URL configuration - dynamic environment handling
+const baseUrl = process.env.NODE_ENV === 'production'
+  ? 'https://app.theagencyiq.ai'
   : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
 // TypeScript interfaces for OAuth callback handling
@@ -136,7 +136,7 @@ export function configurePassportStrategies() {
     passport.use(new FacebookStrategy({
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`,
+      callbackURL: `${baseUrl}/auth/facebook/callback`,
       profileFields: ['id', 'displayName', 'name', 'email'],
       enableProof: true,
       passReqToCallback: true
@@ -165,7 +165,7 @@ export function configurePassportStrategies() {
   passport.use(new LinkedInStrategy({
     clientID: process.env.LINKEDIN_CLIENT_ID!,
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
-    callbackURL: `${OAUTH_REDIRECT_BASE}/auth/linkedin/callback`,
+    callbackURL: `${baseUrl}/auth/linkedin/callback`,
     scope: ['profile', 'w_member_social', 'email'],
     passReqToCallback: true
   }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
@@ -185,7 +185,7 @@ export function configurePassportStrategies() {
   passport.use(new TwitterStrategy({
     consumerKey: process.env.X_0AUTH_CLIENT_ID!,
     consumerSecret: process.env.X_0AUTH_CLIENT_SECRET!,
-    callbackURL: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`,
+    callbackURL: `${baseUrl}/auth/twitter/callback`,
     userProfileURL: "https://api.twitter.com/1.1/account/verify_credentials.json?include_email=true",
     passReqToCallback: true
   }, async (req: any, token: string, tokenSecret: string, profile: any, done: any) => {
@@ -205,7 +205,7 @@ export function configurePassportStrategies() {
   passport.use('youtube', new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    callbackURL: `${OAUTH_REDIRECT_BASE}/auth/youtube/callback`,
+    callbackURL: `${baseUrl}/auth/youtube/callback`,
     scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload'],
     passReqToCallback: true
   }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
@@ -267,24 +267,24 @@ authRouter.get('/youtube/callback', passport.authenticate('youtube', { failureRe
 authRouter.get('/test-config', (req, res) => {
   const config = {
     timestamp: new Date().toISOString(),
-    baseUrl: OAUTH_REDIRECT_BASE,
+    baseUrl: baseUrl,
     strategies: {
       facebook: {
         configured: !!(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
         appId: process.env.FACEBOOK_APP_ID ? 'configured' : 'missing',
-        callbackUrl: `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`
+        callbackUrl: `${baseUrl}/auth/facebook/callback`
       },
       linkedin: {
         configured: !!(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET),
-        callbackUrl: `${OAUTH_REDIRECT_BASE}/auth/linkedin/callback`
+        callbackUrl: `${baseUrl}/auth/linkedin/callback`
       },
       twitter: {
         configured: !!(process.env.X_0AUTH_CLIENT_ID && process.env.X_0AUTH_CLIENT_SECRET),
-        callbackUrl: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`
+        callbackUrl: `${baseUrl}/auth/twitter/callback`
       },
       youtube: {
         configured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
-        callbackUrl: `${OAUTH_REDIRECT_BASE}/auth/youtube/callback`
+        callbackUrl: `${baseUrl}/auth/youtube/callback`
       }
     },
     packageVersions: {

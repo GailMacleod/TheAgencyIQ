@@ -1,0 +1,67 @@
+Modify src/auth/authRoutes.ts to handle both redirect URIs dynamically (based on the environment):
+typescript
+
+
+
+
+// src/auth/authRoutes.ts
+import express, { Request, Response } from 'express';
+import passport from 'passport';
+import { Strategy as FacebookStrategy } from 'passport-facebook';
+import axios from 'axios';
+
+const router = express.Router();
+const baseUrl = process.env.NODE_ENV === 'production'
+  ? 'https://app.theagencyiq.ai'
+  : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+
+passport.use(
+  new FacebookStrategy(
+    {
+      clientID: process.env.FACEBOOK_CLIENT_ID!,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+      callbackURL: `${baseUrl}/auth/facebook/callback`,
+      profileFields: ['id', 'emails', 'displayName'],
+    },
+    (accessToken, refreshToken, profile, done) => {
+      const user: OAuthUser = {
+        id: profile.id,
+        email: profile.emails?.[0].value || '',
+        displayName: profile.displayName || '',
+        accessToken,
+      };
+      done(null, user);
+    }
+  )
+);
+
+passport.serializeUser((user: OAuthUser, done) => done(null, user.id));
+passport.deserializeUser((id: string, done) => {
+  const user: OAuthUser = { id, email: 'test@example.com', displayName: 'Test User', accessToken: '' };
+  done(null, user);
+});
+
+router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+router.get(
+  '/facebook/callback',
+  passport.authenticate('facebook', { failureRedirect: '/' }),
+  (req: Request, res: Response) => res.redirect('/profile')
+);
+router.get('/profile', (req: Request, res: Response) => {
+  if (!req.user) return res.redirect('/auth/facebook');
+  res.json({ user: req.user, message: 'Logged in successfully' });
+});
+router.get('/facebook/data', async (req: Request, res: Response) => {
+  if (!req.user) return res.redirect('/auth/facebook');
+  const user = req.user as OAuthUser;
+  try {
+    const response = await axios.get('https://graph.facebook.com/v20.0/me', {
+      params: { fields: 'id,name,email', access_token: user.accessToken },
+    });
+    res.json({ data: response.data });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch Facebook data' });
+  }
+});
+
+export default router;

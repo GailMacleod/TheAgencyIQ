@@ -1,7 +1,7 @@
 import express from 'express';
 import session from 'express-session';
 import Knex from 'knex';
-import connectSessionKnex from 'connect-session-knex';
+import ConnectSessionKnex from 'connect-session-knex';
 import passport from 'passport';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -54,7 +54,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Session configuration
-const KnexSessionStore = connectSessionKnex(session);
+const KnexSessionStore = ConnectSessionKnex(session);
 const knex = Knex({
   client: 'sqlite3',
   connection: { filename: './sessions.db' },
