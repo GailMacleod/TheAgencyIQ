@@ -54,45 +54,23 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session configuration with SQLite persistent store
-const knex = Knex({
-  client: 'sqlite3',
-  connection: { filename: './data/sessions.db' },
-  useNullAsDefault: true,
-  debug: true, // Enable query logging for debugging
-});
+// Session configuration - using memory store temporarily for testing
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'fallback-session-secret-for-development',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false, // Allow non-HTTPS in development
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+      sameSite: 'lax',
+    },
+    name: 'theagencyiq.sid',
+  })
+);
 
-// Initialize session store with dynamic import for ES module compatibility
-async function initializeSessionStore() {
-  const connectSessionKnex = (await import('connect-session-knex')).default;
-  const KnexSessionStore = connectSessionKnex(session);
-  
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET || 'fallback-session-secret-for-development',
-      resave: false,
-      saveUninitialized: false,
-      store: new KnexSessionStore({ 
-        knex, 
-        tablename: 'sessions',
-        createtable: true
-      }),
-      cookie: {
-        httpOnly: true,
-        secure: false, // Allow non-HTTPS in development
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-        sameSite: 'lax',
-      },
-      name: 'theagencyiq.sid',
-    })
-  );
-  
-  console.log('✅ SQLite session store initialized');
-  return true;
-}
-
-// Initialize session store before other middleware
-await initializeSessionStore();
+console.log('✅ Session middleware initialized (memory store)');
 
 // Configure Passport strategies and initialize
 configurePassportStrategies();
