@@ -115,7 +115,13 @@ async function startServer() {
       userId: req.session.userId
     })).toString('base64');
     
-    const callbackUri = 'https://workspace.GailMac.repl.co/callback';
+    // Use dynamic callback URI based on environment
+    const callbackUri = process.env.NODE_ENV === 'production' 
+      ? 'https://app.theagencyiq.ai/callback'
+      : `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/callback`;
+    
+    console.log(`🔗 OAuth initiation for ${platform}:`);
+    console.log(`📍 Callback URI: ${callbackUri}`);
     
     const redirectUrls: {[key: string]: string} = {
       facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=public_profile,pages_show_list,pages_manage_posts,pages_read_engagement,publish_actions&response_type=code&state=${state}`,

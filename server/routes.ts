@@ -5652,8 +5652,10 @@ Continue building your Value Proposition Canvas systematically.`;
 
       const clientId = process.env.FACEBOOK_APP_ID;
       
-      // Use unified callback URI
-      const redirectUri = 'https://app.theagencyiq.ai/callback';
+      // Use dynamic callback URI based on environment
+      const redirectUri = process.env.NODE_ENV === 'production' 
+        ? 'https://app.theagencyiq.ai/callback'
+        : `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/callback`;
       
       const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement';
       const state = Buffer.from(JSON.stringify({ userId, platform: 'facebook' })).toString('base64');
