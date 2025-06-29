@@ -135,34 +135,56 @@ async function startServer() {
 
   // OAuth callback handler
   app.get('/callback', async (req, res) => {
+    console.log('🚀 UNIVERSAL OAuth callback START');
+    console.log('📥 Request details:', {
+      url: req.url,
+      query: req.query,
+      headers: Object.keys(req.headers),
+      method: req.method
+    });
+    
     const { code, state, error } = req.query;
     
+    console.log('🔍 OAuth parameters:', {
+      code: code ? `present (${String(code).substring(0,15)}...)` : 'MISSING',
+      state: state ? `present (${String(state).substring(0,15)}...)` : 'MISSING',
+      error: error ? `ERROR: ${error}` : 'none'
+    });
+    
     if (error) {
-      console.log(`OAuth error: ${error}`);
+      console.error(`❌ OAuth error received: ${error}`);
       return res.redirect('/platform-connections?error=' + encodeURIComponent(error as string));
     }
     
     if (!code || !state) {
-      console.log('OAuth callback missing parameters');
+      console.error('❌ OAuth callback missing required parameters');
       return res.redirect('/platform-connections?error=missing_parameters');
     }
 
     try {
+      console.log('🔄 Parsing state data...');
       const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
       const { platform } = stateData;
       
+      console.log('✅ State parsed successfully:', {
+        platform: platform,
+        stateData: stateData
+      });
+      
       // Store OAuth token in session
       if (!req.session.oauthTokens) {
+        console.log('🆕 Creating new oauthTokens session object');
         req.session.oauthTokens = {};
       }
       
+      console.log('💾 Storing OAuth token in session...');
       req.session.oauthTokens[platform] = {
         code: code as string,
         timestamp: new Date().toISOString(),
         status: 'connected'
       };
       
-      console.log(`OAuth success for ${platform}`);
+      console.log(`✅ OAuth success for ${platform} - token stored in session`);
       res.send(`
         <!DOCTYPE html>
         <html>
