@@ -2002,6 +2002,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fix X posts to comply with new hashtag prohibition policy
+  app.post("/api/fix-x-posts", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { validateXContent } = await import('./grok.js');
+      
+      // Get all X posts for the user
+      const posts = await storage.getPostsByUser(userId);
+      const xPosts = posts.filter(post => post.platform === 'x');
+      
+      let fixedCount = 0;
+      const fixedPosts = [];
+      
+      for (const post of xPosts) {
+        const validation = validateXContent(post.content);
+        
+        if (!validation.isValid && validation.fixedContent) {
+          // Update the post with the fixed content
+          const updatedPost = await storage.updatePost(post.id, {
+            content: validation.fixedContent
+          });
+          
+          fixedPosts.push({
+            id: post.id,
+            originalContent: post.content,
+            fixedContent: validation.fixedContent,
+            errors: validation.errors
+          });
+          
+          fixedCount++;
+          console.log(`Fixed X post ${post.id}: removed hashtags and emojis`);
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Fixed ${fixedCount} X posts to comply with new hashtag prohibition policy`,
+        totalXPosts: xPosts.length,
+        fixedCount,
+        fixedPosts: fixedPosts
+      });
+      
+    } catch (error) {
+      console.error('Error fixing X posts:', error);
+      res.status(500).json({ message: "Failed to fix X posts" });
+    }
+  });
+
   // Approve individual post for scheduling
   app.post("/api/approve-post", requireAuth, async (req: any, res) => {
     try {

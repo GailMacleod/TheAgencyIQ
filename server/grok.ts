@@ -78,7 +78,7 @@ Requirements:
 - Platform: ${platform}
 - Professional Queensland business tone
 - ${platform === 'x' ? 
-  'X PLATFORM SPECIFIC RULES: Maximum 280 characters, NEVER use hashtags (#), ALWAYS use @ for mentions (e.g., @username), clean engaging content WITHOUT promotional tones or emojis' : 
+  'X PLATFORM STRICT RULES (NEW X POLICY): Maximum 280 characters, hashtags (#) are COMPLETELY PROHIBITED and will be rejected by X, ONLY @ mentions allowed (e.g., @username), clean engaging content WITHOUT promotional tones or emojis' : 
   'Include relevant hashtags (#QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing)'}
 - Clear call-to-action
 - URL: https://app.theagencyiq.ai
@@ -221,9 +221,9 @@ export function validateXContent(content: string): { isValid: boolean; errors: s
     fixedContent = content.substring(0, 277) + '...';
   }
   
-  // Check for prohibited hashtags
+  // Check for prohibited hashtags (NEW X POLICY - COMPLETELY BANNED)
   if (content.includes('#')) {
-    errors.push('X posts must not contain hashtags (#)');
+    errors.push('CRITICAL: X completely prohibits hashtags (#) - posts with hashtags will be REJECTED by X platform');
     // Remove hashtags but keep the text
     fixedContent = fixedContent.replace(/#\w+/g, '').replace(/\s+/g, ' ').trim();
   }
@@ -266,7 +266,7 @@ export async function generateEngagementInsight(platform: string, timeSlot: stri
     facebook: "Facebook posts perform best with community engagement and local Queensland references",
     linkedin: "LinkedIn content should focus on professional insights and business value",
     instagram: "Instagram thrives on visual storytelling and lifestyle integration",
-    x: "X posts must be under 280 chars, never use hashtags, use @ mentions only, clean engaging content without promotional tones or emojis",
+    x: "NEW X POLICY: Posts must be under 280 chars, hashtags (#) are COMPLETELY PROHIBITED by X and will be rejected, ONLY @ mentions allowed, clean engaging content without promotional tones or emojis",
     youtube: "YouTube content should provide educational value and transformation stories"
   };
   
