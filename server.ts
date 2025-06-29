@@ -134,8 +134,10 @@ app.use((err: any, req: any, res: any, next: any) => {
   
   // Handle Facebook OAuth domain errors gracefully
   if (req.url.includes('/auth/facebook/callback') && err.message.includes("domain of this URL isn't included")) {
-    console.error('❌ Facebook OAuth callback error: Domain not configured');
-    return res.redirect('/login?error=domain_not_configured');
+    console.error('❌ Facebook OAuth callback error: Domain not configured in Meta Console');
+    console.error('Required domain: 4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev');
+    console.error('Required callback URL: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/auth/facebook/callback');
+    return res.redirect('/login?error=domain_not_configured&domain=4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev');
   }
   
   if (!res.headersSent) {

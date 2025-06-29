@@ -133,10 +133,13 @@ function extractPlatformData(profile: OAuthProfile, platform: string): { display
 export function configurePassportStrategies() {
   // Facebook OAuth Strategy
   if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+    const facebookCallbackURL = `${baseUrl}/auth/facebook/callback`;
+    console.log(`🔗 Facebook OAuth callback URL configured: ${facebookCallbackURL}`);
+    
     passport.use(new FacebookStrategy({
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: `${baseUrl}/auth/facebook/callback`,
+      callbackURL: facebookCallbackURL,
       profileFields: ['id', 'displayName', 'name', 'email'],
       enableProof: true,
       passReqToCallback: true
@@ -249,6 +252,28 @@ authRouter.get('/facebook', (req, res, next) => {
   passport.authenticate('facebook', { 
     scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_to_groups']
   })(req, res, next);
+});
+
+// Facebook OAuth configuration diagnostic endpoint
+authRouter.get('/facebook/config', (req, res) => {
+  const config = {
+    baseUrl,
+    callbackURL: `${baseUrl}/auth/facebook/callback`,
+    appId: process.env.FACEBOOK_APP_ID ? `${process.env.FACEBOOK_APP_ID.substring(0, 6)}...` : 'NOT_SET',
+    appSecret: process.env.FACEBOOK_APP_SECRET ? 'SET' : 'NOT_SET',
+    requiredDomain: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    requiredCallbackURL: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/auth/facebook/callback'
+  };
+  
+  res.json({
+    message: 'Facebook OAuth Configuration',
+    config,
+    instructions: [
+      'Add the required domain to App Domains in Facebook Developer Console',
+      'Add the required callback URL to Valid OAuth Redirect URIs',
+      'Ensure Facebook app is in Live mode or add domain to test users'
+    ]
+  });
 });
 
 authRouter.get('/facebook/callback', (req, res, next) => {
