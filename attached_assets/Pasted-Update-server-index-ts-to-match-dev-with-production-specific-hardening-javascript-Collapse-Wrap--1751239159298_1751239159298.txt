@@ -1,11 +1,16 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+Update server/index.ts to match dev, with production-specific hardening:
+javascript
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
 const app = express();
 const baseUrl = process.env.NODE_ENV === 'production'
   ? 'https://app.theagencyiq.ai'
@@ -81,3 +86,8 @@ process.on('uncaughtException', (error) => console.error('Uncaught:', error.stac
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Live on ${PORT}`));
+Install if needed: npm install express body-parser.
+Redeploy with Focus
+Rebuild: npm run build.
+Redeploy to https://app.theagencyiq.ai via the deploy button, ensuring dist/index.js and dist/public/ are intact.
+Set NODE_ENV=production in Replit Settings > Secrets.
