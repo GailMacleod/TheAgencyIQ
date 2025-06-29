@@ -5,8 +5,7 @@ import Knex from 'knex';
 import passport from 'passport';
 import cors from 'cors';
 import { createServer } from 'http';
-import { configurePassportStrategies, authRouter } from './src/auth/authRoutes';
-import { apiRouter } from './src/routes/apiRoutes';
+// Dynamic imports for code splitting
 
 // Environment validation
 if (!process.env.SESSION_SECRET) {
@@ -72,10 +71,20 @@ app.use(
 
 console.log('✅ Session middleware initialized (memory store)');
 
-// Configure Passport strategies and initialize
-configurePassportStrategies();
-app.use(passport.initialize());
-app.use(passport.session());
+// Initialize auth and API routes with dynamic imports
+async function initializeRoutes() {
+  const { configurePassportStrategies, authRouter } = await import('./src/auth/authRoutes');
+  const { apiRouter } = await import('./src/routes/apiRoutes');
+  
+  configurePassportStrategies();
+  app.use(passport.initialize());
+  app.use(passport.session());
+  
+  app.use('/auth', authRouter);
+  app.use('/api', apiRouter);
+}
+
+await initializeRoutes();
 
 // Global error handler
 app.use((err: any, req: any, res: any, next: any) => {
@@ -197,9 +206,7 @@ app.get('/oauth-status', (req, res) => {
   });
 });
 
-// Mount route modules
-app.use('/auth', authRouter);
-app.use('/api', apiRouter);
+// Routes will be mounted dynamically above
 
 // Static file serving
 app.use('/uploads', express.static('uploads'));
