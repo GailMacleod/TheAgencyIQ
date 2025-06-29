@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import passport from 'passport';
-import { Strategy as FacebookStrategy } from 'passport-facebook';
+// import { Strategy as FacebookStrategy } from 'passport-facebook'; // DISABLED - using custom implementation
 import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
 import { Strategy as TwitterStrategy } from 'passport-twitter';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import passport from 'passport';
-import { Strategy as FacebookStrategy } from 'passport-facebook';
+// import { Strategy as FacebookStrategy } from 'passport-facebook'; // DISABLED - using custom implementation
 import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
 import { Strategy as TwitterStrategy } from 'passport-twitter';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
@@ -205,14 +205,22 @@ export function configurePassportStrategies() {
   });
 }
 
-// OAuth route handlers
-authRouter.get('/facebook', (req, res, next) => {
+// OAuth route handlers - Facebook using custom implementation
+authRouter.get('/facebook', (req, res) => {
   if (!process.env.FACEBOOK_APP_ID) {
     return res.status(400).json({ error: 'Facebook OAuth not configured' });
   }
-  passport.authenticate('facebook', { 
-    scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_to_groups']
-  })(req, res, next);
+  
+  // Custom Facebook OAuth URL generation (bypassing passport-facebook)
+  const clientId = process.env.FACEBOOK_APP_ID;
+  const redirectUri = encodeURIComponent(`${baseUrl}/auth/facebook/callback`);
+  const state = encodeURIComponent('facebook_oauth_state');
+  const scope = encodeURIComponent('email,pages_manage_posts,pages_read_engagement,publish_to_groups');
+  
+  const facebookOAuthUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}&response_type=code`;
+  
+  console.log('🔗 Custom Facebook OAuth redirect:', facebookOAuthUrl);
+  res.redirect(facebookOAuthUrl);
 });
 
 // Facebook OAuth configuration diagnostic endpoint
