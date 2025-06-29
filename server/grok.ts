@@ -77,10 +77,12 @@ Brand Details:
 Requirements:
 - Platform: ${platform}
 - Professional Queensland business tone
-- Include relevant hashtags (#QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing)
+- ${platform === 'x' ? 
+  'X PLATFORM SPECIFIC RULES: Maximum 280 characters, NEVER use hashtags (#), ALWAYS use @ for mentions (e.g., @username), clean engaging content WITHOUT promotional tones or emojis' : 
+  'Include relevant hashtags (#QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing)'}
 - Clear call-to-action
 - URL: https://app.theagencyiq.ai
-- ${platform === 'x' ? 'Maximum 280 characters' : 'Engaging, detailed content'}
+- ${platform === 'x' ? 'X format: Clean, engaging, topic-focused content with @ mentions only' : 'Engaging, detailed content'}
 
 Return ONLY the post content, no extra formatting or JSON.`;
 
@@ -138,9 +140,25 @@ Return ONLY the post content, no extra formatting or JSON.`;
 
 function generateFallbackContent(params: ContentGenerationParams, platform: string, postNumber: number): string {
   const brandName = params.brandName || "The AgencyIQ";
-  const hashtags = "#QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing";
   const url = "https://app.theagencyiq.ai";
   
+  // X Platform specific content (NO hashtags, NO emojis, @ mentions only, max 280 chars)
+  if (platform.toLowerCase() === 'x' || platform.toLowerCase() === 'twitter') {
+    const xTemplates = [
+      `Transform your business with ${brandName}. Our AI-powered platform delivers ${params.productsServices} that helps ${params.audience} achieve their goals. ${url}`,
+      `${brandName} understands your challenges: ${params.painPoints}. Let our intelligent system automate your success while you focus on what matters most. ${url}`,
+      `Ready to see real results? ${brandName} helps ${params.audience} overcome obstacles and reach new heights. Join Queensland businesses already winning. ${url}`,
+      `${brandName} delivers ${params.productsServices} designed for busy Queensland entrepreneurs. Save time, increase engagement, grow your business. ${url}`
+    ];
+    
+    const xContent = xTemplates[postNumber % xTemplates.length];
+    
+    // Ensure strict 280 character limit for X
+    return xContent.length > 280 ? xContent.substring(0, 277) + '...' : xContent;
+  }
+  
+  // All other platforms (with hashtags and emojis)
+  const hashtags = "#QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing";
   const contentTemplates = [
     `🚀 Transform your business with ${brandName}! Our AI-powered platform delivers ${params.productsServices} that helps ${params.audience} achieve their goals. ${hashtags} ${url}`,
     `💡 ${brandName} understands your challenges: ${params.painPoints}. Let our intelligent system automate your success while you focus on what matters most. ${hashtags} ${url}`,
@@ -152,9 +170,6 @@ function generateFallbackContent(params: ContentGenerationParams, platform: stri
   
   // Platform-specific optimization
   switch (platform.toLowerCase()) {
-    case 'x':
-    case 'twitter':
-      return template.substring(0, 250) + (template.length > 250 ? '...' : '');
     case 'linkedin':
       return template + '\n\nWhat challenges are you facing in your business growth? Share your thoughts below.';
     case 'instagram':
@@ -195,12 +210,63 @@ export async function getAIResponse(query: string, context?: string, brandPurpos
   return "The AgencyIQ is designed to help Queensland small businesses automate their social media marketing. Our AI-powered platform creates engaging content that resonates with your target audience and drives business growth.";
 }
 
+// X Platform content validation function
+export function validateXContent(content: string): { isValid: boolean; errors: string[]; fixedContent?: string } {
+  const errors: string[] = [];
+  let fixedContent = content;
+  
+  // Check character limit (280 max)
+  if (content.length > 280) {
+    errors.push('Content exceeds 280 character limit');
+    fixedContent = content.substring(0, 277) + '...';
+  }
+  
+  // Check for prohibited hashtags
+  if (content.includes('#')) {
+    errors.push('X posts must not contain hashtags (#)');
+    // Remove hashtags but keep the text
+    fixedContent = fixedContent.replace(/#\w+/g, '').replace(/\s+/g, ' ').trim();
+  }
+  
+  // Check for common emojis (simplified detection)
+  const commonEmojis = ['🚀', '💡', '🎯', '⭐', '❤️', '👍', '🔥', '💪', '✨', '🌟'];
+  const hasEmojis = commonEmojis.some(emoji => content.includes(emoji));
+  if (hasEmojis) {
+    errors.push('X posts must not contain emojis');
+    // Remove common emojis
+    commonEmojis.forEach(emoji => {
+      fixedContent = fixedContent.replace(new RegExp(emoji, 'g'), '');
+    });
+    fixedContent = fixedContent.replace(/\s+/g, ' ').trim();
+  }
+  
+  // Validate @ mentions (should be allowed)
+  const mentionRegex = /@\w+/g;
+  const mentions = content.match(mentionRegex);
+  if (mentions) {
+    // This is allowed, no error
+  }
+  
+  // Check for promotional tone indicators
+  const promotionalWords = ['🚀', '💡', '🎯', '⭐', 'amazing', 'incredible', 'revolutionary'];
+  const hasPromotionalTone = promotionalWords.some(word => content.toLowerCase().includes(word.toLowerCase()));
+  if (hasPromotionalTone) {
+    errors.push('X posts should avoid promotional tones');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    fixedContent: errors.length > 0 ? fixedContent : undefined
+  };
+}
+
 export async function generateEngagementInsight(platform: string, timeSlot: string): Promise<string> {
-  const insights = {
+  const insights: Record<string, string> = {
     facebook: "Facebook posts perform best with community engagement and local Queensland references",
     linkedin: "LinkedIn content should focus on professional insights and business value",
     instagram: "Instagram thrives on visual storytelling and lifestyle integration",
-    x: "X posts need to be concise, hashtag-heavy, and conversation starters",
+    x: "X posts must be under 280 chars, never use hashtags, use @ mentions only, clean engaging content without promotional tones or emojis",
     youtube: "YouTube content should provide educational value and transformation stories"
   };
   
