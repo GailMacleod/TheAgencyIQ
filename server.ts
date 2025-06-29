@@ -131,9 +131,10 @@ app.use((err: any, req: any, res: any, next: any) => {
   console.error('Global error handler caught:', err.message || err);
   console.error('Request URL:', req.url);
   console.error('Request method:', req.method);
+  console.error('Headers sent:', res.headersSent);
   
   // Handle Facebook OAuth errors gracefully
-  if (req.url.includes('/auth/facebook/callback')) {
+  if (req.url.includes('/auth/facebook/callback') && !res.headersSent) {
     if (err.message.includes("domain of this URL isn't included")) {
       console.error('❌ Facebook OAuth callback error: Domain not configured in Meta Console');
       console.error('Required domain: 4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev');
@@ -142,7 +143,7 @@ app.use((err: any, req: any, res: any, next: any) => {
     }
     
     if (err.message.includes("Invalid verification code format") || err.message.includes("verification code")) {
-      console.error('❌ Facebook OAuth callback error: Invalid or expired authorization code');
+      console.error('❌ Facebook OAuth callback error: Invalid or expired authorization code - redirecting to login');
       return res.redirect('/login?error=invalid_code&message=Please+try+connecting+again');
     }
     
@@ -159,7 +160,6 @@ app.use((err: any, req: any, res: any, next: any) => {
       url: req.url
     });
   }
-  next();
 });
 
 // Resilient session recovery middleware

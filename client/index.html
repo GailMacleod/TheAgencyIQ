@@ -60,11 +60,13 @@
     <!-- End Facebook SDK -->
     
     <script>
-      // Enhanced console filtering and CSP compliance fixes
+      // AGGRESSIVE console filtering - completely block Replit framework messages
       (function() {
         const originalWarn = console.warn;
         const originalError = console.error;
+        const originalLog = console.log;
         
+        // Comprehensive filter list for all Replit framework noise
         const frameworkFilters = [
           'Error while parsing the \'sandbox\' attribute',
           'allow-downloads-without-user-activation',
@@ -83,6 +85,8 @@
           'unsized-media',
           'pointer-lock',
           'Allow attribute will take precedence',
+          'allowfullscreen',
+          'allowpaymentrequest',
           'Unable to preventDefault inside passive event listener invocation',
           'preventDefault inside passive event listener',
           'passive event listener',
@@ -95,11 +99,50 @@
           'Refused to load the image',
           'createAssignCSP.js',
           'beacon.js',
-          'net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin'
+          'net::ERR_BLOCKED_BY_RESPONSE.NotSameOrigin',
+          'workspace_iframe.html',
+          '__replco',
+          'replit.dev',
+          'worf.replit.dev',
+          'Understand this warning',
+          'vite] server connection lost',
+          'Polling for restart'
         ];
         
         function shouldFilter(message) {
-          if (typeof message !== 'string') return false;
+          if (typeof message !== 'string') {
+            message = String(message);
+          }
+          return frameworkFilters.some(filter => message.includes(filter));
+        }
+        
+        // Override all console methods to filter Replit framework messages
+        console.warn = function(...args) {
+          const message = args.join(' ');
+          if (!shouldFilter(message)) {
+            originalWarn.apply(console, args);
+          }
+        };
+        
+        console.error = function(...args) {
+          const message = args.join(' ');
+          if (!shouldFilter(message)) {
+            originalError.apply(console, args);
+          }
+        };
+        
+        console.log = function(...args) {
+          const message = args.join(' ');
+          if (!shouldFilter(message)) {
+            originalLog.apply(console, args);
+          }
+        };
+        
+        // Suppress window errors from Replit framework
+        window.addEventListener('error', function(e) {
+          if (shouldFilter(e.message)) {
+            e.preventDefault();
+            return false; (typeof message !== 'string') return false;
           return frameworkFilters.some(filter => message.includes(filter));
         }
         
