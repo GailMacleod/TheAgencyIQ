@@ -1,11 +1,16 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+Update server/index.ts to match dev, with enhanced error logging:
+javascript
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
 const app = express();
 const baseUrl = process.env.NODE_ENV === 'production'
   ? 'https://app.theagencyiq.ai'
@@ -61,9 +66,7 @@ app.get('/platform-connections', (req, res) => {
   }
 });
 
-const publicDir = process.env.NODE_ENV === 'production' 
-  ? path.join(__dirname, 'public')
-  : path.join(__dirname, '..', 'dist', 'public');
+const publicDir = path.join(__dirname, 'dist', 'public');
 app.use(express.static(publicDir));
 app.get('/manifest.json', (req, res) => {
   res.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval';");
@@ -90,3 +93,15 @@ process.on('uncaughtException', (error) => console.error('Uncaught:', error.stac
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Live on ${PORT}`));
+Install if needed: npm install express body-parser.
+Redeploy to Production
+Rebuild: npm run build.
+Redeploy to https://app.theagencyiq.ai via the deploy button.
+Set NODE_ENV=production in Replit Settings > Secrets.
+Test Production
+Test root: curl -I https://app.theagencyiq.ai (expect 200).
+Test /facebook: curl -I https://app.theagencyiq.ai/facebook (expect 200).
+Retry login, check for the 500.
+Debug the 500
+If 500 persists, check deployment logs for runtime errors (e.g., ENOENT on index.html, CSP violation).
+The detailed error logging will help pinpoint the crash.
