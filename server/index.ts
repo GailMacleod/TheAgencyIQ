@@ -118,7 +118,7 @@ async function startServer() {
     // Use dynamic callback URI based on environment
     const callbackUri = process.env.NODE_ENV === 'production' 
       ? 'https://app.theagencyiq.ai/callback'
-      : `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/callback`;
+      : `https://${process.env.REPLIT_DEV_DOMAIN}/callback`;
     
     console.log(`🔗 OAuth initiation for ${platform}:`);
     console.log(`📍 Callback URI: ${callbackUri}`);

@@ -5655,7 +5655,7 @@ Continue building your Value Proposition Canvas systematically.`;
       // Use dynamic callback URI based on environment
       const redirectUri = process.env.NODE_ENV === 'production' 
         ? 'https://app.theagencyiq.ai/callback'
-        : `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/callback`;
+        : `https://${process.env.REPLIT_DEV_DOMAIN}/callback`;
       
       console.log(`🔗 Facebook OAuth initiation:`);
       console.log(`📍 Callback URI: ${redirectUri}`);
