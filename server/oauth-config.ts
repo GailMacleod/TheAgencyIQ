@@ -1,5 +1,5 @@
 import passport from 'passport';
-import { Strategy as FacebookStrategy } from 'passport-facebook';
+// import { Strategy as FacebookStrategy } from 'passport-facebook'; // DISABLED - using custom implementation
 import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
 import { Strategy as TwitterStrategy } from 'passport-twitter';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
@@ -125,26 +125,9 @@ const OAUTH_REDIRECT_BASE = process.env.REPLIT_DOMAINS
   ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
   : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
-// Facebook OAuth Strategy with unified callback handling
-passport.use(new FacebookStrategy({
-  clientID: process.env.FACEBOOK_APP_ID!,
-  clientSecret: process.env.FACEBOOK_APP_SECRET!,
-  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`,
-  profileFields: ['id', 'displayName', 'email'],
-  scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_to_groups', 'pages_show_list', 'user_posts', 'publish_actions'],
-  passReqToCallback: true
-}, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
-  const result = await handleOAuthCallback({
-    req,
-    profile,
-    tokens: { accessToken, refreshToken },
-    platform: 'facebook'
-  });
-  
-  return result.success 
-    ? done(null, result) 
-    : done(new Error(result.error));
-}));
+// Facebook OAuth Strategy - DISABLED (using custom implementation in authModule.ts)
+// Custom Facebook OAuth handler bypasses passport-facebook to prevent strategy conflicts
+console.log('Facebook OAuth: Strategy disabled in oauth-config.ts, using custom implementation');
 
 // Instagram - Direct connection method (OAuth disabled due to app configuration issues)
 // Instagram connections are now handled via direct API endpoints in routes.ts

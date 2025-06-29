@@ -6632,15 +6632,9 @@ Continue building your Value Proposition Canvas systematically.`;
 
   // OAuth Routes for Real Platform Connections
   
-  // Facebook OAuth
-  app.get('/auth/facebook', requireAuth, passport.authenticate('facebook', { scope: ['pages_manage_posts', 'pages_read_engagement'] }));
-  
-  app.get('/auth/facebook/callback', 
-    passport.authenticate('facebook', { failureRedirect: '/platform-connections?error=facebook_failed' }),
-    (req, res) => {
-      res.redirect('/platform-connections?success=facebook_connected');
-    }
-  );
+  // Facebook OAuth - DISABLED (using custom implementation in authModule.ts)
+  // Custom Facebook OAuth routes implemented in authModule.ts to bypass passport-facebook conflicts
+  console.log('Facebook OAuth routes disabled in server/routes.ts - using custom implementation');
 
   // Instagram OAuth disabled - using direct connection method instead
 
