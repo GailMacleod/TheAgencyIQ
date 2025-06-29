@@ -132,12 +132,23 @@ app.use((err: any, req: any, res: any, next: any) => {
   console.error('Request URL:', req.url);
   console.error('Request method:', req.method);
   
-  // Handle Facebook OAuth domain errors gracefully
-  if (req.url.includes('/auth/facebook/callback') && err.message.includes("domain of this URL isn't included")) {
-    console.error('❌ Facebook OAuth callback error: Domain not configured in Meta Console');
-    console.error('Required domain: 4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev');
-    console.error('Required callback URL: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/auth/facebook/callback');
-    return res.redirect('/login?error=domain_not_configured&domain=4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev');
+  // Handle Facebook OAuth errors gracefully
+  if (req.url.includes('/auth/facebook/callback')) {
+    if (err.message.includes("domain of this URL isn't included")) {
+      console.error('❌ Facebook OAuth callback error: Domain not configured in Meta Console');
+      console.error('Required domain: 4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev');
+      console.error('Required callback URL: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/auth/facebook/callback');
+      return res.redirect('/login?error=domain_not_configured&domain=4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev');
+    }
+    
+    if (err.message.includes("Invalid verification code format") || err.message.includes("verification code")) {
+      console.error('❌ Facebook OAuth callback error: Invalid or expired authorization code');
+      return res.redirect('/login?error=invalid_code&message=Please+try+connecting+again');
+    }
+    
+    // Other Facebook OAuth errors
+    console.error('❌ Facebook OAuth callback error:', err.message);
+    return res.redirect('/login?error=facebook_oauth_failed&message=' + encodeURIComponent(err.message));
   }
   
   if (!res.headersSent) {
