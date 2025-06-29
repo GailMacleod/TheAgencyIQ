@@ -92,7 +92,7 @@ Return ONLY the post content, no extra formatting or JSON.`;
         messages: [
           {
             role: "system", 
-            content: "You are an expert Queensland small business marketing strategist. Create compelling social media content that drives engagement and conversions."
+            content: "You are an expert Queensland small business marketing strategist. Create compelling social media content that drives engagement and conversions. CRITICAL X PLATFORM RULE: For X posts, hashtags (#) are COMPLETELY PROHIBITED and will cause posts to be rejected by X. Use ONLY @ mentions for X content."
           },
           { 
             role: "user", 
