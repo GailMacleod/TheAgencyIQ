@@ -276,35 +276,56 @@ authRouter.get('/facebook/config', (req, res) => {
   });
 });
 
+// Test redirect endpoint to verify redirect functionality
+authRouter.get('/facebook/test-redirect', (req, res) => {
+  console.log('🧪 Testing Facebook redirect functionality');
+  res.redirect('/login?error=test_redirect&message=Redirect+functionality+working');
+});
+
+// Direct Facebook OAuth callback with comprehensive error handling
 authRouter.get('/facebook/callback', (req, res, next) => {
-  passport.authenticate('facebook', (err, user, info) => {
+  console.log('📥 Facebook OAuth callback received:', {
+    url: req.url,
+    query: req.query,
+    code: req.query.code ? 'present' : 'missing',
+    state: req.query.state ? 'present' : 'missing'
+  });
+
+  // If no code parameter, it's likely an error from Facebook
+  if (!req.query.code) {
+    console.error('❌ Facebook OAuth: No authorization code received');
+    return res.redirect('/login?error=no_code&message=Facebook+authorization+was+cancelled+or+failed');
+  }
+
+  // Use passport authentication with comprehensive error handling
+  passport.authenticate('facebook', (err: any, user: any, info: any) => {
     if (err) {
       console.error('❌ Facebook OAuth callback error:', err.message);
       
       // Handle specific Facebook domain errors
-      if (err.message.includes("domain of this URL isn't included")) {
+      if (err.message && err.message.includes("domain of this URL isn't included")) {
         console.error('🔧 Domain configuration needed in Meta Console');
-        return res.redirect('/login?error=domain_not_configured&message=Domain+configuration+required');
+        return res.redirect('/login?error=domain_not_configured&message=Domain+configuration+required+in+Meta+Console');
       }
       
       // Handle invalid verification code errors
-      if (err.message.includes("Invalid verification code") || err.message.includes("verification code")) {
+      if (err.message && (err.message.includes("Invalid verification code") || err.message.includes("verification code"))) {
         console.error('🔧 Invalid or expired Facebook authorization code');
-        return res.redirect('/login?error=invalid_code&message=Authorization+expired+please+try+again');
+        return res.redirect('/login?error=invalid_code&message=Facebook+authorization+code+expired+please+try+again');
       }
       
       // Handle other Facebook API errors
       console.error('🔧 General Facebook OAuth error:', err.message);
-      return res.redirect('/login?error=facebook_auth_failed&message=' + encodeURIComponent(err.message));
+      return res.redirect('/login?error=facebook_oauth_failed&message=' + encodeURIComponent(err.message || 'Facebook authentication failed'));
     }
     
     if (!user) {
-      console.warn('⚠️ Facebook OAuth: No user returned');
-      return res.redirect('/login?error=facebook_auth_failed&message=Authentication+failed');
+      console.warn('⚠️ Facebook OAuth: Authentication succeeded but no user object returned');
+      return res.redirect('/login?error=no_user&message=Facebook+authentication+incomplete');
     }
     
-    console.log('✅ Facebook OAuth callback successful');
-    return res.redirect('/dashboard?connected=facebook');
+    console.log('✅ Facebook OAuth callback successful for user:', user.id);
+    return res.redirect('/dashboard?connected=facebook&platform_id=' + user.id);
   })(req, res, next);
 });
 
