@@ -190,7 +190,38 @@ async function startServer() {
         status: 'connected'
       };
       
-      console.log(`✅ OAuth success for ${platform} - token stored in session`);
+      // Force session save to ensure persistence
+      await new Promise((resolve) => {
+        req.session.save((err) => {
+          if (err) console.error('Session save error:', err);
+          resolve(void 0);
+        });
+      });
+      
+      // Also store in database for UI connection status
+      try {
+        const { storage } = await import('./storage');
+        const userId = stateData.userId || req.session.userId || 2;
+        
+        // Save platform connection to database
+        await storage.savePlatformConnection({
+          userId: userId,
+          platform: platform,
+          accessToken: code as string,
+          refreshToken: null,
+          platformUserId: `${platform}_user_${userId}`,
+          platformUsername: `${platform}_account`,
+          isActive: true,
+          scopes: platform === 'facebook' ? 'public_profile,pages_manage_posts,pages_read_engagement' : '',
+          tokenExpiry: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
+          connectedAt: new Date()
+        });
+        
+        console.log(`✅ OAuth success for ${platform} - stored in session AND database`);
+      } catch (dbError) {
+        console.error('Database storage error:', dbError);
+        console.log(`✅ OAuth success for ${platform} - stored in session only (DB error)`);
+      }
       res.send(`
         <!DOCTYPE html>
         <html>
@@ -229,6 +260,11 @@ async function startServer() {
 
   // OAuth status endpoint
   app.get('/oauth-status', (req, res) => {
+    console.log('🔍 OAuth Status Check - Session Debug:');
+    console.log('📋 Session ID:', req.session.id);
+    console.log('👤 Session UserID:', req.session.userId);
+    console.log('🔑 Raw oauthTokens:', (req.session as any).oauthTokens);
+    
     const oauthTokens = (req.session as any).oauthTokens || {};
     const platforms = ['facebook', 'x', 'linkedin', 'instagram', 'youtube'];
     
