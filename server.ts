@@ -40,7 +40,7 @@ app.use((req, res, next) => {
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com",
     "connect-src 'self' https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' data:",
+    "font-src 'self' data: https: https://fonts.gstatic.com https://fonts.googleapis.com blob:",
     "img-src 'self' data: https: https://scontent.xx.fbcdn.net https://www.google-analytics.com",
     "frame-src 'self' https://*.facebook.com",
     "object-src 'none'",
