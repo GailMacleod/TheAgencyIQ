@@ -15,8 +15,9 @@ if (!process.env.SESSION_SECRET) {
 
 const app = express();
 
-// Replit-compatible port configuration
+// Replit-compatible port configuration - uses dynamic port assignment
 const port = parseInt(process.env.PORT || '5000', 10);
+console.log(`Server initializing with port ${port} (${process.env.PORT ? 'from ENV' : 'default'})`);
 
 // Validate port for Replit environment
 if (isNaN(port) || port < 1 || port > 65535) {
@@ -225,13 +226,13 @@ app.get('*', (req, res) => {
 const server = createServer(app);
 
 server.listen(port, '0.0.0.0', () => {
-  console.log(`TheAgencyIQ Server successfully started`);
-  console.log(`Running on port: ${port} (from ${process.env.PORT ? 'ENV' : 'default'})`);
-  console.log(`Host: 0.0.0.0 (Replit-compatible)`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🚀 TheAgencyIQ Server running on port ${port}`);
+  console.log(`📍 Port source: ${process.env.PORT ? `ENV (${process.env.PORT})` : 'default (5000)'}`);
+  console.log(`🌐 Host: 0.0.0.0 (Replit-compatible)`);
+  console.log(`⚙️  Environment: ${process.env.NODE_ENV || 'development'}`);
   
   if (process.env.REPLIT_DOMAINS) {
-    console.log(`Replit domain: https://${process.env.REPLIT_DOMAINS.split(',')[0]}`);
+    console.log(`🔗 Replit URL: https://${process.env.REPLIT_DOMAINS.split(',')[0]}`);
   }
   
   console.log(`Deploy time: ${new Date().toLocaleString('en-AU', { 
@@ -258,11 +259,12 @@ server.on('error', (error: NodeJS.ErrnoException) => {
     const tryAlternativePort = (altPort: number) => {
       const altServer = createServer(app);
       altServer.listen(altPort, '0.0.0.0', () => {
-        console.log(`✅ TheAgencyIQ Server started successfully on alternative port ${altPort}`);
-        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-        console.log(`Host: 0.0.0.0 (Replit-compatible)`);
+        console.log(`🚀 TheAgencyIQ Server running on port ${altPort} (alternative)`);
+        console.log(`📍 Port source: alternative (original ${port} was busy)`);
+        console.log(`🌐 Host: 0.0.0.0 (Replit-compatible)`);
+        console.log(`⚙️  Environment: ${process.env.NODE_ENV || 'development'}`);
         if (process.env.REPLIT_DOMAINS) {
-          console.log(`Replit domain: https://${process.env.REPLIT_DOMAINS.split(',')[0]}`);
+          console.log(`🔗 Replit URL: https://${process.env.REPLIT_DOMAINS.split(',')[0]}`);
         }
         console.log('React app with OAuth bypass ready');
       }).on('error', (altError: NodeJS.ErrnoException) => {
