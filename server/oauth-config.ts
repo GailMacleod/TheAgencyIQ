@@ -125,9 +125,26 @@ const OAUTH_REDIRECT_BASE = process.env.REPLIT_DOMAINS
   ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
   : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
-// Facebook OAuth Strategy - DISABLED (using custom implementation in authModule.ts)
-// Custom Facebook OAuth handler bypasses passport-facebook to prevent strategy conflicts
-console.log('Facebook OAuth: Strategy disabled in oauth-config.ts, using custom implementation');
+// Facebook OAuth Strategy - DUMMY STRATEGY to catch remaining calls
+import { Strategy as BaseStrategy } from 'passport-strategy';
+
+class FacebookDummyStrategy extends BaseStrategy {
+  name: string;
+  
+  constructor() {
+    super();
+    this.name = 'facebook';
+  }
+  
+  authenticate(req: any) {
+    console.log('🔧 DUMMY Facebook strategy called from:', req.url);
+    console.log('🔧 Stack trace:', new Error().stack);
+    return this.redirect('/login?error=facebook_disabled&message=Facebook+OAuth+disabled+using+custom+implementation');
+  }
+}
+
+passport.use(new FacebookDummyStrategy());
+console.log('Facebook OAuth: Dummy strategy registered to catch remaining calls');
 
 // Instagram - Direct connection method (OAuth disabled due to app configuration issues)
 // Instagram connections are now handled via direct API endpoints in routes.ts
