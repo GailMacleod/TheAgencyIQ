@@ -113,6 +113,18 @@ try {
 
 // Initialize auth and API routes with dynamic imports
 async function initializeRoutes() {
+  // Health check endpoint for monitoring
+  app.get('/ping', (req, res) => {
+    res.json({ status: 'ok' });
+  });
+
+  // Test error endpoint for monitoring alerts
+  app.get('/test-error', (req, res) => {
+    const fs = require('fs');
+    const errorLog = `${new Date().toISOString()} - Test Error 500 - Monitoring test failure initiated\n`;
+    fs.appendFileSync('logs.txt', errorLog);
+    res.status(500).json({ error: 'Test failure for monitoring system' });
+  });
   const { configurePassportStrategies, authRouter } = await import('./authModule');
   const { apiRouter } = await import('./apiModule');
   

@@ -5730,7 +5730,14 @@ Continue building your Value Proposition Canvas systematically.`;
     try {
       const { code, state, error } = req.query;
       
+      // Enhanced logging for monitoring
+      const fs = require('fs');
+      const logEntry = `${new Date().toISOString()} - Facebook OAuth Callback - Time: ${new Date().toISOString()}, Code: ${req.query.code}, State: ${req.query.state}, Error: ${req.query.error || 'None'}\n`;
+      fs.appendFileSync('logs.txt', logEntry);
+      
       if (error) {
+        const errorLog = `${new Date().toISOString()} - Facebook OAuth Error - ${error}\n`;
+        fs.appendFileSync('logs.txt', errorLog);
         return res.redirect('/connect-platforms?error=facebook_oauth_denied');
       }
 
