@@ -1,10 +1,17 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
+Update server/index.ts for Production
+Adjust to handle CSP and stabilize endpoints:
+javascript
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
 const app = express();
 const baseUrl = process.env.NODE_ENV === 'production'
   ? 'https://app.theagencyiq.ai'
@@ -78,3 +85,25 @@ process.on('uncaughtException', (error) => console.error('Uncaught:', error.stac
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Live on ${PORT}`));
+Install if needed: npm install express body-parser.
+Redeploy to Production
+Rebuild: npm run build.
+Redeploy to https://app.theagencyiq.ai via the deploy button.
+Set NODE_ENV=production in Replit Settings > Secrets.
+Test Production
+Test /platform-connections: curl https://app.theagencyiq.ai/platform-connections?code=testcode.
+Retry login on https://app.theagencyiq.ai, check console.
+Debug 500 and 403
+If 500 persists, check deployment logs for runtime errors.
+If 403 on /data/__reachability remains, ensure the CSP allows the resource or remove the request if unnecessary.
+Verify Facebook Developer Console redirect URI.
+Notes
+The 500 is likely a CSP or runtime issue—this fixes both with targeted headers.
+Share logs or console output if issues linger—I’ll sharpen it.
+
+
+
+
+
+
+6.9s
