@@ -253,34 +253,62 @@ authRouter.get('/facebook/test-redirect', (req, res) => {
 
 // Custom Facebook OAuth callback - bypasses passport-facebook completely
 authRouter.get('/facebook/callback', async (req, res) => {
-  console.log('📥 Facebook OAuth callback received:', {
+  console.log('🚀 Facebook OAuth callback START');
+  console.log('📥 Request details:', {
     url: req.url,
+    method: req.method,
+    headers: req.headers,
     query: req.query,
-    code: req.query.code ? 'present' : 'missing',
-    state: req.query.state ? 'present' : 'missing'
+    params: req.params
+  });
+  
+  const code = req.query.code as string;
+  const state = req.query.state as string;
+  const error = req.query.error as string;
+  
+  console.log('🔍 OAuth parameters:', {
+    code: code ? `present (${code.substring(0,10)}...)` : 'MISSING',
+    state: state ? `present (${state})` : 'MISSING',
+    error: error ? `ERROR: ${error}` : 'none',
+    codeLength: code ? code.length : 0
   });
 
+  // Handle OAuth errors from Facebook
+  if (error) {
+    console.error('❌ Facebook OAuth error:', error);
+    console.error('❌ Error description:', req.query.error_description);
+    return res.redirect('/login?error=oauth_error&message=' + encodeURIComponent(error));
+  }
+
   // If no code parameter, redirect immediately
-  if (!req.query.code) {
+  if (!code) {
     console.error('❌ Facebook OAuth: No authorization code received');
     return res.redirect('/login?error=no_code&message=Facebook+authorization+was+cancelled+or+failed');
   }
 
   // Handle test codes gracefully
-  const code = req.query.code as string;
   if (code.startsWith('AQ') && (code.includes('Test') || code.includes('test') || code.length < 20)) {
-    console.error('🔧 Test authorization code detected - simulating success for testing');
+    console.log('🔧 Test authorization code detected - simulating success for testing');
     return res.redirect('/dashboard?connected=facebook&test_mode=true');
   }
 
   try {
+    console.log('🔄 Starting Facebook token exchange process...');
+    
     // Custom Facebook token exchange without passport
     const clientId = process.env.FACEBOOK_APP_ID;
     const clientSecret = process.env.FACEBOOK_APP_SECRET;
     const redirectUri = `${baseUrl}/auth/facebook/callback`;
 
+    console.log('🔑 Facebook credentials check:', {
+      clientId: clientId ? `present (${clientId.substring(0,8)}...)` : 'MISSING',
+      clientSecret: clientSecret ? 'present' : 'MISSING',
+      redirectUri: redirectUri,
+      baseUrl: baseUrl
+    });
+
     if (!clientId || !clientSecret) {
-      console.error('❌ Facebook credentials missing');
+      console.error('❌ Facebook credentials missing - check environment variables');
       return res.redirect('/login?error=config_error&message=Facebook+app+not+configured');
     }
 
@@ -293,15 +321,24 @@ authRouter.get('/facebook/callback', async (req, res) => {
       code: code
     });
 
-    console.log('🔄 Attempting Facebook token exchange...');
+    console.log('🔄 Starting token exchange process...');
+    console.log('📋 Token exchange parameters:', {
+      tokenUrl: tokenUrl,
+      params: {
+        client_id: clientId.substring(0,8) + '...',
+        redirect_uri: redirectUri,
+        code: code.substring(0,10) + '...'
+      }
+    });
     
     // For now, simulate successful OAuth for any real-looking code
     if (code.length > 15 && !code.includes('Test')) {
-      console.log('✅ Facebook OAuth simulation - treating as successful');
+      console.log('✅ Code validation passed - simulating successful token exchange');
+      console.log('💾 Attempting to store Facebook connection in database...');
       
       // Store connection in database
       try {
-        await storage.createPlatformConnection({
+        const connectionData = {
           userId: 2, // Default user for now
           platform: 'facebook',
           platformUserId: 'fb_' + Date.now(),
@@ -309,21 +346,54 @@ authRouter.get('/facebook/callback', async (req, res) => {
           accessToken: 'fb_token_' + Date.now(),
           refreshToken: null,
           isActive: true
-        });
+        };
         
-        console.log('✅ Facebook connection stored successfully');
+        console.log('📝 Connection data to store:', connectionData);
+        
+        await storage.createPlatformConnection(connectionData);
+        
+        console.log('✅ Facebook connection stored successfully in database');
+        console.log('🎯 Redirecting to dashboard with success status');
         return res.redirect('/dashboard?connected=facebook&status=success');
+        
       } catch (dbError: any) {
-        console.error('❌ Database error storing Facebook connection:', dbError.message);
+        console.error('❌ Database error storing Facebook connection:');
+        console.error('❌ Error details:', {
+          message: dbError.message,
+          stack: dbError.stack,
+          name: dbError.name
+        });
+        console.log('⚠️ Redirecting to dashboard with database warning');
         return res.redirect('/dashboard?connected=facebook&status=db_warning');
       }
     }
 
+    console.log('❌ Code validation failed - redirecting with error');
     return res.redirect('/login?error=invalid_code&message=Facebook+authorization+code+invalid');
 
   } catch (error: any) {
-    console.error('❌ Facebook OAuth custom handler error:', error.message);
-    return res.redirect('/login?error=custom_handler_failed&message=Facebook+OAuth+processing+error');
+    console.error('💥 CRITICAL ERROR in Facebook OAuth callback:');
+    console.error('💥 Error type:', error.constructor.name);
+    console.error('💥 Error message:', error.message);
+    console.error('💥 Error stack:', error.stack);
+    console.error('💥 Full error object:', error);
+    
+    console.log('🔄 Attempting graceful error recovery...');
+    try {
+      return res.redirect('/login?error=callback_failed&message=' + encodeURIComponent('Facebook OAuth error: ' + error.message));
+    } catch (redirectError: any) {
+      console.error('💥 DOUBLE ERROR - Cannot even redirect:', redirectError.message);
+      // Last resort - send basic error response
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          error: 'Facebook OAuth failed', 
+          message: error.message,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+  } finally {
+    console.log('🏁 Facebook OAuth callback processing COMPLETE');
   }
 });
 
