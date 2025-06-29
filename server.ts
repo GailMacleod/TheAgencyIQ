@@ -146,8 +146,10 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 // Resilient session recovery middleware
 app.use(async (req: any, res: any, next: any) => {
-  const skipPaths = ['/api/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/facebook-data-deletion', '/api/deletion-status', '/auth/'];
-  if (skipPaths.some(path => req.url.startsWith(path))) {
+  const skipPaths = ['/api/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/facebook-data-deletion', '/api/deletion-status', '/auth/', '/oauth-status'];
+  
+  // Allow all OAuth routes without authentication
+  if (req.url.startsWith('/auth/facebook') || skipPaths.some(path => req.url.startsWith(path))) {
     return next();
   }
 
