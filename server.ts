@@ -73,8 +73,8 @@ console.log('✅ Session middleware initialized (memory store)');
 
 // Initialize auth and API routes with dynamic imports
 async function initializeRoutes() {
-  const { configurePassportStrategies, authRouter } = await import('./src/auth/authRoutes');
-  const { apiRouter } = await import('./src/routes/apiRoutes');
+  const { configurePassportStrategies, authRouter } = await import('./authModule');
+  const { apiRouter } = await import('./apiModule');
   
   configurePassportStrategies();
   app.use(passport.initialize());
