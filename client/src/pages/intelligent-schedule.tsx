@@ -592,7 +592,7 @@ export default function IntelligentSchedule() {
             ) : (
               // List View
               <div className="grid gap-6">
-                {postsArray.slice(0, 10).map((post: Post) => (
+                {postsArray.map((post: Post) => (
                 <Card key={post.id} className="overflow-hidden border-l-4 border-purple-500">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">

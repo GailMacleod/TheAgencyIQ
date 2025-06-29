@@ -280,8 +280,7 @@ apiRouter.get('/oauth-status', async (req, res) => {
 apiRouter.get('/posts', requireAuth, async (req, res) => {
   try {
     const userId = req.session.userId!;
-    // Note: Using simplified response for now
-    const posts = [];
+    const posts = await storage.getPostsByUser(userId);
     res.json(posts);
   } catch (error: any) {
     console.error('Get posts error:', error);
