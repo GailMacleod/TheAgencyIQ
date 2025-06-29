@@ -251,12 +251,29 @@ authRouter.get('/facebook', (req, res, next) => {
   })(req, res, next);
 });
 
-authRouter.get('/facebook/callback', 
-  passport.authenticate('facebook', { 
-    failureRedirect: '/login?error=facebook_auth_failed',
-    successRedirect: '/dashboard?connected=facebook'
-  })
-);
+authRouter.get('/facebook/callback', (req, res, next) => {
+  passport.authenticate('facebook', (err, user, info) => {
+    if (err) {
+      console.error('❌ Facebook OAuth callback error:', err.message);
+      
+      // Handle specific Facebook domain errors
+      if (err.message.includes("domain of this URL isn't included")) {
+        return res.redirect('/login?error=domain_not_configured');
+      }
+      
+      // Handle other Facebook API errors
+      return res.redirect('/login?error=facebook_auth_failed');
+    }
+    
+    if (!user) {
+      console.warn('⚠️ Facebook OAuth: No user returned');
+      return res.redirect('/login?error=facebook_auth_failed');
+    }
+    
+    console.log('✅ Facebook OAuth callback successful');
+    return res.redirect('/dashboard?connected=facebook');
+  })(req, res, next);
+});
 
 authRouter.get('/linkedin', passport.authenticate('linkedin', { scope: ['profile', 'w_member_social', 'email'] }));
 authRouter.get('/linkedin/callback', passport.authenticate('linkedin', { failureRedirect: '/login' }), (req, res) => {

@@ -40,7 +40,7 @@ app.use((req, res, next) => {
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com",
     "connect-src 'self' https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com",
+    "font-src 'self' data:",
     "img-src 'self' data: https: https://scontent.xx.fbcdn.net https://www.google-analytics.com",
     "frame-src 'self' https://*.facebook.com",
     "object-src 'none'",
@@ -128,10 +128,15 @@ await initializeRoutes();
 
 // Global error handler
 app.use((err: any, req: any, res: any, next: any) => {
-  console.error('Global error handler caught:', err);
-  console.error('Error stack:', err.stack);
+  console.error('Global error handler caught:', err.message || err);
   console.error('Request URL:', req.url);
   console.error('Request method:', req.method);
+  
+  // Handle Facebook OAuth domain errors gracefully
+  if (req.url.includes('/auth/facebook/callback') && err.message.includes("domain of this URL isn't included")) {
+    console.error('❌ Facebook OAuth callback error: Domain not configured');
+    return res.redirect('/login?error=domain_not_configured');
+  }
   
   if (!res.headersSent) {
     res.status(500).json({
