@@ -306,8 +306,10 @@ app.get('*', (req, res) => {
 // Start server
 const server = createServer(app);
 
-server.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 TheAgencyIQ Server running on port ${port}`);
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Live on ${PORT}`);
+  console.log(`🚀 TheAgencyIQ Server running on port ${PORT}`);
   console.log(`📍 Port source: ${process.env.PORT ? `ENV (${process.env.PORT})` : 'default (5000)'}`);
   console.log(`🌐 Host: 0.0.0.0 (Replit-compatible)`);
   console.log(`⚙️  Environment: ${process.env.NODE_ENV || 'development'}`);
