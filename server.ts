@@ -7,8 +7,10 @@ import cors from 'cors';
 import { createServer } from 'http';
 // Dynamic imports for code splitting
 
-// Environment validation - use default in production
-const SESSION_SECRET = process.env.SESSION_SECRET || 'fallback-production-secret-key-2025';
+// Environment validation
+if (!process.env.SESSION_SECRET) {
+  throw new Error('Missing required SESSION_SECRET');
+}
 
 const app = express();
 
@@ -122,22 +124,7 @@ async function initializeRoutes() {
   app.use('/api', apiRouter);
 }
 
-// Health check endpoint - must be before route initialization
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// Initialize routes synchronously to avoid deployment issues
-try {
-  await initializeRoutes();
-} catch (error: any) {
-  console.error('Route initialization failed:', error.message);
-  // Continue without full routes for basic functionality
-}
+await initializeRoutes();
 
 // Facebook OAuth specific error handler - must be before routes
 app.use('/auth/facebook/callback', (err: any, req: any, res: any, next: any) => {
@@ -310,34 +297,17 @@ app.get('/manifest.json', (req, res) => {
   res.sendFile(require('path').join(__dirname, '../public/manifest.json'));
 });
 
-// Global error handler
-app.use((err: any, req: any, res: any, next: any) => {
-  console.error('Server error:', err.message);
-  if (!res.headersSent) {
-    res.status(500).json({ 
-      error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? err.message : 'Server error'
-    });
-  }
-});
-
 // Serve frontend
 app.get('*', (req, res) => {
-  try {
-    const path = require('path');
-    res.sendFile(path.join(__dirname, 'client/dist/index.html'));
-  } catch (error) {
-    res.status(404).send('Application not found');
-  }
+  const path = require('path');
+  res.sendFile(path.join(__dirname, 'client/dist/index.html'));
 });
 
 // Start server
 const server = createServer(app);
 
-const PORT = parseInt(process.env.PORT || '5000', 10);
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Live on ${PORT}`);
-  console.log(`🚀 TheAgencyIQ Server running on port ${PORT}`);
+server.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 TheAgencyIQ Server running on port ${port}`);
   console.log(`📍 Port source: ${process.env.PORT ? `ENV (${process.env.PORT})` : 'default (5000)'}`);
   console.log(`🌐 Host: 0.0.0.0 (Replit-compatible)`);
   console.log(`⚙️  Environment: ${process.env.NODE_ENV || 'development'}`);
