@@ -1,7 +1,7 @@
 import express from 'express';
 import session from 'express-session';
 import Knex from 'knex';
-import * as ConnectSessionKnex from 'connect-session-knex';
+
 import passport from 'passport';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -57,31 +57,42 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Session configuration with SQLite persistent store
 const knex = Knex({
   client: 'sqlite3',
-  connection: { filename: './sessions.db' },
+  connection: { filename: './data/sessions.db' },
   useNullAsDefault: true,
+  debug: true, // Enable query logging for debugging
 });
 
-const KnexSessionStore = ConnectSessionKnex(session);
+// Initialize session store with dynamic import for ES module compatibility
+async function initializeSessionStore() {
+  const connectSessionKnex = (await import('connect-session-knex')).default;
+  const KnexSessionStore = connectSessionKnex(session);
+  
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || 'fallback-session-secret-for-development',
+      resave: false,
+      saveUninitialized: false,
+      store: new KnexSessionStore({ 
+        knex, 
+        tablename: 'sessions',
+        createtable: true
+      }),
+      cookie: {
+        httpOnly: true,
+        secure: false, // Allow non-HTTPS in development
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+        sameSite: 'lax',
+      },
+      name: 'theagencyiq.sid',
+    })
+  );
+  
+  console.log('✅ SQLite session store initialized');
+  return true;
+}
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'fallback-session-secret-for-development',
-    resave: false,
-    saveUninitialized: false,
-    store: new KnexSessionStore({ 
-      knex, 
-      tablename: 'sessions',
-      createtable: true
-    }),
-    cookie: {
-      httpOnly: true,
-      secure: false, // Allow non-HTTPS in development
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-      sameSite: 'lax',
-    },
-    name: 'theagencyiq.sid',
-  })
-);
+// Initialize session store before other middleware
+await initializeSessionStore();
 
 // Configure Passport strategies and initialize
 configurePassportStrategies();
