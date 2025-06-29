@@ -135,21 +135,21 @@ app.use((err: any, req: any, res: any, next: any) => {
   
   // Handle Facebook OAuth errors gracefully
   if (req.url.includes('/auth/facebook/callback') && !res.headersSent) {
-    if (err.message.includes("domain of this URL isn't included")) {
-      console.error('❌ Facebook OAuth callback error: Domain not configured in Meta Console');
-      console.error('Required domain: 4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev');
-      console.error('Required callback URL: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/auth/facebook/callback');
-      return res.redirect('/login?error=domain_not_configured&domain=4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev');
+    console.error('🔧 Intercepting Facebook OAuth error for graceful handling');
+    
+    if (err.message && err.message.includes("domain of this URL isn't included")) {
+      console.error('❌ Facebook OAuth: Domain not configured in Meta Console');
+      return res.redirect('/login?error=domain_not_configured&message=Domain+configuration+required+in+Meta+Console');
     }
     
-    if (err.message.includes("Invalid verification code format") || err.message.includes("verification code")) {
-      console.error('❌ Facebook OAuth callback error: Invalid or expired authorization code - redirecting to login');
-      return res.redirect('/login?error=invalid_code&message=Please+try+connecting+again');
+    if (err.message && (err.message.includes("Invalid verification code") || err.message.includes("verification code"))) {
+      console.error('❌ Facebook OAuth: Invalid authorization code - graceful redirect');
+      return res.redirect('/login?error=invalid_code&message=Facebook+authorization+expired+please+try+again');
     }
     
     // Other Facebook OAuth errors
-    console.error('❌ Facebook OAuth callback error:', err.message);
-    return res.redirect('/login?error=facebook_oauth_failed&message=' + encodeURIComponent(err.message));
+    console.error('❌ Facebook OAuth error - graceful redirect:', err.message);
+    return res.redirect('/login?error=facebook_oauth_failed&message=' + encodeURIComponent(err.message || 'Facebook OAuth failed'));
   }
   
   if (!res.headersSent) {

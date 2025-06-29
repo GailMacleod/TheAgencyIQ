@@ -282,7 +282,7 @@ authRouter.get('/facebook/test-redirect', (req, res) => {
   res.redirect('/login?error=test_redirect&message=Redirect+functionality+working');
 });
 
-// Direct Facebook OAuth callback with comprehensive error handling
+// Facebook OAuth callback with error interception before passport
 authRouter.get('/facebook/callback', (req, res, next) => {
   console.log('📥 Facebook OAuth callback received:', {
     url: req.url,
@@ -291,42 +291,42 @@ authRouter.get('/facebook/callback', (req, res, next) => {
     state: req.query.state ? 'present' : 'missing'
   });
 
-  // If no code parameter, it's likely an error from Facebook
+  // If no code parameter, redirect immediately
   if (!req.query.code) {
     console.error('❌ Facebook OAuth: No authorization code received');
     return res.redirect('/login?error=no_code&message=Facebook+authorization+was+cancelled+or+failed');
   }
 
-  // Use passport authentication with comprehensive error handling
-  passport.authenticate('facebook', (err: any, user: any, info: any) => {
-    if (err) {
-      console.error('❌ Facebook OAuth callback error:', err.message);
-      
-      // Handle specific Facebook domain errors
-      if (err.message && err.message.includes("domain of this URL isn't included")) {
-        console.error('🔧 Domain configuration needed in Meta Console');
-        return res.redirect('/login?error=domain_not_configured&message=Domain+configuration+required+in+Meta+Console');
+  // For test codes that will definitely fail, handle them gracefully
+  const code = req.query.code as string;
+  if (code.startsWith('AQ') && (code.includes('Test') || code.includes('test') || code.length < 20)) {
+    console.error('🔧 Test authorization code detected - redirecting gracefully');
+    return res.redirect('/login?error=test_code&message=Test+authorization+code+not+valid+please+use+real+Facebook+login');
+  }
+
+  // Wrap passport authentication in error handling
+  try {
+    passport.authenticate('facebook', {
+      failureRedirect: '/login?error=facebook_failed&message=Facebook+authentication+failed',
+      successRedirect: '/dashboard?connected=facebook'
+    })(req, res, (err: any) => {
+      if (err) {
+        console.error('❌ Facebook OAuth middleware error:', err.message);
+        
+        if (err.message && err.message.includes("Invalid verification code")) {
+          console.error('🔧 Invalid verification code - graceful redirect');
+          return res.redirect('/login?error=invalid_code&message=Facebook+authorization+expired+please+try+again');
+        }
+        
+        return res.redirect('/login?error=auth_middleware_failed&message=Facebook+OAuth+processing+failed');
       }
       
-      // Handle invalid verification code errors
-      if (err.message && (err.message.includes("Invalid verification code") || err.message.includes("verification code"))) {
-        console.error('🔧 Invalid or expired Facebook authorization code');
-        return res.redirect('/login?error=invalid_code&message=Facebook+authorization+code+expired+please+try+again');
-      }
-      
-      // Handle other Facebook API errors
-      console.error('🔧 General Facebook OAuth error:', err.message);
-      return res.redirect('/login?error=facebook_oauth_failed&message=' + encodeURIComponent(err.message || 'Facebook authentication failed'));
-    }
-    
-    if (!user) {
-      console.warn('⚠️ Facebook OAuth: Authentication succeeded but no user object returned');
-      return res.redirect('/login?error=no_user&message=Facebook+authentication+incomplete');
-    }
-    
-    console.log('✅ Facebook OAuth callback successful for user:', user.id);
-    return res.redirect('/dashboard?connected=facebook&platform_id=' + user.id);
-  })(req, res, next);
+      if (next) next(err);
+    });
+  } catch (authError: any) {
+    console.error('❌ Facebook OAuth wrapper error:', authError.message);
+    return res.redirect('/login?error=auth_wrapper_failed&message=Facebook+OAuth+initialization+failed');
+  }
 });
 
 authRouter.get('/linkedin', passport.authenticate('linkedin', { scope: ['profile', 'w_member_social', 'email'] }));
