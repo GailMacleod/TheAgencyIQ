@@ -1,51 +1,15 @@
-import express from 'express';
-import session from 'express-session';
-import Knex from 'knex';
-
-import passport from 'passport';
-import cors from 'cors';
-import { createServer } from 'http';
-// Dynamic imports for code splitting
-
-// Environment validation
-if (!process.env.SESSION_SECRET) {
-  throw new Error('Missing required SESSION_SECRET');
-}
-
+const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
 const app = express();
+const baseUrl = process.env.NODE_ENV === 'production'
+  ? 'https://app.theagencyiq.ai'
+  : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
-// Replit-compatible port configuration - uses dynamic port assignment
-const port = parseInt(process.env.PORT || '5000', 10);
-console.log(`Server initializing with port ${port} (${process.env.PORT ? 'from ENV' : 'default'})`);
-
-// Validate port for Replit environment
-if (isNaN(port) || port < 1 || port > 65535) {
-  console.error(`Invalid port: ${process.env.PORT}. Using default port 5000.`);
-  process.exit(1);
-}
-
-// CORS configuration
-app.use(cors({
-  origin: true,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  optionsSuccessStatus: 200
-}));
-
-// Content Security Policy middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 app.use((req, res, next) => {
-  res.setHeader('Content-Security-Policy', [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com",
-    "connect-src 'self' https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' data: https: https://fonts.gstatic.com https://fonts.googleapis.com blob:",
-    "img-src 'self' data: https: https://scontent.xx.fbcdn.net https://www.google-analytics.com",
-    "frame-src 'self' https://*.facebook.com",
-    "object-src 'none'",
-    "base-uri 'self'"
-  ].join('; '));
+  res.set('Access-Control-Allow-Origin', '*');
   next();
 });
 
