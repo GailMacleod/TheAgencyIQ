@@ -212,6 +212,13 @@ app.get('/oauth-status', (req, res) => {
 app.use('/uploads', express.static('uploads'));
 app.use('/attached_assets', express.static('attached_assets'));
 
+// Serve manifest.json with proper headers
+app.get('/manifest.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.sendFile(require('path').join(__dirname, '../public/manifest.json'));
+});
+
 // Serve frontend
 app.get('*', (req, res) => {
   const path = require('path');
