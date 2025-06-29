@@ -1,7 +1,7 @@
 import express from 'express';
 import session from 'express-session';
 import Knex from 'knex';
-import ConnectSessionKnex from 'connect-session-knex';
+import * as ConnectSessionKnex from 'connect-session-knex';
 import passport from 'passport';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -53,20 +53,32 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session configuration
-const KnexSessionStore = ConnectSessionKnex(session);
+// Session configuration with SQLite persistent store
 const knex = Knex({
   client: 'sqlite3',
   connection: { filename: './sessions.db' },
   useNullAsDefault: true,
 });
 
+const KnexSessionStore = ConnectSessionKnex(session);
+
 app.use(
   session({
-    secret: process.env.SESSION_SECRET!,
+    secret: process.env.SESSION_SECRET || 'fallback-session-secret-for-development',
     resave: false,
     saveUninitialized: false,
-    store: new KnexSessionStore({ knex, tablename: 'sessions' }),
+    store: new KnexSessionStore({ 
+      knex, 
+      tablename: 'sessions',
+      createtable: true
+    }),
+    cookie: {
+      httpOnly: true,
+      secure: false, // Allow non-HTTPS in development
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+      sameSite: 'lax',
+    },
+    name: 'theagencyiq.sid',
   })
 );
 
@@ -237,16 +249,38 @@ server.listen(port, '0.0.0.0', () => {
   console.log('Visit /public to bypass auth and access platform connections');
 });
 
-// Server error handling for Replit hosting
+// Dynamic port conflict handling for Replit hosting
 server.on('error', (error: NodeJS.ErrnoException) => {
   if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${port} is already in use. Replit will assign a different port.`);
-    process.exit(1);
+    console.log(`Port ${port} is already in use, trying alternative ports...`);
+    
+    // Try alternative ports dynamically
+    const tryAlternativePort = (altPort: number) => {
+      const altServer = createServer(app);
+      altServer.listen(altPort, '0.0.0.0', () => {
+        console.log(`✅ TheAgencyIQ Server started successfully on alternative port ${altPort}`);
+        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`Host: 0.0.0.0 (Replit-compatible)`);
+        if (process.env.REPLIT_DOMAINS) {
+          console.log(`Replit domain: https://${process.env.REPLIT_DOMAINS.split(',')[0]}`);
+        }
+        console.log('React app with OAuth bypass ready');
+      }).on('error', (altError: NodeJS.ErrnoException) => {
+        if (altError.code === 'EADDRINUSE' && altPort < 8000) {
+          tryAlternativePort(altPort + 1);
+        } else {
+          console.error(`Failed to bind to port ${altPort}:`, altError.message);
+          process.exit(1);
+        }
+      });
+    };
+    
+    tryAlternativePort(port + 1);
   } else if (error.code === 'EACCES') {
-    console.error(`Permission denied for port ${port}. Check Replit configuration.`);
+    console.error(`❌ Permission denied for port ${port}. Check Replit configuration.`);
     process.exit(1);
   } else {
-    console.error('Server error:', error);
+    console.error('❌ Server error:', error);
     process.exit(1);
   }
 });
