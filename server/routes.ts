@@ -6859,22 +6859,35 @@ Continue building your Value Proposition Canvas systematically.`;
 // Platform Analytics Functions
 async function fetchFacebookAnalytics(accessToken: string) {
   try {
-    const response = await axios.get(
-      `https://graph.facebook.com/v18.0/me/posts?fields=id,message,created_time,insights.metric(post_impressions,post_engaged_users)&access_token=${accessToken}`
+    // First try to get basic posts without insights to check if token works
+    const basicResponse = await axios.get(
+      `https://graph.facebook.com/v18.0/me/posts?fields=id,message,created_time&access_token=${accessToken}`
     );
     
-    const posts = response.data.data || [];
+    const posts = basicResponse.data.data || [];
+    
+    // Try to get insights if permissions allow, otherwise return basic data
     let totalReach = 0;
     let totalEngagement = 0;
-
-    posts.forEach((post: any) => {
-      if (post.insights?.data) {
-        const impressions = post.insights.data.find((m: any) => m.name === 'post_impressions')?.values[0]?.value || 0;
-        const engagement = post.insights.data.find((m: any) => m.name === 'post_engaged_users')?.values[0]?.value || 0;
-        totalReach += impressions;
-        totalEngagement += engagement;
-      }
-    });
+    
+    try {
+      const insightsResponse = await axios.get(
+        `https://graph.facebook.com/v18.0/me/posts?fields=id,insights.metric(post_impressions,post_engaged_users)&access_token=${accessToken}`
+      );
+      
+      const postsWithInsights = insightsResponse.data.data || [];
+      postsWithInsights.forEach((post: any) => {
+        if (post.insights?.data) {
+          const impressions = post.insights.data.find((m: any) => m.name === 'post_impressions')?.values[0]?.value || 0;
+          const engagement = post.insights.data.find((m: any) => m.name === 'post_engaged_users')?.values[0]?.value || 0;
+          totalReach += impressions;
+          totalEngagement += engagement;
+        }
+      });
+    } catch (insightsError) {
+      // Insights permission not available, continue with basic data
+      console.log('Facebook insights not available, using basic post count');
+    }
 
     return {
       platform: 'facebook',
@@ -6885,28 +6898,47 @@ async function fetchFacebookAnalytics(accessToken: string) {
     };
   } catch (error) {
     console.error('Facebook API error:', error);
-    throw new Error('Failed to fetch Facebook analytics');
+    // Return fallback data instead of throwing
+    return {
+      platform: 'facebook',
+      totalPosts: 0,
+      totalReach: 0,
+      totalEngagement: 0,
+      engagementRate: '0',
+      error: 'Unable to fetch Facebook data - check token permissions'
+    };
   }
 }
 
 async function fetchInstagramAnalytics(accessToken: string) {
   try {
-    const response = await axios.get(
-      `https://graph.facebook.com/v18.0/me/media?fields=id,caption,timestamp,insights.metric(impressions,engagement)&access_token=${accessToken}`
+    // First try basic media without insights
+    const basicResponse = await axios.get(
+      `https://graph.facebook.com/v18.0/me/media?fields=id,caption,timestamp&access_token=${accessToken}`
     );
     
-    const posts = response.data.data || [];
+    const posts = basicResponse.data.data || [];
     let totalReach = 0;
     let totalEngagement = 0;
 
-    posts.forEach((post: any) => {
-      if (post.insights?.data) {
-        const impressions = post.insights.data.find((m: any) => m.name === 'impressions')?.values[0]?.value || 0;
-        const engagement = post.insights.data.find((m: any) => m.name === 'engagement')?.values[0]?.value || 0;
-        totalReach += impressions;
-        totalEngagement += engagement;
-      }
-    });
+    // Try to get insights if permissions allow
+    try {
+      const insightsResponse = await axios.get(
+        `https://graph.facebook.com/v18.0/me/media?fields=id,insights.metric(impressions,engagement)&access_token=${accessToken}`
+      );
+      
+      const postsWithInsights = insightsResponse.data.data || [];
+      postsWithInsights.forEach((post: any) => {
+        if (post.insights?.data) {
+          const impressions = post.insights.data.find((m: any) => m.name === 'impressions')?.values[0]?.value || 0;
+          const engagement = post.insights.data.find((m: any) => m.name === 'engagement')?.values[0]?.value || 0;
+          totalReach += impressions;
+          totalEngagement += engagement;
+        }
+      });
+    } catch (insightsError) {
+      console.log('Instagram insights not available, using basic post count');
+    }
 
     return {
       platform: 'instagram',
@@ -6917,7 +6949,14 @@ async function fetchInstagramAnalytics(accessToken: string) {
     };
   } catch (error) {
     console.error('Instagram API error:', error);
-    throw new Error('Failed to fetch Instagram analytics');
+    return {
+      platform: 'instagram',
+      totalPosts: 0,
+      totalReach: 0,
+      totalEngagement: 0,
+      engagementRate: '0',
+      error: 'Unable to fetch Instagram data - check token permissions'
+    };
   }
 }
 
