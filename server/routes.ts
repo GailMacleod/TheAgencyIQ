@@ -5657,6 +5657,11 @@ Continue building your Value Proposition Canvas systematically.`;
         ? 'https://app.theagencyiq.ai/callback'
         : `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co/callback`;
       
+      console.log(`🔗 Facebook OAuth initiation:`);
+      console.log(`📍 Callback URI: ${redirectUri}`);
+      console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
+      console.log(`🎯 REPL_SLUG: ${process.env.REPL_SLUG}, REPL_OWNER: ${process.env.REPL_OWNER}`);
+      
       const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement';
       const state = Buffer.from(JSON.stringify({ userId, platform: 'facebook' })).toString('base64');
       
