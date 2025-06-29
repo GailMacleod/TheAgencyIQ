@@ -333,4 +333,77 @@ apiRouter.post('/webhook', async (req, res) => {
   }
 });
 
+// Gift certificate redemption endpoint
+apiRouter.post('/redeem', requireAuth, async (req, res) => {
+  try {
+    const { code } = req.body;
+    
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Certificate code is required" 
+      });
+    }
+
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Not authenticated" 
+      });
+    }
+
+    // Get the certificate from database
+    const certificate = await storage.getGiftCertificate(code);
+    if (!certificate) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Invalid certificate code" 
+      });
+    }
+
+    if (certificate.isUsed) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Certificate has already been redeemed" 
+      });
+    }
+
+    // Redeem the certificate
+    await storage.redeemGiftCertificate(code, userId);
+
+    // Upgrade user to the certificate plan
+    const planPostLimits = {
+      'professional': { remaining: 50, total: 52 },
+      'growth': { remaining: 25, total: 27 },
+      'starter': { remaining: 10, total: 12 }
+    };
+
+    const limits = planPostLimits[certificate.plan as keyof typeof planPostLimits] || planPostLimits.starter;
+
+    await storage.updateUser(userId, {
+      subscriptionPlan: certificate.plan,
+      remainingPosts: limits.remaining,
+      totalPosts: limits.total
+    });
+
+    console.log(`Gift certificate ${code} redeemed by user ${userId} for ${certificate.plan} plan`);
+
+    res.status(200).json({
+      success: true,
+      message: `Certificate redeemed successfully! You now have access to the ${certificate.plan} plan with ${limits.total} posts.`,
+      plan: certificate.plan,
+      totalPosts: limits.total,
+      remainingPosts: limits.remaining
+    });
+
+  } catch (error: any) {
+    console.error('Certificate redemption error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Certificate redemption failed" 
+    });
+  }
+});
+
 export { apiRouter };
