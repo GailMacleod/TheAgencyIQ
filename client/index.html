@@ -142,9 +142,9 @@
         window.addEventListener('error', function(e) {
           if (shouldFilter(e.message)) {
             e.preventDefault();
-            return false; (typeof message !== 'string') return false;
-          return frameworkFilters.some(filter => message.includes(filter));
-        }
+            return false;
+          }
+        });
         
         console.warn = function(...args) {
           if (!shouldFilter(args[0])) {
