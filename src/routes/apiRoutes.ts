@@ -406,4 +406,35 @@ apiRouter.post('/redeem', requireAuth, async (req, res) => {
   }
 });
 
+// Facebook token refresh endpoint
+apiRouter.post('/refresh-facebook-token', async (req, res) => {
+  try {
+    console.log('🔄 Facebook token refresh endpoint called');
+    
+    const { OAuthRefreshService } = await import('../../server/oauth-refresh.js');
+    const result = await OAuthRefreshService.updateFacebookTokenFromRefresh();
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Facebook token refreshed successfully',
+        newAccessToken: result.newAccessToken ? '***' + result.newAccessToken.slice(-4) : 'N/A'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Facebook token refresh failed',
+        error: result.error
+      });
+    }
+  } catch (error: any) {
+    console.error('Facebook token refresh endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
 export { apiRouter };
