@@ -1,12 +1,16 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+Update server/index.ts to match dev’s working setup:
+javascript
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+Collapse
 
+Wrap
+
+Run
+
+Copy
+const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
 const app = express();
 const baseUrl = process.env.NODE_ENV === 'production'
   ? 'https://app.theagencyiq.ai'
@@ -14,7 +18,7 @@ const baseUrl = process.env.NODE_ENV === 'production'
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use((req: any, res: any, next: any) => {
+app.use((req, res, next) => {
   res.set({
     'Access-Control-Allow-Origin': '*',
     'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.theagencyiq.ai https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev https://replit.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://graph.facebook.com;"
@@ -22,7 +26,7 @@ app.use((req: any, res: any, next: any) => {
   next();
 });
 
-app.all('/facebook', (req: any, res: any) => {
+app.all('/facebook', (req, res) => {
   try {
     const { code, signed_request, error } = { ...req.body, ...req.query };
     if (code) {
@@ -32,7 +36,7 @@ app.all('/facebook', (req: any, res: any) => {
       });
     } else if (signed_request) {
       res.status(200).json({
-        url: `${baseUrl}/deletion-status`,
+        url: `${baseUrl}/deletion-status',
         confirmation_code: 'del_' + Math.random().toString(36).substr(2, 9)
       });
     } else if (error) {
@@ -40,13 +44,13 @@ app.all('/facebook', (req: any, res: any) => {
     } else {
       throw new Error('Invalid request');
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Facebook Error:', error.stack);
     res.status(500).json({ error: 'Server issue', details: error.message });
   }
 });
 
-app.get('/platform-connections', (req: any, res: any) => {
+app.get('/platform-connections', (req, res) => {
   try {
     const { code, error } = req.query;
     if (!code && !error) {
@@ -56,28 +60,28 @@ app.get('/platform-connections', (req: any, res: any) => {
       return res.status(400).json({ error: 'Login failed', message: error });
     }
     res.status(200).json({ message: 'Platform connected', code });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Platform Error:', error.stack);
     res.status(500).json({ error: 'Server issue', details: error.message });
   }
 });
 
-const publicDir = path.join(__dirname, '..', 'dist', 'public');
+const publicDir = path.join(__dirname, 'dist', 'public');
 app.use(express.static(publicDir));
-app.get('/manifest.json', (req: any, res: any) => {
+app.get('/manifest.json', (req, res) => {
   res.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';");
-  res.sendFile(path.join(publicDir, 'manifest.json'), (err: any) => {
+  res.sendFile(path.join(publicDir, 'manifest.json'), (err) => {
     if (err) res.status(404).json({ error: 'Manifest missing' });
   });
 });
-app.get('/public/js/beacon.js', (req: any, res: any) => {
-  res.sendFile(path.join(publicDir, 'js', 'beacon.js'), (err: any) => err && res.status(404).json({ error: 'Beacon missing' }));
+app.get('/public/js/beacon.js', (req, res) => {
+  res.sendFile(path.join(publicDir, 'js', 'beacon.js'), (err) => err && res.status(404).json({ error: 'Beacon missing' }));
 });
-app.get('/replit-proxy/beacon.js', (req: any, res: any) => {
+app.get('/replit-proxy/beacon.js', (req, res) => {
   res.redirect(301, '/public/js/beacon.js');
 });
-app.get('*', (req: any, res: any) => {
-  res.sendFile(path.join(publicDir, 'index.html'), (err: any) => {
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'), (err) => {
     if (err) {
       console.error('Index.html Error:', err.stack);
       res.status(500).json({ error: 'Failed to load app', details: err.message });
@@ -85,7 +89,8 @@ app.get('*', (req: any, res: any) => {
   });
 });
 
-process.on('uncaughtException', (error: any) => console.error('Uncaught:', error.stack));
+process.on('uncaughtException', (error) => console.error('Uncaught:', error.stack));
 
-const PORT = Number(process.env.PORT) || 5000;
-app.listen(PORT, '0.0.0.0', () => console.log(`Live on ${PORT}`));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Live on ${PORT}`));
+Install if needed: npm install express body-parser.

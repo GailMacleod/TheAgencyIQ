@@ -2,18 +2,16 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const app = express();
-
 const baseUrl = process.env.NODE_ENV === 'production'
   ? 'https://app.theagencyiq.ai'
   : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
 app.use((req, res, next) => {
   res.set({
     'Access-Control-Allow-Origin': '*',
-    'Content-Security-Policy': "default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.theagencyiq.ai https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev https://replit.com https://connect.facebook.net; style-src 'self' 'unsafe-inline' data:; img-src 'self' data: https:; connect-src 'self' https://graph.facebook.com https://www.facebook.com; font-src 'self' data:;"
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.theagencyiq.ai https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev https://replit.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://graph.facebook.com;"
   });
   next();
 });
@@ -58,24 +56,20 @@ app.get('/platform-connections', (req, res) => {
   }
 });
 
-const publicDir = path.join(__dirname, '..', 'dist', 'public');
+const publicDir = path.join(__dirname, 'dist', 'public');
 app.use(express.static(publicDir));
-
 app.get('/manifest.json', (req, res) => {
   res.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';");
   res.sendFile(path.join(publicDir, 'manifest.json'), (err) => {
     if (err) res.status(404).json({ error: 'Manifest missing' });
   });
 });
-
 app.get('/public/js/beacon.js', (req, res) => {
   res.sendFile(path.join(publicDir, 'js', 'beacon.js'), (err) => err && res.status(404).json({ error: 'Beacon missing' }));
 });
-
 app.get('/replit-proxy/beacon.js', (req, res) => {
   res.redirect(301, '/public/js/beacon.js');
 });
-
 app.get('*', (req, res) => {
   res.sendFile(path.join(publicDir, 'index.html'), (err) => {
     if (err) {
