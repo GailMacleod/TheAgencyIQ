@@ -11,6 +11,10 @@ export default function MasterFooter() {
             <a href="https://theagencyiq.ai/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 transition-colors">
               Privacy Policy
             </a>
+            <span>•</span>
+            <a href="mailto:support@theagencyiq.ai" className="hover:text-gray-700 transition-colors">
+              Contact Support
+            </a>
           </div>
           <p className="text-sm text-gray-400">
             © 2024 MacleodGlobal trading as The AgencyIQ. All rights reserved.

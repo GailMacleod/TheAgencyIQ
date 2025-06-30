@@ -21,6 +21,13 @@ export default function Footer() {
             >
               Terms and Conditions
             </a>
+            <span className="hidden sm:block text-gray-300">•</span>
+            <a 
+              href="mailto:support@theagencyiq.ai" 
+              className="text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Contact Support
+            </a>
           </div>
           <p className="text-sm text-gray-500">
             © 2025 MacleodGlobal T/A The AgencyIQ. All rights reserved.
