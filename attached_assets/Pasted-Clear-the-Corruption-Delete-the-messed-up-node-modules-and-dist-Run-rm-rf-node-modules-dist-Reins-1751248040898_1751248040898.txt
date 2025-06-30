@@ -1,3 +1,16 @@
+Clear the Corruption
+Delete the messed-up node_modules and dist: Run rm -rf node_modules dist.
+Reinstall Dependencies
+Run npm install express body-parser to bring back the basics needed for the simple server. Do not add or remove anything else unless I say so.
+Replace server/index.ts with Simple Version
+Replace the entire content of server/index.ts with this exact text, and do not make any other changes unless I say so:
+text
+
+Collapse
+
+Wrap
+
+Copy
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -35,3 +48,4 @@ process.on('uncaughtException', (error) => console.error('Uncaught:', error.stac
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Live on ${PORT}`));
+Do not add, remove, or update anything, run extra commands, or make changes beyond this task without my okay. Tell me any errors and wait for my next move.
