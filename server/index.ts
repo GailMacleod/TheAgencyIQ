@@ -1,11 +1,7 @@
-import { createServer } from 'http';
-import { parse } from 'url';
-import { readFile } from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const http = require('http');
+const url = require('url');
+const fs = require('fs').promises;
+const path = require('path');
 
 const baseUrl = process.env.NODE_ENV === 'production'
   ? 'https://app.theagencyiq.ai'
@@ -14,7 +10,7 @@ const baseUrl = process.env.NODE_ENV === 'production'
 function parseBody(req: any): Promise<any> {
   return new Promise((resolve) => {
     let body = '';
-    req.on('data', (chunk: any) => body += chunk);
+    req.on('data', (chunk: string) => body += chunk);
     req.on('end', () => {
       try {
         resolve(body ? JSON.parse(body) : {});
@@ -25,8 +21,8 @@ function parseBody(req: any): Promise<any> {
   });
 }
 
-const server = createServer(async (req, res) => {
-  const { pathname, query } = parse(req.url || '', true);
+const server = http.createServer(async (req: any, res: any) => {
+  const { pathname, query } = url.parse(req.url || '', true);
   
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -54,7 +50,7 @@ const server = createServer(async (req, res) => {
         
         if (clientId && clientSecret) {
           try {
-            const axios = (await import('axios')).default;
+            const axios = require('axios');
             const response = await axios.get('https://graph.facebook.com/oauth/access_token', {
               params: { client_id: clientId, client_secret: clientSecret, code, redirect_uri: `${baseUrl}/facebook` }
             });
@@ -86,34 +82,27 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // Serve static files or index.html
-  try {
-    const publicDir = path.join(__dirname, '..', 'dist', 'public');
-    const filePath = pathname === '/' ? path.join(publicDir, 'index.html') : path.join(publicDir, pathname || '');
-    
-    try {
-      const content = await readFile(filePath);
-      const ext = path.extname(filePath);
-      const contentType = ext === '.html' ? 'text/html' : ext === '.js' ? 'application/javascript' : ext === '.css' ? 'text/css' : 'application/octet-stream';
-      
-      res.writeHead(200, { 'Content-Type': contentType });
-      res.end(content);
-    } catch {
-      // Fallback to index.html for SPA routing
-      const indexPath = path.join(publicDir, 'index.html');
-      try {
-        const indexContent = await readFile(indexPath);
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end(indexContent);
-      } catch (err: any) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Failed to load app', details: err.message }));
-      }
-    }
-  } catch (error: any) {
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Server error', details: error.message }));
+  // Simple HTML response for root
+  if (pathname === '/') {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(`
+      <!DOCTYPE html>
+      <html>
+      <head><title>TheAgencyIQ</title></head>
+      <body>
+        <h1>TheAgencyIQ Server</h1>
+        <p>Server is running successfully!</p>
+        <p>Health check: <a href="/api/health">/api/health</a></p>
+        <p>Facebook OAuth: <a href="/facebook">/facebook</a></p>
+      </body>
+      </html>
+    `);
+    return;
   }
+
+  // 404 for other routes
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Not found' }));
 });
 
 process.on('uncaughtException', (error) => console.error('Uncaught:', error.stack));
