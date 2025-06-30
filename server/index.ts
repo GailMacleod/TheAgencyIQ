@@ -119,4 +119,7 @@ const server = createServer(async (req, res) => {
 process.on('uncaughtException', (error) => console.error('Uncaught:', error.stack));
 
 const PORT = parseInt(process.env.PORT || '5000');
-server.listen(PORT, () => console.log(`Live on ${PORT}`));
+console.log(`Starting server on port ${PORT}...`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Live on ${PORT}`);
+});
