@@ -11,18 +11,6 @@ apiRouter.get('/health', (req, res) => {
   });
 });
 
-// Monitoring endpoints for Pingdom
-apiRouter.get('/ping', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-apiRouter.get('/test-error', (req, res) => {
-  const fs = require('fs');
-  const errorLog = `${new Date().toISOString()} - Test Error 500 - Monitoring test failure initiated\n`;
-  fs.appendFileSync('logs.txt', errorLog);
-  res.status(500).json({ error: 'Test failure for monitoring system' });
-});
-
 // Facebook OAuth configuration diagnostic endpoint (public access)
 apiRouter.get('/facebook-oauth-config', (req, res) => {
   const baseUrl = process.env.NODE_ENV === 'production'

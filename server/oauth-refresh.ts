@@ -40,45 +40,6 @@ export class OAuthRefreshService {
     }
   }
 
-  static async updateFacebookTokenFromRefresh(): Promise<TokenRefreshResult> {
-    try {
-      console.log('🔄 Using FACEBOOK_REFRESH_TOKEN to get new access token...');
-      
-      const refreshToken = process.env.FACEBOOK_REFRESH_TOKEN;
-      if (!refreshToken) {
-        throw new Error('FACEBOOK_REFRESH_TOKEN not found in environment variables');
-      }
-
-      const result = await this.refreshFacebookToken(refreshToken);
-      
-      if (result.success && result.newAccessToken) {
-        // Update all Facebook connections with the new token
-        const connections = await storage.getPlatformConnectionsByPlatform('facebook');
-        
-        for (const connection of connections) {
-          await storage.updatePlatformConnection(connection.id, {
-            accessToken: result.newAccessToken,
-            isActive: true,
-            lastError: null
-          });
-          console.log(`✅ Updated Facebook connection ${connection.id} with new access token`);
-        }
-
-        console.log(`✅ Facebook token refresh successful, updated ${connections.length} connections`);
-        return result;
-      } else {
-        console.error('❌ Facebook token refresh failed:', result.error);
-        return result;
-      }
-    } catch (error: any) {
-      console.error('❌ Error updating Facebook token:', error.message);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
   static async refreshLinkedInToken(refreshToken: string): Promise<TokenRefreshResult> {
     try {
       const response = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', 
