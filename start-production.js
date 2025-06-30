@@ -28,8 +28,8 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
-// Start the server
-const serverProcess = spawn('node', ['--loader', 'tsx/esm', 'server/index.ts'], {
+// Start the server with proper TypeScript support
+const serverProcess = spawn('npx', ['tsx', 'server/index.ts'], {
   stdio: 'inherit',
   env: process.env,
   cwd: process.cwd()
