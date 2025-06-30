@@ -15,15 +15,16 @@ const baseUrl = process.env.NODE_ENV === 'production'
 
 // Determine correct public directory path
 let publicDir: string;
-const prodPath = path.join(__dirname, 'public');
 const devPath = path.join(__dirname, '..', 'dist', 'public');
+const prodPath = path.join(__dirname, 'public');
 
-if (existsSync(prodPath)) {
-  publicDir = prodPath;
-} else if (existsSync(devPath)) {
+// Always prefer the built dist/public directory in development
+if (existsSync(devPath)) {
   publicDir = devPath;
+} else if (existsSync(prodPath)) {
+  publicDir = prodPath;
 } else {
-  console.error('No public directory found. Checked:', [prodPath, devPath]);
+  console.error('No public directory found. Checked:', [devPath, prodPath]);
   publicDir = devPath; // fallback
 }
 
