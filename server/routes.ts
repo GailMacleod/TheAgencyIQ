@@ -2659,7 +2659,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Get platform connections status
-  app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
+  app.get("/api/platform-connections", requireActiveSubscription, async (req: any, res) => {
     try {
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
       res.json(connections);
@@ -2670,7 +2670,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Instagram OAuth fix - POST to platform connections
-  app.post("/api/platform-connections", requireAuth, async (req: any, res) => {
+  app.post("/api/platform-connections", requireActiveSubscription, async (req: any, res) => {
     try {
       const { action } = req.body;
       const userId = req.session.userId;
@@ -2943,7 +2943,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Bulletproof System Test - Comprehensive reliability testing
-  app.get("/api/bulletproof-test", requireAuth, async (req: any, res) => {
+  app.get("/api/bulletproof-test", requireActiveSubscription, async (req: any, res) => {
     try {
       const userId = req.session.userId || 2;
       const { BulletproofTester } = await import('./bulletproof-test');
@@ -3051,7 +3051,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Instagram Business API Integration
-  app.post("/api/instagram/setup", requireAuth, async (req: any, res) => {
+  app.post("/api/instagram/setup", requireActiveSubscription, async (req: any, res) => {
     try {
       const userId = req.session.userId || 2;
       const { facebookConnectionId } = req.body;
@@ -4452,7 +4452,7 @@ Continue building your Value Proposition Canvas systematically.`;
   );
 
   // Get subscription usage statistics
-  app.get("/api/subscription-usage", requireAuth, async (req: any, res) => {
+  app.get("/api/subscription-usage", requireActiveSubscription, async (req: any, res) => {
     try {
       // Use subscription service for accurate plan enforcement
       const { SubscriptionService } = await import('./subscription-service');
