@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import path from 'path';
 
 export default defineConfig({
+  plugins: [],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -16,5 +17,8 @@ export default defineConfig({
     rollupOptions: {
       input: 'index.html',
     },
+  },
+  css: {
+    postcss: path.resolve(import.meta.dirname, "postcss.config.minimal.js"),
   },
 });
