@@ -23,6 +23,7 @@ import PostPublisher from "./post-publisher";
 import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
 import { PostRetryService } from './post-retry-service';
+import { requireActiveSubscription, requireAuth } from './middleware/subscriptionAuth';
 
 // Session type declaration
 declare module 'express-session' {
@@ -1436,6 +1437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create user without active subscription - requires payment or certificate
       const user = await storage.createUser({
+        userId: phone, // Phone number as UID
         email,
         password: hashedPassword,
         phone,
@@ -2344,7 +2346,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Analytics endpoint
-  app.get("/api/analytics/monthly", requireAuth, async (req: any, res) => {
+  app.get("/api/analytics/monthly", requireActiveSubscription, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       const posts = await storage.getPostsByUser(userId);
@@ -4141,7 +4143,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Approve and publish post with proper allocation tracking
-  app.post("/api/schedule-post", requireAuth, async (req: any, res) => {
+  app.post("/api/schedule-post", requireActiveSubscription, async (req: any, res) => {
     try {
       const { postId, platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'] } = req.body;
       
