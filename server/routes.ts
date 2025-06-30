@@ -1244,7 +1244,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedUser = await storage.updateUser(req.session.userId, {
         subscriptionPlan: certificate.plan,
         remainingPosts: limits.remaining,
-        totalPosts: limits.total
+        totalPosts: limits.total,
+        subscriptionSource: 'certificate',
+        subscriptionActive: true
       });
 
       console.log(`Gift certificate ${code} redeemed by user ${req.session.userId} for ${certificate.plan} plan`);
@@ -1432,15 +1434,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create user with default starter plan
+      // Create user without active subscription - requires payment or certificate
       const user = await storage.createUser({
         email,
         password: hashedPassword,
         phone,
-        subscriptionPlan: 'starter',
-        subscriptionStart: new Date(),
-        remainingPosts: 12,
-        totalPosts: 12,
+        subscriptionPlan: null,
+        subscriptionStart: null,
+        remainingPosts: 0,
+        totalPosts: 0,
+        subscriptionSource: 'none',
+        subscriptionActive: false
       });
 
       // Mark verification code as used
