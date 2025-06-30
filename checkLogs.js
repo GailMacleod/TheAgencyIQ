@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const nodemailer = require('nodemailer');
+import fs from 'fs';
+import nodemailer from 'nodemailer';
 
 // SMTP configuration for email alerts
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
   secure: false,
