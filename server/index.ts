@@ -37,7 +37,7 @@ app.use(bodyParser.json());
 app.use((req: any, res: any, next: any) => {
   res.set({
     'Access-Control-Allow-Origin': '*',
-    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.theagencyiq.ai https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev https://replit.com; connect-src 'self' https://graph.facebook.com;"
+    'Content-Security-Policy': "default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.theagencyiq.ai https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev https://replit.com https://connect.facebook.net; style-src 'self' 'unsafe-inline' data:; img-src 'self' data: https:; connect-src 'self' https://graph.facebook.com https://www.facebook.com; font-src 'self' data:;"
   });
   next();
 });
