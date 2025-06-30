@@ -1777,7 +1777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get brand purpose data for a user
-  app.get("/api/brand-purpose", requireAuth, async (req: any, res) => {
+  app.get("/api/brand-purpose", requireActiveSubscription, async (req: any, res) => {
     try {
       const brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
       
@@ -1836,7 +1836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Save brand purpose with comprehensive Strategyzer data
-  app.post("/api/brand-purpose", requireAuth, async (req: any, res) => {
+  app.post("/api/brand-purpose", requireActiveSubscription, async (req: any, res) => {
     try {
       // Handle Instagram OAuth fix action first
       if (req.body.action === 'instagram-oauth-fix') {
@@ -2592,7 +2592,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Generate content calendar
-  app.post("/api/generate-content-calendar", requireAuth, async (req: any, res) => {
+  app.post("/api/generate-content-calendar", requireActiveSubscription, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.session.userId);
       if (!user) {
@@ -2648,7 +2648,7 @@ Continue building your Value Proposition Canvas systematically.`;
   // Removed conflicting /schedule route to allow React component to render
 
   // Get posts for schedule screen
-  app.get("/api/posts", requireAuth, async (req: any, res) => {
+  app.get("/api/posts", requireActiveSubscription, async (req: any, res) => {
     try {
       const posts = await storage.getPostsByUser(req.session.userId);
       res.json(posts);
@@ -5031,7 +5031,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Analytics dashboard data
-  app.get("/api/analytics", requireAuth, async (req: any, res) => {
+  app.get("/api/analytics", requireActiveSubscription, async (req: any, res) => {
     try {
       const userId = req.session.userId || 1;
 
