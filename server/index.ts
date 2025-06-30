@@ -1,7 +1,18 @@
 import express from 'express';
 import session from 'express-session';
 import { createServer } from 'http';
-import { setupVite, serveStatic, log } from './vite';
+import path from 'path';
+
+// Production-compatible logger
+function log(message: string, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit", 
+    second: "2-digit",
+    hour12: true,
+  });
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
 
 async function startServer() {
   const app = express();
@@ -324,17 +335,33 @@ async function startServer() {
     next();
   });
 
-  // Register API routes and setup Vite with error handling
+  // Register API routes and setup static file serving
   try {
     console.log('📡 Loading routes...');
     const { registerRoutes } = await import('./routes');
     await registerRoutes(app);
     console.log('✅ Routes registered successfully');
     
-    console.log('⚡ Setting up Vite...');
-    const vite = await setupVite(app, httpServer);
-    serveStatic(app);
-    console.log('✅ Vite setup complete');
+    // Production static file serving
+    if (process.env.NODE_ENV === 'production') {
+      console.log('⚡ Setting up production static files...');
+      // Serve built frontend assets
+      app.use(express.static(path.join(process.cwd(), 'dist/public')));
+      
+      // Serve React app for all non-API routes
+      app.get('*', (req, res) => {
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+          res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
+        }
+      });
+      console.log('✅ Production static files setup complete');
+    } else {
+      console.log('⚡ Setting up development Vite...');
+      const { setupVite, serveStatic } = await import('./vite');
+      await setupVite(app, httpServer);
+      serveStatic(app);
+      console.log('✅ Vite setup complete');
+    }
   } catch (error) {
     console.error('❌ Server setup error:', error);
     throw error;
