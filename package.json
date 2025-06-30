@@ -50,7 +50,6 @@
     "@types/helmet": "^0.0.48",
     "@types/memoizee": "^0.4.12",
     "@types/multer": "^1.4.13",
-    "@types/nodemailer": "^6.4.17",
     "@types/passport-facebook": "^3.0.3",
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/passport-linkedin-oauth2": "^1.5.6",
@@ -81,7 +80,6 @@
     "memorystore": "^1.6.7",
     "multer": "^2.0.1",
     "next-themes": "^0.4.6",
-    "nodemailer": "^7.0.3",
     "oauth-1.0a": "^2.2.6",
     "openai": "^5.1.1",
     "openid-client": "^6.5.1",
@@ -124,15 +122,15 @@
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "@types/ws": "^8.5.13",
-    "@vitejs/plugin-react": "^4.6.0",
+    "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
-    "tsx": "^4.20.3",
-    "typescript": "^5.6.3",
-    "vite": "^5.4.19"
+    "tsx": "^4.19.1",
+    "typescript": "5.6.3",
+    "vite": "^5.4.14"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
