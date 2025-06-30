@@ -211,7 +211,7 @@
   
   /* Card styles with Airbnb elegance */
   .card-atomiq {
-    @apply bg-white rounded-2xl shadow-elegant hover:shadow-elegant-md transition-elegant border border-border/50;
+    @apply bg-white rounded-2xl shadow-elegant hover:shadow-elegant-md transition-elegant border border-gray-200/50;
   }
   
   .card-atomiq-feature {
