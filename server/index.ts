@@ -27,6 +27,13 @@ async function startServer() {
     ? 'https://app.theagencyiq.ai'
     : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
+  console.log('🌍 Server Environment:', {
+    NODE_ENV: process.env.NODE_ENV,
+    baseUrl: baseUrl,
+    port: process.env.PORT,
+    hasDatabase: !!process.env.DATABASE_URL
+  });
+
   // Facebook OAuth endpoint
   app.all('/facebook', async (req, res) => {
     try {
@@ -317,11 +324,52 @@ async function startServer() {
     next();
   });
 
-  // Register API routes and setup Vite
-  const { registerRoutes } = await import('./routes');
-  await registerRoutes(app);
-  const vite = await setupVite(app, httpServer);
-  serveStatic(app);
+  // Register API routes and setup Vite with error handling
+  try {
+    console.log('📡 Loading routes...');
+    const { registerRoutes } = await import('./routes');
+    await registerRoutes(app);
+    console.log('✅ Routes registered successfully');
+    
+    console.log('⚡ Setting up Vite...');
+    const vite = await setupVite(app, httpServer);
+    serveStatic(app);
+    console.log('✅ Vite setup complete');
+  } catch (error) {
+    console.error('❌ Server setup error:', error);
+    throw error;
+  }
+
+  // Global error handler for all routes
+  app.use((error: any, req: any, res: any, next: any) => {
+    console.error('🚨 Global Error Handler:', {
+      message: error.message,
+      stack: error.stack,
+      url: req.url,
+      method: req.method,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (res.headersSent) {
+      return next(error);
+    }
+    
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : error.message,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      port: process.env.PORT
+    });
+  });
 
   const PORT = parseInt(process.env.PORT || '5000');
   httpServer.listen(PORT, '0.0.0.0', () => {
