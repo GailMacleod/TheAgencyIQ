@@ -66,6 +66,7 @@ export interface IStorage {
   createGiftCertificate(certificate: InsertGiftCertificate): Promise<GiftCertificate>;
   getGiftCertificate(code: string): Promise<GiftCertificate | undefined>;
   redeemGiftCertificate(code: string, userId: number): Promise<GiftCertificate>;
+  hasUserRedeemedCertificate(userId: string): Promise<boolean>;
 
   // Platform connection search operations
   getPlatformConnectionsByPlatformUserId(platformUserId: string): Promise<PlatformConnection[]>;
@@ -345,6 +346,16 @@ export class DatabaseStorage implements IStorage {
       .where(eq(giftCertificates.code, code))
       .returning();
     return certificate;
+  }
+
+  async hasUserRedeemedCertificate(userId: string): Promise<boolean> {
+    const userIdNumber = parseInt(userId);
+    const certificates = await db
+      .select()
+      .from(giftCertificates)
+      .where(eq(giftCertificates.redeemedBy, userIdNumber))
+      .limit(1);
+    return certificates.length > 0;
   }
 
   async getPlatformConnectionsByPlatformUserId(platformUserId: string): Promise<PlatformConnection[]> {

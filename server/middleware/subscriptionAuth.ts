@@ -14,12 +14,19 @@ export const requireActiveSubscription = async (req: any, res: any, next: any) =
       return res.status(401).json({ message: "User not found" });
     }
 
-    // Allow access if subscription is active
+    // TESTER BYPASS: Allow full access for certificate-based testers
+    // Check if user has redeemed any gift certificate (certificate-based testing)
+    const hasRedeemedCertificate = await storage.hasUserRedeemedCertificate(user.userId);
+    if (hasRedeemedCertificate) {
+      return next(); // Full access for certificate testers
+    }
+
+    // Allow access if subscription is active (paying customers)
     if (user.subscriptionActive) {
       return next();
     }
 
-    // Block access for inactive subscriptions
+    // Block access for non-subscribers without certificates
     return res.status(403).json({ 
       message: "Subscription required", 
       redirectTo: "/subscription",
