@@ -323,7 +323,18 @@ async function startServer() {
   // Create HTTP server
   const httpServer = createServer(app);
 
-  // Request logging and API registration
+  // Register API routes FIRST before any middleware that might interfere
+  try {
+    console.log('📡 Loading routes...');
+    const { registerRoutes } = await import('./routes');
+    await registerRoutes(app);
+    console.log('✅ Routes registered successfully');
+  } catch (routeError) {
+    console.error('❌ Route registration failed:', routeError);
+    throw routeError;
+  }
+
+  // Request logging after API registration
   app.use((req, res, next) => {
     const start = Date.now();
     res.on("finish", () => {
@@ -335,13 +346,8 @@ async function startServer() {
     next();
   });
 
-  // Register API routes and setup static file serving
+  // Setup static file serving after API routes
   try {
-    console.log('📡 Loading routes...');
-    const { registerRoutes } = await import('./routes');
-    await registerRoutes(app);
-    console.log('✅ Routes registered successfully');
-    
     // Production static file serving
     if (process.env.NODE_ENV === 'production') {
       console.log('⚡ Setting up production static files...');
