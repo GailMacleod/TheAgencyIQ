@@ -1208,16 +1208,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Gift certificate redemption endpoint
+  // Gift certificate redemption endpoint - CREATES NEW ISOLATED USER ACCOUNT
   app.post("/api/redeem-gift-certificate", async (req, res) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const { code } = req.body;
+      const { code, email, password, phone } = req.body;
+      
+      // Validate required fields
       if (!code || typeof code !== 'string') {
         return res.status(400).json({ message: "Certificate code is required" });
+      }
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      if (!password || typeof password !== 'string') {
+        return res.status(400).json({ message: "Password is required" });
       }
 
       // Get the certificate
@@ -1230,10 +1234,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Certificate has already been redeemed" });
       }
 
-      // Redeem the certificate
-      await storage.redeemGiftCertificate(code, req.session.userId);
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Account with this email already exists" });
+      }
 
-      // Upgrade user to the certificate plan
+      // Create new isolated user account with certificate benefits
       const planPostLimits = {
         'professional': { remaining: 50, total: 52 },
         'growth': { remaining: 25, total: 27 },
@@ -1242,7 +1249,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const limits = planPostLimits[certificate.plan as keyof typeof planPostLimits] || planPostLimits.starter;
 
-      const updatedUser = await storage.updateUser(req.session.userId, {
+      // Generate unique userId (required field)
+      const userId = phone || `cert_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+      const newUser = await storage.createUser({
+        userId,
+        email,
+        password,
+        phone: phone || null,
         subscriptionPlan: certificate.plan,
         remainingPosts: limits.remaining,
         totalPosts: limits.total,
@@ -1250,23 +1264,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionActive: true
       });
 
-      console.log(`Gift certificate ${code} redeemed by user ${req.session.userId} for ${certificate.plan} plan`);
+      // Redeem the certificate to the new user
+      await storage.redeemGiftCertificate(code, newUser.id);
+
+      // Establish session for the new user
+      req.session.userId = newUser.id;
+
+      console.log(`Gift certificate ${code} redeemed - NEW USER CREATED: ${email} (ID: ${newUser.id}) for ${certificate.plan} plan`);
 
       res.json({ 
-        message: "Certificate redeemed successfully",
+        message: "Certificate redeemed successfully - New account created",
         plan: certificate.plan,
         user: {
-          id: updatedUser.id,
-          email: updatedUser.email,
-          subscriptionPlan: updatedUser.subscriptionPlan,
-          remainingPosts: updatedUser.remainingPosts,
-          totalPosts: updatedUser.totalPosts
+          id: newUser.id,
+          email: newUser.email,
+          subscriptionPlan: newUser.subscriptionPlan,
+          remainingPosts: newUser.remainingPosts,
+          totalPosts: newUser.totalPosts
         }
       });
 
     } catch (error: any) {
       console.error('Gift certificate redemption error:', error);
-      res.status(500).json({ message: "Certificate redemption failed" });
+      res.status(500).json({ message: "Certificate redemption failed: " + error.message });
     }
   });
 

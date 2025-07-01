@@ -16,6 +16,9 @@ import { MetaPixelTracker } from "@/lib/meta-pixel";
 
 const certificateSchema = z.object({
   code: z.string().min(1, "Certificate code is required").max(50, "Code is too long"),
+  email: z.string().email("Valid email is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  phone: z.string().optional(),
 });
 
 type CertificateForm = z.infer<typeof certificateSchema>;
@@ -29,6 +32,9 @@ export default function RedeemCertificate() {
     resolver: zodResolver(certificateSchema),
     defaultValues: {
       code: "",
+      email: "",
+      password: "",
+      phone: "",
     },
   });
 
@@ -94,7 +100,7 @@ export default function RedeemCertificate() {
             Redeem Gift Certificate
           </CardTitle>
           <CardDescription className="text-gray-600 dark:text-gray-400">
-            Enter your gift certificate code to upgrade your account
+            Create your new account using a gift certificate
           </CardDescription>
         </CardHeader>
 
@@ -113,6 +119,60 @@ export default function RedeemCertificate() {
                         placeholder="PROF-TEST-XXXXXXXX"
                         className="text-center font-mono text-lg tracking-wider uppercase"
                         onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="email"
+                        placeholder="your@email.com"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="password"
+                        placeholder="Create a secure password"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="tel"
+                        placeholder="+61 xxx xxx xxx"
                       />
                     </FormControl>
                     <FormMessage />
