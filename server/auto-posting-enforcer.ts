@@ -58,7 +58,6 @@ export class AutoPostingEnforcer {
       }
       
       console.log(`Auto-posting enforcer: User within cycle, ${cycleCheck.postsRemaining} posts remaining, Ekka access: ${cycleCheck.hasEkkaAccess}`);
-      }
       
       const { cycleStart, cycleEnd } = PostQuotaService.getUserCycleDates(user.subscriptionStart);
       const currentDate = new Date();

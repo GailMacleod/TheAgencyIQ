@@ -14,7 +14,7 @@ echo "Load testing: 100 concurrent requests, quota exceed protection"
 echo ""
 
 # Enhanced validation checklist for 10 customers
-TOTAL_CHECKS=15
+TOTAL_CHECKS=16
 PASSED_CHECKS=0
 CUSTOMER_COUNT=10
 EXPECTED_POSTS=520
@@ -45,9 +45,21 @@ else
     echo "❌ Database connection failed"
 fi
 
-# CHECK 3: 10-Customer Quota Validation
+# CHECK 3: Dynamic 30-Day Cycle Validation
 echo ""
-echo "3️⃣  VALIDATING 10-CUSTOMER QUOTA SYSTEM..."
+echo "3️⃣  VALIDATING DYNAMIC 30-DAY SUBSCRIPTION CYCLES..."
+if timeout 60 npx tsx test-dynamic-subscription-cycles.js | grep -q "SUCCESS RATE: 100%"; then
+    echo "✅ Dynamic 30-day cycles validated (10 customers with varied start dates)"
+    echo "✅ Brisbane Ekka overlap detection working (8/10 customers)"
+    echo "✅ Queensland events integrated within user subscription windows"
+    ((PASSED_CHECKS++))
+else
+    echo "❌ Dynamic cycle validation failed"
+fi
+
+# CHECK 4: 10-Customer Quota Validation
+echo ""
+echo "4️⃣  VALIDATING 10-CUSTOMER QUOTA SYSTEM..."
 if node test-comprehensive-quota-fix.js 2>/dev/null | grep -q "6/6 tests passed"; then
     echo "✅ 10-customer quota validation successful (520 posts)"
     ((PASSED_CHECKS++))

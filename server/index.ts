@@ -430,15 +430,33 @@ async function startServer() {
         serveStatic(app);
         console.log('✅ Vite setup complete');
       } catch (viteError) {
-        console.warn('⚠️ Vite setup failed, falling back to static file serving:', viteError.message);
-        // Fallback to basic static file serving for development
-        app.use(express.static(path.join(process.cwd(), 'client')));
+        console.warn('⚠️ Vite setup failed, falling back to enhanced static file serving:', viteError.message);
+        
+        // Enhanced fallback static serving with proper MIME types for ES modules
+        app.use('/src', express.static(path.join(process.cwd(), 'client/src'), {
+          setHeaders: (res, path) => {
+            if (path.endsWith('.js') || path.endsWith('.jsx') || path.endsWith('.ts') || path.endsWith('.tsx')) {
+              res.setHeader('Content-Type', 'application/javascript');
+            }
+          }
+        }));
+        
+        // Serve client directory with proper MIME types
+        app.use(express.static(path.join(process.cwd(), 'client'), {
+          setHeaders: (res, path) => {
+            if (path.endsWith('.js') || path.endsWith('.jsx') || path.endsWith('.ts') || path.endsWith('.tsx')) {
+              res.setHeader('Content-Type', 'application/javascript');
+            }
+          }
+        }));
+        
+        // Handle client-side routing - serve index.html for non-API routes
         app.get('*', (req, res) => {
-          if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+          if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health') && !req.path.startsWith('/src')) {
             res.sendFile(path.join(process.cwd(), 'client/index.html'));
           }
         });
-        console.log('✅ Fallback static serving enabled');
+        console.log('✅ Enhanced fallback static serving enabled with ES module support');
       }
     }
   } catch (error) {
