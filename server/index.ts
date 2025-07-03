@@ -360,6 +360,7 @@ async function startServer() {
 
   // Static assets - combined
   app.use('/public', express.static('public'));
+  app.use('/attached_assets', express.static('attached_assets'));
   
   // Combined asset endpoints
   app.get(['/manifest.json', '/public/js/beacon.js'], (req, res) => {
@@ -414,6 +415,8 @@ async function startServer() {
       console.log('⚡ Setting up production static files...');
       // Serve built frontend assets
       app.use(express.static(path.join(process.cwd(), 'dist/public')));
+      // Serve attached assets in production
+      app.use('/attached_assets', express.static('attached_assets'));
       
       // Root route for production
       app.get('/', (req, res) => {
