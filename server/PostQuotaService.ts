@@ -37,11 +37,9 @@ export class PostQuotaService {
   };
 
   /**
-   * 30-DAY CYCLE MANAGEMENT (July 3-31, 2025)
-   * Event-driven post scheduling with Brisbane Ekka focus
+   * DYNAMIC 30-DAY CYCLE MANAGEMENT PER CUSTOMER SUBSCRIPTION
+   * Event-driven post scheduling with Brisbane Ekka focus when within window
    */
-  private static readonly CYCLE_START = new Date('2025-07-03T00:00:00.000Z');
-  private static readonly CYCLE_END = new Date('2025-07-31T23:59:59.999Z');
   private static readonly EKKA_START = new Date('2025-07-09T00:00:00.000Z');
   private static readonly EKKA_END = new Date('2025-07-19T23:59:59.999Z');
 
@@ -691,8 +689,43 @@ export class PostQuotaService {
   /**
    * Check if post is within current 30-day cycle (July 3-31, 2025)
    */
+  /**
+   * Calculate dynamic 30-day cycle for specific user based on subscription start
+   */
+  static getUserCycleDates(subscriptionStart: Date): { cycleStart: Date; cycleEnd: Date } {
+    const cycleStart = new Date(subscriptionStart);
+    const cycleEnd = new Date(cycleStart);
+    cycleEnd.setDate(cycleEnd.getDate() + 30);
+    
+    return { cycleStart, cycleEnd };
+  }
+
+  /**
+   * Check if post is within user's current 30-day cycle
+   */
+  static isWithinUserCycle(date: Date, subscriptionStart: Date): boolean {
+    const { cycleStart, cycleEnd } = this.getUserCycleDates(subscriptionStart);
+    return date >= cycleStart && date <= cycleEnd;
+  }
+
+  /**
+   * Check if Brisbane Ekka overlaps with user's 30-day cycle
+   */
+  static isEkkaWithinUserCycle(subscriptionStart: Date): boolean {
+    const { cycleStart, cycleEnd } = this.getUserCycleDates(subscriptionStart);
+    
+    // Check if Ekka period (July 9-19) overlaps with user's cycle
+    return (this.EKKA_START <= cycleEnd && this.EKKA_END >= cycleStart);
+  }
+
+  /**
+   * Legacy method - kept for backward compatibility
+   */
   static isWithinCurrentCycle(date: Date): boolean {
-    return date >= PostQuotaService.CYCLE_START && date <= PostQuotaService.CYCLE_END;
+    // Fallback to July 3-31 cycle if no specific user cycle available
+    const legacyCycleStart = new Date('2025-07-03T00:00:00.000Z');
+    const legacyCycleEnd = new Date('2025-07-31T23:59:59.999Z');
+    return date >= legacyCycleStart && date <= legacyCycleEnd;
   }
 
   /**
@@ -703,7 +736,7 @@ export class PostQuotaService {
   }
 
   /**
-   * Enforce 52 event-driven posts for 30-day cycle
+   * Enforce 52 event-driven posts for dynamic 30-day cycle per user
    */
   static async enforce30DayCycle(userId: number): Promise<{ success: boolean; message: string; postsInCycle: number }> {
     const startTime = Date.now();
@@ -711,15 +744,21 @@ export class PostQuotaService {
     try {
       const { storage } = await import('./storage.js');
       
-      // Get all posts in the current cycle
-      const allPosts = await storage.getPostsByUser(userId);
-      const cycleStart = PostQuotaService.CYCLE_START;
-      const cycleEnd = PostQuotaService.CYCLE_END;
+      // Get user subscription start for dynamic cycle calculation
+      const user = await storage.getUser(userId);
+      if (!user || !user.subscriptionStart) {
+        return { success: false, message: 'User subscription start not found', postsInCycle: 0 };
+      }
       
+      // Calculate user's dynamic 30-day cycle
+      const { cycleStart, cycleEnd } = PostQuotaService.getUserCycleDates(user.subscriptionStart);
+      
+      // Get all posts in the user's current cycle
+      const allPosts = await storage.getPostsByUser(userId);
       const postsInCycle = allPosts.filter(post => {
         if (!post.scheduledFor) return false;
         const postDate = new Date(post.scheduledFor);
-        return PostQuotaService.isWithinCurrentCycle(postDate);
+        return user.subscriptionStart ? PostQuotaService.isWithinUserCycle(postDate, new Date(user.subscriptionStart)) : false;
       });
       
       const quota = await PostQuotaService.getQuotaStatus(userId);

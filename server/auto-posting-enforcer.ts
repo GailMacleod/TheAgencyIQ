@@ -44,22 +44,24 @@ export class AutoPostingEnforcer {
         return result;
       }
 
-      // Check 30-day cycle enforcement (July 3-31, 2025)
-      const cycleStart = new Date('2025-07-03T00:00:00.000Z');
-      const cycleEnd = new Date('2025-07-31T23:59:59.999Z');
-      const currentDate = new Date();
-      
-      if (currentDate < cycleStart || currentDate > cycleEnd) {
-        result.errors.push(`Outside 30-day cycle: ${cycleStart.toDateString()} - ${cycleEnd.toDateString()}`);
+      // Check dynamic 30-day cycle based on user subscription start
+      if (!user.subscriptionStart) {
+        result.errors.push('User subscription start date not found');
         return result;
       }
       
-      // Queensland Ekka premium period (July 9-19, 2025)
-      const ekkaStart = new Date('2025-07-09T00:00:00.000Z');
-      const ekkaEnd = new Date('2025-07-19T23:59:59.999Z');
-      const isEkkaEvent = currentDate >= ekkaStart && currentDate <= ekkaEnd;
+      const { cycleStart, cycleEnd } = PostQuotaService.getUserCycleDates(user.subscriptionStart);
+      const currentDate = new Date();
       
-      console.log(`30-day cycle active. Queensland Ekka premium event: ${isEkkaEvent}`);
+      if (currentDate < cycleStart || currentDate > cycleEnd) {
+        result.errors.push(`Outside user's 30-day cycle: ${cycleStart.toDateString()} - ${cycleEnd.toDateString()}`);
+        return result;
+      }
+      
+      // Check if Brisbane Ekka overlaps with user's cycle
+      const isEkkaWithinCycle = PostQuotaService.isEkkaWithinUserCycle(user.subscriptionStart);
+      
+      console.log(`User ${userId} dynamic 30-day cycle active (${cycleStart.toDateString()} - ${cycleEnd.toDateString()}). Brisbane Ekka overlap: ${isEkkaWithinCycle}`);
       
       // Check subscription period (30 days from start)
       const subscriptionStart = user.subscriptionStart;
