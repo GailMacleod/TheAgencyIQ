@@ -156,6 +156,12 @@ export default function IntelligentSchedule() {
     enabled: !!user && !userLoading,
   });
 
+  // Fetch subscription usage for quota-aware generation
+  const { data: subscriptionUsage, isLoading: subscriptionLoading } = useQuery<SubscriptionUsage>({
+    queryKey: ["/api/subscription-usage"],
+    enabled: !!user && !userLoading,
+  });
+
   // Fetch posts only after user is authenticated
   const { data: posts, isLoading: postsLoading, refetch: refetchPosts } = useQuery({
     queryKey: ["/api/posts"],
@@ -164,11 +170,7 @@ export default function IntelligentSchedule() {
     staleTime: 30000,
   });
 
-  // Fetch subscription status for post limits
-  const { data: subscriptionUsage } = useQuery<SubscriptionUsage>({
-    queryKey: ["/api/subscription-usage"],
-    enabled: !!user && !userLoading,
-  });
+
 
   // Type-safe posts array
   const postsArray: Post[] = Array.isArray(posts) ? posts : [];
@@ -287,6 +289,12 @@ export default function IntelligentSchedule() {
         description: "Analyzing your brand purpose and generating intelligent content...",
       });
 
+      // Calculate dynamic total posts based on user's remaining quota
+      const remainingPosts = subscriptionUsage?.remainingPosts || 0;
+      const requestedPosts = Math.min(30, remainingPosts); // Cap at 30 or remaining posts
+      
+      console.log(`🎯 Dynamic quota-aware generation: ${requestedPosts} posts (${remainingPosts} remaining)`);
+
       // Generate AI-powered schedule
       const response = await fetch('/api/generate-ai-schedule', {
         method: 'POST',
@@ -296,7 +304,7 @@ export default function IntelligentSchedule() {
         credentials: 'include',
         body: JSON.stringify({
           brandPurpose,
-          totalPosts: 30, // 30-day schedule
+          totalPosts: requestedPosts, // Dynamic quota-aware limit
           platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
         })
       });

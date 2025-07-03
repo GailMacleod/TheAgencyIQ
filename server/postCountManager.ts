@@ -90,16 +90,20 @@ export class PostCountManager {
     }
   }
 
-  // Calculate how many new posts to generate
+  // DEPRECATED: Legacy calculation replaced by PostQuotaService
+  // Use PostQuotaService.getQuotaStatus() instead
   static calculatePostsToGenerate(
     subscriptionQuota: number,
     currentApproved: number,
     currentScheduled: number
   ): number {
+    console.warn('⚠️ DEPRECATED: calculatePostsToGenerate() - Use PostQuotaService.getQuotaStatus() instead');
+    
+    // Legacy fallback - should not be used
     const currentTotal = currentApproved + currentScheduled;
     const postsNeeded = subscriptionQuota - currentTotal;
     
-    console.log(`Post generation calculation:`, {
+    console.log(`⚠️ LEGACY Post generation calculation (deprecated):`, {
       subscriptionQuota,
       currentApproved,
       currentScheduled,
