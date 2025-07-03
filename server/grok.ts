@@ -86,7 +86,14 @@ export async function generateContentCalendar(params: ContentGenerationParams): 
   
   // ANTI-BLOATING: Strict cap at 52 posts maximum for Professional plan
   const maxPosts = Math.min(params.totalPosts, 52);
-  console.log(`ANTI-BLOATING: Generating ${maxPosts} posts (requested: ${params.totalPosts}, capped: 52) using Grok X.AI API`);
+  console.log(`QUEENSLAND EVENT-DRIVEN: Generating ${maxPosts} posts (requested: ${params.totalPosts}, capped: 52) using Grok X.AI API with Queensland event alignment`);
+  
+  // Import Queensland event scheduling service
+  const { EventSchedulingService } = await import('./services/eventSchedulingService');
+  
+  // Generate event-driven posting schedule for Queensland market
+  const eventSchedule = await EventSchedulingService.generateEventPostingSchedule(params.userId || 1);
+  console.log(`🎯 Generated ${eventSchedule.length} Queensland event-driven posts`);
   
   // Generate each post individually to avoid large JSON parsing issues
   const posts = [];
@@ -96,31 +103,79 @@ export async function generateContentCalendar(params: ContentGenerationParams): 
     const platformIndex = i % platforms.length;
     const platform = platforms[platformIndex];
     
-    // Generate dates with AEST timezone consistency and even 30-day distribution
-    const today = new Date();
-    const aestToday = new Date(today.toLocaleString("en-US", { timeZone: "Australia/Brisbane" }));
-    const scheduledDate = new Date(aestToday);
+    // Use event scheduling for date and context
+    let scheduledDate: Date;
+    let eventContext = '';
+    let isEventDriven = false;
     
-    // Calculate even distribution across 30 days to prevent clustering
-    // Use a more sophisticated distribution algorithm
-    const totalDays = 30;
-    const postsPerWeek = Math.ceil(maxPosts / 4); // Distribute across 4 weeks
-    const dayWithinWeek = Math.floor(i / postsPerWeek) % 7; // 0-6 days within week
-    const weekNumber = Math.floor(i / (postsPerWeek * 7)); // Which week
-    const dayOffset = weekNumber * 7 + dayWithinWeek;
-    
-    // Add time variation to prevent clustering
-    const hourVariations = [9, 11, 13, 15, 17]; // 9am, 11am, 1pm, 3pm, 5pm
-    const hourOffset = hourVariations[i % hourVariations.length];
-    const minuteOffset = (i % 4) * 15; // 0, 15, 30, 45 minute intervals
-    
-    scheduledDate.setDate(scheduledDate.getDate() + Math.min(dayOffset, 29)); // Max 29 days
-    scheduledDate.setHours(hourOffset, minuteOffset, 0, 0); // AEST time with better variation
+    if (i < eventSchedule.length) {
+      // Use Queensland event scheduling
+      const eventPlan = eventSchedule[i];
+      
+      // Validate and create safe date
+      let tempDate = new Date(eventPlan.scheduledDate);
+      if (isNaN(tempDate.getTime())) {
+        // Fallback to current date if invalid
+        tempDate = new Date();
+      }
+      scheduledDate = tempDate;
+      
+      eventContext = `Queensland Event: ${eventPlan.eventName} (${eventPlan.contentType})`;
+      isEventDriven = true;
+    } else {
+      // Fallback to even distribution for remaining posts
+      const today = new Date();
+      // Use a safer approach for AEST time
+      scheduledDate = new Date(today);
+      
+      // Calculate even distribution across 30 days to prevent clustering
+      const totalDays = 30;
+      const postsPerWeek = Math.ceil(maxPosts / 4); // Distribute across 4 weeks
+      const dayWithinWeek = Math.floor(i / postsPerWeek) % 7; // 0-6 days within week
+      const weekNumber = Math.floor(i / (postsPerWeek * 7)); // Which week
+      const dayOffset = weekNumber * 7 + dayWithinWeek;
+      
+      // Add time variation to prevent clustering
+      const hourVariations = [9, 11, 13, 15, 17]; // 9am, 11am, 1pm, 3pm, 5pm
+      const hourOffset = hourVariations[i % hourVariations.length];
+      const minuteOffset = (i % 4) * 15; // 0, 15, 30, 45 minute intervals
+      
+      scheduledDate.setDate(scheduledDate.getDate() + Math.min(dayOffset, 29)); // Max 29 days
+      scheduledDate.setHours(hourOffset, minuteOffset, 0, 0); // AEST time with better variation
+      eventContext = 'General Queensland business content';
+    }
     
     const platformSpec = PLATFORM_SPECS[platform as keyof typeof PLATFORM_SPECS] || PLATFORM_SPECS.facebook;
     const wordRange = `${platformSpec.wordCount.min}-${platformSpec.wordCount.max} words`;
     
-    const postPrompt = `Create a single compelling ${platform} marketing post for ${params.brandName} (Queensland business automation).
+    // Enhanced content prompt with Queensland event context
+    const postPrompt = isEventDriven 
+      ? `Create a single compelling ${platform} marketing post for ${params.brandName} aligned with Queensland events.
+
+${eventContext}
+
+Brand Context:
+- Core Purpose: ${params.corePurpose}
+- Products/Services: ${params.productsServices}
+- Target Audience: ${params.audience} (Queensland market focus)
+- Pain Points: ${params.painPoints}
+- Job-to-be-Done: ${params.jobToBeDone}
+
+Platform Requirements for ${platform.toUpperCase()}:
+- Word Count: ${wordRange} STRICT LIMIT
+- Tone: ${platformSpec.tone}
+- Style: ${platformSpec.style}
+- CTA: ${platformSpec.cta}
+- Queensland event context: Connect business automation to Queensland events and activities
+- Align with Queensland business community and local market dynamics
+- ${platform === 'x' ? 
+  'X PLATFORM STRICT RULES: Maximum 280 characters, hashtags (#) COMPLETELY PROHIBITED (will be rejected), ONLY @ mentions allowed (e.g., @TheAgencyIQ), clean engaging content without promotional tones or emojis' : 
+  'Include relevant hashtags: #QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing #Automation'}
+- URL: https://app.theagencyiq.ai
+- Focus on how intelligent automation helps Queensland SMEs during events and business activities
+
+Return ONLY the post content within ${wordRange}, no formatting.`
+      : `Create a single compelling ${platform} marketing post for ${params.brandName} (Queensland business automation).
 
 Brand Context:
 - Core Purpose: ${params.corePurpose}
@@ -136,7 +191,7 @@ Platform Requirements for ${platform.toUpperCase()}:
 - CTA: ${platformSpec.cta}
 - Queensland business context and market insights
 - ${platform === 'x' ? 
-  'X PLATFORM STRICT RULES: Maximum 280 characters, hashtags (#) COMPLETELY PROHIBITED (will be rejected), ONLY @ mentions allowed, clean engaging content without promotional tones or emojis' : 
+  'X PLATFORM STRICT RULES: Maximum 280 characters, hashtags (#) COMPLETELY PROHIBITED (will be rejected), ONLY @ mentions allowed (e.g., @TheAgencyIQ), clean engaging content without promotional tones or emojis' : 
   'Include relevant hashtags: #QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing #Automation'}
 - URL: https://app.theagencyiq.ai
 - Focus on intelligent automation benefits for Queensland SMEs
@@ -199,31 +254,54 @@ Return ONLY the post content within ${wordRange}, no formatting.`;
           content += ` Perfect for Queensland SMEs seeking intelligent automation solutions. https://app.theagencyiq.ai`;
         }
         
+        // Final date validation before storing
+        const safeScheduledDate = isNaN(scheduledDate.getTime()) ? new Date() : scheduledDate;
+        
         posts.push({
           platform,
           content,
-          scheduledFor: scheduledDate.toISOString(),
-          postType: i % 4 === 0 ? 'sales' : i % 4 === 1 ? 'awareness' : i % 4 === 2 ? 'educational' : 'engagement',
+          scheduledFor: safeScheduledDate.toISOString(),
+          postType: isEventDriven ? 'event-driven' : (i % 4 === 0 ? 'sales' : i % 4 === 1 ? 'awareness' : i % 4 === 2 ? 'educational' : 'engagement'),
           aiScore: Math.floor(Math.random() * 20) + 80,
           targetPainPoint: params.painPoints,
           jtbdAlignment: params.jobToBeDone,
-          wordCount: content.split(/\s+/).length
+          wordCount: content.split(/\s+/).length,
+          eventContext: isEventDriven ? eventContext : 'General Queensland business content',
+          platformCompliance: {
+            wordCountRange: `${platformSpec.wordCount.min}-${platformSpec.wordCount.max}`,
+            actualWords: content.split(/\s+/).length,
+            characterCount: platform === 'x' ? content.length : undefined,
+            hashtagPolicy: platform === 'x' ? 'PROHIBITED' : 'ALLOWED',
+            mentionPolicy: platform === 'x' ? '@MENTIONS_ONLY' : 'STANDARD'
+          }
         });
-        console.log(`Generated Grok content for ${platform} post ${i + 1} (${content.split(/\s+/).length} words)`);
+        console.log(`Generated Grok content for ${platform} post ${i + 1} (${content.split(/\s+/).length} words) ${isEventDriven ? '- Queensland Event-Driven' : '- General Content'}`);
       } else {
         throw new Error('Empty content received');
       }
       
     } catch (error) {
       console.log(`Grok API failed for post ${i + 1}, using fallback`);
+      
+      // Ensure fallback date is valid
+      const fallbackScheduledDate = isNaN(scheduledDate.getTime()) ? new Date() : scheduledDate;
+      
       posts.push({
         platform,
-        content: generateFallbackContent(params, platform, i + 1),
-        scheduledFor: scheduledDate.toISOString(),
-        postType: 'awareness',
+        content: generateFallbackContent(params, platform, i + 1, isEventDriven ? eventContext : ''),
+        scheduledFor: fallbackScheduledDate.toISOString(),
+        postType: isEventDriven ? 'event-driven-fallback' : 'awareness',
         aiScore: 75,
         targetPainPoint: params.painPoints,
-        jtbdAlignment: params.jobToBeDone
+        jtbdAlignment: params.jobToBeDone,
+        eventContext: isEventDriven ? eventContext : 'General Queensland business content',
+        platformCompliance: {
+          wordCountRange: `${platformSpec.wordCount.min}-${platformSpec.wordCount.max}`,
+          actualWords: 0, // Will be calculated after content generation
+          characterCount: platform === 'x' ? 0 : undefined,
+          hashtagPolicy: platform === 'x' ? 'PROHIBITED' : 'ALLOWED',
+          mentionPolicy: platform === 'x' ? '@MENTIONS_ONLY' : 'STANDARD'
+        }
       });
     }
   }
@@ -232,7 +310,7 @@ Return ONLY the post content within ${wordRange}, no formatting.`;
   return posts;
 }
 
-function generateFallbackContent(params: ContentGenerationParams, platform: string, postNumber: number): string {
+function generateFallbackContent(params: ContentGenerationParams, platform: string, postNumber: number, eventContext?: string): string {
   const brandName = params.brandName || "The AgencyIQ";
   const url = "https://app.theagencyiq.ai";
   const hashtags = "#QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing #Automation";
@@ -242,7 +320,19 @@ function generateFallbackContent(params: ContentGenerationParams, platform: stri
   
   // X Platform specific content (50-70 words, NO hashtags, NO emojis, @ mentions only)
   if (platform.toLowerCase() === 'x' || platform.toLowerCase() === 'twitter') {
-    const xTemplates = [
+    // Check if this is event-driven content
+    const isEventDriven = eventContext && eventContext.includes('Queensland Event:');
+    
+    const xTemplates = isEventDriven ? [
+      // Queensland Event-Driven X Templates
+      `Queensland businesses heading to Brisbane Ekka? ${brandName} automation frees up time for networking and discovering new opportunities. Our intelligent platform helps ${params.audience} manage operations while you focus on growth. Connect @TheAgencyIQ for automation insights. ${url}`,
+      `Brisbane Ekka showcases Queensland innovation - just like ${brandName} automation technology. Our platform addresses ${params.painPoints} while you attend business events and build connections. Join @TheAgencyIQ community of forward-thinking entrepreneurs. ${url}`,
+      `Queensland Small Business Week highlights automation benefits. ${brandName} delivers ${params.productsServices} that helps business owners attend events without operational stress. Connect @TheAgencyIQ for intelligent solutions that work around your schedule. ${url}`,
+      `Gold Coast Business Excellence Awards recognize innovation like ${brandName} automation. Our platform helps ${params.audience} achieve breakthrough results while maintaining business operations. Join @TheAgencyIQ network of award-winning entrepreneurs. ${url}`,
+      `Cairns Business Expo demonstrates Queensland entrepreneurship. ${brandName} automation ensures your business runs smoothly while you explore new opportunities. Follow @TheAgencyIQ for competitive advantage through intelligent systems. ${url}`,
+      `Queensland events drive business connections. ${brandName} automation handles operations so you can focus on networking and growth opportunities. Join @TheAgencyIQ community transforming how Queensland businesses operate and scale. ${url}`
+    ] : [
+      // General Queensland Business X Templates
       `Transform your Queensland business with ${brandName}. Our AI-powered automation platform delivers ${params.productsServices} that helps ${params.audience} achieve breakthrough results. Join innovative business owners @TheAgencyIQ community already leveraging intelligent automation for competitive advantage. ${url}`,
       `${brandName} understands Queensland business challenges: ${params.painPoints}. Our intelligent automation system streamlines operations while you focus on growth. Connect with @TheAgencyIQ for forward-thinking entrepreneurs across Queensland seeking measurable business transformation. ${url}`,
       `Ready for real business transformation? ${brandName} helps ${params.audience} overcome operational obstacles and reach new performance heights. Join Queensland businesses @TheAgencyIQ network already winning with intelligent automation solutions. ${url}`,
