@@ -2799,6 +2799,20 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(404).json({ message: "User not found" });
       }
 
+      // QUOTA ENFORCEMENT: Check remaining posts before generation
+      const quotaStatus = await PostQuotaService.getQuotaStatus(req.session.userId);
+      if (!quotaStatus) {
+        return res.status(400).json({ message: "Unable to retrieve quota status" });
+      }
+      
+      // Check if user has any posts remaining
+      if (quotaStatus.remainingPosts <= 0) {
+        return res.status(403).json({ 
+          message: `You have reached your ${quotaStatus.subscriptionPlan} plan limit of ${quotaStatus.totalPosts} posts. Upgrade your plan to generate more content.`,
+          quotaStatus 
+        });
+      }
+
       const brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
       if (!brandPurposeRecord) {
         return res.status(400).json({ message: "Brand purpose not found. Please complete setup." });
@@ -2808,6 +2822,10 @@ Continue building your Value Proposition Canvas systematically.`;
       if (connections.length === 0) {
         return res.status(400).json({ message: "No platform connections found. Please connect at least one platform." });
       }
+
+      // Cap generation at remaining quota
+      const maxPostsToGenerate = Math.min(quotaStatus.remainingPosts, user.totalPosts || 12);
+      console.log(`Content calendar quota-aware generation: ${maxPostsToGenerate} posts (${quotaStatus.remainingPosts} remaining from ${quotaStatus.totalPosts} total)`);
 
       // Generate posts using Grok with comprehensive brand data
       const generatedPosts = await generateContentCalendar({
@@ -2822,7 +2840,7 @@ Continue building your Value Proposition Canvas systematically.`;
         logoUrl: brandPurposeRecord.logoUrl || undefined,
         contactDetails: brandPurposeRecord.contactDetails,
         platforms: connections.map(c => c.platform),
-        totalPosts: user.totalPosts || 12,
+        totalPosts: maxPostsToGenerate,
       });
 
       // Save posts to database
@@ -2832,13 +2850,22 @@ Continue building your Value Proposition Canvas systematically.`;
           userId: req.session.userId,
           platform: postData.platform,
           content: postData.content,
-          status: "scheduled",
+          status: "draft", // Start as draft, user can approve later
           scheduledFor: new Date(postData.scheduledFor),
         });
         createdPosts.push(post);
       }
 
-      res.json({ posts: createdPosts });
+      console.log(`Content calendar generated: ${createdPosts.length} posts created within quota limits`);
+
+      res.json({ 
+        posts: createdPosts,
+        quotaStatus: {
+          remaining: quotaStatus.remainingPosts,
+          total: quotaStatus.totalPosts,
+          generated: createdPosts.length
+        }
+      });
     } catch (error: any) {
       console.error('Content generation error:', error);
       res.status(500).json({ message: "Error generating content calendar: " + error.message });

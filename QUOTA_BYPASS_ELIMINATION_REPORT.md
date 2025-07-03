@@ -68,8 +68,10 @@ if (remainingQuota <= 0) {
 ```
 
 ### Route Protection Implementation
-- `/api/generate-ai-schedule` - ✅ PostQuotaService integrated
-- `/api/auto-post-schedule` - ✅ PostQuotaService integrated
+- `/api/generate-ai-schedule` - ✅ PostQuotaService integrated (quota checking + capping)
+- `/api/auto-post-schedule` - ✅ PostQuotaService integrated (quota checking + deduction)
+- `/api/generate-content-calendar` - ✅ PostQuotaService integrated (quota checking + capping)
+- `/api/replace-post` - ✅ No quota needed (modifies existing posts)
 - Auto-posting enforcer - ✅ PostQuotaService validation active
 - Platform publishing methods - ✅ Quota validation before posting
 
