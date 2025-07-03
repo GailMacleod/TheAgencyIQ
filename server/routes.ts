@@ -26,6 +26,22 @@ import { requireActiveSubscription, requireAuth } from './middleware/subscriptio
 import { PostQuotaService } from './PostQuotaService';
 import { userFeedbackService } from './userFeedbackService.js';
 
+// Extended session types
+declare module 'express-session' {
+  interface SessionData {
+    userId: number;
+    oauthTokens: any;
+    deviceInfo: any;
+    lastSyncAt: string;
+  }
+}
+
+declare module 'express-serve-static-core' {
+  interface Request {
+    sessionID: string;
+  }
+}
+
 // Use our custom request interface
 interface CustomRequest extends Request {
   session: session.Session & Partial<session.SessionData> & {

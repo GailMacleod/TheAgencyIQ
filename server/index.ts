@@ -415,10 +415,15 @@ async function startServer() {
       // Serve built frontend assets
       app.use(express.static(path.join(process.cwd(), 'dist/public')));
       
+      // Root route for production
+      app.get('/', (req, res) => {
+        res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+      });
+      
       // Serve React app for all non-API routes
       app.get('*', (req, res) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
+          res.sendFile(path.join(process.cwd(), 'dist/index.html'));
         }
       });
       console.log('✅ Production static files setup complete');
