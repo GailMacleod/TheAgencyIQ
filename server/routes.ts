@@ -24,6 +24,7 @@ import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
 import { PostRetryService } from './post-retry-service';
 import { requireActiveSubscription, requireAuth } from './middleware/subscriptionAuth';
+import { PostQuotaService } from './PostQuotaService';
 
 // Session type declaration
 declare module 'express-session' {
@@ -3773,21 +3774,35 @@ Continue building your Value Proposition Canvas systematically.`;
   // Generate AI-powered schedule using xAI integration
   app.post("/api/generate-ai-schedule", requireAuth, async (req: any, res) => {
     try {
-      const { totalPosts = 52, platforms } = req.body;
+      const { platforms } = req.body;
       
-      // ANTI-BLOATING: Check existing posts before any generation
-      const existingPosts = await storage.getPostsByUser(req.session.userId);
-      const currentDraftCount = existingPosts.filter(p => p.status === 'draft').length;
-      
-      // Professional plan: Allow regeneration by clearing drafts automatically
-      if (existingPosts.length >= 52) {
-        console.log(`Auto-clearing ${existingPosts.length} posts to regenerate fresh content`);
-        // Auto-clear all existing posts to allow fresh generation
-        for (const post of existingPosts) {
-          await storage.deletePost(post.id);
-        }
-        console.log(`Cleared all existing posts, proceeding with fresh generation`);
+      // QUOTA ENFORCEMENT: Check remaining posts before generation
+      const quotaStatus = await PostQuotaService.getQuotaStatus(req.session.userId);
+      if (!quotaStatus) {
+        return res.status(400).json({ message: "Unable to retrieve quota status" });
       }
+      
+      // Check if user has any posts remaining
+      if (quotaStatus.remainingPosts <= 0) {
+        return res.status(403).json({ 
+          message: `You have reached your ${quotaStatus.subscriptionPlan} plan limit of ${quotaStatus.totalPosts} posts. Upgrade your plan to generate more content.`,
+          quotaStatus 
+        });
+      }
+      
+      // Cap generation at remaining quota
+      const maxPostsToGenerate = Math.min(quotaStatus.remainingPosts, 30);
+      console.log(`Quota-aware generation: ${maxPostsToGenerate} posts (${quotaStatus.remainingPosts} remaining from ${quotaStatus.totalPosts} total)`);
+      
+      // Check existing posts (without deleting them)
+      const existingPosts = await storage.getPostsByUser(req.session.userId);
+      const preGenerationCounts = {
+        total: existingPosts.length,
+        draft: existingPosts.filter(p => p.status === 'draft').length,
+        approved: existingPosts.filter(p => p.status === 'approved').length
+      };
+      
+      console.log(`Pre-generation counts for user ${req.session.userId}:`, preGenerationCounts);
       
       // Get brand purpose from database instead of requiring it in request
       const brandPurpose = await storage.getBrandPurposeByUser(req.session.userId);
@@ -3875,9 +3890,9 @@ Continue building your Value Proposition Canvas systematically.`;
 
       console.log(`User ID tracking verified: ${req.session.userId} (${sessionUser.email})`);
 
-      // Log current post counts before generation
+      // Log current post counts before generation  
       const currentPosts = await storage.getPostsByUser(req.session.userId);
-      const currentCounts = {
+      const postGenerationCounts = {
         total: currentPosts.length,
         draft: currentPosts.filter(p => p.status === 'draft').length,
         approved: currentPosts.filter(p => p.status === 'approved').length,
@@ -3885,13 +3900,13 @@ Continue building your Value Proposition Canvas systematically.`;
         published: currentPosts.filter(p => p.status === 'published').length
       };
       
-      console.log(`Pre-generation post counts for user ${req.session.userId}:`, currentCounts);
+      console.log(`Pre-generation post counts for user ${req.session.userId}:`, postGenerationCounts);
       console.log(`Generating fresh ${planPostLimit} posts for ${brandPurpose.brandName}: ${userPlan.name} plan - unlimited regenerations allowed`)
 
       // Import xAI functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
       
-      // Prepare content generation parameters with full subscription allocation
+      // Prepare content generation parameters with quota-aware limits
       const contentParams = {
         brandName: brandPurpose.brandName,
         productsServices: brandPurpose.productsServices,
@@ -3903,7 +3918,7 @@ Continue building your Value Proposition Canvas systematically.`;
         goals: brandPurpose.goals || {},
         contactDetails: brandPurpose.contactDetails || {},
         platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-        totalPosts: planPostLimit // Generate full subscription allocation
+        totalPosts: maxPostsToGenerate // Generate only remaining quota amount
       };
 
       // Generate brand analysis
@@ -3963,14 +3978,31 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      // Prepare schedule insights with subscription information
+      // QUOTA DEDUCTION: Deduct created posts from quota
+      for (let i = 0; i < savedPosts.length; i++) {
+        try {
+          await PostQuotaService.deductPost(req.session.userId, savedPosts[i].id);
+          console.log(`Post ${i + 1}/${savedPosts.length} deducted from quota`);
+        } catch (error) {
+          console.error(`Failed to deduct post ${i + 1} from quota:`, error);
+        }
+      }
+      
+      // Get updated quota status after deduction
+      const updatedQuota = await PostQuotaService.getQuotaStatus(req.session.userId);
+      if (!updatedQuota) {
+        return res.status(500).json({ message: "Failed to retrieve updated quota status" });
+      }
+      console.log(`Updated quota after generation: ${updatedQuota.remainingPosts}/${updatedQuota.totalPosts} posts remaining`);
+
+      // Prepare schedule insights with subscription information using PostQuotaService
       const scheduleData = {
         posts: savedPosts,
         subscription: {
-          plan: subscriptionStatus.plan.name,
-          totalAllowed: subscriptionStatus.totalPostsAllowed,
-          used: subscriptionStatus.postsUsed + savedPosts.length, // Include newly created posts
-          remaining: Math.max(0, subscriptionStatus.postsRemaining - savedPosts.length),
+          plan: updatedQuota.subscriptionPlan,
+          totalAllowed: updatedQuota.totalPosts,
+          used: updatedQuota.totalPosts - updatedQuota.remainingPosts,
+          remaining: updatedQuota.remainingPosts,
           cycleStart: subscriptionStatus.cycleInfo.cycleStart,
           cycleEnd: subscriptionStatus.cycleInfo.cycleEnd
         },
@@ -4018,7 +4050,7 @@ Continue building your Value Proposition Canvas systematically.`;
 
       // Add verification data to response
       scheduleData.verification = {
-        preGeneration: currentCounts,
+        preGeneration: preGenerationCounts,
         postGeneration: finalCounts,
         newPostsCreated: savedPosts.length,
         userIdVerified: req.session.userId
