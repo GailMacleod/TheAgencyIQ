@@ -432,20 +432,34 @@ async function startServer() {
       } catch (viteError) {
         console.warn('⚠️ Vite setup failed, falling back to enhanced static file serving:', viteError.message);
         
-        // Enhanced fallback static serving with proper MIME types for ES modules
+        // Enhanced fallback static serving with comprehensive MIME types for ES modules
         app.use('/src', express.static(path.join(process.cwd(), 'client/src'), {
-          setHeaders: (res, path) => {
-            if (path.endsWith('.js') || path.endsWith('.jsx') || path.endsWith('.ts') || path.endsWith('.tsx')) {
-              res.setHeader('Content-Type', 'application/javascript');
+          setHeaders: (res, filePath) => {
+            if (filePath.endsWith('.js') || filePath.endsWith('.jsx')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (filePath.endsWith('.ts') || filePath.endsWith('.tsx')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (filePath.endsWith('.mjs')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (filePath.endsWith('.css')) {
+              res.setHeader('Content-Type', 'text/css; charset=utf-8');
             }
           }
         }));
         
-        // Serve client directory with proper MIME types
+        // Serve client directory with comprehensive MIME types
         app.use(express.static(path.join(process.cwd(), 'client'), {
-          setHeaders: (res, path) => {
-            if (path.endsWith('.js') || path.endsWith('.jsx') || path.endsWith('.ts') || path.endsWith('.tsx')) {
-              res.setHeader('Content-Type', 'application/javascript');
+          setHeaders: (res, filePath) => {
+            if (filePath.endsWith('.js') || filePath.endsWith('.jsx')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (filePath.endsWith('.ts') || filePath.endsWith('.tsx')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (filePath.endsWith('.mjs')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (filePath.endsWith('.css')) {
+              res.setHeader('Content-Type', 'text/css; charset=utf-8');
+            } else if (filePath.endsWith('.html')) {
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
             }
           }
         }));
