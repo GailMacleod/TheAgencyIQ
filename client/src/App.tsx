@@ -9,6 +9,7 @@ import GrokWidget from "@/components/grok-widget";
 import NotFound from "@/pages/not-found";
 import { initGA } from "./lib/analytics";
 import { useAnalytics } from "./hooks/use-analytics";
+import { clearBrowserCache } from "./utils/cache-utils";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
@@ -69,8 +70,19 @@ function Router() {
 function App() {
   const [showSplash, setShowSplash] = useState(true);
 
-  // Initialize Google Analytics when app loads
+  // Initialize Google Analytics and clear stale cache when app loads
   useEffect(() => {
+    // Clear any stale browser cache on startup to prevent auth issues
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('clearCache') === 'true') {
+      clearBrowserCache();
+      console.log('Browser cache cleared on startup');
+      // Remove clearCache parameter from URL
+      urlParams.delete('clearCache');
+      const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+      window.history.replaceState({}, '', newUrl);
+    }
+    
     // Verify required environment variable is present
     if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
       console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');

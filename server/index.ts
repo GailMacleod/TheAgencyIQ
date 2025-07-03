@@ -358,9 +358,21 @@ async function startServer() {
     });
   });
 
-  // Static assets - combined
-  app.use('/public', express.static('public'));
-  app.use('/attached_assets', express.static('attached_assets'));
+  // Static assets - combined with cache-busting headers
+  app.use('/public', express.static('public', {
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }));
+  app.use('/attached_assets', express.static('attached_assets', {
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }));
   
   // Combined asset endpoints
   app.get(['/manifest.json', '/public/js/beacon.js'], (req, res) => {
@@ -384,6 +396,19 @@ async function startServer() {
   // Create HTTP server
   const httpServer = createServer(app);
 
+  // Cache clearing endpoint for stale auth issues - BEFORE route registration
+  app.post('/api/clear-cache', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Clear-Site-Data', '"cache", "storage"');
+    res.json({ 
+      success: true, 
+      message: 'Cache cleared successfully',
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // Register API routes FIRST before any middleware that might interfere
   try {
     console.log('📡 Loading routes...');
@@ -391,6 +416,7 @@ async function startServer() {
     await registerRoutes(app);
     addNotificationEndpoints(app);
     console.log('✅ Routes registered successfully');
+    
   } catch (routeError) {
     console.error('❌ Route registration failed:', routeError);
     throw routeError;
