@@ -424,10 +424,22 @@ async function startServer() {
       console.log('✅ Production static files setup complete');
     } else {
       console.log('⚡ Setting up development Vite...');
-      const { setupVite, serveStatic } = await import('./vite');
-      await setupVite(app, httpServer);
-      serveStatic(app);
-      console.log('✅ Vite setup complete');
+      try {
+        const { setupVite, serveStatic } = await import('./vite');
+        await setupVite(app, httpServer);
+        serveStatic(app);
+        console.log('✅ Vite setup complete');
+      } catch (viteError) {
+        console.warn('⚠️ Vite setup failed, falling back to static file serving:', viteError.message);
+        // Fallback to basic static file serving for development
+        app.use(express.static(path.join(process.cwd(), 'client')));
+        app.get('*', (req, res) => {
+          if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+            res.sendFile(path.join(process.cwd(), 'client/index.html'));
+          }
+        });
+        console.log('✅ Fallback static serving enabled');
+      }
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);

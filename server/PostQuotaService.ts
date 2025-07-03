@@ -779,92 +779,10 @@ export class PostQuotaService {
   }
 
   /**
-   * Check if post is within current 30-day cycle (July 3-31, 2025)
-   */
-  }
-
-  /**
-   * Check if Brisbane Ekka overlaps with user's 30-day cycle
-   */
-  static isEkkaWithinUserCycle(subscriptionStart: Date): boolean {
-    const { cycleStart, cycleEnd } = this.getUserCycleDates(subscriptionStart);
-    
-    // Check if Ekka period (July 9-19) overlaps with user's cycle
-    return (this.EKKA_START <= cycleEnd && this.EKKA_END >= cycleStart);
-  }
-
-  /**
-   * Legacy method - kept for backward compatibility
-   */
-  static isWithinCurrentCycle(date: Date): boolean {
-    // Fallback to July 3-31 cycle if no specific user cycle available
-    const legacyCycleStart = new Date('2025-07-03T00:00:00.000Z');
-    const legacyCycleEnd = new Date('2025-07-31T23:59:59.999Z');
-    return date >= legacyCycleStart && date <= legacyCycleEnd;
-  }
-
-  /**
    * Check if post is within Ekka event period (July 9-19, 2025)
    */
   static isWithinEkkaEvent(date: Date): boolean {
     return date >= PostQuotaService.EKKA_START && date <= PostQuotaService.EKKA_END;
-  }
-
-  /**
-   * Enforce 52 event-driven posts for dynamic 30-day cycle per user
-   */
-  static async enforce30DayCycle(userId: number): Promise<{ success: boolean; message: string; postsInCycle: number }> {
-    const startTime = Date.now();
-    
-    try {
-      const { storage } = await import('./storage.js');
-      
-      // Get user subscription start for dynamic cycle calculation
-      const user = await storage.getUser(userId);
-      if (!user || !user.subscriptionStart) {
-        return { success: false, message: 'User subscription start not found', postsInCycle: 0 };
-      }
-      
-      // Calculate user's dynamic 30-day cycle
-      const { cycleStart, cycleEnd } = PostQuotaService.getUserCycleDates(user.subscriptionStart);
-      
-      // Get all posts in the user's current cycle
-      const allPosts = await storage.getPostsByUser(userId);
-      const postsInCycle = allPosts.filter(post => {
-        if (!post.scheduledFor) return false;
-        const postDate = new Date(post.scheduledFor);
-        return user.subscriptionStart ? PostQuotaService.isWithinUserCycle(postDate, new Date(user.subscriptionStart)) : false;
-      });
-      
-      const quota = await PostQuotaService.getQuotaStatus(userId);
-      if (!quota) {
-        return { success: false, message: 'User quota not found', postsInCycle: 0 };
-      }
-      
-      // Enforce professional plan 52 posts for 30-day cycle
-      if (quota.subscriptionPlan === 'professional' && postsInCycle.length > 52) {
-        await PostQuotaService.logQuotaOperation(userId, 0, 'CYCLE_ENFORCEMENT', 
-          `Excess posts detected: ${postsInCycle.length}/52 in cycle. Enforcement active.`);
-        
-        return { 
-          success: false, 
-          message: `Cycle quota exceeded: ${postsInCycle.length}/52 posts`,
-          postsInCycle: postsInCycle.length
-        };
-      }
-      
-      PostQuotaService.updatePerformanceMetrics(Date.now() - startTime);
-      
-      return { 
-        success: true, 
-        message: `Cycle quota OK: ${postsInCycle.length}/52 posts`,
-        postsInCycle: postsInCycle.length
-      };
-      
-    } catch (error) {
-      console.error('Error enforcing 30-day cycle:', error);
-      return { success: false, message: 'Cycle enforcement failed', postsInCycle: 0 };
-    }
   }
 
   /**
