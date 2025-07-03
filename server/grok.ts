@@ -222,10 +222,12 @@ function generateFallbackContent(params: ContentGenerationParams, platform: stri
   // X Platform specific content (50-70 words, NO hashtags, NO emojis, @ mentions only)
   if (platform.toLowerCase() === 'x' || platform.toLowerCase() === 'twitter') {
     const xTemplates = [
-      `Transform your Queensland business with ${brandName}. Our AI-powered automation platform delivers ${params.productsServices} that helps ${params.audience} achieve breakthrough results. Join innovative business owners already leveraging intelligent automation for competitive advantage. ${url}`,
-      `${brandName} understands Queensland business challenges: ${params.painPoints}. Our intelligent automation system streamlines operations while you focus on growth. Trusted by forward-thinking entrepreneurs across Queensland for measurable business transformation. ${url}`,
-      `Ready for real business transformation? ${brandName} helps ${params.audience} overcome operational obstacles and reach new performance heights. Join Queensland businesses already winning with intelligent automation solutions. ${url}`,
-      `${brandName} delivers ${params.productsServices} designed for ambitious Queensland entrepreneurs. Save valuable time, increase engagement rates, accelerate business growth through proven automation strategies. Experience the competitive advantage today. ${url}`
+      `Transform your Queensland business with ${brandName}. Our AI-powered automation platform delivers ${params.productsServices} that helps ${params.audience} achieve breakthrough results. Join innovative business owners @TheAgencyIQ community already leveraging intelligent automation for competitive advantage. ${url}`,
+      `${brandName} understands Queensland business challenges: ${params.painPoints}. Our intelligent automation system streamlines operations while you focus on growth. Connect with @TheAgencyIQ for forward-thinking entrepreneurs across Queensland seeking measurable business transformation. ${url}`,
+      `Ready for real business transformation? ${brandName} helps ${params.audience} overcome operational obstacles and reach new performance heights. Join Queensland businesses @TheAgencyIQ network already winning with intelligent automation solutions. ${url}`,
+      `${brandName} delivers ${params.productsServices} designed for ambitious Queensland entrepreneurs. Save valuable time, increase engagement rates, accelerate business growth through proven automation strategies. Follow @TheAgencyIQ for competitive advantage insights. ${url}`,
+      `Queensland SMEs are scaling faster with ${brandName} automation. Our intelligent platform addresses ${params.painPoints} while delivering measurable ROI. Join @TheAgencyIQ community of successful business owners transforming their operations daily. Experience the difference automation makes. ${url}`,
+      `Smart Queensland entrepreneurs choose ${brandName} for business automation. Our AI-driven platform helps ${params.audience} streamline operations and boost productivity. Connect @TheAgencyIQ to discover proven strategies for sustainable growth and competitive positioning. ${url}`
     ];
     
     let xContent = xTemplates[postNumber % xTemplates.length];
@@ -365,11 +367,15 @@ export function validateXContent(content: string): { isValid: boolean; errors: s
     fixedContent = fixedContent.replace(/\s+/g, ' ').trim();
   }
   
-  // Validate @ mentions (should be allowed)
+  // Validate @ mentions (encouraged for X platform engagement)
   const mentionRegex = /@\w+/g;
   const mentions = content.match(mentionRegex);
-  if (mentions) {
-    // This is allowed, no error
+  if (mentions && mentions.length > 0) {
+    // @ mentions are encouraged for X platform - this enhances engagement
+    console.log(`✅ X post contains ${mentions.length} @ mention(s): ${mentions.join(', ')} - excellent for platform engagement`);
+  } else {
+    // Suggest adding @ mentions for better engagement
+    errors.push('Consider adding @ mentions to increase engagement on X platform');
   }
   
   // Check for promotional tone indicators
