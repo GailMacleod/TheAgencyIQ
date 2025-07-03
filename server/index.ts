@@ -113,7 +113,7 @@ async function startServer() {
   app.use((req, res, next) => {
     res.setHeader('Content-Security-Policy', [
       "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://unpkg.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com",
       "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://www.google.com",
       "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
@@ -360,16 +360,6 @@ async function startServer() {
 
   // Static assets - combined
   app.use('/public', express.static('public'));
-
-  // Health check endpoint
-  app.get('/api/health', (req, res) => {
-    res.json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      server: 'TheAgencyIQ',
-      version: '1.0.0'
-    });
-  });
   
   // Combined asset endpoints
   app.get(['/manifest.json', '/public/js/beacon.js'], (req, res) => {
@@ -434,149 +424,10 @@ async function startServer() {
       console.log('✅ Production static files setup complete');
     } else {
       console.log('⚡ Setting up development Vite...');
-      try {
-        const { setupVite } = await import('./vite');
-        await setupVite(app, httpServer);
-        console.log('✅ Vite setup complete');
-      } catch (viteError) {
-        console.log('❌ Vite setup failed, using basic HTML serving');
-        console.log('Error:', (viteError as Error).message);
-        
-        // Development fallback - serve a working React app
-        app.use('/src', express.static(path.join(process.cwd(), 'client/src'), {
-          setHeaders: (res, path) => {
-            if (path.endsWith('.tsx') || path.endsWith('.ts')) {
-              res.setHeader('Content-Type', 'application/javascript');
-            }
-          }
-        }));
-        app.use(express.static(path.join(process.cwd(), 'client/public')));
-        
-        // Serve React app for all non-API routes
-        app.get('*', (req, res, next) => {
-          if (req.path.startsWith('/api') || req.path.startsWith('/oauth') || req.path.startsWith('/callback') || req.path.startsWith('/health') || req.path.startsWith('/src')) {
-            return next();
-          }
-          
-          // Check if response already sent to prevent double-send errors
-          if (res.headersSent) {
-            return;
-          }
-          
-          // Create a simple HTML page that loads the React app components directly
-          res.send(`
-            <!DOCTYPE html>
-            <html lang="en">
-              <head>
-                <meta charset="UTF-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                <title>TheAgencyIQ</title>
-                <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-                <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-                <style>
-                  body {
-                    font-family: 'Helvetica', 'Arial', sans-serif;
-                    margin: 0;
-                    padding: 20px;
-                    background: #f5f5f5;
-                  }
-                  .container {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    background: white;
-                    padding: 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                  }
-                  .header {
-                    text-align: center;
-                    margin-bottom: 30px;
-                    padding: 20px;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    border-radius: 8px;
-                  }
-                  .status-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                    gap: 20px;
-                    margin-bottom: 30px;
-                  }
-                  .status-card {
-                    background: #f8f9fa;
-                    padding: 20px;
-                    border-radius: 8px;
-                    border-left: 4px solid #28a745;
-                  }
-                  .status-card h3 {
-                    margin: 0 0 10px 0;
-                    color: #333;
-                  }
-                  .nav-links {
-                    display: flex;
-                    gap: 15px;
-                    justify-content: center;
-                    flex-wrap: wrap;
-                  }
-                  .nav-link {
-                    background: #007bff;
-                    color: white;
-                    padding: 10px 20px;
-                    text-decoration: none;
-                    border-radius: 5px;
-                    transition: background 0.3s;
-                  }
-                  .nav-link:hover {
-                    background: #0056b3;
-                  }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h1>🚀 TheAgencyIQ - Social Media Automation Platform</h1>
-                    <p>AI-Powered Content Generation & Multi-Platform Publishing</p>
-                  </div>
-                  
-                  <div class="status-grid">
-                    <div class="status-card">
-                      <h3>✅ Server Infrastructure</h3>
-                      <p>Running stable on port 5000</p>
-                      <p>Development fallback active</p>
-                    </div>
-                    
-                    <div class="status-card">
-                      <h3>✅ Database System</h3>
-                      <p>PostgreSQL connected</p>
-                      <p>Session management active</p>
-                    </div>
-                    
-                    <div class="status-card">
-                      <h3>✅ Content Generation</h3>
-                      <p>520 posts system ready</p>
-                      <p>10 customers × 52 posts each</p>
-                    </div>
-                    
-                    <div class="status-card">
-                      <h3>✅ Platform Integration</h3>
-                      <p>5 platforms configured</p>
-                      <p>Facebook, Instagram, LinkedIn, YouTube, X</p>
-                    </div>
-                  </div>
-                  
-                  <div class="nav-links">
-                    <a href="/api/health" class="nav-link">Health Check</a>
-                    <a href="/oauth-status" class="nav-link">OAuth Status</a>
-                    <a href="/api/subscription-usage" class="nav-link">Subscription Usage</a>
-                    <a href="/public" class="nav-link">Platform Connections</a>
-                  </div>
-                </div>
-              </body>
-            </html>
-          `);
-        });
-        console.log('✅ Development HTML serving active');
-      }
+      const { setupVite, serveStatic } = await import('./vite');
+      await setupVite(app, httpServer);
+      serveStatic(app);
+      console.log('✅ Vite setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);

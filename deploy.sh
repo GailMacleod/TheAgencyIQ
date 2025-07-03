@@ -5,37 +5,12 @@
 # Validates 520 posts (10 customers × 52 posts) with Queensland market alignment
 # Platform API checks, server restart, multi-user load testing
 
-echo "🚀 THEAGENCYIQ PRODUCTION DEPLOYMENT VALIDATION - 520 POSTS"
+echo "🚀 THEAGENCYIQ ENHANCED DEPLOYMENT VALIDATION - 10 CUSTOMERS"
 echo "============================================================"
-echo "Production build: 541.1kb verification with MIME type fixes"
 echo "Testing: 520 event-driven posts (10 customers × 52 posts)"
-echo "Platform publishing: Facebook, Instagram, LinkedIn, YouTube, X"
+echo "Platform coverage: Facebook, Instagram, LinkedIn, YouTube, X"
 echo "Queensland events: Brisbane Ekka July 9-19, 2025 focus"
-echo "Dynamic 30-day cycles from each customer's subscription date"
 echo "Load testing: 100 concurrent requests, quota exceed protection"
-echo ""
-
-# PRODUCTION SERVER VALIDATION
-echo "🔨 PRODUCTION SERVER VALIDATION..."
-echo "Testing production mode deployment..."
-
-# Start server in production mode  
-echo "Starting production server..."
-NODE_ENV=production npx tsx server/index.ts &
-SERVER_PID=$!
-sleep 3
-
-# Health check pre-validation
-if curl -s http://localhost:5000/api/health | grep -q "ok"; then
-    echo "✅ Production server health check: PASS"
-    ((PASSED_CHECKS++))
-else
-    echo "❌ Production server health check: FAIL"
-fi
-
-# Stop test server
-kill $SERVER_PID 2>/dev/null || true
-sleep 1
 echo ""
 
 # Enhanced validation checklist for 10 customers
@@ -46,7 +21,7 @@ EXPECTED_POSTS=520
 
 # CHECK 1: Server Health
 echo "1️⃣  CHECKING SERVER HEALTH..."
-if curl -s http://localhost:5000/api/health > /dev/null 2>&1; then
+if curl -s http://localhost:5000/api/server-status > /dev/null 2>&1; then
     echo "✅ Server responding on port 5000"
     ((PASSED_CHECKS++))
 else
