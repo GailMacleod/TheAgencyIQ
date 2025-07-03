@@ -96,13 +96,26 @@ export async function generateContentCalendar(params: ContentGenerationParams): 
     const platformIndex = i % platforms.length;
     const platform = platforms[platformIndex];
     
-    // Generate dates with AEST timezone consistency
+    // Generate dates with AEST timezone consistency and even 30-day distribution
     const today = new Date();
     const aestToday = new Date(today.toLocaleString("en-US", { timeZone: "Australia/Brisbane" }));
     const scheduledDate = new Date(aestToday);
-    scheduledDate.setHours(9, 0, 0, 0); // Start at 9 AM AEST
-    scheduledDate.setDate(scheduledDate.getDate() + Math.floor(i / platforms.length));
-    scheduledDate.setHours(scheduledDate.getHours() + (i % platforms.length) * 3); // Spread posts throughout day
+    
+    // Calculate even distribution across 30 days to prevent clustering
+    // Use a more sophisticated distribution algorithm
+    const totalDays = 30;
+    const postsPerWeek = Math.ceil(maxPosts / 4); // Distribute across 4 weeks
+    const dayWithinWeek = Math.floor(i / postsPerWeek) % 7; // 0-6 days within week
+    const weekNumber = Math.floor(i / (postsPerWeek * 7)); // Which week
+    const dayOffset = weekNumber * 7 + dayWithinWeek;
+    
+    // Add time variation to prevent clustering
+    const hourVariations = [9, 11, 13, 15, 17]; // 9am, 11am, 1pm, 3pm, 5pm
+    const hourOffset = hourVariations[i % hourVariations.length];
+    const minuteOffset = (i % 4) * 15; // 0, 15, 30, 45 minute intervals
+    
+    scheduledDate.setDate(scheduledDate.getDate() + Math.min(dayOffset, 29)); // Max 29 days
+    scheduledDate.setHours(hourOffset, minuteOffset, 0, 0); // AEST time with better variation
     
     const platformSpec = PLATFORM_SPECS[platform as keyof typeof PLATFORM_SPECS] || PLATFORM_SPECS.facebook;
     const wordRange = `${platformSpec.wordCount.min}-${platformSpec.wordCount.max} words`;

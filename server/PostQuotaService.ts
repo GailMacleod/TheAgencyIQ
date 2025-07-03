@@ -590,4 +590,54 @@ export class PostQuotaService {
       return { approved: 0, draft: 0, published: 0, failed: 0, total: 0 };
     }
   }
+
+  /**
+   * Detect expired posts that haven't been published
+   */
+  static async detectExpiredPosts(userId: number): Promise<{
+    expiredPosts: any[];
+    totalExpired: number;
+    oldestExpired: Date | null;
+    notificationRequired: boolean;
+  }> {
+    try {
+      const { storage } = await import('./storage.js');
+      const posts = await storage.getPostsByUser(userId);
+      
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Start of today for comparison
+      
+      const expiredPosts = posts.filter(post => {
+        if (!post.scheduledFor || post.status === 'published' || post.status === 'failed') {
+          return false;
+        }
+        
+        const scheduledDate = new Date(post.scheduledFor);
+        scheduledDate.setHours(0, 0, 0, 0);
+        
+        return scheduledDate < now;
+      });
+      
+      const oldestExpired = expiredPosts.length > 0 
+        ? new Date(Math.min(...expiredPosts.map(p => new Date(p.scheduledFor!).getTime())))
+        : null;
+      
+      console.log(`🕐 Expired post detection for user ${userId}: ${expiredPosts.length} expired posts found`);
+      
+      return {
+        expiredPosts,
+        totalExpired: expiredPosts.length,
+        oldestExpired,
+        notificationRequired: expiredPosts.length > 0
+      };
+    } catch (error) {
+      console.error('Error detecting expired posts:', error);
+      return {
+        expiredPosts: [],
+        totalExpired: 0,
+        oldestExpired: null,
+        notificationRequired: false
+      };
+    }
+  }
 }
