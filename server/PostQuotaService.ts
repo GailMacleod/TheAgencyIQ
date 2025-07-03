@@ -112,14 +112,35 @@ export class PostQuotaService {
     try {
       const quota = this.PLAN_QUOTAS[plan as keyof typeof this.PLAN_QUOTAS] || this.PLAN_QUOTAS.starter;
       
-      await db.update(users)
-        .set({
+      // First check if user exists
+      const existingUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      
+      if (existingUser.length === 0) {
+        // Create new user if doesn't exist
+        await db.insert(users).values({
+          id: userId,
+          email: `customer${userId}@queensland-business.com.au`,
+          password: 'test-password-' + userId,
+          phone: `+61400${String(userId).padStart(6, '0')}`,
           remainingPosts: quota,
           totalPosts: quota,
           subscriptionPlan: plan,
-          subscriptionActive: true
-        })
-        .where(eq(users.id, userId));
+          subscriptionActive: true,
+          subscriptionStart: new Date(),
+          subscriptionEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          subscriptionCycle: '30-day'
+        });
+      } else {
+        // Update existing user quota
+        await db.update(users)
+          .set({
+            remainingPosts: quota,
+            totalPosts: quota,
+            subscriptionPlan: plan,
+            subscriptionActive: true
+          })
+          .where(eq(users.id, userId));
+      }
 
       console.log(`✅ Quota initialized for user ${userId}: ${quota} posts (${plan} plan)`);
       return true;

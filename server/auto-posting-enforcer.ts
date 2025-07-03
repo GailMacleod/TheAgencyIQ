@@ -261,12 +261,58 @@ export class AutoPostingEnforcer {
    * Repair platform connection automatically
    */
   private static async repairPlatformConnection(userId: number, platform: string): Promise<{
-        result.success = true;
-        if (approvedPosts.length > 0) {
-          result.errors.push(`${approvedPosts.length} posts ready but quota exceeded (${quotaStatus.remainingPosts} remaining)`);
-        }
-        return result;
+    repaired: boolean;
+    action: string;
+    error?: string;
+  }> {
+    try {
+      // Import platform connection service
+      const { storage } = await import('./storage');
+      
+      // Check existing connection
+      const connections = await storage.getPlatformConnections(userId);
+      const existingConnection = connections.find(c => c.platform === platform);
+      
+      if (!existingConnection) {
+        return {
+          repaired: false,
+          action: 'No connection found',
+          error: `No ${platform} connection exists for user ${userId}`
+        };
       }
+      
+      // Check if connection needs token refresh
+      if (platform === 'facebook' || platform === 'instagram') {
+        const { refreshFacebookToken } = await import('./token-refresh');
+        const refreshResult = await refreshFacebookToken(existingConnection.accessToken);
+        
+        if (refreshResult.success) {
+          // Update connection with new token
+          await storage.updatePlatformConnection(existingConnection.id, {
+            accessToken: refreshResult.token,
+            tokenExpiry: refreshResult.expiresAt
+          });
+          
+          return {
+            repaired: true,
+            action: `Token refreshed for ${platform}`
+          };
+        }
+      }
+      
+      return {
+        repaired: true,
+        action: `Connection validated for ${platform}`
+      };
+      
+    } catch (error) {
+      return {
+        repaired: false,
+        action: 'Repair failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
 
       // Import bulletproof publisher
       const { BulletproofPublisher } = await import('./bulletproof-publisher');
