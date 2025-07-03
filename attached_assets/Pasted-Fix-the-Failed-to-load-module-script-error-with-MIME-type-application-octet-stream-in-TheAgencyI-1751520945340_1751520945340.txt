@@ -1,0 +1,28 @@
+Fix the 'Failed to load module script' error with MIME type 'application/octet-stream' in TheAgencyIQ. Open server/index.ts, update the static file serving configuration (e.g., express.static or custom middleware) to serve .js files with application/javascript (e.g., res.type('application/javascript') for .js routes). Verify the production build from build-production.sh (541.1kb) has valid .js files in dist. Open vite.config.ts, replace its content with:
+javascript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+const loadDevPlugins = async () => {
+  if (process.env.NODE_ENV === 'production' || !process.env.REPL_ID) {
+    return [];
+  }
+  const plugins = [];
+  try { const runtimeErrorOverlay = await import('@replit/vite-plugin-runtime-error-modal'); plugins.push(runtimeErrorOverlay.default()); } catch (e) { console.warn('Could not load runtime error overlay plugin'); }
+  try { const cartographer = await import('@replit/vite-plugin-cartographer'); plugins.push(cartographer.cartographer()); } catch (e) { console.warn('Could not load cartographer plugin'); }
+  return plugins;
+};
+
+export default defineConfig({
+  plugins: [react(), ...(await loadDevPlugins())],
+});
+Test the build with npm run build and restart with Restarted Start application, checking the browser console on port 5000. Then, finalize server/PostQuotaService.ts with a dynamic 30-day cycle from each customer’s subscription date, enforcing 52 posts per 10 customers (520 total) with postApproved() deducting quota post-publishing. Integrate eventSchedulingService.ts for Queensland events within each user’s window. Update server/auto-posting-enforcer.ts to publish 520 posts to platforms, logging in data/quota-debug.log with /api/notify-expired for failures. Test with npx tsx test-comprehensive-quota-fix.js (6/6 pass) for 10 users with varied start dates (July 3, 5, 10, 15, 20). Update deploy.sh to use build-production.sh and document in replit.md, avoiding OAuth changes.

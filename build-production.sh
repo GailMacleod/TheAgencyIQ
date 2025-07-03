@@ -4,12 +4,11 @@ echo "🏗️  Building TheAgencyIQ for production deployment..."
 
 # Clean previous builds
 rm -rf dist/
-mkdir -p dist/public
+mkdir -p dist/
 
-# Copy client files to dist
-echo "📋 Copying client assets..."
-cp -r client/* dist/public/
-cp client/index.html dist/public/
+# Build frontend with minimal Vite config (avoiding Replit plugin issues)
+echo "📋 Building React frontend..."
+npx vite build --config vite.config.minimal.js
 
 # Build server
 echo "🔧 Building server..."

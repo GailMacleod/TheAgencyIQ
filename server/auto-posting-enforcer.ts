@@ -63,16 +63,15 @@ export class AutoPostingEnforcer {
       if (hasEkkaOverlap) {
         console.log(`User ${userId} has Brisbane Ekka overlap - using enhanced event-driven content`);
       }
-      }
 
-      // Enforce 30-day cycle with Queensland events integration
-      const cycleCheck = await PostQuotaService.enforce30DayCycle(userId);
-      if (!cycleCheck.isWithinCycle) {
-        result.errors.push(`User not within 30-day cycle. Cycle: ${cycleCheck.cycleStart.toISOString()} to ${cycleCheck.cycleEnd.toISOString()}`);
+      // Get quota status for validation
+      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!quotaStatus || quotaStatus.remainingPosts <= 0) {
+        result.errors.push(`User quota exhausted or unavailable. Remaining posts: ${quotaStatus?.remainingPosts || 0}`);
         return result;
       }
       
-      console.log(`Auto-posting enforcer: User within cycle, ${cycleCheck.postsRemaining} posts remaining, Ekka access: ${cycleCheck.hasEkkaAccess}`);
+      console.log(`Auto-posting enforcer: User quota active, ${quotaStatus.remainingPosts} posts remaining, within cycle`);
       
       const { cycleStart, cycleEnd } = PostQuotaService.getUserCycleDates(user.subscriptionStart);
       const currentDate = new Date();
@@ -104,8 +103,8 @@ export class AutoPostingEnforcer {
       }
 
       // QUOTA ENFORCEMENT: Check quota status before processing posts
-      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
-      if (!quotaStatus) {
+      const currentQuotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!currentQuotaStatus) {
         result.errors.push('Unable to retrieve quota status');
         return result;
       }
