@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { seoOptimizationService } from './seoOptimizationService';
 
 export interface ContentGenerationParams {
   brandName: string;
@@ -159,6 +160,9 @@ Return ONLY the post content within ${wordRange}, no formatting.`;
       let content = response.choices[0].message.content?.trim();
       
       if (content && content.length > 10) {
+        // ENHANCED: Apply SEO optimization with Queensland market-specific keywords
+        content = seoOptimizationService.optimizeContentForSeo(content, platform, 'business automation Queensland');
+        
         // Validate and adjust content for platform-specific word counts
         const wordCount = content.split(/\s+/).length;
         const { min, max } = platformSpec.wordCount;
@@ -296,6 +300,9 @@ function generateFallbackContent(params: ContentGenerationParams, platform: stri
   }
   
   let content = templates[postNumber % templates.length];
+  
+  // ENHANCED: Apply SEO optimization to fallback content
+  content = seoOptimizationService.optimizeContentForSeo(content, platform, 'intelligent automation Queensland');
   
   // Validate word count for platform requirements
   const words = content.split(/\s+/);
