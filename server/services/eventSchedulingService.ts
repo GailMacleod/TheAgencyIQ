@@ -228,8 +228,25 @@ export class EventSchedulingService {
     
     try {
       // Import Grok service for AI generation
-      const grokModule = await import('../grok');
-      const aiContent = await grokModule.generatePost(contentPrompt, platform);
+      const { generateContentCalendar } = await import('../grok');
+      
+      // Create minimal content params for event-driven generation
+      const eventContentParams = {
+        brandName: 'Queensland Business',
+        productsServices: 'Event-driven Queensland SME services',
+        corePurpose: `${event.name} networking and business opportunities`,
+        audience: 'Queensland small business owners',
+        jobToBeDone: 'Maximize event networking value',
+        motivations: `Connect with Queensland businesses at ${event.name}`,
+        painPoints: 'Missing Queensland business events',
+        goals: { networking: true, growth: true },
+        contactDetails: { email: 'info@queensland-business.com.au' },
+        platforms: [platform],
+        totalPosts: 1
+      };
+      
+      const generatedContent = await generateContentCalendar(eventContentParams);
+      const aiContent = generatedContent[0]?.content;
       
       return {
         content: aiContent || `Queensland businesses: ${event.name} presents exciting opportunities for networking and growth. Join the Queensland business community at ${event.location}!`,

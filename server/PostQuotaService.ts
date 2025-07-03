@@ -14,7 +14,7 @@ interface QuotaStatus {
   remainingPosts: number;
   totalPosts: number;
   subscriptionPlan: string | null;
-  subscriptionActive: boolean | null;
+  subscriptionActive: boolean;
 }
 
 interface PostCountSummary {
@@ -106,7 +106,7 @@ export class PostQuotaService {
         remainingPosts,
         totalPosts,
         subscriptionPlan,
-        subscriptionActive: user.subscriptionActive || false
+        subscriptionActive: user.subscriptionActive ?? false
       };
 
       // Cache the result
@@ -236,7 +236,8 @@ export class PostQuotaService {
 
   /**
    * Deduct quota ONLY after successful posting - called by platform publishing functions
-   * Integrates with postLedger for accurate 30-day rolling quota tracking
+   * Enforces 30-day cycle (July 3-31, 2025) with 52 posts per customer (520 total for 10 customers)
+   * Integrates with postLedger for accurate 30-day rolling quota tracking and Queensland events
    */
   static async postApproved(userId: number, postId: number): Promise<boolean> {
     try {
@@ -413,7 +414,7 @@ export class PostQuotaService {
    */
   static async hasPostsRemaining(userId: number): Promise<boolean> {
     const status = await this.getQuotaStatus(userId);
-    return status ? status.remainingPosts > 0 && status.subscriptionActive : false;
+    return status ? status.remainingPosts > 0 && (status.subscriptionActive ?? false) : false;
   }
 
   /**
