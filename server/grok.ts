@@ -46,6 +46,40 @@ export async function analyzeBrandPurpose(params: ContentGenerationParams): Prom
   };
 }
 
+// Platform-specific content specifications for Queensland market
+const PLATFORM_SPECS = {
+  facebook: {
+    wordCount: { min: 80, max: 120 },
+    tone: "engaging and community-focused",
+    style: "brand stories with professional tone",
+    cta: "moderate, community-building focused"
+  },
+  instagram: {
+    wordCount: { min: 50, max: 70 },
+    tone: "casual and visually-driven",
+    style: "lifestyle-focused with strong visual hooks",
+    cta: "strong calls-to-action, action-oriented"
+  },
+  linkedin: {
+    wordCount: { min: 100, max: 150 },
+    tone: "authoritative and professional",
+    style: "industry insights and professional networking",
+    cta: "thought leadership and connection building"
+  },
+  youtube: {
+    wordCount: { min: 70, max: 100 },
+    tone: "enthusiastic and compelling",
+    style: "video teaser content with platform-specific hooks",
+    cta: "video engagement and subscription focused"
+  },
+  x: {
+    wordCount: { min: 50, max: 70 },
+    tone: "concise and trending",
+    style: "trending topics with engaging elements (no hashtags per X policy)",
+    cta: "engagement and conversation starters"
+  }
+};
+
 export async function generateContentCalendar(params: ContentGenerationParams): Promise<GeneratedPost[]> {
   const openai = new OpenAI({ baseURL: "https://api.x.ai/v1", apiKey: process.env.XAI_API_KEY });
   
@@ -65,26 +99,31 @@ export async function generateContentCalendar(params: ContentGenerationParams): 
     const scheduledDate = new Date(baseDate);
     scheduledDate.setHours(scheduledDate.getHours() + (i * 6));
     
-    const postPrompt = `Create a single compelling ${platform} marketing post for ${params.brandName}.
+    const platformSpec = PLATFORM_SPECS[platform as keyof typeof PLATFORM_SPECS] || PLATFORM_SPECS.facebook;
+    const wordRange = `${platformSpec.wordCount.min}-${platformSpec.wordCount.max} words`;
+    
+    const postPrompt = `Create a single compelling ${platform} marketing post for ${params.brandName} (Queensland business automation).
 
-Brand Details:
+Brand Context:
 - Core Purpose: ${params.corePurpose}
 - Products/Services: ${params.productsServices}
-- Target Audience: ${params.audience}
+- Target Audience: ${params.audience} (Queensland market focus)
 - Pain Points: ${params.painPoints}
 - Job-to-be-Done: ${params.jobToBeDone}
 
-Requirements:
-- Platform: ${platform}
-- Professional Queensland business tone
+Platform Requirements for ${platform.toUpperCase()}:
+- Word Count: ${wordRange} STRICT LIMIT
+- Tone: ${platformSpec.tone}
+- Style: ${platformSpec.style}
+- CTA: ${platformSpec.cta}
+- Queensland business context and market insights
 - ${platform === 'x' ? 
-  'X PLATFORM STRICT RULES (NEW X POLICY): Maximum 280 characters, hashtags (#) are COMPLETELY PROHIBITED and will be rejected by X, ONLY @ mentions allowed (e.g., @username), clean engaging content WITHOUT promotional tones or emojis' : 
-  'Include relevant hashtags (#QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing)'}
-- Clear call-to-action
+  'X PLATFORM STRICT RULES: Maximum 280 characters, hashtags (#) COMPLETELY PROHIBITED (will be rejected), ONLY @ mentions allowed, clean engaging content without promotional tones or emojis' : 
+  'Include relevant hashtags: #QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing #Automation'}
 - URL: https://app.theagencyiq.ai
-- ${platform === 'x' ? 'X format: Clean, engaging, topic-focused content with @ mentions only' : 'Engaging, detailed content'}
+- Focus on intelligent automation benefits for Queensland SMEs
 
-Return ONLY the post content, no extra formatting or JSON.`;
+Return ONLY the post content within ${wordRange}, no formatting.`;
 
     try {
       const response = await openai.chat.completions.create({
@@ -92,7 +131,21 @@ Return ONLY the post content, no extra formatting or JSON.`;
         messages: [
           {
             role: "system", 
-            content: "You are an expert Queensland small business marketing strategist. Create compelling social media content that drives engagement and conversions. CRITICAL X PLATFORM RULE: For X posts, hashtags (#) are COMPLETELY PROHIBITED and will cause posts to be rejected by X. Use ONLY @ mentions for X content."
+            content: `You are an expert Queensland small business marketing strategist specializing in intelligent automation solutions. Create compelling social media content that:
+            
+            - Resonates with Queensland business owners and decision-makers
+            - Leverages local market insights and business culture
+            - Focuses on time-saving automation benefits for SMEs
+            - Drives engagement and conversions for TheAgencyIQ platform
+            - Adheres to strict platform-specific word count limits
+            
+            CRITICAL X PLATFORM RULE: For X posts, hashtags (#) are COMPLETELY PROHIBITED and will cause posts to be rejected by X. Use ONLY @ mentions for X content.
+            
+            Queensland Market Context:
+            - Strong entrepreneurial spirit and innovation adoption
+            - Focus on efficiency and productivity gains
+            - Community-oriented business relationships
+            - Digital transformation priorities for competitive advantage`
           },
           { 
             role: "user", 
@@ -103,9 +156,28 @@ Return ONLY the post content, no extra formatting or JSON.`;
         max_tokens: 400
       });
       
-      const content = response.choices[0].message.content?.trim();
+      let content = response.choices[0].message.content?.trim();
       
       if (content && content.length > 10) {
+        // Validate and adjust content for platform-specific word counts
+        const wordCount = content.split(/\s+/).length;
+        const { min, max } = platformSpec.wordCount;
+        
+        // If content exceeds word limit, trim it intelligently
+        if (wordCount > max) {
+          const words = content.split(/\s+/);
+          content = words.slice(0, max).join(' ');
+          // Ensure URL is preserved for Queensland businesses
+          if (!content.includes('https://app.theagencyiq.ai')) {
+            content += ' https://app.theagencyiq.ai';
+          }
+        }
+        
+        // If content is too short, enhance with Queensland context
+        if (wordCount < min && platform !== 'x') {
+          content += ` Perfect for Queensland SMEs seeking intelligent automation solutions. https://app.theagencyiq.ai`;
+        }
+        
         posts.push({
           platform,
           content,
@@ -113,9 +185,10 @@ Return ONLY the post content, no extra formatting or JSON.`;
           postType: i % 4 === 0 ? 'sales' : i % 4 === 1 ? 'awareness' : i % 4 === 2 ? 'educational' : 'engagement',
           aiScore: Math.floor(Math.random() * 20) + 80,
           targetPainPoint: params.painPoints,
-          jtbdAlignment: params.jobToBeDone
+          jtbdAlignment: params.jobToBeDone,
+          wordCount: content.split(/\s+/).length
         });
-        console.log(`Generated Grok content for ${platform} post ${i + 1}`);
+        console.log(`Generated Grok content for ${platform} post ${i + 1} (${content.split(/\s+/).length} words)`);
       } else {
         throw new Error('Empty content received');
       }
@@ -141,46 +214,98 @@ Return ONLY the post content, no extra formatting or JSON.`;
 function generateFallbackContent(params: ContentGenerationParams, platform: string, postNumber: number): string {
   const brandName = params.brandName || "The AgencyIQ";
   const url = "https://app.theagencyiq.ai";
+  const hashtags = "#QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing #Automation";
   
-  // X Platform specific content (NO hashtags, NO emojis, @ mentions only, max 280 chars)
+  // Get platform specifications for word count requirements
+  const platformSpec = PLATFORM_SPECS[platform as keyof typeof PLATFORM_SPECS] || PLATFORM_SPECS.facebook;
+  
+  // X Platform specific content (50-70 words, NO hashtags, NO emojis, @ mentions only)
   if (platform.toLowerCase() === 'x' || platform.toLowerCase() === 'twitter') {
     const xTemplates = [
-      `Transform your business with ${brandName}. Our AI-powered platform delivers ${params.productsServices} that helps ${params.audience} achieve their goals. ${url}`,
-      `${brandName} understands your challenges: ${params.painPoints}. Let our intelligent system automate your success while you focus on what matters most. ${url}`,
-      `Ready to see real results? ${brandName} helps ${params.audience} overcome obstacles and reach new heights. Join Queensland businesses already winning. ${url}`,
-      `${brandName} delivers ${params.productsServices} designed for busy Queensland entrepreneurs. Save time, increase engagement, grow your business. ${url}`
+      `Transform your Queensland business with ${brandName}. Our AI-powered automation platform delivers ${params.productsServices} that helps ${params.audience} achieve breakthrough results. Join innovative business owners already leveraging intelligent automation for competitive advantage. ${url}`,
+      `${brandName} understands Queensland business challenges: ${params.painPoints}. Our intelligent automation system streamlines operations while you focus on growth. Trusted by forward-thinking entrepreneurs across Queensland for measurable business transformation. ${url}`,
+      `Ready for real business transformation? ${brandName} helps ${params.audience} overcome operational obstacles and reach new performance heights. Join Queensland businesses already winning with intelligent automation solutions. ${url}`,
+      `${brandName} delivers ${params.productsServices} designed for ambitious Queensland entrepreneurs. Save valuable time, increase engagement rates, accelerate business growth through proven automation strategies. Experience the competitive advantage today. ${url}`
     ];
     
-    const xContent = xTemplates[postNumber % xTemplates.length];
+    let xContent = xTemplates[postNumber % xTemplates.length];
     
-    // Ensure strict 280 character limit for X
+    // Ensure word count between 50-70 words
+    const words = xContent.split(/\s+/);
+    if (words.length > 70) {
+      xContent = words.slice(0, 70).join(' ') + ` ${url}`;
+    } else if (words.length < 50) {
+      xContent += " Queensland's premier business automation solution.";
+    }
+    
+    // Final 280 character safety check
     return xContent.length > 280 ? xContent.substring(0, 277) + '...' : xContent;
   }
   
-  // All other platforms (with hashtags and emojis)
-  const hashtags = "#QueenslandBusiness #TheAgencyIQ #SmallBusiness #DigitalMarketing";
-  const contentTemplates = [
-    `🚀 Transform your business with ${brandName}! Our AI-powered platform delivers ${params.productsServices} that helps ${params.audience} achieve their goals. ${hashtags} ${url}`,
-    `💡 ${brandName} understands your challenges: ${params.painPoints}. Let our intelligent system automate your success while you focus on what matters most. ${hashtags} ${url}`,
-    `🎯 Ready to see real results? ${brandName} helps ${params.audience} overcome obstacles and reach new heights. Join the Queensland businesses already winning! ${hashtags} ${url}`,
-    `⭐ ${brandName} delivers ${params.productsServices} designed for busy Queensland entrepreneurs. Save time, increase engagement, grow your business. ${hashtags} ${url}`
-  ];
+  // Platform-specific content templates with appropriate word counts
+  let templates: string[] = [];
   
-  const template = contentTemplates[postNumber % contentTemplates.length];
-  
-  // Platform-specific optimization
   switch (platform.toLowerCase()) {
-    case 'linkedin':
-      return template + '\n\nWhat challenges are you facing in your business growth? Share your thoughts below.';
-    case 'instagram':
-      return template + '\n\n#entrepreneurlife #businessgrowth #queensland';
     case 'facebook':
-      return template + '\n\nComment below if you want to learn more about automating your business growth!';
+      // Facebook: 80-120 words, engaging brand stories, community-focused
+      templates = [
+        `🚀 Transform your Queensland business with ${brandName}! As a locally-grown platform, we understand the unique challenges facing Queensland entrepreneurs today. Our AI-powered automation system delivers ${params.productsServices} specifically designed to help ${params.audience} achieve their ambitious growth goals. From Brisbane to Cairns, smart business owners are already leveraging our intelligent solutions to streamline operations, boost engagement, and accelerate revenue growth. Join our thriving community of successful Queensland businesses and experience the difference automation makes. Ready to revolutionize your business operations? ${hashtags} ${url}`,
+        
+        `💡 Every Queensland business owner faces this reality: ${params.painPoints}. That's exactly why we built ${brandName} - to be your intelligent automation partner. Our platform understands the Queensland market dynamics and delivers solutions that actually work for local businesses. Whether you're in retail, services, or manufacturing, our AI-powered system automates the time-consuming tasks while you focus on what truly matters - growing your business and serving your customers. Join hundreds of Queensland entrepreneurs who've already transformed their operations and seen measurable results. ${hashtags} ${url}`,
+        
+        `🎯 Picture this: Your Queensland business running smoothly while you focus on strategy and growth. That's the power of ${brandName}! Our intelligent automation platform helps ${params.audience} overcome operational obstacles and reach new performance heights. From the Gold Coast to Townsville, innovative business owners are already winning with our proven systems. We're not just another tech solution - we're your local automation experts who understand Queensland business culture and challenges. Ready to see real transformation? ${hashtags} ${url}`
+      ];
+      break;
+      
+    case 'instagram':
+      // Instagram: 50-70 words, casual tone, strong CTAs, visually-driven
+      templates = [
+        `✨ Queensland entrepreneurs, your business transformation starts here! ${brandName} delivers game-changing automation that actually works. Our AI-powered platform helps ${params.audience} achieve breakthrough results while saving precious time. Ready to join successful business owners across Queensland? Swipe to see the difference! ${hashtags} ${url}`,
+        
+        `🔥 Stop letting ${params.painPoints} hold your Queensland business back! ${brandName} understands your challenges and delivers intelligent solutions that work. Join the automation revolution that's transforming businesses from Brisbane to Cairns. Your competitors are already using AI - don't get left behind! ${hashtags} ${url}`,
+        
+        `💪 Queensland business owners are winning with ${brandName}! Our smart automation platform delivers ${params.productsServices} that drives real results. Transform your operations, boost engagement, and accelerate growth. Ready to level up your business game? Tap the link and get started today! ${hashtags} ${url}`
+      ];
+      break;
+      
+    case 'linkedin':
+      // LinkedIn: 100-150 words, authoritative tone, industry insights, professional networking
+      templates = [
+        `The Queensland business landscape is rapidly evolving, and smart entrepreneurs are leveraging intelligent automation to gain competitive advantage. ${brandName} represents the next generation of business optimization platforms, specifically designed for the unique challenges facing Queensland SMEs. Our AI-powered system delivers ${params.productsServices} that addresses critical pain points: ${params.painPoints}. Through sophisticated automation workflows, we enable ${params.audience} to streamline operations, enhance customer engagement, and accelerate sustainable growth. Industry leaders across Queensland are already experiencing measurable ROI improvements. The question isn't whether automation will transform your sector - it's whether you'll lead or follow. Connect with me to explore how ${brandName} can position your business for the future. ${hashtags} ${url}`,
+        
+        `As a Queensland business leader, you understand that operational efficiency directly impacts bottom-line performance. ${brandName} addresses this critical challenge through intelligent automation solutions tailored for the Australian market. Our platform specifically targets ${params.painPoints} while delivering ${params.productsServices} that drives measurable results. Forward-thinking executives across Queensland are already implementing our proven frameworks to optimize their operations and enhance competitive positioning. The automation revolution isn't coming - it's here. The companies that embrace intelligent systems now will dominate their markets tomorrow. I'd welcome the opportunity to discuss how ${brandName} can accelerate your business transformation objectives. ${hashtags} ${url}`
+      ];
+      break;
+      
     case 'youtube':
-      return template + '\n\nWatch our latest video to see how Queensland businesses are transforming with AI.';
+      // YouTube: 70-100 words, video teaser content, enthusiastic tone
+      templates = [
+        `🎬 WATCH: How Queensland businesses are achieving 300% productivity gains with ${brandName}! In this exclusive video series, discover the automation secrets that successful entrepreneurs don't want their competitors to know. See real case studies, implementation strategies, and ROI metrics from actual Queensland businesses. Our AI-powered platform delivers ${params.productsServices} that transforms operations overnight. Don't miss these game-changing insights that could revolutionize your business! Subscribe for more automation success stories and implementation guides. ${hashtags} ${url}`,
+        
+        `🔴 LIVE CASE STUDY: Watch a Queensland business owner completely transform their operations using ${brandName} automation! This isn't theory - it's real results happening right now. Discover how our intelligent platform solves ${params.painPoints} while delivering measurable growth for ${params.audience}. See the exact strategies, tools, and implementation steps that drive success. Plus, exclusive behind-the-scenes insights you won't find anywhere else! Hit subscribe and the notification bell for more transformation videos. ${hashtags} ${url}`
+      ];
+      break;
+      
     default:
-      return template;
+      // Default fallback
+      templates = [
+        `🚀 Transform your Queensland business with ${brandName}! Our AI-powered platform delivers ${params.productsServices} that helps ${params.audience} achieve their goals. Join innovative entrepreneurs already succeeding with intelligent automation. ${hashtags} ${url}`
+      ];
   }
+  
+  let content = templates[postNumber % templates.length];
+  
+  // Validate word count for platform requirements
+  const words = content.split(/\s+/);
+  const { min, max } = platformSpec.wordCount;
+  
+  if (words.length > max) {
+    content = words.slice(0, max).join(' ') + ` ${url}`;
+  } else if (words.length < min && platform !== 'x') {
+    content += ` Perfect for Queensland SMEs seeking intelligent automation solutions.`;
+  }
+  
+  return content;
 }
 
 export async function generateReplacementPost(
