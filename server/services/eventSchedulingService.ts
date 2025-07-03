@@ -27,6 +27,7 @@ export class EventSchedulingService {
   /**
    * QUEENSLAND EVENT CALENDAR - July 2025
    * Brisbane Ekka July 9-19 is the major focus event
+   * Supports 520 event-driven posts (10 customers × 52 posts) with even distribution
    */
   private static readonly QUEENSLAND_EVENTS: QueenslandEvent[] = [
     {
