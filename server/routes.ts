@@ -3580,6 +3580,12 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(404).json({ message: "User not found" });
       }
 
+      // QUOTA ENFORCEMENT: Check quota status before publishing
+      const quotaStatus = await PostQuotaService.getQuotaStatus(req.session.userId);
+      if (!quotaStatus) {
+        return res.status(400).json({ message: "Unable to retrieve quota status" });
+      }
+
       // Get all approved posts for the user
       const posts = await storage.getPostsByUser(req.session.userId);
       const approvedPosts = posts.filter(post => post.status === 'approved');
@@ -3588,12 +3594,12 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "No approved posts found for scheduling" });
       }
 
-      // Check subscription limits
-      const remainingPosts = user.remainingPosts || 0;
-      if (remainingPosts < approvedPosts.length) {
-        return res.status(400).json({ 
-          message: `Insufficient posts remaining. Need ${approvedPosts.length}, have ${remainingPosts}`,
-          remainingPosts
+      // QUOTA ENFORCEMENT: Check if user has sufficient quota
+      if (quotaStatus.remainingPosts < approvedPosts.length) {
+        return res.status(403).json({ 
+          message: `Insufficient posts remaining. Need ${approvedPosts.length}, have ${quotaStatus.remainingPosts} remaining from ${quotaStatus.totalPosts} total (${quotaStatus.subscriptionPlan} plan)`,
+          remainingPosts: quotaStatus.remainingPosts,
+          quotaExceeded: true
         });
       }
 
@@ -3624,10 +3630,8 @@ Continue building your Value Proposition Canvas systematically.`;
               errorLog: null
             });
 
-            // Deduct from user's remaining posts
-            await storage.updateUser(req.session.userId, {
-              remainingPosts: (user.remainingPosts || 0) - 1
-            });
+            // QUOTA ENFORCEMENT: Deduct from quota using PostQuotaService
+            await PostQuotaService.deductPost(req.session.userId, post.id);
             postsDeducted++;
             successCount++;
 

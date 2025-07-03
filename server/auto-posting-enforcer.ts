@@ -5,6 +5,7 @@
  */
 
 import { storage } from './storage';
+import { PostQuotaService } from './PostQuotaService';
 
 interface AutoPostingResult {
   success: boolean;
@@ -57,6 +58,13 @@ export class AutoPostingEnforcer {
         return result;
       }
 
+      // QUOTA ENFORCEMENT: Check quota status before processing posts
+      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!quotaStatus) {
+        result.errors.push('Unable to retrieve quota status');
+        return result;
+      }
+
       // Get all approved posts that need publishing
       const posts = await storage.getPostsByUser(userId);
       const approvedPosts = posts.filter(post => 
@@ -66,10 +74,17 @@ export class AutoPostingEnforcer {
       );
 
       console.log(`Auto-posting enforcer: Found ${approvedPosts.length} posts ready for publishing`);
-      result.postsProcessed = approvedPosts.length;
+      console.log(`Auto-posting enforcer: User has ${quotaStatus.remainingPosts} posts remaining from ${quotaStatus.totalPosts} quota`);
+      
+      // QUOTA ENFORCEMENT: Cap publishing at remaining quota
+      const postsToPublish = approvedPosts.slice(0, quotaStatus.remainingPosts);
+      result.postsProcessed = postsToPublish.length;
 
-      if (approvedPosts.length === 0) {
+      if (postsToPublish.length === 0) {
         result.success = true;
+        if (approvedPosts.length > 0) {
+          result.errors.push(`${approvedPosts.length} posts ready but quota exceeded (${quotaStatus.remainingPosts} remaining)`);
+        }
         return result;
       }
 
@@ -77,7 +92,7 @@ export class AutoPostingEnforcer {
       const { BulletproofPublisher } = await import('./bulletproof-publisher');
 
       // Process each post with connection repair
-      for (const post of approvedPosts) {
+      for (const post of postsToPublish) {
         try {
           // Attempt automatic connection repair first
           const repairResult = await this.repairPlatformConnection(userId, post.platform);
@@ -101,11 +116,8 @@ export class AutoPostingEnforcer {
               errorLog: null
             });
 
-            // Deduct from remaining posts
-            const currentRemaining = user.remainingPosts || 0;
-            await storage.updateUser(userId, {
-              remainingPosts: Math.max(0, currentRemaining - 1)
-            });
+            // QUOTA ENFORCEMENT: Deduct from quota using PostQuotaService
+            await PostQuotaService.deductPost(userId, post.id);
 
             result.postsPublished++;
             console.log(`Auto-posting enforcer: Successfully published post ${post.id} to ${post.platform}`);
