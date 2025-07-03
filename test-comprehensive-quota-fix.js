@@ -26,20 +26,13 @@ async function testComprehensiveQuotaFix() {
     multiCustomerValidation: false
   };
   
-  // Test data for 10 customers with edge cases
+  // Test data for 10 customers
   const customers = Array.from({ length: 10 }, (_, i) => ({
     id: i + 1,
     email: `customer${i + 1}@queensland-business.com.au`,
     plan: 'professional',
     quota: 52,
-    sessionId: `aiq_customer_${i + 1}_session`,
-    edgeCases: {
-      concurrentRequests: i < 3, // First 3 customers get concurrent testing
-      exceedAttempts: i === 3,   // Customer 4 attempts 53 posts
-      eventOutage: i === 4,      // Customer 5 tests event outage
-      sessionTimeout: i === 5,   // Customer 6 tests session timeout
-      invalidInput: i === 6      // Customer 7 tests invalid inputs
-    }
+    sessionId: `aiq_customer_${i + 1}_session`
   }));
 
   try {

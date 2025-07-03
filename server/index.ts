@@ -1,6 +1,5 @@
 import express from 'express';
 import session from 'express-session';
-import fs from 'fs';
 import { createServer } from 'http';
 import path from 'path';
 
@@ -410,74 +409,25 @@ async function startServer() {
 
   // Setup static file serving after API routes
   try {
-    // Production static file serving with MIME type fix
+    // Production static file serving
     if (process.env.NODE_ENV === 'production') {
       console.log('⚡ Setting up production static files...');
-      
-      // Serve built frontend assets with proper MIME types
-      app.use(express.static(path.join(process.cwd(), 'dist'), {
-        setHeaders: (res, filePath) => {
-          if (filePath.endsWith('.js')) {
-            res.set('Content-Type', 'application/javascript');
-          } else if (filePath.endsWith('.css')) {
-            res.set('Content-Type', 'text/css');
-          } else if (filePath.endsWith('.html')) {
-            res.set('Content-Type', 'text/html');
-          }
-        }
-      }));
+      // Serve built frontend assets
+      app.use(express.static(path.join(process.cwd(), 'dist/public')));
       
       // Serve React app for all non-API routes
       app.get('*', (req, res) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+          res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
         }
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up production mode with build assets...');
-      // Force production mode to serve built assets
-      if (fs.existsSync(path.join(process.cwd(), 'dist'))) {
-        // Serve static files from dist directory with proper MIME types
-        app.use(express.static(path.join(process.cwd(), 'dist'), {
-          setHeaders: (res, path) => {
-            if (path.endsWith('.js')) {
-              res.setHeader('Content-Type', 'application/javascript');
-            } else if (path.endsWith('.mjs')) {
-              res.setHeader('Content-Type', 'application/javascript');
-            } else if (path.endsWith('.css')) {
-              res.setHeader('Content-Type', 'text/css');
-            }
-          }
-        }));
-        
-        // Serve React app for all non-API routes
-        app.get('*', (req, res) => {
-          if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-            res.sendFile(path.join(process.cwd(), 'dist/index.html'));
-          }
-        });
-        console.log('✅ Production build assets serving from dist/');
-      } else {
-        console.log('⚠️ No dist/ folder found, building now...');
-        // Trigger build if dist doesn't exist
-        const { exec } = require('child_process');
-        exec('./build-production.sh', (error, stdout, stderr) => {
-          if (error) {
-            console.error('Build failed:', error);
-          } else {
-            console.log('Build completed:', stdout);
-          }
-        });
-        
-        // Serve from client directory as fallback
-        app.use(express.static(path.join(process.cwd(), 'client')));
-        app.get('*', (req, res) => {
-          if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-            res.sendFile(path.join(process.cwd(), 'client/index.html'));
-          }
-        });
-      }
+      console.log('⚡ Setting up development Vite...');
+      const { setupVite, serveStatic } = await import('./vite');
+      await setupVite(app, httpServer);
+      serveStatic(app);
+      console.log('✅ Vite setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);

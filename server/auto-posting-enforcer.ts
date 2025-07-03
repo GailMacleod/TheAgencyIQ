@@ -20,9 +20,9 @@ interface AutoPostingResult {
 export class AutoPostingEnforcer {
   
   /**
-   * Enforce auto-posting for all approved posts with secure token refresh
-   * Publishes to Facebook, Instagram, LinkedIn, YouTube, X with OAuth validation
-   * Logs success/failure in data/quota-debug.log and ensures 520 posts deduct quota post-publishing
+   * Enforce auto-posting for all approved posts using existing API credentials
+   * Publishes to Facebook, Instagram, LinkedIn, YouTube, X without OAuth changes
+   * Logs success/failure in data/quota-debug.log
    */
   static async enforceAutoPosting(userId: number): Promise<AutoPostingResult> {
     const result: AutoPostingResult = {
@@ -44,25 +44,6 @@ export class AutoPostingEnforcer {
         return result;
       }
 
-      // Check dynamic 30-day cycle based on user subscription start
-      if (!user.subscriptionStart) {
-        result.errors.push('User subscription start date not found');
-        return result;
-      }
-      
-      const { cycleStart, cycleEnd } = PostQuotaService.getUserCycleDates(user.subscriptionStart);
-      const currentDate = new Date();
-      
-      if (currentDate < cycleStart || currentDate > cycleEnd) {
-        result.errors.push(`Outside user's 30-day cycle: ${cycleStart.toDateString()} - ${cycleEnd.toDateString()}`);
-        return result;
-      }
-      
-      // Check if Brisbane Ekka overlaps with user's cycle
-      const isEkkaWithinCycle = PostQuotaService.isEkkaWithinUserCycle(user.subscriptionStart);
-      
-      console.log(`User ${userId} dynamic 30-day cycle active (${cycleStart.toDateString()} - ${cycleEnd.toDateString()}). Brisbane Ekka overlap: ${isEkkaWithinCycle}`);
-      
       // Check subscription period (30 days from start)
       const subscriptionStart = user.subscriptionStart;
       if (!subscriptionStart) {

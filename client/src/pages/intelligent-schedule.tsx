@@ -10,8 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
-import { format, addDays, startOfMonth, endOfMonth, isSameDay, isToday, formatInTimeZone } from "date-fns";
-import { zonedTimeToUtc, utcToZonedTime } from "date-fns-tz";
+import { format, addDays, startOfMonth, endOfMonth, isSameDay, isToday } from "date-fns";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
@@ -110,9 +109,6 @@ export default function IntelligentSchedule() {
   const [aiInsights, setAiInsights] = useState<any>(null);
   const [calendarView, setCalendarView] = useState(true);
   const [queenslandEvents, setQueenslandEvents] = useState<any[]>([]);
-  const [loadingApprovals, setLoadingApprovals] = useState<Set<number>>(new Set());
-  const [showPublishConfirm, setShowPublishConfirm] = useState<Post | null>(null);
-  const AEST_TIMEZONE = 'Australia/Brisbane';
 
   const queryClient = useQueryClient();
 
@@ -246,9 +242,6 @@ export default function IntelligentSchedule() {
 
   // Approve and schedule individual post with loading state and success modal
   const approvePost = async (postId: number) => {
-    // Add loading state
-    setLoadingApprovals(prev => new Set([...prev, postId]));
-    
     // Find the post to get platform and scheduling details
     const post = postsArray.find(p => p.id === postId);
     if (!post) return;

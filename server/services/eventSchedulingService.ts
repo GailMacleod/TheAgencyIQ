@@ -27,7 +27,6 @@ export class EventSchedulingService {
   /**
    * QUEENSLAND EVENT CALENDAR - July 2025
    * Brisbane Ekka July 9-19 is the major focus event
-   * Supports 520 event-driven posts (10 customers × 52 posts) with even distribution
    */
   private static readonly QUEENSLAND_EVENTS: QueenslandEvent[] = [
     {
@@ -229,25 +228,8 @@ export class EventSchedulingService {
     
     try {
       // Import Grok service for AI generation
-      const { generateContentCalendar } = await import('../grok');
-      
-      // Create minimal content params for event-driven generation
-      const eventContentParams = {
-        brandName: 'Queensland Business',
-        productsServices: 'Event-driven Queensland SME services',
-        corePurpose: `${event.name} networking and business opportunities`,
-        audience: 'Queensland small business owners',
-        jobToBeDone: 'Maximize event networking value',
-        motivations: `Connect with Queensland businesses at ${event.name}`,
-        painPoints: 'Missing Queensland business events',
-        goals: { networking: true, growth: true },
-        contactDetails: { email: 'info@queensland-business.com.au' },
-        platforms: [platform],
-        totalPosts: 1
-      };
-      
-      const generatedContent = await generateContentCalendar(eventContentParams);
-      const aiContent = generatedContent[0]?.content;
+      const { generateAIContent } = await import('../grok');
+      const aiContent = await generateAIContent(contentPrompt, platform);
       
       return {
         content: aiContent || `Queensland businesses: ${event.name} presents exciting opportunities for networking and growth. Join the Queensland business community at ${event.location}!`,
