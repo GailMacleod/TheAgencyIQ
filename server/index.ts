@@ -424,10 +424,38 @@ async function startServer() {
       console.log('✅ Production static files setup complete');
     } else {
       console.log('⚡ Setting up development Vite...');
-      const { setupVite, serveStatic } = await import('./vite');
-      await setupVite(app, httpServer);
-      serveStatic(app);
-      console.log('✅ Vite setup complete');
+      try {
+        const { setupVite, serveStatic } = await import('./vite');
+        await setupVite(app, httpServer);
+        serveStatic(app);
+        console.log('✅ Vite setup complete');
+      } catch (error) {
+        console.log('⚠️ Vite plugins unavailable, using static fallback...');
+        // Fallback to static serving without plugins
+        app.use(express.static('client', {
+          setHeaders: (res, path) => {
+            if (path.endsWith('.js') || path.endsWith('.jsx') || path.endsWith('.ts') || path.endsWith('.tsx')) {
+              res.setHeader('Content-Type', 'application/javascript');
+            }
+          }
+        }));
+        
+        // Serve node_modules for imports
+        app.use('/node_modules', express.static('node_modules'));
+        
+        // Serve working app as default
+        app.get('/', (req, res) => {
+          res.sendFile(path.join(process.cwd(), 'client', 'working.html'));
+        });
+        
+        // Handle client-side routing
+        app.get('*', (req, res) => {
+          if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+            res.sendFile(path.join(process.cwd(), 'client', 'working.html'));
+          }
+        });
+        console.log('✅ Static fallback setup complete');
+      }
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
