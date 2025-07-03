@@ -96,9 +96,13 @@ export async function generateContentCalendar(params: ContentGenerationParams): 
     const platformIndex = i % platforms.length;
     const platform = platforms[platformIndex];
     
-    const baseDate = new Date('2025-06-25T09:00:00+10:00');
-    const scheduledDate = new Date(baseDate);
-    scheduledDate.setHours(scheduledDate.getHours() + (i * 6));
+    // Generate dates with AEST timezone consistency
+    const today = new Date();
+    const aestToday = new Date(today.toLocaleString("en-US", { timeZone: "Australia/Brisbane" }));
+    const scheduledDate = new Date(aestToday);
+    scheduledDate.setHours(9, 0, 0, 0); // Start at 9 AM AEST
+    scheduledDate.setDate(scheduledDate.getDate() + Math.floor(i / platforms.length));
+    scheduledDate.setHours(scheduledDate.getHours() + (i % platforms.length) * 3); // Spread posts throughout day
     
     const platformSpec = PLATFORM_SPECS[platform as keyof typeof PLATFORM_SPECS] || PLATFORM_SPECS.facebook;
     const wordRange = `${platformSpec.wordCount.min}-${platformSpec.wordCount.max} words`;

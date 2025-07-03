@@ -116,8 +116,8 @@ export class AutoPostingEnforcer {
               errorLog: null
             });
 
-            // QUOTA ENFORCEMENT: Deduct from quota using PostQuotaService
-            await PostQuotaService.deductPost(userId, post.id);
+            // QUOTA ENFORCEMENT: Deduct from quota using PostQuotaService after successful posting
+            await PostQuotaService.postApproved(userId, post.id);
 
             result.postsPublished++;
             console.log(`Auto-posting enforcer: Successfully published post ${post.id} to ${post.platform}`);

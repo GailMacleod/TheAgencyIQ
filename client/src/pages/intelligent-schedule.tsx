@@ -192,15 +192,18 @@ export default function IntelligentSchedule() {
     fetchQueenslandEvents();
   }, []);
 
-  // Generate calendar dates for next 30 days
+  // Generate calendar dates for next 30 days with AEST timezone consistency
   const generateCalendarDates = () => {
     const dates = [];
-    const today = new Date();
+    // Get current date in AEST timezone
+    const today = new Date(new Date().toLocaleString("en-US", { timeZone: "Australia/Brisbane" }));
     
     for (let i = 0; i < 30; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      dates.push(date);
+      // Ensure consistent AEST timezone for each generated date
+      const aestDate = new Date(date.toLocaleString("en-US", { timeZone: "Australia/Brisbane" }));
+      dates.push(aestDate);
     }
     
     return dates;
@@ -208,12 +211,19 @@ export default function IntelligentSchedule() {
 
   const calendarDates = generateCalendarDates();
 
-  // Group posts by date
+  // Group posts by date with AEST timezone consistency
   const getPostsForDate = (date: Date): Post[] => {
-    const dateStr = date.toISOString().split('T')[0];
+    // Convert to AEST timezone for consistent date comparison
+    const aestDate = new Date(date.toLocaleString("en-US", { timeZone: "Australia/Brisbane" }));
+    const dateStr = aestDate.toISOString().split('T')[0];
+    
     return postsArray.filter(post => {
-      const postDate = new Date(post.scheduledFor).toISOString().split('T')[0];
-      return postDate === dateStr;
+      if (!post.scheduledFor) return false;
+      // Convert post scheduled date to AEST
+      const postDate = new Date(post.scheduledFor);
+      const aestPostDate = new Date(postDate.toLocaleString("en-US", { timeZone: "Australia/Brisbane" }));
+      const postDateStr = aestPostDate.toISOString().split('T')[0];
+      return postDateStr === dateStr;
     });
   };
 
