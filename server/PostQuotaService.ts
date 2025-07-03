@@ -42,6 +42,35 @@ export class PostQuotaService {
    */
   private static readonly EKKA_START = new Date('2025-07-09T00:00:00.000Z');
   private static readonly EKKA_END = new Date('2025-07-19T23:59:59.999Z');
+  
+  /**
+   * Get user's cycle dates based on their subscription start date
+   */
+  static getUserCycleDates(subscriptionStart: Date): { cycleStart: Date; cycleEnd: Date } {
+    const cycleStart = new Date(subscriptionStart);
+    const cycleEnd = new Date(cycleStart);
+    cycleEnd.setDate(cycleEnd.getDate() + 30); // 30-day cycle
+    
+    return { cycleStart, cycleEnd };
+  }
+  
+  /**
+   * Check if current date is within user's 30-day cycle
+   */
+  static isWithinUserCycle(subscriptionStart: Date, checkDate: Date = new Date()): boolean {
+    const { cycleStart, cycleEnd } = this.getUserCycleDates(subscriptionStart);
+    return checkDate >= cycleStart && checkDate <= cycleEnd;
+  }
+  
+  /**
+   * Check if user's cycle overlaps with Brisbane Ekka (July 9-19, 2025)
+   */
+  static hasEkkaOverlap(subscriptionStart: Date): boolean {
+    const { cycleStart, cycleEnd } = this.getUserCycleDates(subscriptionStart);
+    
+    // Check if user's 30-day cycle overlaps with Ekka dates
+    return (cycleStart <= this.EKKA_END && cycleEnd >= this.EKKA_START);
+  }
 
   /**
    * CACHE FOR HIGH TRAFFIC OPTIMIZATION
@@ -359,6 +388,69 @@ export class PostQuotaService {
     } catch (error) {
       console.error('Error checking edit permission:', error);
       return false;
+    }
+  }
+
+  /**
+   * ENFORCE 30-DAY CYCLE WITH DYNAMIC USER SUBSCRIPTION DATES
+   * Integrates with eventSchedulingService for Queensland events
+   */
+  static async enforce30DayCycle(userId: number): Promise<{
+    isWithinCycle: boolean;
+    cycleStart: Date;
+    cycleEnd: Date;
+    hasEkkaAccess: boolean;
+    postsRemaining: number;
+    eventRecommendations: string[];
+  }> {
+    try {
+      // Get user data with subscription start date
+      const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      if (user.length === 0 || !user[0].subscriptionStart) {
+        throw new Error(`User ${userId} not found or missing subscription start date`);
+      }
+
+      const subscriptionStart = user[0].subscriptionStart;
+      const { cycleStart, cycleEnd } = this.getUserCycleDates(subscriptionStart);
+      const isWithinCycle = this.isWithinUserCycle(subscriptionStart);
+      const hasEkkaAccess = this.hasEkkaOverlap(subscriptionStart);
+
+      // Get quota status
+      const quotaStatus = await this.getQuotaStatus(userId);
+      const postsRemaining = quotaStatus?.remainingPosts || 0;
+
+      // Generate event recommendations based on cycle overlap
+      const eventRecommendations = [];
+      if (hasEkkaAccess) {
+        eventRecommendations.push('Brisbane Ekka (July 9-19): Premium agricultural and business networking opportunities');
+        eventRecommendations.push('Queensland Small Business Week: Statewide SME support events');
+      } else {
+        eventRecommendations.push('Gold Coast Business Excellence Awards: Recognition opportunities');
+        eventRecommendations.push('Cairns Business Expo: Northern Queensland networking');
+      }
+
+      // Log cycle enforcement
+      await this.logQuotaOperation(userId, 0, 'cycle_enforcement', 
+        `30-day cycle: ${cycleStart.toISOString()} to ${cycleEnd.toISOString()}, Ekka access: ${hasEkkaAccess}, Posts remaining: ${postsRemaining}`);
+
+      return {
+        isWithinCycle,
+        cycleStart,
+        cycleEnd,
+        hasEkkaAccess,
+        postsRemaining,
+        eventRecommendations
+      };
+    } catch (error) {
+      console.error('Error enforcing 30-day cycle:', error);
+      return {
+        isWithinCycle: false,
+        cycleStart: new Date(),
+        cycleEnd: new Date(),
+        hasEkkaAccess: false,
+        postsRemaining: 0,
+        eventRecommendations: []
+      };
     }
   }
 
@@ -689,23 +781,6 @@ export class PostQuotaService {
   /**
    * Check if post is within current 30-day cycle (July 3-31, 2025)
    */
-  /**
-   * Calculate dynamic 30-day cycle for specific user based on subscription start
-   */
-  static getUserCycleDates(subscriptionStart: Date): { cycleStart: Date; cycleEnd: Date } {
-    const cycleStart = new Date(subscriptionStart);
-    const cycleEnd = new Date(cycleStart);
-    cycleEnd.setDate(cycleEnd.getDate() + 30);
-    
-    return { cycleStart, cycleEnd };
-  }
-
-  /**
-   * Check if post is within user's current 30-day cycle
-   */
-  static isWithinUserCycle(date: Date, subscriptionStart: Date): boolean {
-    const { cycleStart, cycleEnd } = this.getUserCycleDates(subscriptionStart);
-    return date >= cycleStart && date <= cycleEnd;
   }
 
   /**

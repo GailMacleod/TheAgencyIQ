@@ -49,6 +49,16 @@ export class AutoPostingEnforcer {
         result.errors.push('User subscription start date not found');
         return result;
       }
+
+      // Enforce 30-day cycle with Queensland events integration
+      const cycleCheck = await PostQuotaService.enforce30DayCycle(userId);
+      if (!cycleCheck.isWithinCycle) {
+        result.errors.push(`User not within 30-day cycle. Cycle: ${cycleCheck.cycleStart.toISOString()} to ${cycleCheck.cycleEnd.toISOString()}`);
+        return result;
+      }
+      
+      console.log(`Auto-posting enforcer: User within cycle, ${cycleCheck.postsRemaining} posts remaining, Ekka access: ${cycleCheck.hasEkkaAccess}`);
+      }
       
       const { cycleStart, cycleEnd } = PostQuotaService.getUserCycleDates(user.subscriptionStart);
       const currentDate = new Date();
