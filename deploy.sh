@@ -19,10 +19,17 @@ PASSED_CHECKS=0
 CUSTOMER_COUNT=10
 EXPECTED_POSTS=520
 
-# CHECK 1: Server Health
-echo "1️⃣  CHECKING SERVER HEALTH..."
+# CHECK 1: Server Health & SSL Certificate
+echo "1️⃣  CHECKING SERVER HEALTH & CERTIFICATE..."
 if curl -s http://localhost:5000/api/server-status > /dev/null 2>&1; then
     echo "✅ Server responding on port 5000"
+    
+    # Check SSL certificate if HTTPS is available
+    if curl -s --connect-timeout 3 https://localhost:5000 > /dev/null 2>&1; then
+        echo "✅ SSL certificate validated"
+    else
+        echo "ℹ️  HTTP only (development mode)"
+    fi
     ((PASSED_CHECKS++))
 else
     echo "❌ Server not responding"

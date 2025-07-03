@@ -228,8 +228,8 @@ export class EventSchedulingService {
     
     try {
       // Import Grok service for AI generation
-      const { generateAIContent } = await import('../grok');
-      const aiContent = await generateAIContent(contentPrompt, platform);
+      const grokModule = await import('../grok');
+      const aiContent = await grokModule.generatePost(contentPrompt, platform);
       
       return {
         content: aiContent || `Queensland businesses: ${event.name} presents exciting opportunities for networking and growth. Join the Queensland business community at ${event.location}!`,

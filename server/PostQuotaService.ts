@@ -13,8 +13,8 @@ interface QuotaStatus {
   userId: number;
   remainingPosts: number;
   totalPosts: number;
-  subscriptionPlan: string;
-  subscriptionActive: boolean;
+  subscriptionPlan: string | null;
+  subscriptionActive: boolean | null;
 }
 
 interface PostCountSummary {
@@ -287,7 +287,7 @@ export class PostQuotaService {
         const planQuota = this.PLAN_QUOTAS[status.subscriptionPlan as keyof typeof this.PLAN_QUOTAS] || this.PLAN_QUOTAS.starter;
         await db.insert(postLedger).values({
           userId: userIdString,
-          subscriptionTier: status.subscriptionPlan === 'professional' ? 'pro' : status.subscriptionPlan,
+          subscriptionTier: status.subscriptionPlan === 'professional' ? 'pro' : (status.subscriptionPlan || 'starter'),
           periodStart: new Date(),
           quota: planQuota,
           usedPosts: 1,
@@ -356,7 +356,7 @@ export class PostQuotaService {
 
       // Check quota for approved/published posts
       const status = await this.getQuotaStatus(userId);
-      return status ? status.remainingPosts > 0 && status.subscriptionActive : false;
+      return status ? status.remainingPosts > 0 && (status.subscriptionActive === true) : false;
     } catch (error) {
       console.error('Error checking edit permission:', error);
       return false;
