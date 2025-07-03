@@ -4,7 +4,7 @@ import CalendarCard from "@/components/calendar-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -782,6 +782,9 @@ export default function IntelligentSchedule() {
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Post Content</DialogTitle>
+            <DialogDescription>
+              Modify the content of your social media post before approval.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
@@ -834,6 +837,9 @@ export default function IntelligentSchedule() {
               <CheckCircle className="w-6 h-6 mr-2" />
               Post Approved Successfully!
             </DialogTitle>
+            <DialogDescription>
+              Your post has been approved and added to your content schedule for publishing.
+            </DialogDescription>
           </DialogHeader>
           <div className="py-6">
             {successModalData && (
