@@ -881,6 +881,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Device-agnostic session synchronization endpoint
+  app.post('/api/sync-session', async (req, res) => {
+    try {
+      const { sessionId, deviceType, lastActivity } = req.body;
+      
+      console.log('Device session sync request:', {
+        providedSessionId: sessionId,
+        currentSessionId: req.sessionID,
+        deviceType,
+        lastActivity,
+        existingUserId: req.session?.userId
+      });
+      
+      // If session ID provided, attempt to restore session context
+      if (sessionId && sessionId !== req.sessionID) {
+        // For now, log the cross-device sync attempt
+        console.log(`📱 Cross-device session sync: ${sessionId} -> ${req.sessionID}`);
+        
+        // In a Redis-backed session store, this would look up the session
+        // For now, we'll maintain the current session and add device tracking
+        if (req.session) {
+          req.session.deviceType = deviceType || 'unknown';
+          req.session.lastSyncAt = new Date().toISOString();
+          req.session.syncedFrom = sessionId;
+        }
+      }
+      
+      // Update session with device info
+      if (req.session) {
+        req.session.deviceType = deviceType || req.session.deviceType || 'unknown';
+        req.session.lastActivity = lastActivity || new Date().toISOString();
+      }
+      
+      // Return session status
+      res.json({
+        success: true,
+        sessionId: req.sessionID,
+        userId: req.session?.userId,
+        deviceType: req.session?.deviceType,
+        syncTimestamp: new Date().toISOString(),
+        sessionActive: !!req.session?.userId
+      });
+      
+    } catch (error) {
+      console.error('Session sync error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Session synchronization failed' 
+      });
+    }
+  });
+
   // Session establishment with proper user validation
   app.post('/api/establish-session', async (req, res) => {
     console.log('Session establishment request:', {
@@ -2589,16 +2641,12 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Update post content
+  // Update post content and handle approval with quota deduction
   app.put("/api/posts/:id", requireAuth, async (req: any, res) => {
     try {
       const postId = parseInt(req.params.id);
-      const { content } = req.body;
+      const { content, status } = req.body;
       const userId = req.session.userId;
-
-      if (!content) {
-        return res.status(400).json({ message: "Content is required" });
-      }
 
       // Verify the post belongs to the user
       const posts = await storage.getPostsByUser(userId);
@@ -2608,14 +2656,122 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(404).json({ message: "Post not found" });
       }
 
-      // Update the post content
-      const updatedPost = await storage.updatePost(postId, { content });
+      // Check if user can edit this post (quota-aware)
+      const canEdit = await PostQuotaService.canEditPost(userId, postId);
+      if (!canEdit && status === 'approved') {
+        return res.status(403).json({ 
+          message: "Cannot approve post: quota exceeded or insufficient subscription" 
+        });
+      }
+
+      // Prepare update data
+      const updateData: any = {};
+      if (content !== undefined) {
+        updateData.content = content;
+      }
+      if (status !== undefined) {
+        updateData.status = status;
+      }
+
+      // Update the post
+      const updatedPost = await storage.updatePost(postId, updateData);
       
-      console.log(`Post ${postId} content updated by user ${userId}`);
+      // Handle approval (NO quota deduction - deduction happens after successful posting)
+      if (status === 'approved' && post.status !== 'approved') {
+        const approvalSuccess = await PostQuotaService.approvePost(userId, postId);
+        if (!approvalSuccess) {
+          console.warn(`Failed to approve post ${postId} - may exceed quota or subscription inactive`);
+          return res.status(403).json({ 
+            message: "Cannot approve post: quota exceeded or subscription inactive" 
+          });
+        }
+        console.log(`✅ Post ${postId} approved by user ${userId} - ready for posting (quota deduction deferred)`);
+      } else if (content !== undefined) {
+        console.log(`📝 Post ${postId} content updated by user ${userId} - no quota deduction (${post.status} status)`);
+      }
+      
       res.json({ success: true, post: updatedPost });
     } catch (error) {
       console.error('Error updating post:', error);
       res.status(500).json({ message: "Failed to update post" });
+    }
+  });
+
+  // Mock platform posting endpoint - demonstrates quota deduction after successful posting
+  app.post("/api/post-to-platform/:postId", requireAuth, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const { platform } = req.body;
+      const userId = req.session.userId;
+
+      // Verify post exists and is approved
+      const posts = await storage.getPostsByUser(userId);
+      const post = posts.find(p => p.id === postId);
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      if (post.status !== 'approved') {
+        return res.status(400).json({ message: "Only approved posts can be published" });
+      }
+
+      // Simulate successful platform posting
+      console.log(`📤 Simulating ${platform} posting for post ${postId}...`);
+      
+      // Mock posting delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // QUOTA DEDUCTION ONLY AFTER SUCCESSFUL POSTING
+      const quotaDeducted = await PostQuotaService.postApproved(userId, postId);
+      
+      if (!quotaDeducted) {
+        return res.status(500).json({ 
+          message: "Post published but quota deduction failed - please contact support" 
+        });
+      }
+
+      console.log(`✅ Post ${postId} successfully published to ${platform} with quota deduction`);
+      
+      res.json({ 
+        success: true, 
+        message: `Post published to ${platform}`,
+        postId,
+        quotaDeducted: true
+      });
+      
+    } catch (error) {
+      console.error('Error posting to platform:', error);
+      res.status(500).json({ message: "Failed to publish post" });
+    }
+  });
+
+  // PostQuotaService debug endpoint
+  app.post("/api/quota-debug", requireAuth, async (req: any, res) => {
+    try {
+      const { email } = req.body;
+      const userId = req.session.userId;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required for debug" });
+      }
+      
+      // Run debug function
+      console.log(`🔍 Running PostQuotaService debug for ${email}...`);
+      await PostQuotaService.debugQuotaAndSimulateReset(email);
+      
+      // Get current status for response
+      const status = await PostQuotaService.getQuotaStatus(userId);
+      
+      res.json({
+        success: true,
+        message: "Debug completed - check data/quota-debug.log for details",
+        currentStatus: status
+      });
+      
+    } catch (error) {
+      console.error('Error running quota debug:', error);
+      res.status(500).json({ message: "Debug execution failed" });
     }
   });
 
@@ -3983,31 +4139,28 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      // QUOTA DEDUCTION: Deduct created posts from quota
-      for (let i = 0; i < savedPosts.length; i++) {
-        try {
-          await PostQuotaService.deductPost(req.session.userId, savedPosts[i].id);
-          console.log(`Post ${i + 1}/${savedPosts.length} deducted from quota`);
-        } catch (error) {
-          console.error(`Failed to deduct post ${i + 1} from quota:`, error);
-        }
+      // NO QUOTA DEDUCTION DURING GENERATION: Posts remain as drafts until approval
+      console.log(`📝 Created ${savedPosts.length} draft posts. Quota will be deducted only after approval.`);
+      
+      // Get current quota status (no deduction performed)
+      const currentQuota = await PostQuotaService.getQuotaStatus(req.session.userId);
+      if (!currentQuota) {
+        return res.status(500).json({ message: "Failed to retrieve quota status" });
       }
       
-      // Get updated quota status after deduction
-      const updatedQuota = await PostQuotaService.getQuotaStatus(req.session.userId);
-      if (!updatedQuota) {
-        return res.status(500).json({ message: "Failed to retrieve updated quota status" });
-      }
-      console.log(`Updated quota after generation: ${updatedQuota.remainingPosts}/${updatedQuota.totalPosts} posts remaining`);
+      // Log quota operation for tracking (accessing private method through debug function)
+      console.log(`📊 QUOTA LOG: User ${req.session.userId}, Operation: generation, Details: Generated ${savedPosts.length} draft posts. Quota deduction deferred until approval. Current remaining: ${currentQuota.remainingPosts}`);
+      
+      console.log(`Current quota status: ${currentQuota.remainingPosts}/${currentQuota.totalPosts} posts remaining (no deduction during generation)`);
 
       // Prepare schedule insights with subscription information using PostQuotaService
       const scheduleData = {
         posts: savedPosts,
         subscription: {
-          plan: updatedQuota.subscriptionPlan,
-          totalAllowed: updatedQuota.totalPosts,
-          used: updatedQuota.totalPosts - updatedQuota.remainingPosts,
-          remaining: updatedQuota.remainingPosts,
+          plan: currentQuota.subscriptionPlan,
+          totalAllowed: currentQuota.totalPosts,
+          used: currentQuota.totalPosts - currentQuota.remainingPosts,
+          remaining: currentQuota.remainingPosts,
           cycleStart: subscriptionStatus.cycleInfo.cycleStart,
           cycleEnd: subscriptionStatus.cycleInfo.cycleEnd
         },

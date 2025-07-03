@@ -144,22 +144,62 @@ export class PostQuotaService {
   }
 
   /**
-   * Deduct one post from user's quota - SINGLE DEDUCTION POINT (with cache invalidation)
+   * Approve a post (status change only) - NO QUOTA DEDUCTION
    */
-  static async deductPost(userId: number, postId: number): Promise<boolean> {
+  static async approvePost(userId: number, postId: number): Promise<boolean> {
     try {
+      // Verify post exists and belongs to user
+      const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
+      if (post.length === 0 || post[0].userId !== userId) {
+        console.warn(`Post ${postId} not found or doesn't belong to user ${userId}`);
+        return false;
+      }
+      
+      // Check if user has quota remaining for approval
       const status = await this.getQuotaStatus(userId);
-      if (!status) {
-        console.error(`Cannot deduct post: user ${userId} not found`);
+      if (!status || status.remainingPosts <= 0 || !status.subscriptionActive) {
+        console.warn(`User ${userId} cannot approve - no quota remaining or inactive subscription`);
         return false;
       }
+      
+      // Update post status to approved (no quota deduction yet)
+      await db.update(posts)
+        .set({ status: 'approved' })
+        .where(eq(posts.id, postId));
+      
+      // Log the approval
+      await this.logQuotaOperation(userId, postId, 'approval', 
+        `Post approved for future posting. No quota deduction yet. Remaining: ${status.remainingPosts}/${status.totalPosts}`);
+      
+      console.log(`✅ Post ${postId} approved for user ${userId} - quota will be deducted after successful posting`);
+      return true;
+      
+    } catch (error) {
+      console.error('Error approving post:', error);
+      return false;
+    }
+  }
 
-      if (status.remainingPosts <= 0) {
-        console.error(`Cannot deduct post: user ${userId} has no remaining posts`);
+  /**
+   * Deduct quota ONLY after successful posting - called by platform publishing functions
+   */
+  static async postApproved(userId: number, postId: number): Promise<boolean> {
+    try {
+      // Verify post is approved and belongs to user
+      const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
+      if (post.length === 0 || post[0].userId !== userId || post[0].status !== 'approved') {
+        console.warn(`Post ${postId} not eligible for quota deduction - not approved or doesn't belong to user`);
         return false;
       }
-
-      // Single atomic deduction
+      
+      // Get current quota status
+      const status = await this.getQuotaStatus(userId);
+      if (!status || status.remainingPosts <= 0) {
+        console.warn(`User ${userId} has no remaining posts for deduction`);
+        return false;
+      }
+      
+      // Single atomic deduction - only after successful posting
       const result = await db.update(users)
         .set({
           remainingPosts: sql`${users.remainingPosts} - 1`
@@ -170,15 +210,83 @@ export class PostQuotaService {
             sql`${users.remainingPosts} > 0`
           )
         );
-
+      
+      // Update post status to published
+      await db.update(posts)
+        .set({ 
+          status: 'published',
+          publishedAt: new Date()
+        })
+        .where(eq(posts.id, postId));
+      
       // Clear cache after quota change
       this.clearUserCache(userId);
       
-      console.log(`📉 Post deducted for user ${userId}. Remaining: ${status.remainingPosts - 1}`);
+      console.log(`📉 Quota deducted after successful posting for user ${userId}. Post ID: ${postId}, Remaining: ${status.remainingPosts - 1}`);
+      
+      // Log to debug file for tracking
+      await this.logQuotaOperation(userId, postId, 'post_deduction', 
+        `Post successfully posted and quota deducted. Remaining: ${status.remainingPosts - 1}/${status.totalPosts}`);
+      
       return true;
     } catch (error) {
-      console.error('Error deducting post:', error);
+      console.error('Error deducting post from quota after posting:', error);
       return false;
+    }
+  }
+
+  /**
+   * Legacy method - DEPRECATED - Use approvePost() for approval, postApproved() for quota deduction
+   */
+  static async deductPost(userId: number, postId: number): Promise<boolean> {
+    console.warn('⚠️ DEPRECATED: deductPost() called - use approvePost() for approval, postApproved() for quota deduction');
+    return await this.approvePost(userId, postId);
+  }
+
+  /**
+   * Check if post can be edited without deducting quota
+   */
+  static async canEditPost(userId: number, postId: number): Promise<boolean> {
+    try {
+      const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
+      if (post.length === 0) {
+        return false;
+      }
+
+      // Allow editing for draft posts without quota deduction
+      if (post[0].status === 'draft') {
+        return true;
+      }
+
+      // Check quota for approved/published posts
+      const status = await this.getQuotaStatus(userId);
+      return status ? status.remainingPosts > 0 && status.subscriptionActive : false;
+    } catch (error) {
+      console.error('Error checking edit permission:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Log quota operations to debug file
+   */
+  private static async logQuotaOperation(userId: number, postId: number, operation: string, details: string): Promise<void> {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      const timestamp = new Date().toISOString();
+      const logEntry = `[${timestamp}] QUOTA_OP: User ${userId}, Post ${postId}, Operation: ${operation}, Details: ${details}\n`;
+      
+      const logPath = path.join(process.cwd(), 'data/quota-debug.log');
+      
+      // Ensure directory exists
+      await fs.promises.mkdir(path.dirname(logPath), { recursive: true });
+      
+      // Use async file operation
+      await fs.promises.appendFile(logPath, logEntry);
+    } catch (error) {
+      console.error('Error logging quota operation:', error);
     }
   }
 

@@ -88,16 +88,24 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // Session configuration
+  // Device-agnostic session configuration for mobile-to-desktop continuity
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     resave: false,
     saveUninitialized: false,
+    name: 'theagencyiq.session', // Custom session name for consistency
+    genid: () => {
+      // Generate device-agnostic session ID with timestamp and random component
+      const timestamp = Date.now().toString(36);
+      const random = Math.random().toString(36).substring(2, 15);
+      return `aiq_${timestamp}_${random}`;
+    },
     cookie: { 
       secure: process.env.NODE_ENV === 'production', 
-      maxAge: 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      sameSite: 'lax'
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for device continuity
+      httpOnly: false, // Allow frontend access for session sync
+      sameSite: 'lax',
+      domain: process.env.NODE_ENV === 'production' ? '.theagencyiq.ai' : undefined // Cross-subdomain support
     }
   }));
 
@@ -113,6 +121,38 @@ async function startServer() {
       "frame-src 'self' https://connect.facebook.net https://*.facebook.com"
     ].join('; '));
     next();
+  });
+
+  // Session synchronization endpoint for device continuity
+  app.post('/api/sync-session', express.json(), (req, res) => {
+    try {
+      const { sessionId, deviceInfo } = req.body;
+      
+      // Store device info in session for continuity tracking
+      if (req.session) {
+        req.session.deviceInfo = deviceInfo;
+        req.session.lastSyncAt = new Date().toISOString();
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session sync error:', err);
+            res.status(500).json({ success: false, error: 'Session sync failed' });
+          } else {
+            console.log(`📱 Session synced for device: ${deviceInfo?.type || 'unknown'}`);
+            res.json({ 
+              success: true, 
+              sessionId: req.sessionID,
+              userId: req.session.userId,
+              lastSync: req.session.lastSyncAt
+            });
+          }
+        });
+      } else {
+        res.status(500).json({ success: false, error: 'No session available' });
+      }
+    } catch (error) {
+      console.error('Session sync error:', error);
+      res.status(500).json({ success: false, error: 'Session sync failed' });
+    }
   });
 
   // Public bypass route
