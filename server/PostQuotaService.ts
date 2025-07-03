@@ -38,10 +38,12 @@ export class PostQuotaService {
 
   /**
    * DYNAMIC 30-DAY CYCLE MANAGEMENT PER CUSTOMER SUBSCRIPTION
+   * Each customer has individualized 30-day cycles based on subscription start date
    * Event-driven post scheduling with Brisbane Ekka focus when within window
    */
   private static readonly EKKA_START = new Date('2025-07-09T00:00:00.000Z');
   private static readonly EKKA_END = new Date('2025-07-19T23:59:59.999Z');
+  private static readonly CYCLE_DURATION_DAYS = 30;
 
   /**
    * CACHE FOR HIGH TRAFFIC OPTIMIZATION
@@ -193,6 +195,86 @@ export class PostQuotaService {
    */
   static getPerformanceMetrics() {
     return { ...this.performanceMetrics };
+  }
+
+  /**
+   * DYNAMIC 30-DAY CYCLE FUNCTIONALITY
+   * Calculate dynamic cycle dates based on individual customer subscription start
+   */
+  static getUserCycleDates(subscriptionStart: Date | null): { start: Date; end: Date } {
+    if (!subscriptionStart) {
+      // Default to current date if no subscription start found
+      subscriptionStart = new Date();
+    }
+    
+    const today = new Date();
+    const startDate = new Date(subscriptionStart);
+    
+    // Calculate how many complete cycles have passed
+    const daysSinceStart = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const cycleNumber = Math.floor(daysSinceStart / this.CYCLE_DURATION_DAYS);
+    
+    // Calculate current cycle start and end dates
+    const currentCycleStart = new Date(startDate);
+    currentCycleStart.setDate(currentCycleStart.getDate() + (cycleNumber * this.CYCLE_DURATION_DAYS));
+    
+    const currentCycleEnd = new Date(currentCycleStart);
+    currentCycleEnd.setDate(currentCycleEnd.getDate() + this.CYCLE_DURATION_DAYS - 1);
+    currentCycleEnd.setHours(23, 59, 59, 999);
+    
+    return {
+      start: currentCycleStart,
+      end: currentCycleEnd
+    };
+  }
+
+  /**
+   * Check if current date is within user's 30-day cycle
+   */
+  static isWithinUserCycle(subscriptionStart: Date | null): boolean {
+    const { start, end } = this.getUserCycleDates(subscriptionStart);
+    const now = new Date();
+    return now >= start && now <= end;
+  }
+
+  /**
+   * Check if user's cycle overlaps with Brisbane Ekka (July 9-19, 2025)
+   */
+  static doesCycleOverlapEkka(subscriptionStart: Date | null): boolean {
+    const { start, end } = this.getUserCycleDates(subscriptionStart);
+    
+    // Check if user's cycle overlaps with Ekka period
+    return (start <= this.EKKA_END && end >= this.EKKA_START);
+  }
+
+  /**
+   * Get cycle info for debugging and validation
+   */
+  static async getCycleInfo(userId: number): Promise<{
+    cycleDates: { start: Date; end: Date };
+    isWithinCycle: boolean;
+    overlapsEkka: boolean;
+    ekkaFocus: boolean;
+  } | null> {
+    try {
+      const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      if (user.length === 0) return null;
+      
+      const subscriptionStart = user[0].subscriptionStart;
+      const cycleDates = this.getUserCycleDates(subscriptionStart);
+      const isWithinCycle = this.isWithinUserCycle(subscriptionStart);
+      const overlapsEkka = this.doesCycleOverlapEkka(subscriptionStart);
+      
+      return {
+        cycleDates,
+        isWithinCycle,
+        overlapsEkka,
+        ekkaFocus: overlapsEkka && isWithinCycle
+      };
+    } catch (error) {
+      console.error('Error getting cycle info:', error);
+      return null;
+    }
   }
 
   /**
@@ -689,34 +771,6 @@ export class PostQuotaService {
   /**
    * Check if post is within current 30-day cycle (July 3-31, 2025)
    */
-  /**
-   * Calculate dynamic 30-day cycle for specific user based on subscription start
-   */
-  static getUserCycleDates(subscriptionStart: Date): { cycleStart: Date; cycleEnd: Date } {
-    const cycleStart = new Date(subscriptionStart);
-    const cycleEnd = new Date(cycleStart);
-    cycleEnd.setDate(cycleEnd.getDate() + 30);
-    
-    return { cycleStart, cycleEnd };
-  }
-
-  /**
-   * Check if post is within user's current 30-day cycle
-   */
-  static isWithinUserCycle(date: Date, subscriptionStart: Date): boolean {
-    const { cycleStart, cycleEnd } = this.getUserCycleDates(subscriptionStart);
-    return date >= cycleStart && date <= cycleEnd;
-  }
-
-  /**
-   * Check if Brisbane Ekka overlaps with user's 30-day cycle
-   */
-  static isEkkaWithinUserCycle(subscriptionStart: Date): boolean {
-    const { cycleStart, cycleEnd } = this.getUserCycleDates(subscriptionStart);
-    
-    // Check if Ekka period (July 9-19) overlaps with user's cycle
-    return (this.EKKA_START <= cycleEnd && this.EKKA_END >= cycleStart);
-  }
 
   /**
    * Legacy method - kept for backward compatibility
