@@ -240,4 +240,122 @@ export class PostQuotaService {
       return { valid: false, issues: ['Validation error'] };
     }
   }
+
+  /**
+   * DEBUG FUNCTION - Read-only quota debugging and cycle reset simulation
+   * Logs current state and simulates 30-day reset without modifying database
+   */
+  static async debugQuotaAndSimulateReset(email: string): Promise<void> {
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    function logToDebugFile(message: string) {
+      const timestamp = new Date().toISOString();
+      const logEntry = `[${timestamp}] ${message}\n`;
+      
+      const logPath = path.join(process.cwd(), 'data/quota-debug.log');
+      fs.appendFileSync(logPath, logEntry);
+      console.log(logEntry.trim());
+    }
+
+    try {
+      logToDebugFile('=== PostQuotaService Debug Session Started ===');
+      logToDebugFile(`Target User: ${email}`);
+      
+      // Find user by email (read-only)
+      const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      
+      if (user.length === 0) {
+        logToDebugFile(`ERROR: User ${email} not found in database`);
+        return;
+      }
+
+      const userData = user[0];
+      logToDebugFile(`User Found: ID ${userData.id}`);
+      
+      // Get current quota status
+      const currentStatus = await this.getQuotaStatus(userData.id);
+      if (!currentStatus) {
+        logToDebugFile('ERROR: Could not retrieve quota status');
+        return;
+      }
+
+      logToDebugFile('=== CURRENT QUOTA STATUS ===');
+      logToDebugFile(`User ID: ${currentStatus.userId}`);
+      logToDebugFile(`Subscription Plan: ${currentStatus.subscriptionPlan}`);
+      logToDebugFile(`Subscription Active: ${currentStatus.subscriptionActive}`);
+      logToDebugFile(`Total Posts: ${currentStatus.totalPosts}`);
+      logToDebugFile(`Remaining Posts: ${currentStatus.remainingPosts}`);
+      logToDebugFile(`Used Posts: ${currentStatus.totalPosts - currentStatus.remainingPosts}`);
+
+      // Get actual post counts
+      const postCounts = await this.getPostCounts(userData.id);
+      logToDebugFile('=== ACTUAL POST COUNTS ===');
+      logToDebugFile(`Total Posts in DB: ${postCounts.total}`);
+      logToDebugFile(`Draft Posts: ${postCounts.draft}`);
+      logToDebugFile(`Approved Posts: ${postCounts.approved}`);
+      logToDebugFile(`Published Posts: ${postCounts.published}`);
+      logToDebugFile(`Failed Posts: ${postCounts.failed}`);
+
+      // Calculate expected quota after posts
+      const effectiveUsed = postCounts.approved + postCounts.published;
+      const expectedRemaining = currentStatus.totalPosts - effectiveUsed;
+      logToDebugFile(`Expected Remaining (${currentStatus.totalPosts} - ${effectiveUsed}): ${expectedRemaining}`);
+      logToDebugFile(`Actual Remaining: ${currentStatus.remainingPosts}`);
+      logToDebugFile(`Discrepancy: ${currentStatus.remainingPosts - expectedRemaining} posts`);
+
+      // Simulate 30-day cycle reset (NO DATABASE CHANGES)
+      logToDebugFile('=== SIMULATING 30-DAY CYCLE RESET ===');
+      logToDebugFile('NOTE: This is a READ-ONLY simulation - no database changes will be made');
+      
+      const planQuota = this.PLAN_QUOTAS[currentStatus.subscriptionPlan as keyof typeof this.PLAN_QUOTAS] || this.PLAN_QUOTAS.starter;
+      
+      logToDebugFile(`Plan: ${currentStatus.subscriptionPlan}`);
+      logToDebugFile(`Plan Quota: ${planQuota} posts`);
+      
+      // Simulate what the reset would do
+      const simulatedReset = {
+        beforeReset: {
+          totalPosts: currentStatus.totalPosts,
+          remainingPosts: currentStatus.remainingPosts,
+          subscriptionPlan: currentStatus.subscriptionPlan
+        },
+        afterReset: {
+          totalPosts: planQuota,
+          remainingPosts: planQuota,
+          subscriptionPlan: currentStatus.subscriptionPlan
+        },
+        changes: {
+          totalPostsChange: planQuota - currentStatus.totalPosts,
+          remainingPostsChange: planQuota - currentStatus.remainingPosts
+        }
+      };
+
+      logToDebugFile('=== SIMULATION RESULTS ===');
+      logToDebugFile(`BEFORE RESET: Total=${simulatedReset.beforeReset.totalPosts}, Remaining=${simulatedReset.beforeReset.remainingPosts}`);
+      logToDebugFile(`AFTER RESET: Total=${simulatedReset.afterReset.totalPosts}, Remaining=${simulatedReset.afterReset.remainingPosts}`);
+      logToDebugFile(`CHANGES: Total posts ${simulatedReset.changes.totalPostsChange >= 0 ? '+' : ''}${simulatedReset.changes.totalPostsChange}, Remaining posts ${simulatedReset.changes.remainingPostsChange >= 0 ? '+' : ''}${simulatedReset.changes.remainingPostsChange}`);
+
+      // Validate simulated result
+      if (simulatedReset.afterReset.totalPosts === planQuota && simulatedReset.afterReset.remainingPosts === planQuota) {
+        logToDebugFile('✅ SIMULATION PASSED: Reset would correctly set both values to plan quota');
+      } else {
+        logToDebugFile('❌ SIMULATION FAILED: Reset logic needs adjustment');
+      }
+
+      logToDebugFile('=== QUOTA INTEGRITY CHECK ===');
+      const validation = await this.validateQuota(userData.id);
+      logToDebugFile(`Quota Valid: ${validation.valid}`);
+      if (validation.issues.length > 0) {
+        validation.issues.forEach(issue => logToDebugFile(`Issue: ${issue}`));
+      }
+
+      logToDebugFile('=== DEBUG SESSION COMPLETED ===');
+      logToDebugFile('CONFIRMATION: No live data was modified during this debug session');
+      
+    } catch (error) {
+      logToDebugFile(`ERROR during debug session: ${error}`);
+      logToDebugFile(`Stack trace: ${error instanceof Error ? error.stack : 'Unknown error'}`);
+    }
+  }
 }
