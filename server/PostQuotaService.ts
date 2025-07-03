@@ -240,10 +240,17 @@ export class PostQuotaService {
    */
   static async postApproved(userId: number, postId: number): Promise<boolean> {
     try {
-      // Verify post is approved and belongs to user
+      // Verify post exists and belongs to user (can be approved, published, or draft being published)
       const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
-      if (post.length === 0 || post[0].userId !== userId || post[0].status !== 'approved') {
-        console.warn(`Post ${postId} not eligible for quota deduction - not approved or doesn't belong to user`);
+      if (post.length === 0 || post[0].userId !== userId) {
+        console.warn(`Post ${postId} not eligible for quota deduction - doesn't belong to user ${userId}`);
+        return false;
+      }
+      
+      // Allow quota deduction for approved or published posts
+      const validStatuses = ['approved', 'published'];
+      if (!validStatuses.includes(post[0].status)) {
+        console.warn(`Post ${postId} not eligible for quota deduction - status '${post[0].status}' not in [${validStatuses.join(', ')}]`);
         return false;
       }
       
