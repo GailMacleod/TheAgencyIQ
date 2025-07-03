@@ -21,7 +21,7 @@ EXPECTED_POSTS=520
 
 # CHECK 1: Server Health
 echo "1️⃣  CHECKING SERVER HEALTH..."
-if curl -s http://localhost:5000/api/server-status > /dev/null 2>&1; then
+if curl -s http://localhost:5000/api/health > /dev/null 2>&1; then
     echo "✅ Server responding on port 5000"
     ((PASSED_CHECKS++))
 else

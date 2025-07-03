@@ -361,6 +361,24 @@ async function startServer() {
   // Static assets - combined
   app.use('/public', express.static('public'));
   
+  // Serve static files from dist directory for production
+  app.use(express.static('dist'));
+  
+  // Frontend fallback - serve index.html for SPA routes
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+  });
+
+  // Health check endpoint
+  app.get('/api/health', (req, res) => {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      server: 'TheAgencyIQ',
+      version: '1.0.0'
+    });
+  });
+  
   // Combined asset endpoints
   app.get(['/manifest.json', '/public/js/beacon.js'], (req, res) => {
     if (req.path === '/manifest.json') {
