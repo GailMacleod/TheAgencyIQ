@@ -1,10 +1,10 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertBrandPurposeSchema, insertPostSchema, users, postLedger, postSchedule, platformConnections, posts, brandPurpose, giftCertificates } from "@shared/schema";
 import { db } from "./db";
-import { sql, eq } from "drizzle-orm";
+import { sql, eq, and, desc, asc } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import Stripe from "stripe";
 import { z } from "zod";
@@ -22,15 +22,15 @@ import axios from "axios";
 import PostPublisher from "./post-publisher";
 import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
-import { PostRetryService } from './post-retry-service';
 import { requireActiveSubscription, requireAuth } from './middleware/subscriptionAuth';
 import { PostQuotaService } from './PostQuotaService';
 
-// Session type declaration
-declare module 'express-session' {
-  interface SessionData {
+// Use our custom request interface
+interface CustomRequest extends Request {
+  session: session.Session & Partial<session.SessionData> & {
     userId?: number;
-  }
+    userEmail?: string;
+  };
 }
 
 // Environment validation
