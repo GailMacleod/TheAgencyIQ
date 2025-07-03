@@ -6,7 +6,7 @@
 
 import { storage } from './storage';
 import { db } from './db';
-import { users, posts } from '../shared/schema';
+import { users, posts, postLedger } from '../shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
 
 interface QuotaStatus {
@@ -62,7 +62,7 @@ export class PostQuotaService {
   };
 
   /**
-   * Get current quota status for a user (with high-traffic caching)
+   * Get current quota status for a user (with high-traffic caching and postLedger integration)
    */
   static async getQuotaStatus(userId: number): Promise<QuotaStatus | null> {
     const startTime = Date.now();
@@ -77,16 +77,35 @@ export class PostQuotaService {
         return cached.quota;
       }
 
-      // Cache miss - fetch from database
+      // Cache miss - fetch from database with postLedger integration
       this.performanceMetrics.cacheMisses++;
       const user = await storage.getUser(userId);
       if (!user) return null;
 
+      // Check postLedger for accurate 30-day rolling quota
+      const userIdString = user.userId || user.id.toString();
+      const ledgerEntry = await db.select()
+        .from(postLedger)
+        .where(eq(postLedger.userId, userIdString))
+        .limit(1);
+
+      let remainingPosts = user.remainingPosts || 0;
+      let totalPosts = user.totalPosts || 0;
+      let subscriptionPlan = user.subscriptionPlan || 'starter';
+
+      // If postLedger exists, use it as authoritative source for quota
+      if (ledgerEntry.length > 0) {
+        const ledger = ledgerEntry[0];
+        totalPosts = ledger.quota;
+        remainingPosts = Math.max(0, ledger.quota - ledger.usedPosts);
+        subscriptionPlan = ledger.subscriptionTier === 'pro' ? 'professional' : ledger.subscriptionTier;
+      }
+
       const quota: QuotaStatus = {
         userId: user.id,
-        remainingPosts: user.remainingPosts || 0,
-        totalPosts: user.totalPosts || 0,
-        subscriptionPlan: user.subscriptionPlan || 'starter',
+        remainingPosts,
+        totalPosts,
+        subscriptionPlan,
         subscriptionActive: user.subscriptionActive || false
       };
 
@@ -217,6 +236,7 @@ export class PostQuotaService {
 
   /**
    * Deduct quota ONLY after successful posting - called by platform publishing functions
+   * Integrates with postLedger for accurate 30-day rolling quota tracking
    */
   static async postApproved(userId: number, postId: number): Promise<boolean> {
     try {
@@ -230,12 +250,46 @@ export class PostQuotaService {
       // Get current quota status
       const status = await this.getQuotaStatus(userId);
       if (!status || status.remainingPosts <= 0) {
-        console.warn(`User ${userId} has no remaining posts for deduction`);
+        console.warn(`User ${userId} has no remaining quota for post ${postId}`);
         return false;
       }
+
+      // Get user for postLedger integration
+      const user = await storage.getUser(userId);
+      if (!user) return false;
+
+      const userIdString = user.userId || user.id.toString();
       
-      // Single atomic deduction - only after successful posting
-      const result = await db.update(users)
+      // Update postLedger table for accurate 30-day tracking
+      const ledgerEntry = await db.select()
+        .from(postLedger)
+        .where(eq(postLedger.userId, userIdString))
+        .limit(1);
+
+      if (ledgerEntry.length > 0) {
+        // Update existing postLedger entry
+        await db.update(postLedger)
+          .set({
+            usedPosts: sql`${postLedger.usedPosts} + 1`,
+            lastPosted: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(postLedger.userId, userIdString));
+      } else {
+        // Create new postLedger entry if it doesn't exist
+        const planQuota = this.PLAN_QUOTAS[status.subscriptionPlan as keyof typeof this.PLAN_QUOTAS] || this.PLAN_QUOTAS.starter;
+        await db.insert(postLedger).values({
+          userId: userIdString,
+          subscriptionTier: status.subscriptionPlan === 'professional' ? 'pro' : status.subscriptionPlan,
+          periodStart: new Date(),
+          quota: planQuota,
+          usedPosts: 1,
+          lastPosted: new Date()
+        });
+      }
+      
+      // Also update the users table for backward compatibility
+      await db.update(users)
         .set({
           remainingPosts: sql`remaining_posts - 1`
         } as any)
