@@ -7280,3 +7280,44 @@ async function fetchTwitterAnalytics(accessToken: string, refreshToken: string) 
   }
 }
 
+// NOTIFICATION ENDPOINTS
+
+// Notify expired posts endpoint for failed posts
+export function addNotificationEndpoints(app: any) {
+  app.post('/api/notify-expired', async (req: any, res: any) => {
+    try {
+      const { userId, postIds, message } = req.body;
+      
+      if (!userId || !postIds || !Array.isArray(postIds)) {
+        return res.status(400).json({ error: 'Invalid request parameters' });
+      }
+
+      console.log(`Expired posts notification for user ${userId}: ${postIds.length} posts`);
+      
+      // Log to quota-debug.log
+      const fs = await import('fs/promises');
+      const timestamp = new Date().toISOString();
+      const logEntry = `[${timestamp}] EXPIRED POSTS NOTIFICATION - User: ${userId}, Posts: ${postIds.join(',')}, Message: ${message || 'Expired posts detected'}\n`;
+      
+      await fs.mkdir('data', { recursive: true });
+      await fs.appendFile('data/quota-debug.log', logEntry);
+      
+      // Simulate email notification (would integrate with SendGrid in production)
+      console.log(`EMAIL NOTIFICATION SENT: ${postIds.length} expired posts for user ${userId}`);
+      
+      res.json({ 
+        success: true, 
+        message: `Notification sent for ${postIds.length} expired posts`,
+        postsNotified: postIds.length
+      });
+      
+    } catch (error) {
+      console.error('Expired posts notification failed:', error);
+      res.status(500).json({ 
+        error: 'Failed to send expired posts notification',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+}
+

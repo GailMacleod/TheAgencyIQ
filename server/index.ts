@@ -386,8 +386,9 @@ async function startServer() {
   // Register API routes FIRST before any middleware that might interfere
   try {
     console.log('📡 Loading routes...');
-    const { registerRoutes } = await import('./routes');
+    const { registerRoutes, addNotificationEndpoints } = await import('./routes');
     await registerRoutes(app);
+    addNotificationEndpoints(app);
     console.log('✅ Routes registered successfully');
   } catch (routeError) {
     console.error('❌ Route registration failed:', routeError);

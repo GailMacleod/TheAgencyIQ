@@ -37,6 +37,15 @@ export class PostQuotaService {
   };
 
   /**
+   * 30-DAY CYCLE MANAGEMENT (July 3-31, 2025)
+   * Event-driven post scheduling with Brisbane Ekka focus
+   */
+  private static readonly CYCLE_START = new Date('2025-07-03T00:00:00.000Z');
+  private static readonly CYCLE_END = new Date('2025-07-31T23:59:59.999Z');
+  private static readonly EKKA_START = new Date('2025-07-09T00:00:00.000Z');
+  private static readonly EKKA_END = new Date('2025-07-19T23:59:59.999Z');
+
+  /**
    * CACHE FOR HIGH TRAFFIC OPTIMIZATION
    */
   private static quotaCache: Map<number, { quota: QuotaStatus; expiry: number }> = new Map();
@@ -588,6 +597,71 @@ export class PostQuotaService {
     } catch (error) {
       console.error('Error getting paginated post counts:', error);
       return { approved: 0, draft: 0, published: 0, failed: 0, total: 0 };
+    }
+  }
+
+  /**
+   * Check if post is within current 30-day cycle (July 3-31, 2025)
+   */
+  static isWithinCurrentCycle(date: Date): boolean {
+    return date >= PostQuotaService.CYCLE_START && date <= PostQuotaService.CYCLE_END;
+  }
+
+  /**
+   * Check if post is within Ekka event period (July 9-19, 2025)
+   */
+  static isWithinEkkaEvent(date: Date): boolean {
+    return date >= PostQuotaService.EKKA_START && date <= PostQuotaService.EKKA_END;
+  }
+
+  /**
+   * Enforce 52 event-driven posts for 30-day cycle
+   */
+  static async enforce30DayCycle(userId: number): Promise<{ success: boolean; message: string; postsInCycle: number }> {
+    const startTime = Date.now();
+    
+    try {
+      const { storage } = await import('./storage.js');
+      
+      // Get all posts in the current cycle
+      const allPosts = await storage.getPostsByUser(userId);
+      const cycleStart = PostQuotaService.CYCLE_START;
+      const cycleEnd = PostQuotaService.CYCLE_END;
+      
+      const postsInCycle = allPosts.filter(post => {
+        if (!post.scheduledFor) return false;
+        const postDate = new Date(post.scheduledFor);
+        return PostQuotaService.isWithinCurrentCycle(postDate);
+      });
+      
+      const quota = await PostQuotaService.getQuotaStatus(userId);
+      if (!quota) {
+        return { success: false, message: 'User quota not found', postsInCycle: 0 };
+      }
+      
+      // Enforce professional plan 52 posts for 30-day cycle
+      if (quota.subscriptionPlan === 'professional' && postsInCycle.length > 52) {
+        await PostQuotaService.logQuotaOperation(userId, 0, 'CYCLE_ENFORCEMENT', 
+          `Excess posts detected: ${postsInCycle.length}/52 in cycle. Enforcement active.`);
+        
+        return { 
+          success: false, 
+          message: `Cycle quota exceeded: ${postsInCycle.length}/52 posts`,
+          postsInCycle: postsInCycle.length
+        };
+      }
+      
+      PostQuotaService.updatePerformanceMetrics(Date.now() - startTime);
+      
+      return { 
+        success: true, 
+        message: `Cycle quota OK: ${postsInCycle.length}/52 posts`,
+        postsInCycle: postsInCycle.length
+      };
+      
+    } catch (error) {
+      console.error('Error enforcing 30-day cycle:', error);
+      return { success: false, message: 'Cycle enforcement failed', postsInCycle: 0 };
     }
   }
 
