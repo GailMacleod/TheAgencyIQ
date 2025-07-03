@@ -79,6 +79,32 @@ function App() {
     }
   }, []);
 
+  // Establish session on app startup to prevent 401 errors
+  useEffect(() => {
+    const establishSession = async () => {
+      try {
+        const response = await fetch('/api/establish-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Session established:', data.user?.email || 'User authenticated');
+        } else {
+          console.log('Session establishment failed, continuing with guest access');
+        }
+      } catch (error) {
+        console.log('Session establishment error, continuing with guest access');
+      }
+    };
+
+    establishSession();
+  }, []);
+
   // PWA Install Prompt Handler
   useEffect(() => {
     let deferredPrompt: any;
