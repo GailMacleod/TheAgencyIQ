@@ -37,8 +37,18 @@ export class PostQuotaService {
   };
 
   /**
-   * 30-DAY CYCLE MANAGEMENT (July 3-31, 2025)
-   * Event-driven post scheduling with Brisbane Ekka focus
+   * DYNAMIC 30-DAY CYCLE MANAGEMENT
+   * Each customer gets individual 30-day cycle from their subscription date
+   */
+  private static calculateCycleForUser(subscriptionStart: Date): { cycleStart: Date; cycleEnd: Date } {
+    const cycleStart = new Date(subscriptionStart);
+    const cycleEnd = new Date(subscriptionStart);
+    cycleEnd.setDate(cycleEnd.getDate() + 30);
+    return { cycleStart, cycleEnd };
+  }
+
+  /**
+   * FIXED CYCLE FOR TESTING (July 3-31, 2025) - Brisbane Ekka focus
    */
   private static readonly CYCLE_START = new Date('2025-07-03T00:00:00.000Z');
   private static readonly CYCLE_END = new Date('2025-07-31T23:59:59.999Z');

@@ -20,11 +20,12 @@ interface AutoPostingResult {
 export class AutoPostingEnforcer {
   
   /**
-   * Enforce auto-posting for all approved posts using existing API credentials
-   * Publishes to Facebook, Instagram, LinkedIn, YouTube, X without OAuth changes
-   * Logs success/failure in data/quota-debug.log
+   * Enforce auto-posting for all approved posts across all platforms
+   * Publishes 520 posts (52 per customer x 10 customers) to Facebook, Instagram, LinkedIn, YouTube, X
+   * Uses PostQuotaService for quota validation and deduction
+   * Logs detailed success/failure in data/quota-debug.log
    */
-  static async enforceAutoPosting(userId: number): Promise<AutoPostingResult> {
+  static async enforceAutoPosting(userId?: number): Promise<AutoPostingResult> {
     const result: AutoPostingResult = {
       success: false,
       postsProcessed: 0,
