@@ -6,7 +6,7 @@
  * 3. Frontend request capping based on remaining quota
  */
 
-import { PostQuotaService } from './server/PostQuotaService.js';
+import { PostQuotaService } from './server/PostQuotaService.ts';
 import fs from 'fs/promises';
 import path from 'path';
 

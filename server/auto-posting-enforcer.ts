@@ -242,6 +242,32 @@ export class AutoPostingEnforcer {
   }
 
   /**
+   * Validate platform token without OAuth disruption
+   */
+  private static async validatePlatformToken(connection: any): Promise<{ isValid: boolean; error?: string }> {
+    try {
+      // Simple token validation - check if token exists and is not obviously expired
+      if (!connection.accessToken) {
+        return { isValid: false, error: 'No access token found' };
+      }
+      
+      // Check if token is expired based on connection metadata
+      if (connection.tokenExpiry && new Date(connection.tokenExpiry) < new Date()) {
+        return { isValid: false, error: 'Token expired' };
+      }
+      
+      // Token appears valid - avoid API calls that could disrupt OAuth
+      return { isValid: true };
+      
+    } catch (error) {
+      return { 
+        isValid: false, 
+        error: error instanceof Error ? error.message : 'Token validation failed' 
+      };
+    }
+  }
+
+  /**
    * Log publishing results to data/quota-debug.log
    */
   private static async logPublishingResult(userId: number, postId: number, platform: string, success: boolean, message: string): Promise<void> {
@@ -281,12 +307,23 @@ export class AutoPostingEnforcer {
         };
       }
       
-      // Check if connection needs token refresh
+      // Enhanced session-based token validation for Facebook/Instagram
       if (platform === 'facebook' || platform === 'instagram') {
-        // Token refresh disabled for build compatibility
-        const refreshResult = { success: false }; // Mock for build compatibility
+        // Check token expiry and attempt validation
+        const tokenValidationResult = await this.validatePlatformToken(existingConnection);
         
-        // Token refresh success check removed for build compatibility
+        if (!tokenValidationResult.isValid) {
+          // Mark connection as inactive but preserve for manual refresh
+          await storage.updatePlatformConnection(existingConnection.id, {
+            isActive: false
+          } as any);
+          
+          return {
+            repaired: false,
+            action: `Token expired for ${platform} - user intervention required`,
+            error: 'Token validation failed - manual OAuth refresh needed'
+          };
+        }
       }
       
       return {
