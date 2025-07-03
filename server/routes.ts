@@ -146,6 +146,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Log all 400-level errors
     res.send = function(data: any) {
+      // Check if headers already sent to prevent double-send errors
+      if (res.headersSent) {
+        return this;
+      }
+      
       if (res.statusCode >= 400 && res.statusCode < 500) {
         console.log('4xx Error Details:', {
           method: req.method,
@@ -162,6 +167,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
     
     res.json = function(data: any) {
+      // Check if headers already sent to prevent double-send errors
+      if (res.headersSent) {
+        return this;
+      }
+      
       if (res.statusCode >= 400 && res.statusCode < 500) {
         console.log('4xx JSON Error Details:', {
           method: req.method,

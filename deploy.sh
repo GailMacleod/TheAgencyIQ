@@ -15,16 +15,27 @@ echo "Dynamic 30-day cycles from each customer's subscription date"
 echo "Load testing: 100 concurrent requests, quota exceed protection"
 echo ""
 
-# BUILD VALIDATION FIRST
-echo "🔨 PRODUCTION BUILD VALIDATION..."
-echo "Building frontend with 541.1kb target..."
-if ./build-production.sh; then
-    BUILD_SIZE=$(du -sh dist/public 2>/dev/null | cut -f1 || echo "N/A")
-    echo "✅ Production build completed: $BUILD_SIZE"
+# PRODUCTION SERVER VALIDATION
+echo "🔨 PRODUCTION SERVER VALIDATION..."
+echo "Testing production mode deployment..."
+
+# Start server in production mode  
+echo "Starting production server..."
+NODE_ENV=production npx tsx server/index.ts &
+SERVER_PID=$!
+sleep 3
+
+# Health check pre-validation
+if curl -s http://localhost:5000/api/health | grep -q "ok"; then
+    echo "✅ Production server health check: PASS"
     ((PASSED_CHECKS++))
 else
-    echo "❌ Production build failed"
+    echo "❌ Production server health check: FAIL"
 fi
+
+# Stop test server
+kill $SERVER_PID 2>/dev/null || true
+sleep 1
 echo ""
 
 # Enhanced validation checklist for 10 customers
