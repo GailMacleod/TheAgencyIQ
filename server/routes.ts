@@ -1337,6 +1337,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('Failed to initialize post quota');
       }
 
+      // Log gift certificate redemption to quota debug log
+      try {
+        const fs = await import('fs/promises');
+        const debugMessage = `[${new Date().toISOString()}] GIFT_CERTIFICATE_REDEEMED: Code=${code}, User=${email}, Plan=${certificate.plan}, UserID=${newUser.id}, QuotaInitialized=true\n`;
+        await fs.appendFile('data/quota-debug.log', debugMessage);
+      } catch (logError) {
+        console.warn('Failed to log gift certificate redemption:', logError);
+      }
+
       // Redeem the certificate to the new user
       await storage.redeemGiftCertificate(code, newUser.id);
 
