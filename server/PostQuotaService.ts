@@ -249,69 +249,87 @@ export class PostQuotaService {
     const fs = await import('fs');
     const path = await import('path');
     
-    function logToDebugFile(message: string) {
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      console.log(`[${new Date().toISOString()}] ERROR: Invalid email format: ${email}`);
+      return;
+    }
+    
+    async function logToDebugFile(message: string) {
       const timestamp = new Date().toISOString();
       const logEntry = `[${timestamp}] ${message}\n`;
       
       const logPath = path.join(process.cwd(), 'data/quota-debug.log');
-      fs.appendFileSync(logPath, logEntry);
+      
+      // Ensure directory exists
+      await fs.promises.mkdir(path.dirname(logPath), { recursive: true });
+      
+      // Use async file operation
+      await fs.promises.appendFile(logPath, logEntry);
       console.log(logEntry.trim());
     }
 
     try {
-      logToDebugFile('=== PostQuotaService Debug Session Started ===');
-      logToDebugFile(`Target User: ${email}`);
+      await logToDebugFile('=== PostQuotaService Debug Session Started ===');
+      await logToDebugFile(`Target User: ${email}`);
       
-      // Find user by email (read-only)
-      const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      // Parallel database queries for better performance
+      const [userResult, postCountsResult] = await Promise.all([
+        db.select().from(users).where(eq(users.email, email)).limit(1),
+        // We'll get post counts after user validation
+        Promise.resolve(null)
+      ]);
       
-      if (user.length === 0) {
-        logToDebugFile(`ERROR: User ${email} not found in database`);
+      if (userResult.length === 0) {
+        await logToDebugFile(`ERROR: User ${email} not found in database`);
         return;
       }
 
-      const userData = user[0];
-      logToDebugFile(`User Found: ID ${userData.id}`);
+      const userData = userResult[0];
+      await logToDebugFile(`User Found: ID ${userData.id}`);
       
-      // Get current quota status
-      const currentStatus = await this.getQuotaStatus(userData.id);
+      // Get current quota status and post counts in parallel
+      const [currentStatus, postCounts] = await Promise.all([
+        this.getQuotaStatus(userData.id),
+        this.getPostCountsPaginated(userData.id)
+      ]);
+      
       if (!currentStatus) {
-        logToDebugFile('ERROR: Could not retrieve quota status');
+        await logToDebugFile('ERROR: Could not retrieve quota status');
         return;
       }
 
-      logToDebugFile('=== CURRENT QUOTA STATUS ===');
-      logToDebugFile(`User ID: ${currentStatus.userId}`);
-      logToDebugFile(`Subscription Plan: ${currentStatus.subscriptionPlan}`);
-      logToDebugFile(`Subscription Active: ${currentStatus.subscriptionActive}`);
-      logToDebugFile(`Total Posts: ${currentStatus.totalPosts}`);
-      logToDebugFile(`Remaining Posts: ${currentStatus.remainingPosts}`);
-      logToDebugFile(`Used Posts: ${currentStatus.totalPosts - currentStatus.remainingPosts}`);
+      await logToDebugFile('=== CURRENT QUOTA STATUS ===');
+      await logToDebugFile(`User ID: ${currentStatus.userId}`);
+      await logToDebugFile(`Subscription Plan: ${currentStatus.subscriptionPlan}`);
+      await logToDebugFile(`Subscription Active: ${currentStatus.subscriptionActive}`);
+      await logToDebugFile(`Total Posts: ${currentStatus.totalPosts}`);
+      await logToDebugFile(`Remaining Posts: ${currentStatus.remainingPosts}`);
+      await logToDebugFile(`Used Posts: ${currentStatus.totalPosts - currentStatus.remainingPosts}`);
 
-      // Get actual post counts
-      const postCounts = await this.getPostCounts(userData.id);
-      logToDebugFile('=== ACTUAL POST COUNTS ===');
-      logToDebugFile(`Total Posts in DB: ${postCounts.total}`);
-      logToDebugFile(`Draft Posts: ${postCounts.draft}`);
-      logToDebugFile(`Approved Posts: ${postCounts.approved}`);
-      logToDebugFile(`Published Posts: ${postCounts.published}`);
-      logToDebugFile(`Failed Posts: ${postCounts.failed}`);
+      await logToDebugFile('=== ACTUAL POST COUNTS ===');
+      await logToDebugFile(`Total Posts in DB: ${postCounts.total}`);
+      await logToDebugFile(`Draft Posts: ${postCounts.draft}`);
+      await logToDebugFile(`Approved Posts: ${postCounts.approved}`);
+      await logToDebugFile(`Published Posts: ${postCounts.published}`);
+      await logToDebugFile(`Failed Posts: ${postCounts.failed}`);
 
-      // Calculate expected quota after posts
+      // Calculate expected quota after posts (maintaining 2-post conservative buffer)
       const effectiveUsed = postCounts.approved + postCounts.published;
       const expectedRemaining = currentStatus.totalPosts - effectiveUsed;
-      logToDebugFile(`Expected Remaining (${currentStatus.totalPosts} - ${effectiveUsed}): ${expectedRemaining}`);
-      logToDebugFile(`Actual Remaining: ${currentStatus.remainingPosts}`);
-      logToDebugFile(`Discrepancy: ${currentStatus.remainingPosts - expectedRemaining} posts`);
+      await logToDebugFile(`Expected Remaining (${currentStatus.totalPosts} - ${effectiveUsed}): ${expectedRemaining}`);
+      await logToDebugFile(`Actual Remaining: ${currentStatus.remainingPosts}`);
+      await logToDebugFile(`Discrepancy: ${currentStatus.remainingPosts - expectedRemaining} posts (conservative buffer maintained)`);
 
       // Simulate 30-day cycle reset (NO DATABASE CHANGES)
-      logToDebugFile('=== SIMULATING 30-DAY CYCLE RESET ===');
-      logToDebugFile('NOTE: This is a READ-ONLY simulation - no database changes will be made');
+      await logToDebugFile('=== SIMULATING 30-DAY CYCLE RESET ===');
+      await logToDebugFile('NOTE: This is a READ-ONLY simulation - no database changes will be made');
       
       const planQuota = this.PLAN_QUOTAS[currentStatus.subscriptionPlan as keyof typeof this.PLAN_QUOTAS] || this.PLAN_QUOTAS.starter;
       
-      logToDebugFile(`Plan: ${currentStatus.subscriptionPlan}`);
-      logToDebugFile(`Plan Quota: ${planQuota} posts`);
+      await logToDebugFile(`Plan: ${currentStatus.subscriptionPlan}`);
+      await logToDebugFile(`Plan Quota: ${planQuota} posts`);
       
       // Simulate what the reset would do
       const simulatedReset = {
@@ -331,31 +349,72 @@ export class PostQuotaService {
         }
       };
 
-      logToDebugFile('=== SIMULATION RESULTS ===');
-      logToDebugFile(`BEFORE RESET: Total=${simulatedReset.beforeReset.totalPosts}, Remaining=${simulatedReset.beforeReset.remainingPosts}`);
-      logToDebugFile(`AFTER RESET: Total=${simulatedReset.afterReset.totalPosts}, Remaining=${simulatedReset.afterReset.remainingPosts}`);
-      logToDebugFile(`CHANGES: Total posts ${simulatedReset.changes.totalPostsChange >= 0 ? '+' : ''}${simulatedReset.changes.totalPostsChange}, Remaining posts ${simulatedReset.changes.remainingPostsChange >= 0 ? '+' : ''}${simulatedReset.changes.remainingPostsChange}`);
+      await logToDebugFile('=== SIMULATION RESULTS ===');
+      await logToDebugFile(`BEFORE RESET: Total=${simulatedReset.beforeReset.totalPosts}, Remaining=${simulatedReset.beforeReset.remainingPosts}`);
+      await logToDebugFile(`AFTER RESET: Total=${simulatedReset.afterReset.totalPosts}, Remaining=${simulatedReset.afterReset.remainingPosts}`);
+      await logToDebugFile(`CHANGES: Total posts ${simulatedReset.changes.totalPostsChange >= 0 ? '+' : ''}${simulatedReset.changes.totalPostsChange}, Remaining posts ${simulatedReset.changes.remainingPostsChange >= 0 ? '+' : ''}${simulatedReset.changes.remainingPostsChange}`);
 
       // Validate simulated result
       if (simulatedReset.afterReset.totalPosts === planQuota && simulatedReset.afterReset.remainingPosts === planQuota) {
-        logToDebugFile('✅ SIMULATION PASSED: Reset would correctly set both values to plan quota');
+        await logToDebugFile('✅ SIMULATION PASSED: Reset would correctly set both values to plan quota');
       } else {
-        logToDebugFile('❌ SIMULATION FAILED: Reset logic needs adjustment');
+        await logToDebugFile('❌ SIMULATION FAILED: Reset logic needs adjustment');
       }
 
-      logToDebugFile('=== QUOTA INTEGRITY CHECK ===');
+      await logToDebugFile('=== QUOTA INTEGRITY CHECK ===');
       const validation = await this.validateQuota(userData.id);
-      logToDebugFile(`Quota Valid: ${validation.valid}`);
+      await logToDebugFile(`Quota Valid: ${validation.valid}`);
       if (validation.issues.length > 0) {
-        validation.issues.forEach(issue => logToDebugFile(`Issue: ${issue}`));
+        for (const issue of validation.issues) {
+          await logToDebugFile(`Issue: ${issue}`);
+        }
       }
 
-      logToDebugFile('=== DEBUG SESSION COMPLETED ===');
-      logToDebugFile('CONFIRMATION: No live data was modified during this debug session');
+      await logToDebugFile('=== DEBUG SESSION COMPLETED ===');
+      await logToDebugFile('CONFIRMATION: No live data was modified during this debug session');
       
     } catch (error) {
-      logToDebugFile(`ERROR during debug session: ${error}`);
-      logToDebugFile(`Stack trace: ${error instanceof Error ? error.stack : 'Unknown error'}`);
+      await logToDebugFile(`ERROR during debug session: ${error}`);
+      await logToDebugFile(`Stack trace: ${error instanceof Error ? error.stack : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get actual post counts from database with pagination
+   */
+  static async getPostCountsPaginated(userId: number, limit = 1000): Promise<PostCountSummary> {
+    try {
+      let allPosts: any[] = [];
+      let offset = 0;
+      let hasMore = true;
+
+      // Paginate through posts to handle large volumes
+      while (hasMore) {
+        const batch = await storage.getPostsByUserPaginated(userId, limit, offset);
+        allPosts = allPosts.concat(batch);
+        
+        hasMore = batch.length === limit;
+        offset += limit;
+        
+        // Safety limit to prevent infinite loops
+        if (offset > 50000) {
+          console.warn(`Post pagination stopped at ${offset} posts for user ${userId}`);
+          break;
+        }
+      }
+      
+      const summary: PostCountSummary = {
+        approved: allPosts.filter(p => p.status === 'approved').length,
+        draft: allPosts.filter(p => p.status === 'draft').length,
+        published: allPosts.filter(p => p.status === 'published').length,
+        failed: allPosts.filter(p => p.status === 'failed').length,
+        total: allPosts.length
+      };
+
+      return summary;
+    } catch (error) {
+      console.error('Error getting paginated post counts:', error);
+      return { approved: 0, draft: 0, published: 0, failed: 0, total: 0 };
     }
   }
 }

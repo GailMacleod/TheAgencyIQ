@@ -39,6 +39,7 @@ export interface IStorage {
 
   // Post operations
   getPostsByUser(userId: number): Promise<Post[]>;
+  getPostsByUserPaginated(userId: number, limit: number, offset: number): Promise<Post[]>;
   createPost(post: InsertPost): Promise<Post>;
   updatePost(id: number, updates: Partial<InsertPost>): Promise<Post>;
   deletePost(id: number): Promise<void>;
@@ -171,6 +172,16 @@ export class DatabaseStorage implements IStorage {
       .from(posts)
       .where(eq(posts.userId, userId))
       .orderBy(desc(posts.scheduledFor));
+  }
+
+  async getPostsByUserPaginated(userId: number, limit: number, offset: number): Promise<Post[]> {
+    return await db
+      .select()
+      .from(posts)
+      .where(eq(posts.userId, userId))
+      .orderBy(desc(posts.scheduledFor))
+      .limit(limit)
+      .offset(offset);
   }
 
   async createPost(insertPost: InsertPost): Promise<Post> {
