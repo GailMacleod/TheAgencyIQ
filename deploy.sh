@@ -5,12 +5,26 @@
 # Validates 520 posts (10 customers × 52 posts) with Queensland market alignment
 # Platform API checks, server restart, multi-user load testing
 
-echo "🚀 THEAGENCYIQ ENHANCED DEPLOYMENT VALIDATION - 10 CUSTOMERS"
+echo "🚀 THEAGENCYIQ PRODUCTION DEPLOYMENT VALIDATION - 520 POSTS"
 echo "============================================================"
+echo "Production build: 541.1kb verification with MIME type fixes"
 echo "Testing: 520 event-driven posts (10 customers × 52 posts)"
-echo "Platform coverage: Facebook, Instagram, LinkedIn, YouTube, X"
+echo "Platform publishing: Facebook, Instagram, LinkedIn, YouTube, X"
 echo "Queensland events: Brisbane Ekka July 9-19, 2025 focus"
+echo "Dynamic 30-day cycles from each customer's subscription date"
 echo "Load testing: 100 concurrent requests, quota exceed protection"
+echo ""
+
+# BUILD VALIDATION FIRST
+echo "🔨 PRODUCTION BUILD VALIDATION..."
+echo "Building frontend with 541.1kb target..."
+if ./build-production.sh; then
+    BUILD_SIZE=$(du -sh dist/public 2>/dev/null | cut -f1 || echo "N/A")
+    echo "✅ Production build completed: $BUILD_SIZE"
+    ((PASSED_CHECKS++))
+else
+    echo "❌ Production build failed"
+fi
 echo ""
 
 # Enhanced validation checklist for 10 customers

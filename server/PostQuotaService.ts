@@ -93,11 +93,40 @@ export class PostQuotaService {
       let totalPosts = user.totalPosts || 0;
       let subscriptionPlan = user.subscriptionPlan || 'starter';
 
-      // If postLedger exists, use it as authoritative source for quota
+      // If postLedger exists, use it as authoritative source for quota with dynamic 30-day cycle
       if (ledgerEntry.length > 0) {
         const ledger = ledgerEntry[0];
-        totalPosts = ledger.quota;
-        remainingPosts = Math.max(0, ledger.quota - ledger.usedPosts);
+        const subscriptionDate = user.subscriptionStart || ledger.periodStart;
+        const now = new Date();
+        
+        // Calculate dynamic 30-day cycle from customer's subscription date
+        if (subscriptionDate) {
+          const cycleStart = new Date(subscriptionDate);
+          const daysSinceStart = Math.floor((now.getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24));
+          const currentCycle = Math.floor(daysSinceStart / 30);
+          const cycleStartDate = new Date(cycleStart.getTime() + (currentCycle * 30 * 24 * 60 * 60 * 1000));
+          
+          // Check if we need to reset quota for new 30-day cycle
+          if (ledger.periodStart < cycleStartDate) {
+            await db.update(postLedger)
+              .set({
+                periodStart: cycleStartDate,
+                usedPosts: 0,
+                updatedAt: new Date()
+              })
+              .where(eq(postLedger.userId, userIdString));
+            
+            totalPosts = ledger.quota;
+            remainingPosts = ledger.quota;
+          } else {
+            totalPosts = ledger.quota;
+            remainingPosts = Math.max(0, ledger.quota - ledger.usedPosts);
+          }
+        } else {
+          totalPosts = ledger.quota;
+          remainingPosts = Math.max(0, ledger.quota - ledger.usedPosts);
+        }
+        
         subscriptionPlan = ledger.subscriptionTier === 'pro' ? 'professional' : ledger.subscriptionTier;
       }
 
