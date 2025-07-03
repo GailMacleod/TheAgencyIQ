@@ -357,8 +357,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Use session userId instead of hardcoded 2
+      const sessionUserId = req.session?.userId || 2; // Fallback to 2 only if no session
+      
       const connection = await storage.createPlatformConnection({
-        userId: 2,
+        userId: sessionUserId,
         platform: 'facebook',
         platformUserId: pageId,
         platformUsername: pageName,
@@ -417,8 +420,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = profileResult.id || `linkedin_user_${Date.now()}`;
       const username = `${profileResult.firstName?.localized?.en_US || ''} ${profileResult.lastName?.localized?.en_US || ''}`.trim() || 'LinkedIn User';
 
+      // Use session userId instead of hardcoded 2
+      const sessionUserId = req.session?.userId || 2; // Fallback to 2 only if no session
+      
       const connection = await storage.createPlatformConnection({
-        userId: 2,
+        userId: sessionUserId,
         platform: 'linkedin',
         platformUserId: userId,
         platformUsername: username,
@@ -487,8 +493,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         platformUsername = userData.data.username;
       }
       
+      // Use session userId instead of hardcoded 2  
+      const sessionUserId = req.session?.userId || 2; // Fallback to 2 only if no session
+      
       const connection = await storage.createPlatformConnection({
-        userId: 2,
+        userId: sessionUserId,
         platform: 'x',
         platformUserId: platformUserId,
         platformUsername: platformUsername,
@@ -990,26 +999,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Price ID is required" });
       }
 
-      // Map price IDs to plan details for new signups
-      const planMapping: { [key: string]: { name: string, posts: number, totalPosts: number } } = {
-        "price_starter": { name: "starter", posts: 10, totalPosts: 12 },
-        "price_growth": { name: "growth", posts: 25, totalPosts: 27 },
-        "price_professional": { name: "professional", posts: 50, totalPosts: 52 }
+      // Map price IDs to plan names only - PostQuotaService handles quotas
+      const planMapping: { [key: string]: string } = {
+        "price_starter": "starter",
+        "price_growth": "growth", 
+        "price_professional": "professional"
       };
 
-      let planDetails = planMapping[priceId];
+      let planName = planMapping[priceId];
       
       // If not found in mapping, extract from Stripe metadata
-      if (!planDetails) {
+      if (!planName) {
         try {
           const price = await stripe.prices.retrieve(priceId);
           const product = await stripe.products.retrieve(price.product as string);
           
-          const plan = product.metadata?.plan || 'starter';
-          const posts = parseInt(product.metadata?.posts || '10');
-          const totalPosts = parseInt(product.metadata?.totalPosts || '12');
-          
-          planDetails = { name: plan, posts, totalPosts };
+          planName = product.metadata?.plan || 'starter';
         } catch (error) {
           return res.status(400).json({ message: "Invalid price ID" });
         }
@@ -1028,9 +1033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success_url: `https://${domain}/api/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `https://${domain}/subscription`,
         metadata: {
-          plan: planDetails.name,
-          posts: planDetails.posts.toString(),
-          totalPosts: planDetails.totalPosts.toString(),
+          plan: planName,
           userId: 'new_signup'
         }
       });
@@ -1240,29 +1243,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Account with this email already exists" });
       }
 
-      // Create new isolated user account with certificate benefits
-      const planPostLimits = {
-        'professional': { remaining: 50, total: 52 },
-        'growth': { remaining: 25, total: 27 },
-        'starter': { remaining: 10, total: 12 }
-      };
-
-      const limits = planPostLimits[certificate.plan as keyof typeof planPostLimits] || planPostLimits.starter;
-
       // Generate unique userId (required field)
       const userId = phone || `cert_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
+      // Create new isolated user account WITHOUT post allocations
       const newUser = await storage.createUser({
         userId,
         email,
         password,
         phone: phone || null,
         subscriptionPlan: certificate.plan,
-        remainingPosts: limits.remaining,
-        totalPosts: limits.total,
+        remainingPosts: 0, // Will be set by PostQuotaService
+        totalPosts: 0,     // Will be set by PostQuotaService
         subscriptionSource: 'certificate',
         subscriptionActive: true
       });
+
+      // Use centralized PostQuotaService to initialize quota
+      const { PostQuotaService } = await import('./PostQuotaService');
+      const quotaInitialized = await PostQuotaService.initializeQuota(newUser.id, certificate.plan);
+      
+      if (!quotaInitialized) {
+        throw new Error('Failed to initialize post quota');
+      }
 
       // Redeem the certificate to the new user
       await storage.redeemGiftCertificate(code, newUser.id);
@@ -1270,17 +1273,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Establish session for the new user
       req.session.userId = newUser.id;
 
-      console.log(`Gift certificate ${code} redeemed - NEW USER CREATED: ${email} (ID: ${newUser.id}) for ${certificate.plan} plan`);
+      // Get updated user data with proper quota
+      const updatedUser = await storage.getUser(newUser.id);
+
+      console.log(`✅ Gift certificate ${code} redeemed - NEW USER CREATED: ${email} (ID: ${newUser.id}) for ${certificate.plan} plan`);
 
       res.json({ 
         message: "Certificate redeemed successfully - New account created",
         plan: certificate.plan,
         user: {
-          id: newUser.id,
-          email: newUser.email,
-          subscriptionPlan: newUser.subscriptionPlan,
-          remainingPosts: newUser.remainingPosts,
-          totalPosts: newUser.totalPosts
+          id: updatedUser.id,
+          email: updatedUser.email,
+          subscriptionPlan: updatedUser.subscriptionPlan,
+          remainingPosts: updatedUser.remainingPosts,
+          totalPosts: updatedUser.totalPosts
         }
       });
 
@@ -4471,40 +4477,36 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   );
 
-  // Get subscription usage statistics
+  // Get subscription usage statistics - CENTRALIZED VERSION
   app.get("/api/subscription-usage", requireActiveSubscription, async (req: any, res) => {
     try {
-      // Use subscription service for accurate plan enforcement
-      const { SubscriptionService } = await import('./subscription-service');
-      const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
+      // Use centralized PostQuotaService for accurate quota data
+      const { PostQuotaService } = await import('./PostQuotaService');
+      const quotaStatus = await PostQuotaService.getQuotaStatus(req.session.userId);
       
-      const posts = await storage.getPostsByUser(req.session.userId);
-      
-      // Calculate usage statistics from actual posts
-      const publishedPosts = posts.filter(p => p.status === 'published' && p.subscriptionCycle === subscriptionStatus.subscriptionCycle).length;
-      const failedPosts = posts.filter(p => p.status === 'failed' && p.subscriptionCycle === subscriptionStatus.subscriptionCycle).length;
-      const partialPosts = posts.filter(p => p.status === 'partial' && p.subscriptionCycle === subscriptionStatus.subscriptionCycle).length;
-      
-      // Use proper plan allocation: Starter=14, Growth=27, Professional=52
-      const { SUBSCRIPTION_PLANS } = await import('./subscription-service');
-      const userPlan = SUBSCRIPTION_PLANS[subscriptionStatus.plan.name.toLowerCase()];
+      if (!quotaStatus) {
+        return res.status(404).json({ message: "User quota not found" });
+      }
+
+      // Get detailed post counts
+      const postCounts = await PostQuotaService.getPostCounts(req.session.userId);
       
       const planLimits = {
-        posts: subscriptionStatus.totalPostsAllowed, // Use actual subscription allocation
-        reach: userPlan.name === 'professional' ? 15000 : userPlan.name === 'growth' ? 30000 : 5000,
-        engagement: userPlan.name === 'professional' ? 4.5 : userPlan.name === 'growth' ? 5.5 : 3.5
+        posts: quotaStatus.totalPosts,
+        reach: quotaStatus.subscriptionPlan === 'professional' ? 15000 : quotaStatus.subscriptionPlan === 'growth' ? 30000 : 5000,
+        engagement: quotaStatus.subscriptionPlan === 'professional' ? 4.5 : quotaStatus.subscriptionPlan === 'growth' ? 5.5 : 3.5
       };
 
       res.json({
-        subscriptionPlan: subscriptionStatus.plan.name.toLowerCase(),
-        totalAllocation: subscriptionStatus.totalPostsAllowed,
-        remainingPosts: subscriptionStatus.postsRemaining,
-        usedPosts: subscriptionStatus.postsUsed,
-        publishedPosts: publishedPosts,
-        failedPosts: failedPosts,
-        partialPosts: partialPosts,
+        subscriptionPlan: quotaStatus.subscriptionPlan,
+        totalAllocation: quotaStatus.totalPosts,
+        remainingPosts: quotaStatus.remainingPosts,
+        usedPosts: quotaStatus.totalPosts - quotaStatus.remainingPosts,
+        publishedPosts: postCounts.published,
+        failedPosts: postCounts.failed,
+        partialPosts: 0, // Not tracked in centralized system
         planLimits: planLimits,
-        usagePercentage: subscriptionStatus.totalPostsAllowed > 0 ? Math.round((subscriptionStatus.postsUsed / subscriptionStatus.totalPostsAllowed) * 100) : 0
+        usagePercentage: quotaStatus.totalPosts > 0 ? Math.round(((quotaStatus.totalPosts - quotaStatus.remainingPosts) / quotaStatus.totalPosts) * 100) : 0
       });
 
     } catch (error: any) {
