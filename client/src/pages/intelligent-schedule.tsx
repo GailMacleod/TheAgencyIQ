@@ -98,6 +98,13 @@ export default function IntelligentSchedule() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [approvedPosts, setApprovedPosts] = useState<Set<number>>(new Set());
   const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
+  const [approvingPosts, setApprovingPosts] = useState<Set<number>>(new Set());
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successModalData, setSuccessModalData] = useState<{
+    platform: string;
+    postId: number;
+    scheduledTime: string;
+  } | null>(null);
   const [scheduleGenerated, setScheduleGenerated] = useState(false);
   const [aiInsights, setAiInsights] = useState<any>(null);
   const [calendarView, setCalendarView] = useState(true);
@@ -233,8 +240,15 @@ export default function IntelligentSchedule() {
     return queenslandEvents.filter(event => event.date === dateStr);
   };
 
-  // Approve and schedule individual post
+  // Approve and schedule individual post with loading state and success modal
   const approvePost = async (postId: number) => {
+    // Find the post to get platform and scheduling details
+    const post = postsArray.find(p => p.id === postId);
+    if (!post) return;
+
+    // Add to loading state
+    setApprovingPosts(prev => new Set(prev).add(postId));
+
     try {
       const response = await fetch('/api/approve-post', {
         method: 'POST',
@@ -253,9 +267,17 @@ export default function IntelligentSchedule() {
         });
         queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
         
+        // Show success modal with post details
+        setSuccessModalData({
+          platform: post.platform,
+          postId: postId,
+          scheduledTime: post.scheduledFor || 'immediately'
+        });
+        setShowSuccessModal(true);
+        
         toast({
-          title: "Post Approved",
-          description: "Post has been approved and scheduled for publishing.",
+          title: "Post Approved Successfully",
+          description: `${post.platform} post scheduled for publishing`,
         });
       } else {
         throw new Error('Failed to approve post');
@@ -265,6 +287,13 @@ export default function IntelligentSchedule() {
         title: "Approval Failed",
         description: "Failed to approve post. Please try again.",
         variant: "destructive",
+      });
+    } finally {
+      // Remove from loading state
+      setApprovingPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
       });
     }
   };
@@ -427,7 +456,7 @@ export default function IntelligentSchedule() {
     <div className="min-h-screen bg-gray-50">
       <MasterHeader showUserMenu={true} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <div className="mb-6">
           <BackButton to="/brand-purpose" label="Back to Brand Purpose" />
         </div>
@@ -647,14 +676,16 @@ export default function IntelligentSchedule() {
                       </div>
                     )}
                     
-                    <div className="flex space-x-3">
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                       <Button
                         onClick={() => handleEditPost(post)}
                         variant="outline"
                         size="sm"
+                        className="w-full sm:w-auto"
                       >
                         <Edit3 className="w-4 h-4 mr-2" />
-                        Edit Content
+                        <span className="hidden sm:inline">Edit Content</span>
+                        <span className="sm:hidden">Edit</span>
                       </Button>
                       
                       {post.status !== 'published' && (
@@ -662,14 +693,29 @@ export default function IntelligentSchedule() {
                           onClick={() => approvePost(post.id)}
                           className={
                             post.status === 'approved' || approvedPosts.has(post.id)
-                              ? "bg-gray-600 hover:bg-gray-700 text-white cursor-not-allowed"
-                              : "bg-green-600 hover:bg-green-700 text-white"
+                              ? "bg-gray-600 hover:bg-gray-700 text-white cursor-not-allowed w-full sm:w-auto"
+                              : "bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
                           }
                           size="sm"
-                          disabled={post.status === 'approved' || approvedPosts.has(post.id)}
+                          disabled={post.status === 'approved' || approvedPosts.has(post.id) || approvingPosts.has(post.id)}
                         >
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          {post.status === 'approved' || approvedPosts.has(post.id) ? 'Approved ✓' : 'Approve & Schedule'}
+                          {approvingPosts.has(post.id) ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                              <span className="hidden sm:inline">Approving...</span>
+                              <span className="sm:hidden">Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              <span className="hidden sm:inline">
+                                {post.status === 'approved' || approvedPosts.has(post.id) ? 'Approved ✓' : 'Approve & Schedule'}
+                              </span>
+                              <span className="sm:hidden">
+                                {post.status === 'approved' || approvedPosts.has(post.id) ? 'Approved ✓' : 'Approve'}
+                              </span>
+                            </>
+                          )}
                         </Button>
                       )}
                     </div>
@@ -701,9 +747,21 @@ export default function IntelligentSchedule() {
                 onClick={generateIntelligentSchedule}
                 className="bg-purple-600 hover:bg-purple-700 text-white"
                 size="lg"
+                disabled={isGeneratingSchedule}
               >
-                <Brain className="w-5 h-5 mr-2" />
-                Generate AI Content
+                {isGeneratingSchedule ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                    <span className="hidden sm:inline">Generating AI Content...</span>
+                    <span className="sm:hidden">Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-5 h-5 mr-2" />
+                    <span className="hidden sm:inline">Generate AI Content</span>
+                    <span className="sm:hidden">Generate</span>
+                  </>
+                )}
               </Button>
             ) : (
               <Button
@@ -763,6 +821,78 @@ export default function IntelligentSchedule() {
                   Save Changes
                 </>
               )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Confirmation Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-green-600">
+              <CheckCircle className="w-6 h-6 mr-2" />
+              Post Approved Successfully!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-6">
+            {successModalData && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6 space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      {successModalData.platform === 'facebook' && (
+                        <div className="w-6 h-6 bg-blue-600 rounded text-white flex items-center justify-center text-xs font-bold">f</div>
+                      )}
+                      {successModalData.platform === 'instagram' && (
+                        <div className="w-6 h-6 bg-gradient-to-br from-purple-600 to-pink-600 rounded text-white flex items-center justify-center text-xs font-bold">ig</div>
+                      )}
+                      {successModalData.platform === 'linkedin' && (
+                        <div className="w-6 h-6 bg-blue-800 rounded text-white flex items-center justify-center text-xs font-bold">in</div>
+                      )}
+                      {successModalData.platform === 'youtube' && (
+                        <div className="w-6 h-6 bg-red-600 rounded text-white flex items-center justify-center text-xs font-bold">yt</div>
+                      )}
+                      {successModalData.platform === 'x' && (
+                        <div className="w-6 h-6 bg-black rounded text-white flex items-center justify-center text-xs font-bold">x</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 capitalize">
+                      {successModalData.platform} Post Approved
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Post ID: {successModalData.postId}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-md p-4 border border-green-200">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Clock className="w-4 h-4" />
+                    <span>Scheduled for: {new Date(successModalData.scheduledTime).toLocaleString('en-AU', {
+                      timeZone: 'Australia/Brisbane',
+                      dateStyle: 'medium',
+                      timeStyle: 'short'
+                    })}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2 text-sm text-green-700">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Your post has been approved and will be automatically published at the scheduled time.</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button 
+              onClick={() => setShowSuccessModal(false)}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Great!
             </Button>
           </div>
         </DialogContent>
