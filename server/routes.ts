@@ -24,6 +24,7 @@ import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
 import { requireActiveSubscription, requireAuth } from './middleware/subscriptionAuth';
 import { PostQuotaService } from './PostQuotaService';
+import { userFeedbackService } from './userFeedbackService.js';
 
 // Use our custom request interface
 interface CustomRequest extends Request {
@@ -6907,7 +6908,84 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // User Feedback API Endpoints
+  app.post('/api/submit-feedback', async (req: Request, res: Response) => {
+    try {
+      const { feedbackType, message, platform, postId, rating, metadata } = req.body;
+      const userId = (req as any).session?.userId || 2; // Default user for demo
 
+      if (!feedbackType || !message) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Missing required fields: feedbackType and message are required' 
+        });
+      }
+
+      const feedback = {
+        userId,
+        feedbackType,
+        message,
+        platform,
+        postId,
+        rating,
+        metadata: {
+          ...metadata,
+          userAgent: req.headers['user-agent'],
+          sessionId: (req as any).sessionID
+        }
+      };
+
+      const result = await userFeedbackService.submitFeedback(feedback);
+      
+      console.log(`📝 Feedback submitted: ${feedbackType} from user ${userId}`);
+      res.json(result);
+    } catch (error: any) {
+      console.error('❌ Feedback submission error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to submit feedback' 
+      });
+    }
+  });
+
+  app.get('/api/feedback-analytics', async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).session?.userId;
+      const analytics = await userFeedbackService.getFeedbackAnalytics(userId);
+      
+      res.json({
+        success: true,
+        analytics
+      });
+    } catch (error: any) {
+      console.error('❌ Feedback analytics error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch feedback analytics' 
+      });
+    }
+  });
+
+  app.get('/api/user-feedback', async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).session?.userId || 2;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      const result = await userFeedbackService.getUserFeedback(userId, page, limit);
+      
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (error: any) {
+      console.error('❌ User feedback fetch error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch user feedback' 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

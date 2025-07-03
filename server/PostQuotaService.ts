@@ -37,22 +37,61 @@ export class PostQuotaService {
   };
 
   /**
-   * Get current quota status for a user
+   * CACHE FOR HIGH TRAFFIC OPTIMIZATION
+   */
+  private static quotaCache: Map<number, { quota: QuotaStatus; expiry: number }> = new Map();
+  private static readonly CACHE_DURATION = 2 * 60 * 1000; // 2 minutes cache
+  
+  /**
+   * Performance metrics tracking
+   */
+  private static performanceMetrics = {
+    cacheHits: 0,
+    cacheMisses: 0,
+    totalRequests: 0,
+    avgResponseTime: 0
+  };
+
+  /**
+   * Get current quota status for a user (with high-traffic caching)
    */
   static async getQuotaStatus(userId: number): Promise<QuotaStatus | null> {
+    const startTime = Date.now();
+    this.performanceMetrics.totalRequests++;
+    
     try {
+      // Check cache first
+      const cached = this.quotaCache.get(userId);
+      if (cached && Date.now() < cached.expiry) {
+        this.performanceMetrics.cacheHits++;
+        this.updatePerformanceMetrics(Date.now() - startTime);
+        return cached.quota;
+      }
+
+      // Cache miss - fetch from database
+      this.performanceMetrics.cacheMisses++;
       const user = await storage.getUser(userId);
       if (!user) return null;
 
-      return {
+      const quota: QuotaStatus = {
         userId: user.id,
         remainingPosts: user.remainingPosts || 0,
         totalPosts: user.totalPosts || 0,
         subscriptionPlan: user.subscriptionPlan || 'starter',
         subscriptionActive: user.subscriptionActive || false
       };
+
+      // Cache the result
+      this.quotaCache.set(userId, {
+        quota,
+        expiry: Date.now() + this.CACHE_DURATION
+      });
+
+      this.updatePerformanceMetrics(Date.now() - startTime);
+      return quota;
     } catch (error) {
       console.error('Error getting quota status:', error);
+      this.updatePerformanceMetrics(Date.now() - startTime);
       return null;
     }
   }
@@ -82,7 +121,30 @@ export class PostQuotaService {
   }
 
   /**
-   * Deduct one post from user's quota - SINGLE DEDUCTION POINT
+   * Performance metrics helper
+   */
+  private static updatePerformanceMetrics(responseTime: number): void {
+    const { totalRequests, avgResponseTime } = this.performanceMetrics;
+    this.performanceMetrics.avgResponseTime = 
+      (avgResponseTime * (totalRequests - 1) + responseTime) / totalRequests;
+  }
+
+  /**
+   * Clear cache for specific user (called after quota changes)
+   */
+  static clearUserCache(userId: number): void {
+    this.quotaCache.delete(userId);
+  }
+
+  /**
+   * Get performance metrics (for monitoring)
+   */
+  static getPerformanceMetrics() {
+    return { ...this.performanceMetrics };
+  }
+
+  /**
+   * Deduct one post from user's quota - SINGLE DEDUCTION POINT (with cache invalidation)
    */
   static async deductPost(userId: number, postId: number): Promise<boolean> {
     try {
@@ -109,6 +171,9 @@ export class PostQuotaService {
           )
         );
 
+      // Clear cache after quota change
+      this.clearUserCache(userId);
+      
       console.log(`📉 Post deducted for user ${userId}. Remaining: ${status.remainingPosts - 1}`);
       return true;
     } catch (error) {
