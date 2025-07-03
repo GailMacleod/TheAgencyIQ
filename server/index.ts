@@ -409,11 +409,22 @@ async function startServer() {
 
   // Setup static file serving after API routes
   try {
-    // Production static file serving
+    // Production static file serving with proper MIME types
     if (process.env.NODE_ENV === 'production') {
       console.log('⚡ Setting up production static files...');
-      // Serve built frontend assets
-      app.use(express.static(path.join(process.cwd(), 'dist/public')));
+      
+      // Enhanced static file serving with proper MIME types for JavaScript modules
+      app.use(express.static(path.join(process.cwd(), 'dist/public'), {
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+          } else if (filePath.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css; charset=utf-8');
+          } else if (filePath.endsWith('.html')) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          }
+        }
+      }));
       
       // Serve React app for all non-API routes
       app.get('*', (req, res) => {
@@ -421,7 +432,7 @@ async function startServer() {
           res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
         }
       });
-      console.log('✅ Production static files setup complete');
+      console.log('✅ Production static files with enhanced MIME types setup complete');
     } else {
       console.log('⚡ Setting up development Vite...');
       try {

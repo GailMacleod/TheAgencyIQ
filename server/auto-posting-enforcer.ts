@@ -50,6 +50,21 @@ export class AutoPostingEnforcer {
         return result;
       }
 
+      // Validate user is within their 30-day subscription cycle
+      const withinCycle = PostQuotaService.isWithinUserCycle(user.subscriptionStart);
+      if (!withinCycle) {
+        console.log(`User ${userId} is outside their 30-day cycle - enforcer paused`);
+        result.errors.push('User outside their 30-day subscription cycle');
+        return result;
+      }
+
+      // Check for Brisbane Ekka overlap for enhanced event-driven posting
+      const hasEkkaOverlap = PostQuotaService.hasBrisbaneEkkaOverlap(user.subscriptionStart);
+      if (hasEkkaOverlap) {
+        console.log(`User ${userId} has Brisbane Ekka overlap - using enhanced event-driven content`);
+      }
+      }
+
       // Enforce 30-day cycle with Queensland events integration
       const cycleCheck = await PostQuotaService.enforce30DayCycle(userId);
       if (!cycleCheck.isWithinCycle) {
