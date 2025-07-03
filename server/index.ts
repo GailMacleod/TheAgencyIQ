@@ -409,22 +409,11 @@ async function startServer() {
 
   // Setup static file serving after API routes
   try {
-    // Production static file serving with proper MIME types
+    // Production static file serving
     if (process.env.NODE_ENV === 'production') {
       console.log('⚡ Setting up production static files...');
-      
-      // Enhanced static file serving with proper MIME types for JavaScript modules
-      app.use(express.static(path.join(process.cwd(), 'dist/public'), {
-        setHeaders: (res, filePath) => {
-          if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
-            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-          } else if (filePath.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css; charset=utf-8');
-          } else if (filePath.endsWith('.html')) {
-            res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          }
-        }
-      }));
+      // Serve built frontend assets
+      app.use(express.static(path.join(process.cwd(), 'dist/public')));
       
       // Serve React app for all non-API routes
       app.get('*', (req, res) => {
@@ -432,114 +421,13 @@ async function startServer() {
           res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
         }
       });
-      console.log('✅ Production static files with enhanced MIME types setup complete');
+      console.log('✅ Production static files setup complete');
     } else {
       console.log('⚡ Setting up development Vite...');
-      try {
-        const { setupVite, serveStatic } = await import('./vite');
-        await setupVite(app, httpServer);
-        serveStatic(app);
-        console.log('✅ Vite setup complete');
-      } catch (viteError) {
-        console.warn('⚠️ Vite setup failed, falling back to enhanced static file serving:', viteError.message);
-        
-        // Switch to production mode when Vite fails - serve built files from dist/
-        console.log('⚡ Switching to production mode - serving built files from dist/');
-        process.env.NODE_ENV = 'production';
-        
-        // Serve compiled JavaScript files from dist directory
-        app.use(express.static('dist', {
-          setHeaders: (res, filePath) => {
-            if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            } else if (filePath.endsWith('.css')) {
-              res.setHeader('Content-Type', 'text/css; charset=utf-8');
-            } else if (filePath.endsWith('.html')) {
-              res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            }
-          }
-        }));
-        
-        // Handle TypeScript files by transforming them to JavaScript on the fly
-        app.get('/src/*.tsx', async (req, res) => {
-          try {
-            const { transformSync } = await import('esbuild');
-            const filePath = path.join(process.cwd(), 'client', req.path);
-            const sourceCode = require('fs').readFileSync(filePath, 'utf8');
-            
-            const result = transformSync(sourceCode, {
-              loader: 'tsx',
-              format: 'esm',
-              target: 'es2020',
-              jsx: 'automatic',
-              define: {
-                'process.env.NODE_ENV': '"development"'
-              }
-            });
-            
-            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            res.send(result.code);
-          } catch (error) {
-            console.error('TypeScript transform error:', error);
-            res.status(500).send(`// TypeScript transform error: ${error.message}`);
-          }
-        });
-        
-        app.get('/src/*.ts', async (req, res) => {
-          try {
-            const { transformSync } = await import('esbuild');
-            const filePath = path.join(process.cwd(), 'client', req.path);
-            const sourceCode = require('fs').readFileSync(filePath, 'utf8');
-            
-            const result = transformSync(sourceCode, {
-              loader: 'ts',
-              format: 'esm',
-              target: 'es2020',
-              define: {
-                'process.env.NODE_ENV': '"development"'
-              }
-            });
-            
-            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            res.send(result.code);
-          } catch (error) {
-            console.error('TypeScript transform error:', error);
-            res.status(500).send(`// TypeScript transform error: ${error.message}`);
-          }
-        });
-        
-        // Handle client-side routing - serve index.html for non-API routes
-        app.get('*', (req, res) => {
-          if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health') && !req.path.startsWith('/src')) {
-            res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
-          }
-        });
-        
-        // Serve client directory with comprehensive MIME types
-        app.use(express.static(path.join(process.cwd(), 'client'), {
-          setHeaders: (res, filePath) => {
-            if (filePath.endsWith('.js') || filePath.endsWith('.jsx')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            } else if (filePath.endsWith('.ts') || filePath.endsWith('.tsx')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            } else if (filePath.endsWith('.mjs')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            } else if (filePath.endsWith('.css')) {
-              res.setHeader('Content-Type', 'text/css; charset=utf-8');
-            } else if (filePath.endsWith('.html')) {
-              res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            }
-          }
-        }));
-        
-        // Handle client-side routing - serve index.html for non-API routes
-        app.get('*', (req, res) => {
-          if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health') && !req.path.startsWith('/src')) {
-            res.sendFile(path.join(process.cwd(), 'client/index.html'));
-          }
-        });
-        console.log('✅ Enhanced fallback static serving enabled with ES module support');
-      }
+      const { setupVite, serveStatic } = await import('./vite');
+      await setupVite(app, httpServer);
+      serveStatic(app);
+      console.log('✅ Vite setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);

@@ -49,29 +49,6 @@ export class AutoPostingEnforcer {
         result.errors.push('User subscription start date not found');
         return result;
       }
-
-      // Validate user is within their 30-day subscription cycle
-      const withinCycle = PostQuotaService.isWithinUserCycle(user.subscriptionStart);
-      if (!withinCycle) {
-        console.log(`User ${userId} is outside their 30-day cycle - enforcer paused`);
-        result.errors.push('User outside their 30-day subscription cycle');
-        return result;
-      }
-
-      // Check for Brisbane Ekka overlap for enhanced event-driven posting
-      const hasEkkaOverlap = PostQuotaService.hasBrisbaneEkkaOverlap(user.subscriptionStart);
-      if (hasEkkaOverlap) {
-        console.log(`User ${userId} has Brisbane Ekka overlap - using enhanced event-driven content`);
-      }
-
-      // Get quota status for validation
-      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
-      if (!quotaStatus || quotaStatus.remainingPosts <= 0) {
-        result.errors.push(`User quota exhausted or unavailable. Remaining posts: ${quotaStatus?.remainingPosts || 0}`);
-        return result;
-      }
-      
-      console.log(`Auto-posting enforcer: User quota active, ${quotaStatus.remainingPosts} posts remaining, within cycle`);
       
       const { cycleStart, cycleEnd } = PostQuotaService.getUserCycleDates(user.subscriptionStart);
       const currentDate = new Date();
@@ -103,8 +80,8 @@ export class AutoPostingEnforcer {
       }
 
       // QUOTA ENFORCEMENT: Check quota status before processing posts
-      const currentQuotaStatus = await PostQuotaService.getQuotaStatus(userId);
-      if (!currentQuotaStatus) {
+      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!quotaStatus) {
         result.errors.push('Unable to retrieve quota status');
         return result;
       }
