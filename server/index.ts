@@ -447,22 +447,8 @@ async function startServer() {
         console.log('⚡ Switching to production mode - serving built files from dist/');
         process.env.NODE_ENV = 'production';
         
-        // Enhanced static file serving with proper MIME types for JavaScript modules
-        // Serve the main bundle from dist root
-        app.use(express.static(path.join(process.cwd(), 'dist'), {
-          setHeaders: (res, filePath) => {
-            if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            } else if (filePath.endsWith('.css')) {
-              res.setHeader('Content-Type', 'text/css; charset=utf-8');
-            } else if (filePath.endsWith('.html')) {
-              res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            }
-          }
-        }));
-        
-        // Serve the public assets from dist/public
-        app.use(express.static(path.join(process.cwd(), 'dist/public'), {
+        // Serve compiled JavaScript files from dist directory
+        app.use(express.static('dist', {
           setHeaders: (res, filePath) => {
             if (filePath.endsWith('.js') || filePath.endsWith('.mjs')) {
               res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
