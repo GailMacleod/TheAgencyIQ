@@ -803,7 +803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use Facebook Access Token to connect Instagram Business API
-      const facebookToken = process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+      const facebookToken = process.env.FACEBOOK_ACCESS_TOKEN || process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
       if (!facebookToken) {
         // Create direct connection without Facebook API if token unavailable
         const connection = await storage.createPlatformConnection({
@@ -1787,7 +1787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Use Facebook Access Token to connect Instagram Business API
-      const facebookToken = process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+      const facebookToken = process.env.FACEBOOK_ACCESS_TOKEN || process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
       if (!facebookToken) {
         // Create direct connection without Facebook API if token unavailable
         const connection = await storage.createPlatformConnection({
@@ -1957,7 +1957,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Use Facebook Access Token to connect Instagram Business API
-        const facebookToken = process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+        const facebookToken = process.env.FACEBOOK_ACCESS_TOKEN || process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
         if (!facebookToken) {
           // Create direct connection without Facebook API if token unavailable
           const connection = await storage.createPlatformConnection({
@@ -2923,7 +2923,7 @@ Continue building your Value Proposition Canvas systematically.`;
         }
 
         // Use Facebook Access Token to connect Instagram Business API
-        const facebookToken = process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+        const facebookToken = process.env.FACEBOOK_ACCESS_TOKEN || process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
         if (!facebookToken) {
           // Create direct connection without Facebook API if token unavailable
           const connection = await storage.createPlatformConnection({
