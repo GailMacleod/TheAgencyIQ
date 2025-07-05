@@ -58,7 +58,7 @@ export class DirectPostPublisher {
 
   private static async testFacebookPost(content: string) {
     // Test with actual Facebook API using current token
-    const accessToken = process.env.FACEBOOK_ACCESS_TOKEN || 'your_current_token';
+    const accessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || 'your_current_token';
     
     try {
       const response = await axios.post(

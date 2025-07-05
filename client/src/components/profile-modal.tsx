@@ -38,7 +38,7 @@ export default function ProfileModal({ isOpen, onClose, user }: ProfileModalProp
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      phone: user?.phone || "+61 400 000 000",
+      phone: user?.phone || "",
       password: "",
     },
   });

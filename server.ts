@@ -289,6 +289,7 @@ app.get('/oauth-status', (req, res) => {
 // Static file serving
 app.use('/uploads', express.static('uploads'));
 app.use('/attached_assets', express.static('attached_assets'));
+app.use('/public', express.static('public'));
 
 // Serve manifest.json with proper headers
 app.get('/manifest.json', (req, res) => {
