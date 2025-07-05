@@ -358,7 +358,91 @@ async function startServer() {
     });
   });
 
-  // Static assets - combined with cache-busting headers
+  // Enhanced beacon.js endpoint with comprehensive CORS and caching - BEFORE static middleware
+  app.get('/public/js/beacon.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours cache
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    
+    // Enhanced beacon implementation
+    const beaconScript = `
+// TheAgencyIQ Local Beacon.js - Enhanced Implementation
+(function() {
+  'use strict';
+  
+  console.log('🔗 TheAgencyIQ Beacon.js loaded successfully (local)');
+  
+  // Enhanced beacon functionality
+  window.replitBeacon = window.replitBeacon || {
+    initialized: false,
+    
+    init: function() {
+      if (this.initialized) return;
+      this.initialized = true;
+      console.log('🚀 Beacon tracking initialized (TheAgencyIQ)');
+      
+      // Fire initialization event
+      if (typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('beacon:initialized', {
+          detail: { source: 'theagencyiq-local', timestamp: Date.now() }
+        }));
+      }
+    },
+    
+    track: function(event, data) {
+      console.log('📊 Beacon tracking:', event, data || {});
+      
+      // Fire tracking event for analytics
+      if (typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('beacon:track', {
+          detail: { event: event, data: data || {}, timestamp: Date.now() }
+        }));
+      }
+    },
+    
+    error: function(error) {
+      console.warn('⚠️ Beacon error:', error);
+    }
+  };
+  
+  // Legacy compatibility
+  window.beacon = window.replitBeacon;
+  
+  // Auto-initialize
+  window.replitBeacon.init();
+  
+  // Handle external beacon calls
+  if (typeof window.replitBeaconInit === 'function') {
+    try {
+      window.replitBeaconInit();
+    } catch (e) {
+      window.replitBeacon.error('External beacon init failed: ' + e.message);
+    }
+  }
+  
+})();`;
+    
+    res.send(beaconScript);
+  });
+
+  // Manifest.json endpoint
+  app.get('/manifest.json', (req, res) => {
+    res.json({
+      "name": "TheAgencyIQ",
+      "short_name": "AgencyIQ", 
+      "description": "AI-powered social media automation platform",
+      "start_url": "/",
+      "display": "standalone",
+      "background_color": "#ffffff",
+      "theme_color": "#000000",
+      "icons": [{ "src": "/attached_assets/agency_logo_1749083054761.png", "sizes": "512x512", "type": "image/png" }]
+    });
+  });
+
+  // Static assets - placed AFTER beacon.js endpoint with cache-busting headers
   app.use('/public', express.static('public', {
     setHeaders: (res) => {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -373,25 +457,6 @@ async function startServer() {
       res.setHeader('Expires', '0');
     }
   }));
-  
-  // Combined asset endpoints
-  app.get(['/manifest.json', '/public/js/beacon.js'], (req, res) => {
-    if (req.path === '/manifest.json') {
-      res.json({
-        "name": "TheAgencyIQ",
-        "short_name": "AgencyIQ", 
-        "description": "AI-powered social media automation platform",
-        "start_url": "/",
-        "display": "standalone",
-        "background_color": "#ffffff",
-        "theme_color": "#000000",
-        "icons": [{ "src": "/attached_assets/agency_logo_1749083054761.png", "sizes": "512x512", "type": "image/png" }]
-      });
-    } else {
-      res.setHeader('Content-Type', 'application/javascript');
-      res.send(`console.log('Beacon.js loaded successfully');window.beacon={track:function(event,data){console.log('Tracking:',event,data);},init:function(){console.log('Beacon tracking initialized');}};if(typeof window!=='undefined'){window.beacon.init();}`);
-    }
-  });
 
   // Create HTTP server
   const httpServer = createServer(app);

@@ -1,17 +1,23 @@
-// Beacon.js - Analytics and tracking
-console.log('Beacon.js loaded successfully');
+// Mock beacon.js file for Replit compatibility
+// This file prevents 403 errors from external beacon.js requests
 
-// Initialize tracking
-window.beacon = {
-  track: function(event, data) {
-    console.log('Tracking event:', event, data);
-  },
-  init: function() {
-    console.log('Beacon tracking initialized');
+(function() {
+  'use strict';
+  
+  // Mock beacon functionality - no-op implementation
+  window.replitBeacon = {
+    init: function() {
+      // Mock initialization
+      console.log('Beacon initialized (mock)');
+    },
+    track: function(event, data) {
+      // Mock event tracking
+      console.log('Beacon track (mock):', event, data);
+    }
+  };
+  
+  // Auto-initialize if needed
+  if (typeof window.replitBeaconInit === 'function') {
+    window.replitBeaconInit();
   }
-};
-
-// Auto-initialize
-if (typeof window !== 'undefined') {
-  window.beacon.init();
-}
+})();
