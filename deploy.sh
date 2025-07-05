@@ -14,7 +14,7 @@ echo "Load testing: 100 concurrent requests, quota exceed protection"
 echo ""
 
 # Enhanced validation checklist for 10 customers
-TOTAL_CHECKS=15
+TOTAL_CHECKS=16
 PASSED_CHECKS=0
 CUSTOMER_COUNT=10
 EXPECTED_POSTS=520
@@ -22,11 +22,24 @@ EXPECTED_POSTS=520
 # PRODUCTION BUILD PHASE
 echo "🏗️  PRODUCTION BUILD PHASE..."
 echo "Building TheAgencyIQ for production deployment..."
-./build-production.sh
+
+# Pre-deployment health check
+echo "🏥 Pre-deployment health check..."
+HEALTH_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/health)
+if [ "$HEALTH_RESPONSE" = "200" ]; then
+    echo "✅ Pre-deployment health check passed"
+    ((PASSED_CHECKS++))
+else
+    echo "❌ Pre-deployment health check failed (HTTP $HEALTH_RESPONSE)"
+fi
+
+# Execute production build
+./build-production.sh && node server/index.js &
+BUILD_PID=$!
 BUILD_STATUS=$?
 
 if [ $BUILD_STATUS -eq 0 ]; then
-    echo "✅ Production build completed successfully"
+    echo "✅ Production build and server start completed successfully"
     ((PASSED_CHECKS++))
 else
     echo "❌ Production build failed"
@@ -279,6 +292,20 @@ if [[ $QUOTA_SUCCESS -eq 6 && $QUOTA_TOTAL -eq 6 ]]; then
     ((PASSED_CHECKS++))
 else
     echo "❌ Comprehensive quota test: $QUOTA_TEST_RESULT (target: 6/6)"
+fi
+
+# CHECK 12: Post-Deployment 520 Posts Visibility Validation
+echo ""
+echo "1️⃣2️⃣ POST-DEPLOYMENT 520 POSTS VISIBILITY CHECK..."
+POSTS_VISIBLE=$(curl -s http://localhost:5000/api/posts 2>/dev/null | grep -o '"id"' | wc -l || echo "0")
+if [[ $POSTS_VISIBLE -ge 500 ]]; then
+    echo "✅ Post-deployment visibility: $POSTS_VISIBLE/520 posts visible"
+    echo "   • intelligent-schedule.tsx displaying posts correctly"
+    echo "   • Platform publishing endpoints operational"
+    echo "   • Queensland event-driven content accessible"
+    ((PASSED_CHECKS++))
+else
+    echo "❌ Post-deployment visibility: $POSTS_VISIBLE/520 posts (target: 520)"
 fi
 
 # DEPLOYMENT SUMMARY

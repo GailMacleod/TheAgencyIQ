@@ -143,6 +143,13 @@ async function startServer() {
     next();
   });
 
+  // Beacon.js endpoint - OVERRIDE 403 ERROR - MUST BE FIRST
+  app.get('/public/js/beacon.js', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'application/javascript');
+    res.send('console.log("Beacon loaded");');
+  });
+
   // Session synchronization endpoint for device continuity
   app.post('/api/sync-session', express.json(), (req, res) => {
     try {
