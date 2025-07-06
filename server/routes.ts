@@ -11,6 +11,8 @@ import { z } from "zod";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { generateContentCalendar, generateReplacementPost, getAIResponse, generateEngagementInsight } from "./grok";
+import { grokCalendarService } from './grok-calendar-service.js';
+import { calendarService } from './calendar-service.js';
 import twilio from 'twilio';
 import sgMail from '@sendgrid/mail';
 import multer from "multer";
@@ -7199,6 +7201,175 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ 
         success: false, 
         error: 'Failed to fetch user feedback' 
+      });
+    }
+  });
+
+  // Calendar-Driven Content Generation API Endpoints
+  app.get('/api/calendar/events', async (req: Request, res: Response) => {
+    try {
+      const { days, category, trending } = req.query;
+      
+      let events;
+      if (trending === 'true') {
+        events = await grokCalendarService.getTrendingEvents();
+      } else if (category) {
+        events = await grokCalendarService.getEventsByCategory(category as string);
+      } else {
+        const daysCount = days ? parseInt(days as string) : 7;
+        events = await grokCalendarService.getUpcomingEvents(daysCount);
+      }
+
+      console.log(`📅 Retrieved ${events.length} calendar events`);
+      res.json({
+        success: true,
+        events,
+        count: events.length
+      });
+    } catch (error: any) {
+      console.error('❌ Calendar events error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch calendar events' 
+      });
+    }
+  });
+
+  app.post('/api/generate-event-content', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const { 
+        platforms = ['facebook', 'instagram', 'linkedin', 'youtube', 'x'],
+        eventContext = 'upcoming',
+        eventId,
+        businessFocus,
+        customPrompt,
+        targetAudience,
+        contentStyle = 'engaging'
+      } = req.body;
+
+      // Check quota before generation
+      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!quotaStatus || quotaStatus.remainingPosts <= 0) {
+        return res.status(402).json({ 
+          error: 'No remaining posts in quota',
+          quotaStatus 
+        });
+      }
+
+      console.log(`🚀 Generating event-driven content for platforms: ${platforms.join(', ')}`);
+      
+      const contentRequest = {
+        platforms,
+        eventContext,
+        eventId,
+        businessFocus,
+        customPrompt,
+        targetAudience,
+        contentStyle
+      };
+
+      const generatedContent = await grokCalendarService.generateEventDrivenContent(contentRequest);
+      
+      // Create posts in database
+      const createdPosts = [];
+      for (const content of generatedContent) {
+        try {
+          const postData = {
+            userId,
+            platform: content.platform,
+            content: content.content,
+            scheduledFor: content.scheduledFor,
+            status: 'draft' as const,
+            eventId: content.eventId,
+            eventTitle: content.eventTitle,
+            characterCount: content.characterCount,
+            hashtags: content.hashtags,
+            mentions: content.mentions
+          };
+
+          const [newPost] = await db.insert(posts).values(postData).returning();
+          createdPosts.push({
+            ...newPost,
+            ...content
+          });
+          
+          console.log(`✅ Created ${content.platform} post: ${content.content.substring(0, 50)}...`);
+        } catch (dbError) {
+          console.error(`❌ Failed to save ${content.platform} post:`, dbError);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Generated ${createdPosts.length} event-driven posts`,
+        posts: createdPosts,
+        totalGenerated: generatedContent.length,
+        remainingQuota: quotaStatus.remainingPosts - createdPosts.length
+      });
+
+    } catch (error: any) {
+      console.error('❌ Event content generation error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to generate event-driven content',
+        details: error.message 
+      });
+    }
+  });
+
+  app.get('/api/preview-event-content', requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { 
+        platforms = 'facebook,instagram,linkedin,youtube,x',
+        eventId 
+      } = req.query;
+
+      const platformList = typeof platforms === 'string' 
+        ? platforms.split(',').map(p => p.trim())
+        : ['facebook', 'instagram', 'linkedin', 'youtube', 'x'];
+
+      console.log(`👀 Previewing content for platforms: ${platformList.join(', ')}`);
+      
+      const previews = await grokCalendarService.previewEventContent(
+        platformList, 
+        eventId as string
+      );
+
+      res.json({
+        success: true,
+        previews,
+        totalEvents: previews.length
+      });
+
+    } catch (error: any) {
+      console.error('❌ Content preview error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to preview event content' 
+      });
+    }
+  });
+
+  app.get('/api/calendar/trending', async (req: Request, res: Response) => {
+    try {
+      const trendingEvents = await grokCalendarService.getTrendingEvents();
+      
+      res.json({
+        success: true,
+        events: trendingEvents,
+        count: trendingEvents.length,
+        message: 'High-impact events for content creation'
+      });
+    } catch (error: any) {
+      console.error('❌ Trending events error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch trending events' 
       });
     }
   });
