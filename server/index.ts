@@ -45,6 +45,18 @@ async function startServer() {
     hasDatabase: !!process.env.DATABASE_URL
   });
 
+  // CRITICAL: Health check endpoint - MUST be first to bypass all middleware
+  app.get('/api/health', (req, res) => {
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: !!process.env.DATABASE_URL,
+      uptime: process.uptime(),
+      version: '1.0.0'
+    });
+  });
+
   // Facebook OAuth endpoint
   app.all('/facebook', async (req, res) => {
     try {
@@ -80,6 +92,17 @@ async function startServer() {
     } catch (error) {
       res.status(500).json({ error: 'Server issue', details: (error as Error).message });
     }
+  });
+
+  // Health check endpoint
+  app.get('/api/health', (req, res) => {
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: !!process.env.DATABASE_URL,
+      uptime: process.uptime()
+    });
   });
 
   // Data deletion status
@@ -478,6 +501,18 @@ async function startServer() {
       success: true, 
       message: 'Cache cleared successfully',
       timestamp: new Date().toISOString()
+    });
+  });
+
+  // Health check endpoint - MUST be first to bypass all middleware
+  app.get('/api/health', (req, res) => {
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: !!process.env.DATABASE_URL,
+      uptime: process.uptime(),
+      version: '1.0.0'
     });
   });
 
