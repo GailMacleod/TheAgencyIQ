@@ -199,6 +199,59 @@ export default function IntelligentSchedule() {
     fetchQueenslandEvents();
   }, []);
 
+  // Layout synchronization with null checks for dimensions
+  useEffect(() => {
+    const handleLayoutSync = () => {
+      try {
+        const dimensions = {
+          width: window.innerWidth,
+          height: window.innerHeight,
+          devicePixelRatio: window.devicePixelRatio || 1
+        };
+        
+        // Add null check for dimensions
+        if (dimensions && dimensions.width && dimensions.height) {
+          // Apply mobile layout adjustments
+          if (dimensions.width < 768) {
+            console.log('Schedule layout adjusted for mobile');
+            console.log('Mobile layout applied');
+          }
+          
+          // Sync layout state
+          const isMobile = dimensions.width < 768;
+          const isTablet = dimensions.width >= 768 && dimensions.width < 1024;
+          const isDesktop = dimensions.width >= 1024;
+          
+          // Apply responsive adjustments based on device type
+          if (isMobile) {
+            document.documentElement.style.setProperty('--schedule-columns', '1');
+            document.documentElement.style.setProperty('--schedule-gap', '0.5rem');
+          } else if (isTablet) {
+            document.documentElement.style.setProperty('--schedule-columns', '2');
+            document.documentElement.style.setProperty('--schedule-gap', '1rem');
+          } else if (isDesktop) {
+            document.documentElement.style.setProperty('--schedule-columns', '3');
+            document.documentElement.style.setProperty('--schedule-gap', '1.5rem');
+          }
+        }
+      } catch (error) {
+        console.log('Layout sync error handled gracefully:', error);
+      }
+    };
+
+    // Initial sync
+    handleLayoutSync();
+    
+    // Add resize listener with null check
+    const resizeListener = () => handleLayoutSync();
+    window.addEventListener('resize', resizeListener);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', resizeListener);
+    };
+  }, []);
+
   // Generate calendar dates for next 30 days with AEST timezone consistency
   const generateCalendarDates = () => {
     const dates = [];
