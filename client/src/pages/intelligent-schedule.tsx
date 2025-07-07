@@ -352,13 +352,23 @@ export default function IntelligentSchedule() {
     }
   };
 
-  // Handle video generation for a post using Strategizer workflow
+  // State for video prompt selection
+  const [videoPromptDialog, setVideoPromptDialog] = useState<{
+    isOpen: boolean;
+    post: Post | null;
+    promptOptions: string[];
+  }>({
+    isOpen: false,
+    post: null,
+    promptOptions: []
+  });
+
+  // Handle video generation for a post - shows prompt selection first
   const handleGenerateVideo = async (post: Post) => {
-    // Check if we have brand purpose data for the prompt
     if (!brandPurpose) {
       toast({
         title: "Brand Purpose Required",
-        description: "Complete your Strategizer brand purpose setup to generate video prompts.",
+        description: "Complete your Strategizer brand purpose setup to generate videos.",
         variant: "destructive",
       });
       setLocation("/brand-purpose");
@@ -368,12 +378,7 @@ export default function IntelligentSchedule() {
     setGeneratingVideos(prev => new Set(prev).add(post.id));
 
     try {
-      toast({
-        title: "Generating Video Content",
-        description: "Creating AI-powered video prompt from your Strategizer data...",
-      });
-
-      // Step 1: Generate video prompt using OpenAI from Strategizer input
+      // Step 1: Get video prompt options for the user to choose from
       const promptResponse = await fetch('/api/generate-video-prompt', {
         method: 'POST',
         headers: {
@@ -383,18 +388,54 @@ export default function IntelligentSchedule() {
         body: JSON.stringify({
           brandPurpose: brandPurpose.corePurpose,
           targetAudience: brandPurpose.audience,
-          contentGoal: post.content.substring(0, 100), // Use post content as goal
+          contentGoal: post.content.substring(0, 100),
           platform: post.platform
         })
       });
 
       if (!promptResponse.ok) {
-        throw new Error('Failed to generate video prompt');
+        throw new Error('Failed to generate video prompt options');
       }
 
       const promptData = await promptResponse.json();
 
-      // Step 2: Generate video using the AI-generated prompt
+      // Show dialog with 2 prompt options
+      setVideoPromptDialog({
+        isOpen: true,
+        post,
+        promptOptions: promptData.promptOptions
+      });
+
+    } catch (error) {
+      console.error('Video prompt generation error:', error);
+      toast({
+        title: "Video Prompt Generation Failed",
+        description: "Failed to generate video prompt options. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingVideos(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(post.id);
+        return newSet;
+      });
+    }
+  };
+
+  // Generate video with selected prompt
+  const generateVideoWithPrompt = async (selectedPrompt: string) => {
+    const post = videoPromptDialog.post;
+    if (!post) return;
+
+    setGeneratingVideos(prev => new Set(prev).add(post.id));
+    setVideoPromptDialog({ isOpen: false, post: null, promptOptions: [] });
+
+    try {
+      toast({
+        title: "Generating Short-Form Video",
+        description: "Creating video using Stable Video Diffusion...",
+      });
+
       const videoResponse = await fetch(`/api/posts/${post.id}/generate-video`, {
         method: 'POST',
         headers: {
@@ -402,7 +443,7 @@ export default function IntelligentSchedule() {
         },
         credentials: 'include',
         body: JSON.stringify({
-          prompt: promptData.prompt
+          videoPrompt: selectedPrompt
         })
       });
 
@@ -410,11 +451,9 @@ export default function IntelligentSchedule() {
         throw new Error('Failed to generate video');
       }
 
-      const videoData = await videoResponse.json();
-
       toast({
         title: "Video Generated Successfully",
-        description: `Short-form video created for ${post.platform} using AI-powered prompt`,
+        description: `Short-form video created for ${post.platform}`,
       });
 
       // Refresh posts to show new video
@@ -1059,6 +1098,55 @@ export default function IntelligentSchedule() {
             >
               <CheckCircle className="w-4 h-4 mr-2" />
               Great!
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Prompt Selection Dialog */}
+      <Dialog open={videoPromptDialog.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setVideoPromptDialog({ isOpen: false, post: null, promptOptions: [] });
+        }
+      }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-purple-600">
+              <Play className="w-6 h-6 mr-2" />
+              Choose Video Prompt for {videoPromptDialog.post?.platform}
+            </DialogTitle>
+            <DialogDescription>
+              Select one of the video prompts below to generate a short-form video using Stable Video Diffusion.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-6 space-y-4">
+            {videoPromptDialog.promptOptions.map((prompt, index) => (
+              <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900 mb-2">Option {index + 1}</h4>
+                    <p className="text-gray-700 text-sm leading-relaxed">{prompt}</p>
+                  </div>
+                  <Button
+                    onClick={() => generateVideoWithPrompt(prompt)}
+                    className="ml-4 bg-purple-600 hover:bg-purple-700 text-white"
+                    size="sm"
+                  >
+                    <Play className="w-4 h-4 mr-1" />
+                    Generate Video
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex justify-end space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setVideoPromptDialog({ isOpen: false, post: null, promptOptions: [] })}
+            >
+              Cancel
             </Button>
           </div>
         </DialogContent>

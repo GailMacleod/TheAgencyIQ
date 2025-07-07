@@ -7675,17 +7675,20 @@ export function addNotificationEndpoints(app: any) {
       };
 
       const platformPrompts = videoPrompts[platform.toLowerCase()] || videoPrompts.facebook;
-      const videoPrompt = platformPrompts[Math.floor(Math.random() * platformPrompts.length)];
+      
+      // Return 2 random prompt options for the user to choose from
+      const shuffled = [...platformPrompts].sort(() => Math.random() - 0.5);
+      const promptOptions = shuffled.slice(0, 2);
 
-      if (!videoPrompt) {
-        return res.status(500).json({ error: 'Failed to generate video prompt' });
+      if (!promptOptions || promptOptions.length === 0) {
+        return res.status(500).json({ error: 'Failed to generate video prompt options' });
       }
 
       res.json({
         success: true,
-        videoPrompt,
+        promptOptions,
         platform,
-        message: 'Video prompt generated successfully'
+        message: 'Video prompt options generated successfully'
       });
 
     } catch (error) {
