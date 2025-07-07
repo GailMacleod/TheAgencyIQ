@@ -193,35 +193,56 @@ TARGET MARKET: Small business owners seeking operational improvements
 VALUE PROPOSITION: Professional automation solutions
 `;
     
-    return `
-Create compelling ${platform} content that follows the complete Strategizer brand purpose waterfall strategy.
+    // Platform-specific copywriting guides
+    const platformMastery = {
+      facebook: "FACEBOOK MASTERY: Conversational storytelling. Start with relatable struggle, build community connection, ask engaging questions, create tribal FOMO. Be the business mate with insider knowledge.",
+      instagram: "INSTAGRAM MASTERY: Visual lifestyle storytelling. Aspirational transformation narrative, behind-the-scenes success, powerful emotional triggers, create desire and urgency for business upgrade.",
+      linkedin: "LINKEDIN MASTERY: Authority thought leadership. Industry expert dropping knowledge bombs, data-driven insights, contrarian professional wisdom, network-expanding shareable content.",
+      youtube: "YOUTUBE MASTERY: Educational preview mastery. Create massive curiosity gaps, tease game-changing insights, preview transformation, subscription-driving anticipation building.",
+      x: "X MASTERY: Sharp viral wisdom. Provocative truth bombs, contrarian business insights, quotable authority statements, conversation-starting controversial takes. ZERO hashtags."
+    };
 
-EVENT: "${primaryEvent.title}" - ${eventDate}
-CONTEXT: ${primaryEvent.description}
-LOCATION: ${primaryEvent.location || 'Various locations'}
+    return `
+Generate KILLER ${platform} content using complete Strategizer brand purpose waterfall methodology.
+
+EVENT DETAILS:
+"${primaryEvent.title}" - ${eventDate}
+Context: ${primaryEvent.description}
+Location: ${primaryEvent.location || 'Various Queensland locations'}
 
 ${strategizerSection}
 
-PLATFORM: ${platform}
-Max characters: ${platformSpec.characterLimit}
-Tone: ${platformSpec.tone}
-${platform === 'x' ? 'CRITICAL: Use @ mentions only, NO hashtags allowed on X platform' : 'Include 2-3 relevant hashtags'}
+${platformMastery[platform as keyof typeof platformMastery]}
 
-STRATEGIC CONTENT FRAMEWORK:
-1. Lead with a customer job-to-be-done that this event addresses
-2. Connect the event to specific pain point relief mentioned in brand purpose
-3. Highlight gain creators that align with brand value proposition
-4. Use motivation triggers from customer analysis
-5. Position as brand domination opportunity in Queensland market
-6. Make it actionable toward the core brand purpose
+PLATFORM SPECIFICATIONS:
+- MAXIMUM ${platformSpec.characterLimit} characters (count every character)
+- Tone: ${platformSpec.tone} AF - no mixed messaging
+- ${platform === 'x' ? 'ZERO hashtags - use @ mentions strategically' : 'Include 2-3 laser-targeted hashtags'}
+- Australian English with Queensland business context
 
-BRAND-ALIGNED MESSAGING:
-- How does this event serve our defined customer jobs?
-- Which specific pain points can be addressed through event participation?
-- What gains align with our value proposition and brand purpose?
-- How does this advance our Queensland market domination strategy?
+STRATEGIZER COPYWRITING WATERFALL (MANDATORY SEQUENCE):
+1. HOOK: Address specific customer job-to-be-done (first 5-10 words)
+2. PAIN AGITATION: Connect event to defined pain points (invisibility killing growth)
+3. GAIN DEMONSTRATION: Show specific value aligned with brand proposition  
+4. MOTIVATION TRIGGER: Use customer motivations from framework
+5. DOMINATION POSITIONING: Position as Queensland market advantage
+6. ACTION DRIVER: Clear CTA toward brand purpose fulfillment
 
-Return ONLY the post content following Strategizer framework, no quotes or formatting.`;
+KICK-ASS COPYWRITING REQUIREMENTS:
+- Stop-scroll attention grab in opening line
+- Specific, measurable business outcomes mentioned
+- Create curiosity gap that demands engagement
+- Include social proof or credibility element
+- Power words that trigger emotion and action
+- Urgency without being sleazy or pushy
+- Write like conversion copywriter, not content creator
+- Address real SME pain points that keep owners awake
+- Position AgencyIQ as unfair competitive advantage
+
+CORE BRAND MESSAGE INTEGRATION:
+"Good businesses die quietly from invisibility. Professional, strategic, automated presence = validation = growth."
+
+Return ONLY the final post content - no quotes, no explanations, pure copywriting gold.`;
   }
 
   /**
@@ -244,25 +265,43 @@ STRATEGIZER FRAMEWORK REQUIREMENTS:
 - Drive toward the brand domination strategy` : `You are an expert social media copywriter specializing in ${platform} content for Queensland small businesses and entrepreneurs focused on automation and efficiency solutions.`;
     
     const platformGuidelines = {
-      facebook: "Create community-focused content that encourages discussion and sharing. Use storytelling that aligns with customer motivations and jobs-to-be-done.",
-      instagram: "Write visually-inspired content with strong aesthetic appeal. Focus on inspiration and lifestyle elements that create specific gains for target customers.",
-      linkedin: "Maintain a professional tone with industry insights and business value. Position content as thought leadership that addresses customer pain points.",
-      youtube: "Create enthusiastic video descriptions that tease valuable content and encourage subscriptions while serving customer jobs-to-be-done.",
-      x: "Write concise, punchy content. NEVER use hashtags - they are strictly prohibited. Use @mentions instead when relevant. Address specific customer motivations."
+      facebook: "FACEBOOK TONE: Conversational, community-driven, story-telling master. Be relatable, ask engaging questions, create FOMO. Use casual Australian slang where appropriate. Build tribal connection. Make people want to comment and share. Be the mate who always has the best business advice.",
+      instagram: "INSTAGRAM TONE: Visual storyteller, aspirational lifestyle curator. Write like you're documenting success stories. Be inspirational but authentic. Use power words that create desire and urgency. Think: behind-the-scenes success, transformation stories, lifestyle upgrade messaging.",
+      linkedin: "LINKEDIN TONE: Industry authority, thought leader, corporate strategist. Be professional but not boring. Drop insider knowledge bombs. Position as the expert small business owners turn to for growth strategies. Authoritative, data-driven, results-focused.",
+      youtube: "YOUTUBE TONE: Enthusiastic educator, value-packed preview master. Create curiosity gaps, tease valuable insights, build anticipation. Be the channel that delivers game-changing business content. Energetic but informative.",
+      x: "X TONE: Sharp, witty, direct impact. No fluff, pure value in minimal words. Be the business guru who drops truth bombs. Controversial takes welcome if valuable. Think: viral business insights, contrarian wisdom, attention-grabbing one-liners. NEVER use hashtags."
     };
 
     return `${strategizerPrompt}
 
 ${platformGuidelines[platform as keyof typeof platformGuidelines] || 'Create engaging, platform-appropriate content.'}
 
-CRITICAL RULES:
-- Stay within the ${platformSpec.characterLimit} character limit
-- Match the platform's ${platformSpec.tone} tone exactly
-- ${platformSpec.hashtagsAllowed ? 'Include relevant hashtags' : 'NEVER use hashtags'}
-- ${platformSpec.mentionsPreferred ? 'Use @mentions when appropriate' : 'Avoid @mentions unless specifically relevant'}
-- Make content actionable and valuable for business owners
-- Write in Australian English with local business context when relevant
-- Follow the complete Strategizer waterfall: Brand Purpose → Customer Jobs → Pain Relief → Gain Creation → Market Domination`;
+CRITICAL COPYWRITING RULES:
+- MAXIMUM ${platformSpec.characterLimit} characters - count every single character
+- Match platform tone exactly - be ${platformSpec.tone} AF
+- ${platformSpec.hashtagsAllowed ? 'Include relevant hashtags' : 'ZERO hashtags allowed - use @mentions instead'}
+- ${platformSpec.mentionsPreferred ? 'Use @mentions strategically' : 'Minimal @mentions only when adding value'}
+- Write Australian English with Queensland business context
+- Follow Strategizer waterfall: Brand Purpose → Customer Jobs → Pain Relief → Gain Creation → Market Domination
+
+KICK-ASS COPYWRITING TECHNIQUES:
+- Open with attention-grabbing hooks that make people stop scrolling
+- Use power words that trigger emotion and action
+- Create curiosity gaps that demand engagement  
+- Include specific, measurable outcomes when possible
+- End with clear, compelling calls-to-action
+- Write like a conversion copywriter, not a content creator
+- Make every word count - trim ruthlessly
+- Use contrarian angles that challenge conventional thinking
+- Include social proof elements when relevant
+- Create urgency without being sleazy
+
+CONTENT MUST:
+- Sound like it's written BY a business owner FOR business owners
+- Address real pain points that keep SMEs awake at night
+- Offer actionable insights they can implement immediately
+- Position AgencyIQ as the unfair advantage they've been missing
+- Drive toward the core message: visibility equals validation and growth`;
   }
 
   /**
@@ -318,15 +357,15 @@ CRITICAL RULES:
     const eventTitle = event?.title || 'Business Innovation';
     
     const fallbackTemplates = {
-      facebook: `🚀 ${eventTitle} is happening soon! This is exactly the kind of innovation that's transforming small businesses across Australia. Are you ready to take advantage of these opportunities? ${platformSpec.cta}`,
+      facebook: `Your competitors are already planning for ${eventTitle}, but most Queensland businesses will miss this completely. Here's the brutal truth: visibility beats talent every single time. While they're scrambling last-minute, you could be positioned as THE authority in your space. Ready to stop being invisible? ${platformSpec.cta}`,
       
-      instagram: `✨ ${eventTitle} vibes! 💼 Smart business owners are always looking ahead to the next big opportunity. What's your next move? ${platformSpec.cta}`,
+      instagram: `Behind the scenes at ${eventTitle}: The businesses that show up consistently are the ones that dominate. Not the smartest. Not the cheapest. The ones that never disappear. Queensland's best-kept business secret? Automated professional presence that works 24/7. Your move. ${platformSpec.cta}`,
       
-      linkedin: `${eventTitle} represents a significant opportunity for professional growth and business development. Forward-thinking leaders are already preparing for these industry shifts. ${platformSpec.cta}`,
+      linkedin: `${eventTitle} insight: 73% of Queensland SMEs admit their biggest regret is "waiting too long to be visible." While your competition struggles with inconsistent messaging, industry leaders leverage systematic presence to capture market share. Strategic positioning starts now. ${platformSpec.cta}`,
       
-      youtube: `🎥 ${eventTitle} is coming up and it's going to be HUGE for business owners! Get ready for some game-changing insights. ${platformSpec.cta}`,
+      youtube: `Why most Queensland businesses will FAIL at ${eventTitle} (and how to be the exception): I see this pattern everywhere - brilliant business owners with incredible services, completely invisible to their ideal customers. This changes everything. ${platformSpec.cta}`,
       
-      x: `${eventTitle} is happening! Smart businesses are already planning their next moves. @TheAgencyIQ helps you stay ahead of the curve. ${platformSpec.cta}`
+      x: `${eventTitle} reality check: Your expertise means nothing if nobody sees it. Queensland's hidden advantage? @TheAgencyIQ automated visibility system. While competitors post randomly, you dominate systematically. ${platformSpec.cta}`
     };
 
     const content = fallbackTemplates[platform as keyof typeof fallbackTemplates] || 
