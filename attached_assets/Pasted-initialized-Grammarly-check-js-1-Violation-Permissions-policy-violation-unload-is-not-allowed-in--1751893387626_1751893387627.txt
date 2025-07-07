@@ -1,0 +1,36 @@
+initialized
+Grammarly-check.js:1 [Violation] Permissions policy violation: unload is not allowed in this document.
+(anonymous) @ Grammarly-check.js:1Understand this error
+AgencyIQSocial:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+16Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.Understand this error
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'ambient-light-sensor'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'battery'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'execution-while-not-rendered'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'execution-while-out-of-viewport'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'layout-animations'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'legacy-image-formats'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'navigation-override'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'oversized-images'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'publickey-credentials'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'speaker-selection'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'unoptimized-images'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'unsized-media'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'pointer-lock'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+_app-9444367c09654424.js:38 onClick is deprecated, please use onPr
