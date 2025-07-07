@@ -190,15 +190,18 @@ export class VideoGenerationService {
    */
   private enhancePromptForVideo(prompt: string, style: string): string {
     const styleEnhancements = {
-      asmr: 'ultra-realistic, smooth movements, calming, high detail, cinematic lighting',
-      product: 'professional product showcase, clean background, studio lighting, detailed textures',
-      educational: 'clear demonstration, step-by-step process, professional presentation',
-      lifestyle: 'natural movements, authentic moments, warm lighting, relatable scenarios'
+      asmr: 'ultra-realistic ASMR style, gentle movements, satisfying visuals, calming atmosphere, soft focus, peaceful environment, high detail close-ups, smooth transitions, relaxing business automation theme',
+      product: 'professional Strategizer product showcase, clean Queensland business environment, studio lighting, detailed automation workflows',
+      educational: 'clear Strategizer framework demonstration, step-by-step business transformation, professional Queensland SME presentation',
+      lifestyle: 'natural Queensland entrepreneur lifestyle, authentic business moments, warm professional lighting, relatable automation scenarios'
     };
 
-    const enhancement = styleEnhancements[style as keyof typeof styleEnhancements] || styleEnhancements.educational;
+    const enhancement = styleEnhancements[style as keyof typeof styleEnhancements] || styleEnhancements.asmr;
     
-    return `${prompt}, ${enhancement}, high quality, 4k resolution, smooth motion`;
+    // Add Strategizer-specific elements
+    const strategizerElements = 'Queensland business automation focus, SME transformation theme, value proposition clarity, customer jobs-to-be-done alignment';
+    
+    return `${prompt}, ${enhancement}, ${strategizerElements}, high quality, 4k resolution, smooth motion, short-form vertical format`;
   }
 
   /**

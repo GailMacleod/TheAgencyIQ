@@ -7565,7 +7565,7 @@ export function addNotificationEndpoints(app: any) {
       }
 
       const postId = parseInt(req.params.id);
-      const { videoPrompt, style = 'educational' } = req.body;
+      const { videoPrompt, style = 'asmr' } = req.body;
 
       if (!videoPrompt) {
         return res.status(400).json({ error: 'Video prompt is required' });
@@ -7645,32 +7645,27 @@ export function addNotificationEndpoints(app: any) {
         });
       }
 
-      // Generate video prompt using built-in templates for Stable Video Diffusion
+      // Generate Strategizer-aligned ASMR short-form video prompts for Stable Video Diffusion
       const videoPrompts = {
         facebook: [
-          "Professional business meeting in modern office, clean corporate aesthetic, 15 seconds",
-          "Person typing on laptop with business charts floating, productivity focus, 12 seconds",
-          "Team collaboration around digital whiteboard, innovation theme, 18 seconds"
+          "ASMR Queensland business automation setup, gentle typing sounds, automated social posts appearing on screen, satisfying growth metrics animation, 15 seconds",
+          "ASMR Brisbane office workflow optimization, soft paper shuffling sounds, digital transformation process visualization, peaceful productivity vibes, 12 seconds"
         ],
         instagram: [
-          "Aesthetic workspace with plants and laptop, minimalist vibes, 15 seconds",
-          "Phone screen showing social media growth metrics, success visualization, 12 seconds",
-          "Creative person brainstorming with sticky notes, inspiration flow, 16 seconds"
+          "ASMR aesthetic business automation workspace, gentle plant watering sounds, phone notifications of scheduled posts, satisfying visual growth charts, 15 seconds", 
+          "ASMR Queensland entrepreneur morning routine, soft coffee pouring sounds, automated business systems running smoothly, peaceful success visualization, 12 seconds"
         ],
         linkedin: [
-          "Professional handshake in corporate boardroom, business success, 10 seconds",
-          "Data visualization charts appearing on screen, growth analytics, 14 seconds",
-          "Executive presenting to engaged audience, leadership theme, 18 seconds"
+          "ASMR professional business strategy session, gentle paper turning sounds, value proposition canvas being completed, satisfying strategic clarity moment, 14 seconds",
+          "ASMR Queensland SME automation implementation, soft keyboard clicking sounds, customer jobs-to-be-done analysis on screen, professional transformation, 18 seconds"
         ],
         youtube: [
-          "Tutorial-style screen recording with highlights, educational content, 20 seconds",
-          "Before/after transformation showcase, results demonstration, 15 seconds",
-          "Expert explaining concept with visual aids, knowledge sharing, 25 seconds"
+          "ASMR business automation tutorial preview, gentle screen tapping sounds, Strategizer framework demonstration, satisfying process optimization steps, 20 seconds",
+          "ASMR Queensland business transformation showcase, soft clicking sounds, before/after automation results display, peaceful growth visualization, 15 seconds"
         ],
         x: [
-          "Quick data visualization animation, trending topics, 8 seconds",
-          "News-style text overlay on dynamic background, breaking update, 10 seconds",
-          "Fast-paced montage of key moments, highlight reel, 12 seconds"
+          "ASMR quick business automation tips, gentle notification sounds, rapid productivity gains visualization, satisfying efficiency moments, 8 seconds",
+          "ASMR fast-paced Queensland SME success montage, soft achievement notification sounds, automated business growth highlights, 12 seconds"
         ]
       };
 
