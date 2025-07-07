@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play, Eye, ThumbsUp, X, Sparkles, Brain, Target, Users, MapPin, Edit3, Save } from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play, Eye, ThumbsUp, X, Sparkles, Brain, Target, Users, MapPin, Edit3, Save, Video, Plus, Trash2 } from "lucide-react";
 import CalendarCard from "@/components/calendar-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,14 @@ interface Post {
   aiRecommendation?: string;
   aiScore?: number;
   localEvent?: string;
+  videoData?: {
+    id: string;
+    videoUrl: string;
+    thumbnailUrl: string;
+    duration: number;
+    style: string;
+    status: 'generating' | 'completed' | 'failed';
+  };
   analytics?: {
     reach: number;
     engagement: number;
@@ -109,6 +117,9 @@ export default function IntelligentSchedule() {
   const [aiInsights, setAiInsights] = useState<any>(null);
   const [calendarView, setCalendarView] = useState(true);
   const [queenslandEvents, setQueenslandEvents] = useState<any[]>([]);
+  const [creatingVideo, setCreatingVideo] = useState<Set<number>>(new Set());
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [selectedPostForVideo, setSelectedPostForVideo] = useState<Post | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -136,6 +147,82 @@ export default function IntelligentSchedule() {
       });
     }
   });
+
+  // Video creation mutation
+  const createVideoMutation = useMutation({
+    mutationFn: async ({ postId, script, style }: { postId: number; script: string; style: string }) => {
+      const response = await apiRequest("POST", "/api/posts/video-generate", { 
+        postId: postId.toString(),
+        script,
+        style
+      });
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      setCreatingVideo(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.postId);
+        return newSet;
+      });
+      setShowVideoModal(false);
+      setSelectedPostForVideo(null);
+      toast({
+        title: "Video Created Successfully",
+        description: "Seedance 1.0 video has been generated and attached to your post.",
+      });
+    },
+    onError: (error, variables) => {
+      setCreatingVideo(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.postId);
+        return newSet;
+      });
+      toast({
+        title: "Video Creation Failed",
+        description: "Failed to create video. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Handle video creation
+  const handleCreateVideo = (post: Post) => {
+    setSelectedPostForVideo(post);
+    setShowVideoModal(true);
+  };
+
+  // Create video for post
+  const createVideoForPost = (script: string, style: string = 'professional') => {
+    if (selectedPostForVideo) {
+      setCreatingVideo(prev => new Set(prev).add(selectedPostForVideo.id));
+      createVideoMutation.mutate({
+        postId: selectedPostForVideo.id,
+        script,
+        style
+      });
+    }
+  };
+
+  // Remove video from post
+  const removeVideoFromPost = async (postId: number) => {
+    try {
+      const response = await apiRequest("DELETE", `/api/posts/${postId}/video`);
+      if (response.ok) {
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+        toast({
+          title: "Video Removed",
+          description: "Video has been removed from the post.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Remove Failed",
+        description: "Failed to remove video. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Handle edit content button click
   const handleEditPost = (post: Post) => {
@@ -720,6 +807,54 @@ export default function IntelligentSchedule() {
                     
                     <p className="text-gray-800 mb-4 leading-relaxed">{post.content}</p>
                     
+                    {/* Video Display Section */}
+                    {post.videoData && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center">
+                            <Video className="w-4 h-4 text-blue-600 mr-2" />
+                            <span className="font-medium text-blue-800">Seedance 1.0 Video</span>
+                            <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-800">
+                              {post.videoData.duration}s • {post.videoData.style}
+                            </Badge>
+                          </div>
+                          <Button
+                            onClick={() => removeVideoFromPost(post.id)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        
+                        {post.videoData.status === 'generating' ? (
+                          <div className="flex items-center justify-center py-4">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3" />
+                            <span className="text-blue-700">Generating video...</span>
+                          </div>
+                        ) : post.videoData.status === 'completed' ? (
+                          <div className="space-y-2">
+                            <div className="relative bg-gray-100 rounded-lg overflow-hidden">
+                              <img 
+                                src={post.videoData.thumbnailUrl} 
+                                alt="Video thumbnail"
+                                className="w-full h-32 object-cover"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="bg-black bg-opacity-50 rounded-full p-2">
+                                  <Play className="w-6 h-6 text-white" />
+                                </div>
+                              </div>
+                            </div>
+                            <p className="text-xs text-blue-600">Video ready for publishing</p>
+                          </div>
+                        ) : (
+                          <div className="text-red-600 text-sm">Video generation failed</div>
+                        )}
+                      </div>
+                    )}
+                    
                     {post.aiRecommendation && (
                       <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
                         <div className="flex items-start">
@@ -740,6 +875,42 @@ export default function IntelligentSchedule() {
                         <span className="hidden sm:inline">Edit Content</span>
                         <span className="sm:hidden">Edit</span>
                       </Button>
+                      
+                      {/* Video Creation/Management Button */}
+                      {!post.videoData ? (
+                        <Button
+                          onClick={() => handleCreateVideo(post)}
+                          variant="outline"
+                          size="sm"
+                          className="w-full sm:w-auto border-blue-200 text-blue-600 hover:bg-blue-50"
+                          disabled={creatingVideo.has(post.id)}
+                        >
+                          {creatingVideo.has(post.id) ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2" />
+                              <span className="hidden sm:inline">Creating...</span>
+                              <span className="sm:hidden">Creating...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Video className="w-4 h-4 mr-2" />
+                              <span className="hidden sm:inline">Add Video</span>
+                              <span className="sm:hidden">Video</span>
+                            </>
+                          )}
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => handleCreateVideo(post)}
+                          variant="outline"
+                          size="sm"
+                          className="w-full sm:w-auto border-blue-200 text-blue-600 hover:bg-blue-50"
+                        >
+                          <Video className="w-4 h-4 mr-2" />
+                          <span className="hidden sm:inline">Edit Video</span>
+                          <span className="sm:hidden">Edit Video</span>
+                        </Button>
+                      )}
                       
                       {post.status !== 'published' && (
                         <Button
@@ -952,6 +1123,96 @@ export default function IntelligentSchedule() {
             >
               <CheckCircle className="w-4 h-4 mr-2" />
               Great!
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Creation Modal */}
+      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Video className="w-5 h-5 text-blue-600 mr-2" />
+              Create Seedance 1.0 Video
+            </DialogTitle>
+            <DialogDescription>
+              Generate a professional video using Seedance 1.0 for your {selectedPostForVideo?.platform} post.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Video Script</label>
+              <Textarea
+                id="videoScript"
+                placeholder="Enter your video script or use the post content..."
+                defaultValue={selectedPostForVideo?.content || ""}
+                rows={4}
+                className="resize-none"
+              />
+              <p className="text-xs text-gray-500">
+                Tip: Use your post content or create a custom script for the video
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Video Style</label>
+              <select 
+                id="videoStyle"
+                className="w-full p-2 border border-gray-300 rounded-md"
+                defaultValue="professional"
+              >
+                <option value="professional">Professional</option>
+                <option value="casual">Casual</option>
+                <option value="dynamic">Dynamic</option>
+                <option value="minimal">Minimal</option>
+              </select>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-start">
+                <Video className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                <div className="text-blue-800 text-sm">
+                  <p className="font-medium mb-1">Seedance 1.0 Features:</p>
+                  <ul className="text-xs space-y-1">
+                    <li>• Professional 1080p HD video generation</li>
+                    <li>• Automatic thumbnail creation</li>
+                    <li>• 15-30 second optimized duration</li>
+                    <li>• Platform-specific formatting</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowVideoModal(false)}
+              disabled={createVideoMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                const script = (document.getElementById('videoScript') as HTMLTextAreaElement)?.value || selectedPostForVideo?.content || "";
+                const style = (document.getElementById('videoStyle') as HTMLSelectElement)?.value || "professional";
+                createVideoForPost(script, style);
+              }}
+              disabled={createVideoMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {createVideoMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  Creating Video...
+                </>
+              ) : (
+                <>
+                  <Video className="w-4 h-4 mr-2" />
+                  Create Video
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>

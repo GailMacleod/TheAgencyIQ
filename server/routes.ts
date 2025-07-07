@@ -7273,7 +7273,7 @@ Continue building your Value Proposition Canvas systematically.`;
 
   app.post('/api/posts/video-generate', async (req: Request, res: Response) => {
     try {
-      const { postId, videoStyle, duration = 15 } = req.body;
+      const { postId, script, style = 'professional', duration = 15 } = req.body;
       const session = (req as any).session;
       const userId = session?.userId || 2;
 
@@ -7281,34 +7281,39 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ error: 'Post ID required for video generation' });
       }
 
+      // Convert postId to number for matching
+      const numericPostId = parseInt(postId);
+
       // Rate limiting for video processing
       await new Promise((resolve, reject) => {
         videoSemaphore.take(async () => {
           try {
             // Simulate advanced video generation with Seedance 1.0
             const videoData = {
-              id: `video_${postId}_${Date.now()}`,
-              url: `https://seedance-cdn.theagencyiq.ai/videos/${postId}.mp4`,
-              thumbnail: `https://seedance-cdn.theagencyiq.ai/thumbnails/${postId}.jpg`,
+              id: `video_${numericPostId}_${Date.now()}`,
+              videoUrl: `https://seedance-cdn.theagencyiq.ai/videos/${numericPostId}.mp4`,
+              thumbnailUrl: `https://seedance-cdn.theagencyiq.ai/thumbnails/${numericPostId}.jpg`,
               duration: duration,
-              style: videoStyle || 'professional',
-              format: 'mp4',
-              resolution: '1080p',
-              size: Math.floor(Math.random() * 50) + 10, // MB
+              style: style,
+              status: 'completed' as const,
               generatedAt: new Date().toISOString(),
-              seedanceEngine: '1.0'
+              seedanceVersion: '1.0'
             };
 
-            // Update post with video data
+            // Update post with video data in the expected format
             if (session.posts) {
-              const postIndex = session.posts.findIndex((p: any) => p.id === postId);
+              const postIndex = session.posts.findIndex((p: any) => p.id === numericPostId);
               if (postIndex !== -1) {
-                session.posts[postIndex].video = videoData;
+                session.posts[postIndex].videoData = videoData;
                 session.posts[postIndex].status = 'video_ready';
+                
+                console.log(`🎬 Seedance 1.0: Video attached to post ${numericPostId}`, videoData);
+              } else {
+                console.warn(`⚠️ Post ${numericPostId} not found in session posts`);
               }
             }
 
-            console.log(`🎬 Seedance 1.0: Generated video for post ${postId} (${videoStyle}, ${duration}s)`);
+            console.log(`🎬 Seedance 1.0: Generated video for post ${numericPostId} (${style}, ${duration}s)`);
             
             videoSemaphore.leave();
             resolve(videoData);
@@ -7321,7 +7326,7 @@ Continue building your Value Proposition Canvas systematically.`;
 
       res.json({ 
         success: true,
-        video: (session.posts?.find((p: any) => p.id === postId))?.video,
+        videoData: (session.posts?.find((p: any) => p.id === numericPostId))?.videoData,
         message: 'Video generated successfully with Seedance 1.0'
       });
       
@@ -7329,6 +7334,52 @@ Continue building your Value Proposition Canvas systematically.`;
       console.error('❌ Seedance video generation error:', error);
       res.status(500).json({ 
         error: 'Failed to generate video content',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Remove video from post
+  app.delete('/api/posts/:id/video', async (req: Request, res: Response) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const session = (req as any).session;
+      const userId = session?.userId || 2;
+
+      if (!postId) {
+        return res.status(400).json({ error: 'Post ID required' });
+      }
+
+      // Find and update the post to remove video
+      if (session.posts) {
+        const postIndex = session.posts.findIndex((p: any) => p.id === postId);
+        if (postIndex !== -1) {
+          // Remove video data from post
+          delete session.posts[postIndex].video;
+          delete session.posts[postIndex].videoData;
+          
+          // Update status back to previous state
+          if (session.posts[postIndex].status === 'video_ready') {
+            session.posts[postIndex].status = 'draft';
+          }
+          
+          console.log(`🗑️ Video removed from post ${postId}`);
+          
+          res.json({ 
+            success: true,
+            message: 'Video removed successfully'
+          });
+        } else {
+          res.status(404).json({ error: 'Post not found' });
+        }
+      } else {
+        res.status(404).json({ error: 'No posts found in session' });
+      }
+      
+    } catch (error) {
+      console.error('❌ Video removal error:', error);
+      res.status(500).json({ 
+        error: 'Failed to remove video',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
