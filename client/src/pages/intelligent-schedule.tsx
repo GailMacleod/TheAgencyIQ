@@ -399,7 +399,7 @@ export default function IntelligentSchedule() {
     });
   };
 
-  // Generate video for post only if checkbox is checked
+  // Generate video for post with two-script limit
   const handleGenerateVideo = async (post: Post) => {
     if (!videoCheckboxes.has(post.id)) {
       toast({
@@ -413,57 +413,42 @@ export default function IntelligentSchedule() {
     try {
       setGeneratingVideos(prev => new Set(prev).add(post.id));
 
-      // Call /api/generate-video-prompt only if checkbox is checked
-      const promptResponse = await fetch('/api/generate-video-prompt', {
-        method: 'POST',
+      // Get two ASMR prompt options with attempt tracking
+      const promptResponse = await fetch(`/api/generate-video-prompt/${post.id}`, {
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          brandPurpose: brandPurpose?.corePurpose,
-          targetAudience: brandPurpose?.audience,
-          contentGoal: post.content.substring(0, 100),
-          platform: post.platform
-        })
+        credentials: 'include'
       });
 
       if (!promptResponse.ok) {
-        throw new Error('Failed to generate video prompt');
+        if (promptResponse.status === 429) {
+          throw new Error('Video generation limit reached (2 attempts max per post)');
+        }
+        throw new Error('Failed to get video prompts');
       }
 
       const promptData = await promptResponse.json();
-      const prompt = promptData.promptOptions?.[0] || `ASMR ${post.platform} content: 30s`;
-
-      // Generate video with prompt
-      const videoResponse = await fetch(`/api/posts/${post.id}/generate-video`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ videoPrompt: prompt })
-      });
-
-      if (!videoResponse.ok) {
-        throw new Error('Failed to generate video');
-      }
-
-      const videoData = await videoResponse.json();
       
-      // Store video URL in state
-      setVideoUrls(prev => {
-        const newMap = new Map(prev);
-        newMap.set(post.id, videoData.videoUrl);
-        return newMap;
+      // Show dialog with two prompt options
+      setVideoPromptDialog({
+        isOpen: true,
+        post: post,
+        loading: false,
+        promptOptions: promptData.promptOptions || [],
+        editablePrompts: promptData.promptOptions || [],
+        selectedPrompt: '',
+        videoUrl: null,
+        showPreview: false,
+        regenerationCount: promptData.attempts || 0,
+        showRegenerateInput: false,
+        customPrompt: ''
       });
 
-      toast({
-        title: "Video Generated",
-        description: "30-second ASMR video created successfully!",
-      });
-
-    } catch (error) {
+    } catch (error: any) {
       console.error('Video generation error:', error);
       toast({
         title: "Video Generation Failed",
-        description: "Please try again later.",
+        description: error.message || "Please try again later.",
         variant: "destructive",
       });
     } finally {

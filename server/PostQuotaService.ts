@@ -49,6 +49,30 @@ export class PostQuotaService {
   }
 
   /**
+   * Support unlimited posts with dynamic 30-day cycles
+   * Allows dynamic scaling for customer requirements
+   */
+  static async enableUnlimitedPosts(userId: number): Promise<boolean> {
+    try {
+      // Remove any artificial post limits by setting high quota
+      const user = await storage.getUser(userId);
+      if (!user) return false;
+      
+      // Set high limit for unlimited posting capability with dynamic cycles
+      await storage.updateUser(userId, {
+        remainingPosts: 999999,
+        subscriptionPlan: 'unlimited'
+      });
+      
+      console.log(`Unlimited posts enabled for user ${userId} with dynamic 30-day cycles`);
+      return true;
+    } catch (error) {
+      console.error('Error enabling unlimited posts:', error);
+      return false;
+    }
+  }
+
+  /**
    * Enforce mandatory post usage - all 52 posts per cycle must be used
    * Returns remaining posts that must be published within cycle
    */

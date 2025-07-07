@@ -1954,7 +1954,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Video generation with semaphore for max 2 concurrent executions
+  // Initialize session video attempt tracking
+  if (!req.session.videoAttempts) {
+    req.session.videoAttempts = {};
+  }
+
+  // Generate two ASMR video prompt options with attempt tracking
+  app.get('/api/generate-video-prompt/:id', requireActiveSubscription, async (req: any, res) => {
+    const postId = req.params.id;
+    
+    // Check attempt limit (max 2 per post)
+    const attempts = req.session.videoAttempts[postId] || 0;
+    if (attempts >= 2) {
+      return res.status(429).json({ 
+        error: 'Video generation limit reached. Maximum 2 attempts per post for beta.' 
+      });
+    }
+
+    try {
+      // Return two ASMR prompt options
+      const promptOptions = [
+        `ASMR Queensland Pulse: Drip with innovation, 30s`,
+        `ASMR Coastal Whisper: Breeze with crunch, 30s`
+      ];
+
+      res.json({ 
+        promptOptions,
+        attempts,
+        remaining: 2 - attempts
+      });
+
+    } catch (error) {
+      console.error('Error generating video prompts:', error);
+      res.status(500).json({ error: 'Failed to generate video prompts' });
+    }
+  });
+
+  // Video generation with semaphore for max 2 concurrent executions  
   let videoGenerationSemaphore = 0;
   const MAX_CONCURRENT_VIDEOS = 2;
 
@@ -1962,11 +1998,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const postId = parseInt(req.params.id);
     const { videoPrompt } = req.body;
 
+    // Check attempt limit before generation
+    const attempts = req.session.videoAttempts[postId] || 0;
+    if (attempts >= 2) {
+      return res.status(429).json({ 
+        error: 'Video generation limit reached. Maximum 2 attempts per post for beta.' 
+      });
+    }
+
     if (videoGenerationSemaphore >= MAX_CONCURRENT_VIDEOS) {
       return res.status(429).json({ 
         error: 'Maximum concurrent video generations reached. Please try again later.' 
       });
     }
+
+    // Increment attempt counter
+    req.session.videoAttempts[postId] = attempts + 1;
 
     videoGenerationSemaphore++;
 
@@ -1979,7 +2026,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { exec } = childProcess;
       
       await new Promise((resolve, reject) => {
-        const command = `python stable-video-diffusion/generate_video.py --prompt "${videoPrompt}" --output ${outputPath} --asmr --short`;
+        const command = `python stable-video-diffusion/generate_video.py --prompt "${videoPrompt}" --output ${outputPath} --short`;
         
         exec(command, (err: any, stdout: any, stderr: any) => {
           if (err) {
@@ -1994,7 +2041,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ 
         videoUrl: `/${outputPath}`,
-        success: true 
+        success: true,
+        attempts: req.session.videoAttempts[postId],
+        remaining: 2 - req.session.videoAttempts[postId]
       });
 
     } catch (error) {
