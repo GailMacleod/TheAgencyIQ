@@ -17,6 +17,14 @@ import BackButton from "@/components/back-button";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
 import AutoPostingEnforcer from "@/components/auto-posting-enforcer";
 
+// Meta Pixel singleton declaration
+declare global {
+  interface Window {
+    metaPixelInitialized?: boolean;
+    fbq?: any;
+  }
+}
+
 interface Post {
   id: number;
   platform: string;
@@ -206,7 +214,7 @@ export default function IntelligentSchedule() {
     fetchQueenslandEvents();
   }, []);
 
-  // Layout synchronization with null checks for dimensions
+  // Layout synchronization with null checks for dimensions and Meta Pixel singleton
   useEffect(() => {
     const handleLayoutSync = () => {
       try {
@@ -248,6 +256,19 @@ export default function IntelligentSchedule() {
 
     // Initial sync
     handleLayoutSync();
+    
+    // Meta Pixel singleton initialization
+    if (typeof window !== 'undefined' && !window.metaPixelInitialized) {
+      try {
+        if (window.fbq) {
+          window.fbq('init', '1409057863445071');
+          window.metaPixelInitialized = true;
+          console.log('Meta Pixel initialized successfully');
+        }
+      } catch (error) {
+        console.error('Meta Pixel initialization error:', error);
+      }
+    }
     
     // Add resize listener with null check
     const resizeListener = () => handleLayoutSync();

@@ -2033,63 +2033,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fs.mkdirSync(videoDir, { recursive: true });
       }
 
-      // Dynamic script-driven video generation using FFmpeg directly
-      const { spawn } = await import('child_process');
+      // Enhanced video generation with concurrent execution control (max 2)
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execAsync = promisify(exec);
       
-      // Create dynamic patterns based on video prompt
-      let visualPattern = 'testsrc2=size=1280x720:duration=10:rate=30';
-      let audioFreq = '440';
-      let hueShift = 't*30';
+      // Concurrent execution semaphore (max 2 as requested)
+      const concurrentVideoSemaphore = global.videoSemaphore || { current: 0, max: 2 };
+      global.videoSemaphore = concurrentVideoSemaphore;
       
-      const prompt = (videoPrompt || '').toLowerCase();
-      if (prompt.includes('automation') || prompt.includes('productivity')) {
-        visualPattern = 'mandelbrot=size=1280x720:rate=30';
-        audioFreq = '220';
-        hueShift = 't*40';
-      } else if (prompt.includes('growth') || prompt.includes('success')) {
-        visualPattern = 'life=size=1280x720:rate=30:ratio=0.1';
-        audioFreq = '330';
-        hueShift = 't*50';
-      } else if (prompt.includes('innovation') || prompt.includes('creative')) {
-        visualPattern = 'mandelbrot=size=1280x720:rate=30:maxiter=50';
-        audioFreq = '550';
-        hueShift = 't*60';
-      } else if (prompt.includes('coastal') || prompt.includes('beach')) {
-        visualPattern = 'life=size=1280x720:rate=30:ratio=0.2';
-        audioFreq = '200';
-        hueShift = 't*20';
+      if (concurrentVideoSemaphore.current >= concurrentVideoSemaphore.max) {
+        throw new Error('Maximum concurrent video generation limit reached (2). Please try again in a moment.');
       }
       
-      const ffmpegArgs = [
-        '-f', 'lavfi',
-        '-i', `${visualPattern},hue=s=0.7:h=${hueShift}`,
-        '-f', 'lavfi', 
-        '-i', `sine=frequency=${audioFreq}:duration=10`,
-        '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-c:a', 'aac',
-        '-t', '10',
-        '-y',
-        outputPath
-      ];
-
-      const ffmpeg = spawn('ffmpeg', ffmpegArgs);
+      concurrentVideoSemaphore.current++;
       
-      await new Promise((resolve, reject) => {
-        ffmpeg.on('close', (code) => {
-          if (code === 0) resolve(true);
-          else reject(new Error(`Dynamic video generation failed with code ${code}`));
-        });
-        ffmpeg.on('error', reject);
+      try {
+        // Use exec command as requested with dynamic pattern generation
+        const prompt = videoPrompt || 'ASMR Queensland automation';
+        const safePrompt = prompt.replace(/['"\\]/g, ''); // Sanitize for shell execution
         
-        // Log output for debugging dynamic video generation
-        ffmpeg.stdout.on('data', (data) => {
-          console.log(`Dynamic video: ${data}`);
-        });
-        ffmpeg.stderr.on('data', (data) => {
-          console.log(`Video processing: ${data.toString().slice(0, 100)}...`);
-        });
-      });
+        const command = `python3 stable-video-diffusion/generate_video.py --prompt "${safePrompt}" --output "${outputPath}" --asmr --short`;
+        
+        const { stdout, stderr } = await execAsync(command, { timeout: 30000 });
+        console.log('Video generation output:', stdout);
+        if (stderr) console.log('Video generation info:', stderr);
+        
+      } catch (error) {
+        throw new Error(`Python video generation failed: ${error.message}`);
+      } finally {
+        // Release semaphore
+        concurrentVideoSemaphore.current = Math.max(0, concurrentVideoSemaphore.current - 1);
+      }
 
       // Update post with video URL
       await storage.updatePost(postId, {
