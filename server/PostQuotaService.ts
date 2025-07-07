@@ -49,25 +49,32 @@ export class PostQuotaService {
   }
 
   /**
-   * Support unlimited posts with dynamic 30-day cycles
-   * Allows dynamic scaling for customer requirements
+   * Enforce strict subscription quotas - NO UNLIMITED POSTS
+   * Respects subscription plan limits: Starter(12), Growth(27), Professional(52)
    */
-  static async enableUnlimitedPosts(userId: number): Promise<boolean> {
+  static async enforceSubscriptionQuota(userId: number): Promise<boolean> {
     try {
-      // Remove any artificial post limits by setting high quota
       const user = await storage.getUser(userId);
       if (!user) return false;
       
-      // Set high limit for unlimited posting capability with dynamic cycles
+      // Enforce subscription plan quotas strictly
+      const planQuotas = {
+        'starter': 12,
+        'growth': 27, 
+        'professional': 52
+      };
+      
+      const quota = planQuotas[user.subscriptionPlan as keyof typeof planQuotas] || 12;
+      
       await storage.updateUser(userId, {
-        remainingPosts: 999999,
-        subscriptionPlan: 'unlimited'
+        remainingPosts: Math.min(user.remainingPosts || quota, quota),
+        totalPosts: quota
       });
       
-      console.log(`Unlimited posts enabled for user ${userId} with dynamic 30-day cycles`);
+      console.log(`Subscription quota enforced for user ${userId}: ${quota} posts (${user.subscriptionPlan} plan)`);
       return true;
     } catch (error) {
-      console.error('Error enabling unlimited posts:', error);
+      console.error('Error enforcing subscription quota:', error);
       return false;
     }
   }
