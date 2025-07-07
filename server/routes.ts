@@ -7648,24 +7648,24 @@ export function addNotificationEndpoints(app: any) {
       // Generate Strategizer-aligned ASMR short-form video prompts for Stable Video Diffusion
       const videoPrompts = {
         facebook: [
-          "ASMR Queensland business automation setup, gentle typing sounds, automated social posts appearing on screen, satisfying growth metrics animation, 15 seconds",
-          "ASMR Brisbane office workflow optimization, soft paper shuffling sounds, digital transformation process visualization, peaceful productivity vibes, 12 seconds"
+          "ASMR Gold Coast rainforest office, gentle rain on leaves, Queensland SME planning session with native bird calls, automation tools on wooden desk, natural productivity vibes, 60 seconds",
+          "ASMR Brisbane River sunset workspace, soft water lapping sounds, local entrepreneur reviewing growth metrics with cicada ambience, peaceful business transformation, 60 seconds"
         ],
         instagram: [
-          "ASMR aesthetic business automation workspace, gentle plant watering sounds, phone notifications of scheduled posts, satisfying visual growth charts, 15 seconds", 
-          "ASMR Queensland entrepreneur morning routine, soft coffee pouring sounds, automated business systems running smoothly, peaceful success visualization, 12 seconds"
+          "ASMR Sunshine Coast beach co-working, gentle wave sounds, Queensland business owner with laptop on driftwood, seagull calls mixing with notification chimes, coastal productivity aesthetic, 60 seconds",
+          "ASMR Byron Bay hinterland café, soft coffee grinding with kookaburra calls, local SME strategizing automation while native wind chimes create peaceful business planning atmosphere, 60 seconds"
         ],
         linkedin: [
-          "ASMR professional business strategy session, gentle paper turning sounds, value proposition canvas being completed, satisfying strategic clarity moment, 14 seconds",
-          "ASMR Queensland SME automation implementation, soft keyboard clicking sounds, customer jobs-to-be-done analysis on screen, professional transformation, 18 seconds"
+          "ASMR boardroom overlooking Kangaroo Point cliffs, gentle Brisbane cityscape hum, executive hands moving across automation blueprints with distant ferry horns, sophisticated Queensland business evolution, 60 seconds",
+          "ASMR Fortitude Valley innovation hub, soft industrial ambience with native plant rustling, professional strategy session featuring local cultural elements and modern business transformation, 60 seconds"
         ],
         youtube: [
-          "ASMR business automation tutorial preview, gentle screen tapping sounds, Strategizer framework demonstration, satisfying process optimization steps, 20 seconds",
-          "ASMR Queensland business transformation showcase, soft clicking sounds, before/after automation results display, peaceful growth visualization, 15 seconds"
+          "ASMR complete Queensland SME transformation, starting with Daintree rainforest sounds transitioning to modern office automation, featuring native wildlife calls blending with success notifications, 60 seconds",
+          "ASMR journey from Outback station office to digital automation hub, natural bush sounds evolving into efficient business operations with authentic Queensland cultural touchpoints, 60 seconds"
         ],
         x: [
-          "ASMR quick business automation tips, gentle notification sounds, rapid productivity gains visualization, satisfying efficiency moments, 8 seconds",
-          "ASMR fast-paced Queensland SME success montage, soft achievement notification sounds, automated business growth highlights, 12 seconds"
+          "ASMR rapid automation insight with Moreton Bay fig tree rustling, quick business tip delivery featuring gentle native bird calls and soft notification sounds, concise Queensland innovation moment, 60 seconds",
+          "ASMR instant SME breakthrough moment, combining jacaranda tree whispers with sharp efficiency gains, authentic Brisbane business culture in concentrated format, 60 seconds"
         ]
       };
 

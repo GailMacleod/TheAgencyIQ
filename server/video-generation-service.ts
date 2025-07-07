@@ -190,18 +190,18 @@ export class VideoGenerationService {
    */
   private enhancePromptForVideo(prompt: string, style: string): string {
     const styleEnhancements = {
-      asmr: 'ultra-realistic ASMR style, gentle movements, satisfying visuals, calming atmosphere, soft focus, peaceful environment, high detail close-ups, smooth transitions, relaxing business automation theme',
-      product: 'professional Strategizer product showcase, clean Queensland business environment, studio lighting, detailed automation workflows',
-      educational: 'clear Strategizer framework demonstration, step-by-step business transformation, professional Queensland SME presentation',
-      lifestyle: 'natural Queensland entrepreneur lifestyle, authentic business moments, warm professional lighting, relatable automation scenarios'
+      asmr: 'ultra-realistic ASMR style, immersive Queensland natural environment, gentle movements with native sounds, satisfying tactile business visuals, calming atmosphere blending rainforest/coastal ambience with SME productivity, soft focus on natural textures, peaceful environment with authentic local cultural touchpoints, high detail close-ups of hands interacting with automation tools, smooth transitions between natural and business elements',
+      product: 'professional Queensland business showcase in natural setting, clean coastal or hinterland environment, natural lighting with automation workflows, detailed tactile interactions',
+      educational: 'clear demonstration in authentic Queensland landscape, step-by-step transformation with environmental context, professional local business presentation with natural elements',
+      lifestyle: 'natural Queensland entrepreneur lifestyle in iconic locations, authentic business moments with environmental sounds, warm natural lighting, relatable automation scenarios with local cultural resonance'
     };
 
     const enhancement = styleEnhancements[style as keyof typeof styleEnhancements] || styleEnhancements.asmr;
     
-    // Add Strategizer-specific elements
-    const strategizerElements = 'Queensland business automation focus, SME transformation theme, value proposition clarity, customer jobs-to-be-done alignment';
+    // Add immersive Queensland environmental elements
+    const environmentalElements = 'authentic Queensland landscape integration, natural sensory triggers (rain, waves, bird calls, wind), visceral ASMR moments blending local environment with SME identity, unexpected sensory combinations creating emotional hooks, tactile business automation experiences with environmental context';
     
-    return `${prompt}, ${enhancement}, ${strategizerElements}, high quality, 4k resolution, smooth motion, short-form vertical format`;
+    return `${prompt}, ${enhancement}, ${environmentalElements}, high quality, 4k resolution, smooth motion, 60-second ASMR format, immersive sensory experience`;
   }
 
   /**
