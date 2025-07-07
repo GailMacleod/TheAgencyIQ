@@ -1,16 +1,23 @@
-// Beacon script for Replit compatibility
-console.log("TheAgencyIQ beacon script loaded successfully");
+// Mock beacon.js file for Replit compatibility
+// This file prevents 403 errors from external beacon.js requests
 
-// Simple beacon functionality
-window.theagencyiq = window.theagencyiq || {};
-window.theagencyiq.beacon = {
-  init: function() {
-    console.log("TheAgencyIQ beacon initialized");
-  },
-  track: function(event, data) {
-    console.log("Beacon tracking:", event, data);
+(function() {
+  'use strict';
+  
+  // Mock beacon functionality - no-op implementation
+  window.replitBeacon = {
+    init: function() {
+      // Mock initialization
+      console.log('Beacon initialized (mock)');
+    },
+    track: function(event, data) {
+      // Mock event tracking
+      console.log('Beacon track (mock):', event, data);
+    }
+  };
+  
+  // Auto-initialize if needed
+  if (typeof window.replitBeaconInit === 'function') {
+    window.replitBeaconInit();
   }
-};
-
-// Initialize beacon
-window.theagencyiq.beacon.init();
+})();

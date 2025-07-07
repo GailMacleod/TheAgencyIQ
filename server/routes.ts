@@ -36,7 +36,6 @@ declare module 'express-session' {
     oauthTokens: any;
     deviceInfo: any;
     lastSyncAt: string;
-    videoAttempts: Record<string, number>;
   }
 }
 
@@ -7270,50 +7269,6 @@ Continue building your Value Proposition Canvas systematically.`;
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
-  });
-
-  // Enhanced video generation endpoint with 360p resolution
-  app.post('/api/posts/:id/generate-video', (req: Request, res: Response) => {
-    const postId = req.params.id;
-    
-    // Initialize session video attempts if not exists
-    if (!req.session.videoAttempts) {
-      req.session.videoAttempts = {};
-    }
-    
-    // Check max attempts limit
-    if (req.session.videoAttempts[postId] >= 2) {
-      return res.status(400).send('Max attempts');
-    }
-    
-    videoSemaphore.take(() => {
-      const { prompt } = req.body;
-      
-      if (!prompt) {
-        videoSemaphore.leave();
-        return res.status(400).json({ error: 'Prompt is required' });
-      }
-      
-      axios.post('https://api.wavespeed.ai/api/v3/bytedance/seedance-v1-pro-t2v-360p', {
-        prompt,
-        duration: 30,
-        resolution: '360p'
-      }, {
-        headers: {
-          'Authorization': `Bearer ${process.env.SEEDANCE_API_KEY}`
-        }
-      }).then(response => {
-        // Increment attempt counter
-        req.session.videoAttempts[postId] = (req.session.videoAttempts[postId] || 0) + 1;
-        
-        res.json({ videoUrl: response.data.videoUrl });
-      }).catch(err => {
-        console.error('Video generation error:', err.message);
-        res.status(500).send(err.message);
-      }).finally(() => {
-        videoSemaphore.leave();
-      });
-    });
   });
 
   app.post('/api/posts/video-generate', async (req: Request, res: Response) => {
