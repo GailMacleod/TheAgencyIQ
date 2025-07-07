@@ -1,0 +1,41 @@
+framework-dfe5d8a22d938f45.js:1 Unrecognized feature: 'pointer-lock'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+framework-dfe5d8a22d938f45.js:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-dfe5d8a22d938f45.js:1Understand this warning
+_app-9444367c09654424.js:38 onClick is deprecated, please use onPress
+(anonymous) @ _app-9444367c09654424.js:38Understand this warning
+_app-9444367c09654424.js:38 WARN: A component changed from uncontrolled to controlled.
+(anonymous) @ _app-9444367c09654424.js:38
+(anonymous) @ _app-9444367c09654424.js:26
+oO @ framework-dfe5d8a22d938f45.js:1
+uB @ framework-dfe5d8a22d938f45.js:1
+u_ @ framework-dfe5d8a22d938f45.js:1
+r6 @ framework-dfe5d8a22d938f45.js:1
+(anonymous) @ framework-dfe5d8a22d938f45.js:1
+uO @ framework-dfe5d8a22d938f45.js:1
+uS @ framework-dfe5d8a22d938f45.js:1
+C @ framework-dfe5d8a22d938f45.js:1
+z @ framework-dfe5d8a22d938f45.js:1Understand this warning
+_app-9444367c09654424.js:38 WARN: A component changed from controlled to uncontrolled.
+(anonymous) @ _app-9444367c09654424.js:38
+(anonymous) @ _app-9444367c09654424.js:26
+oO @ framework-dfe5d8a22d938f45.js:1
+uB @ framework-dfe5d8a22d938f45.js:1
+(anonymous) @ framework-dfe5d8a22d938f45.js:1
+C @ framework-dfe5d8a22d938f45.js:1
+z @ framework-dfe5d8a22d938f45.js:1Understand this warning
+_app-9444367c09654424.js:38 WARN: A component changed from uncontrolled to controlled.
+(anonymous) @ _app-9444367c09654424.js:38
+(anonymous) @ _app-9444367c09654424.js:26
+oO @ framework-dfe5d8a22d938f45.js:1
+uB @ framework-dfe5d8a22d938f45.js:1
+u_ @ framework-dfe5d8a22d938f45.js:1
+r6 @ framework-dfe5d8a22d938f45.js:1
+(anonymous) @ framework-dfe5d8a22d938f45.js:1
+uO @ framework-dfe5d8a22d938f45.js:1
+uS @ framework-dfe5d8a22d938f45.js:1
+C @ framework-dfe5d8a22d938f45.js:1
+z @ framework-dfe5d8a22d938f45.js:1Understand this warning
+Grammarly-check.js:1 [Violation] Permissions policy violation: unload is not allowed in this document.

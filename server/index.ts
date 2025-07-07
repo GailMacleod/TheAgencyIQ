@@ -564,11 +564,11 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development Vite...');
-      const { setupVite, serveStatic } = await import('./vite');
-      await setupVite(app, httpServer);
+      console.log('⚡ Setting up development server (Vite-free)...');
+      const { setupViteFree, serveStatic } = await import('./vite-bypass');
+      await setupViteFree(app);
       serveStatic(app);
-      console.log('✅ Vite setup complete');
+      console.log('✅ Development setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
