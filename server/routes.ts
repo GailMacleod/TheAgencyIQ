@@ -1979,12 +1979,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { exec } = childProcess;
       
       await new Promise((resolve, reject) => {
-        const command = `python stable-video-diffusion/generate_video_fallback.py --prompt "${videoPrompt}" --output ${outputPath} --asmr --short`;
+        const command = `python stable-video-diffusion/generate_video.py --prompt "${videoPrompt}" --output ${outputPath} --asmr --short`;
         
         exec(command, (err: any, stdout: any, stderr: any) => {
           if (err) {
-            console.error('Video generation error:', err.message);
-            reject(err);
+            console.error(`Generation failed: ${stderr}`);
+            reject(new Error(`Failed: ${err.message}`));
           } else {
             console.log('Video generated successfully:', stdout);
             resolve(stdout);
@@ -1993,7 +1993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json({ 
-        videoUrl: `/${outputPath}`,
+        videoUrl: `/uploads/videos/video_${postId}_${Date.now()}.mp4`,
         success: true 
       });
 
@@ -2035,6 +2035,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Video preview error:', error);
       res.status(500).json({ error: 'Failed to retrieve video preview' });
+    }
+  });
+
+  // Approve video endpoint
+  app.post('/api/posts/:id/approve-video', requireActiveSubscription, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { videoUrl } = req.body;
+      
+      if (!videoUrl) {
+        return res.status(400).json({ error: 'Video URL required' });
+      }
+
+      // Update post with approved video
+      await storage.updatePost(postId, { 
+        videoUrl,
+        hasVideo: true,
+        status: 'approved'
+      });
+
+      console.log(`📹 Video approved for post ${postId}, triggering auto-posting enforcer`);
+      
+      // Trigger auto-posting enforcer
+      const autoPostingEnforcer = await import('./auto-posting-enforcer');
+      if (autoPostingEnforcer.triggerAutoPosting) {
+        await autoPostingEnforcer.triggerAutoPosting();
+      }
+
+      res.json({ 
+        success: true,
+        message: 'Video approved and auto-posting triggered'
+      });
+
+    } catch (error) {
+      console.error('Video approval error:', error);
+      res.status(500).json({ error: 'Failed to approve video' });
     }
   });
 

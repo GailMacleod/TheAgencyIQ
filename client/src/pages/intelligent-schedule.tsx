@@ -1088,6 +1088,18 @@ export default function IntelligentSchedule() {
                           Add Video (Optional 30-second ASMR)
                         </label>
                       </div>
+                      
+                      {/* Loading Indicator */}
+                      {generatingVideos.has(post.id) && (
+                        <div className="mt-3 loading">
+                          <div className="flex items-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-sm text-blue-700">Generating ASMR video...</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Video Preview */}
                       {videoUrls.has(post.id) && (
                         <div className="mt-3">
                           <video 

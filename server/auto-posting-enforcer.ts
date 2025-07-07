@@ -467,3 +467,14 @@ export class AutoPostingEnforcer {
     }
   }
 }
+
+// Export trigger function for video approval workflow
+export async function triggerAutoPosting(userId?: number): Promise<void> {
+  try {
+    console.log('🎬 Video approval triggered auto-posting enforcer');
+    const result = await AutoPostingEnforcer.enforceAutoPosting(userId);
+    console.log(`Auto-posting completed: ${result.postsPublished} posts published, ${result.postsFailed} failed`);
+  } catch (error) {
+    console.error('Auto-posting trigger failed:', error);
+  }
+}

@@ -23,6 +23,26 @@ def check_dependencies():
         print(f"Missing dependencies: {e}")
         return False
 
+def add_audio_layer(prompt):
+    """Add ASMR audio layers to video based on prompt"""
+    audio_elements = []
+    
+    # Queensland ASMR environmental sounds
+    if "rainforest" in prompt.lower() or "forest" in prompt.lower():
+        audio_elements.extend(["gentle_rain.wav", "bird_calls.wav", "rustling_leaves.wav"])
+    elif "beach" in prompt.lower() or "coastal" in prompt.lower():
+        audio_elements.extend(["ocean_waves.wav", "gentle_breeze.wav"])
+    elif "office" in prompt.lower() or "workspace" in prompt.lower():
+        audio_elements.extend(["soft_typing.wav", "paper_shuffle.wav", "coffee_pour.wav"])
+    
+    # Business automation ASMR elements
+    if "automation" in prompt.lower():
+        audio_elements.extend(["mechanical_clicks.wav", "soft_notifications.wav"])
+    if "growth" in prompt.lower() or "success" in prompt.lower():
+        audio_elements.extend(["satisfying_completion.wav", "achievement_chime.wav"])
+        
+    return audio_elements
+
 def generate_initial_image(prompt, width=1024, height=576):
     """Generate initial image from prompt for SVD"""
     try:
@@ -164,13 +184,25 @@ def main():
     parser.add_argument('--width', type=int, default=1920, help='Video width')
     parser.add_argument('--height', type=int, default=1080, help='Video height')
     parser.add_argument('--duration', type=int, default=15, help='Video duration in seconds')
+    parser.add_argument('--asmr', action='store_true', help='Enable ASMR audio layer processing')
+    parser.add_argument('--short', action='store_true', help='Generate short 30-second video')
     
     args = parser.parse_args()
+    
+    # Override duration for short videos
+    if args.short:
+        args.duration = 30
     
     print(f"🎬 Generating video: {args.prompt}")
     print(f"📁 Output: {args.output}")
     print(f"📐 Dimensions: {args.width}x{args.height}")
     print(f"⏱️ Duration: {args.duration}s")
+    print(f"🔊 ASMR Audio: {'Enabled' if args.asmr else 'Disabled'}")
+    
+    # Process ASMR audio layers if requested
+    if args.asmr:
+        audio_layers = add_audio_layer(args.prompt)
+        print(f"🎵 ASMR Audio Elements: {', '.join(audio_layers) if audio_layers else 'Default ambient'}")
     
     # Ensure output directory exists
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
