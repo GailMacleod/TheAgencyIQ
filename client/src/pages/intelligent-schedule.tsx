@@ -356,6 +356,7 @@ export default function IntelligentSchedule() {
   const [videoPromptDialog, setVideoPromptDialog] = useState<{
     isOpen: boolean;
     post: Post | null;
+    loading?: boolean;
     promptOptions: string[];
     editablePrompts: string[];
     selectedPrompt: string;
@@ -389,6 +390,21 @@ export default function IntelligentSchedule() {
       return;
     }
 
+    // Set loading state
+    setVideoPromptDialog({
+      isOpen: true,
+      post,
+      loading: true,
+      promptOptions: [],
+      editablePrompts: [],
+      selectedPrompt: '',
+      showPreview: false,
+      videoUrl: null,
+      regenerationCount: 0,
+      showRegenerateInput: false,
+      customPrompt: ''
+    });
+
     try {
       // Get two example 30-second ASMR prompts as starting points
       const promptResponse = await fetch('/api/generate-video-prompt', {
@@ -420,6 +436,7 @@ export default function IntelligentSchedule() {
       setVideoPromptDialog({
         isOpen: true,
         post,
+        loading: false,
         promptOptions: defaultPrompts,
         editablePrompts: [...defaultPrompts],
         selectedPrompt: '',
@@ -456,6 +473,13 @@ export default function IntelligentSchedule() {
     if (!post) return;
 
     setGeneratingVideos(prev => new Set(prev).add(post.id));
+    
+    // Set loading state for video generation
+    setVideoPromptDialog(prev => ({
+      ...prev,
+      loading: true,
+      selectedPrompt
+    }));
 
     try {
       toast({
@@ -495,6 +519,7 @@ export default function IntelligentSchedule() {
       // Update dialog to show preview with approve/regenerate options
       setVideoPromptDialog(prev => ({
         ...prev,
+        loading: false,
         selectedPrompt,
         videoUrl,
         showPreview: true,
@@ -1257,7 +1282,16 @@ export default function IntelligentSchedule() {
             </DialogDescription>
           </DialogHeader>
           
-          {!videoPromptDialog.showPreview ? (
+          {videoPromptDialog.loading ? (
+            // Loading indicator during video generation
+            <div className="py-8 text-center">
+              <div className="loading mb-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Generating Video...</h3>
+              <p className="text-sm text-gray-600">Creating your 30-second ASMR video with Queensland elements</p>
+            </div>
+          ) : !videoPromptDialog.showPreview ? (
             // Prompt editing phase
             <div className="py-6 space-y-4">
               {videoPromptDialog.editablePrompts.map((prompt, index) => (

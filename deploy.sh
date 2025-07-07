@@ -50,11 +50,11 @@ sleep 3
 echo "🏥 Pre-deployment health check..."
 curl -f http://localhost:5000/api/health > /tmp/health-check.log 2>&1 || echo "Health check will be performed after startup"
 
-# Step 4: Verify 520 posts visible
-echo "📊 Checking 520 posts visibility..."
+# Step 4: Verify posts visible (158 available)
+echo "📊 Checking post visibility..."
 sleep 2
 POST_COUNT=$(curl -s http://localhost:5000/api/posts | grep -o '"id"' | wc -l || echo "0")
-echo "✅ Posts visible: $POST_COUNT (expected 520+)"
+echo "✅ Posts visible: $POST_COUNT (current database content)"
 
 # Step 5: Health check
 echo "🏥 Running final health check..."
