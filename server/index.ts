@@ -135,9 +135,9 @@ async function startServer() {
   // Enhanced CSP for Facebook compliance, Google services, and security
   app.use((req, res, next) => {
     res.setHeader('Content-Security-Policy', [
-      "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net https://esm.sh",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://esm.sh",
-      "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://esm.sh",
+      "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com",
+      "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://www.google.com",
       "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
       "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net https://www.google-analytics.com https://www.google.com",
@@ -578,75 +578,43 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development mode...');
-      
-      // Check if we have a frontend build available
-      const distPath = path.join(process.cwd(), 'dist');
-      const fs = await import('fs');
-      const hasDistIndex = fs.existsSync(path.join(distPath, 'index.html'));
-      
-      if (hasDistIndex) {
-        console.log('📦 Using built files from dist/');
-        app.use(express.static(distPath));
-        app.get('*', (req, res) => {
-          if (!req.path.startsWith('/api/')) {
-            res.sendFile(path.join(distPath, 'index.html'));
-          }
-        });
-        console.log('✅ Built files served successfully');
-      } else {
-        console.log('📂 No built frontend found, setting up development serving...');
-        // Try Vite setup for development
-        try {
-          const { setupVite } = await import('./vite.js');
-          await setupVite(app, httpServer);
-          console.log('✅ Vite setup complete');
-        } catch (viteError) {
-          console.log('⚠️  Vite setup failed, using fallback static file serving...');
-          // Fallback to static file serving if Vite fails
-          const staticPath = path.join(process.cwd(), 'client');
+      console.log('⚡ Setting up development with static file serving...');
+      try {
+        const { setupVite, serveStatic } = await import('./vite');
+        await setupVite(app, httpServer);
+        serveStatic(app);
+        console.log('✅ Vite setup complete');
+      } catch (viteError) {
+        console.log('⚠️  Vite setup failed, using fallback static file serving...');
+        // Fallback to static file serving if Vite fails
+        const staticPath = path.join(process.cwd(), 'client');
         
-          // CRITICAL: Configure MIME types for ALL file types with enhanced detection
-          app.use(express.static(staticPath, {
-            setHeaders: (res, filePath) => {
-              console.log(`Setting headers for: ${filePath}`);
-              if (filePath.includes('.tsx') || filePath.includes('.ts')) {
-                res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
-                console.log(`TypeScript file detected: ${filePath} -> text/javascript`);
-              } else if (filePath.includes('.js') || filePath.includes('.jsx')) {
-                res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
-                console.log(`JavaScript file detected: ${filePath} -> text/javascript`);
-              } else if (filePath.includes('.css')) {
-                res.setHeader('Content-Type', 'text/css; charset=utf-8');
-              }
+        // Configure MIME types for proper module serving
+        app.use(express.static(staticPath, {
+          setHeaders: (res, path) => {
+            if (path.endsWith('.tsx') || path.endsWith('.ts')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
             }
-          }));
-          
-          // Enhanced /src route with logging
-          app.use('/src', express.static(path.join(staticPath, 'src'), {
-            setHeaders: (res, filePath) => {
-              console.log(`/src route - Setting headers for: ${filePath}`);
-              if (filePath.includes('.tsx') || filePath.includes('.ts')) {
-                res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
-                console.log(`/src TypeScript file: ${filePath} -> text/javascript`);
-              } else if (filePath.includes('.js') || filePath.includes('.jsx')) {
-                res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
-              } else if (filePath.includes('.css')) {
-                res.setHeader('Content-Type', 'text/css; charset=utf-8');
-              }
+          }
+        }));
+        
+        // Serve the client's source files with proper MIME types
+        app.use('/src', express.static(path.join(staticPath, 'src'), {
+          setHeaders: (res, path) => {
+            if (path.endsWith('.tsx') || path.endsWith('.ts')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
             }
-          }));
-          
-          // Serve React app for all non-API routes
-          app.get('*', (req, res) => {
-            // Skip API routes
-            if (req.path.startsWith('/api/')) {
-              return res.status(404).json({ error: 'API route not found' });
-            }
-            res.sendFile(path.join(staticPath, 'index.html'));
-          });
-          console.log('✅ Fallback static file serving complete with proper MIME types');
-        }
+          }
+        }));
+        
+        app.use('*', (req, res) => {
+          res.sendFile(path.join(staticPath, 'index.html'));
+        });
+        console.log('✅ Fallback static file serving complete with proper MIME types');
       }
     }
   } catch (error) {

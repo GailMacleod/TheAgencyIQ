@@ -1954,14 +1954,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Initialize session video attempt tracking
+  if (!req.session.videoAttempts) {
+    req.session.videoAttempts = {};
+  }
+
   // Generate two ASMR video prompt options with attempt tracking
   app.get('/api/generate-video-prompt/:id', requireActiveSubscription, async (req: any, res) => {
     const postId = req.params.id;
-    
-    // Initialize session video attempts if not exists
-    if (!req.session.videoAttempts) {
-      req.session.videoAttempts = {};
-    }
     
     // Check attempt limit (max 2 per post)
     const attempts = req.session.videoAttempts[postId] || 0;
@@ -1998,11 +1998,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const postId = parseInt(req.params.id);
     const { videoPrompt } = req.body;
 
-    // Initialize session video attempts if not exists
-    if (!req.session.videoAttempts) {
-      req.session.videoAttempts = {};
-    }
-    
     // Check attempt limit before generation
     const attempts = req.session.videoAttempts[postId] || 0;
     if (attempts >= 2) {
@@ -2019,63 +2014,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Increment attempt counter
     req.session.videoAttempts[postId] = attempts + 1;
+
     videoGenerationSemaphore++;
 
     try {
       const videoFileName = `video_${postId}_${Date.now()}.mp4`;
       const outputPath = `uploads/videos/${videoFileName}`;
 
-      // Ensure directory exists
-      const fs = await import('fs');
-      const path = await import('path');
-      const videoDir = path.dirname(outputPath);
-      if (!fs.existsSync(videoDir)) {
-        fs.mkdirSync(videoDir, { recursive: true });
-      }
+      // Execute FFmpeg command for video generation  
+      const childProcess = await import('child_process');
+      const { exec } = childProcess;
+      
+      await new Promise((resolve, reject) => {
+        const command = `python stable-video-diffusion/generate_video.py --prompt "${videoPrompt}" --output ${outputPath} --short`;
+        
+        exec(command, (err: any, stdout: any, stderr: any) => {
+          if (err) {
+            console.error(`Generation failed: ${stderr}`);
+            reject(new Error(`Failed: ${err.message}`));
+          } else {
+            console.log('Video generated successfully:', stdout);
+            resolve(stdout);
+          }
+        });
+      });
 
-      // Enhanced video generation with exec command and 2 concurrent max
-      const { exec } = await import('child_process');
-      
-      // Concurrent execution semaphore (max 2 as requested)
-      const concurrentVideoSemaphore = global.videoSemaphore || { current: 0, max: 2 };
-      global.videoSemaphore = concurrentVideoSemaphore;
-      
-      if (concurrentVideoSemaphore.current >= concurrentVideoSemaphore.max) {
-        return res.status(429).json({ 
-          error: 'Maximum concurrent video generation limit reached (2). Please try again in a moment.',
-          semaphore: concurrentVideoSemaphore.current 
-        });
-      }
-      
-      concurrentVideoSemaphore.current++;
-      
-      const prompt = videoPrompt || 'ASMR Queensland automation';
-      const safePrompt = prompt.replace(/['"\\]/g, ''); // Sanitize for shell execution
-      const videoFilename = `video_${postId}_${Date.now()}.mp4`;
-      const command = `python generate.py --prompt "${safePrompt}" --output uploads/videos/${videoFilename} --asmr --short`;
-      
-      exec(command, { timeout: 30000 }, (err, stdout, stderr) => {
-        // Release semaphore immediately
-        concurrentVideoSemaphore.current = Math.max(0, concurrentVideoSemaphore.current - 1);
-        
-        if (err) {
-          console.error(`Video generation failed: ${stderr}`);
-          console.error(`Command: ${command}`);
-          return res.status(500).json({ 
-            error: `Video generation failed: ${err.message}`,
-            stderr: stderr,
-            command: command
-          });
-        }
-        
-        console.log('Video generation output:', stdout);
-        if (stderr) console.log('Video generation info:', stderr);
-        
-        res.json({ 
-          videoUrl: `/uploads/videos/${videoFilename}`,
-          stdout: stdout,
-          stderr: stderr
-        });
+      res.json({ 
+        videoUrl: `/${outputPath}`,
+        success: true,
+        attempts: req.session.videoAttempts[postId],
+        remaining: 2 - req.session.videoAttempts[postId]
       });
 
     } catch (error) {

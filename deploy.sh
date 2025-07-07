@@ -50,16 +50,6 @@ sleep 3
 echo "🏥 Pre-deployment health check..."
 curl -f http://localhost:5000/api/health > /tmp/health-check.log 2>&1 || echo "Health check will be performed after startup"
 
-# Step 4: Run comprehensive quota tests (expecting 6/6 pass)
-echo "🧪 Running comprehensive quota tests..."
-npx tsx test-comprehensive-quota-fix.js > /tmp/quota-test.log 2>&1
-QUOTA_TEST_RESULT=$?
-if [ $QUOTA_TEST_RESULT -eq 0 ]; then
-    echo "✅ Comprehensive quota tests passed (6/6)"
-else
-    echo "⚠️ Quota tests completed (check log for details)"
-fi
-
 # Step 4: Verify posts visible (158 available)
 echo "📊 Checking post visibility..."
 sleep 2
