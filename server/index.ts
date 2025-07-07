@@ -205,11 +205,16 @@ async function startServer() {
     }
   });
 
+  // Root route - redirect to public interface
+  app.get('/', (req, res) => {
+    res.redirect('/public');
+  });
+
   // Public bypass route - serve the React app directly
   app.get('/public', (req, res) => {
     req.session.userId = 2;
     console.log(`React app accessed at ${new Date().toISOString()}`);
-    res.sendFile(path.join(process.cwd(), 'client/public/index.html'));
+    res.redirect('/intelligent-schedule');
   });
 
   // OAuth connection routes
@@ -579,16 +584,38 @@ async function startServer() {
       console.log('✅ Production static files setup complete');
     } else {
       console.log('⚡ Setting up development static files...');
-      // Serve client assets directly without Vite
-      app.use(express.static('client/public'));
+      // Serve static assets with proper MIME types
+      app.use('/src', express.static('client/src', {
+        setHeaders: (res, path) => {
+          if (path.endsWith('.tsx') || path.endsWith('.ts')) {
+            res.set('Content-Type', 'application/javascript');
+          }
+          if (path.endsWith('.jsx') || path.endsWith('.js')) {
+            res.set('Content-Type', 'application/javascript');
+          }
+        }
+      }));
+      app.use('/public', express.static('client/public'));
       app.use('/attached_assets', express.static('attached_assets'));
       
-      // Serve index.html for all non-API routes
-      app.get('*', (req, res) => {
-        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.redirect('/public');
-        }
-      });
+      // Import and setup Vite development server
+      try {
+        const { createServer } = await import('vite');
+        const vite = await createServer({
+          server: { middlewareMode: true },
+          appType: 'custom'
+        });
+        app.use(vite.middlewares);
+        console.log('✅ Vite dev server initialized for React app');
+      } catch (error) {
+        console.log('⚠️  Vite not available, serving static files');
+        // Fallback: serve React app for all non-API routes  
+        app.get('*', (req, res) => {
+          if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+            res.sendFile(path.join(process.cwd(), 'client/index.html'));
+          }
+        });
+      }
       console.log('✅ Development static files setup complete');
     }
   } catch (error) {

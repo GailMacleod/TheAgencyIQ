@@ -378,52 +378,39 @@ export default function IntelligentSchedule() {
 
   // Handle video generation for a post - shows prompt selection first
   const handleGenerateVideo = async (post: Post) => {
-    if (!brandPurpose) {
-      toast({
-        title: "Brand Purpose Required",
-        description: "Complete your Strategizer brand purpose setup to generate videos.",
-        variant: "destructive",
-      });
-      setLocation("/brand-purpose");
-      return;
-    }
-
     setGeneratingVideos(prev => new Set(prev).add(post.id));
 
     try {
-      // Step 1: Get video prompt options for the user to choose from
+      // Step 1: Get two ASMR prompt options
       const promptResponse = await fetch('/api/generate-video-prompt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify({
-          brandPurpose: brandPurpose.corePurpose,
-          targetAudience: brandPurpose.audience,
-          contentGoal: post.content.substring(0, 100),
-          platform: post.platform
-        })
+        credentials: 'include'
       });
 
       if (!promptResponse.ok) {
-        throw new Error('Failed to generate video prompt options');
+        throw new Error('Failed to get ASMR prompt options');
       }
 
       const promptData = await promptResponse.json();
-
-      // Show dialog with 2 prompt options
+      
+      // Show dialog with 2 ASMR prompt options (e.g., 'ASMR glass cutting, 60s' and 'ASMR whisper, 60s')
       setVideoPromptDialog({
         isOpen: true,
         post,
-        promptOptions: promptData.promptOptions
+        promptOptions: promptData.promptOptions || [
+          'ASMR glass cutting sounds, 60s',
+          'ASMR whisper productivity, 60s'
+        ]
       });
 
     } catch (error) {
       console.error('Video prompt generation error:', error);
       toast({
-        title: "Video Prompt Generation Failed",
-        description: "Failed to generate video prompt options. Please try again.",
+        title: "Video Generation Failed",
+        description: "Failed to get ASMR prompt options. Please try again.",
         variant: "destructive",
       });
     } finally {
