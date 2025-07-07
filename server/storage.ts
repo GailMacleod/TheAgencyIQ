@@ -38,6 +38,7 @@ export interface IStorage {
   updateUserStripeInfo(id: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
 
   // Post operations
+  getPost(id: number): Promise<Post | undefined>;
   getPostsByUser(userId: number): Promise<Post[]>;
   getPostsByUserPaginated(userId: number, limit: number, offset: number): Promise<Post[]>;
   createPost(post: InsertPost): Promise<Post>;
@@ -166,6 +167,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Post operations
+  async getPost(id: number): Promise<Post | undefined> {
+    const [post] = await db
+      .select()
+      .from(posts)
+      .where(eq(posts.id, id));
+    return post;
+  }
+
   async getPostsByUser(userId: number): Promise<Post[]> {
     return await db
       .select()

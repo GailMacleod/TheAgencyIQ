@@ -28,6 +28,10 @@ interface Post {
   aiRecommendation?: string;
   aiScore?: number;
   localEvent?: string;
+  videoUrl?: string;
+  hasVideo?: boolean;
+  videoEnabled?: boolean;
+  isRequired?: boolean;
   analytics?: {
     reach: number;
     engagement: number;
@@ -110,6 +114,8 @@ export default function IntelligentSchedule() {
   const [calendarView, setCalendarView] = useState(true);
   const [queenslandEvents, setQueenslandEvents] = useState<any[]>([]);
   const [generatingVideos, setGeneratingVideos] = useState<Set<number>>(new Set());
+  const [videoCheckboxes, setVideoCheckboxes] = useState<Set<number>>(new Set());
+  const [videoUrls, setVideoUrls] = useState<Map<number, string>>(new Map());
 
   const queryClient = useQueryClient();
 
@@ -378,102 +384,155 @@ export default function IntelligentSchedule() {
     customPrompt: ''
   });
 
-  // Handle video generation for a post - shows 30-second ASMR prompt dialog with editing
+
+
+  // Handle video checkbox toggle
+  const handleVideoCheckboxToggle = (postId: number) => {
+    setVideoCheckboxes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+      }
+      return newSet;
+    });
+  };
+
+  // Generate video for post only if checkbox is checked
   const handleGenerateVideo = async (post: Post) => {
-    if (!brandPurpose) {
+    if (!videoCheckboxes.has(post.id)) {
       toast({
-        title: "Brand Purpose Required",
-        description: "Complete your Strategizer brand purpose setup to generate videos.",
+        title: "Video Not Enabled",
+        description: "Please check 'Add Video' to enable video generation for this post.",
         variant: "destructive",
       });
-      setLocation("/brand-purpose");
       return;
     }
 
-    // Set loading state
-    setVideoPromptDialog({
-      isOpen: true,
-      post,
-      loading: true,
-      promptOptions: [],
-      editablePrompts: [],
-      selectedPrompt: '',
-      showPreview: false,
-      videoUrl: null,
-      regenerationCount: 0,
-      showRegenerateInput: false,
-      customPrompt: ''
-    });
-
     try {
-      // Get two example 30-second ASMR prompts as starting points
+      setGeneratingVideos(prev => new Set(prev).add(post.id));
+
+      // Call /api/generate-video-prompt only if checkbox is checked
       const promptResponse = await fetch('/api/generate-video-prompt', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          brandPurpose: brandPurpose.corePurpose,
-          targetAudience: brandPurpose.audience,
+          brandPurpose: brandPurpose?.corePurpose,
+          targetAudience: brandPurpose?.audience,
           contentGoal: post.content.substring(0, 100),
           platform: post.platform
         })
       });
 
       if (!promptResponse.ok) {
-        throw new Error('Failed to generate video prompt options');
+        throw new Error('Failed to generate video prompt');
       }
 
       const promptData = await promptResponse.json();
+      const prompt = promptData.promptOptions?.[0] || `ASMR ${post.platform} content: 30s`;
 
-      // Show dialog with 2 editable 30-second ASMR prompt options
-      const defaultPrompts = promptData.promptOptions || [
-        "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
-        "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
-      ];
+      // Generate video with prompt
+      const videoResponse = await fetch(`/api/posts/${post.id}/generate-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ videoPrompt: prompt })
+      });
+
+      if (!videoResponse.ok) {
+        throw new Error('Failed to generate video');
+      }
+
+      const videoData = await videoResponse.json();
       
-      setVideoPromptDialog({
-        isOpen: true,
-        post,
-        loading: false,
-        promptOptions: defaultPrompts,
-        editablePrompts: [...defaultPrompts],
-        selectedPrompt: '',
-        videoUrl: null,
-        showPreview: false,
-        regenerationCount: 0,
-        showRegenerateInput: false,
-        customPrompt: ''
+      // Store video URL in state
+      setVideoUrls(prev => {
+        const newMap = new Map(prev);
+        newMap.set(post.id, videoData.videoUrl);
+        return newMap;
+      });
+
+      toast({
+        title: "Video Generated",
+        description: "30-second ASMR video created successfully!",
       });
 
     } catch (error) {
-      console.error('Video prompt generation error:', error);
+      console.error('Video generation error:', error);
       toast({
-        title: "Video Prompt Generation Failed",
-        description: "Using default 30-second ASMR prompts.",
+        title: "Video Generation Failed",
+        description: "Please try again later.",
         variant: "destructive",
       });
+    } finally {
+      setGeneratingVideos(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(post.id);
+        return newSet;
+      });
+    }
+  };
+
+  // Preview generated video
+  const previewVideo = async (postId: number) => {
+    try {
+      const response = await fetch(`/api/posts/${postId}/preview-video`, {
+        credentials: 'include'
+      });
       
-      // Fallback to default prompts
-      setVideoPromptDialog({
-        isOpen: true,
-        post,
-        loading: false,
-        promptOptions: [
-          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
-          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
-        ],
-        editablePrompts: [
-          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
-          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
-        ],
-        selectedPrompt: '',
-        videoUrl: null,
-        showPreview: false,
-        regenerationCount: 0,
-        showRegenerateInput: false,
-        customPrompt: ''
+      if (!response.ok) {
+        throw new Error('Failed to load video preview');
+      }
+
+      const data = await response.json();
+      
+      if (data.videoUrl) {
+        setVideoUrls(prev => {
+          const newMap = new Map(prev);
+          newMap.set(postId, data.videoUrl);
+          return newMap;
+        });
+      }
+    } catch (error) {
+      console.error('Video preview error:', error);
+      toast({
+        title: "Video Preview Failed",
+        description: "Could not load video preview.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Approve video and embed in post
+  const approveVideo = async (postId: number, videoUrl: string) => {
+    try {
+      const response = await fetch(`/api/posts/${postId}/approve-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ postId, videoUrl })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to approve video');
+      }
+
+      toast({
+        title: "Video Approved",
+        description: "Video has been embedded in the post and queued for publishing.",
+      });
+
+      // Refresh posts to show updated status
+      refetchPosts();
+
+    } catch (error) {
+      console.error('Video approval error:', error);
+      toast({
+        title: "Video Approval Failed",
+        description: "Please try again later.",
+        variant: "destructive",
       });
     }
   };
@@ -569,8 +628,8 @@ export default function IntelligentSchedule() {
     }
   };
 
-  // Approve video and save to post
-  const approveVideo = async () => {
+  // Approve video and save to post (from dialog)
+  const approveVideoFromDialog = async () => {
     const post = videoPromptDialog.post;
     if (!post || !videoPromptDialog.videoUrl) return;
 
@@ -1001,6 +1060,7 @@ export default function IntelligentSchedule() {
                         }>
                           {post.status === 'approved' ? 'Approved ✓' : post.status}
                         </Badge>
+                        <span className="text-red-500 font-bold text-lg" title="Required Post">*</span>
                         {post.aiScore && (
                           <Badge variant="secondary" className="bg-purple-100 text-purple-800">
                             AI Score: {post.aiScore}/100
@@ -1013,6 +1073,40 @@ export default function IntelligentSchedule() {
                     </div>
                     
                     <p className="text-gray-800 mb-4 leading-relaxed">{post.content}</p>
+                    
+                    {/* Video Checkbox Section */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          id={`video-${post.id}`}
+                          checked={videoCheckboxes.has(post.id)}
+                          onChange={() => handleVideoCheckboxToggle(post.id)}
+                          className="h-4 w-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
+                        />
+                        <label htmlFor={`video-${post.id}`} className="text-sm font-medium text-blue-800">
+                          Add Video (Optional 30-second ASMR)
+                        </label>
+                      </div>
+                      {videoUrls.has(post.id) && (
+                        <div className="mt-3">
+                          <video 
+                            controls 
+                            className="w-32 h-18 rounded border"
+                            src={videoUrls.get(post.id)}
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                          <Button
+                            onClick={() => approveVideo(post.id, videoUrls.get(post.id)!)}
+                            size="sm"
+                            className="ml-2 bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            Approve Video
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                     
                     {post.aiRecommendation && (
                       <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
@@ -1035,27 +1129,25 @@ export default function IntelligentSchedule() {
                         <span className="sm:hidden">Edit</span>
                       </Button>
 
-                      <Button
-                        onClick={() => handleGenerateVideo(post)}
-                        variant="outline"
-                        size="sm"
-                        className="w-full sm:w-auto bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-                        disabled={generatingVideos.has(post.id)}
-                      >
-                        {generatingVideos.has(post.id) ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2" />
-                            <span className="hidden sm:inline">Generating...</span>
-                            <span className="sm:hidden">Processing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Generate Video</span>
-                            <span className="sm:hidden">Video</span>
-                          </>
-                        )}
-                      </Button>
+                      {videoCheckboxes.has(post.id) && (
+                        <Button
+                          onClick={() => handleGenerateVideo(post)}
+                          variant="outline"
+                          size="sm"
+                          className="w-full sm:w-auto bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                          disabled={generatingVideos.has(post.id)}
+                        >
+                          {generatingVideos.has(post.id) ? (
+                            <div className="loading">Generating...</div>
+                          ) : (
+                            <>
+                              <Play className="w-4 h-4 mr-2" />
+                              <span className="hidden sm:inline">Generate Video</span>
+                              <span className="sm:hidden">Video</span>
+                            </>
+                          )}
+                        </Button>
+                      )}
                       
                       {post.status !== 'published' && (
                         <Button
@@ -1384,7 +1476,7 @@ export default function IntelligentSchedule() {
               {!videoPromptDialog.showRegenerateInput ? (
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
-                    onClick={approveVideo}
+                    onClick={approveVideoFromDialog}
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                   >
                     <ThumbsUp className="w-4 h-4 mr-2" />

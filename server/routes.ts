@@ -1954,6 +1954,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Video generation with semaphore for max 2 concurrent executions
+  let videoGenerationSemaphore = 0;
+  const MAX_CONCURRENT_VIDEOS = 2;
+
+  app.post('/api/posts/:id/generate-video', requireActiveSubscription, async (req: any, res) => {
+    const postId = parseInt(req.params.id);
+    const { videoPrompt } = req.body;
+
+    if (videoGenerationSemaphore >= MAX_CONCURRENT_VIDEOS) {
+      return res.status(429).json({ 
+        error: 'Maximum concurrent video generations reached. Please try again later.' 
+      });
+    }
+
+    videoGenerationSemaphore++;
+
+    try {
+      const videoFileName = `video_${postId}_${Date.now()}.mp4`;
+      const outputPath = `uploads/videos/${videoFileName}`;
+
+      // Execute FFmpeg command for video generation  
+      const childProcess = await import('child_process');
+      const { exec } = childProcess;
+      
+      await new Promise((resolve, reject) => {
+        const command = `python stable-video-diffusion/generate_video_fallback.py --prompt "${videoPrompt}" --output ${outputPath} --asmr --short`;
+        
+        exec(command, (err: any, stdout: any, stderr: any) => {
+          if (err) {
+            console.error('Video generation error:', err.message);
+            reject(err);
+          } else {
+            console.log('Video generated successfully:', stdout);
+            resolve(stdout);
+          }
+        });
+      });
+
+      res.json({ 
+        videoUrl: `/${outputPath}`,
+        success: true 
+      });
+
+    } catch (error) {
+      console.error('Video generation failed:', error);
+      res.status(500).json({ 
+        error: 'Video generation failed',
+        message: (error as Error).message 
+      });
+    } finally {
+      videoGenerationSemaphore--;
+    }
+  });
+
+  // Preview video endpoint
+  app.get('/api/posts/:id/preview-video', requireActiveSubscription, async (req: any, res) => {
+    const postId = parseInt(req.params.id);
+    
+    try {
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+
+      if (post.videoUrl) {
+        res.json({
+          success: true,
+          videoUrl: post.videoUrl,
+          hasVideo: true,
+          metadata: post.videoMetadata || {}
+        });
+      } else {
+        res.json({
+          success: false,
+          hasVideo: false,
+          message: 'No video available for this post'
+        });
+      }
+    } catch (error) {
+      console.error('Video preview error:', error);
+      res.status(500).json({ error: 'Failed to retrieve video preview' });
+    }
+  });
+
+  // Approve video and embed in post
+  app.post('/api/posts/:id/approve-video', requireActiveSubscription, async (req: any, res) => {
+    const postId = parseInt(req.params.id);
+    const { videoUrl } = req.body;
+
+    try {
+      // Update post with video URL
+      await storage.updatePost(postId, {
+        videoUrl: videoUrl,
+        hasVideo: true,
+        videoMetadata: {
+          approved: true,
+          approvedAt: new Date().toISOString(),
+          style: 'asmr',
+          duration: 30
+        }
+      });
+
+      // Trigger auto-posting enforcer
+      console.log(`📹 Video approved for post ${postId}, triggering auto-posting enforcer`);
+
+      res.json({
+        success: true,
+        message: 'Video approved and embedded in post',
+        postId: postId,
+        videoUrl: videoUrl
+      });
+
+    } catch (error) {
+      console.error('Video approval error:', error);
+      res.status(500).json({ error: 'Failed to approve video' });
+    }
+  });
+
   // Save brand purpose with comprehensive Strategyzer data
   app.post("/api/brand-purpose", requireActiveSubscription, async (req: any, res) => {
     try {

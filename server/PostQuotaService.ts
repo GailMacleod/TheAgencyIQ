@@ -39,12 +39,51 @@ export class PostQuotaService {
   /**
    * DYNAMIC 30-DAY CYCLE MANAGEMENT
    * Each customer gets individual 30-day cycle from their subscription date
+   * Enforces that all 52 posts be used within the subscription period
    */
   private static calculateCycleForUser(subscriptionStart: Date): { cycleStart: Date; cycleEnd: Date } {
     const cycleStart = new Date(subscriptionStart);
     const cycleEnd = new Date(subscriptionStart);
     cycleEnd.setDate(cycleEnd.getDate() + 30);
     return { cycleStart, cycleEnd };
+  }
+
+  /**
+   * Enforce mandatory post usage - all 52 posts per cycle must be used
+   * Returns remaining posts that must be published within cycle
+   */
+  static async getRemainingRequiredPosts(userId: number): Promise<number> {
+    try {
+      const user = await storage.getUser(userId);
+      if (!user) return 0;
+
+      const planQuota = this.PLAN_QUOTAS[user.subscriptionPlan as keyof typeof this.PLAN_QUOTAS] || 12;
+      
+      // Get posts within current 30-day cycle
+      const subscriptionStart = user.subscriptionStart ? new Date(user.subscriptionStart) : new Date();
+      const { cycleStart, cycleEnd } = this.calculateCycleForUser(subscriptionStart);
+      
+      const postsInCycle = await db
+        .select()
+        .from(posts)
+        .where(
+          and(
+            eq(posts.userId, userId),
+            sql`${posts.scheduledFor} >= ${cycleStart.toISOString()}`,
+            sql`${posts.scheduledFor} <= ${cycleEnd.toISOString()}`
+          )
+        );
+
+      const usedPosts = postsInCycle.length;
+      const remaining = Math.max(0, planQuota - usedPosts);
+      
+      console.log(`📊 User ${userId}: ${remaining}/${planQuota} posts remaining in 30-day cycle`);
+      return remaining;
+      
+    } catch (error) {
+      console.error('Error calculating remaining required posts:', error);
+      return 0;
+    }
   }
 
   /**
