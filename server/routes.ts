@@ -7645,37 +7645,37 @@ export function addNotificationEndpoints(app: any) {
         });
       }
 
-      // Generate video prompt using OpenAI
-      const { OpenAI } = await import('openai');
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      
-      const systemPrompt = `You are a video content strategist specializing in short-form business videos. Generate a compelling video prompt based on the Strategizer business model canvas input.
-
-Platform: ${platform}
-Brand Purpose: ${brandPurpose}
-Target Audience: ${targetAudience}
-Content Goal: ${contentGoal}
-
-Create a video prompt that will generate a ${platform === 'instagram' ? '9:16 vertical' : '16:9 horizontal'} video. The prompt should be:
-- Specific and actionable
-- Platform-appropriate
-- Business-focused
-- Visual and engaging
-- 15-30 seconds duration
-
-Return ONLY the video prompt text, no additional explanation.`;
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate a video prompt for ${platform} that aligns with our brand purpose and content goals.` }
+      // Generate video prompt using built-in templates for Stable Video Diffusion
+      const videoPrompts = {
+        facebook: [
+          "Professional business meeting in modern office, clean corporate aesthetic, 15 seconds",
+          "Person typing on laptop with business charts floating, productivity focus, 12 seconds",
+          "Team collaboration around digital whiteboard, innovation theme, 18 seconds"
         ],
-        max_tokens: 200,
-        temperature: 0.7
-      });
+        instagram: [
+          "Aesthetic workspace with plants and laptop, minimalist vibes, 15 seconds",
+          "Phone screen showing social media growth metrics, success visualization, 12 seconds",
+          "Creative person brainstorming with sticky notes, inspiration flow, 16 seconds"
+        ],
+        linkedin: [
+          "Professional handshake in corporate boardroom, business success, 10 seconds",
+          "Data visualization charts appearing on screen, growth analytics, 14 seconds",
+          "Executive presenting to engaged audience, leadership theme, 18 seconds"
+        ],
+        youtube: [
+          "Tutorial-style screen recording with highlights, educational content, 20 seconds",
+          "Before/after transformation showcase, results demonstration, 15 seconds",
+          "Expert explaining concept with visual aids, knowledge sharing, 25 seconds"
+        ],
+        x: [
+          "Quick data visualization animation, trending topics, 8 seconds",
+          "News-style text overlay on dynamic background, breaking update, 10 seconds",
+          "Fast-paced montage of key moments, highlight reel, 12 seconds"
+        ]
+      };
 
-      const videoPrompt = response.choices[0].message.content?.trim();
+      const platformPrompts = videoPrompts[platform.toLowerCase()] || videoPrompts.facebook;
+      const videoPrompt = platformPrompts[Math.floor(Math.random() * platformPrompts.length)];
 
       if (!videoPrompt) {
         return res.status(500).json({ error: 'Failed to generate video prompt' });
