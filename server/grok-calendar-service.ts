@@ -37,18 +37,22 @@ export class GrokCalendarService {
   }
 
   /**
-   * Generate platform-specific content based on upcoming calendar events
+   * Generate platform-specific content based on Strategizer brand purpose waterfall
    */
-  async generateEventDrivenContent(request: ContentGenerationRequest): Promise<PlatformContent[]> {
+  async generateEventDrivenContent(request: ContentGenerationRequest, brandPurpose?: any): Promise<PlatformContent[]> {
     try {
-      console.log('🎯 Generating event-driven content for platforms:', request.platforms);
+      console.log('🎯 Generating STRATEGIZER-DRIVEN content for platforms:', request.platforms);
 
       // Get relevant calendar events
       const events = this.getRelevantEvents(request);
       console.log(`📅 Found ${events.length} relevant events for content generation`);
 
+      // Get brand purpose and strategy context
+      const strategizerContext = await this.getStrategizerContext(brandPurpose);
+      console.log('📊 STRATEGIZER CONTEXT:', strategizerContext.summary);
+
       const contentPromises = request.platforms.map(platform => 
-        this.generatePlatformContent(platform, events, request)
+        this.generatePlatformContent(platform, events, request, strategizerContext)
       );
 
       const results = await Promise.all(contentPromises);
@@ -82,12 +86,13 @@ export class GrokCalendarService {
   }
 
   /**
-   * Generate content for a specific platform using Grok AI
+   * Generate content for a specific platform using OpenAI with Strategizer framework
    */
   private async generatePlatformContent(
     platform: string, 
     events: CalendarEvent[], 
-    request: ContentGenerationRequest
+    request: ContentGenerationRequest,
+    strategizerContext?: any
   ): Promise<PlatformContent | null> {
     try {
       const platformSpec = this.platformSpecs[platform];
@@ -102,7 +107,7 @@ export class GrokCalendarService {
         return null;
       }
 
-      const prompt = this.buildContentPrompt(platform, platformSpec, primaryEvent, events, request);
+      const prompt = this.buildContentPrompt(platform, platformSpec, primaryEvent, events, request, strategizerContext);
       
       console.log(`🚀 Generating ${platform} content with OpenAI...`);
       
@@ -111,7 +116,7 @@ export class GrokCalendarService {
         messages: [
           {
             role: "system",
-            content: this.getSystemPrompt(platform, platformSpec)
+            content: this.getSystemPrompt(platform, platformSpec, strategizerContext)
           },
           {
             role: "user",
@@ -141,62 +146,112 @@ export class GrokCalendarService {
   }
 
   /**
-   * Build comprehensive prompt for Grok AI
+   * Build comprehensive prompt with Strategizer brand purpose framework
    */
   private buildContentPrompt(
     platform: string,
     platformSpec: PlatformSpecification,
     primaryEvent: CalendarEvent,
     allEvents: CalendarEvent[],
-    request: ContentGenerationRequest
+    request: ContentGenerationRequest,
+    strategizerContext?: any
   ): string {
     const eventDate = format(primaryEvent.date, 'MMMM do, yyyy');
     const relatedEvents = allEvents.slice(1, 3);
     
+    // Build Strategizer-driven prompt
+    const strategizerSection = strategizerContext ? `
+STRATEGIZER BRAND PURPOSE FRAMEWORK:
+BRAND VALUE PROPOSITION: "${strategizerContext.valueProposition}"
+CORE PURPOSE: "${strategizerContext.summary}"
+TARGET AUDIENCE: ${strategizerContext.audience}
+
+CUSTOMER JOBS-TO-BE-DONE:
+${strategizerContext.customerJobs.map((job: string) => `- ${job}`).join('\n')}
+
+PAIN POINTS TO ADDRESS:
+${strategizerContext.painPoints.map((pain: string) => `- ${pain}`).join('\n')}
+
+GAIN CREATORS (Value We Deliver):
+${strategizerContext.gainCreators.map((gain: string) => `- ${gain}`).join('\n')}
+
+CUSTOMER MOTIVATIONS:
+${strategizerContext.motivations.map((motivation: string) => `- ${motivation}`).join('\n')}
+
+BRAND DOMINATION STRATEGY: ${strategizerContext.brandDomination}
+
+STRATEGIZER CONTENT REQUIREMENTS:
+- Content MUST align with the brand purpose and value proposition
+- Address specific customer jobs-to-be-done in the context of this event
+- Connect event opportunities to pain relief and gain creation
+- Use customer motivation triggers in messaging
+- Position brand as solution provider for stated customer jobs
+- Every post must drive toward the brand domination strategy
+` : `
+BUSINESS FOCUS: Queensland SME automation and efficiency
+TARGET MARKET: Small business owners seeking operational improvements
+VALUE PROPOSITION: Professional automation solutions
+`;
+    
     return `
-Create fresh, engaging ${platform} content for Queensland small businesses.
+Create compelling ${platform} content that follows the complete Strategizer brand purpose waterfall strategy.
 
 EVENT: "${primaryEvent.title}" - ${eventDate}
 CONTEXT: ${primaryEvent.description}
 LOCATION: ${primaryEvent.location || 'Various locations'}
+
+${strategizerSection}
 
 PLATFORM: ${platform}
 Max characters: ${platformSpec.characterLimit}
 Tone: ${platformSpec.tone}
 ${platform === 'x' ? 'CRITICAL: Use @ mentions only, NO hashtags allowed on X platform' : 'Include 2-3 relevant hashtags'}
 
-CONTENT STRATEGY:
-- Connect this event to real business opportunities for Queensland SMEs
-- Focus on automation, efficiency, and growth benefits
-- Use ${platformSpec.tone} voice appropriate for ${platform}
-- Stay under ${platformSpec.characterLimit} characters
-- Be specific about business benefits, not generic
-- Avoid overused phrases like "Brisbane Ekka" or repetitive messaging
-- Make it actionable and valuable to small business owners
+STRATEGIC CONTENT FRAMEWORK:
+1. Lead with a customer job-to-be-done that this event addresses
+2. Connect the event to specific pain point relief mentioned in brand purpose
+3. Highlight gain creators that align with brand value proposition
+4. Use motivation triggers from customer analysis
+5. Position as brand domination opportunity in Queensland market
+6. Make it actionable toward the core brand purpose
 
-BUSINESS ANGLE:
-- How does this event create opportunities?
-- What specific benefits can businesses gain?
-- How does automation/AI help small businesses capitalize?
+BRAND-ALIGNED MESSAGING:
+- How does this event serve our defined customer jobs?
+- Which specific pain points can be addressed through event participation?
+- What gains align with our value proposition and brand purpose?
+- How does this advance our Queensland market domination strategy?
 
-Return ONLY the post content, no quotes or formatting.`;
+Return ONLY the post content following Strategizer framework, no quotes or formatting.`;
   }
 
   /**
-   * Get system prompt for specific platform
+   * Get system prompt for specific platform with Strategizer framework
    */
-  private getSystemPrompt(platform: string, platformSpec: PlatformSpecification): string {
-    const basePrompt = `You are an expert social media copywriter specializing in ${platform} content for small businesses and entrepreneurs.`;
+  private getSystemPrompt(platform: string, platformSpec: PlatformSpecification, strategizerContext?: any): string {
+    const strategizerPrompt = strategizerContext ? `You are a Strategizer-certified social media copywriter who creates strategic content following the complete brand purpose waterfall methodology for ${platform}.
+
+BRAND PURPOSE FOUNDATION:
+- Value Proposition: "${strategizerContext.valueProposition}"  
+- Core Purpose: "${strategizerContext.summary}"
+- Target Audience: ${strategizerContext.audience}
+
+STRATEGIZER FRAMEWORK REQUIREMENTS:
+- Every post must align with the defined brand purpose and value proposition
+- Address specific customer jobs-to-be-done from the framework
+- Connect content to pain point relief and gain creation
+- Use customer motivation triggers identified in the strategy
+- Position brand as solution provider for stated customer jobs
+- Drive toward the brand domination strategy` : `You are an expert social media copywriter specializing in ${platform} content for Queensland small businesses and entrepreneurs focused on automation and efficiency solutions.`;
     
     const platformGuidelines = {
-      facebook: "Create community-focused content that encourages discussion and sharing. Use storytelling and ask questions.",
-      instagram: "Write visually-inspired content with strong aesthetic appeal. Focus on inspiration and lifestyle elements.",
-      linkedin: "Maintain a professional tone with industry insights and business value. Position content as thought leadership.",
-      youtube: "Create enthusiastic video descriptions that tease valuable content and encourage subscriptions.",
-      x: "Write concise, punchy content. NEVER use hashtags - they are strictly prohibited. Use @mentions instead when relevant."
+      facebook: "Create community-focused content that encourages discussion and sharing. Use storytelling that aligns with customer motivations and jobs-to-be-done.",
+      instagram: "Write visually-inspired content with strong aesthetic appeal. Focus on inspiration and lifestyle elements that create specific gains for target customers.",
+      linkedin: "Maintain a professional tone with industry insights and business value. Position content as thought leadership that addresses customer pain points.",
+      youtube: "Create enthusiastic video descriptions that tease valuable content and encourage subscriptions while serving customer jobs-to-be-done.",
+      x: "Write concise, punchy content. NEVER use hashtags - they are strictly prohibited. Use @mentions instead when relevant. Address specific customer motivations."
     };
 
-    return `${basePrompt}
+    return `${strategizerPrompt}
 
 ${platformGuidelines[platform as keyof typeof platformGuidelines] || 'Create engaging, platform-appropriate content.'}
 
@@ -206,7 +261,8 @@ CRITICAL RULES:
 - ${platformSpec.hashtagsAllowed ? 'Include relevant hashtags' : 'NEVER use hashtags'}
 - ${platformSpec.mentionsPreferred ? 'Use @mentions when appropriate' : 'Avoid @mentions unless specifically relevant'}
 - Make content actionable and valuable for business owners
-- Write in Australian English with local business context when relevant`;
+- Write in Australian English with local business context when relevant
+- Follow the complete Strategizer waterfall: Brand Purpose → Customer Jobs → Pain Relief → Gain Creation → Market Domination`;
   }
 
   /**
@@ -309,6 +365,66 @@ CRITICAL RULES:
    */
   async getTrendingEvents(): Promise<CalendarEvent[]> {
     return calendarService.getTrendingEvents();
+  }
+
+  /**
+   * Get Strategizer brand purpose context for content generation
+   */
+  async getStrategizerContext(brandPurpose?: any): Promise<any> {
+    try {
+      if (!brandPurpose) {
+        console.log('⚠️ No brand purpose provided - using default context');
+        return {
+          summary: 'Generic Queensland business automation',
+          valueProposition: 'Helping Queensland SMEs automate their marketing',
+          customerJobs: ['automate marketing', 'save time', 'grow business'],
+          painPoints: ['manual posting', 'lack of consistency', 'time constraints'],
+          gainCreators: ['automation', 'AI-powered content', 'multi-platform posting'],
+          brandDomination: 'Queensland market leadership in SME automation'
+        };
+      }
+
+      // Extract Strategizer framework elements
+      const context = {
+        summary: brandPurpose.corePurpose || 'Brand purpose driven content',
+        valueProposition: brandPurpose.productsServices || 'Professional services',
+        customerJobs: [
+          brandPurpose.jobToBeDone || 'solve business problems',
+          'increase efficiency',
+          'grow revenue'
+        ],
+        painPoints: brandPurpose.painPoints ? brandPurpose.painPoints.split(',').map((p: string) => p.trim()) : [
+          'manual processes',
+          'time constraints',
+          'lack of automation'
+        ],
+        gainCreators: [
+          'automation solutions',
+          'AI-powered systems',
+          'strategic consulting'
+        ],
+        motivations: brandPurpose.motivations ? brandPurpose.motivations.split(',').map((m: string) => m.trim()) : [
+          'business growth',
+          'competitive advantage',
+          'operational efficiency'
+        ],
+        audience: brandPurpose.audience || 'Queensland small business owners',
+        brandDomination: `${brandPurpose.brandName || 'Brand'} domination in Queensland market`
+      };
+
+      console.log('📊 STRATEGIZER CONTEXT BUILT:', context.summary);
+      return context;
+    } catch (error) {
+      console.error('❌ Error building Strategizer context:', error);
+      return {
+        summary: 'Default business automation context',
+        valueProposition: 'Queensland SME automation services',
+        customerJobs: ['automate marketing', 'save time'],
+        painPoints: ['manual processes', 'time constraints'],
+        gainCreators: ['automation', 'AI systems'],
+        brandDomination: 'Queensland market leadership'
+      };
+    }
   }
 
   /**
