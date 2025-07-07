@@ -564,11 +564,22 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development Vite...');
-      const { setupVite, serveStatic } = await import('./vite');
-      await setupVite(app, httpServer);
-      serveStatic(app);
-      console.log('✅ Vite setup complete');
+      console.log('⚡ Setting up production static serving (Vite-free)...');
+      
+      // Serve static files from dist/ (esbuild output)
+      app.use(express.static('dist', { 
+        setHeaders: (res, path) => {
+          if (path.endsWith('.js')) {
+            res.set('Content-Type', 'application/javascript');
+          }
+        }
+      }));
+      
+      // Static assets
+      app.use('/attached_assets', express.static('attached_assets'));
+      app.use('/public', express.static('public'));
+      
+      console.log('✅ Static file serving configured (esbuild mode)');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
