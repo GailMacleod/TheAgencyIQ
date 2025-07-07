@@ -7584,38 +7584,13 @@ export function addNotificationEndpoints(app: any) {
 
       console.log(`🎬 Generating video for post ${postId} on ${postData.platform}`);
 
-      // Generate ASMR video using Python script with prompt
-      console.log(`🎬 Generating ASMR video: "${videoPrompt}"`);
-      
-      const { exec } = await import('child_process');
-      const util = await import('util');
-      const execPromise = util.promisify(exec);
-      
-      try {
-        // Execute Python video generation script
-        const outputPath = `uploads/videos/asmr_${postId}_${Date.now()}.mp4`;
-        await execPromise(`python generate.py --prompt "${videoPrompt}" --output "${outputPath}" --asmr`);
-        
-        const result = {
-          success: true,
-          videoUrl: `/${outputPath}`,
-          metadata: {
-            prompt: videoPrompt,
-            platform: postData.platform,
-            duration: '60s',
-            style: 'ASMR',
-            aspectRatio: postData.platform === 'instagram' ? '9:16' : '16:9'
-          }
-        };
-      } catch (error) {
-        // Fallback to video generation service if Python script fails
-        const result = await videoGenerationService.generateVideo({
-          prompt: videoPrompt,
-          platform: postData.platform,
-          userId,
-          style: 'ASMR'
-        });
-      }
+      // Generate video with user's custom prompt
+      const result = await videoGenerationService.generateVideo({
+        prompt: videoPrompt,
+        platform: postData.platform,
+        userId,
+        style
+      });
 
       if (result.success) {
         // Update post with video information
@@ -7670,27 +7645,32 @@ export function addNotificationEndpoints(app: any) {
         });
       }
 
-      // Generate ASMR-style video prompts for Stable Video Diffusion
+      // Generate video prompt using built-in templates for Stable Video Diffusion
       const videoPrompts = {
         facebook: [
-          "ASMR glass cutting sounds with crystal reflections, satisfying texture, 60s",
-          "ASMR whisper productivity session, gentle typing sounds, 60s"
+          "Professional business meeting in modern office, clean corporate aesthetic, 15 seconds",
+          "Person typing on laptop with business charts floating, productivity focus, 12 seconds",
+          "Team collaboration around digital whiteboard, innovation theme, 18 seconds"
         ],
         instagram: [
-          "ASMR aesthetic workspace setup, gentle object placement sounds, 60s", 
-          "ASMR glass apple slice cutting, crispy satisfying sounds, 60s"
+          "Aesthetic workspace with plants and laptop, minimalist vibes, 15 seconds",
+          "Phone screen showing social media growth metrics, success visualization, 12 seconds",
+          "Creative person brainstorming with sticky notes, inspiration flow, 16 seconds"
         ],
         linkedin: [
-          "ASMR professional paper shuffling, quiet office ambiance, 60s",
-          "ASMR gentle keyboard typing, productivity focus sounds, 60s"
+          "Professional handshake in corporate boardroom, business success, 10 seconds",
+          "Data visualization charts appearing on screen, growth analytics, 14 seconds",
+          "Executive presenting to engaged audience, leadership theme, 18 seconds"
         ],
         youtube: [
-          "ASMR tutorial whispers with soft visual cues, educational calm, 60s",
-          "ASMR glass cutting demonstration, detailed texture sounds, 60s"
+          "Tutorial-style screen recording with highlights, educational content, 20 seconds",
+          "Before/after transformation showcase, results demonstration, 15 seconds",
+          "Expert explaining concept with visual aids, knowledge sharing, 25 seconds"
         ],
         x: [
-          "ASMR quick tapping patterns, rhythmic satisfaction, 60s",
-          "ASMR whisper news updates, gentle information delivery, 60s"
+          "Quick data visualization animation, trending topics, 8 seconds",
+          "News-style text overlay on dynamic background, breaking update, 10 seconds",
+          "Fast-paced montage of key moments, highlight reel, 12 seconds"
         ]
       };
 

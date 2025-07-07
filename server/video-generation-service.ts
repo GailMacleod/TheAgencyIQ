@@ -212,64 +212,21 @@ export class VideoGenerationService {
     duration: number;
   }): Promise<{ success: boolean; videoPath?: string; error?: string }> {
     try {
-      console.log('🔄 Generating ASMR-style fallback video...');
+      console.log('🔄 Generating fallback video...');
       
-      // Create ASMR-style video based on prompt content
-      let command: string;
+      // Create simple animated video with FFmpeg
+      const escapedText = params.prompt.replace(/'/g, "\\'").replace(/"/g, '\\"');
+      const command = `ffmpeg -f lavfi -i "color=c=navy:size=${params.width}x${params.height}:duration=${params.duration}" -vf "drawtext=fontsize=30:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:text='${escapedText}'" -c:v libx264 -t ${params.duration} -y "${params.output}"`;
       
-      if (params.prompt.toLowerCase().includes('glass') || params.prompt.toLowerCase().includes('slice')) {
-        // Glass apple slicing ASMR video
-        command = `ffmpeg -y \\
-          -f lavfi -i "color=c=#2a4d3a:size=${params.width}x${params.height}:duration=${params.duration}" \\
-          -f lavfi -i "color=c=#8fbc8f:size=200:200:duration=${params.duration}" \\
-          -f lavfi -i "color=c=#ff6b6b:size=150:150:duration=${params.duration}" \\
-          -filter_complex "[0:v][1:v]overlay=x='if(gte(t,1), (W-w)/2+30*sin(2*PI*t), -w)':y='(H-h)/2':shortest=1[bg1]; \\
-          [bg1][2:v]overlay=x='if(gte(t,3), (W-w)/2-40*cos(2*PI*t), W)':y='(H-h)/2+50':shortest=1[bg2]; \\
-          [bg2]drawtext=fontsize=24:fontcolor=white@0.8:x=(w-text_w)/2:y=h-80:text='Fresh Apple Slicing - ASMR Experience'[final]" \\
-          -map "[final]" -c:v libx264 -pix_fmt yuv420p -t ${params.duration} "${params.output}"`;
-      } else if (params.prompt.toLowerCase().includes('transformation')) {
-        // Business transformation video
-        command = `ffmpeg -y \\
-          -f lavfi -i "color=c=#1e3a8a:size=${params.width}x${params.height}:duration=${params.duration}" \\
-          -f lavfi -i "color=c=#3b82f6:size=300:100:duration=${params.duration}" \\
-          -f lavfi -i "color=c=#60a5fa:size=200:100:duration=${params.duration}" \\
-          -filter_complex "[0:v][1:v]overlay=x='(W-w)/2':y='(H-h)/2-100+20*sin(2*PI*t)':shortest=1[bg1]; \\
-          [bg1][2:v]overlay=x='(W-w)/2':y='(H-h)/2+50+15*cos(2*PI*t)':shortest=1[bg2]; \\
-          [bg2]drawtext=fontsize=32:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:text='Business Transformation':enable='between(t,0,${params.duration})'[final]" \\
-          -map "[final]" -c:v libx264 -pix_fmt yuv420p -t ${params.duration} "${params.output}"`;
-      } else if (params.prompt.toLowerCase().includes('productivity') || params.prompt.toLowerCase().includes('automation')) {
-        // Productivity/automation video
-        command = `ffmpeg -y \\
-          -f lavfi -i "color=c=#065f46:size=${params.width}x${params.height}:duration=${params.duration}" \\
-          -f lavfi -i "color=c=#10b981:size=100:100:duration=${params.duration}" \\
-          -filter_complex "[0:v][1:v]overlay=x='100+200*t/${params.duration}':y='(H-h)/2+30*sin(4*PI*t)':shortest=1[bg1]; \\
-          [bg1]drawtext=fontsize=28:fontcolor=white:x=(w-text_w)/2:y=50:text='Automated Productivity Solutions'[final]" \\
-          -map "[final]" -c:v libx264 -pix_fmt yuv420p -t ${params.duration} "${params.output}"`;
-      } else {
-        // Default dynamic video
-        command = `ffmpeg -y \\
-          -f lavfi -i "color=c=#374151:size=${params.width}x${params.height}:duration=${params.duration}" \\
-          -f lavfi -i "color=c=#6366f1:size=150:150:duration=${params.duration}" \\
-          -f lavfi -i "color=c=#ec4899:size=100:100:duration=${params.duration}" \\
-          -filter_complex "[0:v][1:v]overlay=x='(W-w)/2+50*sin(2*PI*t)':y='(H-h)/2+30*cos(2*PI*t)':shortest=1[bg1]; \\
-          [bg1][2:v]overlay=x='(W-w)/2-40*cos(2*PI*t)':y='(H-h)/2-20*sin(2*PI*t)':shortest=1[bg2]; \\
-          [bg2]drawtext=fontsize=26:fontcolor=white@0.9:x=(w-text_w)/2:y=h-60:text='TheAgencyIQ - Smart Automation'[final]" \\
-          -map "[final]" -c:v libx264 -pix_fmt yuv420p -t ${params.duration} "${params.output}"`;
-      }
+      await execAsync(command, { timeout: 60000 });
       
-      // Clean up command for execution (remove line breaks)
-      const cleanCommand = command.replace(/\\\s*\n\s*/g, ' ').replace(/\s+/g, ' ').trim();
-      
-      await execAsync(cleanCommand, { timeout: 60000 });
-      
-      console.log('✅ ASMR-style fallback video generated successfully');
       return { success: true, videoPath: params.output };
       
     } catch (error) {
-      console.error('ASMR fallback video generation error:', error);
+      console.error('Fallback video generation error:', error);
       return { 
         success: false, 
-        error: 'Failed to generate ASMR fallback video' 
+        error: 'Failed to generate both SVD and fallback video' 
       };
     }
   }

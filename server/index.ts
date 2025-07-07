@@ -94,7 +94,16 @@ async function startServer() {
     }
   });
 
-
+  // Health check endpoint
+  app.get('/api/health', (req, res) => {
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: !!process.env.DATABASE_URL,
+      uptime: process.uptime()
+    });
+  });
 
   // Data deletion status
   app.get('/deletion-status/:userId?', (req, res) => {
@@ -379,7 +388,75 @@ async function startServer() {
     });
   });
 
-
+  // Enhanced beacon.js endpoint with comprehensive CORS and caching - BEFORE static middleware
+  app.get('/public/js/beacon.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours cache
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    
+    // Enhanced beacon implementation
+    const beaconScript = `
+// TheAgencyIQ Local Beacon.js - Enhanced Implementation
+(function() {
+  'use strict';
+  
+  console.log('🔗 TheAgencyIQ Beacon.js loaded successfully (local)');
+  
+  // Enhanced beacon functionality
+  window.replitBeacon = window.replitBeacon || {
+    initialized: false,
+    
+    init: function() {
+      if (this.initialized) return;
+      this.initialized = true;
+      console.log('🚀 Beacon tracking initialized (TheAgencyIQ)');
+      
+      // Fire initialization event
+      if (typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('beacon:initialized', {
+          detail: { source: 'theagencyiq-local', timestamp: Date.now() }
+        }));
+      }
+    },
+    
+    track: function(event, data) {
+      console.log('📊 Beacon tracking:', event, data || {});
+      
+      // Fire tracking event for analytics
+      if (typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('beacon:track', {
+          detail: { event: event, data: data || {}, timestamp: Date.now() }
+        }));
+      }
+    },
+    
+    error: function(error) {
+      console.warn('⚠️ Beacon error:', error);
+    }
+  };
+  
+  // Legacy compatibility
+  window.beacon = window.replitBeacon;
+  
+  // Auto-initialize
+  window.replitBeacon.init();
+  
+  // Handle external beacon calls
+  if (typeof window.replitBeaconInit === 'function') {
+    try {
+      window.replitBeaconInit();
+    } catch (e) {
+      window.replitBeacon.error('External beacon init failed: ' + e.message);
+    }
+  }
+  
+})();`;
+    
+    res.send(beaconScript);
+  });
 
   // Manifest.json endpoint
   app.get('/manifest.json', (req, res) => {
@@ -478,13 +555,7 @@ async function startServer() {
     if (process.env.NODE_ENV === 'production') {
       console.log('⚡ Setting up production static files...');
       // Serve built frontend assets
-      app.use(express.static(path.join(process.cwd(), 'dist/public'), {
-        setHeaders: (res, path) => {
-          if (path.endsWith('.js')) {
-            res.set('Content-Type', 'application/javascript');
-          }
-        }
-      }));
+      app.use(express.static(path.join(process.cwd(), 'dist/public')));
       // Serve attached assets in production
       app.use('/attached_assets', express.static('attached_assets'));
       
@@ -501,18 +572,11 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development static files...');
-      // Serve client assets directly without Vite
-      app.use(express.static('client/public'));
-      app.use('/attached_assets', express.static('attached_assets'));
-      
-      // Serve index.html for all non-API routes
-      app.get('*', (req, res) => {
-        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.sendFile(path.join(process.cwd(), 'client/index.html'));
-        }
-      });
-      console.log('✅ Development static files setup complete');
+      console.log('⚡ Setting up development with Vite...');
+      const { setupVite, serveStatic } = await import('./vite');
+      await setupVite(app, httpServer);
+      serveStatic(app);
+      console.log('✅ Vite setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
