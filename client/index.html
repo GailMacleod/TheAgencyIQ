@@ -3,130 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TheAgencyIQ - Loading</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .loading-container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 40px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        .logo {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        .loading-text {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-        }
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 4px solid white;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 30px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .status-list {
-            text-align: left;
-            margin: 20px 0;
-        }
-        .status-item {
-            margin: 8px 0;
-            padding-left: 20px;
-            position: relative;
-        }
-        .status-item:before {
-            content: "✅";
-            position: absolute;
-            left: 0;
-        }
-        .redirect-msg {
-            margin-top: 20px;
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-    </style>
+    <title>TheAgencyIQ</title>
+    <script>
+        // Immediate redirect to stop any loops
+        window.location.replace('/public');
+    </script>
 </head>
 <body>
-    <div class="loading-container">
-        <div class="logo">TheAgencyIQ</div>
-        <div class="loading-text">Initializing AI-powered social media automation platform...</div>
-        <div class="spinner"></div>
-        
-        <div class="status-list">
-            <div class="status-item">Server running on port 5000</div>
-            <div class="status-item">ASMR video generation with Stable Video Diffusion</div>
-            <div class="status-item">520 posts validated across 10 customers</div>
-            <div class="status-item">PostQuotaService integration complete</div>
-            <div class="status-item">Vite-free deployment ready</div>
-        </div>
-        
-        <div class="redirect-msg">
-            Redirecting to application in 3 seconds...
-        </div>
-    </div>
-
-    <script>
-        // Meta Pixel tracking
-        !function(f,b,e,v,n,t,s)
-        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-        n.queue=[];t=b.createElement(e);t.async=!0;
-        t.src=v;s=b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t,s)}(window, document,'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init', '552419557458648');
-        fbq('track', 'PageView');
-        console.log('Meta Pixel initialized successfully');
-
-        // Single session establishment, then redirect
-        let sessionEstablished = false;
-        
-        async function establishSessionOnce() {
-            if (sessionEstablished) return;
-            sessionEstablished = true;
-            
-            try {
-                await fetch('/api/establish-session', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({})
-                });
-                console.log('Session established successfully');
-            } catch (error) {
-                console.error('Session establishment failed:', error);
-            }
-        }
-
-        // Redirect after a delay to stop the loading loop
-        establishSessionOnce();
-        
-        setTimeout(() => {
-            console.log('Redirecting to main application...');
-            window.location.href = '/public';
-        }, 3000);
-    </script>
+    <p>Redirecting to TheAgencyIQ...</p>
 </body>
 </html>

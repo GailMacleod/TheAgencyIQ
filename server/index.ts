@@ -205,11 +205,11 @@ async function startServer() {
     }
   });
 
-  // Public bypass route
+  // Public bypass route - serve the React app directly
   app.get('/public', (req, res) => {
     req.session.userId = 2;
-    console.log(`React fix bypass activated at ${new Date().toISOString()}`);
-    res.redirect('/platform-connections');
+    console.log(`React app accessed at ${new Date().toISOString()}`);
+    res.sendFile(path.join(process.cwd(), 'client/public/index.html'));
   });
 
   // OAuth connection routes
@@ -586,7 +586,7 @@ async function startServer() {
       // Serve index.html for all non-API routes
       app.get('*', (req, res) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.sendFile(path.join(process.cwd(), 'client/index.html'));
+          res.redirect('/public');
         }
       });
       console.log('✅ Development static files setup complete');
