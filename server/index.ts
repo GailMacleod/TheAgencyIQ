@@ -487,6 +487,14 @@ async function startServer() {
       res.setHeader('Expires', '0');
     }
   }));
+  
+  // Static file serving for video uploads
+  app.use('/uploads', express.static('uploads', {
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache videos for 1 hour
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+  }));
 
   // Create HTTP server
   const httpServer = createServer(app);
