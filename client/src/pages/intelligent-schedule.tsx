@@ -947,7 +947,7 @@ export default function IntelligentSchedule() {
                         </Button>
                       ) : (
                         <Button
-                          onClick={() => handleCreateVideo(post)}
+                          onPress={() => handleCreateVideo(post)}
                           variant="outline"
                           size="sm"
                           className="w-full sm:w-auto border-blue-200 text-blue-600 hover:bg-blue-50"
