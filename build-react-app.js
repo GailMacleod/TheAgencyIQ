@@ -49,55 +49,15 @@ async function buildReactApp() {
 
     console.log('✅ React bundle created: dist/public/main.js');
 
-    // Create the HTML file that loads the bundle
-    const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <link rel="icon" type="image/png" href="/attached_assets/agency_logo_1749083054761.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#3250fa" />
-    <title>The AgencyIQ</title>
-    <style>
-      body {
-        font-family: 'Helvetica', 'Arial', sans-serif;
-        font-weight: 400;
-        line-height: 1.6;
-        margin: 0;
-        padding: 0;
-      }
-      h1, h2, h3 {
-        font-weight: 700;
-      }
-    </style>
+    // Copy the original HTML file and update it to load the bundle
+    const originalHtmlPath = path.join(__dirname, 'client/index.html');
+    let htmlContent = fs.readFileSync(originalHtmlPath, 'utf8');
     
-    <!-- Meta Pixel Code -->
-    <script>
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '1409057863445071');
-      fbq('track', 'PageView');
-      console.log('Meta Pixel test fired - initialization complete');
-    </script>
-    <!-- End Meta Pixel Code -->
-  </head>
-  <body>
-    <!-- Meta Pixel noscript fallback -->
-    <noscript><img height="1" width="1" style="display:none"
-      src="https://www.facebook.com/tr?id=1409057863445071&ev=PageView&noscript=1"
-    /></noscript>
-    
-    <div id="root"></div>
-    <script type="module" src="/main.js"></script>
-  </body>
-</html>`;
+    // Replace the module script reference to load the built bundle
+    htmlContent = htmlContent.replace(
+      '<script type="module" src="/src/main.tsx"></script>',
+      '<script type="module" src="/main.js"></script>'
+    );
 
     fs.writeFileSync(path.join(distDir, 'index.html'), htmlContent);
     console.log('✅ HTML file created: dist/public/index.html');

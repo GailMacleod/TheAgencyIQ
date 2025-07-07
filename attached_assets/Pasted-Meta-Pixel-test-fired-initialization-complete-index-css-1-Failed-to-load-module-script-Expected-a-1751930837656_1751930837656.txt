@@ -1,0 +1,79 @@
+Meta Pixel test fired - initialization complete
+index.css:1 Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "text/css". Strict MIME type checking is enforced for module scripts per HTML spec.Understand this error
+eruda.js:2 Meta Pixel test fired - initialization complete
+index.css:1 Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "text/css". Strict MIME type checking is enforced for module scripts per HTML spec.Understand this error
+Console.js:61 Meta Pixel test fired - initialization complete
+Console.js:61 Schedule layout adjusted for mobile
+Console.js:61 Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID
+Mt.forEach.n.<computed> @ Console.js:61
+(anonymous) @ main.js:53994
+commitHookEffectListMount @ main.js:18906
+commitPassiveMountOnFiber @ main.js:20154
+commitPassiveMountEffects_complete @ main.js:20122
+commitPassiveMountEffects_begin @ main.js:20112
+commitPassiveMountEffects @ main.js:20102
+flushPassiveEffectsImpl @ main.js:21486
+flushPassiveEffects @ main.js:21443
+performSyncWorkOnRoot @ main.js:20864
+flushSyncCallbacks @ main.js:11109
+commitRootImpl @ main.js:21428
+commitRoot @ main.js:21273
+finishConcurrentRender @ main.js:20801
+performConcurrentWorkOnRoot @ main.js:20711
+workLoop @ main.js:2138
+flushWork @ main.js:2117
+performWorkUntilDeadline @ main.js:2325Understand this warning
+Console.js:61 Mobile layout applied
+main.js:54002 
+            
+            
+           POST https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/establish-session 404 (Not Found)
+window.fetch @ Network.js:219
+establishSession @ main.js:54002
+(anonymous) @ main.js:54019
+commitHookEffectListMount @ main.js:18906
+commitPassiveMountOnFiber @ main.js:20154
+commitPassiveMountEffects_complete @ main.js:20122
+commitPassiveMountEffects_begin @ main.js:20112
+commitPassiveMountEffects @ main.js:20102
+flushPassiveEffectsImpl @ main.js:21486
+flushPassiveEffects @ main.js:21443
+performSyncWorkOnRoot @ main.js:20864
+flushSyncCallbacks @ main.js:11109
+commitRootImpl @ main.js:21428
+commitRoot @ main.js:21273
+finishConcurrentRender @ main.js:20801
+performConcurrentWorkOnRoot @ main.js:20711
+workLoop @ main.js:2138
+flushWork @ main.js:2117
+performWorkUntilDeadline @ main.js:2325Understand this error
+Console.js:61 Session establishment failed, continuing with guest access
+main.js:54075 
+            
+            
+           POST https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/establish-session 404 (Not Found)
+window.fetch @ Network.js:219
+establishSession @ main.js:54075
+(anonymous) @ main.js:54100
+commitHookEffectListMount @ main.js:18906
+commitPassiveMountOnFiber @ main.js:20154
+commitPassiveMountEffects_complete @ main.js:20122
+commitPassiveMountEffects_begin @ main.js:20112
+commitPassiveMountEffects @ main.js:20102
+flushPassiveEffectsImpl @ main.js:21486
+flushPassiveEffects @ main.js:21443
+performSyncWorkOnRoot @ main.js:20864
+flushSyncCallbacks @ main.js:11109
+commitRootImpl @ main.js:21428
+commitRoot @ main.js:21273
+finishConcurrentRender @ main.js:20801
+performConcurrentWorkOnRoot @ main.js:20711
+workLoop @ main.js:2138
+flushWork @ main.js:2117
+performWorkUntilDeadline @ main.js:2325Understand this error
+Console.js:61 Session establishment failed, continuing without auth
+Console.js:61 Meta Pixel initialized successfully
+main.js:27568 
+            
+            
+           GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 404 (Not Found)
