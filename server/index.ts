@@ -1,53 +1,9 @@
-import express from 'express';
-import session from 'express-session';
-import { createServer } from 'http';
-import path from 'path';
+const express = require('express');
+const app = express();
 
-// Production-compatible logger
-function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit", 
-    second: "2-digit",
-    hour12: true,
-  });
-  console.log(`${formattedTime} [${source}] ${message}`);
-}
+app.use(express.static('public'));
 
-async function startServer() {
-  const app = express();
-
-  // Essential middleware
-  app.use(express.urlencoded({ extended: true }));
-  app.use(express.json());
-  app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    
-    if (req.method === 'OPTIONS') {
-      res.sendStatus(200);
-      return;
-    }
-    next();
-  });
-
-  // Environment-aware base URL
-  const baseUrl = process.env.NODE_ENV === 'production'
-    ? 'https://app.theagencyiq.ai'
-    : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
-
-  console.log('🌍 Server Environment:', {
-    NODE_ENV: process.env.NODE_ENV,
-    baseUrl: baseUrl,
-    port: process.env.PORT,
-    hasDatabase: !!process.env.DATABASE_URL
-  });
-
-  // CRITICAL: Health check endpoint - MUST be first to bypass all middleware
-  app.get('/api/health', (req, res) => {
-    res.json({
+app.listen(5000);
       status: 'healthy',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
