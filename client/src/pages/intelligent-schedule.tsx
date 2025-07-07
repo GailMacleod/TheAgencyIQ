@@ -159,7 +159,10 @@ export default function IntelligentSchedule() {
       return response.json();
     },
     onSuccess: (data, variables) => {
+      // Force refresh of posts data
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      refetchPosts();
+      
       setCreatingVideo(prev => {
         const newSet = new Set(prev);
         newSet.delete(variables.postId);
@@ -169,7 +172,7 @@ export default function IntelligentSchedule() {
       setSelectedPostForVideo(null);
       toast({
         title: "Video Created Successfully",
-        description: "Seedance 1.0 video has been generated and attached to your post.",
+        description: "Seedance 1.0 video has been generated and attached to your post. Refresh the page if you don't see it immediately.",
       });
     },
     onError: (error, variables) => {

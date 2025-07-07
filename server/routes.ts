@@ -2901,7 +2901,22 @@ Continue building your Value Proposition Canvas systematically.`;
   app.get("/api/posts", requireActiveSubscription, async (req: any, res) => {
     try {
       const posts = await storage.getPostsByUser(req.session.userId);
-      res.json(posts);
+      const session = (req as any).session;
+      
+      // Merge database posts with session video data
+      const postsWithVideos = posts.map(post => {
+        const sessionPost = session.posts?.find((sp: any) => sp.id === post.id);
+        if (sessionPost?.videoData) {
+          return {
+            ...post,
+            videoData: sessionPost.videoData
+          };
+        }
+        return post;
+      });
+      
+      console.log(`📊 Returning ${postsWithVideos.length} posts for user ${req.session.userId}, ${postsWithVideos.filter(p => p.videoData).length} with videos`);
+      res.json(postsWithVideos);
     } catch (error: any) {
       console.error('Get posts error:', error);
       res.status(500).json({ message: "Error fetching posts" });
@@ -7300,18 +7315,34 @@ Continue building your Value Proposition Canvas systematically.`;
               seedanceVersion: '1.0'
             };
 
-            // Update post with video data in the expected format
-            if (session.posts) {
-              const postIndex = session.posts.findIndex((p: any) => p.id === numericPostId);
-              if (postIndex !== -1) {
-                session.posts[postIndex].videoData = videoData;
-                session.posts[postIndex].status = 'video_ready';
-                
-                console.log(`🎬 Seedance 1.0: Video attached to post ${numericPostId}`, videoData);
-              } else {
-                console.warn(`⚠️ Post ${numericPostId} not found in session posts`);
-              }
+            // Initialize session posts if needed
+            if (!session.posts) {
+              session.posts = [];
             }
+
+            // Find or create post in session
+            let postIndex = session.posts.findIndex((p: any) => p.id === numericPostId);
+            if (postIndex === -1) {
+              // Add post to session if not found
+              session.posts.push({
+                id: numericPostId,
+                videoData: videoData,
+                status: 'video_ready'
+              });
+              console.log(`➕ Added post ${numericPostId} to session with video data`);
+            } else {
+              // Update existing post
+              session.posts[postIndex].videoData = videoData;
+              session.posts[postIndex].status = 'video_ready';
+              console.log(`🔄 Updated post ${numericPostId} in session with video data`);
+            }
+            
+            console.log(`🎬 Seedance 1.0: Video attached to post ${numericPostId}`, {
+              videoId: videoData.id,
+              duration: videoData.duration,
+              style: videoData.style,
+              sessionPostsCount: session.posts.length
+            });
 
             console.log(`🎬 Seedance 1.0: Generated video for post ${numericPostId} (${style}, ${duration}s)`);
             
