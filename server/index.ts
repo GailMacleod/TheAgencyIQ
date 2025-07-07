@@ -210,11 +210,18 @@ async function startServer() {
     res.redirect('/public');
   });
 
-  // Public bypass route - serve the React app directly
+  // Public bypass route - redirect to intelligent schedule
   app.get('/public', (req, res) => {
     req.session.userId = 2;
-    console.log(`React app accessed at ${new Date().toISOString()}`);
+    console.log(`Public access at ${new Date().toISOString()}`);
     res.redirect('/intelligent-schedule');
+  });
+
+  // Intelligent schedule route - serve direct HTML interface
+  app.get('/intelligent-schedule', (req, res) => {
+    req.session.userId = 2;
+    console.log(`Intelligent schedule accessed at ${new Date().toISOString()}`);
+    res.sendFile(path.join(process.cwd(), 'client/public/intelligent-schedule.html'));
   });
 
   // OAuth connection routes
@@ -598,24 +605,12 @@ async function startServer() {
       app.use('/public', express.static('client/public'));
       app.use('/attached_assets', express.static('attached_assets'));
       
-      // Import and setup Vite development server
-      try {
-        const { createServer } = await import('vite');
-        const vite = await createServer({
-          server: { middlewareMode: true },
-          appType: 'custom'
-        });
-        app.use(vite.middlewares);
-        console.log('✅ Vite dev server initialized for React app');
-      } catch (error) {
-        console.log('⚠️  Vite not available, serving static files');
-        // Fallback: serve React app for all non-API routes  
-        app.get('*', (req, res) => {
-          if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-            res.sendFile(path.join(process.cwd(), 'client/index.html'));
-          }
-        });
-      }
+      // Serve React app for all non-API routes (NO VITE)
+      app.get('*', (req, res) => {
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+          res.sendFile(path.join(process.cwd(), 'client/index.html'));
+        }
+      });
       console.log('✅ Development static files setup complete');
     }
   } catch (error) {

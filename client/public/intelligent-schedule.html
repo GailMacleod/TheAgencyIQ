@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheAgencyIQ - Intelligent Schedule</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .post-card { 
+            border-left: 4px solid #9333ea;
+            transition: all 0.3s ease;
+        }
+        .post-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        .platform-icon { width: 24px; height: 24px; }
+        .btn-primary { background: #9333ea; }
+        .btn-primary:hover { background: #7c3aed; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="loading" class="fixed inset-0 bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white z-50">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mx-auto mb-4"></div>
+            <h2 class="text-2xl font-bold">TheAgencyIQ</h2>
+            <p>Loading your intelligent content...</p>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Intelligent Schedule</h1>
+            <p class="text-gray-600">AI-powered content generation with ASMR video capabilities</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <button onclick="generateSchedule()" class="btn-primary text-white px-8 py-3 rounded-lg font-medium hover:scale-105 transition-all">
+                🧠 Generate AI Schedule
+            </button>
+            <button onclick="autoPostSchedule()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-medium hover:scale-105 transition-all">
+                ▶️ Auto-Post Schedule
+            </button>
+        </div>
+
+        <!-- Posts Container -->
+        <div id="posts-container" class="grid gap-6 mb-8">
+            <div class="text-center py-8">
+                <div class="animate-pulse">
+                    <div class="bg-gray-200 h-4 w-48 mx-auto mb-4 rounded"></div>
+                    <div class="bg-gray-200 h-4 w-32 mx-auto rounded"></div>
+                </div>
+                <p class="text-gray-500 mt-4">Loading your 520 posts...</p>
+            </div>
+        </div>
+
+        <!-- Video Generation Modal -->
+        <div id="video-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold mb-4">Generate ASMR Video</h3>
+                <p class="text-gray-600 mb-4">Choose an ASMR video style:</p>
+                <div class="space-y-3">
+                    <button onclick="generateVideo('ASMR glass cutting sounds, 60s')" class="w-full p-3 text-left border rounded-lg hover:bg-purple-50 hover:border-purple-300">
+                        🥃 ASMR Glass Cutting Sounds, 60s
+                    </button>
+                    <button onclick="generateVideo('ASMR whisper productivity, 60s')" class="w-full p-3 text-left border rounded-lg hover:bg-purple-50 hover:border-purple-300">
+                        🗣️ ASMR Whisper Productivity, 60s
+                    </button>
+                </div>
+                <button onclick="closeVideoModal()" class="mt-4 w-full bg-gray-300 text-gray-700 px-4 py-2 rounded-lg">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let posts = [];
+        let currentPostForVideo = null;
+
+        // Load posts on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('loading').style.display = 'none';
+            loadPosts();
+        });
+
+        async function loadPosts() {
+            try {
+                const response = await fetch('/api/posts', { credentials: 'include' });
+                if (response.ok) {
+                    posts = await response.json();
+                    displayPosts();
+                } else {
+                    console.error('Failed to load posts');
+                }
+            } catch (error) {
+                console.error('Error loading posts:', error);
+            }
+        }
+
+        function displayPosts() {
+            const container = document.getElementById('posts-container');
+            if (!posts || posts.length === 0) {
+                container.innerHTML = '<div class="text-center py-8"><p class="text-gray-500">No posts available. Generate some content!</p></div>';
+                return;
+            }
+
+            container.innerHTML = posts.slice(0, 20).map(post => `
+                <div class="post-card bg-white rounded-lg p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="platform-icon bg-${getPlatformColor(post.platform)}-100 rounded-full p-2">
+                                ${getPlatformIcon(post.platform)}
+                            </div>
+                            <span class="font-medium capitalize">${post.platform}</span>
+                            <span class="px-2 py-1 text-xs rounded-full bg-${post.status === 'approved' ? 'green' : 'gray'}-100 text-${post.status === 'approved' ? 'green' : 'gray'}-700">
+                                ${post.status || 'draft'}
+                            </span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="approvePost(${post.id})" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                ✓ Approve
+                            </button>
+                            <button onclick="openVideoModal(${post.id})" class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700">
+                                🎥 Video
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-gray-800 mb-2">${post.content ? post.content.substring(0, 200) + '...' : 'No content'}</div>
+                    <div class="text-sm text-gray-500">
+                        ${post.scheduledFor ? 'Scheduled: ' + new Date(post.scheduledFor).toLocaleDateString() : 'Not scheduled'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getPlatformColor(platform) {
+            const colors = {
+                facebook: 'blue',
+                instagram: 'pink',
+                linkedin: 'indigo',
+                youtube: 'red',
+                x: 'gray'
+            };
+            return colors[platform] || 'gray';
+        }
+
+        function getPlatformIcon(platform) {
+            const icons = {
+                facebook: '📘',
+                instagram: '📷',
+                linkedin: '💼',
+                youtube: '🎥',
+                x: '🐦'
+            };
+            return icons[platform] || '📱';
+        }
+
+        async function generateSchedule() {
+            try {
+                const response = await fetch('/api/generate-ai-schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    alert('✅ AI Schedule generated successfully!');
+                    loadPosts();
+                } else {
+                    alert('❌ Failed to generate schedule');
+                }
+            } catch (error) {
+                console.error('Error generating schedule:', error);
+                alert('❌ Error generating schedule');
+            }
+        }
+
+        async function autoPostSchedule() {
+            try {
+                const response = await fetch('/api/auto-post-schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`✅ Auto-posted ${result.successCount || 0} posts successfully!`);
+                    loadPosts();
+                } else {
+                    alert('❌ Failed to auto-post schedule');
+                }
+            } catch (error) {
+                console.error('Error auto-posting:', error);
+                alert('❌ Error auto-posting schedule');
+            }
+        }
+
+        async function approvePost(postId) {
+            try {
+                const response = await fetch('/api/approve-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postId }),
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    alert('✅ Post approved!');
+                    loadPosts();
+                } else {
+                    alert('❌ Failed to approve post');
+                }
+            } catch (error) {
+                console.error('Error approving post:', error);
+                alert('❌ Error approving post');
+            }
+        }
+
+        function openVideoModal(postId) {
+            currentPostForVideo = postId;
+            document.getElementById('video-modal').classList.remove('hidden');
+        }
+
+        function closeVideoModal() {
+            currentPostForVideo = null;
+            document.getElementById('video-modal').classList.add('hidden');
+        }
+
+        async function generateVideo(prompt) {
+            closeVideoModal();
+            
+            try {
+                // Step 1: Get ASMR prompt options
+                const promptResponse = await fetch('/api/generate-video-prompt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+
+                // Step 2: Generate video with selected prompt
+                const videoResponse = await fetch(`/api/posts/${currentPostForVideo}/generate-video`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt }),
+                    credentials: 'include'
+                });
+                
+                if (videoResponse.ok) {
+                    alert(`✅ ASMR video generated with prompt: "${prompt}"`);
+                    loadPosts();
+                } else {
+                    alert('❌ Failed to generate video');
+                }
+            } catch (error) {
+                console.error('Error generating video:', error);
+                alert('❌ Error generating video');
+            }
+        }
+
+        // Meta Pixel tracking
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '552419557458648');
+        fbq('track', 'PageView');
+    </script>
+</body>
+</html>

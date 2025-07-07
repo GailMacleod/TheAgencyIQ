@@ -68,7 +68,16 @@
     
     <div id="app"></div>
 
-    <script type="module" src="/src/main.tsx"></script>
+    <script>
+        // Initialize React app without Vite - direct access to intelligent-schedule
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide loading screen
+            document.getElementById('loading').style.display = 'none';
+            
+            // Redirect to intelligent-schedule interface
+            window.location.href = '/intelligent-schedule';
+        });
+    </script>
     
     <!-- Meta Pixel Code -->
     <script>
