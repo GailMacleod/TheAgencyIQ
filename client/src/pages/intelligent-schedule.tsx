@@ -257,7 +257,7 @@ export default function IntelligentSchedule() {
     // Initial sync
     handleLayoutSync();
     
-    // Meta Pixel singleton initialization
+    // Meta Pixel singleton initialization - prevents duplicate notifications
     if (typeof window !== 'undefined' && !window.metaPixelInitialized) {
       try {
         if (window.fbq) {

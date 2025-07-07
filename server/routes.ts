@@ -2033,51 +2033,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fs.mkdirSync(videoDir, { recursive: true });
       }
 
-      // Enhanced video generation with concurrent execution control (max 2)
+      // Enhanced video generation with exec command and 2 concurrent max
       const { exec } = await import('child_process');
-      const { promisify } = await import('util');
-      const execAsync = promisify(exec);
       
       // Concurrent execution semaphore (max 2 as requested)
       const concurrentVideoSemaphore = global.videoSemaphore || { current: 0, max: 2 };
       global.videoSemaphore = concurrentVideoSemaphore;
       
       if (concurrentVideoSemaphore.current >= concurrentVideoSemaphore.max) {
-        throw new Error('Maximum concurrent video generation limit reached (2). Please try again in a moment.');
+        return res.status(429).json({ 
+          error: 'Maximum concurrent video generation limit reached (2). Please try again in a moment.',
+          semaphore: concurrentVideoSemaphore.current 
+        });
       }
       
       concurrentVideoSemaphore.current++;
       
-      try {
-        // Use exec command as requested with dynamic pattern generation
-        const prompt = videoPrompt || 'ASMR Queensland automation';
-        const safePrompt = prompt.replace(/['"\\]/g, ''); // Sanitize for shell execution
+      const prompt = videoPrompt || 'ASMR Queensland automation';
+      const safePrompt = prompt.replace(/['"\\]/g, ''); // Sanitize for shell execution
+      const videoFilename = `video_${postId}_${Date.now()}.mp4`;
+      const command = `python generate.py --prompt "${safePrompt}" --output uploads/videos/${videoFilename} --asmr --short`;
+      
+      exec(command, { timeout: 30000 }, (err, stdout, stderr) => {
+        // Release semaphore immediately
+        concurrentVideoSemaphore.current = Math.max(0, concurrentVideoSemaphore.current - 1);
         
-        const command = `python3 stable-video-diffusion/generate_video.py --prompt "${safePrompt}" --output "${outputPath}" --asmr --short`;
+        if (err) {
+          console.error(`Video generation failed: ${stderr}`);
+          console.error(`Command: ${command}`);
+          return res.status(500).json({ 
+            error: `Video generation failed: ${err.message}`,
+            stderr: stderr,
+            command: command
+          });
+        }
         
-        const { stdout, stderr } = await execAsync(command, { timeout: 30000 });
         console.log('Video generation output:', stdout);
         if (stderr) console.log('Video generation info:', stderr);
         
-      } catch (error) {
-        throw new Error(`Python video generation failed: ${error.message}`);
-      } finally {
-        // Release semaphore
-        concurrentVideoSemaphore.current = Math.max(0, concurrentVideoSemaphore.current - 1);
-      }
-
-      // Update post with video URL
-      await storage.updatePost(postId, {
-        videoUrl: `/${outputPath}`,
-        hasVideo: true,
-        videoMetadata: { duration: 10, width: 1280, height: 720, prompt: videoPrompt, dynamic: true }
-      });
-
-      res.json({ 
-        videoUrl: `/${outputPath}`,
-        success: true,
-        attempts: req.session.videoAttempts[postId],
-        remaining: 2 - req.session.videoAttempts[postId]
+        res.json({ 
+          videoUrl: `/uploads/videos/${videoFilename}`,
+          stdout: stdout,
+          stderr: stderr
+        });
       });
 
     } catch (error) {
