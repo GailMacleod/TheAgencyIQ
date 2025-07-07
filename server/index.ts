@@ -135,9 +135,9 @@ async function startServer() {
   // Enhanced CSP for Facebook compliance, Google services, and security
   app.use((req, res, next) => {
     res.setHeader('Content-Security-Policy', [
-      "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com",
-      "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://www.google.com",
+      "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net https://esm.sh",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://esm.sh",
+      "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://esm.sh",
       "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
       "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net https://www.google-analytics.com https://www.google.com",
@@ -606,27 +606,32 @@ async function startServer() {
           // Fallback to static file serving if Vite fails
           const staticPath = path.join(process.cwd(), 'client');
         
-          // CRITICAL: Configure MIME types for TypeScript/JSX modules
+          // CRITICAL: Configure MIME types for ALL file types with enhanced detection
           app.use(express.static(staticPath, {
             setHeaders: (res, filePath) => {
-              if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
+              console.log(`Setting headers for: ${filePath}`);
+              if (filePath.includes('.tsx') || filePath.includes('.ts')) {
                 res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
-              } else if (filePath.endsWith('.js') || filePath.endsWith('.jsx')) {
+                console.log(`TypeScript file detected: ${filePath} -> text/javascript`);
+              } else if (filePath.includes('.js') || filePath.includes('.jsx')) {
                 res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
-              } else if (filePath.endsWith('.css')) {
+                console.log(`JavaScript file detected: ${filePath} -> text/javascript`);
+              } else if (filePath.includes('.css')) {
                 res.setHeader('Content-Type', 'text/css; charset=utf-8');
               }
             }
           }));
           
-          // Serve client source files with proper TypeScript MIME types
+          // Enhanced /src route with logging
           app.use('/src', express.static(path.join(staticPath, 'src'), {
             setHeaders: (res, filePath) => {
-              if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
+              console.log(`/src route - Setting headers for: ${filePath}`);
+              if (filePath.includes('.tsx') || filePath.includes('.ts')) {
                 res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
-              } else if (filePath.endsWith('.js') || filePath.endsWith('.jsx')) {
+                console.log(`/src TypeScript file: ${filePath} -> text/javascript`);
+              } else if (filePath.includes('.js') || filePath.includes('.jsx')) {
                 res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
-              } else if (filePath.endsWith('.css')) {
+              } else if (filePath.includes('.css')) {
                 res.setHeader('Content-Type', 'text/css; charset=utf-8');
               }
             }
