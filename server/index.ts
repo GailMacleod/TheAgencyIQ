@@ -528,6 +528,8 @@ async function startServer() {
   try {
     console.log('📡 Loading routes...');
     const { registerRoutes, addNotificationEndpoints } = await import('./routes');
+    // Seedance 1.0 system available at /auth/google and /api/subscriptions
+
     await registerRoutes(app);
     addNotificationEndpoints(app);
     console.log('✅ Routes registered successfully');
@@ -611,8 +613,16 @@ async function startServer() {
           }
         }));
         
-        app.use('*', (req, res) => {
+        // Root route serves React app
+        app.get('/', (req, res) => {
           res.sendFile(path.join(staticPath, 'index.html'));
+        });
+        
+        // Catch-all route for React Router
+        app.get('*', (req, res) => {
+          if (!req.path.startsWith('/api') && !req.path.startsWith('/auth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+            res.sendFile(path.join(staticPath, 'index.html'));
+          }
         });
         console.log('✅ Fallback static file serving complete with proper MIME types');
       }

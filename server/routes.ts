@@ -27,7 +27,7 @@ import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, auth
 import { requireActiveSubscription, requireAuth } from './middleware/subscriptionAuth';
 import { PostQuotaService } from './PostQuotaService';
 import { userFeedbackService } from './userFeedbackService.js';
-import { videoGenerationService } from './video-generation-service.js';
+// Seedance 1.0 - Video generation service removed
 
 // Extended session types
 declare module 'express-session' {
@@ -1954,208 +1954,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Initialize session video attempt tracking
-  if (!req.session.videoAttempts) {
-    req.session.videoAttempts = {};
-  }
-
-  // Generate two ASMR video prompt options with attempt tracking
-  app.get('/api/generate-video-prompt/:id', requireActiveSubscription, async (req: any, res) => {
-    const postId = req.params.id;
-    
-    // Check attempt limit (max 2 per post)
-    const attempts = req.session.videoAttempts[postId] || 0;
-    if (attempts >= 2) {
-      return res.status(429).json({ 
-        error: 'Video generation limit reached. Maximum 2 attempts per post for beta.' 
-      });
+  // Initialize session for users
+  app.use((req: any, res, next) => {
+    if (!req.session.videoAttempts) {
+      req.session.videoAttempts = {};
     }
-
-    try {
-      // Return two ASMR prompt options
-      const promptOptions = [
-        `ASMR Queensland Pulse: Drip with innovation, 30s`,
-        `ASMR Coastal Whisper: Breeze with crunch, 30s`
-      ];
-
-      res.json({ 
-        promptOptions,
-        attempts,
-        remaining: 2 - attempts
-      });
-
-    } catch (error) {
-      console.error('Error generating video prompts:', error);
-      res.status(500).json({ error: 'Failed to generate video prompts' });
-    }
+    next();
   });
 
-  // Video generation with semaphore for max 2 concurrent executions  
-  let videoGenerationSemaphore = 0;
-  const MAX_CONCURRENT_VIDEOS = 2;
+  // Seedance 1.0 - Video generation removed
 
-  app.post('/api/posts/:id/generate-video', requireActiveSubscription, async (req: any, res) => {
-    const postId = parseInt(req.params.id);
-    const { videoPrompt } = req.body;
+  // Seedance 1.0 - Video generation removed
 
-    // Check attempt limit before generation
-    const attempts = req.session.videoAttempts[postId] || 0;
-    if (attempts >= 2) {
-      return res.status(429).json({ 
-        error: 'Video generation limit reached. Maximum 2 attempts per post for beta.' 
-      });
-    }
+  // Seedance 1.0 - Video preview removed
 
-    if (videoGenerationSemaphore >= MAX_CONCURRENT_VIDEOS) {
-      return res.status(429).json({ 
-        error: 'Maximum concurrent video generations reached. Please try again later.' 
-      });
-    }
-
-    // Increment attempt counter
-    req.session.videoAttempts[postId] = attempts + 1;
-
-    videoGenerationSemaphore++;
-
-    try {
-      const videoFileName = `video_${postId}_${Date.now()}.mp4`;
-      const outputPath = `uploads/videos/${videoFileName}`;
-
-      // Execute FFmpeg command for video generation  
-      const childProcess = await import('child_process');
-      const { exec } = childProcess;
-      
-      await new Promise((resolve, reject) => {
-        const command = `python stable-video-diffusion/generate_video.py --prompt "${videoPrompt}" --output ${outputPath} --short`;
-        
-        exec(command, (err: any, stdout: any, stderr: any) => {
-          if (err) {
-            console.error(`Generation failed: ${stderr}`);
-            reject(new Error(`Failed: ${err.message}`));
-          } else {
-            console.log('Video generated successfully:', stdout);
-            resolve(stdout);
-          }
-        });
-      });
-
-      res.json({ 
-        videoUrl: `/${outputPath}`,
-        success: true,
-        attempts: req.session.videoAttempts[postId],
-        remaining: 2 - req.session.videoAttempts[postId]
-      });
-
-    } catch (error) {
-      console.error('Video generation failed:', error);
-      res.status(500).json({ 
-        error: 'Video generation failed',
-        message: (error as Error).message 
-      });
-    } finally {
-      videoGenerationSemaphore--;
-    }
-  });
-
-  // Preview video endpoint
-  app.get('/api/posts/:id/preview-video', requireActiveSubscription, async (req: any, res) => {
-    const postId = parseInt(req.params.id);
-    
-    try {
-      const post = await storage.getPost(postId);
-      if (!post) {
-        return res.status(404).json({ error: 'Post not found' });
-      }
-
-      if (post.videoUrl) {
-        res.json({
-          success: true,
-          videoUrl: post.videoUrl,
-          hasVideo: true,
-          metadata: post.videoMetadata || {}
-        });
-      } else {
-        res.json({
-          success: false,
-          hasVideo: false,
-          message: 'No video available for this post'
-        });
-      }
-    } catch (error) {
-      console.error('Video preview error:', error);
-      res.status(500).json({ error: 'Failed to retrieve video preview' });
-    }
-  });
-
-  // Approve video endpoint
-  app.post('/api/posts/:id/approve-video', requireActiveSubscription, async (req: any, res) => {
-    try {
-      const postId = parseInt(req.params.id);
-      const { videoUrl } = req.body;
-      
-      if (!videoUrl) {
-        return res.status(400).json({ error: 'Video URL required' });
-      }
-
-      // Update post with approved video
-      await storage.updatePost(postId, { 
-        videoUrl,
-        hasVideo: true,
-        status: 'approved'
-      });
-
-      console.log(`📹 Video approved for post ${postId}, triggering auto-posting enforcer`);
-      
-      // Trigger auto-posting enforcer
-      const autoPostingEnforcer = await import('./auto-posting-enforcer');
-      if (autoPostingEnforcer.triggerAutoPosting) {
-        await autoPostingEnforcer.triggerAutoPosting();
-      }
-
-      res.json({ 
-        success: true,
-        message: 'Video approved and auto-posting triggered'
-      });
-
-    } catch (error) {
-      console.error('Video approval error:', error);
-      res.status(500).json({ error: 'Failed to approve video' });
-    }
-  });
-
-  // Approve video and embed in post
-  app.post('/api/posts/:id/approve-video', requireActiveSubscription, async (req: any, res) => {
-    const postId = parseInt(req.params.id);
-    const { videoUrl } = req.body;
-
-    try {
-      // Update post with video URL
-      await storage.updatePost(postId, {
-        videoUrl: videoUrl,
-        hasVideo: true,
-        videoMetadata: {
-          approved: true,
-          approvedAt: new Date().toISOString(),
-          style: 'asmr',
-          duration: 30
-        }
-      });
-
-      // Trigger auto-posting enforcer
-      console.log(`📹 Video approved for post ${postId}, triggering auto-posting enforcer`);
-
-      res.json({
-        success: true,
-        message: 'Video approved and embedded in post',
-        postId: postId,
-        videoUrl: videoUrl
-      });
-
-    } catch (error) {
-      console.error('Video approval error:', error);
-      res.status(500).json({ error: 'Failed to approve video' });
-    }
-  });
+  // Seedance 1.0 - Video approval removed
 
   // Save brand purpose with comprehensive Strategyzer data
   app.post("/api/brand-purpose", requireActiveSubscription, async (req: any, res) => {
@@ -7758,227 +7571,84 @@ export function addNotificationEndpoints(app: any) {
     }
   });
 
-  // ====== CLEAN VIDEO GENERATION ENDPOINTS ======
-
-  app.post("/api/posts/:id/generate-video", requireAuth, async (req: CustomRequest, res: Response) => {
-    try {
-      const userId = req.session?.userId?.toString();
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-
-      const postId = parseInt(req.params.id);
-      const { videoPrompt, style = 'asmr' } = req.body;
-
-      if (!videoPrompt) {
-        return res.status(400).json({ error: 'Video prompt is required' });
-      }
-
-      // Get the post
-      const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
-      if (post.length === 0) {
-        return res.status(404).json({ error: 'Post not found' });
-      }
-
-      const postData = post[0];
-      if (postData.userId !== parseInt(userId)) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-
-      console.log(`🎬 Generating 30-second ASMR video for post ${postId} on ${postData.platform}`);
-
-      // Generate video with custom prompt using Python script
-      const { exec } = await import('child_process');
-      const videoFileName = `video_${postId}_${Date.now()}.mp4`;
-      const outputPath = `uploads/videos/${videoFileName}`;
-      
-      // Try main Python script first, fallback to mock generation
-      const mainCommand = `python stable-video-diffusion/generate_video.py --prompt "${videoPrompt}" --output ${outputPath} --asmr --short --duration 30`;
-      const fallbackCommand = `python stable-video-diffusion/generate_video_fallback.py --prompt "${videoPrompt}" --output ${outputPath} --asmr --short --duration 30`;
-      
-      exec(mainCommand, (err, stdout, stderr) => {
-        if (err) {
-          console.warn('Main video generation failed, trying fallback:', err.message);
-          exec(fallbackCommand, (fallbackErr, fallbackStdout, fallbackStderr) => {
-            if (fallbackErr) {
-              console.error('🎬 Video generation failed:', fallbackErr);
-              res.status(500).json({ error: 'Video generation failed', details: fallbackErr.message });
-              return;
-            }
-            
-            console.log('🎬 Fallback video generation successful:', fallbackStdout);
-            updatePostWithVideo();
-          });
-        } else {
-          console.log('🎬 Main video generation successful:', stdout);
-          updatePostWithVideo();
-        }
-        
-        function updatePostWithVideo() {
-          // Update post with video information
-          db.update(posts)
-            .set({ 
-              videoUrl: `/uploads/videos/${videoFileName}`,
-              hasVideo: true,
-              videoMetadata: { duration: 30, format: 'mp4', style: 'asmr' },
-              updatedAt: new Date()
-            })
-            .where(eq(posts.id, postId))
-            .then(() => {
-              res.json({ 
-                success: true,
-                videoUrl: `/uploads/videos/${videoFileName}`,
-                message: '30-second ASMR video generated successfully'
-              });
-            })
-            .catch((dbError) => {
-              console.error('Database update error:', dbError);
-              res.status(500).json({ error: 'Failed to save video to database' });
-            });
-        }
-      });
-
-    } catch (error) {
-      console.error('Post video generation error:', error);
-      res.status(500).json({ 
-        error: 'Failed to generate video for post',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
-
-  // ====== VIDEO PREVIEW ENDPOINT ======
+  // ====== SEEDANCE 1.0 DEPLOYMENT SYSTEM ======
   
-  /**
-   * Get video preview URL for a post
-   * GET /api/posts/:id/preview-video
-   */
-  app.get("/api/posts/:id/preview-video", requireAuth, async (req: CustomRequest, res: Response) => {
-    try {
-      const userId = req.session?.userId?.toString();
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
+  // Three subscription tiers for Seedance 1.0
+  const seedanceSubscriptions = [
+    { tier: 'starter', posts: 12, price: 29, features: ['Basic AI content', 'Single platform', 'Email support'] },
+    { tier: 'growth', posts: 27, price: 59, features: ['Advanced AI content', '3 platforms', 'Priority support', 'Analytics'] },
+    { tier: 'professional', posts: 52, price: 99, features: ['Premium AI content', 'All 5 platforms', 'Dedicated support', 'Advanced analytics', 'Custom branding'] }
+  ];
 
-      const postId = parseInt(req.params.id);
+  // Google OAuth routes for Seedance 1.0
+  app.get('/auth/google', (req, res) => {
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    const url = client.generateAuthUrl({
+      scope: ['profile', 'email'],
+      state: 'seedance-1.0'
+    });
+    res.redirect(url);
+  });
+
+  app.get('/auth/google/callback', async (req, res) => {
+    try {
+      const { OAuth2Client } = require('google-auth-library');
+      const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
       
-      // Get the post
-      const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
-      if (post.length === 0) {
-        return res.status(404).json({ error: 'Post not found' });
-      }
-
-      const postData = post[0];
-      if (postData.userId !== parseInt(userId)) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-
-      if (!postData.videoUrl || !postData.hasVideo) {
-        return res.status(404).json({ error: 'No video available for this post' });
-      }
-
-      res.json({
-        success: true,
-        videoUrl: postData.videoUrl,
-        metadata: postData.videoMetadata,
-        hasVideo: postData.hasVideo
-      });
-
-    } catch (error) {
-      console.error('Video preview error:', error);
-      res.status(500).json({ error: 'Failed to get video preview' });
-    }
-  });
-
-  /**
-   * Generate video prompt using OpenAI based on Strategizer input
-   * POST /api/generate-video-prompt
-   * Body: { brandPurpose: string, targetAudience: string, contentGoal: string, platform: string }
-   */
-  app.post("/api/generate-video-prompt", requireAuth, async (req: CustomRequest, res: Response) => {
-    try {
-      const userId = req.session?.userId?.toString();
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-
-      const { brandPurpose, targetAudience, contentGoal, platform } = req.body;
-
-      if (!brandPurpose || !targetAudience || !contentGoal || !platform) {
-        return res.status(400).json({ 
-          error: 'Brand purpose, target audience, content goal, and platform are required' 
-        });
-      }
-
-      // Generate two example 30-second ASMR prompts as starting points for client customization
-      const videoPrompts = {
-        facebook: [
-          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
-          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
-        ],
-        instagram: [
-          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s", 
-          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
-        ],
-        linkedin: [
-          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
-          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
-        ],
-        youtube: [
-          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
-          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
-        ],
-        x: [
-          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
-          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
-        ]
-      };
-
-      const platformPrompts = videoPrompts[platform.toLowerCase()] || videoPrompts.facebook;
+      const { code } = req.query;
+      const { tokens } = await client.getToken(code as string);
+      client.setCredentials(tokens);
       
-      // Return 2 random prompt options for the user to choose from
-      const shuffled = [...platformPrompts].sort(() => Math.random() - 0.5);
-      const promptOptions = shuffled.slice(0, 2);
-
-      if (!promptOptions || promptOptions.length === 0) {
-        return res.status(500).json({ error: 'Failed to generate video prompt options' });
-      }
-
+      const ticket = await client.verifyIdToken({
+        idToken: tokens.id_token!,
+        audience: process.env.GOOGLE_CLIENT_ID
+      });
+      
+      const payload = ticket.getPayload();
+      
       res.json({
         success: true,
-        promptOptions,
-        platform,
-        message: 'Video prompt options generated successfully'
+        user: {
+          id: payload?.sub,
+          email: payload?.email,
+          name: payload?.name,
+          picture: payload?.picture
+        },
+        seedanceVersion: '1.0'
       });
-
+      
     } catch (error) {
-      console.error('Video prompt generation error:', error);
-      res.status(500).json({ 
-        error: 'Failed to generate video prompt',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
+      console.error('OAuth callback error:', error);
+      res.status(500).json({ error: 'Authentication failed' });
     }
   });
 
-  /**
-   * Clean up old video files (admin endpoint)
-   * POST /api/cleanup-videos
-   */
-  app.post("/api/cleanup-videos", requireAuth, async (req: CustomRequest, res: Response) => {
-    try {
-      const { maxAgeHours = 24 } = req.body;
-      await videoGenerationService.cleanupOldVideos(maxAgeHours);
-      res.json({
-        success: true,
-        message: `Cleaned up videos older than ${maxAgeHours} hours`
-      });
-    } catch (error) {
-      console.error('Video cleanup error:', error);
-      res.status(500).json({ 
-        error: 'Failed to cleanup videos',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
+  // Subscription management for Seedance 1.0
+  app.get('/api/subscriptions', (req, res) => {
+    res.json({
+      tiers: seedanceSubscriptions,
+      seedanceVersion: '1.0'
+    });
   });
+
+  app.post('/api/subscribe', (req, res) => {
+    const { tier, email } = req.body;
+    const subscription = seedanceSubscriptions.find(s => s.tier === tier);
+    
+    if (!subscription) {
+      return res.status(400).json({ error: 'Invalid subscription tier' });
+    }
+
+    res.json({
+      success: true,
+      subscription,
+      message: `Subscribed to ${tier} plan with ${subscription.posts} posts`,
+      seedanceVersion: '1.0'
+    });
+  });
+  
+  console.log('🌱 Seedance 1.0: TheAgencyIQ ready for text-based social media automation');
 }
 
