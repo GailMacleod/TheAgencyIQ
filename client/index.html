@@ -148,17 +148,7 @@
           }
         });
         
-        console.warn = function(...args) {
-          if (!shouldFilter(args[0])) {
-            originalWarn.apply(console, args);
-          }
-        };
-        
-        console.error = function(...args) {
-          if (!shouldFilter(args[0])) {
-            originalError.apply(console, args);
-          }
-        };
+        // Removed duplicate console override - already handled above
       })();
     </script>
   </head>

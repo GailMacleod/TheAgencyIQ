@@ -578,43 +578,70 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development with static file serving...');
-      try {
-        const { setupVite, serveStatic } = await import('./vite');
-        await setupVite(app, httpServer);
-        serveStatic(app);
-        console.log('✅ Vite setup complete');
-      } catch (viteError) {
-        console.log('⚠️  Vite setup failed, using fallback static file serving...');
-        // Fallback to static file serving if Vite fails
-        const staticPath = path.join(process.cwd(), 'client');
-        
-        // Configure MIME types for proper module serving
-        app.use(express.static(staticPath, {
-          setHeaders: (res, path) => {
-            if (path.endsWith('.tsx') || path.endsWith('.ts')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            }
+      console.log('⚡ Setting up development mode...');
+      
+      // Check if we have a frontend build available
+      const distPath = path.join(process.cwd(), 'dist');
+      const fs = await import('fs');
+      const hasDistIndex = fs.existsSync(path.join(distPath, 'index.html'));
+      
+      if (hasDistIndex) {
+        console.log('📦 Using built files from dist/');
+        app.use(express.static(distPath));
+        app.get('*', (req, res) => {
+          if (!req.path.startsWith('/api/')) {
+            res.sendFile(path.join(distPath, 'index.html'));
           }
-        }));
-        
-        // Serve the client's source files with proper MIME types
-        app.use('/src', express.static(path.join(staticPath, 'src'), {
-          setHeaders: (res, path) => {
-            if (path.endsWith('.tsx') || path.endsWith('.ts')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            }
-          }
-        }));
-        
-        app.use('*', (req, res) => {
-          res.sendFile(path.join(staticPath, 'index.html'));
         });
-        console.log('✅ Fallback static file serving complete with proper MIME types');
+        console.log('✅ Built files served successfully');
+      } else {
+        console.log('📂 No built frontend found, setting up development serving...');
+        // Try Vite setup for development
+        try {
+          const { setupVite } = await import('./vite.js');
+          await setupVite(app, httpServer);
+          console.log('✅ Vite setup complete');
+        } catch (viteError) {
+          console.log('⚠️  Vite setup failed, using fallback static file serving...');
+          // Fallback to static file serving if Vite fails
+          const staticPath = path.join(process.cwd(), 'client');
+        
+          // CRITICAL: Configure MIME types for TypeScript/JSX modules
+          app.use(express.static(staticPath, {
+            setHeaders: (res, filePath) => {
+              if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
+                res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+              } else if (filePath.endsWith('.js') || filePath.endsWith('.jsx')) {
+                res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+              } else if (filePath.endsWith('.css')) {
+                res.setHeader('Content-Type', 'text/css; charset=utf-8');
+              }
+            }
+          }));
+          
+          // Serve client source files with proper TypeScript MIME types
+          app.use('/src', express.static(path.join(staticPath, 'src'), {
+            setHeaders: (res, filePath) => {
+              if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
+                res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+              } else if (filePath.endsWith('.js') || filePath.endsWith('.jsx')) {
+                res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+              } else if (filePath.endsWith('.css')) {
+                res.setHeader('Content-Type', 'text/css; charset=utf-8');
+              }
+            }
+          }));
+          
+          // Serve React app for all non-API routes
+          app.get('*', (req, res) => {
+            // Skip API routes
+            if (req.path.startsWith('/api/')) {
+              return res.status(404).json({ error: 'API route not found' });
+            }
+            res.sendFile(path.join(staticPath, 'index.html'));
+          });
+          console.log('✅ Fallback static file serving complete with proper MIME types');
+        }
       }
     }
   } catch (error) {
