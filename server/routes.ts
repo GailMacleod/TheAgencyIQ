@@ -7555,100 +7555,8 @@ export function addNotificationEndpoints(app: any) {
     }
   });
 
-  // ====== VIDEO GENERATION ENDPOINTS ======
+  // ====== CLEAN VIDEO GENERATION ENDPOINTS ======
 
-  /**
-   * Generate video content for a post
-   * POST /api/generate-video
-   * Body: { prompt: string, platform: string, aspectRatio?: string, duration?: number, style?: string }
-   */
-  app.post("/api/generate-video", requireAuth, async (req: CustomRequest, res: Response) => {
-    try {
-      const userId = req.session?.userId?.toString();
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-
-      const { prompt, platform, aspectRatio, duration, style } = req.body;
-
-      if (!prompt || !platform) {
-        return res.status(400).json({ error: 'Prompt and platform are required' });
-      }
-
-      // Check if user can generate videos
-      const generationStatus = await videoGenerationService.getGenerationStatus(userId);
-      if (!generationStatus.canGenerate) {
-        return res.status(403).json({ 
-          error: 'Video generation limit reached',
-          reason: generationStatus.reason,
-          videosGenerated: generationStatus.videosGenerated,
-          videoLimit: generationStatus.videoLimit
-        });
-      }
-
-      console.log(`🎬 Starting video generation for user ${userId}: "${prompt}"`);
-
-      // Generate video
-      const result = await videoGenerationService.generateVideo({
-        prompt,
-        platform,
-        userId,
-        aspectRatio,
-        duration,
-        style
-      });
-
-      if (result.success) {
-        res.json({
-          success: true,
-          videoUrl: result.videoUrl,
-          metadata: result.metadata,
-          message: 'Video generated successfully'
-        });
-      } else {
-        res.status(500).json({
-          error: 'Video generation failed',
-          details: result.error
-        });
-      }
-
-    } catch (error) {
-      console.error('Video generation endpoint error:', error);
-      res.status(500).json({ 
-        error: 'Internal server error during video generation',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
-
-  /**
-   * Get video generation status for user
-   * GET /api/video-generation-status
-   */
-  app.get("/api/video-generation-status", requireAuth, async (req: CustomRequest, res: Response) => {
-    try {
-      const userId = req.session?.userId?.toString();
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-
-      const status = await videoGenerationService.getGenerationStatus(userId);
-      res.json(status);
-
-    } catch (error) {
-      console.error('Video generation status error:', error);
-      res.status(500).json({ 
-        error: 'Failed to get video generation status',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
-
-  /**
-   * Generate video for specific post
-   * POST /api/posts/:id/generate-video
-   * Body: { platform: string, aspectRatio?: string, style?: string }
-   */
   app.post("/api/posts/:id/generate-video", requireAuth, async (req: CustomRequest, res: Response) => {
     try {
       const userId = req.session?.userId?.toString();
@@ -7657,10 +7565,10 @@ export function addNotificationEndpoints(app: any) {
       }
 
       const postId = parseInt(req.params.id);
-      const { platform, aspectRatio, style } = req.body;
+      const { videoPrompt, style = 'educational' } = req.body;
 
-      if (!platform) {
-        return res.status(400).json({ error: 'Platform is required' });
+      if (!videoPrompt) {
+        return res.status(400).json({ error: 'Video prompt is required' });
       }
 
       // Get the post
@@ -7674,32 +7582,23 @@ export function addNotificationEndpoints(app: any) {
         return res.status(403).json({ error: 'Access denied' });
       }
 
-      // Check video generation status
-      const generationStatus = await videoGenerationService.getGenerationStatus(userId);
-      if (!generationStatus.canGenerate) {
-        return res.status(403).json({ 
-          error: 'Video generation limit reached',
-          reason: generationStatus.reason
-        });
-      }
+      console.log(`🎬 Generating video for post ${postId} on ${postData.platform}`);
 
-      // Generate video using post content as prompt
-      const videoPrompt = `${postData.content} - Professional business video for ${platform}`;
-      
+      // Generate video with user's custom prompt
       const result = await videoGenerationService.generateVideo({
         prompt: videoPrompt,
-        platform,
+        platform: postData.platform,
         userId,
-        aspectRatio,
-        style: style || 'professional'
+        style
       });
 
       if (result.success) {
-        // Update post with video URL
+        // Update post with video information
         await db.update(posts)
           .set({ 
             videoUrl: result.videoUrl,
             hasVideo: true,
+            videoMetadata: result.metadata,
             updatedAt: new Date()
           })
           .where(eq(posts.id, postId));
@@ -7708,7 +7607,7 @@ export function addNotificationEndpoints(app: any) {
           success: true,
           videoUrl: result.videoUrl,
           metadata: result.metadata,
-          message: 'Video generated and attached to post'
+          message: 'Video generated and attached to post successfully'
         });
       } else {
         res.status(500).json({
@@ -7727,20 +7626,89 @@ export function addNotificationEndpoints(app: any) {
   });
 
   /**
-   * Clean up old video files
+   * Generate video prompt using OpenAI based on Strategizer input
+   * POST /api/generate-video-prompt
+   * Body: { brandPurpose: string, targetAudience: string, contentGoal: string, platform: string }
+   */
+  app.post("/api/generate-video-prompt", requireAuth, async (req: CustomRequest, res: Response) => {
+    try {
+      const userId = req.session?.userId?.toString();
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      const { brandPurpose, targetAudience, contentGoal, platform } = req.body;
+
+      if (!brandPurpose || !targetAudience || !contentGoal || !platform) {
+        return res.status(400).json({ 
+          error: 'Brand purpose, target audience, content goal, and platform are required' 
+        });
+      }
+
+      // Generate video prompt using OpenAI
+      const { OpenAI } = await import('openai');
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const systemPrompt = `You are a video content strategist specializing in short-form business videos. Generate a compelling video prompt based on the Strategizer business model canvas input.
+
+Platform: ${platform}
+Brand Purpose: ${brandPurpose}
+Target Audience: ${targetAudience}
+Content Goal: ${contentGoal}
+
+Create a video prompt that will generate a ${platform === 'instagram' ? '9:16 vertical' : '16:9 horizontal'} video. The prompt should be:
+- Specific and actionable
+- Platform-appropriate
+- Business-focused
+- Visual and engaging
+- 15-30 seconds duration
+
+Return ONLY the video prompt text, no additional explanation.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Generate a video prompt for ${platform} that aligns with our brand purpose and content goals.` }
+        ],
+        max_tokens: 200,
+        temperature: 0.7
+      });
+
+      const videoPrompt = response.choices[0].message.content?.trim();
+
+      if (!videoPrompt) {
+        return res.status(500).json({ error: 'Failed to generate video prompt' });
+      }
+
+      res.json({
+        success: true,
+        videoPrompt,
+        platform,
+        message: 'Video prompt generated successfully'
+      });
+
+    } catch (error) {
+      console.error('Video prompt generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate video prompt',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  /**
+   * Clean up old video files (admin endpoint)
    * POST /api/cleanup-videos
    */
   app.post("/api/cleanup-videos", requireAuth, async (req: CustomRequest, res: Response) => {
     try {
       const { maxAgeHours = 24 } = req.body;
-      
       await videoGenerationService.cleanupOldVideos(maxAgeHours);
-      
       res.json({
         success: true,
         message: `Cleaned up videos older than ${maxAgeHours} hours`
       });
-
     } catch (error) {
       console.error('Video cleanup error:', error);
       res.status(500).json({ 

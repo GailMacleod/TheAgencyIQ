@@ -109,6 +109,7 @@ export default function IntelligentSchedule() {
   const [aiInsights, setAiInsights] = useState<any>(null);
   const [calendarView, setCalendarView] = useState(true);
   const [queenslandEvents, setQueenslandEvents] = useState<any[]>([]);
+  const [generatingVideos, setGeneratingVideos] = useState<Set<number>>(new Set());
 
   const queryClient = useQueryClient();
 
@@ -346,6 +347,90 @@ export default function IntelligentSchedule() {
       setApprovingPosts(prev => {
         const newSet = new Set(prev);
         newSet.delete(postId);
+        return newSet;
+      });
+    }
+  };
+
+  // Handle video generation for a post using Strategizer workflow
+  const handleGenerateVideo = async (post: Post) => {
+    // Check if we have brand purpose data for the prompt
+    if (!brandPurpose) {
+      toast({
+        title: "Brand Purpose Required",
+        description: "Complete your Strategizer brand purpose setup to generate video prompts.",
+        variant: "destructive",
+      });
+      setLocation("/brand-purpose");
+      return;
+    }
+
+    setGeneratingVideos(prev => new Set(prev).add(post.id));
+
+    try {
+      toast({
+        title: "Generating Video Content",
+        description: "Creating AI-powered video prompt from your Strategizer data...",
+      });
+
+      // Step 1: Generate video prompt using OpenAI from Strategizer input
+      const promptResponse = await fetch('/api/generate-video-prompt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          brandPurpose: brandPurpose.corePurpose,
+          targetAudience: brandPurpose.audience,
+          contentGoal: post.content.substring(0, 100), // Use post content as goal
+          platform: post.platform
+        })
+      });
+
+      if (!promptResponse.ok) {
+        throw new Error('Failed to generate video prompt');
+      }
+
+      const promptData = await promptResponse.json();
+
+      // Step 2: Generate video using the AI-generated prompt
+      const videoResponse = await fetch(`/api/posts/${post.id}/generate-video`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          prompt: promptData.prompt
+        })
+      });
+
+      if (!videoResponse.ok) {
+        throw new Error('Failed to generate video');
+      }
+
+      const videoData = await videoResponse.json();
+
+      toast({
+        title: "Video Generated Successfully",
+        description: `Short-form video created for ${post.platform} using AI-powered prompt`,
+      });
+
+      // Refresh posts to show new video
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+
+    } catch (error) {
+      console.error('Video generation error:', error);
+      toast({
+        title: "Video Generation Failed",
+        description: "Failed to generate video. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingVideos(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(post.id);
         return newSet;
       });
     }
@@ -739,6 +824,28 @@ export default function IntelligentSchedule() {
                         <Edit3 className="w-4 h-4 mr-2" />
                         <span className="hidden sm:inline">Edit Content</span>
                         <span className="sm:hidden">Edit</span>
+                      </Button>
+
+                      <Button
+                        onClick={() => handleGenerateVideo(post)}
+                        variant="outline"
+                        size="sm"
+                        className="w-full sm:w-auto bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                        disabled={generatingVideos.has(post.id)}
+                      >
+                        {generatingVideos.has(post.id) ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2" />
+                            <span className="hidden sm:inline">Generating...</span>
+                            <span className="sm:hidden">Processing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4 mr-2" />
+                            <span className="hidden sm:inline">Generate Video</span>
+                            <span className="sm:hidden">Video</span>
+                          </>
+                        )}
                       </Button>
                       
                       {post.status !== 'published' && (

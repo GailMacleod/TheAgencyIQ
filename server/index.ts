@@ -572,7 +572,7 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development Vite...');
+      console.log('⚡ Setting up development with Vite...');
       const { setupVite, serveStatic } = await import('./vite');
       await setupVite(app, httpServer);
       serveStatic(app);
