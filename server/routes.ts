@@ -2033,17 +2033,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fs.mkdirSync(videoDir, { recursive: true });
       }
 
-      // Quick FFmpeg command for 10-second video (faster generation)
+      // Dynamic script-driven video generation using FFmpeg directly
       const { spawn } = await import('child_process');
+      
+      // Create dynamic patterns based on video prompt
+      let visualPattern = 'testsrc2=size=1280x720:duration=10:rate=30';
+      let audioFreq = '440';
+      let hueShift = 't*30';
+      
+      const prompt = (videoPrompt || '').toLowerCase();
+      if (prompt.includes('automation') || prompt.includes('productivity')) {
+        visualPattern = 'mandelbrot=size=1280x720:rate=30';
+        audioFreq = '220';
+        hueShift = 't*40';
+      } else if (prompt.includes('growth') || prompt.includes('success')) {
+        visualPattern = 'life=size=1280x720:rate=30:ratio=0.1';
+        audioFreq = '330';
+        hueShift = 't*50';
+      } else if (prompt.includes('innovation') || prompt.includes('creative')) {
+        visualPattern = 'mandelbrot=size=1280x720:rate=30:maxiter=50';
+        audioFreq = '550';
+        hueShift = 't*60';
+      } else if (prompt.includes('coastal') || prompt.includes('beach')) {
+        visualPattern = 'life=size=1280x720:rate=30:ratio=0.2';
+        audioFreq = '200';
+        hueShift = 't*20';
+      }
+      
       const ffmpegArgs = [
         '-f', 'lavfi',
-        '-i', 'testsrc2=size=1280x720:duration=10:rate=30',
+        '-i', `${visualPattern},hue=s=0.7:h=${hueShift}`,
         '-f', 'lavfi', 
-        '-i', 'sine=frequency=440:duration=10',
+        '-i', `sine=frequency=${audioFreq}:duration=10`,
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
         '-c:a', 'aac',
-        '-shortest',
+        '-t', '10',
         '-y',
         outputPath
       ];
@@ -2053,16 +2078,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await new Promise((resolve, reject) => {
         ffmpeg.on('close', (code) => {
           if (code === 0) resolve(true);
-          else reject(new Error(`FFmpeg failed with code ${code}`));
+          else reject(new Error(`Dynamic video generation failed with code ${code}`));
         });
         ffmpeg.on('error', reject);
+        
+        // Log output for debugging dynamic video generation
+        ffmpeg.stdout.on('data', (data) => {
+          console.log(`Dynamic video: ${data}`);
+        });
+        ffmpeg.stderr.on('data', (data) => {
+          console.log(`Video processing: ${data.toString().slice(0, 100)}...`);
+        });
       });
 
       // Update post with video URL
       await storage.updatePost(postId, {
         videoUrl: `/${outputPath}`,
         hasVideo: true,
-        videoMetadata: { duration: 10, width: 1280, height: 720 }
+        videoMetadata: { duration: 10, width: 1280, height: 720, prompt: videoPrompt, dynamic: true }
       });
 
       res.json({ 

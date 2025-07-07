@@ -40,40 +40,77 @@ def add_audio_layer(prompt):
     return audio_elements
 
 def generate_asmr_video(prompt, output_path, duration=30, width=1920, height=1080):
-    """Generate ASMR video using FFmpeg with visual patterns and audio"""
+    """Generate dynamic ASMR video using FFmpeg with script-driven visual patterns"""
     try:
         # Create output directory
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        # Generate visual pattern based on prompt (using only available FFmpeg filters)
-        if "rainforest" in prompt.lower() or "forest" in prompt.lower():
-            pattern = "mandelbrot"
-            color_filter = "hue=s=0.7:h=120"
-        elif "coastal" in prompt.lower() or "beach" in prompt.lower():
-            pattern = "life"
-            color_filter = "hue=s=0.5:h=200"
-        elif "office" in prompt.lower() or "automation" in prompt.lower():
-            pattern = "testsrc2"
-            color_filter = "hue=s=0.3:h=30"
-        else:
-            pattern = "mandelbrot"
-            color_filter = "hue=s=0.4:h=60"
+        # Advanced script-driven pattern generation based on prompt content
+        prompt_lower = prompt.lower()
         
-        # FFmpeg command for ASMR video generation
+        # Initialize filters with default values
+        visual_filter = "testsrc2=size={}x{}:rate=25,hue=s=0.5:h=t*40:H=t*10,scale={}:{}".format(width, height, width, height)
+        audio_filter = "sine=frequency=280+20*sin(PI*t):sample_rate=44100,volume=0.12"
+        
+        # Queensland business automation themes with dynamic effects (simplified FFmpeg syntax)
+        if "automation" in prompt_lower or "productivity" in prompt_lower:
+            # Flowing geometric patterns with smooth transitions
+            visual_filter = "mandelbrot=size={}x{}:rate=25,hue=s=0.6:h=t*30".format(width, height)
+            audio_filter = "sine=frequency=220:sample_rate=44100,volume=0.15"
+            
+        elif "growth" in prompt_lower or "success" in prompt_lower:
+            # Expanding cellular automata with growth-like patterns
+            visual_filter = "life=size={}x{}:rate=25:ratio=0.1:random_seed=2,hue=s=0.8:h=120+t*10".format(width, height)
+            audio_filter = "sine=frequency=440:sample_rate=44100,volume=0.12"
+            
+        elif "innovation" in prompt_lower or "creative" in prompt_lower:
+            # Complex mandelbrot with shifting colors
+            visual_filter = "mandelbrot=size={}x{}:rate=25:maxiter=100,hue=s=0.9:h=t*60".format(width, height)
+            audio_filter = "sine=frequency=330:sample_rate=44100,volume=0.1"
+            
+        elif "coastal" in prompt_lower or "beach" in prompt_lower:
+            # Wave-like cellular patterns with blue tones
+            visual_filter = "life=size={}x{}:rate=25:ratio=0.2,hue=s=0.7:h=200+t*5".format(width, height)
+            audio_filter = "sine=frequency=200:sample_rate=44100,volume=0.08"
+            
+        elif "forest" in prompt_lower or "nature" in prompt_lower:
+            # Organic mandelbrot patterns with green earth tones
+            visual_filter = "mandelbrot=size={}x{}:rate=25,hue=s=0.8:h=90+t*15".format(width, height)
+            audio_filter = "sine=frequency=150:sample_rate=44100,volume=0.1"
+            
+        else:
+            # Default dynamic pattern for general business content
+            visual_filter = "testsrc2=size={}x{}:rate=25,hue=s=0.5:h=t*40".format(width, height)
+            audio_filter = "sine=frequency=280:sample_rate=44100,volume=0.12"
+        
+        # Ensure we have valid filters and add scaling
+        if not visual_filter:
+            visual_filter = "testsrc2=size={}x{}:rate=25,hue=s=0.5:h=t*40".format(width, height)
+        
+        # Add scaling to video filter
+        visual_filter += ",scale={}:{}".format(width, height)
+        
+        if not audio_filter or audio_filter == "anullsrc=channel_layout=stereo:sample_rate=44100":
+            audio_filter = "sine=frequency=280:sample_rate=44100,volume=0.12"
+        
+        print(f"🎨 Visual filter: {visual_filter[:50]}...")
+        print(f"🎵 Audio filter: {audio_filter[:50]}...")
+        
+        # Advanced FFmpeg command for dynamic script-driven video generation
         cmd = [
             'ffmpeg', '-y',
             '-f', 'lavfi',
-            '-i', f'{pattern}=size={width}x{height}:rate=25',
+            '-i', visual_filter,
             '-f', 'lavfi', 
-            '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
-            '-vf', f'{color_filter},scale={width}:{height}',
-            '-af', 'volume=0.1',
+            '-i', audio_filter,
             '-t', str(duration),
             '-c:v', 'libx264',
+            '-preset', 'medium',
             '-c:a', 'aac',
             '-pix_fmt', 'yuv420p',
-            '-b:v', '1000k',
+            '-b:v', '800k',
             '-b:a', '128k',
+            '-movflags', '+faststart',
             output_path
         ]
         
