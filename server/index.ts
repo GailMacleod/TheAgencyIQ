@@ -145,22 +145,12 @@ async function startServer() {
       "frame-ancestors 'self' https://www.google.com"
     ].join('; '));
     
-    // Standardized Permissions Policy (removing unrecognized features)
+    // Minimal Permissions Policy (only widely supported features)
     res.setHeader('Permissions-Policy', [
       'camera=()',
-      'fullscreen=()',
-      'geolocation=()',
-      'gyroscope=()',
-      'magnetometer=()',
       'microphone=()',
-      'midi=()',
-      'payment=()',
-      'picture-in-picture=()',
-      'sync-xhr=()',
-      'usb=()',
-      'screen-wake-lock=()',
-      'web-share=()',
-      'unload=()'
+      'geolocation=()',
+      'payment=()'
     ].join(', '));
     
     next();
