@@ -558,6 +558,12 @@ async function startServer() {
       app.use(express.static(path.join(process.cwd(), 'dist/public')));
       // Serve attached assets in production
       app.use('/attached_assets', express.static('attached_assets'));
+      // Serve dist files with proper JS content type
+      app.use(express.static('dist', { 
+        setHeaders: (res, path) => { 
+          if (path.endsWith('.js')) res.set('Content-Type', 'application/javascript'); 
+        } 
+      }));
       
       // Root route for production
       app.get('/', (req, res) => {

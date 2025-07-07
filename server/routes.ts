@@ -7585,7 +7585,7 @@ export function addNotificationEndpoints(app: any) {
       console.log(`🎬 Generating 30-second ASMR video for post ${postId} on ${postData.platform}`);
 
       // Generate video with custom prompt using Python script
-      const { exec } = require('child_process');
+      const { exec } = await import('child_process');
       const videoFileName = `video_${postId}_${Date.now()}.mp4`;
       const outputPath = `uploads/videos/${videoFileName}`;
       

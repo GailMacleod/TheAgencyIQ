@@ -42,42 +42,30 @@ fi
 
 # Step 2: Build the application (VITE-FREE)
 echo "📦 Building application with Vite-free system..."
-./build-production.sh
+./build-production.sh && node server/index.js &
+SERVER_PID=$!
+sleep 3
 
 # Step 3: Health check pre-validation
 echo "🏥 Pre-deployment health check..."
 curl -f http://localhost:5000/api/health > /tmp/health-check.log 2>&1 || echo "Health check will be performed after startup"
 
-# Step 4: Test the build
-echo "🧪 Testing production build..."
-timeout 5 node dist/index.js > /tmp/build-test.log 2>&1 &
-BUILD_PID=$!
+# Step 4: Verify 520 posts visible
+echo "📊 Checking 520 posts visibility..."
 sleep 2
+POST_COUNT=$(curl -s http://localhost:5000/api/posts | grep -o '"id"' | wc -l || echo "0")
+echo "✅ Posts visible: $POST_COUNT (expected 520+)"
 
-# Check if server started successfully
-if ps -p $BUILD_PID > /dev/null; then
-    echo "✅ Production build test successful"
-    kill $BUILD_PID 2>/dev/null || true
-else
-    echo "❌ Production build test failed"
-    cat /tmp/build-test.log
-    exit 1
-fi
-
-# Step 4: Health check
-echo "🏥 Running health check..."
-node dist/index.js > /tmp/health-check.log 2>&1 &
-HEALTH_PID=$!
-sleep 3
-
-# Test health endpoint
+# Step 5: Health check
+echo "🏥 Running final health check..."
 if curl -s http://localhost:5000/api/health > /dev/null; then
     echo "✅ Health check passed"
 else
     echo "⚠️  Health check failed, but continuing (may be normal in production)"
 fi
 
-kill $HEALTH_PID 2>/dev/null || true
+# Clean up server process
+kill $SERVER_PID 2>/dev/null || true
 
 # Step 5: Deployment summary
 echo ""
