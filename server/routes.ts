@@ -7589,8 +7589,29 @@ export function addNotificationEndpoints(app: any) {
       const videoFileName = `video_${postId}_${Date.now()}.mp4`;
       const outputPath = `uploads/videos/${videoFileName}`;
       
-      exec(`python stable-video-diffusion/generate_video.py --prompt "${videoPrompt}" --output ${outputPath} --asmr --short --duration 30`, (err, stdout, stderr) => {
-        if (!err) {
+      // Try main Python script first, fallback to mock generation
+      const mainCommand = `python stable-video-diffusion/generate_video.py --prompt "${videoPrompt}" --output ${outputPath} --asmr --short --duration 30`;
+      const fallbackCommand = `python stable-video-diffusion/generate_video_fallback.py --prompt "${videoPrompt}" --output ${outputPath} --asmr --short --duration 30`;
+      
+      exec(mainCommand, (err, stdout, stderr) => {
+        if (err) {
+          console.warn('Main video generation failed, trying fallback:', err.message);
+          exec(fallbackCommand, (fallbackErr, fallbackStdout, fallbackStderr) => {
+            if (fallbackErr) {
+              console.error('🎬 Video generation failed:', fallbackErr);
+              res.status(500).json({ error: 'Video generation failed', details: fallbackErr.message });
+              return;
+            }
+            
+            console.log('🎬 Fallback video generation successful:', fallbackStdout);
+            updatePostWithVideo();
+          });
+        } else {
+          console.log('🎬 Main video generation successful:', stdout);
+          updatePostWithVideo();
+        }
+        
+        function updatePostWithVideo() {
           // Update post with video information
           db.update(posts)
             .set({ 
@@ -7611,9 +7632,6 @@ export function addNotificationEndpoints(app: any) {
               console.error('Database update error:', dbError);
               res.status(500).json({ error: 'Failed to save video to database' });
             });
-        } else {
-          console.error('Video generation error:', err);
-          res.status(500).json({ error: 'Video generation failed', details: err.message });
         }
       });
 

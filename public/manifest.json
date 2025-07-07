@@ -9,7 +9,7 @@
   "icons": [
     {
       "src": "/attached_assets/agency_logo_1749083054761.png",
-      "sizes": "192x192",
+      "sizes": "any",
       "type": "image/png"
     },
     {

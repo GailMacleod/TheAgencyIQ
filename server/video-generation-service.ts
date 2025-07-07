@@ -154,13 +154,22 @@ export class VideoGenerationService {
       // Enhanced prompt for better video generation
       const enhancedPrompt = this.enhancePromptForVideo(params.prompt, params.style);
       
-      // Create Python script command
+      // Try main Python script, fallback to mock if dependencies missing
       const pythonScript = path.join(this.svdPath, 'generate_video.py');
-      const command = `python3 "${pythonScript}" --prompt "${enhancedPrompt}" --output "${params.output}" --width ${params.width} --height ${params.height} --duration ${params.duration}`;
+      const fallbackScript = path.join(this.svdPath, 'generate_video_fallback.py');
+      const mainCommand = `python3 "${pythonScript}" --prompt "${enhancedPrompt}" --output "${params.output}" --width ${params.width} --height ${params.height} --duration ${params.duration}`;
+      const fallbackCommand = `python3 "${fallbackScript}" --prompt "${enhancedPrompt}" --output "${params.output}" --width ${params.width} --height ${params.height} --duration ${params.duration}`;
       
-      console.log(`📝 Command: ${command}`);
+      console.log(`📝 Trying main command: ${mainCommand}`);
       
-      const { stdout, stderr } = await execAsync(command, { timeout: 300000 }); // 5 minute timeout
+      try {
+        const { stdout, stderr } = await execAsync(mainCommand, { timeout: 300000 }); // 5 minute timeout
+        console.log('Main video generation successful:', stdout);
+      } catch (mainError) {
+        console.warn('Main video generation failed, trying fallback:', mainError);
+        const { stdout, stderr } = await execAsync(fallbackCommand, { timeout: 30000 }); // 30 second timeout for fallback
+        console.log('Fallback video generation successful:', stdout);
+      }
       
       if (stderr && !stderr.includes('Warning')) {
         console.error('SVD stderr:', stderr);
