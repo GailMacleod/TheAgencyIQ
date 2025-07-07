@@ -228,7 +228,7 @@ export async function registerRoutes(app) {
     }
   });
 
-  // Seedance 1.0 endpoints
+  // Seedance 1.0 endpoints with video approval workflow
   app.post('/api/posts/generate', async (req, res) => {
     try {
       if (!req.session.userId) {
@@ -246,10 +246,13 @@ export async function registerRoutes(app) {
         videoUrl: `https://cdn.theagencyiq.ai/videos/seedance_${Date.now()}.mp4`,
         thumbnailUrl: `https://cdn.theagencyiq.ai/thumbnails/seedance_${Date.now()}.jpg`,
         duration, style, platforms: ['facebook', 'instagram', 'linkedin', 'youtube', 'x'],
-        generatedAt: new Date().toISOString(), seedanceVersion: '1.0.0'
+        videoStatus: 'pending_approval', // New video approval status
+        videoApproved: false,
+        generatedAt: new Date().toISOString(), 
+        seedanceVersion: '1.0.0'
       };
       
-      res.json({ success: true, content: seedanceContent, message: 'Seedance 1.0 content generated successfully' });
+      res.json({ success: true, content: seedanceContent, message: 'Seedance 1.0 content generated - video pending approval' });
     } catch (error) {
       res.status(500).json({ error: 'Content generation failed' });
     }
@@ -270,13 +273,109 @@ export async function registerRoutes(app) {
         script,
         videoUrl: `https://cdn.theagencyiq.ai/videos/seedance_video_${Date.now()}.mp4`,
         thumbnailUrl: `https://cdn.theagencyiq.ai/thumbnails/seedance_video_${Date.now()}.jpg`,
-        style, resolution, duration: 30, status: 'completed',
-        generatedAt: new Date().toISOString(), seedanceVersion: '1.0.0'
+        style, resolution, duration: 30, 
+        videoStatus: 'pending_approval', // Video needs approval before posting
+        videoApproved: false,
+        status: 'generated',
+        generatedAt: new Date().toISOString(), 
+        seedanceVersion: '1.0.0'
       };
       
-      res.json({ success: true, video: seedanceVideo, message: 'Seedance 1.0 video generated successfully' });
+      res.json({ success: true, video: seedanceVideo, message: 'Seedance 1.0 video generated - awaiting approval' });
     } catch (error) {
       res.status(500).json({ error: 'Video generation failed' });
+    }
+  });
+
+  // Video approval workflow endpoints
+  app.post('/api/posts/:id/approve-video', async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const { id } = req.params;
+      const { approved, feedback } = req.body;
+      
+      // In a real implementation, this would update the database
+      const approvalResponse = {
+        postId: id,
+        videoApproved: approved,
+        videoStatus: approved ? 'approved' : 'rejected',
+        feedback: feedback || '',
+        approvedAt: new Date().toISOString(),
+        userId: req.session.userId
+      };
+      
+      res.json({ 
+        success: true, 
+        approval: approvalResponse, 
+        message: approved ? 'Video approved for posting' : 'Video rejected - will not be posted'
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Video approval failed' });
+    }
+  });
+
+  app.get('/api/posts/:id/video-preview', async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const { id } = req.params;
+      
+      // Mock video preview data
+      const videoPreview = {
+        postId: id,
+        videoUrl: `https://cdn.theagencyiq.ai/videos/seedance_video_${id}.mp4`,
+        thumbnailUrl: `https://cdn.theagencyiq.ai/thumbnails/seedance_video_${id}.jpg`,
+        duration: 30,
+        resolution: '1080p',
+        style: 'professional',
+        videoStatus: 'pending_approval',
+        generatedAt: new Date().toISOString()
+      };
+      
+      res.json({ success: true, preview: videoPreview });
+    } catch (error) {
+      res.status(500).json({ error: 'Video preview failed' });
+    }
+  });
+
+  app.get('/api/posts/pending-approval', async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      // Mock pending approval videos
+      const pendingVideos = [
+        {
+          id: 1,
+          title: 'Queensland Business Automation Video 1',
+          videoUrl: 'https://cdn.theagencyiq.ai/videos/seedance_video_001.mp4',
+          thumbnailUrl: 'https://cdn.theagencyiq.ai/thumbnails/seedance_video_001.jpg',
+          duration: 30,
+          resolution: '1080p',
+          videoStatus: 'pending_approval',
+          generatedAt: new Date().toISOString()
+        },
+        {
+          id: 2,
+          title: 'Queensland SME Marketing Video',
+          videoUrl: 'https://cdn.theagencyiq.ai/videos/seedance_video_002.mp4',
+          thumbnailUrl: 'https://cdn.theagencyiq.ai/thumbnails/seedance_video_002.jpg',
+          duration: 25,
+          resolution: '1080p',
+          videoStatus: 'pending_approval',
+          generatedAt: new Date().toISOString()
+        }
+      ];
+      
+      res.json({ success: true, pendingVideos });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch pending approvals' });
     }
   });
 
