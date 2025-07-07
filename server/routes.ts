@@ -18,7 +18,6 @@ import path from "path";
 import fs from "fs";
 import crypto from "crypto";
 import { passport } from "./oauth-config";
-
 import axios from "axios";
 import PostPublisher from "./post-publisher";
 import BreachNotificationService from "./breach-notification";
@@ -6587,54 +6586,6 @@ Continue building your Value Proposition Canvas systematically.`;
   // Phone verification code storage (in-memory for development)
   const verificationCodes = new Map<string, { code: string; expiresAt: Date }>();
 
-  // Seedance 1.0 Video Generation Service
-  async function generateSeedanceVideo(script: string, style: string, duration: number) {
-    try {
-      const videoId = `seedance_${Date.now()}`;
-      
-      // Call Seedance API for video generation
-      const seedanceResponse = await fetch('https://api.seedance.ai/v1/generate', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.SEEDANCE_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          script: script,
-          style: style,
-          duration: duration,
-          format: 'mp4',
-          resolution: '1080p',
-          engine: 'seedance-1.0'
-        })
-      });
-
-      if (!seedanceResponse.ok) {
-        throw new Error(`Seedance API error: ${seedanceResponse.status}`);
-      }
-
-      const seedanceData = await seedanceResponse.json();
-      
-      return {
-        videoUrl: seedanceData.video_url,
-        thumbnailUrl: seedanceData.thumbnail_url,
-        videoId: seedanceData.video_id || videoId
-      };
-    } catch (error) {
-      console.error('Seedance API error:', error);
-      
-      // Fallback to local generation if API fails
-      const videoId = `local_${Date.now()}`;
-      return {
-        videoUrl: `/api/video/generated/${videoId}.mp4`,
-        thumbnailUrl: `/api/video/thumbnail/${videoId}.jpg`,
-        videoId: videoId
-      };
-    }
-  }
-
-
-
   // Send SMS verification code endpoint
   app.post('/api/send-code', async (req, res) => {
     try {
@@ -7352,19 +7303,16 @@ Continue building your Value Proposition Canvas systematically.`;
       await new Promise((resolve, reject) => {
         videoSemaphore.take(async () => {
           try {
-            // Generate real video using Seedance 1.0 API
-            console.log(`🎥 Calling Seedance API for post ${numericPostId}: "${script}" (${style}, ${duration}s)`);
-            const seedanceResult = await generateSeedanceVideo(script, style, duration);
+            // Simulate advanced video generation with Seedance 1.0
             const videoData = {
               id: `video_${numericPostId}_${Date.now()}`,
-              videoUrl: seedanceResult.videoUrl,
-              thumbnailUrl: seedanceResult.thumbnailUrl,
+              videoUrl: `https://seedance-cdn.theagencyiq.ai/videos/${numericPostId}.mp4`,
+              thumbnailUrl: `https://seedance-cdn.theagencyiq.ai/thumbnails/${numericPostId}.jpg`,
               duration: duration,
               style: style,
               status: 'completed' as const,
               generatedAt: new Date().toISOString(),
-              seedanceVersion: '1.0',
-              script: script
+              seedanceVersion: '1.0'
             };
 
             // Initialize session posts if needed

@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -17,9 +16,6 @@ import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
 import AutoPostingEnforcer from "@/components/auto-posting-enforcer";
-
-// Prevent PWA install prompt
-window.addEventListener('beforeinstallprompt', (e) => e.preventDefault());
 
 interface Post {
   id: number;
@@ -124,8 +120,6 @@ export default function IntelligentSchedule() {
   const [creatingVideo, setCreatingVideo] = useState<Set<number>>(new Set());
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedPostForVideo, setSelectedPostForVideo] = useState<Post | null>(null);
-  const [videoScript, setVideoScript] = useState("");
-  const [videoStyle, setVideoStyle] = useState("professional");
 
   const queryClient = useQueryClient();
 
@@ -198,8 +192,6 @@ export default function IntelligentSchedule() {
   // Handle video creation
   const handleCreateVideo = (post: Post) => {
     setSelectedPostForVideo(post);
-    setVideoScript(post.content || "");
-    setVideoStyle("professional");
     setShowVideoModal(true);
   };
 
@@ -656,7 +648,7 @@ export default function IntelligentSchedule() {
                 Complete your brand purpose to enable AI content generation
               </p>
               <Button
-                onPress={() => setLocation("/brand-purpose")}
+                onClick={() => setLocation("/brand-purpose")}
                 className="bg-yellow-600 hover:bg-yellow-700 text-white"
               >
                 Complete Brand Purpose
@@ -701,7 +693,7 @@ export default function IntelligentSchedule() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {!scheduleGenerated ? (
               <Button
-                onPress={generateIntelligentSchedule}
+                onClick={generateIntelligentSchedule}
                 disabled={!brandPurpose || isGeneratingSchedule}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg"
                 size="lg"
@@ -720,7 +712,7 @@ export default function IntelligentSchedule() {
               </Button>
             ) : (
               <Button
-                onPress={autoPostIntelligentSchedule}
+                onClick={autoPostIntelligentSchedule}
                 className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg"
                 size="lg"
               >
@@ -751,7 +743,7 @@ export default function IntelligentSchedule() {
               {/* View Toggle */}
               <div className="flex bg-gray-100 rounded-lg p-1">
                 <button
-                  onPress={() => setCalendarView(true)}
+                  onClick={() => setCalendarView(true)}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                     calendarView ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                   }`}
@@ -760,7 +752,7 @@ export default function IntelligentSchedule() {
                   Calendar
                 </button>
                 <button
-                  onPress={() => setCalendarView(false)}
+                  onClick={() => setCalendarView(false)}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                     !calendarView ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                   }`}
@@ -830,7 +822,7 @@ export default function IntelligentSchedule() {
                             </Badge>
                           </div>
                           <Button
-                            onPress={() => removeVideoFromPost(post.id)}
+                            onClick={() => removeVideoFromPost(post.id)}
                             variant="ghost"
                             size="sm"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -846,19 +838,21 @@ export default function IntelligentSchedule() {
                           </div>
                         ) : post.videoData.status === 'completed' ? (
                           <div className="space-y-3">
-                            <div className="space-y-2">
-                              <video 
-                                controls 
-                                src={post.videoData.videoUrl}
-                                poster={post.videoData.thumbnailUrl}
-                                className="w-full h-32 object-cover rounded-lg"
-                                preload="metadata"
-                              >
-                                Your browser does not support the video tag.
-                              </video>
-                              <p className="text-xs text-blue-600 font-medium text-center">
-                                Video preview • {post.videoData.duration}s • {post.videoData.style} style
-                              </p>
+                            <div className="relative bg-gray-100 rounded-lg overflow-hidden cursor-pointer group"
+                                 onClick={() => window.open(post.videoData.videoUrl, '_blank')}>
+                              <img 
+                                src={post.videoData.thumbnailUrl} 
+                                alt="Video thumbnail"
+                                className="w-full h-32 object-cover transition-transform group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="bg-black bg-opacity-60 rounded-full p-3 transition-all group-hover:bg-opacity-70 group-hover:scale-110">
+                                  <Play className="w-6 h-6 text-white" />
+                                </div>
+                              </div>
+                              <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                                {post.videoData.duration}s
+                              </div>
                             </div>
                             
                             {/* Video Approval Actions */}
@@ -875,7 +869,7 @@ export default function IntelligentSchedule() {
                               
                               <div className="flex space-x-1">
                                 <Button
-                                  onPress={() => handleCreateVideo(post)}
+                                  onClick={() => handleCreateVideo(post)}
                                   variant="ghost"
                                   size="sm"
                                   className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
@@ -884,7 +878,7 @@ export default function IntelligentSchedule() {
                                   <Edit3 className="w-3 h-3" />
                                 </Button>
                                 <Button
-                                  onPress={() => window.open(post.videoData.videoUrl, '_blank')}
+                                  onClick={() => window.open(post.videoData.videoUrl, '_blank')}
                                   variant="ghost"
                                   size="sm"
                                   className="text-green-600 hover:text-green-700 hover:bg-green-50"
@@ -916,7 +910,7 @@ export default function IntelligentSchedule() {
                     
                     <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                       <Button
-                        onPress={() => handleEditPost(post)}
+                        onClick={() => handleEditPost(post)}
                         variant="outline"
                         size="sm"
                         className="w-full sm:w-auto"
@@ -929,14 +923,18 @@ export default function IntelligentSchedule() {
                       {/* Video Creation/Management Button */}
                       {!post.videoData ? (
                         <Button
-                          onPress={() => handleCreateVideo(post)}
+                          onClick={() => handleCreateVideo(post)}
                           variant="outline"
                           size="sm"
                           className="w-full sm:w-auto border-blue-200 text-blue-600 hover:bg-blue-50"
                           disabled={creatingVideo.has(post.id)}
                         >
                           {creatingVideo.has(post.id) ? (
-                            <div className="loading">Generating...</div>
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2" />
+                              <span className="hidden sm:inline">Creating...</span>
+                              <span className="sm:hidden">Creating...</span>
+                            </>
                           ) : (
                             <>
                               <Video className="w-4 h-4 mr-2" />
@@ -947,7 +945,7 @@ export default function IntelligentSchedule() {
                         </Button>
                       ) : (
                         <Button
-                          onPress={() => handleCreateVideo(post)}
+                          onClick={() => handleCreateVideo(post)}
                           variant="outline"
                           size="sm"
                           className="w-full sm:w-auto border-blue-200 text-blue-600 hover:bg-blue-50"
@@ -960,7 +958,7 @@ export default function IntelligentSchedule() {
                       
                       {post.status !== 'published' && (
                         <Button
-                          onPress={() => approvePost(post.id)}
+                          onClick={() => approvePost(post.id)}
                           className={
                             post.status === 'approved' || approvedPosts.has(post.id)
                               ? "bg-gray-600 hover:bg-gray-700 text-white cursor-not-allowed w-full sm:w-auto"
@@ -1030,7 +1028,7 @@ export default function IntelligentSchedule() {
             </p>
             {brandPurpose ? (
               <Button
-                onPress={generateIntelligentSchedule}
+                onClick={generateIntelligentSchedule}
                 className="bg-purple-600 hover:bg-purple-700 text-white"
                 size="lg"
                 disabled={isGeneratingSchedule}
@@ -1051,7 +1049,7 @@ export default function IntelligentSchedule() {
               </Button>
             ) : (
               <Button
-                onPress={() => setLocation("/brand-purpose")}
+                onClick={() => setLocation("/brand-purpose")}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
                 size="lg"
               >
@@ -1090,13 +1088,13 @@ export default function IntelligentSchedule() {
           <div className="flex justify-end space-x-2">
             <Button 
               variant="outline" 
-              onPress={() => setIsEditModalOpen(false)}
+              onClick={() => setIsEditModalOpen(false)}
               disabled={editPostMutation.isPending}
             >
               Cancel
             </Button>
             <Button 
-              onPress={saveEditedContent}
+              onClick={saveEditedContent}
               disabled={editPostMutation.isPending}
             >
               {editPostMutation.isPending ? (
@@ -1180,7 +1178,7 @@ export default function IntelligentSchedule() {
           </div>
           <div className="flex justify-end space-x-2">
             <Button 
-              onPress={() => setShowSuccessModal(false)}
+              onClick={() => setShowSuccessModal(false)}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <CheckCircle className="w-4 h-4 mr-2" />
@@ -1206,9 +1204,9 @@ export default function IntelligentSchedule() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Video Script</label>
               <Textarea
+                id="videoScript"
                 placeholder="Enter your video script or use the post content..."
-                value={videoScript}
-                onChange={(e) => setVideoScript(e.target.value)}
+                defaultValue={selectedPostForVideo?.content || ""}
                 rows={4}
                 className="resize-none"
               />
@@ -1219,17 +1217,16 @@ export default function IntelligentSchedule() {
             
             <div className="space-y-2">
               <label className="text-sm font-medium">Video Style</label>
-              <Select value={videoStyle} onValueChange={setVideoStyle}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select video style" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="professional">Growth: Drip, 30s</SelectItem>
-                  <SelectItem value="casual">Ease: Breeze, 30s</SelectItem>
-                  <SelectItem value="dynamic">Dynamic</SelectItem>
-                  <SelectItem value="minimal">Minimal</SelectItem>
-                </SelectContent>
-              </Select>
+              <select 
+                id="videoStyle"
+                className="w-full p-2 border border-gray-300 rounded-md"
+                defaultValue="professional"
+              >
+                <option value="professional">Professional</option>
+                <option value="casual">Casual</option>
+                <option value="dynamic">Dynamic</option>
+                <option value="minimal">Minimal</option>
+              </select>
             </div>
             
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -1251,13 +1248,17 @@ export default function IntelligentSchedule() {
           <div className="flex justify-end space-x-2">
             <Button 
               variant="outline" 
-              onPress={() => setShowVideoModal(false)}
+              onClick={() => setShowVideoModal(false)}
               disabled={createVideoMutation.isPending}
             >
               Cancel
             </Button>
             <Button 
-              onPress={() => createVideoForPost(videoScript, videoStyle)}
+              onClick={() => {
+                const script = (document.getElementById('videoScript') as HTMLTextAreaElement)?.value || selectedPostForVideo?.content || "";
+                const style = (document.getElementById('videoStyle') as HTMLSelectElement)?.value || "professional";
+                createVideoForPost(script, style);
+              }}
               disabled={createVideoMutation.isPending}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
