@@ -556,8 +556,20 @@ async function startServer() {
     } else {
       console.log('⚡ Setting up development server...');
       
-      // Serve static files for development
-      app.use(express.static('client/dist'));
+      // Direct TypeScript/JavaScript file handling with explicit MIME types
+      app.get('/src/*', (req, res) => {
+        const filePath = path.join(process.cwd(), 'client', req.path);
+        res.setHeader('Content-Type', 'application/javascript');
+        res.sendFile(filePath);
+      });
+      
+      app.get('*.js', (req, res) => {
+        res.setHeader('Content-Type', 'application/javascript');
+        res.sendFile(path.join(process.cwd(), 'client', req.path));
+      });
+      
+      app.use(express.static('client/public'));
+      app.use(express.static('client'));
       app.use(express.static('public'));
       
       // Fallback route for SPA
@@ -565,7 +577,7 @@ async function startServer() {
         if (req.path.startsWith('/api/')) {
           return res.status(404).json({ error: 'API endpoint not found' });
         }
-        res.sendFile(path.join(process.cwd(), 'client', 'dist', 'index.html'));
+        res.sendFile(path.join(process.cwd(), 'client', 'index.html'));
       });
       
       console.log('✅ Development server setup complete');
