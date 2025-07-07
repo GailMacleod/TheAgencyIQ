@@ -62,62 +62,12 @@ app.use(session({
   }
 }));
 
-// TypeScript/JSX compilation middleware
-app.get('/src/*', async (req, res, next) => {
-  try {
-    const filePath = path.join(__dirname, '../client', req.path);
-    const { build } = await import('esbuild');
-    
-    if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
-      const result = await build({
-        entryPoints: [filePath],
-        bundle: true,
-        write: false,
-        format: 'esm',
-        jsx: 'automatic',
-        target: 'es2020',
-        outdir: '/tmp',
-        external: ['*.css', '*.png', '*.jpg', '*.jpeg', '*.svg'],
-        loader: { 
-          '.tsx': 'tsx', 
-          '.ts': 'ts'
-        },
-        define: {
-          'process.env.NODE_ENV': '"development"'
-        },
-        alias: {
-          '@assets': path.join(__dirname, '../attached_assets'),
-          '@': path.join(__dirname, '../client/src')
-        }
-      });
-      
-      if (result.outputFiles && result.outputFiles.length > 0) {
-        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache');
-        return res.send(result.outputFiles[0].text);
-      }
-    } else if (filePath.endsWith('.css')) {
-      // Serve CSS files directly
-      res.setHeader('Content-Type', 'text/css');
-      const fs = await import('fs');
-      if (fs.existsSync(filePath)) {
-        return res.sendFile(filePath);
-      }
-    }
-    next();
-  } catch (error) {
-    console.error('TypeScript compilation error:', error);
-    next();
-  }
-});
-
-// Static file serving
-app.use('/public', express.static(path.join(__dirname, '../public'), { 
-  setHeaders: (res) => res.set('Content-Type', 'application/javascript') 
-}));
+// Static file serving with proper MIME types
+app.use('/public', express.static(path.join(__dirname, '../public')));
 app.use('/attached_assets', express.static(path.join(__dirname, '../attached_assets')));
-app.use('/src', express.static(path.join(__dirname, '../client/src')));
-app.use(express.static(path.join(__dirname, '../client')));
+
+// Serve the built frontend from dist/public
+app.use(express.static(path.join(__dirname, '../dist/public')));
 app.use(express.static('dist'));
 
 // Initialize auth and API routes
@@ -147,8 +97,8 @@ app.get('*', (req, res) => {
   if (req.path.startsWith('/api/') || req.path.startsWith('/auth/')) {
     return res.status(404).json({ error: 'Endpoint not found' });
   }
-  // Serve the React app
-  res.sendFile(path.join(__dirname, '../client/index.html'));
+  // Serve the built React app
+  res.sendFile(path.join(__dirname, '../dist/public/index.html'));
 });
 
 // Start server
