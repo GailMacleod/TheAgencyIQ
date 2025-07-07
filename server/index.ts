@@ -585,9 +585,9 @@ async function startServer() {
       // Skip Vite entirely and serve React app directly
       const staticPath = path.join(process.cwd(), 'client');
       
-      // Serve static assets and source files
-      app.use(express.static(staticPath));
+      // Only serve specific assets, NOT the client folder's index.html
       app.use('/src', express.static(path.join(staticPath, 'src')));
+      app.use('/assets', express.static(path.join(staticPath, 'assets')));
       
       // Create a proper React app HTML that loads your components
       const reactAppHtml = `<!DOCTYPE html>
@@ -673,17 +673,19 @@ async function startServer() {
 </body>
 </html>`;
       
-      // Override ALL routes to serve React app
-      app.get('/', (req, res) => {
-        res.send(reactAppHtml);
-      });
-      
-      app.get('*', (req, res) => {
-        if (!req.path.startsWith('/api') && !req.path.startsWith('/auth') && 
-            !req.path.startsWith('/callback') && !req.path.startsWith('/health') &&
-            !req.path.startsWith('/attached_assets') && !req.path.startsWith('/uploads')) {
-          res.send(reactAppHtml);
+      // Override ALL routes to serve React app - FORCE OVERRIDE
+      app.use('/', (req, res, next) => {
+        // Skip API and asset routes
+        if (req.path.startsWith('/api') || req.path.startsWith('/auth') || 
+            req.path.startsWith('/callback') || req.path.startsWith('/health') ||
+            req.path.startsWith('/attached_assets') || req.path.startsWith('/uploads') ||
+            req.path.startsWith('/src') || req.path.startsWith('/assets')) {
+          return next();
         }
+        
+        // Force serve React app for everything else
+        res.setHeader('Content-Type', 'text/html');
+        res.send(reactAppHtml);
       });
       
       console.log('✅ React app configured directly (Vite bypassed)');
