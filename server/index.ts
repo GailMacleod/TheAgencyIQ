@@ -17,6 +17,11 @@ function log(message: string, source = "express") {
 async function startServer() {
   const app = express();
 
+  // Static file serving with proper headers
+  app.use(express.static('public', { 
+    setHeaders: (res) => res.set('Content-Type', 'application/javascript') 
+  }));
+
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
@@ -564,11 +569,20 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development Vite...');
-      const { setupVite, serveStatic } = await import('./vite');
-      await setupVite(app, httpServer);
-      serveStatic(app);
-      console.log('✅ Vite setup complete');
+      console.log('🚀 Setting up Vite-free development server...');
+      
+      // Bypass Vite and serve static files directly
+      app.use(express.static('src', { 
+        setHeaders: (res, path) => {
+          if (path.endsWith('.js') || path.endsWith('.tsx') || path.endsWith('.ts')) {
+            res.set('Content-Type', 'application/javascript');
+          }
+        }
+      }));
+      
+      console.log('✅ Vite-free development server ready');
+      console.log('✅ Static file serving configured');
+      console.log('✅ Development setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
