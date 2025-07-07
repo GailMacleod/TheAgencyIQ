@@ -2,9 +2,9 @@ import OpenAI from "openai";
 import { calendarService, CalendarEvent, PLATFORM_SPECS, PlatformSpecification } from './calendar-service.js';
 import { addDays, format } from 'date-fns';
 
+// Initialize OpenAI for content generation instead of XAI/Grok
 const openai = new OpenAI({ 
-  baseURL: "https://api.x.ai/v1", 
-  apiKey: process.env.XAI_API_KEY 
+  apiKey: process.env.OPENAI_API_KEY || process.env.XAI_API_KEY 
 });
 
 export interface PlatformContent {
@@ -104,10 +104,10 @@ export class GrokCalendarService {
 
       const prompt = this.buildContentPrompt(platform, platformSpec, primaryEvent, events, request);
       
-      console.log(`🚀 Generating ${platform} content with Grok AI...`);
+      console.log(`🚀 Generating ${platform} content with OpenAI...`);
       
       const response = await openai.chat.completions.create({
-        model: "grok-2-1212",
+        model: "gpt-4",
         messages: [
           {
             role: "system",
@@ -118,8 +118,8 @@ export class GrokCalendarService {
             content: prompt
           }
         ],
-        max_tokens: 800,
-        temperature: 0.7
+        max_tokens: 500,
+        temperature: 0.8
       });
 
       const generatedContent = response.choices[0].message.content;
@@ -154,40 +154,32 @@ export class GrokCalendarService {
     const relatedEvents = allEvents.slice(1, 3);
     
     return `
-Create compelling ${platform} content about "${primaryEvent.title}" happening on ${eventDate}.
+Create fresh, engaging ${platform} content for Queensland small businesses.
 
-EVENT DETAILS:
-- Title: ${primaryEvent.title}
-- Description: ${primaryEvent.description}
-- Category: ${primaryEvent.category}
-- Location: ${primaryEvent.location || 'Various locations'}
-- Business Relevance: ${primaryEvent.businessRelevance}/10
-- Target Audience: ${primaryEvent.targetAudience.join(', ')}
+EVENT: "${primaryEvent.title}" - ${eventDate}
+CONTEXT: ${primaryEvent.description}
+LOCATION: ${primaryEvent.location || 'Various locations'}
 
-RELATED EVENTS CONTEXT:
-${relatedEvents.map(event => `- ${event.title} (${format(event.date, 'MMM do')})`).join('\n')}
+PLATFORM: ${platform}
+Max characters: ${platformSpec.characterLimit}
+Tone: ${platformSpec.tone}
+${platform === 'x' ? 'CRITICAL: Use @ mentions only, NO hashtags allowed on X platform' : 'Include 2-3 relevant hashtags'}
 
-PLATFORM REQUIREMENTS FOR ${platform.toUpperCase()}:
-- Character limit: ${platformSpec.characterLimit}
-- Tone: ${platformSpec.tone}
-- Content style: ${platformSpec.contentStyle}
-- Hashtags allowed: ${platformSpec.hashtagsAllowed ? 'YES' : 'NO - STRICTLY PROHIBITED'}
-- Mentions preferred: ${platformSpec.mentionsPreferred ? 'YES (use @mentions)' : 'NO'}
-- Call to action: ${platformSpec.cta}
+CONTENT STRATEGY:
+- Connect this event to real business opportunities for Queensland SMEs
+- Focus on automation, efficiency, and growth benefits
+- Use ${platformSpec.tone} voice appropriate for ${platform}
+- Stay under ${platformSpec.characterLimit} characters
+- Be specific about business benefits, not generic
+- Avoid overused phrases like "Brisbane Ekka" or repetitive messaging
+- Make it actionable and valuable to small business owners
 
-CONTENT REQUIREMENTS:
-- Write kick-ass, engaging copy that resonates with ${platform} audience
-- Focus on business value and actionable insights
-- Reference the event naturally and make it relevant to small business owners
-- Stay within character limits (aim for 70-80% of max)
-- Include appropriate hashtags OR mentions (never both for X platform)
-- End with the platform-specific call to action
-- Make it conversational and authentic, not overly promotional
+BUSINESS ANGLE:
+- How does this event create opportunities?
+- What specific benefits can businesses gain?
+- How does automation/AI help small businesses capitalize?
 
-${request.businessFocus ? `BUSINESS FOCUS: ${request.businessFocus}` : ''}
-${request.customPrompt ? `ADDITIONAL CONTEXT: ${request.customPrompt}` : ''}
-
-Generate ONLY the final content text, no explanations or formatting markers.`;
+Return ONLY the post content, no quotes or formatting.`;
   }
 
   /**
