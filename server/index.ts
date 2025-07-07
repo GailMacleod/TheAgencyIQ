@@ -94,16 +94,7 @@ async function startServer() {
     }
   });
 
-  // Health check endpoint
-  app.get('/api/health', (req, res) => {
-    res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development',
-      database: !!process.env.DATABASE_URL,
-      uptime: process.uptime()
-    });
-  });
+
 
   // Data deletion status
   app.get('/deletion-status/:userId?', (req, res) => {
@@ -388,75 +379,7 @@ async function startServer() {
     });
   });
 
-  // Enhanced beacon.js endpoint with comprehensive CORS and caching - BEFORE static middleware
-  app.get('/public/js/beacon.js', (req, res) => {
-    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours cache
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    
-    // Enhanced beacon implementation
-    const beaconScript = `
-// TheAgencyIQ Local Beacon.js - Enhanced Implementation
-(function() {
-  'use strict';
-  
-  console.log('🔗 TheAgencyIQ Beacon.js loaded successfully (local)');
-  
-  // Enhanced beacon functionality
-  window.replitBeacon = window.replitBeacon || {
-    initialized: false,
-    
-    init: function() {
-      if (this.initialized) return;
-      this.initialized = true;
-      console.log('🚀 Beacon tracking initialized (TheAgencyIQ)');
-      
-      // Fire initialization event
-      if (typeof window.dispatchEvent === 'function') {
-        window.dispatchEvent(new CustomEvent('beacon:initialized', {
-          detail: { source: 'theagencyiq-local', timestamp: Date.now() }
-        }));
-      }
-    },
-    
-    track: function(event, data) {
-      console.log('📊 Beacon tracking:', event, data || {});
-      
-      // Fire tracking event for analytics
-      if (typeof window.dispatchEvent === 'function') {
-        window.dispatchEvent(new CustomEvent('beacon:track', {
-          detail: { event: event, data: data || {}, timestamp: Date.now() }
-        }));
-      }
-    },
-    
-    error: function(error) {
-      console.warn('⚠️ Beacon error:', error);
-    }
-  };
-  
-  // Legacy compatibility
-  window.beacon = window.replitBeacon;
-  
-  // Auto-initialize
-  window.replitBeacon.init();
-  
-  // Handle external beacon calls
-  if (typeof window.replitBeaconInit === 'function') {
-    try {
-      window.replitBeaconInit();
-    } catch (e) {
-      window.replitBeacon.error('External beacon init failed: ' + e.message);
-    }
-  }
-  
-})();`;
-    
-    res.send(beaconScript);
-  });
+
 
   // Manifest.json endpoint
   app.get('/manifest.json', (req, res) => {
