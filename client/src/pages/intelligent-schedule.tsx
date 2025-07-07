@@ -1364,7 +1364,14 @@ export default function IntelligentSchedule() {
                   <video 
                     controls 
                     className="w-full max-w-md mx-auto rounded-lg shadow-md"
-                    src={videoPromptDialog.videoUrl}
+                    src={`${videoPromptDialog.videoUrl}?t=${Date.now()}`}
+                    key={`${videoPromptDialog.videoUrl}-${Date.now()}`}
+                    preload="auto"
+                    onError={(e) => {
+                      console.error('Video load error:', e);
+                      console.log('Video URL:', videoPromptDialog.videoUrl);
+                    }}
+                    onLoadedData={() => console.log('Video loaded successfully')}
                   >
                     Your browser does not support the video tag.
                   </video>

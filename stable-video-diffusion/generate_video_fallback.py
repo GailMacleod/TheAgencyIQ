@@ -20,11 +20,11 @@ def create_mock_video(output_path, duration=30):
         import subprocess
         
         try:
-            # Create a simple gradient video using FFmpeg (simpler and faster)
+            # Create a simple video with moving elements to ensure it's visible
             ffmpeg_cmd = [
                 'ffmpeg', '-y',  # -y to overwrite existing files
                 '-f', 'lavfi',   # Use lavfi input
-                '-i', f'color=black:size=1920x1080:duration={duration}:rate=30',  # Black background
+                '-i', f'testsrc=size=1920x1080:duration={duration}:rate=30',  # Test pattern with movement
                 '-c:v', 'libx264',  # H.264 codec
                 '-pix_fmt', 'yuv420p',  # Compatible pixel format
                 '-preset', 'ultrafast',  # Fast encoding
