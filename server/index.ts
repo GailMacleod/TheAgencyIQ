@@ -589,6 +589,7 @@ async function startServer() {
     console.log('Vite error details:', viteError?.message || 'Unknown error');
         // Fallback to static file serving if Vite fails
         const staticPath = path.join(process.cwd(), 'client');
+        console.log('Static path set to:', staticPath);
         
         // Configure MIME types for proper module serving
         app.use(express.static(staticPath, {
@@ -612,11 +613,18 @@ async function startServer() {
           }
         }));
         
-        app.get('*', (req, res) => {
+        app.get('*', (req, res, next) => {
           if (req.path.startsWith('/api') || req.path.startsWith('/public')) {
-            return;
+            return next();
           }
-          res.sendFile(path.join(staticPath, 'simple.html'));
+          const filePath = path.join(staticPath, 'simple.html');
+          console.log('Serving file:', filePath);
+          res.sendFile(filePath, (err) => {
+            if (err) {
+              console.error('File serve error:', err);
+              res.status(500).send('App loading error');
+            }
+          });
         });
         console.log('✅ Fallback static file serving complete with proper MIME types');
       }
