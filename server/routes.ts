@@ -1964,7 +1964,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Seedance 1.0 - Video generation removed
+  // Seedance 1.0 - Video generation now uses Seedance API
 
   // Seedance 1.0 - Video generation removed
 
@@ -7837,6 +7837,134 @@ export function addNotificationEndpoints(app: any) {
     });
   });
   
-  console.log('🌱 Seedance 1.0: TheAgencyIQ ready for text-based social media automation');
+  // ====== SEEDANCE VIDEO API INTEGRATION ======
+  // Replaces old Stable Video Diffusion system with Seedance API
+  
+  app.post('/api/posts/:id/generate-video', requireAuth, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { videoPrompt, platform } = req.body;
+      
+      // Get post from database
+      const post = await storage.getPost(postId);
+      if (!post || post.userId !== req.session.userId) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+
+      // Import Seedance video service
+      const { SeedanceVideoService } = await import('./seedance-video');
+      
+      // Generate platform-specific prompt if not provided
+      const brandContext = await storage.getBrandPurposeByUser(req.session.userId);
+      const finalPrompt = videoPrompt || SeedanceVideoService.generatePlatformPrompt(brandContext, platform || post.platform);
+      const aspectRatio = SeedanceVideoService.getPlatformAspectRatio(platform || post.platform);
+      
+      console.log(`🎬 Generating Seedance video for post ${postId} (${platform || post.platform})`);
+      
+      // Generate video using Seedance API
+      const videoResult = await SeedanceVideoService.generateVideo({
+        prompt: finalPrompt,
+        duration: 30,
+        aspectRatio,
+        style: 'asmr'
+      });
+
+      if (videoResult.success && videoResult.videoUrl) {
+        // Update post with video information
+        await storage.updatePost(postId, {
+          videoUrl: videoResult.videoUrl,
+          hasVideo: true,
+          videoMetadata: videoResult.metadata
+        });
+
+        res.json({
+          success: true,
+          videoUrl: videoResult.videoUrl,
+          videoId: videoResult.videoId,
+          metadata: videoResult.metadata,
+          message: 'Video generated successfully with Seedance API'
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: videoResult.error || 'Video generation failed'
+        });
+      }
+    } catch (error) {
+      console.error('Seedance video generation error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to generate video: ' + (error as Error).message 
+      });
+    }
+  });
+
+  app.get('/api/posts/:id/preview-video', requireAuth, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const post = await storage.getPost(postId);
+      
+      if (!post || post.userId !== req.session.userId) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+
+      if (!post.videoUrl) {
+        return res.status(404).json({ error: 'No video found for this post' });
+      }
+
+      res.json({
+        success: true,
+        videoUrl: post.videoUrl,
+        hasVideo: post.hasVideo,
+        metadata: post.videoMetadata
+      });
+    } catch (error) {
+      console.error('Video preview error:', error);
+      res.status(500).json({ error: 'Failed to preview video' });
+    }
+  });
+
+  app.post('/api/posts/:id/approve-video', requireAuth, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const post = await storage.getPost(postId);
+      
+      if (!post || post.userId !== req.session.userId) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+
+      // Update post status to approved
+      await storage.updatePost(postId, {
+        status: 'approved'
+      });
+
+      res.json({
+        success: true,
+        message: 'Video approved and post status updated',
+        postId: postId
+      });
+    } catch (error) {
+      console.error('Video approval error:', error);
+      res.status(500).json({ error: 'Failed to approve video' });
+    }
+  });
+
+  app.get('/api/seedance-video-status', (req, res) => {
+    // Import and get Seedance status
+    import('./seedance-video').then(({ SeedanceVideoService }) => {
+      SeedanceVideoService.getStatus().then(status => {
+        res.json(status);
+      });
+    }).catch(error => {
+      res.json({
+        connected: false,
+        apiKey: 'error',
+        service: 'Seedance Video API',
+        error: error.message
+      });
+    });
+  });
+
+  console.log('🌱 Seedance 1.0: TheAgencyIQ ready with video API integration');
 }
 
