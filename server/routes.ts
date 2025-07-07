@@ -7584,13 +7584,38 @@ export function addNotificationEndpoints(app: any) {
 
       console.log(`🎬 Generating video for post ${postId} on ${postData.platform}`);
 
-      // Generate video with user's custom prompt
-      const result = await videoGenerationService.generateVideo({
-        prompt: videoPrompt,
-        platform: postData.platform,
-        userId,
-        style
-      });
+      // Generate ASMR video using Python script with prompt
+      console.log(`🎬 Generating ASMR video: "${videoPrompt}"`);
+      
+      const { exec } = await import('child_process');
+      const util = await import('util');
+      const execPromise = util.promisify(exec);
+      
+      try {
+        // Execute Python video generation script
+        const outputPath = `uploads/videos/asmr_${postId}_${Date.now()}.mp4`;
+        await execPromise(`python generate.py --prompt "${videoPrompt}" --output "${outputPath}" --asmr`);
+        
+        const result = {
+          success: true,
+          videoUrl: `/${outputPath}`,
+          metadata: {
+            prompt: videoPrompt,
+            platform: postData.platform,
+            duration: '60s',
+            style: 'ASMR',
+            aspectRatio: postData.platform === 'instagram' ? '9:16' : '16:9'
+          }
+        };
+      } catch (error) {
+        // Fallback to video generation service if Python script fails
+        const result = await videoGenerationService.generateVideo({
+          prompt: videoPrompt,
+          platform: postData.platform,
+          userId,
+          style: 'ASMR'
+        });
+      }
 
       if (result.success) {
         // Update post with video information

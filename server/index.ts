@@ -555,7 +555,13 @@ async function startServer() {
     if (process.env.NODE_ENV === 'production') {
       console.log('⚡ Setting up production static files...');
       // Serve built frontend assets
-      app.use(express.static(path.join(process.cwd(), 'dist/public')));
+      app.use(express.static(path.join(process.cwd(), 'dist/public'), {
+        setHeaders: (res, path) => {
+          if (path.endsWith('.js')) {
+            res.set('Content-Type', 'application/javascript');
+          }
+        }
+      }));
       // Serve attached assets in production
       app.use('/attached_assets', express.static('attached_assets'));
       
