@@ -572,11 +572,18 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development with Vite...');
-      const { setupVite, serveStatic } = await import('./vite');
-      await setupVite(app, httpServer);
-      serveStatic(app);
-      console.log('✅ Vite setup complete');
+      console.log('⚡ Setting up development static files...');
+      // Serve client assets directly without Vite
+      app.use(express.static('client/public'));
+      app.use('/attached_assets', express.static('attached_assets'));
+      
+      // Serve index.html for all non-API routes
+      app.get('*', (req, res) => {
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+          res.sendFile(path.join(process.cwd(), 'client/index.html'));
+        }
+      });
+      console.log('✅ Development static files setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
