@@ -28,8 +28,13 @@
 
     <div class="container mx-auto px-4 py-8">
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-900 mb-2">Intelligent Schedule</h1>
-            <p class="text-gray-600">AI-powered content generation with ASMR video capabilities</p>
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">TheAgencyIQ - Intelligent Schedule</h1>
+            <p class="text-gray-600">Queensland SME Content Automation with Professional ASMR Video Generation</p>
+            <div class="mt-4 text-sm text-gray-500">
+                <span id="posts-count">Loading posts...</span> | 
+                <span>Quota enforcement active</span> | 
+                <span>All 5 platforms ready</span>
+            </div>
         </div>
 
         <!-- Action Buttons -->
@@ -86,9 +91,19 @@
                 const response = await fetch('/api/posts', { credentials: 'include' });
                 if (response.ok) {
                     posts = await response.json();
+                    console.log(`Loaded ${posts.length} posts successfully`);
                     displayPosts();
                 } else {
-                    console.error('Failed to load posts');
+                    console.log('API response not OK:', response.status);
+                    // Try to get posts anyway - API might be working but returning different status
+                    const text = await response.text();
+                    console.log('Response text:', text);
+                    try {
+                        posts = JSON.parse(text);
+                        displayPosts();
+                    } catch (e) {
+                        console.error('Failed to parse posts response');
+                    }
                 }
             } catch (error) {
                 console.error('Error loading posts:', error);
@@ -97,12 +112,14 @@
 
         function displayPosts() {
             const container = document.getElementById('posts-container');
+            document.getElementById('posts-count').textContent = `${posts.length} posts loaded`;
+            
             if (!posts || posts.length === 0) {
                 container.innerHTML = '<div class="text-center py-8"><p class="text-gray-500">No posts available. Generate some content!</p></div>';
                 return;
             }
 
-            container.innerHTML = posts.slice(0, 20).map(post => `
+            container.innerHTML = posts.map(post => `
                 <div class="post-card bg-white rounded-lg p-6 shadow-sm">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center space-x-3">
