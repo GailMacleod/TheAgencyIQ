@@ -617,7 +617,7 @@ async function startServer() {
           if (req.path.startsWith('/api') || req.path.startsWith('/public')) {
             return next();
           }
-          const filePath = path.join(staticPath, 'simple.html');
+          const filePath = path.join(process.cwd(), 'dist', 'index.html');
           console.log('Serving file:', filePath);
           res.sendFile(filePath, (err) => {
             if (err) {
@@ -626,7 +626,7 @@ async function startServer() {
             }
           });
         });
-        console.log('✅ Fallback static file serving complete with proper MIME types');
+        console.log('✅ Production build serving active - TheAgencyIQ ready');
       }
     }
   } catch (error) {
