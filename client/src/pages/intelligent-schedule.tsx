@@ -533,6 +533,13 @@ export default function IntelligentSchedule() {
 
     } catch (error) {
       console.error('Video generation error:', error);
+      
+      // Clear loading state on error
+      setVideoPromptDialog(prev => ({
+        ...prev,
+        loading: false
+      }));
+      
       toast({
         title: "Video Generation Failed",
         description: "Failed to generate video. Please try again.",
@@ -1314,9 +1321,9 @@ export default function IntelligentSchedule() {
                     <Button
                       onClick={() => generateVideoWithPrompt(prompt)}
                       className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                      disabled={generatingVideos.has(videoPromptDialog.post?.id || 0)}
+                      disabled={generatingVideos.has(videoPromptDialog.post?.id || 0) || videoPromptDialog.loading}
                     >
-                      {generatingVideos.has(videoPromptDialog.post?.id || 0) ? (
+                      {generatingVideos.has(videoPromptDialog.post?.id || 0) || videoPromptDialog.loading ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                           Generating 30s Video...
