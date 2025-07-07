@@ -572,11 +572,44 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development with Vite...');
-      const { setupVite, serveStatic } = await import('./vite');
-      await setupVite(app, httpServer);
-      serveStatic(app);
-      console.log('✅ Vite setup complete');
+      console.log('⚡ Setting up development with static file serving...');
+      try {
+        const { setupVite, serveStatic } = await import('./vite');
+        await setupVite(app, httpServer);
+        serveStatic(app);
+        console.log('✅ Vite setup complete');
+      } catch (viteError) {
+        console.log('⚠️  Vite setup failed, using fallback static file serving...');
+        // Fallback to static file serving if Vite fails
+        const staticPath = path.join(process.cwd(), 'client');
+        
+        // Configure MIME types for proper module serving
+        app.use(express.static(staticPath, {
+          setHeaders: (res, path) => {
+            if (path.endsWith('.tsx') || path.endsWith('.ts')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            }
+          }
+        }));
+        
+        // Serve the client's source files with proper MIME types
+        app.use('/src', express.static(path.join(staticPath, 'src'), {
+          setHeaders: (res, path) => {
+            if (path.endsWith('.tsx') || path.endsWith('.ts')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            }
+          }
+        }));
+        
+        app.use('*', (req, res) => {
+          res.sendFile(path.join(staticPath, 'index.html'));
+        });
+        console.log('✅ Fallback static file serving complete with proper MIME types');
+      }
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
