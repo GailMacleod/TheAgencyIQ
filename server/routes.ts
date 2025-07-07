@@ -2898,9 +2898,11 @@ Continue building your Value Proposition Canvas systematically.`;
   // Removed conflicting /schedule route to allow React component to render
 
   // Get posts for schedule screen
-  app.get("/api/posts", requireActiveSubscription, async (req: any, res) => {
+  app.get("/api/posts", requireAuth, async (req: any, res) => {
     try {
+      console.log(`Fetching posts for user ${req.session.userId}`);
       const posts = await storage.getPostsByUser(req.session.userId);
+      console.log(`Found ${posts.length} posts for user ${req.session.userId}`);
       res.json(posts);
     } catch (error: any) {
       console.error('Get posts error:', error);
