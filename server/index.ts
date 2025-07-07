@@ -18,18 +18,50 @@ async function startServer() {
   const app = express();
 
   // Static file serving with proper headers
-  app.use(express.static('public', { 
-    setHeaders: (res) => res.set('Content-Type', 'application/javascript') 
+  app.use('/public', express.static('public', { 
+    setHeaders: (res, path) => {
+      if (path.endsWith('.js')) {
+        res.set('Content-Type', 'application/javascript');
+      } else if (path.endsWith('.json')) {
+        res.set('Content-Type', 'application/json');
+      }
+    }
   }));
+  
+  // Serve manifest.json specifically
+  app.get('/manifest.json', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'public/manifest.json'));
+  });
+  
+  // Create beacon.js file for Replit compatibility
+  app.get('/public/js/beacon.js', (req, res) => {
+    res.set('Content-Type', 'application/javascript');
+    res.set('Access-Control-Allow-Origin', '*');
+    res.send('console.log("Beacon script loaded successfully");');
+  });
 
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
+  
+  // Enhanced CSP for Replit compatibility
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Allow-Credentials', 'true');
+    
+    // Updated CSP to allow Replit development tools
+    res.header('Content-Security-Policy', [
+      "default-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.replit.dev https://*.worf.replit.dev",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: https:",
+      "connect-src 'self' https:",
+      "frame-src 'self' https:",
+      "manifest-src 'self'"
+    ].join('; '));
     
     if (req.method === 'OPTIONS') {
       res.sendStatus(200);
