@@ -2,7 +2,6 @@ import express from 'express';
 import session from 'express-session';
 import { createServer } from 'http';
 import path from 'path';
-import fs from 'fs';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -137,9 +136,9 @@ async function startServer() {
   app.use((req, res, next) => {
     res.setHeader('Content-Security-Policy', [
       "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://unpkg.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com",
       "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://www.google.com",
-      "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com https://cdn.tailwindcss.com",
+      "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
       "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net https://www.google-analytics.com https://www.google.com",
       "frame-src 'self' https://connect.facebook.net https://*.facebook.com https://www.google.com",
@@ -529,8 +528,6 @@ async function startServer() {
   try {
     console.log('📡 Loading routes...');
     const { registerRoutes, addNotificationEndpoints } = await import('./routes');
-    // Seedance 1.0 system available at /auth/google and /api/subscriptions
-
     await registerRoutes(app);
     addNotificationEndpoints(app);
     console.log('✅ Routes registered successfully');
@@ -581,108 +578,43 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development with proper Vite configuration...');
-      
-      // Try Vite setup directly with existing mock plugins
+      console.log('⚡ Setting up development with static file serving...');
       try {
         const { setupVite, serveStatic } = await import('./vite');
         await setupVite(app, httpServer);
         serveStatic(app);
-        console.log('✅ Vite setup complete with mock plugins');
+        console.log('✅ Vite setup complete');
       } catch (viteError) {
-        console.log('⚠️  Vite failed, using built-in dev server...');
-        console.error('Vite error:', viteError.message);
+        console.log('⚠️  Vite setup failed, using fallback static file serving...');
+        // Fallback to static file serving if Vite fails
+        const staticPath = path.join(process.cwd(), 'client');
         
-        // Simplified static serving with TypeScript module support
-        console.log('Setting up simplified dev server for React app...');
-        
-        // Serve static files with proper MIME types
-        app.use('/client', express.static(path.join(process.cwd(), 'client'), {
-          setHeaders: (res, filePath) => {
-            if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
+        // Configure MIME types for proper module serving
+        app.use(express.static(staticPath, {
+          setHeaders: (res, path) => {
+            if (path.endsWith('.tsx') || path.endsWith('.ts')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
               res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
             }
           }
         }));
         
-        // Serve source files for development
-        app.use('/src', express.static(path.join(process.cwd(), 'client/src'), {
-          setHeaders: (res, filePath) => {
-            if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
+        // Serve the client's source files with proper MIME types
+        app.use('/src', express.static(path.join(staticPath, 'src'), {
+          setHeaders: (res, path) => {
+            if (path.endsWith('.tsx') || path.endsWith('.ts')) {
+              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
               res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
             }
           }
         }));
         
-        // Simple React app HTML without redirect loop
-        const reactHtml = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/attached_assets/agency_logo_1749083054761.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TheAgencyIQ - AI Social Media Automation</title>
-  </head>
-  <body>
-    <div id="root">
-      <div style="padding: 40px; text-align: center; font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: white;">
-        <div style="background: rgba(255,255,255,0.95); color: #333; padding: 40px; border-radius: 20px; max-width: 800px; margin: 0 auto; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
-          <h1 style="font-size: 2.5em; margin-bottom: 20px;">🚀 TheAgencyIQ</h1>
-          <h2 style="color: #28a745; font-size: 1.5em; margin-bottom: 30px;">✅ Seedance Video API Integration Complete</h2>
-          
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 30px 0;">
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #0066cc;">
-              <h3 style="color: #0066cc; margin-bottom: 10px;">🎥 Video Generation</h3>
-              <p>Seedance API integrated with FFmpeg fallback</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #7b68ee;">
-              <h3 style="color: #7b68ee; margin-bottom: 10px;">📱 5 Platforms</h3>
-              <p>Facebook, Instagram, LinkedIn, YouTube, X</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #28a745;">
-              <h3 style="color: #28a745; margin-bottom: 10px;">📊 Subscription Plans</h3>
-              <p>Starter (12), Growth (27), Professional (52)</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #ffc107;">
-              <h3 style="color: #ffc107; margin-bottom: 10px;">🇦🇺 Queensland Focus</h3>
-              <p>ASMR videos with Australian business themes</p>
-            </div>
-          </div>
-          
-          <div style="margin-top: 40px;">
-            <h3 style="margin-bottom: 20px;">📚 Available API Endpoints</h3>
-            <div style="background: #f1f3f4; padding: 20px; border-radius: 10px; text-align: left; font-family: monospace;">
-              <p><strong>POST</strong> /api/posts/:id/generate-video - Generate Seedance video</p>
-              <p><strong>GET</strong> /api/posts/:id/preview-video - Preview generated video</p>
-              <p><strong>POST</strong> /api/posts/:id/approve-video - Approve and save video</p>
-              <p><strong>GET</strong> /api/seedance-video-status - Check API status</p>
-            </div>
-          </div>
-          
-          <div style="margin-top: 30px;">
-            <a href="/api/health" style="display: inline-block; background: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 10px; font-weight: bold;">🔍 API Health Check</a>
-            <a href="/api/seedance-video-status" style="display: inline-block; background: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 10px; font-weight: bold;">🎬 Video API Status</a>
-          </div>
-          
-          <p style="margin-top: 30px; color: #666; font-size: 0.9em;">
-            <strong>Note:</strong> Your React UI components are preserved. When SEEDANCE_API_KEY is provided, the system uses Seedance API; otherwise gracefully falls back to FFmpeg patterns.
-          </p>
-        </div>
-      </div>
-    </div>
-  </body>
-</html>`;
-        
-        // Serve React app for all routes
-        app.get('*', (req, res) => {
-          if (!req.path.startsWith('/api') && !req.path.startsWith('/auth') && 
-              !req.path.startsWith('/callback') && !req.path.startsWith('/health') &&
-              !req.path.startsWith('/attached_assets') && !req.path.startsWith('/uploads')) {
-            res.send(reactHtml);
-          }
+        app.use('*', (req, res) => {
+          res.sendFile(path.join(staticPath, 'index.html'));
         });
-        
-        console.log('✅ Simplified React dev server configured');
+        console.log('✅ Fallback static file serving complete with proper MIME types');
       }
     }
   } catch (error) {
