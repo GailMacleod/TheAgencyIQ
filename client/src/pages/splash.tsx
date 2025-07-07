@@ -6,7 +6,7 @@ import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "r
 import { useQuery } from "@tanstack/react-query";
 import GrokWidget from "@/components/grok-widget";
 import UserMenu from "@/components/user-menu";
-import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
+const agencyLogoPath = "/attached_assets/agency_logo_1749083054761.png";
 
 export default function Splash() {
   const { data: user } = useQuery({

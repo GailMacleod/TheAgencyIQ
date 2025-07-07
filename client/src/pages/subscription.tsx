@@ -12,7 +12,7 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import AIWidget from "@/components/grok-widget";
-import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
+const agencyLogoPath = "/attached_assets/agency_logo_1749083054761.png";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
 
 const signupSchema = z.object({
