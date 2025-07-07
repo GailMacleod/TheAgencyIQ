@@ -487,14 +487,6 @@ async function startServer() {
       res.setHeader('Expires', '0');
     }
   }));
-  
-  // Static file serving for video uploads
-  app.use('/uploads', express.static('uploads', {
-    setHeaders: (res) => {
-      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache videos for 1 hour
-      res.setHeader('Access-Control-Allow-Origin', '*');
-    }
-  }));
 
   // Create HTTP server
   const httpServer = createServer(app);
@@ -558,12 +550,6 @@ async function startServer() {
       app.use(express.static(path.join(process.cwd(), 'dist/public')));
       // Serve attached assets in production
       app.use('/attached_assets', express.static('attached_assets'));
-      // Serve dist files with proper JS content type
-      app.use(express.static('dist', { 
-        setHeaders: (res, path) => { 
-          if (path.endsWith('.js')) res.set('Content-Type', 'application/javascript'); 
-        } 
-      }));
       
       // Root route for production
       app.get('/', (req, res) => {
@@ -578,56 +564,11 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development with static file serving...');
-      try {
-        const { setupVite, serveStatic } = await import('./vite');
-        await setupVite(app, httpServer);
-        serveStatic(app);
-        console.log('✅ Vite setup complete');
-      } catch (viteError) {
-        console.log('⚠️  Vite setup failed, using fallback static file serving...');
-    console.log('Vite error details:', viteError?.message || 'Unknown error');
-        // Fallback to static file serving if Vite fails
-        const staticPath = path.join(process.cwd(), 'client');
-        console.log('Static path set to:', staticPath);
-        
-        // Configure MIME types for proper module serving
-        app.use(express.static(staticPath, {
-          setHeaders: (res, path) => {
-            if (path.endsWith('.tsx') || path.endsWith('.ts')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            }
-          }
-        }));
-        
-        // Serve the client's source files with proper MIME types
-        app.use('/src', express.static(path.join(staticPath, 'src'), {
-          setHeaders: (res, path) => {
-            if (path.endsWith('.tsx') || path.endsWith('.ts')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
-              res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            }
-          }
-        }));
-        
-        app.get('*', (req, res, next) => {
-          if (req.path.startsWith('/api') || req.path.startsWith('/public')) {
-            return next();
-          }
-          const filePath = path.join(process.cwd(), 'dist', 'index.html');
-          console.log('Serving file:', filePath);
-          res.sendFile(filePath, (err) => {
-            if (err) {
-              console.error('File serve error:', err);
-              res.status(500).send('App loading error');
-            }
-          });
-        });
-        console.log('✅ Production build serving active - TheAgencyIQ ready');
-      }
+      console.log('⚡ Setting up development Vite...');
+      const { setupVite, serveStatic } = await import('./vite');
+      await setupVite(app, httpServer);
+      serveStatic(app);
+      console.log('✅ Vite setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);

@@ -235,7 +235,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="app-container min-h-screen bg-background text-foreground">
+        <div className="app-container">
           <Toaster />
           {showSplash ? (
             <SplashScreen onComplete={() => setShowSplash(false)} />

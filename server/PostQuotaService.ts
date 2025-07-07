@@ -39,82 +39,12 @@ export class PostQuotaService {
   /**
    * DYNAMIC 30-DAY CYCLE MANAGEMENT
    * Each customer gets individual 30-day cycle from their subscription date
-   * Enforces that all 52 posts be used within the subscription period
    */
   private static calculateCycleForUser(subscriptionStart: Date): { cycleStart: Date; cycleEnd: Date } {
     const cycleStart = new Date(subscriptionStart);
     const cycleEnd = new Date(subscriptionStart);
     cycleEnd.setDate(cycleEnd.getDate() + 30);
     return { cycleStart, cycleEnd };
-  }
-
-  /**
-   * Enforce strict subscription quotas - NO UNLIMITED POSTS
-   * Respects subscription plan limits: Starter(12), Growth(27), Professional(52)
-   */
-  static async enforceSubscriptionQuota(userId: number): Promise<boolean> {
-    try {
-      const user = await storage.getUser(userId);
-      if (!user) return false;
-      
-      // Enforce subscription plan quotas strictly
-      const planQuotas = {
-        'starter': 12,
-        'growth': 27, 
-        'professional': 52
-      };
-      
-      const quota = planQuotas[user.subscriptionPlan as keyof typeof planQuotas] || 12;
-      
-      await storage.updateUser(userId, {
-        remainingPosts: Math.min(user.remainingPosts || quota, quota),
-        totalPosts: quota
-      });
-      
-      console.log(`Subscription quota enforced for user ${userId}: ${quota} posts (${user.subscriptionPlan} plan)`);
-      return true;
-    } catch (error) {
-      console.error('Error enforcing subscription quota:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Enforce mandatory post usage - all 52 posts per cycle must be used
-   * Returns remaining posts that must be published within cycle
-   */
-  static async getRemainingRequiredPosts(userId: number): Promise<number> {
-    try {
-      const user = await storage.getUser(userId);
-      if (!user) return 0;
-
-      const planQuota = this.PLAN_QUOTAS[user.subscriptionPlan as keyof typeof this.PLAN_QUOTAS] || 12;
-      
-      // Get posts within current 30-day cycle
-      const subscriptionStart = user.subscriptionStart ? new Date(user.subscriptionStart) : new Date();
-      const { cycleStart, cycleEnd } = this.calculateCycleForUser(subscriptionStart);
-      
-      const postsInCycle = await db
-        .select()
-        .from(posts)
-        .where(
-          and(
-            eq(posts.userId, userId),
-            sql`${posts.scheduledFor} >= ${cycleStart.toISOString()}`,
-            sql`${posts.scheduledFor} <= ${cycleEnd.toISOString()}`
-          )
-        );
-
-      const usedPosts = postsInCycle.length;
-      const remaining = Math.max(0, planQuota - usedPosts);
-      
-      console.log(`📊 User ${userId}: ${remaining}/${planQuota} posts remaining in 30-day cycle`);
-      return remaining;
-      
-    } catch (error) {
-      console.error('Error calculating remaining required posts:', error);
-      return 0;
-    }
   }
 
   /**

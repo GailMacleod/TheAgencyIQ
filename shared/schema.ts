@@ -69,11 +69,7 @@ export const posts = pgTable("posts", {
   scheduledFor: timestamp("scheduled_for"),
   aiRecommendation: text("ai_recommendation"),
   subscriptionCycle: text("subscription_cycle"), // Track which 30-day cycle this post belongs to
-  videoUrl: text("video_url"), // URL to generated video content
-  hasVideo: boolean("has_video").default(false), // Whether post has video content
-  videoMetadata: jsonb("video_metadata"), // Store video metadata: { duration: number, resolution: string, aspectRatio: string, fileSize: number }
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Platform connections for OAuth tokens

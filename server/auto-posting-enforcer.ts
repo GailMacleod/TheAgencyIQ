@@ -24,7 +24,6 @@ export class AutoPostingEnforcer {
    * Uses PostQuotaService.getRemainingPosts(userId) for each subscriber
    * Publishes to Facebook, Instagram, LinkedIn, YouTube, X with 2-second delays
    * Logs detailed results in data/quota-debug.log
-   * Publishes all 52 posts per cycle (required) with optional videos and copywriting
    * Removes fixed limits, uses dynamic quota per subscriber
    */
   static async enforceAutoPosting(userId?: number): Promise<AutoPostingResult> {
@@ -465,16 +464,5 @@ export class AutoPostingEnforcer {
     } catch (error: any) {
       console.error('Auto-posting scheduler error:', error);
     }
-  }
-}
-
-// Export trigger function for video approval workflow
-export async function triggerAutoPosting(userId?: number): Promise<void> {
-  try {
-    console.log('🎬 Video approval triggered auto-posting enforcer');
-    const result = await AutoPostingEnforcer.enforceAutoPosting(userId);
-    console.log(`Auto-posting completed: ${result.postsPublished} posts published, ${result.postsFailed} failed`);
-  } catch (error) {
-    console.error('Auto-posting trigger failed:', error);
   }
 }
