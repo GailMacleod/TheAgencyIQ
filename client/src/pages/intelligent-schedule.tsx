@@ -459,10 +459,21 @@ export default function IntelligentSchedule() {
       setVideoPromptDialog({
         isOpen: true,
         post,
+        loading: false,
         promptOptions: [
           "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
           "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
-        ]
+        ],
+        editablePrompts: [
+          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
+          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
+        ],
+        selectedPrompt: '',
+        videoUrl: null,
+        showPreview: false,
+        regenerationCount: 0,
+        showRegenerateInput: false,
+        customPrompt: ''
       });
     }
   };
@@ -475,6 +486,7 @@ export default function IntelligentSchedule() {
     setGeneratingVideos(prev => new Set(prev).add(post.id));
     
     // Set loading state for video generation
+    console.log(`🎬 UI: Setting loading state to TRUE for post ${post.id}`);
     setVideoPromptDialog(prev => ({
       ...prev,
       loading: true,
@@ -482,6 +494,7 @@ export default function IntelligentSchedule() {
     }));
 
     try {
+      console.log(`🎬 UI: Starting video generation API call`);
       toast({
         title: "Generating 30-second ASMR Video",
         description: "Creating video using Python script with custom prompt...",
@@ -517,6 +530,8 @@ export default function IntelligentSchedule() {
       }
 
       // Update dialog to show preview with approve/regenerate options
+      console.log(`🎬 UI: Video generated successfully! VideoURL: ${videoUrl}`);
+      console.log(`🎬 UI: Setting loading to FALSE and showing preview`);
       setVideoPromptDialog(prev => ({
         ...prev,
         loading: false,
@@ -1295,8 +1310,9 @@ export default function IntelligentSchedule() {
               <div className="loading mb-4">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Generating Video...</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">🎬 Generating Video...</h3>
               <p className="text-sm text-gray-600">Creating your 30-second ASMR video with Queensland elements</p>
+              <p className="text-xs text-purple-600 mt-2">Loading state: {videoPromptDialog.loading ? 'TRUE' : 'FALSE'}</p>
             </div>
           ) : !videoPromptDialog.showPreview ? (
             // Prompt editing phase
