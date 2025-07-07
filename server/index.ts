@@ -205,9 +205,11 @@ async function startServer() {
     }
   });
 
-  // Root route - redirect to public interface
+  // Root route - serve main React app interface
   app.get('/', (req, res) => {
-    res.redirect('/public');
+    req.session.userId = 2;
+    console.log(`Root access at ${new Date().toISOString()}`);
+    res.sendFile(path.join(process.cwd(), 'dist/index.html'));
   });
 
   // Public bypass route - redirect to intelligent schedule
@@ -217,7 +219,7 @@ async function startServer() {
     res.redirect('/intelligent-schedule');
   });
 
-  // Intelligent schedule route - serve direct HTML interface
+  // Intelligent schedule route - serve React schedule interface
   app.get('/intelligent-schedule', (req, res) => {
     req.session.userId = 2;
     console.log(`Intelligent schedule accessed at ${new Date().toISOString()}`);
@@ -605,10 +607,11 @@ async function startServer() {
       app.use('/public', express.static('client/public'));
       app.use('/attached_assets', express.static('attached_assets'));
       
-      // Serve React app for all non-API routes (NO VITE)
+      // Serve built React app (production files)
+      app.use(express.static('dist'));
       app.get('*', (req, res) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.sendFile(path.join(process.cwd(), 'client/index.html'));
+          res.sendFile(path.join(process.cwd(), 'dist/index.html'));
         }
       });
       console.log('✅ Development static files setup complete');
