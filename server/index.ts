@@ -205,25 +205,11 @@ async function startServer() {
     }
   });
 
-  // Root route - serve main React app interface
-  app.get('/', (req, res) => {
-    req.session.userId = 2;
-    console.log(`Root access at ${new Date().toISOString()}`);
-    res.sendFile(path.join(process.cwd(), 'dist/index.html'));
-  });
-
-  // Public bypass route - redirect to intelligent schedule
+  // Public bypass route
   app.get('/public', (req, res) => {
     req.session.userId = 2;
-    console.log(`Public access at ${new Date().toISOString()}`);
-    res.redirect('/intelligent-schedule');
-  });
-
-  // Intelligent schedule route - serve React schedule interface
-  app.get('/intelligent-schedule', (req, res) => {
-    req.session.userId = 2;
-    console.log(`Intelligent schedule accessed at ${new Date().toISOString()}`);
-    res.sendFile(path.join(process.cwd(), 'client/public/intelligent-schedule.html'));
+    console.log(`React fix bypass activated at ${new Date().toISOString()}`);
+    res.redirect('/platform-connections');
   });
 
   // OAuth connection routes
@@ -593,25 +579,14 @@ async function startServer() {
       console.log('✅ Production static files setup complete');
     } else {
       console.log('⚡ Setting up development static files...');
-      // Serve static assets with proper MIME types
-      app.use('/src', express.static('client/src', {
-        setHeaders: (res, path) => {
-          if (path.endsWith('.tsx') || path.endsWith('.ts')) {
-            res.set('Content-Type', 'application/javascript');
-          }
-          if (path.endsWith('.jsx') || path.endsWith('.js')) {
-            res.set('Content-Type', 'application/javascript');
-          }
-        }
-      }));
-      app.use('/public', express.static('client/public'));
+      // Serve client assets directly without Vite
+      app.use(express.static('client/public'));
       app.use('/attached_assets', express.static('attached_assets'));
       
-      // Serve built React app (production files)
-      app.use(express.static('dist'));
+      // Serve index.html for all non-API routes
       app.get('*', (req, res) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+          res.sendFile(path.join(process.cwd(), 'client/index.html'));
         }
       });
       console.log('✅ Development static files setup complete');
