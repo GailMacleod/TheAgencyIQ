@@ -1958,6 +1958,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/generate-video-prompt/:id', requireActiveSubscription, async (req: any, res) => {
     const postId = req.params.id;
     
+    // Initialize session video attempts if not exists
+    if (!req.session.videoAttempts) {
+      req.session.videoAttempts = {};
+    }
+    
     // Check attempt limit (max 2 per post)
     const attempts = req.session.videoAttempts[postId] || 0;
     if (attempts >= 2) {
@@ -1993,10 +1998,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const postId = parseInt(req.params.id);
     const { videoPrompt } = req.body;
 
-    // Check attempt limit before generation
+    // Initialize session video attempts if not exists
     if (!req.session.videoAttempts) {
       req.session.videoAttempts = {};
     }
+    
+    // Check attempt limit before generation
     const attempts = req.session.videoAttempts[postId] || 0;
     if (attempts >= 2) {
       return res.status(429).json({ 
@@ -2026,14 +2033,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fs.mkdirSync(videoDir, { recursive: true });
       }
 
-      // Simple FFmpeg command that actually works
+      // Quick FFmpeg command for 10-second video (faster generation)
       const { spawn } = await import('child_process');
       const ffmpegArgs = [
         '-f', 'lavfi',
-        '-i', 'testsrc2=size=1920x1080:duration=30:rate=30',
+        '-i', 'testsrc2=size=1280x720:duration=10:rate=30',
         '-f', 'lavfi', 
-        '-i', 'sine=frequency=440:duration=30',
+        '-i', 'sine=frequency=440:duration=10',
         '-c:v', 'libx264',
+        '-preset', 'ultrafast',
         '-c:a', 'aac',
         '-shortest',
         '-y',
@@ -2054,7 +2062,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updatePost(postId, {
         videoUrl: `/${outputPath}`,
         hasVideo: true,
-        videoMetadata: { duration: 30, width: 1920, height: 1080 }
+        videoMetadata: { duration: 10, width: 1280, height: 720 }
       });
 
       res.json({ 
