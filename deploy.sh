@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-echo "🚀 TheAgencyIQ Deployment Script (Vite-Free)"
-echo "=============================================="
+echo "🚀 TheAgencyIQ Deployment Script (Unlimited Posts + ASMR Video)"
+echo "================================================================="
 
 # Step 1: Remove problematic Vite plugins
 echo "🔧 Ensuring mock plugins are in place..."

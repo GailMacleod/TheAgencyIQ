@@ -1993,7 +1993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json({ 
-        videoUrl: `/uploads/videos/video_${postId}_${Date.now()}.mp4`,
+        videoUrl: `/${outputPath}`,
         success: true 
       });
 
