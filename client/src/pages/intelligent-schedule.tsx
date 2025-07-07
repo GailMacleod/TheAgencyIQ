@@ -363,6 +363,19 @@ export default function IntelligentSchedule() {
     promptOptions: []
   });
 
+  // State for video preview
+  const [videoPreviewDialog, setVideoPreviewDialog] = useState<{
+    isOpen: boolean;
+    post: Post | null;
+    videoUrl: string | null;
+    selectedPrompt: string | null;
+  }>({
+    isOpen: false,
+    post: null,
+    videoUrl: null,
+    selectedPrompt: null
+  });
+
   // Handle video generation for a post - shows prompt selection first
   const handleGenerateVideo = async (post: Post) => {
     if (!brandPurpose) {
@@ -451,13 +464,15 @@ export default function IntelligentSchedule() {
         throw new Error('Failed to generate video');
       }
 
-      toast({
-        title: "Video Generated Successfully",
-        description: `Short-form video created for ${post.platform}`,
-      });
+      const videoData = await videoResponse.json();
 
-      // Refresh posts to show new video
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      // Show video preview dialog instead of immediate approval
+      setVideoPreviewDialog({
+        isOpen: true,
+        post,
+        videoUrl: videoData.videoUrl,
+        selectedPrompt
+      });
 
     } catch (error) {
       console.error('Video generation error:', error);
@@ -471,6 +486,65 @@ export default function IntelligentSchedule() {
         const newSet = new Set(prev);
         newSet.delete(post.id);
         return newSet;
+      });
+    }
+  };
+
+  // Approve video and add to post
+  const approveVideo = async () => {
+    if (!videoPreviewDialog.post || !videoPreviewDialog.videoUrl) return;
+
+    try {
+      toast({
+        title: "Video Approved",
+        description: `Video has been added to your ${videoPreviewDialog.post.platform} post`,
+      });
+
+      // Refresh posts to show video attachment
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+
+      setVideoPreviewDialog({ isOpen: false, post: null, videoUrl: null, selectedPrompt: null });
+
+    } catch (error) {
+      console.error('Video approval error:', error);
+      toast({
+        title: "Video Approval Failed",
+        description: "Failed to approve video. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Cancel video and regenerate
+  const cancelVideo = async () => {
+    if (!videoPreviewDialog.post || !videoPreviewDialog.videoUrl) return;
+
+    try {
+      // Delete the generated video file
+      await fetch('/api/cleanup-videos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          videoUrl: videoPreviewDialog.videoUrl
+        })
+      });
+
+      toast({
+        title: "Video Cancelled",
+        description: "Video has been deleted. You can generate a new one.",
+      });
+
+      setVideoPreviewDialog({ isOpen: false, post: null, videoUrl: null, selectedPrompt: null });
+
+    } catch (error) {
+      console.error('Video cancellation error:', error);
+      toast({
+        title: "Video Cancellation Failed",
+        description: "Failed to cancel video.",
+        variant: "destructive",
       });
     }
   };
@@ -1147,6 +1221,77 @@ export default function IntelligentSchedule() {
               onClick={() => setVideoPromptDialog({ isOpen: false, post: null, promptOptions: [] })}
             >
               Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Preview Dialog */}
+      <Dialog open={videoPreviewDialog.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setVideoPreviewDialog({ isOpen: false, post: null, videoUrl: null, selectedPrompt: null });
+        }
+      }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-green-600">
+              <Play className="w-6 h-6 mr-2" />
+              Video Preview - {videoPreviewDialog.post?.platform}
+            </DialogTitle>
+            <DialogDescription>
+              Review your generated short-form video. Approve to add it to your post or cancel to regenerate.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-6">
+            {videoPreviewDialog.videoUrl && (
+              <div className="space-y-4">
+                {/* Video Player */}
+                <div className="bg-black rounded-lg overflow-hidden aspect-video">
+                  <video 
+                    controls 
+                    autoPlay 
+                    muted 
+                    loop
+                    className="w-full h-full object-contain"
+                    src={videoPreviewDialog.videoUrl}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+                
+                {/* Video Details */}
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <h4 className="font-medium text-gray-900">Video Details</h4>
+                  <p className="text-sm text-gray-600">
+                    <strong>Platform:</strong> {videoPreviewDialog.post?.platform}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Prompt:</strong> {videoPreviewDialog.selectedPrompt}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Generated with:</strong> Stable Video Diffusion
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={cancelVideo}
+              className="border-red-300 text-red-700 hover:bg-red-50"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancel & Regenerate
+            </Button>
+            <Button 
+              onClick={approveVideo}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Approve Video
             </Button>
           </div>
         </DialogContent>
