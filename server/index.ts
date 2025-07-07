@@ -564,84 +564,11 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development static files...');
-      
-      // Create a simple index.html for development
-      const devHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TheAgencyIQ</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .api-link { display: block; padding: 10px; margin: 5px 0; background: #f0f0f0; text-decoration: none; border-radius: 5px; }
-        .api-link:hover { background: #e0e0e0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚀 TheAgencyIQ - Calendar-Driven Content Generation</h1>
-        <h2>Calendar API Endpoints</h2>
-        <a href="/api/calendar/events" class="api-link">📅 /api/calendar/events - Get upcoming events</a>
-        <a href="/api/calendar/trending" class="api-link">🔥 /api/calendar/trending - Get trending events</a>
-        <a href="/api/preview-event-content?platforms=facebook,linkedin,x" class="api-link">👀 /api/preview-event-content - Preview content</a>
-        
-        <h2>System Status</h2>
-        <a href="/api/health" class="api-link">💚 /api/health - System health</a>
-        <a href="/oauth-status" class="api-link">🔑 /oauth-status - OAuth status</a>
-        
-        <h2>Test Grok Calendar Integration</h2>
-        <button onclick="testCalendarIntegration()">🧪 Test Calendar Integration</button>
-        <div id="results"></div>
-        
-        <script>
-        async function testCalendarIntegration() {
-            const results = document.getElementById('results');
-            results.innerHTML = '<p>🔄 Testing calendar integration...</p>';
-            
-            try {
-                // Test calendar events
-                const eventsResponse = await fetch('/api/calendar/events');
-                const eventsData = await eventsResponse.json();
-                
-                // Test trending events
-                const trendingResponse = await fetch('/api/calendar/trending');
-                const trendingData = await trendingResponse.json();
-                
-                results.innerHTML = \`
-                    <h3>✅ Calendar Integration Test Results</h3>
-                    <p><strong>Events Found:</strong> \${eventsData.count || 0}</p>
-                    <p><strong>Trending Events:</strong> \${trendingData.count || 0}</p>
-                    <pre>\${JSON.stringify(eventsData, null, 2).substring(0, 500)}...</pre>
-                \`;
-            } catch (error) {
-                results.innerHTML = \`<p>❌ Error: \${error.message}</p>\`;
-            }
-        }
-        </script>
-    </div>
-</body>
-</html>`;
-
-      // Serve the development HTML
-      app.get('/', (req, res) => {
-        res.send(devHtml);
-      });
-      
-      // Serve static assets for development
-      app.use('/src', express.static('src'));
-      app.use('/client', express.static('client'));
-      
-      // Catch-all for development
-      app.get('*', (req, res) => {
-        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.send(devHtml);
-        }
-      });
-      
-      console.log('✅ Development static files setup complete (No Vite)');
+      console.log('⚡ Setting up development Vite...');
+      const { setupVite, serveStatic } = await import('./vite');
+      await setupVite(app, httpServer);
+      serveStatic(app);
+      console.log('✅ Vite setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
