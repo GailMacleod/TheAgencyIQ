@@ -586,6 +586,7 @@ async function startServer() {
         console.log('✅ Vite setup complete');
       } catch (viteError) {
         console.log('⚠️  Vite setup failed, using fallback static file serving...');
+    console.log('Vite error details:', viteError?.message || 'Unknown error');
         // Fallback to static file serving if Vite fails
         const staticPath = path.join(process.cwd(), 'client');
         
@@ -611,8 +612,11 @@ async function startServer() {
           }
         }));
         
-        app.use('*', (req, res) => {
-          res.sendFile(path.join(staticPath, 'index.html'));
+        app.get('*', (req, res) => {
+          if (req.path.startsWith('/api') || req.path.startsWith('/public')) {
+            return;
+          }
+          res.sendFile(path.join(staticPath, 'simple.html'));
         });
         console.log('✅ Fallback static file serving complete with proper MIME types');
       }

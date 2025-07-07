@@ -1954,13 +1954,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Initialize session video attempt tracking
-  if (!req.session.videoAttempts) {
-    req.session.videoAttempts = {};
-  }
-
   // Generate two ASMR video prompt options with attempt tracking
   app.get('/api/generate-video-prompt/:id', requireActiveSubscription, async (req: any, res) => {
+    // Initialize session video attempt tracking
+    if (!req.session.videoAttempts) {
+      req.session.videoAttempts = {};
+    }
     const postId = req.params.id;
     
     // Check attempt limit (max 2 per post)
