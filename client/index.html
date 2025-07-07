@@ -37,12 +37,15 @@
                 <h3>Subscription Plans with Strict Quota Enforcement:</h3>
                 <div class="plan">
                     <strong>Starter:</strong> 12 posts per month - $29
+                    <br><small>Basic AI content + image generation</small>
                 </div>
                 <div class="plan">
                     <strong>Growth:</strong> 27 posts per month - $59
+                    <br><small>Advanced AI content + platform-specific images</small>
                 </div>
                 <div class="plan">
                     <strong>Professional:</strong> 52 posts per month - $99
+                    <br><small>Premium AI content + Queensland business images</small>
                 </div>
             </div>
             
@@ -50,11 +53,19 @@
                 <h3>System Features:</h3>
                 <ul>
                     <li>✅ Stable Video Diffusion completely removed</li>
+                    <li>✅ Wavespeed AI image generation integrated</li>
                     <li>✅ Clean Express.js architecture</li>
                     <li>✅ Google OAuth2 authentication</li>
                     <li>✅ Strict subscription quota enforcement</li>
                     <li>✅ 5-platform social media automation</li>
+                    <li>🎨 Queensland business-themed visuals</li>
+                    <li>📸 Platform-specific image optimization</li>
                 </ul>
+                
+                <div id="wavespeed-test" style="margin-top: 20px; padding: 15px; background: #e8f5e8; border-radius: 5px;">
+                    <h4>Wavespeed AI Status:</h4>
+                    <p id="wavespeed-status">Testing connection...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -68,10 +79,24 @@
             .then(data => {
                 console.log('API Response:', data);
                 document.getElementById('status').textContent = 'API Connected';
+                
+                // Test Wavespeed AI status
+                return fetch('/api/wavespeed-status');
+            })
+            .then(response => response.json())
+            .then(wavespeedData => {
+                console.log('Wavespeed Status:', wavespeedData);
+                const statusElement = document.getElementById('wavespeed-status');
+                if (wavespeedData.connected) {
+                    statusElement.innerHTML = `<strong style="color: #27ae60;">✅ Connected</strong> - ${wavespeedData.service}`;
+                } else {
+                    statusElement.innerHTML = `<strong style="color: #e74c3c;">❌ Not Connected</strong> - ${wavespeedData.error || 'API key missing'}`;
+                }
             })
             .catch(error => {
                 console.log('API test:', error.message);
                 document.getElementById('status').textContent = 'Ready';
+                document.getElementById('wavespeed-status').innerHTML = '<strong style="color: #f39c12;">⚠️ Status Unknown</strong>';
             });
     </script>
 </body>

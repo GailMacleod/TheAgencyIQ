@@ -27,7 +27,8 @@ import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, auth
 import { requireActiveSubscription, requireAuth } from './middleware/subscriptionAuth';
 import { PostQuotaService } from './PostQuotaService';
 import { userFeedbackService } from './userFeedbackService.js';
-// Seedance 1.0 - Video generation service removed
+import { wavespeedService } from './wavespeed-service';
+// Seedance 1.0 - Video generation service removed, Wavespeed AI image generation added
 
 // Extended session types
 declare module 'express-session' {
@@ -7218,6 +7219,117 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ 
         success: false, 
         error: 'Failed to fetch user feedback' 
+      });
+    }
+  });
+
+  // Seedance 1.0 - AI Image Generation Endpoints
+  app.post('/api/generate-image', requireActiveSubscription, async (req: Request, res: Response) => {
+    try {
+      const { prompt, platform, businessType, size } = req.body;
+      const userId = req.session.userId;
+
+      // Check quota before generation
+      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!quotaStatus || quotaStatus.remainingPosts <= 0) {
+        return res.status(403).json({
+          error: 'Image generation quota exceeded',
+          remainingPosts: quotaStatus?.remainingPosts || 0
+        });
+      }
+
+      // Generate platform-specific prompt if needed
+      const finalPrompt = platform 
+        ? wavespeedService.generatePlatformPrompt(platform, prompt, businessType)
+        : prompt;
+
+      const result = await wavespeedService.generateImage({
+        prompt: finalPrompt,
+        size: size || "1024*1024",
+        num_images: 1
+      });
+
+      if (result.success) {
+        console.log(`🎨 Image generated for user ${userId}: ${prompt.substring(0, 50)}...`);
+        res.json({
+          success: true,
+          images: result.images,
+          executionTime: result.executionTime,
+          prompt: finalPrompt,
+          platform,
+          remainingQuota: quotaStatus.remainingPosts
+        });
+      } else {
+        res.status(500).json({
+          error: result.error,
+          success: false
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Image generation error:', error);
+      res.status(500).json({ error: 'Image generation failed' });
+    }
+  });
+
+  app.post('/api/generate-queensland-image', requireActiveSubscription, async (req: Request, res: Response) => {
+    try {
+      const { businessType, context } = req.body;
+      const userId = req.session.userId;
+
+      // Check quota
+      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!quotaStatus || quotaStatus.remainingPosts <= 0) {
+        return res.status(403).json({
+          error: 'Image generation quota exceeded',
+          remainingPosts: quotaStatus?.remainingPosts || 0
+        });
+      }
+
+      const queenslandPrompt = wavespeedService.generateQueenslandBusinessPrompt(businessType, context);
+      
+      const result = await wavespeedService.generateImage({
+        prompt: queenslandPrompt,
+        size: "1024*1024",
+        num_images: 1
+      });
+
+      if (result.success) {
+        res.json({
+          success: true,
+          images: result.images,
+          executionTime: result.executionTime,
+          prompt: queenslandPrompt,
+          theme: 'Queensland Business',
+          remainingQuota: quotaStatus.remainingPosts
+        });
+      } else {
+        res.status(500).json({
+          error: result.error,
+          success: false
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Queensland image generation error:', error);
+      res.status(500).json({ error: 'Queensland image generation failed' });
+    }
+  });
+
+  app.get('/api/wavespeed-status', async (req: Request, res: Response) => {
+    try {
+      const isConnected = await wavespeedService.testConnection();
+      res.json({
+        connected: isConnected,
+        apiKey: process.env.WAVESPEED_API_KEY ? 'configured' : 'missing',
+        service: 'Wavespeed AI Flux-Dev-LoRA',
+        seedanceVersion: '1.0'
+      });
+    } catch (error) {
+      res.json({
+        connected: false,
+        error: 'Connection test failed',
+        seedanceVersion: '1.0'
       });
     }
   });

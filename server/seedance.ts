@@ -93,7 +93,13 @@ export function setupSeedanceAuth(app: express.Application) {
   app.get('/api/subscriptions', (req, res) => {
     res.json({
       tiers: subscriptionTiers,
-      seedanceVersion: '1.0'
+      seedanceVersion: '1.0',
+      features: {
+        aiImageGeneration: true,
+        textGeneration: true,
+        multiPlatform: true,
+        quotaEnforcement: true
+      }
     });
   });
 
