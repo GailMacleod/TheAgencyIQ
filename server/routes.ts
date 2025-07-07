@@ -28,6 +28,7 @@ import { requireActiveSubscription, requireAuth } from './middleware/subscriptio
 import { PostQuotaService } from './PostQuotaService';
 import { userFeedbackService } from './userFeedbackService.js';
 import { wavespeedService } from './wavespeed-service';
+import { IntelligentPromptService } from './intelligent-prompt-service';
 // Seedance 1.0 - Video generation service removed, Wavespeed AI image generation added
 
 // Extended session types
@@ -7224,9 +7225,9 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Seedance 1.0 - AI Image Generation Endpoints
-  app.post('/api/generate-image', requireActiveSubscription, async (req: Request, res: Response) => {
+  app.post('/api/generate-brand-image', requireActiveSubscription, async (req: Request, res: Response) => {
     try {
-      const { prompt, platform, businessType, size } = req.body;
+      const { brandContext, platform, contentType, size } = req.body;
       const userId = req.session.userId;
 
       // Check quota before generation
@@ -7238,25 +7239,29 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      // Generate platform-specific prompt if needed
-      const finalPrompt = platform 
-        ? wavespeedService.generatePlatformPrompt(platform, prompt, businessType)
-        : prompt;
+      // Generate intelligent brand-adapted prompt
+      const intelligentPrompt = IntelligentPromptService.generateBrandPrompt(
+        brandContext, 
+        platform, 
+        contentType || 'promotional'
+      );
 
       const result = await wavespeedService.generateImage({
-        prompt: finalPrompt,
+        prompt: intelligentPrompt,
         size: size || "1024*1024",
         num_images: 1
       });
 
       if (result.success) {
-        console.log(`🎨 Image generated for user ${userId}: ${prompt.substring(0, 50)}...`);
+        console.log(`🎨 Brand-specific image generated for user ${userId}: ${brandContext.brandPurpose?.substring(0, 30)}...`);
         res.json({
           success: true,
           images: result.images,
           executionTime: result.executionTime,
-          prompt: finalPrompt,
+          prompt: intelligentPrompt,
           platform,
+          brandPurpose: brandContext.brandPurpose,
+          adaptedFor: `${platform} with ${contentType} content`,
           remainingQuota: quotaStatus.remainingPosts
         });
       } else {
@@ -7267,8 +7272,79 @@ Continue building your Value Proposition Canvas systematically.`;
       }
 
     } catch (error: any) {
-      console.error('Image generation error:', error);
-      res.status(500).json({ error: 'Image generation failed' });
+      console.error('Brand image generation error:', error);
+      res.status(500).json({ error: 'Brand image generation failed' });
+    }
+  });
+
+  app.post('/api/generate-script-prompt', requireActiveSubscription, async (req: Request, res: Response) => {
+    try {
+      const { brandContext, platform, duration } = req.body;
+      const userId = req.session.userId;
+
+      // Check quota
+      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!quotaStatus || quotaStatus.remainingPosts <= 0) {
+        return res.status(403).json({
+          error: 'Script generation quota exceeded',
+          remainingPosts: quotaStatus?.remainingPosts || 0
+        });
+      }
+
+      const scriptPrompt = IntelligentPromptService.generateVideoScriptPrompt(
+        brandContext,
+        platform,
+        duration || 60
+      );
+
+      res.json({
+        success: true,
+        scriptPrompt,
+        platform,
+        duration: duration || 60,
+        brandPurpose: brandContext.brandPurpose,
+        adaptedElements: {
+          hook: `${platform}-optimized hook for ${brandContext.targetAudience}`,
+          coreMessage: `Brand purpose: ${brandContext.brandPurpose}`,
+          cta: `${platform}-specific call to action`
+        },
+        remainingQuota: quotaStatus.remainingPosts
+      });
+
+    } catch (error: any) {
+      console.error('Script prompt generation error:', error);
+      res.status(500).json({ error: 'Script prompt generation failed' });
+    }
+  });
+
+  app.post('/api/generate-challenge-prompt', requireActiveSubscription, async (req: Request, res: Response) => {
+    try {
+      const { brandContext } = req.body;
+      const userId = req.session.userId;
+
+      // Check quota
+      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!quotaStatus || quotaStatus.remainingPosts <= 0) {
+        return res.status(403).json({
+          error: 'Challenge generation quota exceeded',
+          remainingPosts: quotaStatus?.remainingPosts || 0
+        });
+      }
+
+      const challengePrompt = IntelligentPromptService.generateChallengePrompt(brandContext);
+
+      res.json({
+        success: true,
+        challengePrompt,
+        brandPurpose: brandContext.brandPurpose,
+        industry: brandContext.industry,
+        targetAudience: brandContext.targetAudience,
+        remainingQuota: quotaStatus.remainingPosts
+      });
+
+    } catch (error: any) {
+      console.error('Challenge prompt generation error:', error);
+      res.status(500).json({ error: 'Challenge prompt generation failed' });
     }
   });
 
