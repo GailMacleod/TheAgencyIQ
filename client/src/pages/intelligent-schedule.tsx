@@ -357,13 +357,27 @@ export default function IntelligentSchedule() {
     isOpen: boolean;
     post: Post | null;
     promptOptions: string[];
+    editablePrompts: string[];
+    selectedPrompt: string;
+    videoUrl: string | null;
+    showPreview: boolean;
+    regenerationCount: number;
+    showRegenerateInput: boolean;
+    customPrompt: string;
   }>({
     isOpen: false,
     post: null,
-    promptOptions: []
+    promptOptions: [],
+    editablePrompts: [],
+    selectedPrompt: '',
+    videoUrl: null,
+    showPreview: false,
+    regenerationCount: 0,
+    showRegenerateInput: false,
+    customPrompt: ''
   });
 
-  // Handle video generation for a post - shows prompt selection first
+  // Handle video generation for a post - shows 30-second ASMR prompt dialog with editing
   const handleGenerateVideo = async (post: Post) => {
     if (!brandPurpose) {
       toast({
@@ -375,10 +389,8 @@ export default function IntelligentSchedule() {
       return;
     }
 
-    setGeneratingVideos(prev => new Set(prev).add(post.id));
-
     try {
-      // Step 1: Get video prompt options for the user to choose from
+      // Get two example 30-second ASMR prompts as starting points
       const promptResponse = await fetch('/api/generate-video-prompt', {
         method: 'POST',
         headers: {
@@ -399,25 +411,41 @@ export default function IntelligentSchedule() {
 
       const promptData = await promptResponse.json();
 
-      // Show dialog with 2 prompt options
+      // Show dialog with 2 editable 30-second ASMR prompt options
+      const defaultPrompts = promptData.promptOptions || [
+        "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
+        "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
+      ];
+      
       setVideoPromptDialog({
         isOpen: true,
         post,
-        promptOptions: promptData.promptOptions
+        promptOptions: defaultPrompts,
+        editablePrompts: [...defaultPrompts],
+        selectedPrompt: '',
+        videoUrl: null,
+        showPreview: false,
+        regenerationCount: 0,
+        showRegenerateInput: false,
+        customPrompt: ''
       });
 
     } catch (error) {
       console.error('Video prompt generation error:', error);
       toast({
         title: "Video Prompt Generation Failed",
-        description: "Failed to generate video prompt options. Please try again.",
+        description: "Using default 30-second ASMR prompts.",
         variant: "destructive",
       });
-    } finally {
-      setGeneratingVideos(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(post.id);
-        return newSet;
+      
+      // Fallback to default prompts
+      setVideoPromptDialog({
+        isOpen: true,
+        post,
+        promptOptions: [
+          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
+          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
+        ]
       });
     }
   };
@@ -428,12 +456,11 @@ export default function IntelligentSchedule() {
     if (!post) return;
 
     setGeneratingVideos(prev => new Set(prev).add(post.id));
-    setVideoPromptDialog({ isOpen: false, post: null, promptOptions: [] });
 
     try {
       toast({
-        title: "Generating Short-Form Video",
-        description: "Creating video using Stable Video Diffusion...",
+        title: "Generating 30-second ASMR Video",
+        description: "Creating video using Python script with custom prompt...",
       });
 
       const videoResponse = await fetch(`/api/posts/${post.id}/generate-video`, {
@@ -451,13 +478,33 @@ export default function IntelligentSchedule() {
         throw new Error('Failed to generate video');
       }
 
-      toast({
-        title: "Video Generated Successfully",
-        description: `Short-form video created for ${post.platform}`,
+      const videoData = await videoResponse.json();
+
+      // Get video preview
+      const previewResponse = await fetch(`/api/posts/${post.id}/preview-video`, {
+        method: 'GET',
+        credentials: 'include'
       });
 
-      // Refresh posts to show new video
-      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      let videoUrl = null;
+      if (previewResponse.ok) {
+        const previewData = await previewResponse.json();
+        videoUrl = previewData.videoUrl;
+      }
+
+      // Update dialog to show preview with approve/regenerate options
+      setVideoPromptDialog(prev => ({
+        ...prev,
+        selectedPrompt,
+        videoUrl,
+        showPreview: true,
+        regenerationCount: prev.regenerationCount + 1
+      }));
+
+      toast({
+        title: "30-second ASMR Video Generated",
+        description: "Preview your video and choose to approve or regenerate.",
+      });
 
     } catch (error) {
       console.error('Video generation error:', error);
@@ -473,6 +520,82 @@ export default function IntelligentSchedule() {
         return newSet;
       });
     }
+  };
+
+  // Approve video and save to post
+  const approveVideo = async () => {
+    const post = videoPromptDialog.post;
+    if (!post || !videoPromptDialog.videoUrl) return;
+
+    try {
+      // Update posts to show video is approved
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      
+      setVideoPromptDialog({
+        isOpen: false,
+        post: null,
+        promptOptions: [],
+        editablePrompts: [],
+        selectedPrompt: '',
+        videoUrl: null,
+        showPreview: false,
+        regenerationCount: 0,
+        showRegenerateInput: false,
+        customPrompt: ''
+      });
+
+      toast({
+        title: "Video Approved",
+        description: "30-second ASMR video saved to post successfully.",
+      });
+
+    } catch (error) {
+      console.error('Video approval error:', error);
+      toast({
+        title: "Approval Failed",
+        description: "Failed to approve video. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Show regenerate input if allowed
+  const showRegenerateInput = () => {
+    if (videoPromptDialog.regenerationCount >= 1) {
+      toast({
+        title: "Regeneration Limit Reached",
+        description: "You can only regenerate once per post.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setVideoPromptDialog(prev => ({
+      ...prev,
+      showRegenerateInput: true,
+      customPrompt: prev.selectedPrompt
+    }));
+  };
+
+  // Regenerate with custom prompt
+  const regenerateVideo = async () => {
+    if (!videoPromptDialog.customPrompt.trim()) {
+      toast({
+        title: "Prompt Required",
+        description: "Please enter a custom prompt for regeneration.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setVideoPromptDialog(prev => ({
+      ...prev,
+      showRegenerateInput: false,
+      showPreview: false,
+      videoUrl: null
+    }));
+
+    await generateVideoWithPrompt(videoPromptDialog.customPrompt);
   };
 
   // Generate AI-powered content schedule
@@ -1103,50 +1226,179 @@ export default function IntelligentSchedule() {
         </DialogContent>
       </Dialog>
 
-      {/* Video Prompt Selection Dialog */}
+      {/* Enhanced 30-second ASMR Video Generation Dialog */}
       <Dialog open={videoPromptDialog.isOpen} onOpenChange={(open) => {
         if (!open) {
-          setVideoPromptDialog({ isOpen: false, post: null, promptOptions: [] });
+          setVideoPromptDialog({
+            isOpen: false,
+            post: null,
+            promptOptions: [],
+            editablePrompts: [],
+            selectedPrompt: '',
+            videoUrl: null,
+            showPreview: false,
+            regenerationCount: 0,
+            showRegenerateInput: false,
+            customPrompt: ''
+          });
         }
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center text-purple-600">
               <Play className="w-6 h-6 mr-2" />
-              Choose Video Prompt for {videoPromptDialog.post?.platform}
+              30-second ASMR Video for {videoPromptDialog.post?.platform}
             </DialogTitle>
             <DialogDescription>
-              Select one of the video prompts below to generate a short-form video using Stable Video Diffusion.
+              {!videoPromptDialog.showPreview 
+                ? "Edit and customize these 30-second ASMR prompts for your brand, then generate your video."
+                : "Preview your 30-second ASMR video and choose to approve or regenerate with a new prompt."
+              }
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-6 space-y-4">
-            {videoPromptDialog.promptOptions.map((prompt, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900 mb-2">Option {index + 1}</h4>
-                    <p className="text-gray-700 text-sm leading-relaxed">{prompt}</p>
+          {!videoPromptDialog.showPreview ? (
+            // Prompt editing phase
+            <div className="py-6 space-y-4">
+              {videoPromptDialog.editablePrompts.map((prompt, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors">
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-900">Option {index + 1}</h4>
+                    <Textarea
+                      value={prompt}
+                      onChange={(e) => {
+                        const newPrompts = [...videoPromptDialog.editablePrompts];
+                        newPrompts[index] = e.target.value;
+                        setVideoPromptDialog(prev => ({
+                          ...prev,
+                          editablePrompts: newPrompts
+                        }));
+                      }}
+                      className="min-h-[100px] text-sm"
+                      placeholder="Edit your 30-second ASMR prompt with Queensland SME elements..."
+                    />
+                    <Button
+                      onClick={() => generateVideoWithPrompt(prompt)}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                      disabled={generatingVideos.has(videoPromptDialog.post?.id || 0)}
+                    >
+                      {generatingVideos.has(videoPromptDialog.post?.id || 0) ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Generating 30s Video...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4 mr-2" />
+                          Generate 30-second ASMR Video
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => generateVideoWithPrompt(prompt)}
-                    className="ml-4 bg-purple-600 hover:bg-purple-700 text-white"
-                    size="sm"
+                </div>
+              ))}
+            </div>
+          ) : (
+            // Preview phase with approve/regenerate options
+            <div className="py-6 space-y-6">
+              {videoPromptDialog.videoUrl && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-3">30-second ASMR Video Preview</h4>
+                  <video 
+                    controls 
+                    className="w-full max-w-md mx-auto rounded-lg shadow-md"
+                    src={videoPromptDialog.videoUrl}
                   >
-                    <Play className="w-4 h-4 mr-1" />
-                    Generate Video
+                    Your browser does not support the video tag.
+                  </video>
+                  <p className="text-sm text-gray-600 mt-2 text-center">
+                    Prompt: {videoPromptDialog.selectedPrompt}
+                  </p>
+                </div>
+              )}
+
+              {!videoPromptDialog.showRegenerateInput ? (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={approveVideo}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <ThumbsUp className="w-4 h-4 mr-2" />
+                    Approve Video
+                  </Button>
+                  <Button
+                    onClick={showRegenerateInput}
+                    variant="outline"
+                    className="flex-1"
+                    disabled={videoPromptDialog.regenerationCount >= 1}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Regenerate {videoPromptDialog.regenerationCount >= 1 ? '(Used)' : '(1 left)'}
                   </Button>
                 </div>
-              </div>
-            ))}
-          </div>
+              ) : (
+                <div className="space-y-4">
+                  <h4 className="font-medium text-gray-900">Enter Custom Regeneration Prompt</h4>
+                  <Textarea
+                    value={videoPromptDialog.customPrompt}
+                    onChange={(e) => setVideoPromptDialog(prev => ({
+                      ...prev,
+                      customPrompt: e.target.value
+                    }))}
+                    className="min-h-[120px] text-sm"
+                    placeholder="Customize your 30-second ASMR prompt with specific Queensland SME elements..."
+                  />
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={regenerateVideo}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                      disabled={generatingVideos.has(videoPromptDialog.post?.id || 0)}
+                    >
+                      {generatingVideos.has(videoPromptDialog.post?.id || 0) ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Regenerating...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="w-4 h-4 mr-2" />
+                          Regenerate Video
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => setVideoPromptDialog(prev => ({
+                        ...prev,
+                        showRegenerateInput: false
+                      }))}
+                      variant="outline"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           
           <div className="flex justify-end space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setVideoPromptDialog({ isOpen: false, post: null, promptOptions: [] })}
+            <Button
+              onClick={() => setVideoPromptDialog({
+                isOpen: false,
+                post: null,
+                promptOptions: [],
+                editablePrompts: [],
+                selectedPrompt: '',
+                videoUrl: null,
+                showPreview: false,
+                regenerationCount: 0,
+                showRegenerateInput: false,
+                customPrompt: ''
+              })}
+              variant="outline"
             >
-              Cancel
+              <X className="w-4 h-4 mr-2" />
+              Close
             </Button>
           </div>
         </DialogContent>

@@ -7582,39 +7582,40 @@ export function addNotificationEndpoints(app: any) {
         return res.status(403).json({ error: 'Access denied' });
       }
 
-      console.log(`🎬 Generating video for post ${postId} on ${postData.platform}`);
+      console.log(`🎬 Generating 30-second ASMR video for post ${postId} on ${postData.platform}`);
 
-      // Generate video with user's custom prompt
-      const result = await videoGenerationService.generateVideo({
-        prompt: videoPrompt,
-        platform: postData.platform,
-        userId,
-        style
+      // Generate video with custom prompt using Python script
+      const { exec } = require('child_process');
+      const videoFileName = `video_${postId}_${Date.now()}.mp4`;
+      const outputPath = `uploads/videos/${videoFileName}`;
+      
+      exec(`python stable-video-diffusion/generate_video.py --prompt "${videoPrompt}" --output ${outputPath} --asmr --short --duration 30`, (err, stdout, stderr) => {
+        if (!err) {
+          // Update post with video information
+          db.update(posts)
+            .set({ 
+              videoUrl: `/uploads/videos/${videoFileName}`,
+              hasVideo: true,
+              videoMetadata: { duration: 30, format: 'mp4', style: 'asmr' },
+              updatedAt: new Date()
+            })
+            .where(eq(posts.id, postId))
+            .then(() => {
+              res.json({ 
+                success: true,
+                videoUrl: `/uploads/videos/${videoFileName}`,
+                message: '30-second ASMR video generated successfully'
+              });
+            })
+            .catch((dbError) => {
+              console.error('Database update error:', dbError);
+              res.status(500).json({ error: 'Failed to save video to database' });
+            });
+        } else {
+          console.error('Video generation error:', err);
+          res.status(500).json({ error: 'Video generation failed', details: err.message });
+        }
       });
-
-      if (result.success) {
-        // Update post with video information
-        await db.update(posts)
-          .set({ 
-            videoUrl: result.videoUrl,
-            hasVideo: true,
-            videoMetadata: result.metadata,
-            updatedAt: new Date()
-          })
-          .where(eq(posts.id, postId));
-
-        res.json({
-          success: true,
-          videoUrl: result.videoUrl,
-          metadata: result.metadata,
-          message: 'Video generated and attached to post successfully'
-        });
-      } else {
-        res.status(500).json({
-          error: 'Video generation failed',
-          details: result.error
-        });
-      }
 
     } catch (error) {
       console.error('Post video generation error:', error);
@@ -7622,6 +7623,49 @@ export function addNotificationEndpoints(app: any) {
         error: 'Failed to generate video for post',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
+    }
+  });
+
+  // ====== VIDEO PREVIEW ENDPOINT ======
+  
+  /**
+   * Get video preview URL for a post
+   * GET /api/posts/:id/preview-video
+   */
+  app.get("/api/posts/:id/preview-video", requireAuth, async (req: CustomRequest, res: Response) => {
+    try {
+      const userId = req.session?.userId?.toString();
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      const postId = parseInt(req.params.id);
+      
+      // Get the post
+      const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
+      if (post.length === 0) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+
+      const postData = post[0];
+      if (postData.userId !== parseInt(userId)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      if (!postData.videoUrl || !postData.hasVideo) {
+        return res.status(404).json({ error: 'No video available for this post' });
+      }
+
+      res.json({
+        success: true,
+        videoUrl: postData.videoUrl,
+        metadata: postData.videoMetadata,
+        hasVideo: postData.hasVideo
+      });
+
+    } catch (error) {
+      console.error('Video preview error:', error);
+      res.status(500).json({ error: 'Failed to get video preview' });
     }
   });
 
@@ -7645,27 +7689,27 @@ export function addNotificationEndpoints(app: any) {
         });
       }
 
-      // Generate Strategizer-aligned ASMR short-form video prompts for Stable Video Diffusion
+      // Generate two example 30-second ASMR prompts as starting points for client customization
       const videoPrompts = {
         facebook: [
-          "ASMR Gold Coast rainforest office, gentle rain on leaves, Queensland SME planning session with native bird calls, automation tools on wooden desk, natural productivity vibes, 60 seconds",
-          "ASMR Brisbane River sunset workspace, soft water lapping sounds, local entrepreneur reviewing growth metrics with cicada ambience, peaceful business transformation, 60 seconds"
+          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
+          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
         ],
         instagram: [
-          "ASMR Sunshine Coast beach co-working, gentle wave sounds, Queensland business owner with laptop on driftwood, seagull calls mixing with notification chimes, coastal productivity aesthetic, 60 seconds",
-          "ASMR Byron Bay hinterland café, soft coffee grinding with kookaburra calls, local SME strategizing automation while native wind chimes create peaceful business planning atmosphere, 60 seconds"
+          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s", 
+          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
         ],
         linkedin: [
-          "ASMR boardroom overlooking Kangaroo Point cliffs, gentle Brisbane cityscape hum, executive hands moving across automation blueprints with distant ferry horns, sophisticated Queensland business evolution, 60 seconds",
-          "ASMR Fortitude Valley innovation hub, soft industrial ambience with native plant rustling, professional strategy session featuring local cultural elements and modern business transformation, 60 seconds"
+          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
+          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
         ],
         youtube: [
-          "ASMR complete Queensland SME transformation, starting with Daintree rainforest sounds transitioning to modern office automation, featuring native wildlife calls blending with success notifications, 60 seconds",
-          "ASMR journey from Outback station office to digital automation hub, natural bush sounds evolving into efficient business operations with authentic Queensland cultural touchpoints, 60 seconds"
+          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
+          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
         ],
         x: [
-          "ASMR rapid automation insight with Moreton Bay fig tree rustling, quick business tip delivery featuring gentle native bird calls and soft notification sounds, concise Queensland innovation moment, 60 seconds",
-          "ASMR instant SME breakthrough moment, combining jacaranda tree whispers with sharp efficiency gains, authentic Brisbane business culture in concentrated format, 60 seconds"
+          "ASMR Queensland Rainforest Pulse: Quick drip with innovation hum, 30s",
+          "ASMR Coastal Resilience: Brief sea breeze with sand crunch, 30s"
         ]
       };
 
