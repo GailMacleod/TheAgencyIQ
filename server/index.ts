@@ -564,11 +564,21 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development Vite...');
-      const { setupVite, serveStatic } = await import('./vite');
-      await setupVite(app, httpServer);
-      serveStatic(app);
-      console.log('✅ Vite setup complete');
+      console.log('⚡ Setting up development server...');
+      
+      // Serve static files for development
+      app.use(express.static('client/dist'));
+      app.use(express.static('public'));
+      
+      // Fallback route for SPA
+      app.get('*', (req, res) => {
+        if (req.path.startsWith('/api/')) {
+          return res.status(404).json({ error: 'API endpoint not found' });
+        }
+        res.sendFile(path.join(process.cwd(), 'client', 'dist', 'index.html'));
+      });
+      
+      console.log('✅ Development server setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
