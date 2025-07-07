@@ -834,20 +834,61 @@ export default function IntelligentSchedule() {
                             <span className="text-blue-700">Generating video...</span>
                           </div>
                         ) : post.videoData.status === 'completed' ? (
-                          <div className="space-y-2">
-                            <div className="relative bg-gray-100 rounded-lg overflow-hidden">
+                          <div className="space-y-3">
+                            <div className="relative bg-gray-100 rounded-lg overflow-hidden cursor-pointer group"
+                                 onClick={() => window.open(post.videoData.videoUrl, '_blank')}>
                               <img 
                                 src={post.videoData.thumbnailUrl} 
                                 alt="Video thumbnail"
-                                className="w-full h-32 object-cover"
+                                className="w-full h-32 object-cover transition-transform group-hover:scale-105"
                               />
                               <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="bg-black bg-opacity-50 rounded-full p-2">
+                                <div className="bg-black bg-opacity-60 rounded-full p-3 transition-all group-hover:bg-opacity-70 group-hover:scale-110">
                                   <Play className="w-6 h-6 text-white" />
                                 </div>
                               </div>
+                              <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                                {post.videoData.duration}s
+                              </div>
                             </div>
-                            <p className="text-xs text-blue-600">Video ready for publishing</p>
+                            
+                            {/* Video Approval Actions */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Video Ready
+                                </Badge>
+                                <span className="text-xs text-gray-500">
+                                  Seedance {post.videoData.seedanceVersion || '1.0'}
+                                </span>
+                              </div>
+                              
+                              <div className="flex space-x-1">
+                                <Button
+                                  onClick={() => handleCreateVideo(post)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                  title="Edit video"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  onClick={() => window.open(post.videoData.videoUrl, '_blank')}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  title="Preview video"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <p className="text-xs text-blue-600 font-medium">
+                              Click thumbnail to view • Video will be included when post is approved
+                            </p>
                           </div>
                         ) : (
                           <div className="text-red-600 text-sm">Video generation failed</div>
@@ -918,7 +959,9 @@ export default function IntelligentSchedule() {
                           className={
                             post.status === 'approved' || approvedPosts.has(post.id)
                               ? "bg-gray-600 hover:bg-gray-700 text-white cursor-not-allowed w-full sm:w-auto"
-                              : "bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
+                              : post.videoData 
+                                ? "bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+                                : "bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
                           }
                           size="sm"
                           disabled={post.status === 'approved' || approvedPosts.has(post.id) || approvingPosts.has(post.id)}
@@ -931,12 +974,26 @@ export default function IntelligentSchedule() {
                             </>
                           ) : (
                             <>
-                              <CheckCircle className="w-4 h-4 mr-2" />
+                              {post.videoData ? (
+                                <Video className="w-4 h-4 mr-2" />
+                              ) : (
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                              )}
                               <span className="hidden sm:inline">
-                                {post.status === 'approved' || approvedPosts.has(post.id) ? 'Approved ✓' : 'Approve & Schedule'}
+                                {post.status === 'approved' || approvedPosts.has(post.id) 
+                                  ? 'Approved ✓' 
+                                  : post.videoData 
+                                    ? 'Approve with Video'
+                                    : 'Approve & Schedule'
+                                }
                               </span>
                               <span className="sm:hidden">
-                                {post.status === 'approved' || approvedPosts.has(post.id) ? 'Approved ✓' : 'Approve'}
+                                {post.status === 'approved' || approvedPosts.has(post.id) 
+                                  ? 'Approved ✓' 
+                                  : post.videoData 
+                                    ? 'Approve + Video'
+                                    : 'Approve'
+                                }
                               </span>
                             </>
                           )}
