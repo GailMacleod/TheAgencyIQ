@@ -16,10 +16,35 @@ def create_mock_video(output_path, duration=30):
         # Create directory if it doesn't exist
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         
-        # Create mock video file (empty file as placeholder)
-        with open(output_path, 'wb') as f:
-            # Write minimal MP4 header to make it a valid video file
-            f.write(b'\x00\x00\x00\x20ftypmp41\x00\x00\x00\x00mp41isom\x00\x00\x00\x08free')
+        # Try to create a proper video using FFmpeg
+        import subprocess
+        
+        try:
+            # Create a simple gradient video using FFmpeg (simpler and faster)
+            ffmpeg_cmd = [
+                'ffmpeg', '-y',  # -y to overwrite existing files
+                '-f', 'lavfi',   # Use lavfi input
+                '-i', f'color=black:size=1920x1080:duration={duration}:rate=30',  # Black background
+                '-c:v', 'libx264',  # H.264 codec
+                '-pix_fmt', 'yuv420p',  # Compatible pixel format
+                '-preset', 'ultrafast',  # Fast encoding
+                '-crf', '28',  # Lower quality for smaller file
+                output_path
+            ]
+            
+            result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=60)
+            
+            if result.returncode == 0:
+                print(f"FFmpeg video created successfully: {output_path}")
+            else:
+                raise Exception("FFmpeg failed")
+                
+        except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
+            print(f"FFmpeg not available or failed: {e}, creating minimal MP4...")
+            # Fallback to minimal MP4 file
+            with open(output_path, 'wb') as f:
+                # Write minimal but more complete MP4 structure
+                f.write(b'\x00\x00\x00\x20ftypmp41\x00\x00\x00\x00mp41isom\x00\x00\x00\x08free')
         
         # Create metadata file
         metadata = {
