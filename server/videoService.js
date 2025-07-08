@@ -468,8 +468,32 @@ export class VideoService {
       'swaying with a shimmering leaf while wearing a concert jacket, with gentle hums creating business harmony as productivity notes dance in the air'
     ];
 
+    // REPLIT BRAND-DRIVEN CREATIVE PROMPTS - Empowering creativity through technology
+    const replitCreativeScenes = [
+      'typing code on a glowing laptop while wearing tiny glasses, then high-fiving as their app comes to life: "When creativity meets technology, magic happens!"',
+      'standing at a holographic whiteboard sketching app wireframes, then watching them transform into real interfaces: "Your ideas deserve the best tools"',
+      'debugging code while wearing a detective hat, then celebrating as green checkmarks fill the screen: "Every problem has a creative solution"',
+      'pair programming with a friend via video call, both nodding excitedly as their collaborative project deploys: "Better together, powered by technology"',
+      'presenting their startup pitch to floating investor holograms, then jumping for joy as funding notifications pop up: "Turn your vision into reality"',
+      'racing through a neon-lit digital highway in a code-powered car, leaving trails of successful deployments: "Speed up your creative journey"',
+      'conducting an orchestra of floating code snippets that play beautiful music when executed: "Compose your digital masterpiece"',
+      'painting on a canvas that transforms into interactive web elements with each brushstroke: "Where art meets code"',
+      'building a rocket ship from colorful code blocks, then blasting off to a planet of endless possibilities: "Launch your creativity into orbit"',
+      'growing a digital garden where each planted idea blooms into a successful app or website: "Nurture your innovations with the right tools"',
+      'architecting a city skyline made of glowing servers and databases while wearing a hard hat: "Build the infrastructure of tomorrow"',
+      'DJ-mixing beats on a turntable that generates real-time data visualizations dancing to the rhythm: "Mix creativity with cutting-edge tech"',
+      'cooking in a kitchen where ingredients are programming languages that blend into delicious applications: "Recipe for digital success"',
+      'surfing massive waves made of streaming data while maintaining perfect balance on a code surfboard: "Ride the wave of innovation"',
+      'teaching a classroom of eager students using holographic demonstrations that respond to voice commands: "Empower the next generation"',
+      'exploring ancient ruins that reveal hidden APIs and integration secrets in glowing hieroglyphs: "Discover the power within"',
+      'performing magic tricks where pulling rabbits from hats creates instant working prototypes: "Where magic meets methodology"',
+      'mountain climbing to reach the summit of Success Peak, planting a flag that broadcasts their achievement globally: "Reach new heights with technology"',
+      'time traveling through different eras of technology, from punch cards to quantum computing: "Evolution powered by creativity"',
+      'hosting a game show where contestants solve coding challenges to win digital prizes and real opportunities: "Play your way to success"'
+    ];
+
     // Combine all scene types for maximum variety
-    const allScenes = [...movieTrailerScenes, ...asmrCrystalScenes, ...asmrFluffyScenes, ...asmrProfessionalScenes];
+    const allScenes = [...movieTrailerScenes, ...asmrCrystalScenes, ...asmrFluffyScenes, ...asmrProfessionalScenes, ...replitCreativeScenes];
     
     const randomScene = allScenes[Math.floor(Math.random() * allScenes.length)];
     
