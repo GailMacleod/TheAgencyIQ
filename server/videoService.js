@@ -4,11 +4,17 @@
  */
 
 import axios from 'axios';
+import Replicate from 'replicate';
 import { PostQuotaService } from './PostQuotaService.js';
 
 // Seedance API configuration - Official Replicate Integration
 const REPLICATE_API_BASE = 'https://api.replicate.com/v1';
 const SEEDANCE_MODEL = 'bytedance/seedance-1-lite';
+
+// Initialize Replicate client
+const replicate = new Replicate({
+  auth: process.env.REPLICATE_API_TOKEN,
+});
 
 export class VideoService {
   static async generateVideoPrompts(postContent, platform, brandData) {
@@ -159,7 +165,7 @@ export class VideoService {
         const videoId = `artdirected_${animalType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
         // Art Director prompt for Seedance API
-        const prompt = `15-second ASMR business video: Adorable ${animalType} executing "${strategicIntent}" through "${creativeDirection}". ${spec.ratio} aspect ratio, professional lighting, whispered business narration, tiny office props, Queensland SME focus.`;
+        const prompt = `10-second ASMR business video: Adorable ${animalType} executing "${strategicIntent}" through "${creativeDirection}". ${spec.ratio} aspect ratio, professional lighting, whispered business narration, tiny office props, Queensland SME focus.`;
         
         console.log(`🎬 Art Director generating custom ${animalType} video: ${prompt.substring(0, 100)}...`);
         
@@ -168,31 +174,52 @@ export class VideoService {
         let generationError = null;
         
         try {
-          if (process.env.SEEDANCE_API_KEY) {
-            console.log(`🚀 Calling Seedance API for real video generation...`);
+          if (process.env.REPLICATE_API_TOKEN) {
+            console.log(`🚀 Calling Replicate Seedance API for real video generation...`);
             
-            const seedanceResponse = await axios.post('https://pollo.ai/api/platform/generation/bytedance/seedance', {
-              input: { 
-                prompt: prompt, 
-                resolution: "480p", 
-                duration: 15,
-                aspect_ratio: spec.ratio
-              }
-            }, { 
-              headers: { 
-                'x-api-key': process.env.SEEDANCE_API_KEY, 
-                'Content-Type': 'application/json' 
+            const prediction = await replicate.predictions.create({
+              model: SEEDANCE_MODEL,
+              input: {
+                prompt: prompt,
+                duration: 10, // Changed from 15 to 10 (valid values: 5, 10)
+                resolution: "480p",
+                aspect_ratio: spec.ratio,
+                fps: 24
               },
-              timeout: 30000 // 30 second timeout
+              webhook: `${process.env.BASE_URL || 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'}/api/seedance-webhook`,
+              webhook_events_filter: ["completed"]
             });
             
-            console.log(seedanceResponse.data);
+            console.log('Replicate prediction created:', prediction);
             
-            if (seedanceResponse.data && seedanceResponse.data.videoUrl) {
-              seedanceVideoUrl = seedanceResponse.data.videoUrl;
-              console.log(`✅ Seedance API success: ${seedanceVideoUrl.substring(0, 50)}...`);
-            } else {
-              console.log(`⚠️ Seedance API response missing videoUrl:`, seedanceResponse.data);
+            // For real-time generation, we can poll for completion
+            if (prediction.id) {
+              console.log(`⏳ Prediction ${prediction.id} started, polling for completion...`);
+              
+              // Poll for completion (simplified version)
+              let attempts = 0;
+              const maxAttempts = 30; // 30 seconds max wait
+              
+              while (attempts < maxAttempts) {
+                const status = await replicate.predictions.get(prediction.id);
+                console.log(`Attempt ${attempts + 1}: Status ${status.status}`);
+                
+                if (status.status === 'succeeded' && status.output) {
+                  seedanceVideoUrl = status.output;
+                  console.log(`✅ Seedance generation succeeded: ${seedanceVideoUrl.substring(0, 50)}...`);
+                  break;
+                } else if (status.status === 'failed') {
+                  console.log(`❌ Seedance generation failed:`, status.error);
+                  break;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+                attempts++;
+              }
+              
+              if (attempts >= maxAttempts) {
+                console.log(`⏰ Seedance generation timeout after ${maxAttempts} seconds`);
+              }
             }
           }
         } catch (apiError) {
@@ -217,7 +244,7 @@ export class VideoService {
           width: spec.width,
           height: spec.height,
           aspectRatio: spec.ratio,
-          duration: 15,
+          duration: 10,
           customGenerated: true,
           artDirectorPreview: !seedanceVideoUrl, // False if real video generated
           previewMode: !seedanceVideoUrl, // False if real video available
@@ -272,7 +299,7 @@ export class VideoService {
         seedanceUrl: generatedVideo.seedanceUrl, // Future production URL
         title: generatedVideo.title,
         description: generatedVideo.description,
-        duration: 15, // 15 seconds exactly
+        duration: 10, // 10 seconds exactly
         quality: settings.resolution,
         format: 'mp4',
         aspectRatio: generatedVideo.aspectRatio,
@@ -305,7 +332,7 @@ export class VideoService {
         url: emergencyVideo.url,
         title: emergencyVideo.title,
         description: emergencyVideo.description,
-        duration: 15, // 15 seconds exactly
+        duration: 10, // 10 seconds exactly
         quality: '1080p',
         format: 'mp4',
         aspectRatio: emergencyVideo.aspectRatio,

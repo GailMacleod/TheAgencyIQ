@@ -897,6 +897,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Seedance webhook endpoint for video generation completion
+  app.post('/api/seedance-webhook', async (req, res) => {
+    try {
+      const { id, status, output, error } = req.body;
+      console.log(`🎬 Seedance webhook received: ${id} - ${status}`);
+      
+      // Verify webhook signature with Seedance secret
+      const signature = req.headers['x-seedance-signature'];
+      const expectedSignature = 'whsec_JfpT2zLgNoteGnCFo4hmgXvYsPMr7J8K';
+      
+      if (signature !== expectedSignature) {
+        console.log(`❌ Invalid webhook signature: ${signature}`);
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+      
+      if (status === 'succeeded' && output) {
+        console.log(`✅ Seedance video generation completed: ${output.substring(0, 50)}...`);
+        // Store the video URL for retrieval (in production, save to database)
+        // For now, just log the successful generation
+      } else if (status === 'failed') {
+        console.log(`❌ Seedance video generation failed: ${error}`);
+      }
+      
+      res.status(200).json({ received: true });
+    } catch (error) {
+      console.error('Seedance webhook processing error:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
+    }
+  });
+
   // Video preview endpoint for Art Director generated content
   app.get('/video-preview/:videoId', async (req, res) => {
     try {
