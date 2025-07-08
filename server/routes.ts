@@ -7476,18 +7476,30 @@ export function addNotificationEndpoints(app: any) {
   });
 
   // Proxy video content for CORS compatibility
-  app.get('/api/video/proxy/:videoId', async (req, res) => {
+  app.post('/api/video/proxy', async (req, res) => {
     try {
-      const { videoId } = req.params;
-      const { VideoService } = await import('./videoService.js');
+      const { videoUrl } = req.body;
       
-      const result = await VideoService.proxyVideo(videoId);
-      if (result.success) {
-        res.set(result.headers);
-        res.redirect(result.url);
-      } else {
-        res.status(404).json({ error: 'Video not found' });
+      if (!videoUrl) {
+        return res.status(400).json({ error: 'Video URL required' });
       }
+
+      // Set CORS headers
+      res.set({
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'video/mp4'
+      });
+
+      // Stream the video directly
+      const axios = (await import('axios')).default;
+      const response = await axios.get(videoUrl, {
+        responseType: 'stream',
+        timeout: 30000
+      });
+
+      response.data.pipe(res);
     } catch (error) {
       console.error('Video proxy failed:', error);
       res.status(500).json({ error: 'Video proxy failed' });

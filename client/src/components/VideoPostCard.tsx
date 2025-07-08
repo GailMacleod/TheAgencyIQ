@@ -371,8 +371,10 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             autoPlay
                             muted
                             loop
+                            controls
                             className="w-full h-48 object-cover"
                             onError={() => setError('Video playback failed')}
+                            crossOrigin="anonymous"
                           >
                             <source src={videoData.url} type="video/mp4" />
                             Your browser does not support video playback.
