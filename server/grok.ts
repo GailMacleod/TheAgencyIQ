@@ -505,6 +505,12 @@ export async function getAIResponse(query: string, context?: string, brandPurpos
       apiKey: process.env.XAI_API_KEY 
     });
 
+    // Handle simple contact questions directly without AI processing
+    const lowerQuery = query.toLowerCase();
+    if (lowerQuery.includes('contact') || lowerQuery.includes('support') || lowerQuery.includes('help') || lowerQuery.includes('reach')) {
+      return getContextualFallback(query, brandPurposeData);
+    }
+
     // Analyze query for intelligent contextual response
     const analysisPrompt = `You are an expert business strategist assistant for TheAgencyIQ, a Queensland SME social media automation platform. 
 
@@ -559,6 +565,19 @@ Respond with intelligent, valuable insights that demonstrate deep understanding 
 // Intelligent fallback that analyzes query context
 function getContextualFallback(query: string, brandPurposeData?: any): string {
   const lowerQuery = query.toLowerCase();
+  
+  // Contact and support questions - keep simple and direct
+  if (lowerQuery.includes('contact') || lowerQuery.includes('support') || lowerQuery.includes('help') || lowerQuery.includes('reach')) {
+    return `You can contact TheAgencyIQ support at:
+
+📧 **Email**: support@theagencyiq.ai
+💬 **Live Chat**: Right here in this chat widget
+🌐 **Website**: theagencyiq.ai
+
+Our team typically responds within 2-4 hours during business hours (AEST).
+
+What specific question can I help you with right now?`;
+  }
   
   // Strategy and planning questions
   if (lowerQuery.includes('strategy') || lowerQuery.includes('plan') || lowerQuery.includes('approach')) {
