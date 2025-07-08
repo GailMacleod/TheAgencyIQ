@@ -127,7 +127,7 @@ export default function CalendarCard({ date, posts, events = [] }: CalendarCardP
                   <Clock className="w-3 h-3 text-gray-400" />
                   <span className="text-xs text-gray-600 font-medium">{time}</span>
                 </div>
-                <div className="flex flex-wrap gap-1">
+                <div className="space-y-2">
                   {timePosts.map((post) => {
                     const IconComponent = platformIcons[post.platform as keyof typeof platformIcons];
                     const colorClass = platformColors[post.platform as keyof typeof platformColors];
@@ -136,19 +136,23 @@ export default function CalendarCard({ date, posts, events = [] }: CalendarCardP
                       <div
                         key={post.id}
                         className={`
-                          flex items-center space-x-1 px-2 py-1 rounded-md text-xs
+                          px-3 py-2 rounded-md text-xs w-full
                           bg-white border shadow-sm hover:shadow-md transition-shadow
                           ${post.status === 'published' ? 'bg-green-50 border-green-200' : ''}
                           ${post.status === 'failed' ? 'bg-red-50 border-red-200' : ''}
                         `}
-                        title={post.content.substring(0, 100) + '...'}
                       >
-                        {IconComponent && (
-                          <IconComponent className={`w-3 h-3 ${colorClass}`} />
-                        )}
-                        <span className="capitalize text-gray-700 font-medium">
-                          {post.platform}
-                        </span>
+                        <div className="flex items-center space-x-1 mb-2">
+                          {IconComponent && (
+                            <IconComponent className={`w-3 h-3 ${colorClass}`} />
+                          )}
+                          <span className="capitalize text-gray-700 font-medium">
+                            {post.platform}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
+                          {post.content}
+                        </div>
                         {post.status === 'published' && (
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         )}
