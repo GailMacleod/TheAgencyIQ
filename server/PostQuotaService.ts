@@ -680,13 +680,7 @@ export class PostQuotaService {
     });
   }
 
-      console.log(`🔄 Quota reset for user ${userId}: ${defaultQuota} posts`);
-      return true;
-    } catch (error) {
-      console.error('Error resetting quota:', error);
-      return false;
-    }
-  }
+
 
   /**
    * Validate quota integrity
