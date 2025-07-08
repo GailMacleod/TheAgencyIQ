@@ -391,15 +391,33 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
     <Card className="w-full">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">
-            {post.platform} Post
-          </CardTitle>
-          <Badge variant={post.status === 'approved' ? 'default' : 'secondary'}>
-            {post.status}
-          </Badge>
-          <Badge variant="outline" className="bg-green-50 text-green-700">
-            🎬 Video Ready
-          </Badge>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-sm font-medium">
+              {post.platform} Post
+            </CardTitle>
+            {/* Scheduled Date and Time */}
+            {post.scheduledFor && (
+              <div className="text-xs text-gray-600">
+                {new Date(post.scheduledFor).toLocaleDateString('en-AU', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short'
+                })} at {new Date(post.scheduledFor).toLocaleTimeString('en-AU', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true
+                })}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant={post.status === 'approved' ? 'default' : 'secondary'}>
+              {post.status}
+            </Badge>
+            <Badge variant="outline" className="bg-green-50 text-green-700">
+              🎬 Video Ready
+            </Badge>
+          </div>
         </div>
         <CardDescription className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
           {post.content}
@@ -409,18 +427,18 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
         </div>
         
         {/* Video Generation Guide */}
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+        <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
             🤖 Video Generation Guide
           </h4>
-          <ul className="text-sm text-blue-700 space-y-1">
+          <ul className="text-sm text-gray-700 space-y-1">
             <li>• <strong>One video per post:</strong> You can generate one video per social media post</li>
             <li>• <strong>Three options:</strong> Choose from two AI prompts or create your own custom prompt</li>
             <li>• <strong>10-second duration:</strong> All videos are automatically capped at 10 seconds for optimal engagement</li>
             <li>• <strong>Platform optimized:</strong> Videos are automatically formatted for {post.platform}</li>
             <li>• <strong>Art Director system:</strong> AI creates viral-worthy cute animal videos with business messaging</li>
           </ul>
-          <div className="mt-2 p-2 bg-blue-100 rounded text-xs text-blue-600">
+          <div className="mt-2 p-2 bg-purple-50 rounded text-xs text-purple-700">
             <strong>Tip:</strong> Click "Generate Video" to see your options and create scroll-stopping content!
           </div>
         </div>
@@ -485,16 +503,16 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                   {prompts.length > 0 && !selectedPrompt && !isRendering && !videoData && (
                     <div className="space-y-4">
                       {/* Detailed Video Options Guide */}
-                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                        <h4 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                      <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                        <h4 className="font-semibold text-purple-800 mb-2 flex items-center gap-2">
                           🎬 Your Video Generation Options
                         </h4>
-                        <div className="text-sm text-amber-700 space-y-2">
+                        <div className="text-sm text-purple-700 space-y-2">
                           <p><strong>Option 1 & 2:</strong> Choose from two AI-generated prompts below</p>
                           <p><strong>Option 3:</strong> Create your own custom prompt by selecting a prompt and editing it</p>
                           <p><strong>Remember:</strong> One video per post, 10-second duration, optimized for {post.platform}</p>
                         </div>
-                        <div className="mt-2 p-2 bg-amber-100 rounded text-xs text-amber-600">
+                        <div className="mt-2 p-2 bg-purple-100 rounded text-xs text-purple-600">
                           <strong>Art Director:</strong> Creates viral cute animal videos with your business messaging
                         </div>
                       </div>
@@ -532,9 +550,9 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                   {selectedPrompt && !isRendering && !videoData && (
                     <div className="space-y-4">
                       {/* Custom Prompt Guide */}
-                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <h4 className="font-semibold text-green-800 mb-1 text-sm">✏️ Custom Prompt Creation</h4>
-                        <p className="text-xs text-green-700">
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <h4 className="font-semibold text-gray-800 mb-1 text-sm">✏️ Custom Prompt Creation</h4>
+                        <p className="text-xs text-gray-700">
                           Edit the prompt below to create your own custom video. The Art Director will interpret your changes 
                           and create a unique 10-second video optimized for {post.platform}.
                         </p>
