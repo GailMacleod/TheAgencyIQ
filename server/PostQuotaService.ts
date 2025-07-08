@@ -37,6 +37,62 @@ export class PostQuotaService {
   };
 
   /**
+   * CONCURRENT OPERATION LOCKS - Prevent post creep during timing gaps
+   */
+  private static userLocks: Map<number, Promise<any>> = new Map();
+  private static operationQueue: Map<number, Array<() => Promise<any>>> = new Map();
+  
+  /**
+   * Lock mechanism to prevent concurrent operations per userId
+   */
+  private static async withUserLock<T>(userId: number, operation: () => Promise<T>): Promise<T> {
+    // If user has active lock, queue the operation
+    if (this.userLocks.has(userId)) {
+      console.log(`🔒 User ${userId} lock active - queueing operation`);
+      return new Promise((resolve, reject) => {
+        if (!this.operationQueue.has(userId)) {
+          this.operationQueue.set(userId, []);
+        }
+        this.operationQueue.get(userId)!.push(async () => {
+          try {
+            const result = await operation();
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+    }
+
+    // Create lock for this user
+    const lockPromise = (async () => {
+      try {
+        console.log(`🔒 Acquiring lock for user ${userId}`);
+        const result = await operation();
+        
+        // Process queued operations sequentially
+        const queue = this.operationQueue.get(userId);
+        if (queue && queue.length > 0) {
+          console.log(`📋 Processing ${queue.length} queued operations for user ${userId}`);
+          for (const queuedOperation of queue) {
+            await queuedOperation();
+          }
+          this.operationQueue.delete(userId);
+        }
+        
+        return result;
+      } finally {
+        // Release lock
+        this.userLocks.delete(userId);
+        console.log(`🔓 Released lock for user ${userId}`);
+      }
+    })();
+
+    this.userLocks.set(userId, lockPromise);
+    return lockPromise;
+  }
+
+  /**
    * DYNAMIC 30-DAY CYCLE MANAGEMENT
    * Each customer gets individual 30-day cycle from their subscription date
    */
@@ -211,133 +267,248 @@ export class PostQuotaService {
    * Approve a post (status change only) - NO QUOTA DEDUCTION
    */
   static async approvePost(userId: number, postId: number): Promise<boolean> {
-    try {
-      // Verify post exists and belongs to user
-      const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
-      if (post.length === 0 || post[0].userId !== userId) {
-        console.warn(`Post ${postId} not found or doesn't belong to user ${userId}`);
+    return this.withUserLock(userId, async () => {
+      console.log(`🔒 ApprovePost operation starting for user ${userId}, post ${postId}`);
+      
+      try {
+        // Verify post exists and belongs to user
+        const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
+        if (post.length === 0 || post[0].userId !== userId) {
+          console.warn(`Post ${postId} not found or doesn't belong to user ${userId}`);
+          return false;
+        }
+        
+        // Check if user has quota remaining for approval
+        const status = await this.getQuotaStatus(userId);
+        if (!status || status.remainingPosts <= 0 || !status.subscriptionActive) {
+          console.warn(`User ${userId} cannot approve - no quota remaining or inactive subscription`);
+          return false;
+        }
+        
+        // Update post status to approved (no quota deduction yet)
+        await db.update(posts)
+          .set({ status: 'approved' } as any)
+          .where(eq(posts.id, postId));
+        
+        // Log the approval
+        await this.logQuotaOperation(userId, postId, 'approval', 
+          `Post approved for future posting. No quota deduction yet. Remaining: ${status.remainingPosts}/${status.totalPosts}`);
+        
+        console.log(`✅ Post ${postId} approved for user ${userId} - quota will be deducted after successful posting`);
+        return true;
+        
+      } catch (error) {
+        console.error('Error approving post:', error);
         return false;
       }
-      
-      // Check if user has quota remaining for approval
-      const status = await this.getQuotaStatus(userId);
-      if (!status || status.remainingPosts <= 0 || !status.subscriptionActive) {
-        console.warn(`User ${userId} cannot approve - no quota remaining or inactive subscription`);
-        return false;
-      }
-      
-      // Update post status to approved (no quota deduction yet)
-      await db.update(posts)
-        .set({ status: 'approved' } as any)
-        .where(eq(posts.id, postId));
-      
-      // Log the approval
-      await this.logQuotaOperation(userId, postId, 'approval', 
-        `Post approved for future posting. No quota deduction yet. Remaining: ${status.remainingPosts}/${status.totalPosts}`);
-      
-      console.log(`✅ Post ${postId} approved for user ${userId} - quota will be deducted after successful posting`);
-      return true;
-      
-    } catch (error) {
-      console.error('Error approving post:', error);
-      return false;
-    }
+    });
   }
 
   /**
    * Deduct quota ONLY after successful posting - called by platform publishing functions
    * Integrates with postLedger for accurate 30-day rolling quota tracking
    */
-  static async postApproved(userId: number, postId: number): Promise<boolean> {
-    try {
-      // Verify post exists and belongs to user (can be approved, published, or draft being published)
-      const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
-      if (post.length === 0 || post[0].userId !== userId) {
-        console.warn(`Post ${postId} not eligible for quota deduction - doesn't belong to user ${userId}`);
-        return false;
-      }
+  /**
+   * ENHANCED: Quota deduction with rollback capability - Prevents post creep
+   * Uses locking mechanism to prevent concurrent operations
+   */
+  static async postApproved(userId: number, postId: number, publishingSuccess: boolean = true): Promise<boolean> {
+    return this.withUserLock(userId, async () => {
+      console.log(`🔒 PostApproved operation starting for user ${userId}, post ${postId}, success: ${publishingSuccess}`);
       
-      // Allow quota deduction for approved or published posts
-      const validStatuses = ['approved', 'published'];
-      if (!validStatuses.includes(post[0].status)) {
-        console.warn(`Post ${postId} not eligible for quota deduction - status '${post[0].status}' not in [${validStatuses.join(', ')}]`);
-        return false;
-      }
-      
-      // Get current quota status
-      const status = await this.getQuotaStatus(userId);
-      if (!status || status.remainingPosts <= 0) {
-        console.warn(`User ${userId} has no remaining quota for post ${postId}`);
-        return false;
-      }
+      // Store rollback data in case we need to undo changes
+      let rollbackData: {
+        ledgerUsedPosts?: number;
+        userRemainingPosts?: number;
+        postStatus?: string;
+        postPublishedAt?: Date | null;
+        ledgerCreated?: boolean;
+      } = {};
 
-      // Get user for postLedger integration
+      try {
+        // Verify post exists and belongs to user
+        const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
+        if (post.length === 0 || post[0].userId !== userId) {
+          console.warn(`Post ${postId} not eligible for quota deduction - doesn't belong to user ${userId}`);
+          return false;
+        }
+        
+        // Store original post state for rollback
+        rollbackData.postStatus = post[0].status;
+        rollbackData.postPublishedAt = post[0].publishedAt;
+        
+        // Allow quota deduction for approved or published posts
+        const validStatuses = ['approved', 'published'];
+        if (!validStatuses.includes(post[0].status)) {
+          console.warn(`Post ${postId} not eligible for quota deduction - status '${post[0].status}' not in [${validStatuses.join(', ')}]`);
+          return false;
+        }
+        
+        // Get current quota status
+        const status = await this.getQuotaStatus(userId);
+        if (!status || status.remainingPosts <= 0) {
+          console.warn(`User ${userId} has no remaining quota for post ${postId}`);
+          return false;
+        }
+
+        // Get user for postLedger integration
+        const user = await storage.getUser(userId);
+        if (!user) return false;
+
+        const userIdString = user.userId || user.id.toString();
+        
+        // Store current user remaining posts for rollback
+        rollbackData.userRemainingPosts = status.remainingPosts;
+        
+        // Handle publishing failure - rollback only
+        if (!publishingSuccess) {
+          console.warn(`🔄 Publishing failed for post ${postId}, performing rollback`);
+          await this.rollbackPostQuota(userId, postId, rollbackData);
+          return false;
+        }
+        
+        // Update postLedger table for accurate 30-day tracking
+        const ledgerEntry = await db.select()
+          .from(postLedger)
+          .where(eq(postLedger.userId, userIdString))
+          .limit(1);
+
+        if (ledgerEntry.length > 0) {
+          // Store original used posts count for rollback
+          rollbackData.ledgerUsedPosts = ledgerEntry[0].usedPosts;
+          
+          // Update existing postLedger entry
+          await db.update(postLedger)
+            .set({
+              usedPosts: sql`${postLedger.usedPosts} + 1`,
+              lastPosted: new Date(),
+              updatedAt: new Date()
+            })
+            .where(eq(postLedger.userId, userIdString));
+        } else {
+          // Mark that we're creating a new ledger entry
+          rollbackData.ledgerCreated = true;
+          
+          // Create new postLedger entry if it doesn't exist
+          const planQuota = this.PLAN_QUOTAS[status.subscriptionPlan as keyof typeof this.PLAN_QUOTAS] || this.PLAN_QUOTAS.starter;
+          await db.insert(postLedger).values({
+            userId: userIdString,
+            subscriptionTier: status.subscriptionPlan === 'professional' ? 'pro' : status.subscriptionPlan,
+            periodStart: new Date(),
+            quota: planQuota,
+            usedPosts: 1,
+            lastPosted: new Date()
+          });
+        }
+        
+        // Also update the users table for backward compatibility
+        await db.update(users)
+          .set({
+            remainingPosts: sql`remaining_posts - 1`
+          } as any)
+          .where(
+            and(
+              eq(users.id, userId),
+              sql`${users.remainingPosts} > 0`
+            )
+          );
+        
+        // Update post status to published
+        await db.update(posts)
+          .set({ 
+            status: 'published',
+            publishedAt: new Date()
+          })
+          .where(eq(posts.id, postId));
+        
+        // Clear cache after quota change
+        this.clearUserCache(userId);
+        
+        console.log(`📉 Quota deducted after successful posting for user ${userId}. Post ID: ${postId}, Remaining: ${status.remainingPosts - 1}`);
+        
+        // Log to debug file for tracking
+        await this.logQuotaOperation(userId, postId, 'post_deduction', 
+          `Post successfully posted and quota deducted. Remaining: ${status.remainingPosts - 1}/${status.totalPosts}`);
+        
+        return true;
+      } catch (error) {
+        console.error(`💥 Error in postApproved for user ${userId}, post ${postId}:`, error);
+        
+        // Perform rollback on any error
+        try {
+          await this.rollbackPostQuota(userId, postId, rollbackData);
+          console.log(`🔄 Rollback completed for user ${userId}, post ${postId}`);
+        } catch (rollbackError) {
+          console.error(`💥 CRITICAL: Rollback failed for user ${userId}, post ${postId}:`, rollbackError);
+          // Log critical rollback failure
+          await this.logQuotaOperation(userId, postId, 'rollback_failure', 
+            `Critical rollback failure: ${rollbackError.message}`);
+        }
+        
+        return false;
+      }
+    });
+  }
+
+  /**
+   * Rollback quota changes when publishing fails
+   */
+  private static async rollbackPostQuota(userId: number, postId: number, rollbackData: any): Promise<void> {
+    console.log(`🔄 Starting rollback for user ${userId}, post ${postId}`);
+    
+    try {
       const user = await storage.getUser(userId);
-      if (!user) return false;
+      if (!user) return;
 
       const userIdString = user.userId || user.id.toString();
       
-      // Update postLedger table for accurate 30-day tracking
-      const ledgerEntry = await db.select()
-        .from(postLedger)
-        .where(eq(postLedger.userId, userIdString))
-        .limit(1);
-
-      if (ledgerEntry.length > 0) {
-        // Update existing postLedger entry
+      // Rollback postLedger changes
+      if (rollbackData.ledgerCreated) {
+        // Delete the ledger entry we created
+        await db.delete(postLedger).where(eq(postLedger.userId, userIdString));
+        console.log(`🔄 Deleted created ledger entry for user ${userId}`);
+      } else if (rollbackData.ledgerUsedPosts !== undefined) {
+        // Restore original used posts count
         await db.update(postLedger)
           .set({
-            usedPosts: sql`${postLedger.usedPosts} + 1`,
-            lastPosted: new Date(),
+            usedPosts: rollbackData.ledgerUsedPosts,
             updatedAt: new Date()
           })
           .where(eq(postLedger.userId, userIdString));
-      } else {
-        // Create new postLedger entry if it doesn't exist
-        const planQuota = this.PLAN_QUOTAS[status.subscriptionPlan as keyof typeof this.PLAN_QUOTAS] || this.PLAN_QUOTAS.starter;
-        await db.insert(postLedger).values({
-          userId: userIdString,
-          subscriptionTier: status.subscriptionPlan === 'professional' ? 'pro' : status.subscriptionPlan,
-          periodStart: new Date(),
-          quota: planQuota,
-          usedPosts: 1,
-          lastPosted: new Date()
-        });
+        console.log(`🔄 Restored ledger used posts to ${rollbackData.ledgerUsedPosts} for user ${userId}`);
       }
       
-      // Also update the users table for backward compatibility
-      await db.update(users)
-        .set({
-          remainingPosts: sql`remaining_posts - 1`
-        } as any)
-        .where(
-          and(
-            eq(users.id, userId),
-            sql`${users.remainingPosts} > 0`
-          )
-        );
+      // Rollback users table quota
+      if (rollbackData.userRemainingPosts !== undefined) {
+        await db.update(users)
+          .set({
+            remainingPosts: rollbackData.userRemainingPosts
+          } as any)
+          .where(eq(users.id, userId));
+        console.log(`🔄 Restored user remaining posts to ${rollbackData.userRemainingPosts} for user ${userId}`);
+      }
       
-      // Update post status to published
-      await db.update(posts)
-        .set({ 
-          status: 'published',
-          publishedAt: new Date()
-        })
-        .where(eq(posts.id, postId));
+      // Rollback post status
+      if (rollbackData.postStatus) {
+        await db.update(posts)
+          .set({
+            status: rollbackData.postStatus,
+            publishedAt: rollbackData.postPublishedAt
+          })
+          .where(eq(posts.id, postId));
+        console.log(`🔄 Restored post status to '${rollbackData.postStatus}' for post ${postId}`);
+      }
       
-      // Clear cache after quota change
+      // Clear cache after rollback
       this.clearUserCache(userId);
       
-      console.log(`📉 Quota deducted after successful posting for user ${userId}. Post ID: ${postId}, Remaining: ${status.remainingPosts - 1}`);
-      
-      // Log to debug file for tracking
-      await this.logQuotaOperation(userId, postId, 'post_deduction', 
-        `Post successfully posted and quota deducted. Remaining: ${status.remainingPosts - 1}/${status.totalPosts}`);
-      
-      return true;
+      // Log rollback operation
+      await this.logQuotaOperation(userId, postId, 'rollback_success', 
+        `Successfully rolled back quota changes due to publishing failure`);
+        
     } catch (error) {
-      console.error('Error deducting post from quota after posting:', error);
-      return false;
+      console.error(`💥 Error during rollback for user ${userId}, post ${postId}:`, error);
+      throw error;
     }
   }
 
@@ -430,52 +601,84 @@ export class PostQuotaService {
    * Upgrade user's plan and adjust quota
    */
   static async upgradePlan(userId: number, newPlan: string): Promise<boolean> {
-    try {
-      const newQuota = this.PLAN_QUOTAS[newPlan as keyof typeof this.PLAN_QUOTAS];
-      if (!newQuota) {
-        console.error(`Invalid plan: ${newPlan}`);
+    return this.withUserLock(userId, async () => {
+      console.log(`🔒 UpgradePlan operation starting for user ${userId}, plan ${newPlan}`);
+      
+      try {
+        const newQuota = this.PLAN_QUOTAS[newPlan as keyof typeof this.PLAN_QUOTAS];
+        if (!newQuota) {
+          console.error(`Invalid plan: ${newPlan}`);
+          return false;
+        }
+
+        const currentStatus = await this.getQuotaStatus(userId);
+        if (!currentStatus) return false;
+
+        // Add the difference to remaining posts
+        const quotaDifference = newQuota - (currentStatus.totalPosts || 0);
+        const newRemaining = Math.max(0, currentStatus.remainingPosts + quotaDifference);
+
+        await db.update(users)
+          .set({
+            subscriptionPlan: newPlan,
+            totalPosts: newQuota,
+            remainingPosts: newRemaining
+          })
+          .where(eq(users.id, userId));
+
+        // Clear cache after upgrade
+        this.clearUserCache(userId);
+
+        console.log(`✅ Plan upgraded for user ${userId}: ${newPlan} (${newQuota} total posts)`);
+        
+        // Log the upgrade
+        await this.logQuotaOperation(userId, 0, 'plan_upgrade', 
+          `Plan upgraded to ${newPlan}. New quota: ${newQuota}, Remaining: ${newRemaining}`);
+        
+        return true;
+      } catch (error) {
+        console.error('Error upgrading plan:', error);
         return false;
       }
-
-      const currentStatus = await this.getQuotaStatus(userId);
-      if (!currentStatus) return false;
-
-      // Add the difference to remaining posts
-      const quotaDifference = newQuota - (currentStatus.totalPosts || 0);
-      const newRemaining = Math.max(0, currentStatus.remainingPosts + quotaDifference);
-
-      await db.update(users)
-        .set({
-          subscriptionPlan: newPlan,
-          totalPosts: newQuota,
-          remainingPosts: newRemaining
-        })
-        .where(eq(users.id, userId));
-
-      console.log(`✅ Plan upgraded for user ${userId}: ${newPlan} (${newQuota} total posts)`);
-      return true;
-    } catch (error) {
-      console.error('Error upgrading plan:', error);
-      return false;
-    }
+    });
   }
 
   /**
    * Reset quota to plan default (admin function)
    */
   static async resetQuota(userId: number): Promise<boolean> {
-    try {
-      const status = await this.getQuotaStatus(userId);
-      if (!status) return false;
+    return this.withUserLock(userId, async () => {
+      console.log(`🔒 ResetQuota operation starting for user ${userId}`);
+      
+      try {
+        const status = await this.getQuotaStatus(userId);
+        if (!status) return false;
 
-      const defaultQuota = this.PLAN_QUOTAS[status.subscriptionPlan as keyof typeof this.PLAN_QUOTAS] || this.PLAN_QUOTAS.starter;
+        const defaultQuota = this.PLAN_QUOTAS[status.subscriptionPlan as keyof typeof this.PLAN_QUOTAS] || this.PLAN_QUOTAS.starter;
 
-      await db.update(users)
-        .set({
-          remainingPosts: defaultQuota,
-          totalPosts: defaultQuota
-        })
-        .where(eq(users.id, userId));
+        await db.update(users)
+          .set({
+            remainingPosts: defaultQuota,
+            totalPosts: defaultQuota
+          })
+          .where(eq(users.id, userId));
+
+        // Clear cache after reset
+        this.clearUserCache(userId);
+
+        console.log(`✅ Quota reset for user ${userId}: ${defaultQuota} posts restored`);
+        
+        // Log the reset
+        await this.logQuotaOperation(userId, 0, 'quota_reset', 
+          `Quota reset to plan default: ${defaultQuota} posts`);
+        
+        return true;
+      } catch (error) {
+        console.error('Error resetting quota:', error);
+        return false;
+      }
+    });
+  }
 
       console.log(`🔄 Quota reset for user ${userId}: ${defaultQuota} posts`);
       return true;
