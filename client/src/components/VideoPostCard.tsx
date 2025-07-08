@@ -371,7 +371,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             key={`video-${videoData.videoId}-${Date.now()}`}
                             src={videoData.url}
                             muted
-                            autoPlay
+                            controls
                             playsInline
                             preload="metadata"
                             className="w-full aspect-video object-contain"
@@ -412,15 +412,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                                 setError('Video playback failed');
                               }
                             }}
-                            // Accessibility fallback
-                            onCanPlayThrough={() => {
-                              const video = document.querySelector(`video[src="${videoData.url}"]`) as HTMLVideoElement;
-                              if (video && video.paused) {
-                                // If autoplay fails, show manual controls
-                                video.controls = true;
-                                console.log('Autoplay blocked - manual controls enabled for accessibility');
-                              }
-                            }}
+
                           />
                           
                           {/* Video Loading Indicator */}
@@ -433,12 +425,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             </div>
                           )}
                           
-                          {/* Manual play fallback for accessibility */}
-                          {!videoData.autoplay && (
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              <PlayIcon className="w-12 h-12 text-white opacity-75" />
-                            </div>
-                          )}
+
                         </div>
                         
                         <div className="flex justify-center gap-2 mt-2">
