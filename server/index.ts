@@ -2,7 +2,6 @@ import express from 'express';
 import session from 'express-session';
 import { createServer } from 'http';
 import path from 'path';
-import fs from 'fs';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -507,63 +506,35 @@ async function startServer() {
     next();
   });
 
-  // Setup static file serving after API routes - NO VITE ALLOWED
+  // Setup static file serving after API routes
   try {
-    console.log('⚡ Setting up static file serving (NO VITE)...');
-    
-    // Check if built files exist, otherwise serve from client directory
-    const distPath = path.join(process.cwd(), 'dist/public');
-    const clientPath = path.join(process.cwd(), 'client');
-    
-    // Serve built files if they exist, otherwise serve client files directly
-    if (fs.existsSync(distPath)) {
-      console.log('📦 Using built files from dist/public');
-      app.use(express.static(distPath));
+    // Production static file serving
+    if (process.env.NODE_ENV === 'production') {
+      console.log('⚡ Setting up production static files...');
+      // Serve built frontend assets
+      app.use(express.static(path.join(process.cwd(), 'dist/public')));
+      // Serve attached assets in production
       app.use('/attached_assets', express.static('attached_assets'));
       
-      // Root route serves built index.html
+      // Root route for production
       app.get('/', (req, res) => {
-        res.sendFile(path.join(distPath, 'index.html'));
+        res.sendFile(path.join(process.cwd(), 'dist/index.html'));
       });
       
       // Serve React app for all non-API routes
       app.get('*', (req, res) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.sendFile(path.join(distPath, 'index.html'));
+          res.sendFile(path.join(process.cwd(), 'dist/index.html'));
         }
       });
+      console.log('✅ Production static files setup complete');
     } else {
-      console.log('📁 Using client files directly (development mode)');
-      // Serve a simple HTML file with message
-      app.get('/', (req, res) => {
-        res.send(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>TheAgencyIQ</title>
-            <style>
-              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-              h1 { color: #6B46C1; }
-              p { color: #6B7280; }
-              .status { background: #F3F4F6; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            </style>
-          </head>
-          <body>
-            <h1>TheAgencyIQ Server Running</h1>
-            <div class="status">
-              <p><strong>Status:</strong> Server operational without Vite</p>
-              <p><strong>Port:</strong> 5000</p>
-              <p><strong>Build:</strong> No-Vite static serving</p>
-            </div>
-            <p>API endpoints are available at /api/*</p>
-            <p>OAuth platform connections at /public</p>
-          </body>
-          </html>
-        `);
-      });
+      console.log('⚡ Setting up development Vite...');
+      const { setupVite, serveStatic } = await import('./vite');
+      await setupVite(app, httpServer);
+      serveStatic(app);
+      console.log('✅ Vite setup complete');
     }
-    
-    console.log('✅ Static file serving setup complete (NO VITE)');
   } catch (error) {
     console.error('❌ Server setup error:', error);
     throw error;
