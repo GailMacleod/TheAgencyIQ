@@ -131,13 +131,13 @@ export class VideoService {
         },
         'Facebook': { 
           resolution: '1080p', 
-          aspectRatio: '16:9', 
+          aspectRatio: '1:1', 
           maxDuration: 240,
           maxSize: '10GB'
         },
         'LinkedIn': { 
           resolution: '1080p', 
-          aspectRatio: '16:9', 
+          aspectRatio: '1:1', 
           maxDuration: 600,
           maxSize: '5GB'
         },
@@ -156,8 +156,8 @@ export class VideoService {
         const videoSpecs = {
           Instagram: { width: 1080, height: 1920, ratio: '9:16' },
           YouTube: { width: 1920, height: 1080, ratio: '16:9' },
-          Facebook: { width: 1920, height: 1080, ratio: '16:9' },
-          LinkedIn: { width: 1920, height: 1080, ratio: '16:9' },
+          Facebook: { width: 1080, height: 1080, ratio: '1:1' },
+          LinkedIn: { width: 1080, height: 1080, ratio: '1:1' },
           X: { width: 1920, height: 1080, ratio: '16:9' }
         };
         
