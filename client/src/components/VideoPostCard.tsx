@@ -46,6 +46,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [renderingProgress, setRenderingProgress] = useState(0);
+  const [renderingTime, setRenderingTime] = useState(0);
   const [prompts, setPrompts] = useState<VideoPrompt[]>([]);
   const [selectedPrompt, setSelectedPrompt] = useState<VideoPrompt | null>(null);
   const [editedText, setEditedText] = useState('');
@@ -96,18 +97,27 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
     try {
       setIsRendering(true);
       setRenderingProgress(0);
+      setRenderingTime(0);
+      
+      // Start timer for rendering duration
+      const startTime = Date.now();
+      const timer = setInterval(() => {
+        setRenderingTime(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
       setError(null);
 
-      // Start progress animation
+      // Smooth progress animation with realistic timing
       const progressInterval = setInterval(() => {
         setRenderingProgress(prev => {
-          if (prev >= 90) {
+          if (prev >= 85) {
             clearInterval(progressInterval);
-            return prev;
+            return 85; // Stop at 85% until actual completion
           }
-          return prev + 10;
+          // Slower progress at the beginning, faster in middle
+          const increment = prev < 20 ? 2 : prev < 60 ? 4 : 3;
+          return Math.min(prev + increment, 85);
         });
-      }, 230); // 2.3s / 10 steps
+      }, 400);
 
       const response = await fetch('/api/video/render', {
         method: 'POST',
@@ -125,20 +135,24 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
 
       if (data.success) {
         setRenderingProgress(100);
+        clearInterval(timer);
         setVideoData(data);
         setHasGeneratedVideo(true);
         toast({
           title: "Video Ready!",
-          description: `1080p video generated successfully (${data.size})`
+          description: `1080p video generated in ${renderingTime}s (${data.size})`
         });
       } else {
         setError('Video rendering failed');
+        clearInterval(timer);
       }
     } catch (error) {
       console.error('Video rendering failed:', error);
       setError('Video rendering failed');
+      clearInterval(timer);
     } finally {
       setIsRendering(false);
+      clearInterval(progressInterval);
     }
   };
 
@@ -354,9 +368,10 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                       
                       <div className="space-y-2">
                         <Progress value={renderingProgress} className="w-full" />
-                        <p className="text-xs text-center text-gray-500">
-                          {renderingProgress}% complete
-                        </p>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>{renderingProgress}% complete</span>
+                          <span>{renderingTime}s elapsed</span>
+                        </div>
                       </div>
                     </div>
                   )}
