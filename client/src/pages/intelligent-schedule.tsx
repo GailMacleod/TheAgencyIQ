@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { format, addDays, startOfMonth, endOfMonth, isSameDay, isToday } from "date-fns";
@@ -121,19 +121,11 @@ function IntelligentSchedule() {
   // Video handling
   const handleVideoApproved = async (postId: number, videoData: any) => {
     try {
-      // Update post status to include video
-      await apiRequest(`/api/posts/${postId}`, {
-        method: 'PUT',
-        body: { 
-          videoUrl: videoData.url,
-          status: 'published'
-        }
-      });
-      
+      // Just refresh the posts query - the video approval is already handled by the backend
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
       toast({
         title: "Video Approved!",
-        description: "Video content has been posted successfully"
+        description: "Video and text combined into approved post. Ready to publish!"
       });
     } catch (error) {
       console.error('Video approval failed:', error);
