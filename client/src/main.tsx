@@ -1,6 +1,6 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import SimpleApp from './SimpleApp';
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./index.css";
+import "./index.js";
 
-const root = createRoot(document.getElementById('root')!);
-root.render(<SimpleApp />);
+createRoot(document.getElementById("root")!).render(<App />);

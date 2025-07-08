@@ -12,7 +12,7 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import AIWidget from "@/components/grok-widget";
-const agencyLogoPath = "/attached_assets/agency_logo_1749083054761.png";
+import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
 
 const signupSchema = z.object({
@@ -54,14 +54,14 @@ export default function Subscription() {
       name: "starter",
       price: "$19.99/month",
       posts: "12 posts (10 + 2 free)",
-      priceId: "price_1234567890starter", // Hardcoded for esbuild mode
+      priceId: import.meta.env.VITE_STRIPE_PRICE_ID_STARTER || "price_1234567890starter",
     },
     {
       id: "growth",
       name: "growth",
       price: "$41.99/month", 
       posts: "27 posts (25 + 2 free)",
-      priceId: "price_1234567890growth", // Hardcoded for esbuild mode
+      priceId: import.meta.env.VITE_STRIPE_PRICE_ID_GROWTH || "price_1234567890growth",
       popular: true,
     },
     {
@@ -69,7 +69,7 @@ export default function Subscription() {
       name: "professional",
       price: "$99.99/month",
       posts: "52 posts (50 + 2 free)",
-      priceId: "price_1234567890professional", // Hardcoded for esbuild mode
+      priceId: import.meta.env.VITE_STRIPE_PRICE_ID_PROFESSIONAL || "price_1234567890professional",
     },
   ];
 

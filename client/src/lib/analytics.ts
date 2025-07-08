@@ -1,6 +1,4 @@
-// Analytics module - esbuild mode (Vite-free)
-// All analytics functionality disabled to prevent import.meta errors
-
+// Define the gtag function globally
 declare global {
   interface Window {
     dataLayer: any[];
@@ -8,43 +6,72 @@ declare global {
   }
 }
 
-// Initialize Google Analytics - Disabled in esbuild mode
+// Initialize Google Analytics
 export const initGA = () => {
-  console.log('Google Analytics disabled in esbuild mode');
-  return;
+  const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+
+  if (!measurementId) {
+    console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
+    return;
+  }
+
+  // Add Google Analytics script to the head
+  const script1 = document.createElement('script');
+  script1.async = true;
+  script1.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+  document.head.appendChild(script1);
+
+  // Initialize gtag
+  const script2 = document.createElement('script');
+  script2.innerHTML = `
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '${measurementId}');
+  `;
+  document.head.appendChild(script2);
 };
 
-// Track page views - Disabled in esbuild mode
+// Track page views - useful for single-page applications
 export const trackPageView = (url: string) => {
-  console.log('Page view tracking disabled in esbuild mode:', url);
-  return;
+  if (typeof window === 'undefined' || !window.gtag) return;
+  
+  const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+  if (!measurementId) return;
+  
+  window.gtag('config', measurementId, {
+    page_path: url
+  });
 };
 
-// Track events - Disabled in esbuild mode
+// Track events
 export const trackEvent = (
-  action: string,
-  category: string = 'General',
-  label?: string,
+  action: string, 
+  category?: string, 
+  label?: string, 
   value?: number
 ) => {
-  console.log('Event tracking disabled in esbuild mode:', { action, category, label, value });
-  return;
+  if (typeof window === 'undefined' || !window.gtag) return;
+  
+  window.gtag('event', action, {
+    event_category: category,
+    event_label: label,
+    value: value,
+  });
 };
 
-// Track social engagement - Disabled in esbuild mode
+// Track social media post engagement
 export const trackSocialEngagement = (platform: string, action: string, content: string) => {
-  console.log('Social engagement tracking disabled in esbuild mode:', { platform, action, content });
-  return;
+  trackEvent('social_engagement', platform, action, 1);
+  trackEvent(`${platform}_${action}`, 'social_media', content);
 };
 
-// Track content generation - Disabled in esbuild mode
+// Track content generation
 export const trackContentGeneration = (platform: string, contentType: string) => {
-  console.log('Content generation tracking disabled in esbuild mode:', { platform, contentType });
-  return;
+  trackEvent('content_generated', 'ai_content', `${platform}_${contentType}`, 1);
 };
 
-// Track milestones - Disabled in esbuild mode
+// Track user journey milestones
 export const trackMilestone = (milestone: string) => {
-  console.log('Milestone tracking disabled in esbuild mode:', milestone);
-  return;
+  trackEvent('milestone_reached', 'user_journey', milestone, 1);
 };

@@ -32,7 +32,6 @@ import InstagramFix from "@/pages/instagram-fix";
 import DataDeletionStatus from "@/pages/data-deletion-status";
 import MetaPixelTest from "@/pages/meta-pixel-test";
 import BulletproofDashboard from "@/pages/bulletproof-dashboard";
-import VideoApproval from "./VideoApproval";
 
 function Router() {
   // Track page views when routes change
@@ -63,14 +62,13 @@ function Router() {
       <Route path="/instagram-fix" component={InstagramFix} />
       <Route path="/data-deletion-status" component={DataDeletionStatus} />
       <Route path="/meta-pixel-test" component={MetaPixelTest} />
-      <Route path="/video-approval" component={VideoApproval} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
-  const [showSplash, setShowSplash] = useState(false); // Disabled splash for debugging
+  const [showSplash, setShowSplash] = useState(true);
 
   // Initialize Google Analytics and clear stale cache when app loads
   useEffect(() => {
@@ -85,8 +83,12 @@ function App() {
       window.history.replaceState({}, '', newUrl);
     }
     
-    // Initialize analytics - disabled in esbuild mode
-    console.log('Analytics disabled in esbuild mode');
+    // Verify required environment variable is present
+    if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
+      console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
+    } else {
+      initGA();
+    }
   }, []);
 
   // Establish session on app startup to prevent 401 errors
