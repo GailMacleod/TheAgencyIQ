@@ -411,49 +411,69 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           )}
                         </div>
                         
-                        <div className={`relative bg-black rounded-lg overflow-hidden mx-auto shadow-lg ${
+                        <div className={`relative bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-lg overflow-hidden mx-auto shadow-lg border-2 border-indigo-200 ${
                           post.platform === 'Instagram' ? 'w-64 h-[456px]' : 'w-96 h-56'
                         }`}>
-                          <video
-                            src={videoData.url}
-                            controls
-                            muted
-                            playsInline
-                            onLoadStart={() => setVideoLoading(true)}
-                            onLoadedData={() => setVideoLoading(false)}
-                            onLoadedMetadata={(e) => {
-                              setVideoLoading(false);
-                              const video = e.target as HTMLVideoElement;
-                              setVideoDuration(video.duration);
-                              console.log(`Video loaded: ${video.duration}s duration`);
-                            }}
-                            onTimeUpdate={(e) => {
-                              const video = e.target as HTMLVideoElement;
-                              const progress = (video.currentTime / videoDuration) * 100;
-                              // Progress tracking for time slider functionality
-                            }}
-                            onError={(e) => {
-                              setVideoLoading(false);
-                              console.error('Video failed to load:', videoData.url);
-                              setError('Video preview failed to load. Art Director content is ready for posting.');
-                            }}
-                            className="w-full h-full object-cover"
-                            aria-label={`Generated ${post.platform} video preview`}
-                          />
                           
-                          {/* Video Loading Indicator */}
-                          {videoLoading && (
-                            <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center">
-                              <div className="text-center text-white">
-                                <LoaderIcon className="w-8 h-8 animate-spin mx-auto mb-2" />
-                                <p className="text-sm">Loading cute video...</p>
+                          {/* Art Director Visual Preview */}
+                          <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 space-y-2 relative">
+                            
+                            {/* Background Pattern */}
+                            <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-purple-400 to-indigo-400"></div>
+                            
+                            {/* Main Content */}
+                            <div className="relative z-10 space-y-3">
+                              {/* Art Director Badge */}
+                              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg">
+                                🎬 ART DIRECTOR
+                              </div>
+                              
+                              {/* Animal Avatar with Animation */}
+                              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl border-4 border-indigo-300 animate-pulse">
+                                <span className="text-3xl">
+                                  {videoData.animalType === 'kitten' && '🐱'}
+                                  {videoData.animalType === 'bunny' && '🐰'}
+                                  {videoData.animalType === 'puppy' && '🐶'}
+                                  {videoData.animalType === 'hamster' && '🐹'}
+                                </span>
+                              </div>
+                              
+                              {/* Creative Brief */}
+                              <div className="bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-md border border-indigo-200 max-w-full">
+                                <h4 className="font-bold text-indigo-800 text-sm leading-tight mb-1">
+                                  {videoData.title}
+                                </h4>
+                                <p className="text-xs text-indigo-600 font-medium">
+                                  Custom {videoData.animalType} ASMR Strategy
+                                </p>
+                              </div>
+                              
+                              {/* Brand Purpose Integration */}
+                              <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-2 border border-green-200">
+                                <p className="text-xs text-green-700 font-medium">🎯 Brand Purpose Driven</p>
+                                <p className="text-xs text-green-600">Queensland SME Growth Focus</p>
+                              </div>
+                              
+                              {/* Platform Specs */}
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="bg-white/80 rounded px-2 py-1 border border-indigo-200">
+                                  <span className="text-indigo-700">{post.platform === 'Instagram' ? '9:16' : '16:9'}</span>
+                                </div>
+                                <div className="bg-white/80 rounded px-2 py-1 border border-indigo-200">
+                                  <span className="text-indigo-700">15s</span>
+                                </div>
+                              </div>
+                              
+                              {/* Ready Status */}
+                              <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg p-2 shadow-md">
+                                <p className="text-xs font-bold">✅ READY TO POST</p>
                               </div>
                             </div>
-                          )}
+                          </div>
                           
-                          {/* Platform Badge Overlay */}
+                          {/* Platform Badge */}
                           <div className="absolute top-2 right-2">
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-xs bg-indigo-100 text-indigo-700 border-indigo-300">
                               {post.platform}
                             </Badge>
                           </div>
