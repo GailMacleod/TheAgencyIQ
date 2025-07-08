@@ -575,13 +575,15 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
             )}
           </div>
           
-          {canGenerateVideo && !hasGeneratedVideo && !post.hasVideo && !post.videoApproved && (
+          {canGenerateVideo && !post.hasVideo && !post.videoApproved && (
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
               <DialogTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleModalOpen}
+                  disabled={hasGeneratedVideo}
+                  style={{ display: hasGeneratedVideo ? 'none' : 'block' }}
                   aria-label="Generate video for this post"
                 >
                   <VideoIcon className="w-4 h-4 mr-2" />
