@@ -134,7 +134,7 @@ export default function Splash() {
                 
                 {/* Video Feature Description */}
                 <div className="mt-4 text-center">
-                  <p className="text-sm text-gray-600 font-medium">
+                  <p className="text-sm text-black font-medium">
                     Includes video shorts fast, text-to-video animation
                   </p>
                 </div>
