@@ -19,7 +19,7 @@ export default function AIWidget() {
     {
       id: '1',
       role: 'assistant',
-      content: 'hi! i\'m your strategyzer-trained ai assistant. i\'ll help you define your brand purpose using proven value proposition methodology. ask me about customer segments, jobs-to-be-done, pains, gains, or your queensland business strategy.',
+      content: 'hi! i\'m your strategic ai assistant, trained on proven business frameworks to help queensland smes succeed.\n\ni can provide expert guidance on:\n• strategic planning & brand positioning\n• content creation & social media strategy\n• platform optimization (facebook, instagram, linkedin, x, youtube)\n• business growth & customer acquisition\n• local queensland market insights\n\nwhat specific business challenge can i help you solve today?',
       timestamp: new Date(),
     },
   ]);

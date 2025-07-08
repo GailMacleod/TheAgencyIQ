@@ -498,8 +498,170 @@ export async function generateReplacementPost(
 }
 
 export async function getAIResponse(query: string, context?: string, brandPurposeData?: any): Promise<string> {
-  // Return static response to avoid AI API failures
-  return "The AgencyIQ is designed to help Queensland small businesses automate their social media marketing. Our AI-powered platform creates engaging content that resonates with your target audience and drives business growth.";
+  try {
+    // Initialize AI client
+    const aiClient = new OpenAI({ 
+      baseURL: "https://api.x.ai/v1", 
+      apiKey: process.env.XAI_API_KEY 
+    });
+
+    // Analyze query for intelligent contextual response
+    const analysisPrompt = `You are an expert business strategist assistant for TheAgencyIQ, a Queensland SME social media automation platform. 
+
+USER QUERY: "${query}"
+
+BRAND CONTEXT: ${brandPurposeData ? `
+- Brand Name: ${brandPurposeData.brandName}
+- Core Purpose: ${brandPurposeData.corePurpose}
+- Target Audience: ${brandPurposeData.audience}
+- Pain Points: ${brandPurposeData.painPoints}
+- Motivations: ${brandPurposeData.motivations}
+- Products/Services: ${brandPurposeData.productsServices}
+` : 'No brand data available - provide general Queensland SME guidance.'}
+
+INSTRUCTIONS:
+1. Analyze the user's question to understand their specific need
+2. Provide strategic, actionable insights that add immediate value
+3. Use Strategyzer Jobs-to-be-Done framework when relevant
+4. Focus on Queensland small business context
+5. Include specific recommendations they can implement
+6. Keep tone professional but approachable
+7. If asking about platform features, explain how they drive business results
+8. For strategy questions, provide CMO-level strategic insights
+9. For content questions, give copywriting and engagement tactics
+10. Always connect advice to measurable business outcomes
+
+Respond with intelligent, valuable insights that demonstrate deep understanding of their business needs and provide actionable next steps.`;
+
+    const response = await aiClient.chat.completions.create({
+      model: "grok-2-1212",
+      messages: [{ role: "user", content: analysisPrompt }],
+      temperature: 0.7,
+      max_tokens: 500
+    });
+
+    const aiResponse = response.choices[0].message.content;
+    
+    // Fallback to contextual static response if AI fails
+    if (!aiResponse) {
+      return getContextualFallback(query, brandPurposeData);
+    }
+    
+    return aiResponse;
+    
+  } catch (error) {
+    console.error('AI response generation failed:', error);
+    // Return intelligent fallback based on query analysis
+    return getContextualFallback(query, brandPurposeData);
+  }
+}
+
+// Intelligent fallback that analyzes query context
+function getContextualFallback(query: string, brandPurposeData?: any): string {
+  const lowerQuery = query.toLowerCase();
+  
+  // Strategy and planning questions
+  if (lowerQuery.includes('strategy') || lowerQuery.includes('plan') || lowerQuery.includes('approach')) {
+    return `For strategic success, focus on these key areas:
+
+1. **Brand Purpose Clarity**: ${brandPurposeData?.corePurpose || 'Define your unique value proposition for Queensland customers'}
+2. **Target Audience**: ${brandPurposeData?.audience || 'Identify your ideal Queensland SME customer profile'}
+3. **Content Strategy**: Create consistent, valuable content that addresses your audience's pain points
+4. **Platform Optimization**: Focus on 2-3 platforms where your audience is most active
+
+Next steps: Complete your brand purpose analysis to unlock AI-powered content generation that resonates with your specific market.`;
+  }
+  
+  // Platform-specific questions
+  if (lowerQuery.includes('facebook') || lowerQuery.includes('instagram') || lowerQuery.includes('linkedin')) {
+    const platform = lowerQuery.includes('facebook') ? 'Facebook' : 
+                    lowerQuery.includes('instagram') ? 'Instagram' : 'LinkedIn';
+    return `${platform} Success Strategy:
+
+**Content Approach**: ${platform === 'LinkedIn' ? 'Professional, industry insights and thought leadership' : 
+                       platform === 'Instagram' ? 'Visual storytelling with strong calls-to-action' : 
+                       'Community-focused content that builds relationships'}
+
+**Posting Frequency**: ${platform === 'LinkedIn' ? '3-4 times per week' : 'Daily consistent posting'}
+
+**Queensland Focus**: Share local business insights, community involvement, and regional success stories.
+
+Our AI system automatically optimizes content for each platform's unique audience and algorithm requirements.`;
+  }
+  
+  // Content creation questions
+  if (lowerQuery.includes('content') || lowerQuery.includes('post') || lowerQuery.includes('write')) {
+    return `Content Creation Excellence:
+
+**Strategic Framework**:
+- **Functional Job**: Help customers accomplish their business goals
+- **Emotional Job**: Make them feel confident and successful
+- **Social Job**: Position them as industry leaders
+
+**Content Types That Convert**:
+1. Educational content (40%) - How-to guides, industry insights
+2. Behind-the-scenes (25%) - Build trust and authenticity  
+3. Customer success stories (20%) - Social proof and results
+4. Community engagement (15%) - Local Queensland focus
+
+**Queensland Edge**: Reference local events, business networks, and regional opportunities to connect with your community.
+
+Ready to automate this process? Our AI generates platform-specific content based on your brand purpose.`;
+  }
+  
+  // Business growth questions
+  if (lowerQuery.includes('grow') || lowerQuery.includes('sales') || lowerQuery.includes('customer')) {
+    return `Business Growth Acceleration:
+
+**Social Media ROI Strategy**:
+1. **Lead Generation**: Use social media to attract qualified prospects
+2. **Trust Building**: Consistent, valuable content establishes credibility
+3. **Community Engagement**: Local Queensland connections drive referrals
+4. **Conversion Optimization**: Strategic calls-to-action in every post
+
+**Measurable Outcomes**:
+- Increased brand awareness and visibility
+- Higher quality leads and inquiries
+- Stronger customer relationships
+- Improved local market position
+
+**Next Level**: ${brandPurposeData?.brandName || 'Your business'} can achieve 3x faster growth with automated, strategic social media presence.`;
+  }
+  
+  // Technical or feature questions
+  if (lowerQuery.includes('how') || lowerQuery.includes('feature') || lowerQuery.includes('work')) {
+    return `TheAgencyIQ Platform Capabilities:
+
+**AI-Powered Automation**:
+- Brand purpose analysis using Strategyzer methodology
+- Platform-specific content generation (Facebook, Instagram, LinkedIn, X, YouTube)
+- Strategic posting schedule optimization
+- Queensland market insights integration
+
+**Video Generation**: AI Art Director creates viral-worthy animal videos that stop scrolling and drive engagement
+
+**Business Impact**: 
+- Save 10+ hours weekly on content creation
+- Increase engagement rates by 40-60%
+- Build consistent professional presence
+- Focus on core business while AI handles marketing
+
+Ready to see your specific strategy? Complete the brand purpose setup to unlock personalized AI recommendations.`;
+  }
+  
+  // Default intelligent response
+  return `Hi! I'm your strategic AI assistant, trained on proven business frameworks to help Queensland SMEs succeed.
+
+**I can help you with**:
+- Strategic planning and brand positioning
+- Content creation and social media strategy  
+- Platform optimization (Facebook, Instagram, LinkedIn, X, YouTube)
+- Business growth and customer acquisition
+- Local Queensland market insights
+
+${brandPurposeData?.brandName ? `Based on your brand purpose for ${brandPurposeData.brandName}, I can provide specific recommendations for your ${brandPurposeData.audience || 'target market'}.` : 'Complete your brand purpose analysis to unlock personalized strategic recommendations.'}
+
+**What specific challenge can I help you solve today?**`;
 }
 
 // Character count validation for all platforms
