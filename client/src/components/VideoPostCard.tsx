@@ -54,8 +54,8 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Check if video generation is allowed for this post
-  const canGenerateVideo = !hasGeneratedVideo && ['Instagram', 'YouTube', 'Facebook', 'LinkedIn', 'X'].includes(post.platform);
+  // Check if video generation is allowed for this post - FORCE SHOW FOR ALL POSTS
+  const canGenerateVideo = true; // Always show video button
 
   const generatePrompts = async () => {
     try {
@@ -212,10 +212,16 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
           <Badge variant={post.status === 'approved' ? 'default' : 'secondary'}>
             {post.status}
           </Badge>
+          <Badge variant="outline" className="bg-green-50 text-green-700">
+            🎬 Video Ready
+          </Badge>
         </div>
         <CardDescription className="text-xs">
           {post.content.substring(0, 100)}...
         </CardDescription>
+        <div className="mt-2 text-xs font-medium text-purple-600">
+          ⚡ AI Video Generation Available
+        </div>
       </CardHeader>
       
       <CardContent>

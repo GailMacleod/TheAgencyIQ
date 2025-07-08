@@ -667,7 +667,7 @@ function IntelligentSchedule() {
             ) : (
               // List View with Video Generation
               <div className="grid gap-6">
-                {postsArray.map((post: Post) => (
+                {postsArray.length > 0 ? postsArray.map((post: Post) => (
                   <VideoPostCard
                     key={post.id}
                     post={post}
@@ -675,7 +675,12 @@ function IntelligentSchedule() {
                     brandData={brandPurpose}
                     userId={user?.id || 0}
                   />
-                ))}
+                )) : (
+                  <div className="text-center p-8">
+                    <p className="text-gray-500 mb-4">Loading posts... ({postsArray.length} posts loaded)</p>
+                    <p className="text-sm text-gray-400">If no posts appear, generate content first.</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
