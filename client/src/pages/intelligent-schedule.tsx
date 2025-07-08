@@ -227,30 +227,15 @@ function IntelligentSchedule() {
     fetchQueenslandEvents();
   }, []);
 
-  // NAVIGATION-LEVEL QUOTA PROTECTION - Prevents screen jumping bypasses
+  // QUOTA DISPLAY ONLY - No restrictions on navigation, editing, or generation
   useEffect(() => {
     if (subscriptionUsage && !subscriptionLoading) {
-      console.log(`🔒 Navigation quota check: ${subscriptionUsage.remainingPosts}/${subscriptionUsage.totalAllocation} posts remaining`);
+      console.log(`📊 Quota status: ${subscriptionUsage.remainingPosts}/${subscriptionUsage.totalAllocation} posts remaining (tracking published posts only)`);
       
-      // Force refresh quota data when navigating to this screen
+      // Refresh quota data for accurate display
       queryClient.invalidateQueries({ queryKey: ["/api/subscription-usage"] });
-      
-      // Block all generation operations if quota exceeded
-      if (subscriptionUsage.remainingPosts <= 0) {
-        console.warn(`🚫 Navigation blocked - quota exceeded (${subscriptionUsage.remainingPosts} remaining)`);
-        
-        // Show quota exceeded warning on navigation
-        toast({
-          title: "Post Quota Reached",
-          description: `You've used all ${subscriptionUsage.totalAllocation} posts. Upgrade your plan to continue.`,
-          variant: "destructive",
-        });
-        
-        // Disable schedule generation to prevent bypasses
-        setScheduleGenerated(false);
-      }
     }
-  }, [subscriptionUsage, subscriptionLoading, queryClient, toast]);
+  }, [subscriptionUsage, subscriptionLoading, queryClient]);
 
   // Generate calendar dates for next 30 days with AEST timezone consistency
   const generateCalendarDates = () => {
@@ -295,17 +280,6 @@ function IntelligentSchedule() {
 
   // Approve and schedule individual post with loading state and success modal
   const approvePost = async (postId: number) => {
-    // NAVIGATION-LEVEL QUOTA ENFORCEMENT - Block if quota exceeded during screen jumping
-    if (subscriptionUsage && subscriptionUsage.remainingPosts <= 0) {
-      toast({
-        title: "Post Quota Reached",
-        description: `You've used all ${subscriptionUsage.totalAllocation} posts. Cannot approve more posts.`,
-        variant: "destructive",
-      });
-      console.warn(`🚫 Approval blocked during navigation - quota exceeded (${subscriptionUsage.remainingPosts} remaining)`);
-      return;
-    }
-
     // Find the post to get platform and scheduling details
     const post = postsArray.find(p => p.id === postId);
     if (!post) return;
@@ -371,16 +345,6 @@ function IntelligentSchedule() {
         variant: "destructive",
       });
       setLocation("/brand-purpose");
-      return;
-    }
-
-    // Check subscription limits before generating
-    if (subscriptionUsage && subscriptionUsage.remainingPosts <= 0) {
-      toast({
-        title: "Post Limit Reached",
-        description: `You've used all ${subscriptionUsage.totalAllocation} posts for this billing cycle. Upgrade your plan or wait for next cycle.`,
-        variant: "destructive",
-      });
       return;
     }
 

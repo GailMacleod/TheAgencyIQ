@@ -160,11 +160,24 @@ export class PostQuotaService {
       let subscriptionPlan = user.subscriptionPlan || 'starter';
 
       // If postLedger exists, use it as authoritative source for quota
+      // BUT only count actually published posts, not approved/draft posts
       if (ledgerEntry.length > 0) {
         const ledger = ledgerEntry[0];
         totalPosts = ledger.quota;
-        remainingPosts = Math.max(0, ledger.quota - ledger.usedPosts);
+        
+        // Count only published posts from the posts table
+        const publishedCount = await db.select({ count: sql`count(*)` })
+          .from(posts)
+          .where(and(
+            eq(posts.userId, userId),
+            eq(posts.status, 'published')
+          ));
+        
+        const actualPublishedPosts = Number(publishedCount[0]?.count || 0);
+        remainingPosts = Math.max(0, ledger.quota - actualPublishedPosts);
         subscriptionPlan = ledger.subscriptionTier === 'pro' ? 'professional' : ledger.subscriptionTier;
+        
+        console.log(`📊 Quota calculation for user ${userId}: ${actualPublishedPosts} published posts, ${remainingPosts}/${totalPosts} remaining`);
       }
 
       const quota: QuotaStatus = {
@@ -278,12 +291,8 @@ export class PostQuotaService {
           return false;
         }
         
-        // Check if user has quota remaining for approval
-        const status = await this.getQuotaStatus(userId);
-        if (!status || status.remainingPosts <= 0 || !status.subscriptionActive) {
-          console.warn(`User ${userId} cannot approve - no quota remaining or inactive subscription`);
-          return false;
-        }
+        // No quota checking needed - users can approve unlimited posts
+        // Quota only deducted during actual platform publishing
         
         // Update post status to approved (no quota deduction yet)
         await db.update(posts)
@@ -292,9 +301,9 @@ export class PostQuotaService {
         
         // Log the approval
         await this.logQuotaOperation(userId, postId, 'approval', 
-          `Post approved for future posting. No quota deduction yet. Remaining: ${status.remainingPosts}/${status.totalPosts}`);
+          `Post approved for future posting. No quota deduction - only deducted during actual platform publishing.`);
         
-        console.log(`✅ Post ${postId} approved for user ${userId} - quota will be deducted after successful posting`);
+        console.log(`✅ Post ${postId} approved for user ${userId} - quota will be deducted only after successful platform publishing`);
         return true;
         
       } catch (error) {

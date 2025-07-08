@@ -2958,14 +2958,6 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Unable to retrieve quota status" });
       }
       
-      // Check if user has any posts remaining
-      if (quotaStatus.remainingPosts <= 0) {
-        return res.status(403).json({ 
-          message: `You have reached your ${quotaStatus.subscriptionPlan} plan limit of ${quotaStatus.totalPosts} posts. Upgrade your plan to generate more content.`,
-          quotaStatus 
-        });
-      }
-
       const brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
       if (!brandPurposeRecord) {
         return res.status(400).json({ message: "Brand purpose not found. Please complete setup." });
@@ -2976,8 +2968,8 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "No platform connections found. Please connect at least one platform." });
       }
 
-      // Cap generation at remaining quota
-      const maxPostsToGenerate = Math.min(quotaStatus.remainingPosts, user.totalPosts || 12);
+      // Generate full subscription amount - quota only consumed during publishing
+      const maxPostsToGenerate = quotaStatus.totalPosts;
       console.log(`Content calendar quota-aware generation: ${maxPostsToGenerate} posts (${quotaStatus.remainingPosts} remaining from ${quotaStatus.totalPosts} total)`);
 
       // Generate posts using Grok with comprehensive brand data
@@ -4139,16 +4131,9 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Unable to retrieve quota status" });
       }
       
-      // Check if user has any posts remaining
-      if (quotaStatus.remainingPosts <= 0) {
-        return res.status(403).json({ 
-          message: `You have reached your ${quotaStatus.subscriptionPlan} plan limit of ${quotaStatus.totalPosts} posts. Upgrade your plan to generate more content.`,
-          quotaStatus 
-        });
-      }
-      
-      // Cap generation at remaining quota
-      const maxPostsToGenerate = Math.min(quotaStatus.remainingPosts, 30);
+      // Generate full subscription amount - quota only consumed during publishing
+      // Users can regenerate schedules unlimited times without quota penalty
+      const maxPostsToGenerate = quotaStatus.totalPosts;
       console.log(`Quota-aware generation: ${maxPostsToGenerate} posts (${quotaStatus.remainingPosts} remaining from ${quotaStatus.totalPosts} total)`);
       
       // Check existing posts (without deleting them)
