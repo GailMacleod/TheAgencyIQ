@@ -377,8 +377,22 @@ export class VideoService {
       styleDirection = 'Social media optimized, shareable moments, broad appeal';
     }
     
-    // Art Director's final creative brief
-    return `ASMR business strategy video starring ${animalCasting}. Creative execution: ${animalCasting} sits at tiny office desk delivering whispered business insights about "${creativeDirection}". Brand purpose "${brandPurpose}" subtly woven throughout. ${styleDirection}. Gentle paw movements organizing miniature business documents, soft animal sounds, calming keyboard tapping. Viral cute factor meets strategic brand messaging. Target: Queensland SME audience seeking ${brandPurpose?.toLowerCase() || 'business growth'}.`;
+    // Human-like activities for the animal
+    const humanActivities = [
+      'sunbathing with tiny sunglasses while lazily sprawled on top of a massive pile of paperwork',
+      'sipping from a miniature lemonade glass while lounging against towering business documents',
+      'doing adorable handstands against an overflowing inbox as papers scatter everywhere',
+      'chasing its own tail around stacks of reports, getting dizzy and flopping over',
+      'taking a nap sprawled across a keyboard with paws dangling over important emails',
+      'doing tiny yoga stretches while balancing on business proposals',
+      'scratching its head with confusion while perched on top of financial spreadsheets',
+      'wearing sunglasses and lounging in a tiny beach chair placed on quarterly reports'
+    ];
+    
+    const randomActivity = humanActivities[Math.floor(Math.random() * humanActivities.length)];
+    
+    // Art Director's enhanced creative brief with human-like behavior
+    return `ASMR business strategy video starring ${animalCasting}. Creative execution: ${animalCasting} ${randomActivity}, occasionally glancing at the work items with mild interest. Brand purpose "${brandPurpose}" subtly woven throughout. ${styleDirection}. Soft animal sounds mixed with gentle paper rustling, whispered business insights delivered while the animal enjoys human-like relaxation. Viral cute factor meets strategic brand messaging through adorable procrastination. Target: Queensland SME audience seeking ${brandPurpose?.toLowerCase() || 'business growth'}.`;
   }
 
   static async approveAndPostVideo(userId, postId, videoData, platforms) {
