@@ -109,7 +109,7 @@ async function startServer() {
     }
   }));
 
-  // Enhanced CSP for Facebook compliance, Google services, and security
+  // Enhanced CSP for Facebook compliance, Google services, video content, and security
   app.use((req, res, next) => {
     res.setHeader('Content-Security-Policy', [
       "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
@@ -118,6 +118,7 @@ async function startServer() {
       "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
       "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net https://www.google-analytics.com https://www.google.com",
+      "media-src 'self' https://commondatastorage.googleapis.com https://*.googleapis.com https://*.google.com data: blob:",
       "frame-src 'self' https://connect.facebook.net https://*.facebook.com https://www.google.com",
       "frame-ancestors 'self' https://www.google.com"
     ].join('; '));
