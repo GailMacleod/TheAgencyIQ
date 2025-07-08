@@ -405,8 +405,73 @@ export class VideoService {
       'climbing like a person up to a mountaintop mansion built from filing cabinets, then sitting in human position on a balcony with tiny binoculars held in paws, surveying their kingdom of automated business below',
       'boarding like a human passenger onto a luxury cruise ship deck made of colorful spreadsheets, then dancing with human-like moves at an elegant party wearing tiny formal wear while invoices fall like celebratory confetti'
     ];
+
+    // ASMR Crystal & Kinetic Sand Variety Prompts - Sensory ASMR experiences
+    const asmrCrystalScenes = [
+      'delicately slicing a glass strawberry with a sharp blade while crisp cracking sounds echo, then arranging the sparkling pieces into a perfect business chart pattern',
+      'molding kinetic sand into a spiral tower while soft squishing noises create rhythm, then watching it transform into a miniature office building',
+      'cutting a crystal apple slowly while echoing shard scatter sounds fill the air, then using the pieces to spell out success messages',
+      'stretching rainbow slime gently while wet stretching noises provide soothing background, then shaping it into colorful productivity graphs',
+      'slicing a glass kiwi on a wooden board while sharp tapping sounds create beat, then arranging slices into a profit timeline',
+      'snapping a gold bar in half with crisp breaking audio, then watching it multiply into a treasure chest of business success',
+      'rolling neon clay into a ball while muffled thudding sounds provide comfort, then molding it into tiny office furniture',
+      'chopping a crystal pineapple while resonant slicing noises echo, then creating a sparkling crown of achievement',
+      'crushing kinetic sand under gentle hands while gritty crumbling sounds soothe, then building it into a meditation garden for entrepreneurs',
+      'popping glass blueberries with high-pitched popping audio, then watching them transform into floating success bubbles',
+      'spreading glowing butter on toast while smooth scraping sounds satisfy, then watching the butter melt into golden business opportunities',
+      'slicing a crystal watermelon while deep cutting echoes resonate, then seeing the seeds become sparkling profit projections',
+      'carving kinetic sand with precision tools while soft scraping noises create calm, then revealing hidden business automation blueprints',
+      'cutting a glass lemon while sharp citrus-like cracking sounds refresh, then squeezing out drops that become liquid motivation',
+      'snipping neon slime with scissors while sticky cutting audio delights, then watching the pieces reform into productivity enhancers',
+      'squeezing a crystal grape while gentle bursting noises pop, then releasing juice that flows into streams of business success',
+      'shaping kinetic sand into waves while rhythmic whooshing sounds flow, then surfing those waves toward entrepreneurial freedom',
+      'peeling a glass orange while crisp peeling audio crackles, then watching segments arrange themselves into perfect business segments',
+      'kneading glowing dough while soft squelching noises comfort, then baking it into bread that feeds business growth',
+      'slicing a crystal mango while rich cutting vibrations hum, then enjoying the sweet taste of automated business success'
+    ];
+
+    // ASMR Fluffy Animal Professional Scenes - Cute animals in business scenarios
+    const asmrFluffyScenes = [
+      'hopping through a glowing forest while soft thumps create rhythm, then discovering a magical business consultation tree',
+      'pouncing on a sparkling toy while gentle purrs fill the air, then realizing it\'s a productivity enhancer that multiplies their efficiency',
+      'chasing a fluttering butterfly while excited yips provide soundtrack, then following it to a secret automation workshop',
+      'prancing on fluffy clouds while light bleats echo, then landing softly in a dreamy office space in the sky',
+      'rolling in a glittery ball while tiny squeaks create melody, then emerging in a sparkling conference room ready for success',
+      'tumbling down a rainbow slide while playful grunts provide joy, then sliding into a pot of gold representing business prosperity',
+      'nibbling a glowing carrot while crisp munching sounds satisfy, then watching it grow into a tower of healthy business habits',
+      'batting at a shimmering star while soft mews create magic, then catching it to power up their productivity superpowers',
+      'digging in a sparkling sandbox while eager barks provide energy, then uncovering buried treasure maps to business success',
+      'leaping over a magical log while light hops create bounce, then landing in a field of opportunity flowers'
+    ];
+
+    // ASMR Professional Animal Scenarios - Animals in business attire performing work tasks
+    const asmrProfessionalScenes = [
+      'typing at a glowing desk while wearing a tiny suit, with soft keyboard clicks creating a productive rhythm that transforms into a symphony of success',
+      'stirring a sparkling pot while wearing a chef hat, with gentle purrs mixing with bubbling sounds as they cook up the perfect business recipe',
+      'driving a shiny car while wearing sunglasses, with excited yips harmonizing with engine purrs as they cruise toward their entrepreneurial dreams',
+      'dancing on a glittery stage while wearing an elegant dress, with light bleats creating music as they perform the dance of business success',
+      'presenting a glowing chart while wearing a professional tie, with tiny squeaks emphasizing key points as data comes alive around them',
+      'sipping coffee while wearing a cozy robe, with playful grunts of satisfaction as steam swirls into patterns of productivity and peace',
+      'painting a magical canvas while wearing an artist hat, with crisp brushstrokes creating masterpieces that reveal hidden business insights',
+      'flying a sparkly kite while wearing a superhero cape, with soft mews of joy as the kite lifts their business dreams into the sky',
+      'saluting proudly while wearing a crisp uniform, with eager barks of determination as they guard the gates to entrepreneurial success',
+      'mixing glowing potions while wearing a lab coat, with light hops of excitement as each formula creates new business innovations',
+      'nuzzling a glowing flower while wearing a cozy scarf, with gentle baas of contentment as petals transform into profit reports',
+      'spinning in a glittery wheel while wearing a tiny cap, with rhythmic clicks directing traffic flow toward business success',
+      'cuddling shimmering bamboo while wearing a formal jacket, with soft snores creating peaceful melodies as growth charts bloom around them',
+      'hopping through a twinkling meadow while wearing a work uniform, with soft thuds marking territory as they guard the path to prosperity',
+      'chasing a glowing feather while wearing a royal crown, with gentle purrs of satisfaction as they wave regally to their business kingdom',
+      'rolling down a glittery hill while wearing a sharp suit, with happy yaps of negotiation as deals multiply around them like golden coins',
+      'sniffing a sparkling rose while wearing a doctor coat, with light sniffs of diagnosis as they check the health of business metrics',
+      'skipping over a rainbow bridge while wearing a reading scarf, with soft bleats of wisdom as knowledge flows like streams beneath them',
+      'climbing a glowing vine while wearing a traffic cap, with tiny squeaks of direction as they guide success upward to new heights',
+      'swaying with a shimmering leaf while wearing a concert jacket, with gentle hums creating business harmony as productivity notes dance in the air'
+    ];
+
+    // Combine all scene types for maximum variety
+    const allScenes = [...movieTrailerScenes, ...asmrCrystalScenes, ...asmrFluffyScenes, ...asmrProfessionalScenes];
     
-    const randomScene = movieTrailerScenes[Math.floor(Math.random() * movieTrailerScenes.length)];
+    const randomScene = allScenes[Math.floor(Math.random() * allScenes.length)];
     
     // Art Director's HUMAN-LIKE LUXURY LIFESTYLE creative brief - relatable movements that pull viewers in
     return `Epic luxury lifestyle movie trailer starring ${animalCasting} moving and acting exactly like a human, living their absolute best life thanks to business automation. Opening scene: ${animalCasting} ${randomScene}. All movements are distinctly human-like: walking upright on hind legs, using paws like hands to hold objects, sitting in chairs like people, making human gestures and expressions. This creates irresistible viewer connection through familiar body language and movements. Pure lifestyle envy - showing off all the amazing free time they now have. Cinematic pastel color palette featuring soft pinks, lavender, mint green, coral, peach, and sky blue throughout. Brand purpose "${brandPurpose}" subtly woven into their glamorous lifestyle upgrade. ${styleDirection}. Dynamic camera movements: swooping aerial shots of luxury scenes, dramatic close-ups of human-like facial expressions, slow-motion leisure sequences showing relatable human actions, and spinning transitions between amazing activities. Upbeat, aspirational soundtrack with luxury lifestyle vibes and triumphant "living my best life" moments. Multiple scene cuts showing different enviable leisure activities, all performed with human-like posture and gestures. Ending with ${animalCasting} standing upright and toasting like a person with a tiny champagne glass held in paws on their luxury balcony as business documents transform into confetti celebrating their freedom. Movie trailer text overlays appear: "When ${brandPurpose?.toLowerCase() || 'business runs itself'}", "This Could Be Your Life", "The Freedom Starts Now". Ultra-engaging, scroll-stopping content that pulls viewers in through relatable human movements and makes them desperate for business automation.`;
