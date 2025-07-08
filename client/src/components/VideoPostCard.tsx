@@ -486,26 +486,41 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           post.platform === 'Instagram' ? 'w-64 h-[456px]' : 'w-96 h-56'
                         }`}>
                           
-                          {/* Real Seedance Video Player (when available) */}
+                          {/* Single Video Player Logic */}
                           {videoData.url && (videoData.url.includes('replicate.delivery') || videoData.url.includes('replicate.com')) ? (
                             <div className="w-full h-full relative">
                               <video
                                 className="w-full h-full object-cover"
                                 controls
-                                autoPlay
                                 muted
                                 loop
                                 onLoadedMetadata={(e) => {
                                   console.log('✅ Real Seedance video loaded successfully:', videoData.url);
+                                  setVideoLoading(false);
                                 }}
                                 onError={(e) => {
                                   console.log('❌ Video load error, falling back to preview:', videoData.url);
+                                  setVideoLoading(false);
                                   setError('Video failed to load, showing preview mode');
+                                }}
+                                onLoadStart={() => {
+                                  console.log('🔄 Video loading started:', videoData.url);
+                                  setVideoLoading(true);
                                 }}
                               >
                                 <source src={videoData.url} type="video/mp4" />
                                 Your browser does not support the video tag.
                               </video>
+                              
+                              {/* Video Loading Overlay */}
+                              {videoLoading && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                  <div className="text-white text-center">
+                                    <LoaderIcon className="w-8 h-8 animate-spin mx-auto mb-2" />
+                                    <p className="text-sm">Loading video...</p>
+                                  </div>
+                                </div>
+                              )}
                               
                               {/* Seedance Generated Badge */}
                               <div className="absolute top-2 left-2">
@@ -515,92 +530,63 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                               </div>
                             </div>
                           ) : (
-                            // Art Director Visual Preview with Video Preview Option
-                            <div className="w-full h-full relative">
-                              
-                              {/* Try to show real video first if URL exists */}
-                              {videoData.url && (videoData.url.includes('replicate.delivery') || videoData.url.includes('replicate.com')) ? (
-                                <div className="w-full h-full">
-                                  <video
-                                    className="w-full h-full object-cover rounded-lg"
-                                    controls
-                                    autoPlay
-                                    muted
-                                    loop
-                                    onLoadedMetadata={() => {
-                                      console.log('✅ Video preview loaded:', videoData.url);
-                                    }}
-                                    onError={() => {
-                                      console.log('❌ Video preview failed, showing Art Director preview');
-                                    }}
-                                  >
-                                    <source src={videoData.url} type="video/mp4" />
-                                  </video>
-                                  
-                                  {/* Real Video Badge */}
-                                  <div className="absolute top-2 left-2">
-                                    <Badge className="text-xs bg-green-600 text-white">
-                                      🎬 Real Video Preview
-                                    </Badge>
-                                  </div>
-                                </div>
-                              ) : (
-                                // Art Director Visual Preview fallback
-                                <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 space-y-2 relative">
+                            // Art Director Visual Preview fallback
+                            <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 space-y-2 relative">
                                 
                                   {/* Background Pattern */}
                                   <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-purple-400 to-indigo-400"></div>
-                                  
-                                  {/* Main Content */}
-                                  <div className="relative z-10 space-y-3">
-                              {/* Art Director Badge */}
-                              <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg">
-                                🎬 ART DIRECTOR
-                              </div>
                               
-                              {/* Animal Avatar with Animation */}
-                              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl border-4 border-indigo-300 animate-pulse">
-                                <span className="text-3xl">
-                                  {videoData.animalType === 'kitten' && '🐱'}
-                                  {videoData.animalType === 'bunny' && '🐰'}
-                                  {videoData.animalType === 'puppy' && '🐶'}
-                                  {videoData.animalType === 'hamster' && '🐹'}
-                                </span>
-                              </div>
+                              {/* Background Pattern */}
+                              <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-purple-400 to-indigo-400"></div>
                               
-                              {/* Creative Brief */}
-                              <div className="bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-md border border-indigo-200 max-w-full">
-                                <h4 className="font-bold text-indigo-800 text-sm leading-tight mb-1">
-                                  {videoData.title}
-                                </h4>
-                                <p className="text-xs text-indigo-600 font-medium">
-                                  Custom {videoData.animalType} ASMR Strategy
-                                </p>
-                              </div>
-                              
-                              {/* Brand Purpose Integration */}
-                              <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-2 border border-green-200">
-                                <p className="text-xs text-green-700 font-medium">🎯 Brand Purpose Driven</p>
-                                <p className="text-xs text-green-600">Queensland SME Growth Focus</p>
-                              </div>
-                              
-                              {/* Platform Specs */}
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div className="bg-white/80 rounded px-2 py-1 border border-indigo-200">
-                                  <span className="text-indigo-700">{post.platform === 'Instagram' ? '9:16' : '16:9'}</span>
+                              {/* Main Content */}
+                              <div className="relative z-10 space-y-3">
+                                {/* Art Director Badge */}
+                                <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg">
+                                  🎬 ART DIRECTOR
                                 </div>
-                                <div className="bg-white/80 rounded px-2 py-1 border border-indigo-200">
-                                  <span className="text-indigo-700">15s</span>
+                                
+                                {/* Animal Avatar with Animation */}
+                                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl border-4 border-indigo-300 animate-pulse">
+                                  <span className="text-3xl">
+                                    {videoData.animalType === 'kitten' && '🐱'}
+                                    {videoData.animalType === 'bunny' && '🐰'}
+                                    {videoData.animalType === 'puppy' && '🐶'}
+                                    {videoData.animalType === 'hamster' && '🐹'}
+                                  </span>
                                 </div>
-                              </div>
+                                
+                                {/* Creative Brief */}
+                                <div className="bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-md border border-indigo-200 max-w-full">
+                                  <h4 className="font-bold text-indigo-800 text-sm leading-tight mb-1">
+                                    {videoData.title}
+                                  </h4>
+                                  <p className="text-xs text-indigo-600 font-medium">
+                                    Custom {videoData.animalType} ASMR Strategy
+                                  </p>
+                                </div>
+                                
+                                {/* Brand Purpose Integration */}
+                                <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-2 border border-green-200">
+                                  <p className="text-xs text-green-700 font-medium">🎯 Brand Purpose Driven</p>
+                                  <p className="text-xs text-green-600">Queensland SME Growth Focus</p>
+                                </div>
+                                
+                                {/* Platform Specs */}
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div className="bg-white/80 rounded px-2 py-1 border border-indigo-200">
+                                    <span className="text-indigo-700">{post.platform === 'Instagram' ? '9:16' : '16:9'}</span>
+                                  </div>
+                                  <div className="bg-white/80 rounded px-2 py-1 border border-indigo-200">
+                                    <span className="text-indigo-700">15s</span>
+                                  </div>
+                                </div>
                               
-                              {/* Ready Status */}
-                              <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg p-2 shadow-md">
-                                <p className="text-xs font-bold">✅ READY TO POST</p>
-                              </div>
-                            </div>
+                                {/* Ready Status */}
+                                <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg p-2 shadow-md">
+                                  <p className="text-xs font-bold">✅ READY TO POST</p>
                                 </div>
-                              )}
+                              </div>
                             </div>
                           )}
                           
