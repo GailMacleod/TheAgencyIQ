@@ -75,8 +75,10 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
       const data = await response.json();
 
       if (data.success) {
+        console.log('✅ Video prompts generated successfully:', data.prompts);
         setPrompts(data.prompts);
       } else {
+        console.error('❌ Video prompt generation failed:', data);
         setError('Failed to generate video prompts');
       }
     } catch (error) {
