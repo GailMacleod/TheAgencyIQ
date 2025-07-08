@@ -213,7 +213,7 @@ export class VideoService {
         url: selectedVideo.url,
         title: `${selectedVideo.title} - ${strategicIntent.substring(0, 30)}...`,
         description: `Art Director interpretation: ${selectedVideo.description} executing brand purpose: ${strategicIntent.substring(0, 80)}...`,
-        duration: 15000, // 15 seconds
+        duration: 15, // 15 seconds exactly
         quality: settings.resolution,
         format: 'mp4',
         aspectRatio: settings.aspectRatio,
@@ -241,7 +241,7 @@ export class VideoService {
         url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         title: 'Emergency Cute Bunny Video',
         description: 'Default cute bunny business video',
-        duration: 15000,
+        duration: 15, // 15 seconds exactly
         quality: '1080p',
         format: 'mp4',
         aspectRatio: '16:9',

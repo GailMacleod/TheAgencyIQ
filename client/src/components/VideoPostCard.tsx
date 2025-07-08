@@ -106,19 +106,19 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
       }, 1000);
       setError(null);
 
-      // Smooth progress animation with realistic timing
+      // Smooth progress animation for 15-second Art Director video creation
       let progressInterval: NodeJS.Timeout | null = null;
       progressInterval = setInterval(() => {
         setRenderingProgress(prev => {
-          if (prev >= 85) {
+          if (prev >= 90) {
             if (progressInterval) clearInterval(progressInterval);
-            return 85; // Stop at 85% until actual completion
+            return 90; // Stop at 90% until actual completion
           }
-          // Slower progress at the beginning, faster in middle
-          const increment = prev < 20 ? 2 : prev < 60 ? 4 : 3;
-          return Math.min(prev + increment, 85);
+          // Realistic 15-second video generation timing
+          const increment = prev < 30 ? 3 : prev < 70 ? 5 : 2;
+          return Math.min(prev + increment, 90);
         });
-      }, 400);
+      }, 200); // Faster updates for 15s video
 
       const response = await fetch('/api/video/render', {
         method: 'POST',
@@ -420,6 +420,19 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             playsInline
                             onLoadStart={() => setVideoLoading(true)}
                             onLoadedData={() => setVideoLoading(false)}
+                            onLoadedMetadata={(e) => {
+                              setVideoLoading(false);
+                              // Set duration to exactly 15 seconds
+                              const video = e.target as HTMLVideoElement;
+                              if (video.duration !== 15) {
+                                console.log(`Video duration: ${video.duration}s (Art Director: 15s)`);
+                              }
+                            }}
+                            onTimeUpdate={(e) => {
+                              const video = e.target as HTMLVideoElement;
+                              const progress = (video.currentTime / 15) * 100; // Use 15s as duration
+                              console.log(`Art Director video progress: ${progress.toFixed(1)}%`);
+                            }}
                             onError={() => {
                               setVideoLoading(false);
                               console.error('Video failed to load:', videoData.url);
@@ -452,6 +465,9 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           </Badge>
                           <Badge variant="outline" className="text-xs">
                             {videoData.size || '1.2MB'}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            15s
                           </Badge>
                           <Badge variant="outline" className="text-xs">
                             {videoData.aspectRatio || '16:9'}
