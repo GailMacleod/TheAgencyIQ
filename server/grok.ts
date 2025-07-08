@@ -47,34 +47,39 @@ export async function analyzeBrandPurpose(params: ContentGenerationParams): Prom
   };
 }
 
-// Platform-specific content specifications for Queensland market
+// Platform-specific content specifications for Queensland market with strict character limits
 const PLATFORM_SPECS = {
   facebook: {
     wordCount: { min: 80, max: 120 },
+    charCount: { min: 400, max: 2000 }, // Facebook post limit ~63K, optimal 400-2000
     tone: "engaging and community-focused",
     style: "brand stories with professional tone",
     cta: "moderate, community-building focused"
   },
   instagram: {
     wordCount: { min: 50, max: 70 },
+    charCount: { min: 250, max: 400 }, // Instagram caption limit 2200, optimal 250-400
     tone: "casual and visually-driven",
     style: "lifestyle-focused with strong visual hooks",
     cta: "strong calls-to-action, action-oriented"
   },
   linkedin: {
     wordCount: { min: 100, max: 150 },
+    charCount: { min: 500, max: 1300 }, // LinkedIn post limit 3000, optimal 500-1300
     tone: "authoritative and professional",
     style: "industry insights and professional networking",
     cta: "thought leadership and connection building"
   },
   youtube: {
     wordCount: { min: 70, max: 100 },
+    charCount: { min: 350, max: 600 }, // YouTube description, optimal for engagement
     tone: "enthusiastic and compelling",
     style: "video teaser content with platform-specific hooks",
     cta: "video engagement and subscription focused"
   },
   x: {
     wordCount: { min: 50, max: 70 },
+    charCount: { min: 200, max: 280 }, // X strict limit 280 characters
     tone: "concise and trending",
     style: "trending topics with engaging elements (no hashtags per X policy)",
     cta: "engagement and conversation starters"
@@ -163,6 +168,7 @@ Brand Context:
 
 Platform Requirements for ${platform.toUpperCase()}:
 - Word Count: ${wordRange} STRICT LIMIT
+- Character Count: ${platformSpec.charCount.min}-${platformSpec.charCount.max} characters ENFORCED
 - Tone: ${platformSpec.tone}
 - Style: ${platformSpec.style}
 - CTA: ${platformSpec.cta}
@@ -186,6 +192,7 @@ Brand Context:
 
 Platform Requirements for ${platform.toUpperCase()}:
 - Word Count: ${wordRange} STRICT LIMIT
+- Character Count: ${platformSpec.charCount.min}-${platformSpec.charCount.max} characters ENFORCED
 - Tone: ${platformSpec.tone}
 - Style: ${platformSpec.style}
 - CTA: ${platformSpec.cta}
@@ -210,7 +217,7 @@ Return ONLY the post content within ${wordRange}, no formatting.`;
             - Leverages local market insights and business culture
             - Focuses on time-saving automation benefits for SMEs
             - Drives engagement and conversions for TheAgencyIQ platform
-            - Adheres to strict platform-specific word count limits
+            - Adheres to strict platform-specific word count AND character count limits
             
             CRITICAL X PLATFORM RULE: For X posts, hashtags (#) are COMPLETELY PROHIBITED and will cause posts to be rejected by X. Use ONLY @ mentions for X content.
             
@@ -235,27 +242,52 @@ Return ONLY the post content within ${wordRange}, no formatting.`;
         // ENHANCED: Apply SEO optimization with Queensland market-specific keywords
         content = seoOptimizationService.optimizeContentForSeo(content, platform, 'business automation Queensland');
         
-        // Validate and adjust content for platform-specific word counts
+        // Validate and adjust content for platform-specific word and character counts
         const wordCount = content.split(/\s+/).length;
-        const { min, max } = platformSpec.wordCount;
+        const charCount = content.length;
+        const { min: minWords, max: maxWords } = platformSpec.wordCount;
+        const { min: minChars, max: maxChars } = platformSpec.charCount;
         
-        // If content exceeds word limit, trim it intelligently
-        if (wordCount > max) {
+        // CHARACTER COUNT ENFORCEMENT - Priority 1: Ensure character limits are respected
+        if (charCount > maxChars) {
+          // Trim content to maximum character limit
+          content = content.substring(0, maxChars - 3) + '...';
+          console.log(`Character limit enforced for ${platform}: ${charCount} → ${content.length} chars`);
+        }
+        
+        // WORD COUNT ENFORCEMENT - Priority 2: Ensure word limits are respected
+        if (wordCount > maxWords) {
           const words = content.split(/\s+/);
-          content = words.slice(0, max).join(' ');
-          // Ensure URL is preserved for Queensland businesses
-          if (!content.includes('https://app.theagencyiq.ai')) {
-            content += ' https://app.theagencyiq.ai';
+          content = words.slice(0, maxWords).join(' ');
+          // Re-check character count after word trimming
+          if (content.length > maxChars) {
+            content = content.substring(0, maxChars - 3) + '...';
+          }
+          console.log(`Word limit enforced for ${platform}: ${wordCount} → ${content.split(/\s+/).length} words`);
+        }
+        
+        // MINIMUM CONTENT REQUIREMENTS - Only if within character limits
+        if (wordCount < minWords && platform !== 'x' && content.length < maxChars - 100) {
+          const additionalContent = ` Perfect for Queensland SMEs seeking intelligent automation solutions. https://app.theagencyiq.ai`;
+          const potentialContent = content + additionalContent;
+          
+          // Only add if it doesn't exceed character limit
+          if (potentialContent.length <= maxChars) {
+            content = potentialContent;
           }
         }
         
-        // If content is too short, enhance with Queensland context
-        if (wordCount < min && platform !== 'x') {
-          content += ` Perfect for Queensland SMEs seeking intelligent automation solutions. https://app.theagencyiq.ai`;
+        // FINAL CHARACTER COUNT VALIDATION - Absolute enforcement
+        if (content.length > maxChars) {
+          content = content.substring(0, maxChars);
+          console.log(`Final character enforcement for ${platform}: trimmed to ${maxChars} chars`);
         }
         
         // Final date validation before storing
         const safeScheduledDate = isNaN(scheduledDate.getTime()) ? new Date() : scheduledDate;
+        
+        const finalWordCount = content.split(/\s+/).length;
+        const finalCharCount = content.length;
         
         posts.push({
           platform,
@@ -265,17 +297,20 @@ Return ONLY the post content within ${wordRange}, no formatting.`;
           aiScore: Math.floor(Math.random() * 20) + 80,
           targetPainPoint: params.painPoints,
           jtbdAlignment: params.jobToBeDone,
-          wordCount: content.split(/\s+/).length,
+          wordCount: finalWordCount,
           eventContext: isEventDriven ? eventContext : 'General Queensland business content',
           platformCompliance: {
             wordCountRange: `${platformSpec.wordCount.min}-${platformSpec.wordCount.max}`,
-            actualWords: content.split(/\s+/).length,
-            characterCount: platform === 'x' ? content.length : undefined,
+            actualWords: finalWordCount,
+            characterCountRange: `${platformSpec.charCount.min}-${platformSpec.charCount.max}`,
+            actualCharacters: finalCharCount,
+            withinWordLimit: finalWordCount >= platformSpec.wordCount.min && finalWordCount <= platformSpec.wordCount.max,
+            withinCharLimit: finalCharCount >= platformSpec.charCount.min && finalCharCount <= platformSpec.charCount.max,
             hashtagPolicy: platform === 'x' ? 'PROHIBITED' : 'ALLOWED',
             mentionPolicy: platform === 'x' ? '@MENTIONS_ONLY' : 'STANDARD'
           }
         });
-        console.log(`Generated Grok content for ${platform} post ${i + 1} (${content.split(/\s+/).length} words) ${isEventDriven ? '- Queensland Event-Driven' : '- General Content'}`);
+        console.log(`Generated Grok content for ${platform} post ${i + 1} (${finalWordCount} words, ${finalCharCount} chars) ${isEventDriven ? '- Queensland Event-Driven' : '- General Content'}`);
       } else {
         throw new Error('Empty content received');
       }
@@ -351,8 +386,13 @@ function generateFallbackContent(params: ContentGenerationParams, platform: stri
       xContent += " Queensland's premier business automation solution.";
     }
     
-    // Final 280 character safety check
-    return xContent.length > 280 ? xContent.substring(0, 277) + '...' : xContent;
+    // Character count enforcement for X platform (280 character limit)
+    const maxChars = platformSpec.charCount.max; // 280 for X
+    if (xContent.length > maxChars) {
+      xContent = xContent.substring(0, maxChars - 3) + '...';
+    }
+    
+    return xContent;
   }
   
   // Platform-specific content templates with appropriate word counts
@@ -413,12 +453,23 @@ function generateFallbackContent(params: ContentGenerationParams, platform: stri
   
   // Validate word count for platform requirements
   const words = content.split(/\s+/);
-  const { min, max } = platformSpec.wordCount;
+  const { min: minWords, max: maxWords } = platformSpec.wordCount;
+  const { min: minChars, max: maxChars } = platformSpec.charCount;
   
-  if (words.length > max) {
-    content = words.slice(0, max).join(' ') + ` ${url}`;
-  } else if (words.length < min && platform !== 'x') {
-    content += ` Perfect for Queensland SMEs seeking intelligent automation solutions.`;
+  // Word count enforcement
+  if (words.length > maxWords) {
+    content = words.slice(0, maxWords).join(' ') + ` ${url}`;
+  } else if (words.length < minWords && platform !== 'x') {
+    const additionalContent = ` Perfect for Queensland SMEs seeking intelligent automation solutions.`;
+    if ((content + additionalContent).length <= maxChars) {
+      content += additionalContent;
+    }
+  }
+  
+  // Character count enforcement (final check)
+  if (content.length > maxChars) {
+    content = content.substring(0, maxChars - 3) + '...';
+    console.log(`Fallback content character limit enforced for ${platform}: trimmed to ${maxChars} chars`);
   }
   
   return content;
@@ -451,15 +502,38 @@ export async function getAIResponse(query: string, context?: string, brandPurpos
   return "The AgencyIQ is designed to help Queensland small businesses automate their social media marketing. Our AI-powered platform creates engaging content that resonates with your target audience and drives business growth.";
 }
 
+// Character count validation for all platforms
+export function validatePlatformContent(content: string, platform: string): { isValid: boolean; errors: string[]; fixedContent?: string } {
+  const errors: string[] = [];
+  let fixedContent = content;
+  
+  const platformSpec = PLATFORM_SPECS[platform.toLowerCase() as keyof typeof PLATFORM_SPECS] || PLATFORM_SPECS.facebook;
+  const maxChars = platformSpec.charCount.max;
+  const minChars = platformSpec.charCount.min;
+  
+  // Character limit enforcement
+  if (content.length > maxChars) {
+    errors.push(`Content exceeds ${maxChars} character limit for ${platform}`);
+    fixedContent = content.substring(0, maxChars - 3) + '...';
+  }
+  
+  if (content.length < minChars) {
+    errors.push(`Content below ${minChars} character minimum for ${platform}`);
+  }
+  
+  return { isValid: errors.length === 0, errors, fixedContent };
+}
+
 // X Platform content validation function
 export function validateXContent(content: string): { isValid: boolean; errors: string[]; fixedContent?: string } {
   const errors: string[] = [];
   let fixedContent = content;
   
-  // Check character limit (280 max)
-  if (content.length > 280) {
-    errors.push('Content exceeds 280 character limit');
-    fixedContent = content.substring(0, 277) + '...';
+  // Use platform specs for character limit
+  const xSpec = PLATFORM_SPECS.x;
+  if (content.length > xSpec.charCount.max) {
+    errors.push(`Content exceeds ${xSpec.charCount.max} character limit`);
+    fixedContent = content.substring(0, xSpec.charCount.max - 3) + '...';
   }
   
   // Check for prohibited hashtags (NEW X POLICY - COMPLETELY BANNED)
