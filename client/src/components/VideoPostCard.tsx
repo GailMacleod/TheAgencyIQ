@@ -367,24 +367,33 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                         <h3 className="font-medium mb-2">Video Preview</h3>
                         <div className="relative bg-gray-100 rounded-lg overflow-hidden">
                           <video
-                            key={videoData.videoId}
-                            autoPlay
+                            key={`video-${videoData.videoId}-${Date.now()}`}
+                            src={videoData.url}
                             muted
                             loop
                             controls
                             playsInline
+                            preload="metadata"
                             className="w-full h-48 object-cover"
                             onError={(e) => {
                               console.error('Video load error:', e);
-                              setError('Video playback failed');
+                              // Try direct URL if proxy fails
+                              const video = e.target as HTMLVideoElement;
+                              if (video.src !== 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4') {
+                                video.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+                              } else {
+                                setError('Video playback failed');
+                              }
                             }}
-                            onLoadStart={() => console.log('Video loading started')}
-                            onCanPlay={() => console.log('Video can play')}
-                          >
-                            <source src={videoData.url} type="video/mp4" />
-                            <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4" />
-                            Your browser does not support video playback.
-                          </video>
+                            onLoadedMetadata={() => {
+                              console.log('Video metadata loaded');
+                              setError(null);
+                            }}
+                            onCanPlay={() => {
+                              console.log('Video can play');
+                              setError(null);
+                            }}
+                          />
                           
                           {/* Manual play fallback */}
                           <div className="absolute inset-0 flex items-center justify-center">
