@@ -739,31 +739,35 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                       <div className="text-center">
                         <h3 className="font-medium mb-2">Video Preview ({post.platform})</h3>
                         
-                        {/* Simple Play Video Button */}
-                        <Button
-                          onClick={async () => {
-                            try {
-                              const response = await fetch('/api/video/latest-seedance');
-                              const data = await response.json();
-                              
-                              if (data.success && data.video?.url) {
-                                const realVideoData = {
-                                  ...videoData,
-                                  url: data.video.url,
-                                  realVideo: true,
-                                  duration: 10
-                                };
-                                setVideoData(realVideoData);
-                                setVideoLoading(false);
+                        {/* Auto-load real video if available */}
+                        {!videoData.realVideo && (
+                          <Button
+                            onClick={async () => {
+                              try {
+                                const response = await fetch('/api/video/latest-seedance');
+                                const data = await response.json();
+                                
+                                if (data.success && data.video?.url) {
+                                  const realVideoData = {
+                                    ...videoData,
+                                    url: data.video.url,
+                                    realVideo: true,
+                                    duration: 10
+                                  };
+                                  setVideoData(realVideoData);
+                                  setVideoLoading(false);
+                                }
+                              } catch (error) {
+                                console.log('Video load failed:', error);
                               }
-                            } catch (error) {
-                              console.log('Video load failed:', error);
-                            }
-                          }}
-                          className="mb-4"
-                        >
-                          ▶️ Play Video
-                        </Button>
+                            }}
+                            className="mb-4"
+                            variant="outline"
+                          >
+                            <PlayIcon className="w-4 h-4 mr-2" />
+                            Play Video
+                          </Button>
+                        )}
                         
                         {/* Video Info */}
                         <div className="bg-purple-50 rounded-lg p-3 mb-4">
@@ -853,10 +857,10 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                         </div>
                       </div>
                       
-                      <div className="flex gap-2">
+                      <div className="flex gap-3 justify-center">
                         <Button
                           onClick={approveVideo}
-                          className="flex-1"
+                          className="bg-green-600 hover:bg-green-700 text-white px-6"
                           aria-label="Approve video for combination with text"
                         >
                           <CheckIcon className="w-4 h-4 mr-2" />
@@ -865,38 +869,11 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                         <Button
                           onClick={deleteVideo}
                           variant="outline"
-                          className="flex-1"
+                          className="px-6"
                           aria-label="Delete video and revert to text-only"
                         >
                           <XIcon className="w-4 h-4 mr-2" />
-                          Delete Video
-                        </Button>
-                        <Button
-                          onClick={async () => {
-                            try {
-                              // Use a known real Seedance video URL from the logs
-                              const realVideoUrl = 'https://replicate.delivery/xezq/BJC8Q7hYOKp8HRfNBsKE5Z6YgIgNx27s1vIxe9MLecuv0M9pA/tmpjns1dnw3.mp4';
-                              console.log('🎬 Loading real Seedance video:', realVideoUrl);
-                              setVideoData(prev => ({
-                                ...prev,
-                                url: realVideoUrl,
-                                previewMode: false,
-                                seedanceGenerated: true
-                              }));
-                              toast({
-                                title: "Real Video Loaded!",
-                                description: "Now showing actual Seedance-generated video"
-                              });
-                            } catch (error) {
-                              console.error('Failed to load real video:', error);
-                            }
-                          }}
-                          variant="outline"
-                          className="flex-1 border-green-300 text-green-600 hover:bg-green-50"
-                          aria-label="Load real Seedance-generated video for preview"
-                        >
-                          <PlayIcon className="w-4 h-4 mr-2" />
-                          Preview Real Video
+                          Delete
                         </Button>
                       </div>
                     </div>
