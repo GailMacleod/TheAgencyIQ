@@ -228,12 +228,21 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
               if (seedanceData.success && seedanceData.video?.url && seedanceData.video.url.includes('replicate.delivery')) {
                 console.log('✅ REAL SEEDANCE VIDEO FOUND:', seedanceData.video.url);
                 setCurrentPhase('✅ Seedance Video Generation Complete!');
-                setVideoData(prev => ({
-                  ...prev,
+                
+                // Force immediate video update with real URL
+                const realVideoData = {
+                  ...videoData,
                   url: seedanceData.video.url,
                   seedanceGenerated: true,
-                  realVideo: true
-                }));
+                  realVideo: true,
+                  duration: 10 // Force 10-second duration
+                };
+                console.log('🔄 FORCING VIDEO DATA UPDATE:', realVideoData);
+                setVideoData(realVideoData);
+                
+                // Force re-render by updating video loading state
+                setVideoLoading(false);
+                
                 toast({
                   title: "Real Video Ready!",
                   description: "Seedance video is now playing"
@@ -522,12 +531,19 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                               
                               if (data.success && data.video?.url && data.video.url.includes('replicate.delivery')) {
                                 console.log('✅ POWER REFRESH SUCCESS:', data.video.url);
-                                setVideoData(prev => ({
-                                  ...prev,
+                                
+                                // Force immediate video update with real URL
+                                const refreshedVideoData = {
+                                  ...videoData,
                                   url: data.video.url,
                                   realVideo: true,
-                                  seedanceGenerated: true
-                                }));
+                                  seedanceGenerated: true,
+                                  duration: 10 // Force 10-second duration
+                                };
+                                console.log('🔄 POWER REFRESH FORCING VIDEO UPDATE:', refreshedVideoData);
+                                setVideoData(refreshedVideoData);
+                                setVideoLoading(false);
+                                
                                 toast({
                                   title: "Video Refreshed",
                                   description: "Real Seedance video is now playing"
@@ -583,12 +599,20 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           {videoData.url && (videoData.url.includes('replicate.delivery') || videoData.url.includes('replicate.com') || videoData.realVideo) ? (
                             <div className="w-full h-full relative">
                               <video
+                                ref={(video) => {
+                                  if (video && videoData.realVideo) {
+                                    video.currentTime = 0; // Reset to start
+                                    console.log('📹 Real video element ready:', videoData.url);
+                                  }
+                                }}
                                 className="w-full h-full object-cover"
                                 controls
                                 muted
                                 loop
+                                autoPlay={videoData.realVideo}
                                 onLoadedMetadata={(e) => {
                                   console.log('✅ Real Seedance video loaded successfully:', videoData.url);
+                                  setVideoDuration(Math.min(e.target.duration, 10)); // Cap at 10 seconds
                                   setVideoLoading(false);
                                 }}
                                 onError={(e) => {
@@ -599,6 +623,12 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                                 onLoadStart={() => {
                                   console.log('🔄 Video loading started:', videoData.url);
                                   setVideoLoading(true);
+                                }}
+                                onTimeUpdate={(e) => {
+                                  // Force 10-second max duration
+                                  if (e.target.currentTime >= 10) {
+                                    e.target.currentTime = 0; // Loop back to start
+                                  }
                                 }}
                               >
                                 <source src={videoData.url} type="video/mp4" />
