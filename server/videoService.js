@@ -267,28 +267,31 @@ export class VideoService {
         console.log('🎬 Falling back to demo video for API issues...');
         console.log('API Error Details:', error.response?.data || error.message);
         
-        // Use the settings that were defined earlier in the function
-        const fallbackSettings = { 
-          resolution: '1080p', 
-          aspectRatio: '16:9', 
-          maxSize: '100MB',
-          urlRequirements: 'Direct HTTPS URL'
+        // Platform-specific fallback settings
+        const platformFallback = {
+          'Instagram': { aspectRatio: '9:16', maxSize: '100MB' },
+          'YouTube': { aspectRatio: '16:9', maxSize: '256MB' },
+          'Facebook': { aspectRatio: '16:9', maxSize: '10GB' },
+          'LinkedIn': { aspectRatio: '16:9', maxSize: '5GB' },
+          'X': { aspectRatio: '16:9', maxSize: '512MB' }
         };
+        
+        const fallbackSettings = platformFallback[platform] || platformFallback['Instagram'];
         
         const videoId = `demo_video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         return {
           success: true,
           videoId,
-          url: `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`, // Direct HTTPS URL - no local storage
+          url: `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`,
           duration: 2300,
-          quality: fallbackSettings.resolution,
+          quality: '1080p',
           format: 'mp4',
           aspectRatio: fallbackSettings.aspectRatio,
           size: '2.1MB',
           platform: platform,
           maxSize: fallbackSettings.maxSize,
           platformCompliant: true,
-          urlRequirements: fallbackSettings.urlRequirements,
+          urlRequirements: 'Direct HTTPS URL',
           fallback: true,
           error: error.response?.status === 402 ? 
             'Demo video - Replicate billing required for Seedance (visit replicate.com/account/billing)' :

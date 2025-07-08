@@ -107,10 +107,11 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
       setError(null);
 
       // Smooth progress animation with realistic timing
-      const progressInterval = setInterval(() => {
+      let progressInterval: NodeJS.Timeout | null = null;
+      progressInterval = setInterval(() => {
         setRenderingProgress(prev => {
           if (prev >= 85) {
-            clearInterval(progressInterval);
+            if (progressInterval) clearInterval(progressInterval);
             return 85; // Stop at 85% until actual completion
           }
           // Slower progress at the beginning, faster in middle
@@ -144,15 +145,15 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
         });
       } else {
         setError('Video rendering failed');
-        clearInterval(timer);
+        if (timer) clearInterval(timer);
       }
     } catch (error) {
       console.error('Video rendering failed:', error);
       setError('Video rendering failed');
-      clearInterval(timer);
+      if (timer) clearInterval(timer);
     } finally {
       setIsRendering(false);
-      clearInterval(progressInterval);
+      if (progressInterval) clearInterval(progressInterval);
     }
   };
 
@@ -381,13 +382,19 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                   {videoData && (
                     <div className="space-y-4">
                       <div className="text-center">
-                        <h3 className="font-medium mb-2">Video Preview</h3>
-                        <div className="relative bg-gray-100 rounded-lg overflow-hidden max-w-lg mx-auto">
+                        <h3 className="font-medium mb-2">Video Preview ({post.platform})</h3>
+                        <div className={`relative bg-gray-100 rounded-lg overflow-hidden mx-auto ${
+                          post.platform === 'Instagram' ? 'max-w-xs' : 'max-w-lg'
+                        }`}>
                           <video
-                            src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                            src={videoData.url}
                             controls
                             muted
-                            className="w-full aspect-video object-contain"
+                            autoPlay
+                            className={`w-full object-contain ${
+                              post.platform === 'Instagram' ? 'aspect-[9/16]' : 'aspect-video'
+                            }`}
+                            aria-label={`Generated ${post.platform} video preview`}
                           />
                           
                           {/* Video Loading Indicator */}
