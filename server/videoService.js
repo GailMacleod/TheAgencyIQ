@@ -69,14 +69,17 @@ export class VideoService {
     const businessTerms = ['automation', 'efficiency', 'productivity', 'growth', 'success', 'professional', 'business', 'entrepreneur', 'sme', 'queensland', 'time-poor', 'visibility', 'competitive'];
     const foundTerms = businessTerms.filter(term => contentWords.includes(term));
     
-    // Human-like luxury lifestyle scenes - relatable movements that draw viewers in
+    // VIRAL ANTHROPOMORPHIC ADVENTURE SCENES - Epic Movie Trailer Style
     const epicScenes = [
-      'walking upright like a person onto a private beach made of invoices, then sitting cross-legged in a luxury cabana using paws like hands to sip tiny cocktails while spreadsheets float by like dream clouds',
-      'strolling elegantly like a human to a spa retreat built from reports, then lying down human-style enjoying a full day of pampering with miniature robes and cucumber eye masks held in place with paws',
-      'walking bipedal onto a yacht deck made of pie charts, then standing upright hosting an exclusive party using human gestures to hold tiny champagne glasses and designer sunglasses',
-      'striding confidently like a person into a luxury resort lobby constructed from spreadsheets, then walking upright to check into the penthouse suite carrying tiny luggage with human-like arm movements',
-      'window shopping like a human through a high-end district made of invoices, then trying on designer outfits with human-like arm and body movements while personal shopping assistants follow',
-      'walking the red carpet like a celebrity made of quarterly reports, then posing with human gestures and attending a glamorous gala wearing tiny formal wear while paparazzi cameras flash'
+      'heroically leaping across skyscrapers made of invoices in slow motion, then landing perfectly on a rooftop office building where they dramatically remove tiny sunglasses and survey their automated business empire below',
+      'driving a miniature sports car at high speed through a canyon made of spreadsheets, then screeching to a stop at the edge of a cliff to dramatically look out over a vast digital landscape of floating quarterly reports',
+      'performing spectacular martial arts moves against an army of paperwork monsters, then striking a final victory pose as automated systems spring to life around them in golden light',
+      'surfing down a massive wave made of quarterly reports while wearing tiny board shorts, then gracefully dismounting onto a tropical beach where robotic assistants serve cocktails',
+      'skydiving through clouds made of pie charts while wearing a tiny parachute, then landing perfectly in front of a luxury mansion as automated lawn sprinklers create rainbow effects',
+      'racing through a jungle made of business documents on a tiny motorcycle, then sliding under a low-hanging invoice vine and emerging into a clearing where a golden automation temple awaits',
+      'climbing a massive mountain of filing cabinets in mountaineering gear, then triumphantly planting a tiny flag at the summit as automated systems activate across the landscape below',
+      'sailing through a storm of flying paperwork on a tiny ship, then emerging into calm waters where a magnificent automated city rises from the ocean',
+      'dancing in slow motion through a ballroom made of spreadsheets while wearing formal attire, then spinning dramatically as the room transforms into a modern automated office space'
     ];
     
     const randomScene = epicScenes[Math.floor(Math.random() * epicScenes.length)];
