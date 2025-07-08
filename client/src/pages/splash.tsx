@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Zap, Target, Calendar, BarChart3, Users, Sparkles, CheckCircle, ArrowRight, Cpu, Lightbulb } from "lucide-react";
+import { Zap, Target, Calendar, BarChart3, Users, Sparkles, CheckCircle, ArrowRight, Cpu, Lightbulb, Film } from "lucide-react";
 import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
 import GrokWidget from "@/components/grok-widget";
@@ -134,7 +134,8 @@ export default function Splash() {
                 
                 {/* Video Feature Description - Centered under card */}
                 <div className="mt-6 flex justify-center max-w-md ml-auto">
-                  <div className="px-6 py-2 rounded-full text-sm font-bold text-black" style={{ backgroundColor: '#00f0ff' }}>
+                  <div className="px-6 py-2 rounded-full text-sm font-bold text-black flex items-center gap-2" style={{ backgroundColor: '#00f0ff' }}>
+                    <Film className="w-4 h-4" />
                     Includes video shorts fast, text-to-video animation
                   </div>
                 </div>
