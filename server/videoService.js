@@ -28,13 +28,13 @@ export class VideoService {
           {
             type: 'Epic Business Adventure',
             content: prompts.shortForm,
-            duration: '15-30s',
+            duration: '10s',
             style: 'Cinematic movie trailer with dynamic action and pastel colors'
           },
           {
             type: 'Magical Business Quest',
             content: prompts.asmr,
-            duration: '30-45s',
+            duration: '10s',
             style: 'Fantastical adventure epic with magical transformations and vibrant entertainment'
           }
         ]
@@ -53,13 +53,13 @@ export class VideoService {
     const brandName = (brandData && brandData.brandName) || 'The AgencyIQ';
     const coreMessage = (brandData && brandData.corePurpose) || 'Professional business visibility';
     
-    // Platform-specific video requirements
+    // Platform-specific video requirements - ALL CAPPED AT 10 SECONDS
     const platformSpecs = {
-      'Instagram': { aspect: '9:16', duration: '15-30s', style: 'cinematic-vertical' },
-      'YouTube': { aspect: '16:9', duration: '30-60s', style: 'epic-trailer' },
-      'Facebook': { aspect: '1:1', duration: '15-45s', style: 'dynamic-square' },
-      'LinkedIn': { aspect: '1:1', duration: '30-60s', style: 'professional-epic' },
-      'X': { aspect: '16:9', duration: '15-30s', style: 'viral-impact' }
+      'Instagram': { aspect: '9:16', duration: '10s', style: 'cinematic-vertical' },
+      'YouTube': { aspect: '16:9', duration: '10s', style: 'epic-trailer' },
+      'Facebook': { aspect: '1:1', duration: '10s', style: 'dynamic-square' },
+      'LinkedIn': { aspect: '1:1', duration: '10s', style: 'professional-epic' },
+      'X': { aspect: '16:9', duration: '10s', style: 'viral-impact' }
     };
 
     const spec = platformSpecs[platform] || platformSpecs['Instagram'];
@@ -85,9 +85,9 @@ export class VideoService {
     const randomScene = epicScenes[Math.floor(Math.random() * epicScenes.length)];
     
     return {
-      shortForm: `Epic ${spec.duration} luxury lifestyle trailer: Sophisticated golden retriever puppy moving exactly like a human, ${randomScene} showcasing their amazing life of leisure. All actions performed with human-like movements: walking upright, using paws like hands, sitting in chairs like people, making relatable gestures. Pastel color palette of soft pink, lavender, mint green, and coral. Dynamic camera work: swooping shots of luxury scenes, glamorous close-ups of human-like expressions, elegant transitions. Business automation message "${postContent.substring(0, 80)}..." subtly delivered through enviable lifestyle showcase. Aspirational soundtrack with luxury vibes and "living my best life" energy. Multiple quick scene cuts showing different lavish activities, all performed with human-like posture and movements. Ends with puppy standing upright and toasting success like a person with tiny champagne as business papers transform into celebration confetti. Movie trailer text: "When ${coreMessage} Works For You" and "This Could Be Your Life". Pure lifestyle envy with relatable human movements that pulls Queensland SMEs in and makes them desperate for business automation.`,
+      shortForm: `Epic 10-second luxury lifestyle trailer: Sophisticated golden retriever puppy moving exactly like a human, ${randomScene} showcasing their amazing life of leisure. All actions performed with human-like movements: walking upright, using paws like hands, sitting in chairs like people, making relatable gestures. Pastel color palette of soft pink, lavender, mint green, and coral. Dynamic camera work: swooping shots of luxury scenes, glamorous close-ups of human-like expressions, elegant transitions. Business automation message "${postContent.substring(0, 50)}..." subtly delivered through enviable lifestyle showcase. Aspirational soundtrack with luxury vibes and "living my best life" energy. Quick scene cuts showing lavish activities, all performed with human-like posture and movements. Ends with puppy standing upright and toasting success like a person with tiny champagne as business papers transform into celebration confetti. Movie trailer text: "When ${coreMessage} Works For You" and "This Could Be Your Life". Pure lifestyle envy with relatable human movements that pulls Queensland SMEs in and makes them desperate for business automation.`,
         
-      asmr: `Cinematic ${spec.duration} luxury lifestyle epic: Pampered orange kitten moving and acting exactly like a human, living their absolute best life, ${randomScene} in a world of endless leisure. All movements distinctly human-like: walking bipedal, using paws as hands to hold objects, sitting cross-legged, making human facial expressions and gestures. Opening: kitten walking upright and stretching like a person waking up in luxury penthouse with automated business running itself. Journey includes: spa days lying human-style with cucumber masks, yacht parties standing and toasting like people with tiny champagne, shopping sprees trying on clothes with human arm movements, red carpet events posing like celebrities with human gestures. Business wisdom "${postContent.substring(0, 100)}..." woven into glamorous lifestyle narrative showing the rewards of automation. Magical transformation sequences showing work becoming play, all with human-like body language. Upbeat music builds to climactic toast with kitten standing upright celebrating freedom from ${foundTerms.join(' and ') || 'business stress'}. Ends with kitten sitting like a person surveying their empire from a luxury balcony as ${coreMessage.toLowerCase()} delivers ultimate lifestyle freedom. Pure aspirational content with irresistible human movements that pulls viewers in and makes business automation irresistible.`
+      asmr: `Cinematic 10-second luxury lifestyle epic: Pampered orange kitten moving and acting exactly like a human, living their absolute best life, ${randomScene} in a world of endless leisure. All movements distinctly human-like: walking bipedal, using paws as hands to hold objects, sitting cross-legged, making human facial expressions and gestures. Opening: kitten walking upright and stretching like a person waking up in luxury penthouse with automated business running itself. Journey includes: spa days lying human-style with cucumber masks, yacht parties standing and toasting like people with tiny champagne, shopping sprees trying on clothes with human arm movements, red carpet events posing like celebrities with human gestures. Business wisdom "${postContent.substring(0, 50)}..." woven into glamorous lifestyle narrative showing the rewards of automation. Magical transformation sequences showing work becoming play, all with human-like body language. Upbeat music builds to climactic toast with kitten standing upright celebrating freedom from ${foundTerms.join(' and ') || 'business stress'}. Ends with kitten sitting like a person surveying their empire from a luxury balcony as ${coreMessage.toLowerCase()} delivers ultimate lifestyle freedom. Pure aspirational content with irresistible human movements that pulls viewers in and makes business automation irresistible.`
     };
   }
 
@@ -498,7 +498,7 @@ export class VideoService {
     const randomScene = allScenes[Math.floor(Math.random() * allScenes.length)];
     
     // Art Director's HUMAN-LIKE LUXURY LIFESTYLE creative brief - relatable movements that pull viewers in
-    return `Epic luxury lifestyle movie trailer starring ${animalCasting} moving and acting exactly like a human, living their absolute best life thanks to business automation. Opening scene: ${animalCasting} ${randomScene}. All movements are distinctly human-like: walking upright on hind legs, using paws like hands to hold objects, sitting in chairs like people, making human gestures and expressions. This creates irresistible viewer connection through familiar body language and movements. Pure lifestyle envy - showing off all the amazing free time they now have. Cinematic pastel color palette featuring soft pinks, lavender, mint green, coral, peach, and sky blue throughout. Brand purpose "${brandPurpose}" subtly woven into their glamorous lifestyle upgrade. ${styleDirection}. Dynamic camera movements: swooping aerial shots of luxury scenes, dramatic close-ups of human-like facial expressions, slow-motion leisure sequences showing relatable human actions, and spinning transitions between amazing activities. Upbeat, aspirational soundtrack with luxury lifestyle vibes and triumphant "living my best life" moments. Multiple scene cuts showing different enviable leisure activities, all performed with human-like posture and gestures. Ending with ${animalCasting} standing upright and toasting like a person with a tiny champagne glass held in paws on their luxury balcony as business documents transform into confetti celebrating their freedom. Movie trailer text overlays appear: "When ${brandPurpose?.toLowerCase() || 'business runs itself'}", "This Could Be Your Life", "The Freedom Starts Now". Ultra-engaging, scroll-stopping content that pulls viewers in through relatable human movements and makes them desperate for business automation.`;
+    return `Epic 10-second luxury lifestyle movie trailer starring ${animalCasting} moving and acting exactly like a human, living their absolute best life thanks to business automation. Opening scene: ${animalCasting} ${randomScene}. All movements are distinctly human-like: walking upright on hind legs, using paws like hands to hold objects, sitting in chairs like people, making human gestures and expressions. This creates irresistible viewer connection through familiar body language and movements. Pure lifestyle envy - showing off all the amazing free time they now have. Cinematic pastel color palette featuring soft pinks, lavender, mint green, coral, peach, and sky blue throughout. Brand purpose "${brandPurpose}" subtly woven into their glamorous lifestyle upgrade. ${styleDirection}. Dynamic camera movements: swooping aerial shots of luxury scenes, dramatic close-ups of human-like facial expressions, slow-motion leisure sequences showing relatable human actions, and spinning transitions between amazing activities. Upbeat, aspirational soundtrack with luxury lifestyle vibes and triumphant "living my best life" moments. Quick scene cuts showing different enviable leisure activities, all performed with human-like posture and gestures. Ending with ${animalCasting} standing upright and toasting like a person with a tiny champagne glass held in paws on their luxury balcony as business documents transform into confetti celebrating their freedom. Movie trailer text overlays appear: "When ${brandPurpose?.toLowerCase() || 'business runs itself'}", "This Could Be Your Life", "The Freedom Starts Now". Ultra-engaging, scroll-stopping content that pulls viewers in through relatable human movements and makes them desperate for business automation.`;
   }
 
   static async approveAndPostVideo(userId, postId, videoData, platforms) {
