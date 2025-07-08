@@ -40,15 +40,11 @@ export function cartographer() {
 EOF
 fi
 
-# Step 2: Build the application (VITE-FREE)
-echo "📦 Building application with Vite-free system..."
-./build-production.sh
+# Step 2: Build the application
+echo "📦 Building application..."
+node build-simple.js
 
-# Step 3: Health check pre-validation
-echo "🏥 Pre-deployment health check..."
-curl -f http://localhost:5000/api/health > /tmp/health-check.log 2>&1 || echo "Health check will be performed after startup"
-
-# Step 4: Test the build
+# Step 3: Test the build
 echo "🧪 Testing production build..."
 timeout 5 node dist/index.js > /tmp/build-test.log 2>&1 &
 BUILD_PID=$!

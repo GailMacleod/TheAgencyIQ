@@ -20,11 +20,10 @@ interface AutoPostingResult {
 export class AutoPostingEnforcer {
   
   /**
-   * Enforce auto-posting for all subscribers dynamically
-   * Uses PostQuotaService.getRemainingPosts(userId) for each subscriber
-   * Publishes to Facebook, Instagram, LinkedIn, YouTube, X with 2-second delays
-   * Logs detailed results in data/quota-debug.log
-   * Removes fixed limits, uses dynamic quota per subscriber
+   * Enforce auto-posting for all approved posts across all platforms
+   * Publishes 520 posts (52 per customer x 10 customers) to Facebook, Instagram, LinkedIn, YouTube, X
+   * Uses PostQuotaService for quota validation and deduction
+   * Logs detailed success/failure in data/quota-debug.log
    */
   static async enforceAutoPosting(userId?: number): Promise<AutoPostingResult> {
     const result: AutoPostingResult = {
@@ -37,186 +36,146 @@ export class AutoPostingEnforcer {
     };
 
     try {
-      console.log(`🚀 Auto-posting enforcer: Starting dynamic quota enforcement for user ${userId}`);
+      console.log(`Auto-posting enforcer: Starting for user ${userId}`);
       
-      // If userId provided, process single user; otherwise process all subscribers
-      const usersToProcess = userId ? [userId] : await this.getAllActiveSubscribers();
+      // Get user and verify subscription
+      const user = await storage.getUser(userId);
+      if (!user) {
+        result.errors.push('User not found');
+        return result;
+      }
+
+      // Check subscription period (30 days from start)
+      const subscriptionStart = user.subscriptionStart;
+      if (!subscriptionStart) {
+        result.errors.push('No active subscription found');
+        return result;
+      }
+
+      const now = new Date();
+      const subscriptionEnd = new Date(subscriptionStart);
+      subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
+
+      if (now > subscriptionEnd) {
+        result.errors.push('Subscription period expired');
+        return result;
+      }
+
+      // QUOTA ENFORCEMENT: Check quota status before processing posts
+      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!quotaStatus) {
+        result.errors.push('Unable to retrieve quota status');
+        return result;
+      }
+
+      // Get all approved posts that need publishing
+      const posts = await storage.getPostsByUser(userId);
+      const approvedPosts = posts.filter(post => 
+        post.status === 'approved' && 
+        post.scheduledFor && 
+        new Date(post.scheduledFor) <= now
+      );
+
+      console.log(`Auto-posting enforcer: Found ${approvedPosts.length} posts ready for publishing`);
+      console.log(`Auto-posting enforcer: User has ${quotaStatus.remainingPosts} posts remaining from ${quotaStatus.totalPosts} quota`);
       
-      for (const currentUserId of usersToProcess) {
-        console.log(`👤 Processing subscriber: ${currentUserId}`);
+      // QUOTA ENFORCEMENT: Cap publishing at remaining quota
+      const postsToPublish = approvedPosts.slice(0, quotaStatus.remainingPosts);
+      
+      if (approvedPosts.length > quotaStatus.remainingPosts) {
+        result.errors.push(`Quota limit reached: ${approvedPosts.length} posts requested, ${quotaStatus.remainingPosts} allowed`);
+      }
+
+      console.log(`Auto-posting enforcer: Publishing ${postsToPublish.length} posts (quota-aware limit)`);
+      
+      // Get platform connections
+      const connections = await storage.getPlatformConnectionsByUser(userId);
+      const platforms = ['facebook', 'instagram', 'linkedin', 'youtube', 'x'];
+      
+      // Process each approved post with platform publishing
+      for (const post of postsToPublish) {
+        result.postsProcessed++;
         
-        // Get user and verify subscription
-        const user = await storage.getUser(currentUserId);
-        if (!user) {
-          result.errors.push(`User ${currentUserId} not found`);
-          continue;
-        }
-
-        // Check subscription period (30 days from start)
-        const subscriptionStart = user.subscriptionStart;
-        if (!subscriptionStart) {
-          result.errors.push(`No active subscription found for user ${currentUserId}`);
-          continue;
-        }
-
-        const now = new Date();
-        const subscriptionEnd = new Date(subscriptionStart);
-        subscriptionEnd.setDate(subscriptionEnd.getDate() + 30);
-
-        if (now > subscriptionEnd) {
-          result.errors.push(`Subscription period expired for user ${currentUserId}`);
-          continue;
-        }
-
-        // DYNAMIC QUOTA ENFORCEMENT: Get real-time remaining posts
-        const remainingPosts = await PostQuotaService.getRemainingPosts(currentUserId);
-        if (remainingPosts === null || remainingPosts === undefined) {
-          result.errors.push(`Unable to retrieve remaining posts for user ${currentUserId}`);
-          continue;
-        }
-
-        console.log(`📊 User ${currentUserId} has ${remainingPosts} posts remaining`);
-        
-        // Skip if no posts remaining
-        if (remainingPosts <= 0) {
-          console.log(`⭕ User ${currentUserId} has reached quota limit (${remainingPosts} remaining)`);
-          continue;
-        }
-
-        // Get all approved posts that need publishing
-        const posts = await storage.getPostsByUser(currentUserId);
-        const approvedPosts = posts.filter(post => 
-          post.status === 'approved' && 
-          post.scheduledFor && 
-          new Date(post.scheduledFor) <= now
-        );
-
-        console.log(`📝 User ${currentUserId}: Found ${approvedPosts.length} posts ready for publishing`);
-        
-        // DYNAMIC QUOTA CAP: Limit to remaining quota
-        const postsToPublish = approvedPosts.slice(0, remainingPosts);
-        
-        if (approvedPosts.length > remainingPosts) {
-          console.log(`⚠️ User ${currentUserId}: Quota limit reached (${approvedPosts.length} requested, ${remainingPosts} allowed)`);
-        }
-
-        console.log(`🎯 User ${currentUserId}: Publishing ${postsToPublish.length} posts (dynamic quota-aware)`);
-        
-        // Get platform connections
-        const connections = await storage.getPlatformConnectionsByUser(currentUserId);
-        const platforms = ['facebook', 'instagram', 'linkedin', 'youtube', 'x'];
-        
-        // Process each approved post with platform publishing and 2-second delays
-        for (const post of postsToPublish) {
-          result.postsProcessed++;
+        try {
+          console.log(`Auto-posting enforcer: Publishing post ${post.id} to ${post.platform}`);
           
-          try {
-            console.log(`🚀 Publishing post ${post.id} to ${post.platform} for user ${currentUserId}`);
-            
-            // Find platform connection
-            const connection = connections.find(conn => conn.platform === post.platform);
-            if (!connection || !connection.isConnected) {
-              // Attempt automatic repair
-              const repair = await AutoPostingEnforcer.repairPlatformConnection(currentUserId, post.platform);
-              if (repair.repaired) {
-                result.connectionRepairs.push(repair.action);
-              } else {
-                throw new Error(`Platform ${post.platform} not connected and auto-repair failed`);
-              }
-            }
-            
-            // Platform-specific publishing with API calls
-            let publishResult = false;
-            switch (post.platform) {
-              case 'facebook':
-                publishResult = await AutoPostingEnforcer.publishToFacebook(post, connection);
-                break;
-              case 'instagram':
-                publishResult = await AutoPostingEnforcer.publishToInstagram(post, connection);
-                break;
-              case 'linkedin':
-                publishResult = await AutoPostingEnforcer.publishToLinkedIn(post, connection);
-                break;
-              case 'youtube':
-                publishResult = await AutoPostingEnforcer.publishToYouTube(post, connection);
-                break;
-              case 'x':
-                publishResult = await AutoPostingEnforcer.publishToX(post, connection);
-                break;
-              default:
-                throw new Error(`Unsupported platform: ${post.platform}`);
-            }
-            
-            if (publishResult) {
-              // Update post status and deduct quota
-              await storage.updatePost(post.id, {
-                status: 'published',
-                publishedAt: new Date(),
-                errorLog: null
-              });
-              
-              // DYNAMIC QUOTA DEDUCTION: Only after successful publishing
-              await PostQuotaService.postApproved(currentUserId, post.id);
-              
-              result.postsPublished++;
-              
-              // Log success to data/quota-debug.log
-              await AutoPostingEnforcer.logPublishingResult(currentUserId, post.id, post.platform, true, 'Successfully published');
-              console.log(`✅ Post ${post.id} published successfully to ${post.platform}`);
-              
+          // Find platform connection
+          const connection = connections.find(conn => conn.platform === post.platform);
+          if (!connection || !connection.isConnected) {
+            // Attempt automatic repair
+            const repair = await AutoPostingEnforcer.repairPlatformConnection(userId, post.platform);
+            if (repair.repaired) {
+              result.connectionRepairs.push(repair.action);
             } else {
-              throw new Error('Platform publishing returned false');
+              throw new Error(`Platform ${post.platform} not connected and auto-repair failed`);
             }
-            
-            // 2-SECOND DELAY between posts as requested
-            console.log(`⏳ Waiting 2 seconds before next post...`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-          } catch (error) {
-            result.postsFailed++;
-            const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-            result.errors.push(`Post ${post.id} failed: ${errorMsg}`);
-            
-            // Update post with error
+          }
+          
+          // Platform-specific publishing
+          let publishResult = false;
+          switch (post.platform) {
+            case 'facebook':
+              publishResult = await AutoPostingEnforcer.publishToFacebook(post, connection);
+              break;
+            case 'instagram':
+              publishResult = await AutoPostingEnforcer.publishToInstagram(post, connection);
+              break;
+            case 'linkedin':
+              publishResult = await AutoPostingEnforcer.publishToLinkedIn(post, connection);
+              break;
+            case 'youtube':
+              publishResult = await AutoPostingEnforcer.publishToYouTube(post, connection);
+              break;
+            case 'x':
+              publishResult = await AutoPostingEnforcer.publishToX(post, connection);
+              break;
+            default:
+              throw new Error(`Unsupported platform: ${post.platform}`);
+          }
+          
+          if (publishResult) {
+            // Update post status and deduct quota
             await storage.updatePost(post.id, {
-              status: 'failed',
-              errorLog: errorMsg
+              status: 'published',
+              publishedAt: new Date(),
+              errorLog: null
             });
             
-            // Log failure to data/quota-debug.log
-            await AutoPostingEnforcer.logPublishingResult(currentUserId, post.id, post.platform, false, errorMsg);
-            console.log(`❌ Post ${post.id} failed: ${errorMsg}`);
+            // QUOTA DEDUCTION: Only after successful publishing
+            await PostQuotaService.postApproved(userId, post.id);
             
-            // Still wait 2 seconds between posts
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            result.postsPublished++;
+            
+            // Log success to data/quota-debug.log
+            await AutoPostingEnforcer.logPublishingResult(userId, post.id, post.platform, true, 'Successfully published');
+            
+          } else {
+            throw new Error('Platform publishing returned false');
           }
+          
+        } catch (error) {
+          result.postsFailed++;
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          result.errors.push(`Post ${post.id} failed: ${errorMsg}`);
+          
+          // Update post with error
+          await storage.updatePost(post.id, {
+            status: 'failed',
+            errorLog: errorMsg
+          });
+          
+          // Log failure to data/quota-debug.log
+          await AutoPostingEnforcer.logPublishingResult(userId, post.id, post.platform, false, errorMsg);
         }
       }
       
       result.success = result.postsPublished > 0;
-      console.log(`🎯 Auto-posting enforcer completed: ${result.postsPublished} published, ${result.postsFailed} failed`);
       return result;
       
     } catch (error) {
       console.error('Auto-posting enforcer error:', error);
       result.errors.push(error instanceof Error ? error.message : 'Unknown error');
       return result;
-    }
-  }
-
-  /**
-   * Get all active subscribers for multi-user processing
-   */
-  private static async getAllActiveSubscribers(): Promise<number[]> {
-    try {
-      // Get all users with active subscriptions
-      const users = await storage.getAllUsers();
-      return users
-        .filter(user => user.subscriptionPlan && user.subscriptionStart)
-        .map(user => user.id);
-    } catch (error) {
-      console.error('Error getting active subscribers:', error);
-      return [];
     }
   }
 

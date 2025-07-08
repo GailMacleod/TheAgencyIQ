@@ -194,26 +194,6 @@ export class PostQuotaService {
   }
 
   /**
-   * Get remaining posts for dynamic quota enforcement
-   * Used by AutoPostingEnforcer for real-time quota checking
-   */
-  static async getRemainingPosts(userId: number): Promise<number | null> {
-    try {
-      const quotaStatus = await this.getQuotaStatus(userId);
-      if (!quotaStatus) {
-        console.log(`⚠️ Unable to get quota status for user ${userId}`);
-        return null;
-      }
-      
-      console.log(`📊 User ${userId} has ${quotaStatus.remainingPosts} posts remaining from ${quotaStatus.totalPosts} total`);
-      return quotaStatus.remainingPosts;
-    } catch (error) {
-      console.error(`Error getting remaining posts for user ${userId}:`, error);
-      return null;
-    }
-  }
-
-  /**
    * Clear cache for specific user (called after quota changes)
    */
   static clearUserCache(userId: number): void {
