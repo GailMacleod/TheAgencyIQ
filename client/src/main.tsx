@@ -34,45 +34,19 @@ const getUser = async () => {
 };
 
 const App: React.FC = () => {
-  const [user, setUser] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
-
   React.useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        const sessionData = await establishSession();
-        if (sessionData?.success) {
-          const userData = await getUser();
-          setUser(userData);
-          console.log('App initialized with user:', userData);
-        }
-      } catch (error) {
-        console.error('Error initializing app:', error);
-      } finally {
-        setLoading(false);
+    // Initialize session and user data
+    establishSession().then(sessionData => {
+      if (sessionData?.success) {
+        getUser().then(userData => {
+          console.log('App initialized with user:', userData?.email);
+        });
       }
-    };
-    
-    initializeApp();
+    });
   }, []);
-
-  if (loading) {
-    return <div style={{ padding: '20px', textAlign: 'center' }}>Loading TheAgencyIQ...</div>;
-  }
 
   return (
     <div>
-      {user && (
-        <div style={{ 
-          padding: '10px', 
-          background: '#f0f8ff', 
-          marginBottom: '20px',
-          border: '1px solid #ddd',
-          borderRadius: '4px'
-        }}>
-          <strong>User:</strong> {user.email} | <strong>Plan:</strong> {user.subscriptionPlan} | <strong>Posts:</strong> {user.remainingPosts}/{user.totalPosts} remaining
-        </div>
-      )}
       <VideoApproval />
     </div>
   );
