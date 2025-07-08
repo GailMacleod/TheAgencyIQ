@@ -19,23 +19,23 @@ const replicate = new Replicate({
 export class VideoService {
   static async generateVideoPrompts(postContent, platform, brandData) {
     try {
-      // Generate two AI prompts: short-form and ASMR
+      // Generate two AI prompts: epic movie trailer styles
       const prompts = await this.createOnBrandPrompts(postContent, platform, brandData);
       
       return {
         success: true,
         prompts: [
           {
-            type: 'Strategic ASMR Short-Form',
+            type: 'Epic Business Adventure',
             content: prompts.shortForm,
             duration: '15-30s',
-            style: 'ASMR business strategy - whispered professional insights'
+            style: 'Cinematic movie trailer with dynamic action and pastel colors'
           },
           {
-            type: 'Brand-Aligned ASMR',
+            type: 'Magical Business Quest',
             content: prompts.asmr,
             duration: '30-45s',
-            style: 'Strategic ASMR - soothing business guidance with tactile elements'
+            style: 'Fantastical adventure epic with magical transformations and vibrant entertainment'
           }
         ]
       };
@@ -55,11 +55,11 @@ export class VideoService {
     
     // Platform-specific video requirements
     const platformSpecs = {
-      'Instagram': { aspect: '9:16', duration: '15-30s', style: 'visual-first' },
-      'YouTube': { aspect: '16:9', duration: '30-60s', style: 'narrative' },
-      'Facebook': { aspect: '1:1', duration: '15-45s', style: 'community' },
-      'LinkedIn': { aspect: '1:1', duration: '30-60s', style: 'professional' },
-      'X': { aspect: '16:9', duration: '15-30s', style: 'quick-impact' }
+      'Instagram': { aspect: '9:16', duration: '15-30s', style: 'cinematic-vertical' },
+      'YouTube': { aspect: '16:9', duration: '30-60s', style: 'epic-trailer' },
+      'Facebook': { aspect: '1:1', duration: '15-45s', style: 'dynamic-square' },
+      'LinkedIn': { aspect: '1:1', duration: '30-60s', style: 'professional-epic' },
+      'X': { aspect: '16:9', duration: '15-30s', style: 'viral-impact' }
     };
 
     const spec = platformSpecs[platform] || platformSpecs['Instagram'];
@@ -69,10 +69,22 @@ export class VideoService {
     const businessTerms = ['automation', 'efficiency', 'productivity', 'growth', 'success', 'professional', 'business', 'entrepreneur', 'sme', 'queensland', 'time-poor', 'visibility', 'competitive'];
     const foundTerms = businessTerms.filter(term => contentWords.includes(term));
     
+    // Dynamic movie trailer scenes with pastel colors
+    const epicScenes = [
+      'dramatically soaring through clouds of floating business documents in slow motion',
+      'surf-riding down a rainbow waterfall of colorful spreadsheets',
+      'bouncing like a superhero between levitating office furniture',
+      'dancing through a tornado of swirling charts and graphs',
+      'racing on a magical flying carpet made of invoices',
+      'conducting an orchestra of musical calculators and laptops'
+    ];
+    
+    const randomScene = epicScenes[Math.floor(Math.random() * epicScenes.length)];
+    
     return {
-      shortForm: `Adorable golden retriever puppy sitting at tiny office desk with miniature laptop, gently tapping keys with paws. Soft whispering voiceover explains: "${postContent.substring(0, 120)}..." while puppy organizes tiny business papers with nose. Cozy office lighting, gentle paw sounds on keyboard, soft paper rustling. ASMR business coaching with cute animal delivering strategic insights in whispered, calming tone. Queensland SME focus with irresistibly cute delivery.`,
+      shortForm: `Epic ${spec.duration} movie trailer: Heroic golden retriever puppy ${randomScene} in a fantastical business wonderland. Pastel color palette of soft pink, lavender, mint green, and coral. Dynamic camera work: sweeping drone shots, dramatic zoom-ins, spinning transitions. Business message "${postContent.substring(0, 80)}..." delivered through adventure narrative. High-energy orchestral soundtrack with triumphant crescendos. Multiple quick scene cuts showing magical office transformations. Ends with puppy striking heroic pose on mountain of conquered paperwork as pastel confetti explodes. Movie trailer text: "The ${coreMessage} Adventure Begins". Ultra-engaging, scroll-stopping entertainment for Queensland SMEs.`,
         
-      asmr: `ASMR business strategy featuring fluffy orange kitten organizing miniature business documents with tiny paws. Close-up shots of kitten gently patting papers, soft purring sounds, whispered voiceover explains: "${postContent.substring(0, 100)}...". Adorable cat sits at small desk discussing ${coreMessage.toLowerCase()} with gentle meowing and paper shuffling. Calming office ambiance with cute animal delivering strategic business insights in soothing ASMR style for ${foundTerms.join(' and ') || 'entrepreneurs'}. Viral cute factor meets professional strategy.`
+      asmr: `Cinematic ${spec.duration} adventure epic: Fluffy orange kitten becomes business superhero, ${randomScene} through dreamy pastel office universe. Opening: kitten discovers magical business portal glowing in soft peach and sky blue. Journey includes: leaping between floating pie charts, surfing waves of colorful data, performing acrobatic stunts around holographic presentations. Business wisdom "${postContent.substring(0, 100)}..." woven into exciting quest narrative. Magical transformation sequences with sparkles and light effects. Dynamic music builds to epic climax where kitten saves the day for ${foundTerms.join(' and ') || 'entrepreneurs'}. Ends with triumphant roar as ${coreMessage.toLowerCase()} achievement unlocked. Pure entertainment that makes business automation look like the greatest adventure ever.`
     };
   }
 
@@ -368,31 +380,33 @@ export class VideoService {
     // Platform-specific creative direction
     let styleDirection = '';
     if (platform === 'Instagram') {
-      styleDirection = 'Vertical close-up shots, Instagram-style trendy lighting, viral cute factor maximized';
+      styleDirection = 'Vertical cinematic shots, Instagram-worthy moments, dynamic movement, viral entertainment factor';
     } else if (platform === 'LinkedIn') {
-      styleDirection = 'Professional office setting, subtle business elements, sophisticated ASMR approach';
+      styleDirection = 'Professional cinematic setting, dynamic business scenes, sophisticated entertainment approach';
     } else if (platform === 'YouTube') {
-      styleDirection = 'Cinematic horizontal framing, YouTube thumbnail-worthy moments, engaging storytelling';
+      styleDirection = 'Cinematic horizontal framing, YouTube movie trailer style, engaging dynamic storytelling';
     } else {
-      styleDirection = 'Social media optimized, shareable moments, broad appeal';
+      styleDirection = 'Cinematic social media optimized, movie trailer vibes, dynamic shareable moments';
     }
     
-    // Human-like activities for the animal
-    const humanActivities = [
-      'sunbathing with tiny sunglasses while lazily sprawled on top of a massive pile of paperwork',
-      'sipping from a miniature lemonade glass while lounging against towering business documents',
-      'doing adorable handstands against an overflowing inbox as papers scatter everywhere',
-      'chasing its own tail around stacks of reports, getting dizzy and flopping over',
-      'taking a nap sprawled across a keyboard with paws dangling over important emails',
-      'doing tiny yoga stretches while balancing on business proposals',
-      'scratching its head with confusion while perched on top of financial spreadsheets',
-      'wearing sunglasses and lounging in a tiny beach chair placed on quarterly reports'
+    // Dynamic movie trailer activities - HIGH ENTERTAINMENT VALUE
+    const movieTrailerScenes = [
+      'dramatically leaping through floating business documents in slow motion while papers swirl around in pastel pink and lavender clouds',
+      'surfing down a mountain of colorful spreadsheets like an action hero, wearing tiny sunglasses, with charts flying everywhere in slow motion',
+      'parkour-style bouncing between floating office furniture suspended in a dreamy pastel mint green sky',
+      'performing epic dance moves on a giant rotating pie chart while confetti of business reports rains down in soft coral colors',
+      'speed-racing through a magical office maze on a tiny scooter, dodging flying staplers and calculators in a whimsical chase scene',
+      'conducting an orchestra of floating laptops and phones that play musical notes in a symphony of pastel purple and yellow',
+      'ninja-style flipping and diving through holographic business presentations that shimmer in soft peach and sky blue',
+      'flying a tiny paper airplane made from invoices through a fantastical sky of floating clouds shaped like bar graphs',
+      'breakdancing on a spinning globe while quarterly reports orbit around like planets in a pastel universe',
+      'skateboarding down a rainbow slide made of colorful spreadsheet cells while business icons rain down like confetti'
     ];
     
-    const randomActivity = humanActivities[Math.floor(Math.random() * humanActivities.length)];
+    const randomScene = movieTrailerScenes[Math.floor(Math.random() * movieTrailerScenes.length)];
     
-    // Art Director's enhanced creative brief with human-like behavior
-    return `ASMR business strategy video starring ${animalCasting}. Creative execution: ${animalCasting} ${randomActivity}, occasionally glancing at the work items with mild interest. Brand purpose "${brandPurpose}" subtly woven throughout. ${styleDirection}. Soft animal sounds mixed with gentle paper rustling, whispered business insights delivered while the animal enjoys human-like relaxation. Viral cute factor meets strategic brand messaging through adorable procrastination. Target: Queensland SME audience seeking ${brandPurpose?.toLowerCase() || 'business growth'}.`;
+    // Art Director's MOVIE TRAILER creative brief with dynamic entertainment
+    return `Epic mini movie trailer starring ${animalCasting} in a fantastical business wonderland. Opening scene: ${animalCasting} ${randomScene}. Cinematic pastel color palette featuring soft pinks, lavender, mint green, coral, peach, and sky blue throughout. Brand purpose "${brandPurpose}" woven into the adventure narrative. ${styleDirection}. Dynamic camera movements: swooping aerial shots, dramatic close-ups, slow-motion action sequences, and spinning transitions. High-energy soundtrack with business-themed sound effects and triumphant orchestral moments. Multiple scene cuts showing different magical business scenarios. Ending with ${animalCasting} striking a heroic pose on top of a mountain of conquered paperwork as pastel confetti falls. Movie trailer text overlays appear: "This ${brandPurpose?.toLowerCase() || 'business transformation'}", "Coming to Queensland SMEs", "The Adventure Begins Now". Ultra-engaging, scroll-stopping entertainment that makes business automation look like the most exciting adventure ever.`;
   }
 
   static async approveAndPostVideo(userId, postId, videoData, platforms) {
