@@ -83,14 +83,14 @@ export class VideoService {
       
       // Platform-specific resolution settings
       const platformSettings = {
-        'Instagram': { resolution: '720p', length: 5 }, // 9:16 ratio preferred
+        'Instagram': { resolution: '1080p', length: 5 }, // 9:16 ratio preferred
         'YouTube': { resolution: '1080p', length: 10 }, // 16:9 ratio
-        'Facebook': { resolution: '720p', length: 5 }, // 1:1 ratio
-        'LinkedIn': { resolution: '720p', length: 5 }, // 1:1 ratio
-        'X': { resolution: '720p', length: 5 } // 16:9 ratio
+        'Facebook': { resolution: '1080p', length: 5 }, // 1:1 ratio
+        'LinkedIn': { resolution: '1080p', length: 5 }, // 1:1 ratio
+        'X': { resolution: '1080p', length: 5 } // 16:9 ratio
       };
       
-      const settings = platformSettings[platform] || { resolution: '720p', length: 5 };
+      const settings = platformSettings[platform] || { resolution: '1080p', length: 5 };
       
       // Official Seedance API via Replicate
       const replicateApiKey = process.env.REPLICATE_API_TOKEN;
