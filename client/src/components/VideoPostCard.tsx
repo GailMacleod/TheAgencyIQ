@@ -98,6 +98,15 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
 
   // Check if video generation is allowed for this post - FORCE SHOW FOR ALL POSTS
   const canGenerateVideo = true; // Always show video button
+  
+  // Check if this post already has a generated video
+  useEffect(() => {
+    if (post.hasVideo && post.videoData) {
+      console.log('🎬 Post already has video:', post.videoData);
+      setVideoData(post.videoData);
+      setHasGeneratedVideo(true);
+    }
+  }, [post.hasVideo, post.videoData]);
 
   const generatePrompts = async () => {
     try {
@@ -173,11 +182,13 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
       });
 
       const data = await response.json();
+      console.log('🎬 Video render response:', data);
 
       if (data.success) {
         setRenderingProgress(100);
         clearInterval(timer);
         if (progressInterval) clearInterval(progressInterval);
+        console.log('🎬 Setting video data:', data);
         setVideoData(data);
         setHasGeneratedVideo(true);
         
@@ -458,6 +469,39 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                     <div className="space-y-4">
                       <div className="text-center">
                         <h3 className="font-medium mb-2">🎬 Art Director Video Preview ({post.platform})</h3>
+                        <div className="text-xs text-gray-500 mb-2">
+                          Video URL: {videoData.url ? 'Available' : 'No URL'} | Mode: {videoData.realVideo ? 'Real' : 'Preview'}
+                        </div>
+                        
+                        {/* Debug: Manual video refresh button */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch('/api/video/latest-seedance');
+                              const data = await response.json();
+                              if (data.success && data.video?.url) {
+                                console.log('🔄 Manual refresh - found real video:', data.video.url);
+                                setVideoData(prev => ({
+                                  ...prev,
+                                  url: data.video.url,
+                                  realVideo: true,
+                                  seedanceGenerated: true
+                                }));
+                                toast({
+                                  title: "Video Refreshed",
+                                  description: "Real Seedance video is now available"
+                                });
+                              }
+                            } catch (error) {
+                              console.log('Manual refresh failed:', error);
+                            }
+                          }}
+                          className="mb-2"
+                        >
+                          🔄 Refresh Video
+                        </Button>
                         
                         {/* Video Info */}
                         <div className="bg-purple-50 rounded-lg p-3 mb-4">
@@ -487,7 +531,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                         }`}>
                           
                           {/* Single Video Player Logic */}
-                          {videoData.url && (videoData.url.includes('replicate.delivery') || videoData.url.includes('replicate.com')) ? (
+                          {videoData.url && (videoData.url.includes('replicate.delivery') || videoData.url.includes('replicate.com') || videoData.realVideo) ? (
                             <div className="w-full h-full relative">
                               <video
                                 className="w-full h-full object-cover"
