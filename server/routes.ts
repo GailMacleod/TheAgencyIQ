@@ -7411,11 +7411,23 @@ export function addNotificationEndpoints(app: any) {
     }
   });
 
-  // Render video from selected prompt
+  // Render video from selected prompt - REAL SEEDANCE API
   app.post('/api/video/render', async (req: any, res) => {
     try {
+      console.log('=== REAL VIDEO RENDERING REQUEST ===');
       const { prompt, editedText, platform, userId, postId } = req.body;
-      const { VideoService } = await import('./videoService.js');
+      
+      console.log('Video render params:', { 
+        promptPreview: typeof prompt === 'string' ? prompt.substring(0, 50) : prompt?.content?.substring(0, 50),
+        editedText: editedText?.substring(0, 50),
+        platform,
+        userId,
+        postId 
+      });
+      
+      // Force fresh import to get updated VideoService with real Seedance API
+      delete require.cache[require.resolve('./videoService.js')];
+      const { VideoService } = await import('./videoService.js?' + Date.now());
       
       // Validate video generation limits
       const validation = VideoService.validateVideoLimits(userId, postId);
@@ -7427,6 +7439,15 @@ export function addNotificationEndpoints(app: any) {
       }
       
       const result = await VideoService.renderVideo(prompt, editedText, platform);
+      
+      console.log('Video rendering result:', { 
+        success: result.success, 
+        videoId: result.videoId,
+        hasUrl: !!result.url,
+        fallback: result.fallback,
+        error: result.error 
+      });
+      
       res.json(result);
     } catch (error) {
       console.error('Video rendering failed:', error);
