@@ -367,16 +367,22 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                         <h3 className="font-medium mb-2">Video Preview</h3>
                         <div className="relative bg-gray-100 rounded-lg overflow-hidden">
                           <video
-                            src={videoData.url}
+                            key={videoData.videoId}
                             autoPlay
                             muted
                             loop
                             controls
+                            playsInline
                             className="w-full h-48 object-cover"
-                            onError={() => setError('Video playback failed')}
-                            crossOrigin="anonymous"
+                            onError={(e) => {
+                              console.error('Video load error:', e);
+                              setError('Video playback failed');
+                            }}
+                            onLoadStart={() => console.log('Video loading started')}
+                            onCanPlay={() => console.log('Video can play')}
                           >
                             <source src={videoData.url} type="video/mp4" />
+                            <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4" />
                             Your browser does not support video playback.
                           </video>
                           
