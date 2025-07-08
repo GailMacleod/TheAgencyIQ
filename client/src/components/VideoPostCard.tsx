@@ -389,6 +389,11 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                               setVideoLoading(false);
                               setError(null);
                             }}
+                            onEnded={() => {
+                              console.log('Video playback ended - focusing on approval');
+                              setVideoLoading(false);
+                              // Focus back on UI - video has finished playing once
+                            }}
                             onError={(e) => {
                               console.error('Video load error:', e);
                               setVideoLoading(false);
