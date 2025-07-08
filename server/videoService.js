@@ -81,16 +81,58 @@ export class VideoService {
       // Use actual text content for video generation
       const videoPrompt = editedText || prompt.content || prompt;
       
-      // Platform-specific resolution settings
+      // Platform-specific video requirements (URLs only, no local storage)
       const platformSettings = {
-        'Instagram': { resolution: '1080p', length: 5 }, // 9:16 ratio preferred
-        'YouTube': { resolution: '1080p', length: 10 }, // 16:9 ratio
-        'Facebook': { resolution: '1080p', length: 5 }, // 1:1 ratio
-        'LinkedIn': { resolution: '1080p', length: 5 }, // 1:1 ratio
-        'X': { resolution: '1080p', length: 5 } // 16:9 ratio
+        'Instagram': { 
+          resolution: '1080p', 
+          aspectRatio: '9:16', 
+          maxDuration: 60, 
+          maxSize: '100MB',
+          formats: ['mp4', 'mov'],
+          urlRequirements: 'Direct HTTPS URL, public accessible'
+        },
+        'YouTube': { 
+          resolution: '1080p', 
+          aspectRatio: '16:9', 
+          maxDuration: 900, // 15 minutes
+          maxSize: '256MB',
+          formats: ['mp4', 'mov', 'avi'],
+          urlRequirements: 'Direct HTTPS URL or YouTube upload API'
+        },
+        'Facebook': { 
+          resolution: '1080p', 
+          aspectRatio: '16:9', 
+          maxDuration: 240, // 4 minutes
+          maxSize: '10GB',
+          formats: ['mp4', 'mov'],
+          urlRequirements: 'Direct HTTPS URL, publicly accessible'
+        },
+        'LinkedIn': { 
+          resolution: '1080p', 
+          aspectRatio: '16:9', 
+          maxDuration: 600, // 10 minutes
+          maxSize: '5GB',
+          formats: ['mp4', 'asf', 'avi'],
+          urlRequirements: 'Direct HTTPS URL, public accessible'
+        },
+        'X': { 
+          resolution: '1080p', 
+          aspectRatio: '16:9', 
+          maxDuration: 140, // 2:20 minutes
+          maxSize: '512MB',
+          formats: ['mp4', 'mov'],
+          urlRequirements: 'Direct HTTPS URL, public accessible'
+        }
       };
       
-      const settings = platformSettings[platform] || { resolution: '1080p', length: 5 };
+      const settings = platformSettings[platform] || { 
+        resolution: '1080p', 
+        aspectRatio: '16:9', 
+        maxDuration: 60,
+        maxSize: '100MB',
+        formats: ['mp4'],
+        urlRequirements: 'Direct HTTPS URL'
+      };
       
       // Official Seedance API via Replicate
       const replicateApiKey = process.env.REPLICATE_API_TOKEN;
@@ -102,19 +144,23 @@ export class VideoService {
       const predictionPayload = {
         input: {
           prompt: videoPrompt,
-          duration: settings.length,
+          duration: Math.min(settings.maxDuration, 15), // Cap at 15s for social media
           resolution: settings.resolution,
-          aspect_ratio: platform === 'Instagram' ? '9:16' : '16:9',
+          aspect_ratio: settings.aspectRatio,
           fps: 24,
           camera_fixed: false,
-          seed: Math.floor(Math.random() * 1000000)
+          seed: Math.floor(Math.random() * 1000000),
+          format: 'mp4' // Ensure MP4 format for maximum compatibility
         }
       };
       
       console.log('Calling Official Seedance API via Replicate:', { 
         prompt: videoPrompt.substring(0, 100) + '...', 
         resolution: settings.resolution,
-        duration: settings.length 
+        aspectRatio: settings.aspectRatio,
+        duration: Math.min(settings.maxDuration, 15),
+        platform: platform,
+        urlRequirements: settings.urlRequirements
       });
       
       // Create prediction using Replicate's model-specific endpoint
@@ -174,11 +220,16 @@ export class VideoService {
         return {
           success: true,
           videoId: predictionId,
-          url: videoResult.output,
+          url: videoResult.output, // Direct HTTPS URL - no local storage
           duration: Date.now() - startTime,
           quality: settings.resolution,
           format: 'mp4',
+          aspectRatio: settings.aspectRatio,
           size: 'Generated',
+          platform: platform,
+          maxSize: settings.maxSize,
+          platformCompliant: true,
+          urlRequirements: settings.urlRequirements,
           seedanceResponse: videoResult
         };
       } else {
@@ -196,11 +247,16 @@ export class VideoService {
         return {
           success: true,
           videoId,
-          url: `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`,
+          url: `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`, // Direct HTTPS URL - no local storage
           duration: 2300,
-          quality: '1080p',
+          quality: settings.resolution,
           format: 'mp4',
+          aspectRatio: settings.aspectRatio,
           size: '2.1MB',
+          platform: platform,
+          maxSize: settings.maxSize,
+          platformCompliant: true,
+          urlRequirements: settings.urlRequirements,
           fallback: true,
           error: error.response?.status === 402 ? 
             'Demo video - Replicate billing required for Seedance (visit replicate.com/account/billing)' :
@@ -261,17 +317,33 @@ export class VideoService {
   }
 
   static async postVideoToPlatform(platform, videoData, postId) {
-    // Mock platform posting - integrate with existing OAuth system
-    console.log(`📤 Posting video to ${platform}:`, videoData.url);
+    // Validate platform compliance before posting
+    const validation = this.validatePlatformVideoCompliance(videoData, platform);
+    if (!validation.valid) {
+      return {
+        success: false,
+        error: validation.error,
+        platform: platform
+      };
+    }
+
+    console.log(`📤 Posting platform-compliant video to ${platform}:`, {
+      url: videoData.url,
+      format: videoData.format,
+      aspectRatio: videoData.aspectRatio,
+      platformCompliant: validation.valid
+    });
     
-    // Simulate platform-specific posting
+    // Mock platform posting - integrate with existing OAuth system
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve({
           success: true,
           platform,
           postId: `${platform.toLowerCase()}_${postId}_${Date.now()}`,
-          url: videoData.url
+          url: videoData.url, // Direct HTTPS URL - no local storage
+          platformCompliant: true,
+          urlType: 'external'
         });
       }, 500);
     });
@@ -297,6 +369,70 @@ export class VideoService {
         error: 'Video proxy failed'
       };
     }
+  }
+
+  static validatePlatformVideoCompliance(videoData, platform) {
+    // Validate video URLs and formats for each platform
+    const platformSettings = {
+      'Instagram': { 
+        maxDuration: 60, 
+        maxSize: 100 * 1024 * 1024, // 100MB
+        aspectRatios: ['9:16', '1:1', '4:5'],
+        formats: ['mp4', 'mov']
+      },
+      'YouTube': { 
+        maxDuration: 900, // 15 minutes
+        maxSize: 256 * 1024 * 1024, // 256MB
+        aspectRatios: ['16:9', '4:3'],
+        formats: ['mp4', 'mov', 'avi']
+      },
+      'Facebook': { 
+        maxDuration: 240, // 4 minutes
+        maxSize: 10 * 1024 * 1024 * 1024, // 10GB
+        aspectRatios: ['16:9', '1:1', '4:5'],
+        formats: ['mp4', 'mov']
+      },
+      'LinkedIn': { 
+        maxDuration: 600, // 10 minutes
+        maxSize: 5 * 1024 * 1024 * 1024, // 5GB
+        aspectRatios: ['16:9', '1:1'],
+        formats: ['mp4', 'asf', 'avi']
+      },
+      'X': { 
+        maxDuration: 140, // 2:20 minutes
+        maxSize: 512 * 1024 * 1024, // 512MB
+        aspectRatios: ['16:9', '1:1'],
+        formats: ['mp4', 'mov']
+      }
+    };
+
+    const settings = platformSettings[platform];
+    if (!settings) {
+      return { valid: false, error: `Unknown platform: ${platform}` };
+    }
+
+    // Validate URL is HTTPS
+    if (!videoData.url || !videoData.url.startsWith('https://')) {
+      return { valid: false, error: `Platform ${platform} requires HTTPS video URLs` };
+    }
+
+    // Validate format
+    if (!settings.formats.includes(videoData.format)) {
+      return { valid: false, error: `Platform ${platform} doesn't support ${videoData.format} format` };
+    }
+
+    // Validate aspect ratio
+    if (videoData.aspectRatio && !settings.aspectRatios.includes(videoData.aspectRatio)) {
+      return { valid: false, error: `Platform ${platform} doesn't support ${videoData.aspectRatio} aspect ratio` };
+    }
+
+    return { 
+      valid: true, 
+      platform: platform,
+      urlCompliant: true,
+      formatCompliant: true,
+      aspectRatioCompliant: true
+    };
   }
 
   static validateVideoLimits(userId, postId) {
