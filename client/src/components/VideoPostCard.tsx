@@ -366,16 +366,15 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                     <div className="space-y-4">
                       <div className="text-center">
                         <h3 className="font-medium mb-2">Video Preview</h3>
-                        <div className="relative bg-gray-100 rounded-lg overflow-hidden">
+                        <div className="relative bg-gray-100 rounded-lg overflow-hidden max-w-lg mx-auto">
                           <video
                             key={`video-${videoData.videoId}-${Date.now()}`}
                             src={videoData.url}
                             muted
-                            loop
                             controls
                             playsInline
                             preload="metadata"
-                            className="w-full h-48 object-cover"
+                            className="w-full aspect-video object-contain"
                             onLoadStart={() => {
                               console.log('Video loading started');
                               setVideoLoading(true);
