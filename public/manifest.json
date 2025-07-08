@@ -11,6 +11,11 @@
       "src": "/favicon.ico",
       "sizes": "48x48",
       "type": "image/x-icon"
+    },
+    {
+      "src": "/attached_assets/agency_logo_1749083054761.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ],
   "categories": ["business", "productivity", "social"],
