@@ -530,10 +530,11 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up direct static server - NO VITE...');
-      const { setupStaticServer } = await import('./static-server.js');
-      setupStaticServer(app);
-      console.log('✅ Direct server setup complete - NO VITE');
+      console.log('⚡ Setting up development Vite...');
+      const { setupVite, serveStatic } = await import('./vite');
+      await setupVite(app, httpServer);
+      serveStatic(app);
+      console.log('✅ Vite setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);

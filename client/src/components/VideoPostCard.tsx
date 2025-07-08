@@ -384,7 +384,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
 
                   {/* Video Preview */}
                   {videoData && (
-                    <>
+                    <div className="space-y-4">
                       <div className="text-center">
                         <h3 className="font-medium mb-2">🎬 Art Director Video Preview ({post.platform})</h3>
                         
@@ -411,44 +411,18 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           )}
                         </div>
                         
-                        <div className={`relative rounded-lg overflow-hidden mx-auto shadow-lg border-2 ${
-                          videoData.liveGeneration 
-                            ? 'bg-black border-green-300' 
-                            : 'bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border-indigo-200'
-                        } ${post.platform === 'Instagram' ? 'w-64 h-[456px]' : 'w-96 h-56'}`}>
+                        <div className={`relative bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-lg overflow-hidden mx-auto shadow-lg border-2 border-indigo-200 ${
+                          post.platform === 'Instagram' ? 'w-64 h-[456px]' : 'w-96 h-56'
+                        }`}>
                           
-                          {/* Live Seedance Video or Art Director Preview */}
-                          {videoData.liveGeneration && videoData.url && !videoData.url.startsWith('art-director-preview:') ? (
-                            /* Real Seedance Video */
-                            <video
-                              src={videoData.url}
-                              controls
-                              muted
-                              playsInline
-                              onLoadStart={() => setVideoLoading(true)}
-                              onLoadedData={() => setVideoLoading(false)}
-                              onLoadedMetadata={(e) => {
-                                setVideoLoading(false);
-                                const video = e.target as HTMLVideoElement;
-                                setVideoDuration(video.duration);
-                                console.log(`Seedance video loaded: ${video.duration}s duration`);
-                              }}
-                              onError={(e) => {
-                                setVideoLoading(false);
-                                console.error('Seedance video failed to load:', videoData.url);
-                                setError('Live video failed to load. Showing Art Director preview.');
-                              }}
-                              className="w-full h-full object-cover"
-                              aria-label={`Live generated ${post.platform} video`}
-                            />
-                          ) : (
-                            /* Art Director Visual Preview */
-                            <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 space-y-2 relative">
-                              {/* Background Pattern */}
-                              <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-purple-400 to-indigo-400"></div>
-                              
-                              {/* Main Content */}
-                              <div className="relative z-10 space-y-3">
+                          {/* Art Director Visual Preview */}
+                          <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 space-y-2 relative">
+                            
+                            {/* Background Pattern */}
+                            <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-purple-400 to-indigo-400"></div>
+                            
+                            {/* Main Content */}
+                            <div className="relative z-10 space-y-3">
                               {/* Art Director Badge */}
                               <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg">
                                 🎬 ART DIRECTOR
@@ -491,54 +465,20 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                               </div>
                               
                               {/* Ready Status */}
-                              <div className={`rounded-lg p-2 shadow-md ${
-                                videoData.liveGeneration 
-                                  ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
-                                  : videoData.error 
-                                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
-                                    : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
-                              }`}>
-                                <p className="text-xs font-bold">
-                                  {videoData.liveGeneration ? '🎬 LIVE GENERATED' : 
-                                   videoData.error ? '⚠️ PREVIEW MODE' : 
-                                   '✅ READY TO POST'}
-                                </p>
+                              <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg p-2 shadow-md">
+                                <p className="text-xs font-bold">✅ READY TO POST</p>
                               </div>
                             </div>
-                          )}
-                          
-                          {/* Video Loading Indicator for Live Generation */}
-                          {videoLoading && videoData.liveGeneration && (
-                            <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center">
-                              <div className="text-center text-white">
-                                <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                                <p className="text-sm">Loading Seedance video...</p>
-                              </div>
-                            </div>
-                          )}
+                          </div>
                           
                           {/* Platform Badge */}
                           <div className="absolute top-2 right-2">
-                            <Badge variant="secondary" className={`text-xs ${
-                              videoData.liveGeneration 
-                                ? 'bg-green-100 text-green-700 border-green-300' 
-                                : 'bg-indigo-100 text-indigo-700 border-indigo-300'
-                            }`}>
+                            <Badge variant="secondary" className="text-xs bg-indigo-100 text-indigo-700 border-indigo-300">
                               {post.platform}
                             </Badge>
                           </div>
-                          
-                          {/* Live Generation Indicator */}
-                          {videoData.liveGeneration && (
-                            <div className="absolute bottom-2 left-2">
-                              <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-300">
-                                🎬 Seedance Live
-                              </Badge>
-                            </div>
-                          )}
                         </div>
                         
-                        <div className="space-y-3">
                         <div className="flex justify-center gap-2 mt-3">
                           <Badge variant="outline" className="text-xs">
                             {videoData.quality || '1080p'}
@@ -553,8 +493,9 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             {videoData.aspectRatio || '16:9'}
                           </Badge>
                         </div>
-                        
-                        <div className="flex gap-2">
+                      </div>
+                      
+                      <div className="flex gap-2">
                         <Button
                           onClick={approveVideo}
                           className="flex-1"
@@ -572,9 +513,8 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           <XIcon className="w-4 h-4 mr-2" />
                           Delete Video
                         </Button>
-                        </div>
-                        </div>
-                    </>
+                      </div>
+                    </div>
                   )}
                 </div>
               </DialogContent>
