@@ -7425,9 +7425,8 @@ export function addNotificationEndpoints(app: any) {
         postId 
       });
       
-      // Force fresh import to get updated VideoService with real Seedance API
-      delete require.cache[require.resolve('./videoService.js')];
-      const { VideoService } = await import('./videoService.js?' + Date.now());
+      // Import VideoService with real Seedance API
+      const { VideoService } = await import('./videoService.js');
       
       // Validate video generation limits
       const validation = VideoService.validateVideoLimits(userId, postId);

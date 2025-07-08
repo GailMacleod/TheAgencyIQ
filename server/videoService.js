@@ -93,9 +93,9 @@ export class VideoService {
       const settings = platformSettings[platform] || { resolution: '720p', length: 5 };
       
       // Official Seedance API via Replicate
-      const replicateApiKey = process.env.SEEDANCE_API_KEY;
+      const replicateApiKey = process.env.REPLICATE_API_TOKEN;
       if (!replicateApiKey) {
-        throw new Error('Seedance API key not configured');
+        throw new Error('Replicate API token not configured');
       }
       
       // Create prediction with Seedance model using proper Replicate format
@@ -188,7 +188,7 @@ export class VideoService {
       console.error('Real Seedance video rendering failed:', error);
       
       // Fallback to demo for API issues - provide specific error guidance
-      if (error.message.includes('API key') || error.response?.status === 401 || error.response?.status === 422) {
+      if (error.message.includes('API key') || error.response?.status === 401 || error.response?.status === 402 || error.response?.status === 422) {
         console.log('🎬 Falling back to demo video for API issues...');
         console.log('API Error Details:', error.response?.data || error.message);
         
@@ -202,7 +202,9 @@ export class VideoService {
           format: 'mp4',
           size: '2.1MB',
           fallback: true,
-          error: 'Demo video - Seedance requires Replicate API token (get from replicate.com/account/api-tokens)',
+          error: error.response?.status === 402 ? 
+            'Demo video - Replicate billing required for Seedance (visit replicate.com/account/billing)' :
+            'Demo video - Check Replicate API configuration',
           apiError: error.response?.data || error.message
         };
       }
