@@ -384,7 +384,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
 
                   {/* Video Preview */}
                   {videoData && (
-                    <div className="space-y-4">
+                    <>
                       <div className="text-center">
                         <h3 className="font-medium mb-2">🎬 Art Director Video Preview ({post.platform})</h3>
                         
@@ -444,12 +444,11 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           ) : (
                             /* Art Director Visual Preview */
                             <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 space-y-2 relative">
-                              
                               {/* Background Pattern */}
                               <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-purple-400 to-indigo-400"></div>
-                            
-                            {/* Main Content */}
-                            <div className="relative z-10 space-y-3">
+                              
+                              {/* Main Content */}
+                              <div className="relative z-10 space-y-3">
                               {/* Art Director Badge */}
                               <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg">
                                 🎬 ART DIRECTOR
@@ -538,6 +537,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             </div>
                           )}
                         </div>
+                        
                         <div className="flex justify-center gap-2 mt-3">
                           <Badge variant="outline" className="text-xs">
                             {videoData.quality || '1080p'}
@@ -553,6 +553,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           </Badge>
                         </div>
                       </div>
+                      
                       <div className="flex gap-2">
                         <Button
                           onClick={approveVideo}
@@ -572,7 +573,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           Delete Video
                         </Button>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
               </DialogContent>
