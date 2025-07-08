@@ -342,6 +342,51 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
     setError(null);
   };
 
+  // Power Refresh functionality for forced video data updates
+  const powerRefreshVideo = async () => {
+    console.log('🔄 Power Refresh: Forcing video data update...');
+    try {
+      const seedanceResponse = await fetch('/api/video/latest-seedance');
+      const seedanceData = await seedanceResponse.json();
+      
+      if (seedanceData.success && seedanceData.video?.url && seedanceData.video.url.includes('replicate.delivery')) {
+        console.log('🚀 Power Refresh: Real Seedance video found!', seedanceData.video.url);
+        
+        // Force immediate video update with real URL
+        const realVideoData = {
+          ...videoData,
+          url: seedanceData.video.url,
+          seedanceGenerated: true,
+          realVideo: true,
+          duration: 10 // Force 10-second duration
+        };
+        
+        console.log('⚡ Power Refresh: Forcing video data update:', realVideoData);
+        setVideoData(realVideoData);
+        
+        // Force re-render by updating video loading state
+        setVideoLoading(false);
+        
+        toast({
+          title: "Power Refresh Success!",
+          description: "Real Seedance video is now playing"
+        });
+      } else {
+        toast({
+          title: "No Real Video Found",
+          description: "Art Director preview is still active"
+        });
+      }
+    } catch (error) {
+      console.error('Power Refresh failed:', error);
+      toast({
+        title: "Power Refresh Failed",
+        description: "Unable to check for real video",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -513,59 +558,32 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                   {videoData && (
                     <div className="space-y-4">
                       <div className="text-center">
-                        <h3 className="font-medium mb-2">🎬 Art Director Video Preview ({post.platform})</h3>
-                        <div className="text-xs text-gray-500 mb-2">
-                          Video URL: {videoData.url ? 'Available' : 'No URL'} | Mode: {videoData.realVideo ? 'Real' : 'Preview'}
-                        </div>
+                        <h3 className="font-medium mb-2">Video Preview ({post.platform})</h3>
                         
-                        {/* POWER REFRESH: Force load latest Seedance video */}
+                        {/* Simple Play Video Button */}
                         <Button
-                          variant="outline"
-                          size="sm"
                           onClick={async () => {
                             try {
-                              console.log('🔄 POWER REFRESH: Forcing latest Seedance video load...');
                               const response = await fetch('/api/video/latest-seedance');
                               const data = await response.json();
-                              console.log('🔄 Power refresh response:', data);
                               
-                              if (data.success && data.video?.url && data.video.url.includes('replicate.delivery')) {
-                                console.log('✅ POWER REFRESH SUCCESS:', data.video.url);
-                                
-                                // Force immediate video update with real URL
-                                const refreshedVideoData = {
+                              if (data.success && data.video?.url) {
+                                const realVideoData = {
                                   ...videoData,
                                   url: data.video.url,
                                   realVideo: true,
-                                  seedanceGenerated: true,
-                                  duration: 10 // Force 10-second duration
+                                  duration: 10
                                 };
-                                console.log('🔄 POWER REFRESH FORCING VIDEO UPDATE:', refreshedVideoData);
-                                setVideoData(refreshedVideoData);
+                                setVideoData(realVideoData);
                                 setVideoLoading(false);
-                                
-                                toast({
-                                  title: "Video Refreshed",
-                                  description: "Real Seedance video is now playing"
-                                });
-                              } else {
-                                console.log('❌ Power refresh: No real video found');
-                                toast({
-                                  title: "No Real Video",
-                                  description: "Real Seedance video not yet available"
-                                });
                               }
                             } catch (error) {
-                              console.log('Power refresh failed:', error);
-                              toast({
-                                title: "Refresh Failed",
-                                description: "Unable to check for real video"
-                              });
+                              console.log('Video load failed:', error);
                             }
                           }}
-                          className="mb-2"
+                          className="mb-4"
                         >
-                          🔄 Force Real Video
+                          ▶️ Play Video
                         </Button>
                         
                         {/* Video Info */}
@@ -591,125 +609,29 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           )}
                         </div>
                         
-                        <div className={`relative bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-lg overflow-hidden mx-auto shadow-lg border-2 border-indigo-200 ${
+                        <div className={`relative bg-gray-100 rounded-lg overflow-hidden mx-auto ${
                           post.platform === 'Instagram' ? 'w-64 h-[456px]' : 'w-96 h-56'
                         }`}>
                           
-                          {/* Single Video Player Logic */}
-                          {videoData.url && (videoData.url.includes('replicate.delivery') || videoData.url.includes('replicate.com') || videoData.realVideo) ? (
-                            <div className="w-full h-full relative">
-                              <video
-                                ref={(video) => {
-                                  if (video && videoData.realVideo) {
-                                    video.currentTime = 0; // Reset to start
-                                    console.log('📹 Real video element ready:', videoData.url);
-                                  }
-                                }}
-                                className="w-full h-full object-cover"
-                                controls
-                                muted
-                                loop
-                                autoPlay={videoData.realVideo}
-                                onLoadedMetadata={(e) => {
-                                  console.log('✅ Real Seedance video loaded successfully:', videoData.url);
-                                  setVideoDuration(Math.min(e.target.duration, 10)); // Cap at 10 seconds
-                                  setVideoLoading(false);
-                                }}
-                                onError={(e) => {
-                                  console.log('❌ Video load error, falling back to preview:', videoData.url);
-                                  setVideoLoading(false);
-                                  setError('Video failed to load, showing preview mode');
-                                }}
-                                onLoadStart={() => {
-                                  console.log('🔄 Video loading started:', videoData.url);
-                                  setVideoLoading(true);
-                                }}
-                                onTimeUpdate={(e) => {
-                                  // Force 10-second max duration
-                                  if (e.target.currentTime >= 10) {
-                                    e.target.currentTime = 0; // Loop back to start
-                                  }
-                                }}
-                              >
-                                <source src={videoData.url} type="video/mp4" />
-                                Your browser does not support the video tag.
-                              </video>
-                              
-                              {/* Video Loading Overlay */}
-                              {videoLoading && (
-                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                  <div className="text-white text-center">
-                                    <LoaderIcon className="w-8 h-8 animate-spin mx-auto mb-2" />
-                                    <p className="text-sm">Loading video...</p>
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Seedance Generated Badge */}
-                              <div className="absolute top-2 left-2">
-                                <Badge className="text-xs bg-green-600 text-white">
-                                  🚀 Seedance Generated
-                                </Badge>
-                              </div>
-                            </div>
+                          {/* Simple Video Player */}
+                          {videoData.url && videoData.realVideo ? (
+                            <video
+                              className="w-full h-full object-cover"
+                              controls
+                              muted
+                              loop
+                              autoPlay
+                              onTimeUpdate={(e) => {
+                                if (e.target.currentTime >= 10) {
+                                  e.target.currentTime = 0;
+                                }
+                              }}
+                            >
+                              <source src={videoData.url} type="video/mp4" />
+                            </video>
                           ) : (
-                            // Art Director Visual Preview fallback
-                            <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 space-y-2 relative">
-                                
-                                  {/* Background Pattern */}
-                                  <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-purple-400 to-indigo-400"></div>
-                              
-                              {/* Background Pattern */}
-                              <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-purple-400 to-indigo-400"></div>
-                              
-                              {/* Main Content */}
-                              <div className="relative z-10 space-y-3">
-                                {/* Art Director Badge */}
-                                <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg">
-                                  🎬 ART DIRECTOR
-                                </div>
-                                
-                                {/* Animal Avatar with Animation */}
-                                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl border-4 border-indigo-300 animate-pulse">
-                                  <span className="text-3xl">
-                                    {videoData.animalType === 'kitten' && '🐱'}
-                                    {videoData.animalType === 'bunny' && '🐰'}
-                                    {videoData.animalType === 'puppy' && '🐶'}
-                                    {videoData.animalType === 'hamster' && '🐹'}
-                                  </span>
-                                </div>
-                                
-                                {/* Creative Brief */}
-                                <div className="bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-md border border-indigo-200 max-w-full">
-                                  <h4 className="font-bold text-indigo-800 text-sm leading-tight mb-1">
-                                    {videoData.title}
-                                  </h4>
-                                  <p className="text-xs text-indigo-600 font-medium">
-                                    Custom {videoData.animalType} ASMR Strategy
-                                  </p>
-                                </div>
-                                
-                                {/* Brand Purpose Integration */}
-                                <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-lg p-2 border border-green-200">
-                                  <p className="text-xs text-green-700 font-medium">🎯 Brand Purpose Driven</p>
-                                  <p className="text-xs text-green-600">Queensland SME Growth Focus</p>
-                                </div>
-                                
-                                {/* Platform Specs */}
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                  <div className="bg-white/80 rounded px-2 py-1 border border-indigo-200">
-                                    <span className="text-indigo-700">{post.platform === 'Instagram' ? '9:16' : '16:9'}</span>
-                                  </div>
-                                  <div className="bg-white/80 rounded px-2 py-1 border border-indigo-200">
-                                    <span className="text-indigo-700">15s</span>
-                                  </div>
-                                </div>
-                              
-                                {/* Ready Status */}
-                                <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg p-2 shadow-md">
-                                  <p className="text-xs font-bold">✅ READY TO POST</p>
-                                </div>
-                              </div>
+                            <div className="w-full h-full flex items-center justify-center">
+                              <p className="text-gray-500">Click Play Video to load</p>
                             </div>
                           )}
                           
