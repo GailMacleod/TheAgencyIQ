@@ -23,58 +23,17 @@ const VideoApproval: React.FC = () => {
 
   const fetchPendingVideos = async () => {
     try {
-      // First try to get posts, then filter for videos with pending approval
       const response = await fetch('/api/posts');
-      if (!response.ok) {
-        // If posts endpoint doesn't exist, create mock data for demonstration
-        console.warn('Posts API not available, using demo data');
-        setVideos([
-          {
-            id: '1',
-            title: 'Queensland SME Digital Transformation',
-            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-            thumbnailUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMyMCIgaGVpZ2h0PSIxODAiIGZpbGw9IiMyMTk2RjMiLz48dGV4dCB4PSIxNjAiIHk9IjkwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxNiI+UXVlZW5zbGFuZCBTTUUgVmlkZW88L3RleHQ+PC9zdmc+',
-            duration: 30,
-            resolution: '1080p',
-            videoStatus: 'pending_approval',
-            generatedAt: new Date().toISOString()
-          },
-          {
-            id: '2', 
-            title: 'Brisbane Business Excellence',
-            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-            thumbnailUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMyMCIgaGVpZ2h0PSIxODAiIGZpbGw9IiMxMGI5ODEiLz48dGV4dCB4PSIxNjAiIHk9IjkwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxNiI+QnJpc2JhbmUgQnVzaW5lc3M8L3RleHQ+PC9zdmc+',
-            duration: 25,
-            resolution: '1080p', 
-            videoStatus: 'pending_approval',
-            generatedAt: new Date().toISOString()
-          }
-        ]);
-        setLoading(false);
-        return;
-      }
+      if (!response.ok) throw new Error('Failed to fetch posts');
       
       const data = await response.json();
       // Filter posts that have videos with pending approval status
-      const videoPosts = (data.posts || data || []).filter((post: any) => 
+      const videoPosts = (data.posts || []).filter((post: any) => 
         post.videoStatus === 'pending_approval' && post.videoUrl
       );
       setVideos(videoPosts);
     } catch (error) {
       console.error('Error fetching videos:', error);
-      // Fallback to demo data
-      setVideos([
-        {
-          id: 'demo1',
-          title: 'Demo Video - Queensland Business',
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-          thumbnailUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMyMCIgaGVpZ2h0PSIxODAiIGZpbGw9IiNlZjQ0NDQiLz48dGV4dCB4PSIxNjAiIHk9IjkwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxNCI+RGVtbyBWaWRlbzwvdGV4dD48L3N2Zz4=',
-          duration: 15,
-          resolution: '1080p',
-          videoStatus: 'pending_approval',
-          generatedAt: new Date().toISOString()
-        }
-      ]);
     } finally {
       setLoading(false);
     }

@@ -16,7 +16,7 @@ fi
 
 # Start server
 echo "2. Starting server..."
-npx tsx server/index.ts &
+node server-simple.js &
 SERVER_PID=$!
 sleep 3
 
