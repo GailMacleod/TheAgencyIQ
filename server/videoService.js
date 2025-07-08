@@ -40,8 +40,8 @@ export class VideoService {
   }
 
   static async createOnBrandPrompts(postContent, platform, brandData) {
-    const brandName = brandData.brandName || 'The AgencyIQ';
-    const coreMessage = brandData.corePurpose || 'Professional business visibility';
+    const brandName = (brandData && brandData.brandName) || 'The AgencyIQ';
+    const coreMessage = (brandData && brandData.corePurpose) || 'Professional business visibility';
     
     // Platform-specific video requirements
     const platformSpecs = {

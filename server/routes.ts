@@ -7376,7 +7376,15 @@ export function addNotificationEndpoints(app: any) {
   // Generate video prompts for post content
   app.post('/api/video/generate-prompts', requireAuth, async (req: any, res) => {
     try {
-      const { postContent, platform, brandData } = req.body;
+      const { postContent, platform } = req.body;
+      const user = req.session?.user;
+      
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'User not authenticated' });
+      }
+
+      // Fetch brand purpose for the user
+      const brandData = await storage.getBrandPurposeByUserId(user.id);
       const { VideoService } = await import('./videoService.js');
       
       const result = await VideoService.generateVideoPrompts(postContent, platform, brandData);
