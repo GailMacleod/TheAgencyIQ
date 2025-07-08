@@ -1,0 +1,167 @@
+User info: {id: 2, email: 'gailm@macleodglba.com.au', phone: '+61424835189', subscriptionPlan: 'professional', remainingPosts: 52, …}
+eruda.js:2 App initialized with user: gailm@macleodglba.com.au
+eruda.js:2 TypeError: Cannot read properties of undefined (reading 'VITE_GA_MEASUREMENT_ID')
+    at main.js:3383:153920
+    at Nv (main.js:8:24431)
+    at hs (main.js:8:42797)
+    at NH (main.js:8:36893)
+    at yr (main.js:6:3288)
+    at Re1 (main.js:8:41638)
+    at li (main.js:8:40587)
+    at MF (main.js:8:35994)
+    at Gw (main.js:1:9606)
+    at MessagePort.Fw (main.js:1:10000)
+Mt.forEach.n.<computed> @ Console.js:61
+WT @ main.js:8
+r.callback @ main.js:8
+vH @ main.js:6
+RH @ main.js:8
+TF @ main.js:8
+_e1 @ main.js:8
+Re1 @ main.js:8
+li @ main.js:8
+NH @ main.js:8
+yr @ main.js:6
+Re1 @ main.js:8
+li @ main.js:8
+MF @ main.js:8
+Gw @ main.js:1
+Fw @ main.js:1Understand this error
+main.js:3383 Uncaught TypeError: Cannot read properties of undefined (reading 'VITE_GA_MEASUREMENT_ID')
+    at main.js:3383:153920
+    at Nv (main.js:8:24431)
+    at hs (main.js:8:42797)
+    at NH (main.js:8:36893)
+    at yr (main.js:6:3288)
+    at Re1 (main.js:8:41638)
+    at li (main.js:8:40587)
+    at MF (main.js:8:35994)
+    at Gw (main.js:1:9606)
+    at MessagePort.Fw (main.js:1:10000)
+(anonymous) @ main.js:3383
+Nv @ main.js:8
+hs @ main.js:8
+NH @ main.js:8
+yr @ main.js:6
+Re1 @ main.js:8
+li @ main.js:8
+MF @ main.js:8
+Gw @ main.js:1
+Fw @ main.js:1Understand this error
+eruda.js:2 Meta Pixel not loaded - check pixel code installation
+Mt.forEach.n.<computed> @ Console.js:61
+initialize @ main.js:3361
+(anonymous) @ main.js:3361
+setTimeout
+(anonymous) @ main.js:3361
+(anonymous) @ main.js:3396Understand this warning
+eruda.js:2 TypeError: Cannot read properties of undefined (reading 'VITE_GA_MEASUREMENT_ID')
+    at main.js:3383:153920
+    at Nv (main.js:8:24431)
+    at hs (main.js:8:42797)
+    at NH (main.js:8:36893)
+    at yr (main.js:6:3288)
+    at Re1 (main.js:8:41638)
+    at li (main.js:8:40587)
+    at MF (main.js:8:35994)
+    at Gw (main.js:1:9606)
+    at MessagePort.Fw (main.js:1:10000)
+Mt.forEach.n.<computed> @ Console.js:61
+WT @ main.js:8
+r.callback @ main.js:8
+vH @ main.js:6
+RH @ main.js:8
+TF @ main.js:8
+_e1 @ main.js:8
+Re1 @ main.js:8
+li @ main.js:8
+NH @ main.js:8
+yr @ main.js:6
+Re1 @ main.js:8
+li @ main.js:8
+MF @ main.js:8
+Gw @ main.js:1
+Fw @ main.js:1Understand this error
+main.js:3383 Uncaught TypeError: Cannot read properties of undefined (reading 'VITE_GA_MEASUREMENT_ID')
+    at main.js:3383:153920
+    at Nv (main.js:8:24431)
+    at hs (main.js:8:42797)
+    at NH (main.js:8:36893)
+    at yr (main.js:6:3288)
+    at Re1 (main.js:8:41638)
+    at li (main.js:8:40587)
+    at MF (main.js:8:35994)
+    at Gw (main.js:1:9606)
+    at MessagePort.Fw (main.js:1:10000)
+(anonymous) @ main.js:3383
+Nv @ main.js:8
+hs @ main.js:8
+NH @ main.js:8
+yr @ main.js:6
+Re1 @ main.js:8
+li @ main.js:8
+MF @ main.js:8
+Gw @ main.js:1
+Fw @ main.js:1Understand this error
+Grammarly-check.js:1 [Violation] Permissions policy violation: unload is not allowed in this document.
+(anonymous) @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+e._trySubscribe @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+s @ Grammarly-check.js:1
+e.subscribe @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+s @ Grammarly-check.js:1
+e.subscribe @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+s @ Grammarly-check.js:1
+e.subscribe @ Grammarly-check.js:1
+b @ Grammarly-check.js:1
+f @ Grammarly-check.js:1
+a._next @ Grammarly-check.js:1
+t.next @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+a._next @ Grammarly-check.js:1
+t.next @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+a._next @ Grammarly-check.js:1
+t.next @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+a._next @ Grammarly-check.js:1
+t.next @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+a._next @ Grammarly-check.js:1
+t.next @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+a._next @ Grammarly-check.js:1
+t.next @ Grammarly-check.js:1
+(anonymous) @ Grammarly-check.js:1
+a._next @ Grammarly-check.js:1
+t.next @ Grammarly-check.js:1
+i @ Grammarly-check.js:1Understand this error
+eruda.js:2 Meta Pixel not loaded - check pixel code installation
+Mt.forEach.n.<computed> @ Console.js:61
+initialize @ main.js:3361
+(anonymous) @ main.js:3361
+setTimeout
+(anonymous) @ main.js:3361
+(anonymous) @ main.js:3396Understand this warning
+Console.js:61 Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID
+Mt.forEach.n.<computed> @ Console.js:61
+(anonymous) @ main.js:3383
+Nv @ main.js:8
+hs @ main.js:8
+NH @ main.js:8
+yr @ main.js:6
+Re1 @ main.js:8
+li @ main.js:8
+MF @ main.js:8
+Gw @ main.js:1
+Fw @ main.js:1Understand this warning
+Console.js:61 Session established: gailm@macleodglba.com.au
+Console.js:61 Session established: gailm@macleodglba.com.au
+Console.js:61 Meta Pixel not loaded - check pixel code installation

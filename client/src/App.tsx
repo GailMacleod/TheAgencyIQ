@@ -85,13 +85,8 @@ function App() {
       window.history.replaceState({}, '', newUrl);
     }
     
-    // Verify required environment variable is present
-    const gaId = import.meta?.env?.VITE_GA_MEASUREMENT_ID;
-    if (!gaId) {
-      console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
-    } else {
-      initGA();
-    }
+    // Initialize analytics - disabled in esbuild mode
+    console.log('Analytics disabled in esbuild mode');
   }, []);
 
   // Establish session on app startup to prevent 401 errors
