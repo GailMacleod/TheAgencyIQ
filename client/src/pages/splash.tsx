@@ -134,7 +134,7 @@ export default function Splash() {
                 
                 {/* Video Feature Description - Centered under card */}
                 <div className="mt-6 flex justify-center max-w-md ml-auto">
-                  <div className="bg-black text-white px-6 py-2 rounded-full text-sm font-medium">
+                  <div className="px-6 py-2 rounded-full text-sm font-bold text-black" style={{ backgroundColor: '#00f0ff' }}>
                     Includes video shorts fast, text-to-video animation
                   </div>
                 </div>
