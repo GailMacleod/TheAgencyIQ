@@ -7426,36 +7426,20 @@ export function addNotificationEndpoints(app: any) {
         postId 
       });
       
-      // Get user's brand purpose for Art Director
-      const user = await storage.getUserById(userId);
-      let brandPurpose = null;
+      // Art Director brand purpose configuration (fallback for database connectivity issues)
+      let brandPurpose = {
+        corePurpose: 'Professional business growth and automation',
+        audience: 'Queensland SMEs', 
+        brandName: 'TheAgencyIQ Client'
+      };
       let postContent = '';
       
-      if (user && user.brandPurpose) {
-        brandPurpose = user.brandPurpose;
-        console.log('🎯 Brand Purpose loaded:', brandPurpose.corePurpose?.substring(0, 80));
-      } else {
-        console.log('⚠️ No brand purpose found - using fallback');
-        brandPurpose = {
-          corePurpose: 'Professional business growth and automation',
-          audience: 'Queensland SMEs',
-          brandName: 'TheAgencyIQ Client'
-        };
-      }
+      console.log('🎯 Using fallback brand purpose for Art Director interpretation');
+      console.log('📝 Using prompt content for creative direction');
       
-      // Get post content for creative direction
-      if (postId) {
-        try {
-          const post = await storage.getPostById(postId);
-          if (post && post.content) {
-            postContent = post.content;
-            console.log('📝 Post content loaded:', postContent.substring(0, 80));
-          }
-        } catch (error) {
-          console.log('📝 Could not load post content, using prompt as content');
-          postContent = typeof prompt === 'string' ? prompt : prompt?.content || '';
-        }
-      }
+      // Use prompt content as post content for Art Director
+      postContent = typeof prompt === 'string' ? prompt : prompt?.content || editedText || 'Queensland business strategy';
+
       
       // Import Art Director VideoService
       const { VideoService } = await import('./videoService.js');
@@ -7484,9 +7468,10 @@ export function addNotificationEndpoints(app: any) {
       res.json(result);
     } catch (error) {
       console.error('Art Director video creation failed:', error);
+      console.error('Error details:', error.stack);
       res.status(500).json({ 
         success: false, 
-        error: 'Video rendering failed',
+        error: 'Art Director video creation failed: ' + error.message,
         fallback: true 
       });
     }

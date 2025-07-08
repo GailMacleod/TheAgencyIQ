@@ -137,23 +137,25 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
       if (data.success) {
         setRenderingProgress(100);
         clearInterval(timer);
+        if (progressInterval) clearInterval(progressInterval);
         setVideoData(data);
         setHasGeneratedVideo(true);
         toast({
-          title: "Video Ready!",
-          description: `1080p video generated in ${renderingTime}s (${data.size})`
+          title: "Art Director Video Ready!",
+          description: `${data.animalType} video generated in ${renderingTime}s (${data.size})`
         });
       } else {
         setError('Video rendering failed');
-        if (timer) clearInterval(timer);
+        clearInterval(timer);
+        if (progressInterval) clearInterval(progressInterval);
       }
     } catch (error) {
       console.error('Video rendering failed:', error);
       setError('Video rendering failed');
-      if (timer) clearInterval(timer);
+      clearInterval(timer);
+      if (progressInterval) clearInterval(progressInterval);
     } finally {
       setIsRendering(false);
-      if (progressInterval) clearInterval(progressInterval);
     }
   };
 
@@ -270,7 +272,8 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
               
               <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Generate Video for {post.platform}</DialogTitle>
+                  <DialogTitle>🎬 Art Director Video Generation for {post.platform}</DialogTitle>
+                  <p className="text-sm text-gray-600">Create brand-driven cute animal ASMR videos</p>
                 </DialogHeader>
                 
                 <div className="space-y-6">
