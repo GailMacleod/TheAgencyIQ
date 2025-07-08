@@ -911,8 +911,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`✅ Seedance video generation completed: ${output}`);
         console.log(`📹 Real video URL available: ${output}`);
         
-        // TODO: Store video URL in database for frontend retrieval
-        // For now, log the successful generation
+        // Store latest video URL in memory for demo purposes
+        global.latestSeedanceVideo = {
+          id,
+          url: output,
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log(`💾 Stored latest video for preview: ${output.substring(0, 50)}...`);
       } else if (status === 'failed') {
         console.log(`❌ Seedance video generation failed: ${error}`);
       }
@@ -921,6 +927,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Seedance webhook processing error:', error);
       res.status(500).json({ error: 'Webhook processing failed' });
+    }
+  });
+
+  // Get latest generated Seedance video for preview testing
+  app.get('/api/video/latest-seedance', (req, res) => {
+    try {
+      if (global.latestSeedanceVideo) {
+        console.log(`📹 Serving latest Seedance video: ${global.latestSeedanceVideo.url}`);
+        res.json({
+          success: true,
+          video: global.latestSeedanceVideo
+        });
+      } else {
+        res.json({
+          success: false,
+          message: 'No Seedance video available yet'
+        });
+      }
+    } catch (error) {
+      console.error('Error serving latest video:', error);
+      res.status(500).json({ error: 'Failed to get latest video' });
     }
   });
 
