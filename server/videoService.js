@@ -186,6 +186,8 @@ export class VideoService {
               timeout: 30000 // 30 second timeout
             });
             
+            console.log(seedanceResponse.data);
+            
             if (seedanceResponse.data && seedanceResponse.data.videoUrl) {
               seedanceVideoUrl = seedanceResponse.data.videoUrl;
               console.log(`✅ Seedance API success: ${seedanceVideoUrl.substring(0, 50)}...`);
