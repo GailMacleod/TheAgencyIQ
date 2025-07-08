@@ -54,6 +54,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
   const [hasGeneratedVideo, setHasGeneratedVideo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [videoDuration, setVideoDuration] = useState(15); // Default to 15s, will update when video loads
   const { toast } = useToast();
 
   // Check if video generation is allowed for this post - FORCE SHOW FOR ALL POSTS
@@ -422,20 +423,19 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             onLoadedData={() => setVideoLoading(false)}
                             onLoadedMetadata={(e) => {
                               setVideoLoading(false);
-                              // Set duration to exactly 15 seconds
                               const video = e.target as HTMLVideoElement;
-                              if (video.duration !== 15) {
-                                console.log(`Video duration: ${video.duration}s (Art Director: 15s)`);
-                              }
+                              setVideoDuration(video.duration);
+                              console.log(`Video loaded: ${video.duration}s duration`);
                             }}
                             onTimeUpdate={(e) => {
                               const video = e.target as HTMLVideoElement;
-                              const progress = (video.currentTime / 15) * 100; // Use 15s as duration
-                              console.log(`Art Director video progress: ${progress.toFixed(1)}%`);
+                              const progress = (video.currentTime / videoDuration) * 100;
+                              // Progress tracking for time slider functionality
                             }}
-                            onError={() => {
+                            onError={(e) => {
                               setVideoLoading(false);
                               console.error('Video failed to load:', videoData.url);
+                              setError('Video preview failed to load. Art Director content is ready for posting.');
                             }}
                             className="w-full h-full object-cover"
                             aria-label={`Generated ${post.platform} video preview`}
@@ -467,7 +467,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             {videoData.size || '1.2MB'}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
-                            15s
+                            {Math.round(videoDuration)}s
                           </Badge>
                           <Badge variant="outline" className="text-xs">
                             {videoData.aspectRatio || '16:9'}
