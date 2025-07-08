@@ -70,7 +70,7 @@ function Router() {
 }
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false); // Disabled splash for debugging
 
   // Initialize Google Analytics and clear stale cache when app loads
   useEffect(() => {
