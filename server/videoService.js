@@ -69,22 +69,22 @@ export class VideoService {
     const businessTerms = ['automation', 'efficiency', 'productivity', 'growth', 'success', 'professional', 'business', 'entrepreneur', 'sme', 'queensland', 'time-poor', 'visibility', 'competitive'];
     const foundTerms = businessTerms.filter(term => contentWords.includes(term));
     
-    // Dynamic movie trailer scenes with pastel colors
+    // Enviable luxury lifestyle scenes - living their best life with all that saved time
     const epicScenes = [
-      'dramatically soaring through clouds of floating business documents in slow motion',
-      'surf-riding down a rainbow waterfall of colorful spreadsheets',
-      'bouncing like a superhero between levitating office furniture',
-      'dancing through a tornado of swirling charts and graphs',
-      'racing on a magical flying carpet made of invoices',
-      'conducting an orchestra of musical calculators and laptops'
+      'swaggering onto a private beach made of invoices, then lounging in a luxury cabana sipping tiny cocktails while spreadsheets float by like dream clouds',
+      'trotting elegantly to a spa retreat built from reports, then enjoying a full day of pampering with miniature robes and cucumber eye masks',
+      'loping gracefully onto a yacht deck made of pie charts, then hosting an exclusive party with tiny champagne glasses and designer sunglasses',
+      'walking confidently into a luxury resort lobby constructed from spreadsheets, then checking into the penthouse suite with tiny luggage',
+      'dawdling through a high-end shopping district made of invoices, then trying on designer outfits with personal shopping assistants',
+      'strutting down a red carpet made of quarterly reports, then attending a glamorous gala with tiny formal wear and paparazzi flashes'
     ];
     
     const randomScene = epicScenes[Math.floor(Math.random() * epicScenes.length)];
     
     return {
-      shortForm: `Epic ${spec.duration} movie trailer: Heroic golden retriever puppy ${randomScene} in a fantastical business wonderland. Pastel color palette of soft pink, lavender, mint green, and coral. Dynamic camera work: sweeping drone shots, dramatic zoom-ins, spinning transitions. Business message "${postContent.substring(0, 80)}..." delivered through adventure narrative. High-energy orchestral soundtrack with triumphant crescendos. Multiple quick scene cuts showing magical office transformations. Ends with puppy striking heroic pose on mountain of conquered paperwork as pastel confetti explodes. Movie trailer text: "The ${coreMessage} Adventure Begins". Ultra-engaging, scroll-stopping entertainment for Queensland SMEs.`,
+      shortForm: `Epic ${spec.duration} luxury lifestyle trailer: Sophisticated golden retriever puppy ${randomScene} showcasing their amazing life of leisure. Pastel color palette of soft pink, lavender, mint green, and coral. Dynamic camera work: swooping shots of luxury scenes, glamorous close-ups, elegant transitions. Business automation message "${postContent.substring(0, 80)}..." subtly delivered through enviable lifestyle showcase. Aspirational soundtrack with luxury vibes and "living my best life" energy. Multiple quick scene cuts showing different lavish activities. Ends with puppy toasting success with tiny champagne as business papers transform into celebration confetti. Movie trailer text: "When ${coreMessage} Works For You" and "This Could Be Your Life". Pure lifestyle envy that makes Queensland SMEs desperate for business automation.`,
         
-      asmr: `Cinematic ${spec.duration} adventure epic: Fluffy orange kitten becomes business superhero, ${randomScene} through dreamy pastel office universe. Opening: kitten discovers magical business portal glowing in soft peach and sky blue. Journey includes: leaping between floating pie charts, surfing waves of colorful data, performing acrobatic stunts around holographic presentations. Business wisdom "${postContent.substring(0, 100)}..." woven into exciting quest narrative. Magical transformation sequences with sparkles and light effects. Dynamic music builds to epic climax where kitten saves the day for ${foundTerms.join(' and ') || 'entrepreneurs'}. Ends with triumphant roar as ${coreMessage.toLowerCase()} achievement unlocked. Pure entertainment that makes business automation look like the greatest adventure ever.`
+      asmr: `Cinematic ${spec.duration} luxury lifestyle epic: Pampered orange kitten living their absolute best life, ${randomScene} in a world of endless leisure. Opening: kitten waking up in luxury penthouse with automated business running itself. Journey includes: spa days with cucumber masks, yacht parties with tiny champagne, shopping sprees with designer accessories, red carpet events with paparazzi. Business wisdom "${postContent.substring(0, 100)}..." woven into glamorous lifestyle narrative showing the rewards of automation. Magical transformation sequences showing work becoming play. Upbeat music builds to climactic toast celebrating freedom from ${foundTerms.join(' and ') || 'business stress'}. Ends with kitten surveying their empire from a luxury balcony as ${coreMessage.toLowerCase()} delivers ultimate lifestyle freedom. Pure aspirational content that makes business automation irresistible.`
     };
   }
 
@@ -389,24 +389,24 @@ export class VideoService {
       styleDirection = 'Cinematic social media optimized, movie trailer vibes, dynamic shareable moments';
     }
     
-    // Dynamic movie trailer activities - HIGH ENTERTAINMENT VALUE
+    // Enviable lifestyle activities - showing off their amazing free time
     const movieTrailerScenes = [
-      'dramatically leaping through floating business documents in slow motion while papers swirl around in pastel pink and lavender clouds',
-      'surfing down a mountain of colorful spreadsheets like an action hero, wearing tiny sunglasses, with charts flying everywhere in slow motion',
-      'parkour-style bouncing between floating office furniture suspended in a dreamy pastel mint green sky',
-      'performing epic dance moves on a giant rotating pie chart while confetti of business reports rains down in soft coral colors',
-      'speed-racing through a magical office maze on a tiny scooter, dodging flying staplers and calculators in a whimsical chase scene',
-      'conducting an orchestra of floating laptops and phones that play musical notes in a symphony of pastel purple and yellow',
-      'ninja-style flipping and diving through holographic business presentations that shimmer in soft peach and sky blue',
-      'flying a tiny paper airplane made from invoices through a fantastical sky of floating clouds shaped like bar graphs',
-      'breakdancing on a spinning globe while quarterly reports orbit around like planets in a pastel universe',
-      'skateboarding down a rainbow slide made of colorful spreadsheet cells while business icons rain down like confetti'
+      'swaggering confidently down a tropical beach made of floating invoices, then lounging in a tiny hammock sipping coconut water while spreadsheets drift by like clouds in pastel pink and lavender',
+      'trotting leisurely through a spa day setup with miniature towels and cucumber slices, then getting a massage from tiny robot assistants while charts float around in mint green bubbles',
+      'loping gracefully onto a yacht made of business documents, then sunbathing with tiny designer sunglasses while sipping champagne as reports flutter away like confetti in coral breeze',
+      'walking casually to a golf course made of pie charts, then taking perfect golf swings while wearing a tiny visor, with business papers serving as confetti when they score holes-in-one',
+      'dawdling through a luxury shopping mall built from spreadsheets, then trying on tiny designer outfits while assistants carry shopping bags made of invoices in pastel purple',
+      'strutting onto a red carpet made of quarterly reports, then posing for paparazzi cameras while wearing a tiny tuxedo, with business documents swirling around like magical confetti',
+      'prowling onto a private jet constructed from office furniture, then reclining in first-class seats with tiny champagne glasses while clouds of receipts drift past the windows',
+      'walking confidently to a luxury resort pool made of floating bar graphs, then diving in and swimming laps while business papers transform into tropical fish in sky blue water',
+      'sauntering up to a mountaintop mansion built from filing cabinets, then relaxing on a balcony with tiny binoculars, surveying their kingdom of automated business below',
+      'striding onto a luxury cruise ship deck made of colorful spreadsheets, then dancing at an elegant party with tiny formal wear while invoices fall like celebratory confetti'
     ];
     
     const randomScene = movieTrailerScenes[Math.floor(Math.random() * movieTrailerScenes.length)];
     
-    // Art Director's MOVIE TRAILER creative brief with dynamic entertainment
-    return `Epic mini movie trailer starring ${animalCasting} in a fantastical business wonderland. Opening scene: ${animalCasting} ${randomScene}. Cinematic pastel color palette featuring soft pinks, lavender, mint green, coral, peach, and sky blue throughout. Brand purpose "${brandPurpose}" woven into the adventure narrative. ${styleDirection}. Dynamic camera movements: swooping aerial shots, dramatic close-ups, slow-motion action sequences, and spinning transitions. High-energy soundtrack with business-themed sound effects and triumphant orchestral moments. Multiple scene cuts showing different magical business scenarios. Ending with ${animalCasting} striking a heroic pose on top of a mountain of conquered paperwork as pastel confetti falls. Movie trailer text overlays appear: "This ${brandPurpose?.toLowerCase() || 'business transformation'}", "Coming to Queensland SMEs", "The Adventure Begins Now". Ultra-engaging, scroll-stopping entertainment that makes business automation look like the most exciting adventure ever.`;
+    // Art Director's LUXURY LIFESTYLE creative brief - living their best life
+    return `Epic luxury lifestyle movie trailer starring ${animalCasting} living their absolute best life thanks to business automation. Opening scene: ${animalCasting} ${randomScene}. This is pure lifestyle envy - showing off all the amazing free time they now have. Cinematic pastel color palette featuring soft pinks, lavender, mint green, coral, peach, and sky blue throughout. Brand purpose "${brandPurpose}" subtly woven into their glamorous lifestyle upgrade. ${styleDirection}. Dynamic camera movements: swooping aerial shots of luxury scenes, dramatic close-ups of pure bliss, slow-motion leisure sequences, and spinning transitions between amazing activities. Upbeat, aspirational soundtrack with luxury lifestyle vibes and triumphant "living my best life" moments. Multiple scene cuts showing different enviable leisure activities. Ending with ${animalCasting} toasting with a tiny champagne glass on their luxury balcony as business documents transform into confetti celebrating their freedom. Movie trailer text overlays appear: "When ${brandPurpose?.toLowerCase() || 'business runs itself'}", "This Could Be Your Life", "The Freedom Starts Now". Ultra-engaging, scroll-stopping content that makes viewers jealous of this amazing lifestyle and desperate for business automation.`;
   }
 
   static async approveAndPostVideo(userId, postId, videoData, platforms) {
