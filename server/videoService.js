@@ -162,10 +162,12 @@ export class VideoService {
         throw new Error('Replicate API token not configured');
       }
       
-      // Create prediction with Seedance model using proper Replicate format
+      // Create prediction with Seedance model using actual video prompt content
+      console.log('🎬 Final video prompt being sent to Seedance:', videoPrompt);
+      
       const predictionPayload = {
         input: {
-          prompt: videoPrompt,
+          prompt: videoPrompt, // This should be the actual strategic ASMR content
           duration: Math.min(settings.maxDuration, 15), // Cap at 15s for social media
           resolution: settings.resolution,
           aspect_ratio: settings.aspectRatio,
@@ -265,8 +267,8 @@ export class VideoService {
         console.log('🎬 Falling back to demo video for API issues...');
         console.log('API Error Details:', error.response?.data || error.message);
         
-        // Ensure fallback settings are available
-        const fallbackSettings = settings || { 
+        // Use the settings that were defined earlier in the function
+        const fallbackSettings = { 
           resolution: '1080p', 
           aspectRatio: '16:9', 
           maxSize: '100MB',
