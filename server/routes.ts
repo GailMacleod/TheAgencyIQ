@@ -7554,19 +7554,68 @@ export function addNotificationEndpoints(app: any) {
     }
   });
 
-  // Approve video and post to platforms
+  // Approve video for a post (combines video + text into single unit)
   app.post('/api/video/approve', async (req: any, res) => {
     try {
-      const { userId, postId, videoData, platforms } = req.body;
-      const { VideoService } = await import('./videoService.js');
+      const { userId, postId, videoData } = req.body;
       
-      const result = await VideoService.approveAndPostVideo(userId, postId, videoData, platforms);
-      res.json(result);
+      // Update post with approved video data
+      const updatedPost = await storage.updatePost(postId, {
+        hasVideo: true,
+        videoApproved: true,
+        videoData: videoData,
+        approvedAt: new Date(),
+        status: 'approved' // Mark entire post as approved
+      });
+      
+      console.log(`✅ Video approved for post ${postId} - combined with text content`);
+      
+      res.json({
+        success: true,
+        postId: postId,
+        combinedContent: true,
+        status: 'approved',
+        message: 'Video and text combined into approved post',
+        videoData: videoData
+      });
     } catch (error) {
       console.error('Video approval failed:', error);
       res.status(500).json({ 
         success: false, 
         error: 'Video approval failed' 
+      });
+    }
+  });
+
+  // Publish approved post (with video + text) to platforms
+  app.post('/api/post/publish-approved', async (req: any, res) => {
+    try {
+      const { userId, postId, platforms } = req.body;
+      const { VideoService } = await import('./videoService.js');
+      
+      // Get the approved post with video data
+      const post = await storage.getPost(postId);
+      if (!post || !post.videoApproved) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Post not approved or no video attached' 
+        });
+      }
+      
+      // Publish combined video + text content
+      const result = await VideoService.approveAndPostVideo(userId, postId, post.videoData, platforms);
+      
+      // Update post status to posted
+      if (result.success) {
+        await storage.updatePost(postId, { status: 'posted' });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Publishing approved post failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Publishing failed' 
       });
     }
   });

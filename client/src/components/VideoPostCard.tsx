@@ -20,6 +20,10 @@ interface VideoPostCardProps {
     content: string;
     platform: string;
     status: string;
+    hasVideo?: boolean;
+    videoApproved?: boolean;
+    videoData?: any;
+    approvedAt?: string;
   };
   onVideoApproved: (postId: number, videoData: any) => void;
   brandData: any;
@@ -42,6 +46,41 @@ interface VideoData {
 }
 
 export function VideoPostCard({ post, onVideoApproved, brandData, userId }: VideoPostCardProps) {
+  // Add publish functionality for approved posts
+  const publishApprovedPost = async () => {
+    try {
+      const response = await fetch('/api/post/publish-approved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          postId: post.id,
+          platforms: [post.platform]
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Post Published!",
+          description: `Approved video and text posted to ${post.platform} successfully!`
+        });
+      } else {
+        toast({
+          title: "Publishing Failed",
+          description: data.error || "Failed to publish approved post",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Publishing failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to publish approved post",
+        variant: "destructive"
+      });
+    }
+  };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
@@ -171,7 +210,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
           userId,
           postId: post.id,
           videoData,
-          platforms: [post.platform]
+          // Remove platforms from approval - approval just combines video + text
         })
       });
 
@@ -182,10 +221,10 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
         setIsModalOpen(false);
         toast({
           title: "Video Approved!",
-          description: `Video posted to ${post.platform} successfully`
+          description: "Video and text combined into approved post. Ready to publish!"
         });
       } else {
-        setError('Failed to approve and post video');
+        setError('Failed to approve video');
       }
     } catch (error) {
       console.error('Video approval failed:', error);
@@ -576,10 +615,10 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                         <Button
                           onClick={approveVideo}
                           className="flex-1"
-                          aria-label="Approve video and post to platform"
+                          aria-label="Approve video for combination with text"
                         >
                           <CheckIcon className="w-4 h-4 mr-2" />
-                          Approve & Post
+                          Approve Video
                         </Button>
                         <Button
                           onClick={deleteVideo}
@@ -625,6 +664,40 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
             </Dialog>
           )}
         </div>
+
+        {/* Show Approved Video button when post has approved video */}
+        {post.videoApproved && post.videoData && (
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-green-600 text-white">
+                  <CheckIcon className="w-3 h-3 mr-1" />
+                  Approved Video
+                </Badge>
+                <span className="text-sm text-green-700 font-medium">
+                  Ready to publish to {post.platform}
+                </span>
+                {post.approvedAt && (
+                  <span className="text-xs text-green-600">
+                    Approved {new Date(post.approvedAt).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+              <Button
+                onClick={publishApprovedPost}
+                className="bg-green-600 hover:bg-green-700 text-white"
+                size="sm"
+                aria-label="Publish approved video and text to platform"
+              >
+                <PlayIcon className="w-4 h-4 mr-2" />
+                Publish Now
+              </Button>
+            </div>
+            <div className="mt-2 text-xs text-green-600">
+              Video and text combined - {post.videoData.animalType || 'Art Director'} video with your copywritten content
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

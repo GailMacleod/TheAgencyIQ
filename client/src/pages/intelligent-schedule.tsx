@@ -34,6 +34,11 @@ interface Post {
     engagement: number;
     impressions: number;
   };
+  // Video approval fields
+  hasVideo?: boolean;
+  videoApproved?: boolean;
+  videoData?: any;
+  approvedAt?: string;
 }
 
 interface User {

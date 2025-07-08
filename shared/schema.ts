@@ -38,10 +38,20 @@ export const postSchedule = pgTable("post_schedule", {
   userId: text("user_id").notNull(), // Mobile number UID
   content: text("content").notNull(),
   platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'tiktok', 'x'
-  status: text("status").notNull().default("draft"), // 'draft', 'scheduled', 'posted'
+  status: text("status").notNull().default("draft"), // 'draft', 'approved', 'scheduled', 'posted'
   isCounted: boolean("is_counted").notNull().default(false), // True only if posted successfully
   scheduledAt: timestamp("scheduled_at"),
   createdAt: timestamp("created_at").defaultNow(),
+  // Video approval fields
+  hasVideo: boolean("has_video").default(false),
+  videoApproved: boolean("video_approved").default(false),
+  videoData: jsonb("video_data"), // Stores video metadata, URL, Art Director info
+  approvedAt: timestamp("approved_at"), // When user approved this post+video combination
+  // Video approval fields
+  hasVideo: boolean("has_video").default(false),
+  videoApproved: boolean("video_approved").default(false),
+  videoData: jsonb("video_data"), // Stores video metadata, URL, Art Director info
+  approvedAt: timestamp("approved_at"), // When user approved this post+video combination
 });
 
 // Post ledger for 30-day rolling quota tracking

@@ -43,6 +43,7 @@ export interface IStorage {
   createPost(post: InsertPost): Promise<Post>;
   updatePost(id: number, updates: Partial<InsertPost>): Promise<Post>;
   deletePost(id: number): Promise<void>;
+  getPost(postId: number): Promise<Post | undefined>;
 
   // Platform connection operations
   getPlatformConnectionsByUser(userId: number): Promise<PlatformConnection[]>;
@@ -203,6 +204,14 @@ export class DatabaseStorage implements IStorage {
 
   async deletePost(id: number): Promise<void> {
     await db.delete(posts).where(eq(posts.id, id));
+  }
+
+  async getPost(postId: number): Promise<Post | undefined> {
+    const [post] = await db
+      .select()
+      .from(posts)
+      .where(eq(posts.id, postId));
+    return post;
   }
 
   // Platform connection operations
