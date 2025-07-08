@@ -416,7 +416,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                         }`}>
                           
                           {/* Real Seedance Video Player (when available) */}
-                          {videoData.seedanceGenerated && videoData.url && !videoData.url.startsWith('art-director-preview://') ? (
+                          {videoData.url && !videoData.url.startsWith('art-director-preview://') && !videoData.previewMode ? (
                             <div className="w-full h-full relative">
                               <video
                                 className="w-full h-full object-cover"
@@ -424,8 +424,11 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                                 autoPlay
                                 muted
                                 loop
+                                onLoadedMetadata={(e) => {
+                                  console.log('✅ Real Seedance video loaded successfully:', videoData.url);
+                                }}
                                 onError={(e) => {
-                                  console.log('Video load error, falling back to preview');
+                                  console.log('❌ Video load error, falling back to preview:', videoData.url);
                                   setError('Video failed to load, showing preview mode');
                                 }}
                               >
