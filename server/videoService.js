@@ -155,14 +155,14 @@ export class VideoService {
           animalType: 'bunny'
         },
         {
-          url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
           title: 'Kitten Productivity Coach',
           description: 'Fluffy kitten organizing business documents',
           keywords: ['kitten', 'cat', 'productivity', 'organization'],
           animalType: 'kitten'
         },
         {
-          url: 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4',
+          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
           title: 'Puppy ASMR Office',
           description: 'Golden retriever puppy at tiny desk with laptop',
           keywords: ['puppy', 'dog', 'retriever', 'office', 'asmr'],
