@@ -64,9 +64,9 @@ export class VideoService {
     const foundTerms = businessTerms.filter(term => contentWords.includes(term));
     
     return {
-      shortForm: `Professional businesswoman in modern office speaking softly about ${foundTerms.join(' and ') || 'business growth'}. She whispers: "${postContent.substring(0, 120)}..." while organizing papers gently. Soft lighting, minimal background noise. Close-up shots of hands typing slowly on laptop keyboard. ASMR business coaching style with strategic insights delivered in whispered, calming tone. Queensland SME focus.`,
+      shortForm: `Adorable golden retriever puppy sitting at tiny office desk with miniature laptop, gently tapping keys with paws. Soft whispering voiceover explains: "${postContent.substring(0, 120)}..." while puppy organizes tiny business papers with nose. Cozy office lighting, gentle paw sounds on keyboard, soft paper rustling. ASMR business coaching with cute animal delivering strategic insights in whispered, calming tone. Queensland SME focus with irresistibly cute delivery.`,
         
-      asmr: `ASMR business strategy session. Close-up footage of hands organizing business documents, gentle keyboard typing sounds, soft paper shuffling. Whispered voiceover explains: "${postContent.substring(0, 100)}...". Professional woman's voice speaks quietly about ${coreMessage.toLowerCase()}. Calming office ambiance, soft pen writing sounds, gentle page turning. Strategic business insights delivered in soothing ASMR style for ${foundTerms.join(' and ') || 'entrepreneurs'}.`
+      asmr: `ASMR business strategy featuring fluffy orange kitten organizing miniature business documents with tiny paws. Close-up shots of kitten gently patting papers, soft purring sounds, whispered voiceover explains: "${postContent.substring(0, 100)}...". Adorable cat sits at small desk discussing ${coreMessage.toLowerCase()} with gentle meowing and paper shuffling. Calming office ambiance with cute animal delivering strategic business insights in soothing ASMR style for ${foundTerms.join(' and ') || 'entrepreneurs'}. Viral cute factor meets professional strategy.`
     };
   }
 
@@ -78,14 +78,14 @@ export class VideoService {
       // Enhanced ASMR prompt processing for Seedance API
       let videoPrompt;
       if (editedText && editedText.trim()) {
-        // User customized prompt - enhance with ASMR context
-        videoPrompt = `ASMR business video: Professional woman softly whispering "${editedText.trim()}". Close-up shots of hands organizing papers, gentle keyboard typing, soft business sounds. Calming office environment with warm lighting.`;
+        // User customized prompt - enhance with cute animal ASMR context
+        videoPrompt = `ASMR business video with cute animals: Adorable fluffy puppy or kitten at tiny office desk with "${editedText.trim()}". Close-up shots of tiny paws organizing miniature papers, gentle keyboard tapping sounds, soft animal sounds. Cozy office environment with warm lighting and irresistibly cute business coaching.`;
       } else if (prompt && typeof prompt === 'object' && prompt.content) {
-        // Use the enhanced ASMR prompt content directly
+        // Use the enhanced cute animal ASMR prompt content directly
         videoPrompt = prompt.content;
       } else if (typeof prompt === 'string') {
-        // Basic string prompt - enhance with ASMR context
-        videoPrompt = `ASMR business content: ${prompt}. Professional woman speaking softly about business strategy, gentle office sounds, calming atmosphere.`;
+        // Basic string prompt - enhance with cute animal ASMR context
+        videoPrompt = `ASMR business content with cute animals: ${prompt}. Adorable puppy or kitten delivering business strategy with soft animal sounds, gentle paw movements, calming atmosphere with viral cute factor.`;
       } else {
         throw new Error('No valid video prompt provided');
       }
