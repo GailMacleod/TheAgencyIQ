@@ -187,7 +187,8 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
         body: JSON.stringify({
           postContent: post.content,
           platform: post.platform,
-          brandData
+          brandData,
+          userId
         })
       });
 

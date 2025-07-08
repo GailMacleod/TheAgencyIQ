@@ -7506,7 +7506,7 @@ export function addNotificationEndpoints(app: any) {
   app.post('/api/video/generate-prompts', async (req: any, res) => {
     try {
       console.log('=== VIDEO PROMPT GENERATION STARTED ===');
-      const { postContent, platform } = req.body;
+      const { postContent, platform, userId } = req.body;
       
       if (!postContent || !platform) {
         return res.status(400).json({ 
@@ -7514,6 +7514,9 @@ export function addNotificationEndpoints(app: any) {
           error: 'Missing postContent or platform' 
         });
       }
+
+      // Get authenticated user for prompt variety tracking
+      const authenticatedUserId = req.session?.userId || userId || 'default';
 
       // Use fallback brand data for video generation
       const brandData = {
@@ -7524,11 +7527,17 @@ export function addNotificationEndpoints(app: any) {
       
       const { VideoService } = await import('./videoService.js');
       
-      console.log('Generating video prompts for:', { postContent: postContent.substring(0, 50), platform, brandName: brandData?.brandName });
+      console.log('Generating varied video prompts for:', { 
+        userId: authenticatedUserId,
+        postContent: postContent.substring(0, 50), 
+        platform, 
+        brandName: brandData?.brandName 
+      });
       
-      const result = await VideoService.generateVideoPrompts(postContent, platform, brandData);
+      const result = await VideoService.generateVideoPrompts(postContent, platform, brandData, authenticatedUserId);
       
-      console.log('Video prompt generation result:', result.success ? 'SUCCESS' : 'FAILED');
+      console.log('Video prompt generation result:', result.success ? 'SUCCESS' : 'FAILED', 
+        result.userHistory ? `(Generated: ${result.userHistory.totalGenerated}, Animals: ${result.userHistory.uniqueAnimals})` : '');
       res.json(result);
     } catch (error) {
       console.error('Video prompt generation failed:', error);
