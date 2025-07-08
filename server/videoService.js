@@ -163,17 +163,50 @@ export class VideoService {
         
         console.log(`🎬 Art Director generating custom ${animalType} video: ${prompt.substring(0, 100)}...`);
         
-        // Simulate Seedance 1.0 video generation (replace with real API call)
-        await new Promise(resolve => setTimeout(resolve, 100)); // Realistic generation delay
+        // REAL SEEDANCE API INTEGRATION - Generate actual video
+        let seedanceVideoUrl = null;
+        let generationError = null;
         
-        // Generate unique Art Director content instead of generic videos
+        try {
+          if (process.env.SEEDANCE_API_KEY) {
+            console.log(`🚀 Calling Seedance API for real video generation...`);
+            
+            const seedanceResponse = await axios.post('https://pollo.ai/api/platform/generation/bytedance/seedance', {
+              input: { 
+                prompt: prompt, 
+                resolution: "480p", 
+                duration: 15,
+                aspect_ratio: spec.ratio
+              }
+            }, { 
+              headers: { 
+                'x-api-key': process.env.SEEDANCE_API_KEY, 
+                'Content-Type': 'application/json' 
+              },
+              timeout: 30000 // 30 second timeout
+            });
+            
+            if (seedanceResponse.data && seedanceResponse.data.videoUrl) {
+              seedanceVideoUrl = seedanceResponse.data.videoUrl;
+              console.log(`✅ Seedance API success: ${seedanceVideoUrl.substring(0, 50)}...`);
+            } else {
+              console.log(`⚠️ Seedance API response missing videoUrl:`, seedanceResponse.data);
+            }
+          }
+        } catch (apiError) {
+          generationError = apiError.message;
+          console.log(`⚠️ Seedance API call failed: ${apiError.message}`);
+          console.log(`🎨 Falling back to Art Director preview mode`);
+        }
+        
+        // Generate Art Director preview (always available as fallback)
         console.log(`🎨 Art Director creating visual preview for: ${animalType} executing "${strategicIntent}"`);
         console.log(`🎬 Creative Brief: ${prompt.substring(0, 120)}...`);
         
         return {
           videoId,
-          url: `art-director-preview://${videoId}`, // Custom protocol for Art Director preview
-          seedanceUrl: `https://seedance.delivery/art-director/${videoId}.mp4`, // Future real URL
+          url: seedanceVideoUrl || `art-director-preview://${videoId}`, // Real Seedance URL or preview
+          seedanceUrl: seedanceVideoUrl || `https://seedance.delivery/art-director/${videoId}.mp4`, // Real or future URL
           title: `Art Director: ${animalType.charAt(0).toUpperCase() + animalType.slice(1)} ${strategicIntent.split(' ').slice(0, 3).join(' ')}`,
           description: `Custom Art Director interpretation: ${animalType} executing brand purpose "${strategicIntent}"`,
           artDirectorBrief: prompt,
@@ -184,8 +217,10 @@ export class VideoService {
           aspectRatio: spec.ratio,
           duration: 15,
           customGenerated: true,
-          artDirectorPreview: true, // Shows this is authentic Art Director content
-          previewMode: true // Indicates this is preview with real generation pending
+          artDirectorPreview: !seedanceVideoUrl, // False if real video generated
+          previewMode: !seedanceVideoUrl, // False if real video available
+          seedanceGenerated: !!seedanceVideoUrl, // True if real API call succeeded
+          generationError: generationError // Include any API errors for debugging
         };
       };
       

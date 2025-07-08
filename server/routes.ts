@@ -897,6 +897,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Video preview endpoint for Art Director generated content
+  app.get('/video-preview/:videoId', async (req, res) => {
+    try {
+      const { videoId } = req.params;
+      console.log(`🎬 Video preview request for: ${videoId}`);
+      
+      // For now, redirect to a placeholder since we store URLs in session/memory
+      // In production, you'd fetch the actual video URL from database storage
+      res.json({
+        videoId,
+        message: 'Video preview endpoint operational',
+        status: 'ready',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Video preview error:', error);
+      res.status(404).json({
+        error: 'Video not found',
+        videoId: req.params.videoId
+      });
+    }
+  });
+
   // Device-agnostic session synchronization endpoint
   app.post('/api/sync-session', async (req, res) => {
     try {

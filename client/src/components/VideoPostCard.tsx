@@ -415,8 +415,34 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           post.platform === 'Instagram' ? 'w-64 h-[456px]' : 'w-96 h-56'
                         }`}>
                           
-                          {/* Art Director Visual Preview */}
-                          <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 space-y-2 relative">
+                          {/* Real Seedance Video Player (when available) */}
+                          {videoData.seedanceGenerated && videoData.url && !videoData.url.startsWith('art-director-preview://') ? (
+                            <div className="w-full h-full relative">
+                              <video
+                                className="w-full h-full object-cover"
+                                controls
+                                autoPlay
+                                muted
+                                loop
+                                onError={(e) => {
+                                  console.log('Video load error, falling back to preview');
+                                  setError('Video failed to load, showing preview mode');
+                                }}
+                              >
+                                <source src={videoData.url} type="video/mp4" />
+                                Your browser does not support the video tag.
+                              </video>
+                              
+                              {/* Seedance Generated Badge */}
+                              <div className="absolute top-2 left-2">
+                                <Badge className="text-xs bg-green-600 text-white">
+                                  🚀 Seedance Generated
+                                </Badge>
+                              </div>
+                            </div>
+                          ) : (
+                            // Art Director Visual Preview
+                            <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 space-y-2 relative">
                             
                             {/* Background Pattern */}
                             <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-purple-400 to-indigo-400"></div>
@@ -470,6 +496,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                               </div>
                             </div>
                           </div>
+                          )}
                           
                           {/* Platform Badge */}
                           <div className="absolute top-2 right-2">
@@ -477,6 +504,21 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                               {post.platform}
                             </Badge>
                           </div>
+                          
+                          {/* Generation Mode Badge */}
+                          {videoData.seedanceGenerated ? (
+                            <div className="absolute bottom-2 left-2">
+                              <Badge className="text-xs bg-green-600 text-white">
+                                ✅ Live Generated
+                              </Badge>
+                            </div>
+                          ) : (
+                            <div className="absolute bottom-2 left-2">
+                              <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700">
+                                🎨 Preview Mode
+                              </Badge>
+                            </div>
+                          )}
                         </div>
                         
                         <div className="flex justify-center gap-2 mt-3">
