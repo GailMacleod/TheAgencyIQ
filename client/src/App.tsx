@@ -32,6 +32,7 @@ import InstagramFix from "@/pages/instagram-fix";
 import DataDeletionStatus from "@/pages/data-deletion-status";
 import MetaPixelTest from "@/pages/meta-pixel-test";
 import BulletproofDashboard from "@/pages/bulletproof-dashboard";
+import VideoApproval from "./VideoApproval";
 
 function Router() {
   // Track page views when routes change
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/instagram-fix" component={InstagramFix} />
       <Route path="/data-deletion-status" component={DataDeletionStatus} />
       <Route path="/meta-pixel-test" component={MetaPixelTest} />
+      <Route path="/video-approval" component={VideoApproval} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -84,7 +86,8 @@ function App() {
     }
     
     // Verify required environment variable is present
-    if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
+    const gaId = import.meta?.env?.VITE_GA_MEASUREMENT_ID;
+    if (!gaId) {
       console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
     } else {
       initGA();

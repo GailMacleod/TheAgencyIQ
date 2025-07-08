@@ -584,7 +584,7 @@ async function startServer() {
         if (req.path.startsWith('/api') || req.path.startsWith('/oauth') || req.path.startsWith('/callback')) {
           return res.status(404).json({ error: 'API endpoint not found' });
         }
-        res.sendFile(path.join(__dirname, '../dist/index.html'));
+        res.sendFile(path.join(process.cwd(), 'dist/index.html'));
       });
       
       console.log('✅ Static file serving configured (esbuild mode)');
