@@ -276,8 +276,8 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
             🎬 Video Ready
           </Badge>
         </div>
-        <CardDescription className="text-xs">
-          {post.content.substring(0, 100)}...
+        <CardDescription className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
+          {post.content}
         </CardDescription>
         <div className="mt-2 text-xs font-medium text-purple-600">
           ⚡ AI Video Generation Available
