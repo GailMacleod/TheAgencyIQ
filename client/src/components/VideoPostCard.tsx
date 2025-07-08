@@ -52,6 +52,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [hasGeneratedVideo, setHasGeneratedVideo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [videoLoading, setVideoLoading] = useState(false);
   const { toast } = useToast();
 
   // Check if video generation is allowed for this post - FORCE SHOW FOR ALL POSTS
@@ -375,8 +376,23 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             playsInline
                             preload="metadata"
                             className="w-full h-48 object-cover"
+                            onLoadStart={() => {
+                              console.log('Video loading started');
+                              setVideoLoading(true);
+                            }}
+                            onLoadedMetadata={() => {
+                              console.log('Video metadata loaded');
+                              setVideoLoading(false);
+                              setError(null);
+                            }}
+                            onCanPlay={() => {
+                              console.log('Video can play');
+                              setVideoLoading(false);
+                              setError(null);
+                            }}
                             onError={(e) => {
                               console.error('Video load error:', e);
+                              setVideoLoading(false);
                               // Try direct URL if proxy fails
                               const video = e.target as HTMLVideoElement;
                               if (video.src !== 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4') {
@@ -385,15 +401,17 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                                 setError('Video playback failed');
                               }
                             }}
-                            onLoadedMetadata={() => {
-                              console.log('Video metadata loaded');
-                              setError(null);
-                            }}
-                            onCanPlay={() => {
-                              console.log('Video can play');
-                              setError(null);
-                            }}
                           />
+                          
+                          {/* Video Loading Indicator */}
+                          {videoLoading && (
+                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                              <div className="text-center text-white">
+                                <LoaderIcon className="w-8 h-8 animate-spin mx-auto mb-2" />
+                                <p className="text-sm">Loading video...</p>
+                              </div>
+                            </div>
+                          )}
                           
                           {/* Manual play fallback */}
                           <div className="absolute inset-0 flex items-center justify-center">
