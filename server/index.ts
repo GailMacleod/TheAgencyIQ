@@ -506,35 +506,27 @@ async function startServer() {
     next();
   });
 
-  // Setup static file serving after API routes
+  // Setup static file serving after API routes - NO VITE ALLOWED
   try {
-    // Production static file serving
-    if (process.env.NODE_ENV === 'production') {
-      console.log('⚡ Setting up production static files...');
-      // Serve built frontend assets
-      app.use(express.static(path.join(process.cwd(), 'dist/public')));
-      // Serve attached assets in production
-      app.use('/attached_assets', express.static('attached_assets'));
-      
-      // Root route for production
-      app.get('/', (req, res) => {
-        res.sendFile(path.join(process.cwd(), 'dist/index.html'));
-      });
-      
-      // Serve React app for all non-API routes
-      app.get('*', (req, res) => {
-        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.sendFile(path.join(process.cwd(), 'dist/index.html'));
-        }
-      });
-      console.log('✅ Production static files setup complete');
-    } else {
-      console.log('⚡ Setting up development Vite...');
-      const { setupVite, serveStatic } = await import('./vite');
-      await setupVite(app, httpServer);
-      serveStatic(app);
-      console.log('✅ Vite setup complete');
-    }
+    console.log('⚡ Setting up static file serving (NO VITE)...');
+    
+    // Serve client files directly
+    app.use(express.static(path.join(process.cwd(), 'client')));
+    app.use('/src', express.static(path.join(process.cwd(), 'client/src')));
+    app.use('/attached_assets', express.static('attached_assets'));
+    
+    // Root route serves client/index.html
+    app.get('/', (req, res) => {
+      res.sendFile(path.join(process.cwd(), 'client/index.html'));
+    });
+    
+    // Serve React app for all non-API routes
+    app.get('*', (req, res) => {
+      if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+        res.sendFile(path.join(process.cwd(), 'client/index.html'));
+      }
+    });
+    console.log('✅ Static file serving setup complete (NO VITE)');
   } catch (error) {
     console.error('❌ Server setup error:', error);
     throw error;
