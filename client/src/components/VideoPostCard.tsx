@@ -538,6 +538,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           )}
                         </div>
                         
+                        <div className="space-y-3">
                         <div className="flex justify-center gap-2 mt-3">
                           <Badge variant="outline" className="text-xs">
                             {videoData.quality || '1080p'}
@@ -552,9 +553,8 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             {videoData.aspectRatio || '16:9'}
                           </Badge>
                         </div>
-                      </div>
-                      
-                      <div className="flex gap-2">
+                        
+                        <div className="flex gap-2">
                         <Button
                           onClick={approveVideo}
                           className="flex-1"
@@ -572,7 +572,8 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           <XIcon className="w-4 h-4 mr-2" />
                           Delete Video
                         </Button>
-                      </div>
+                        </div>
+                        </div>
                     </>
                   )}
                 </div>
