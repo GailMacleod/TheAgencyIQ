@@ -16,6 +16,7 @@ import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
 import AutoPostingEnforcer from "@/components/auto-posting-enforcer";
+import { VideoPostCard } from "@/components/VideoPostCard";
 
 interface Post {
   id: number;
@@ -111,6 +112,33 @@ export default function IntelligentSchedule() {
   const [queenslandEvents, setQueenslandEvents] = useState<any[]>([]);
 
   const queryClient = useQueryClient();
+
+  // Video handling
+  const handleVideoApproved = async (postId: number, videoData: any) => {
+    try {
+      // Update post status to include video
+      await apiRequest(`/api/posts/${postId}`, {
+        method: 'PUT',
+        body: { 
+          videoUrl: videoData.url,
+          status: 'published'
+        }
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      toast({
+        title: "Video Approved!",
+        description: "Video content has been posted successfully"
+      });
+    } catch (error) {
+      console.error('Video approval failed:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to approve video content",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Edit post content mutation
   const editPostMutation = useMutation({
@@ -637,10 +665,26 @@ export default function IntelligentSchedule() {
                 })}
               </div>
             ) : (
-              // List View
+              // List View with Video Generation
               <div className="grid gap-6">
                 {postsArray.map((post: Post) => (
-                <Card key={post.id} className="overflow-hidden border-l-4 border-purple-500">
+                  <VideoPostCard
+                    key={post.id}
+                    post={post}
+                    onVideoApproved={handleVideoApproved}
+                    brandData={brandPurpose}
+                    userId={user?.id || 0}
+                  />
+                ))}
+              </div>
+            )}
+            
+            {/* Legacy Post Cards Section */}
+            {!calendarView && postsArray.length > 0 && (
+              <div className="grid gap-6 mt-8">
+                <h3 className="text-lg font-semibold text-gray-700">Text-Only Posts</h3>
+                {postsArray.map((post: Post) => (
+                <Card key={`text-${post.id}`} className="overflow-hidden border-l-4 border-blue-500">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">

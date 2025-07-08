@@ -7371,5 +7371,87 @@ export function addNotificationEndpoints(app: any) {
       });
     }
   });
+
+  // VIDEO GENERATION API ENDPOINTS
+  // Generate video prompts for post content
+  app.post('/api/video/generate-prompts', requireAuth, async (req: any, res) => {
+    try {
+      const { postContent, platform, brandData } = req.body;
+      const { VideoService } = await import('./videoService.js');
+      
+      const result = await VideoService.generateVideoPrompts(postContent, platform, brandData);
+      res.json(result);
+    } catch (error) {
+      console.error('Video prompt generation failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Video prompt generation failed',
+        fallback: true 
+      });
+    }
+  });
+
+  // Render video from selected prompt
+  app.post('/api/video/render', requireAuth, async (req: any, res) => {
+    try {
+      const { prompt, editedText, platform, userId, postId } = req.body;
+      const { VideoService } = await import('./videoService.js');
+      
+      // Validate video generation limits
+      const validation = VideoService.validateVideoLimits(userId, postId);
+      if (!validation.canGenerate) {
+        return res.status(400).json({
+          success: false,
+          error: validation.reason
+        });
+      }
+      
+      const result = await VideoService.renderVideo(prompt, editedText, platform);
+      res.json(result);
+    } catch (error) {
+      console.error('Video rendering failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Video rendering failed',
+        fallback: true 
+      });
+    }
+  });
+
+  // Approve video and post to platforms
+  app.post('/api/video/approve', requireAuth, async (req: any, res) => {
+    try {
+      const { userId, postId, videoData, platforms } = req.body;
+      const { VideoService } = await import('./videoService.js');
+      
+      const result = await VideoService.approveAndPostVideo(userId, postId, videoData, platforms);
+      res.json(result);
+    } catch (error) {
+      console.error('Video approval failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Video approval failed' 
+      });
+    }
+  });
+
+  // Proxy video content for CORS compatibility
+  app.get('/api/video/proxy/:videoId', async (req, res) => {
+    try {
+      const { videoId } = req.params;
+      const { VideoService } = await import('./videoService.js');
+      
+      const result = await VideoService.proxyVideo(videoId);
+      if (result.success) {
+        res.set(result.headers);
+        res.redirect(result.url);
+      } else {
+        res.status(404).json({ error: 'Video not found' });
+      }
+    } catch (error) {
+      console.error('Video proxy failed:', error);
+      res.status(500).json({ error: 'Video proxy failed' });
+    }
+  });
 }
 
