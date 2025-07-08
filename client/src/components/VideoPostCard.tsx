@@ -407,6 +407,23 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
         <div className="mt-2 text-xs font-medium text-purple-600">
           ⚡ AI Video Generation Available
         </div>
+        
+        {/* Video Generation Guide */}
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+            🤖 Video Generation Guide
+          </h4>
+          <ul className="text-sm text-blue-700 space-y-1">
+            <li>• <strong>One video per post:</strong> You can generate one video per social media post</li>
+            <li>• <strong>Three options:</strong> Choose from two AI prompts or create your own custom prompt</li>
+            <li>• <strong>10-second duration:</strong> All videos are automatically capped at 10 seconds for optimal engagement</li>
+            <li>• <strong>Platform optimized:</strong> Videos are automatically formatted for {post.platform}</li>
+            <li>• <strong>Art Director system:</strong> AI creates viral-worthy cute animal videos with business messaging</li>
+          </ul>
+          <div className="mt-2 p-2 bg-blue-100 rounded text-xs text-blue-600">
+            <strong>Tip:</strong> Click "Generate Video" to see your options and create scroll-stopping content!
+          </div>
+        </div>
       </CardHeader>
       
       <CardContent>
@@ -467,6 +484,21 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                   {/* Prompt Selection */}
                   {prompts.length > 0 && !selectedPrompt && !isRendering && !videoData && (
                     <div className="space-y-4">
+                      {/* Detailed Video Options Guide */}
+                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                        <h4 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                          🎬 Your Video Generation Options
+                        </h4>
+                        <div className="text-sm text-amber-700 space-y-2">
+                          <p><strong>Option 1 & 2:</strong> Choose from two AI-generated prompts below</p>
+                          <p><strong>Option 3:</strong> Create your own custom prompt by selecting a prompt and editing it</p>
+                          <p><strong>Remember:</strong> One video per post, 10-second duration, optimized for {post.platform}</p>
+                        </div>
+                        <div className="mt-2 p-2 bg-amber-100 rounded text-xs text-amber-600">
+                          <strong>Art Director:</strong> Creates viral cute animal videos with your business messaging
+                        </div>
+                      </div>
+                      
                       <h3 className="text-sm font-medium">Choose Your ASMR Strategy Style:</h3>
                       {prompts.map((prompt, index) => (
                         <Card
@@ -499,6 +531,15 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                   {/* Text Editing */}
                   {selectedPrompt && !isRendering && !videoData && (
                     <div className="space-y-4">
+                      {/* Custom Prompt Guide */}
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 className="font-semibold text-green-800 mb-1 text-sm">✏️ Custom Prompt Creation</h4>
+                        <p className="text-xs text-green-700">
+                          Edit the prompt below to create your own custom video. The Art Director will interpret your changes 
+                          and create a unique 10-second video optimized for {post.platform}.
+                        </p>
+                      </div>
+                      
                       <div>
                         <Label htmlFor="editText" className="text-sm font-medium">
                           Add Strategic Focus (max 10 words)
