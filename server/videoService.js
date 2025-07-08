@@ -4,11 +4,17 @@
  */
 
 import axios from 'axios';
+import Replicate from 'replicate';
 import { PostQuotaService } from './PostQuotaService.js';
 
 // Seedance API configuration - Official Replicate Integration
 const REPLICATE_API_BASE = 'https://api.replicate.com/v1';
 const SEEDANCE_MODEL = 'bytedance/seedance-1-lite';
+
+// Initialize Replicate client
+const replicate = new Replicate({
+  auth: process.env.REPLICATE_API_TOKEN
+});
 
 export class VideoService {
   static async generateVideoPrompts(postContent, platform, brandData) {
@@ -163,12 +169,71 @@ export class VideoService {
         
         console.log(`🎬 Art Director generating custom ${animalType} video: ${prompt.substring(0, 100)}...`);
         
-        // Simulate Seedance 1.0 video generation (replace with real API call)
-        await new Promise(resolve => setTimeout(resolve, 100)); // Realistic generation delay
-        
-        // Generate unique Art Director content instead of generic videos
-        console.log(`🎨 Art Director creating visual preview for: ${animalType} executing "${strategicIntent}"`);
-        console.log(`🎬 Creative Brief: ${prompt.substring(0, 120)}...`);
+        try {
+          // Real Seedance API call through Replicate
+          const input = {
+            prompt: prompt,
+            duration: 10, // 10 seconds (closest to our 15s target)
+            resolution: "720p",
+            aspect_ratio: spec.ratio,
+            fps: 24,
+            camera_fixed: false
+          };
+          
+          console.log(`🎬 Calling Seedance API with input:`, { 
+            prompt: prompt.substring(0, 80) + '...', 
+            duration: input.duration,
+            aspect_ratio: input.aspect_ratio 
+          });
+          
+          const output = await replicate.run(SEEDANCE_MODEL, { input });
+          
+          console.log(`🎬 ✅ Seedance generation complete: ${output}`);
+          
+          return {
+            videoId,
+            url: output, // Real Seedance video URL
+            seedanceUrl: output, // Same as URL for live generation
+            title: `Art Director: ${animalType.charAt(0).toUpperCase() + animalType.slice(1)} ${strategicIntent.split(' ').slice(0, 3).join(' ')}`,
+            description: `Custom Art Director interpretation: ${animalType} executing brand purpose "${strategicIntent}"`,
+            artDirectorBrief: prompt,
+            prompt,
+            animalType,
+            width: spec.width,
+            height: spec.height,
+            aspectRatio: spec.ratio,
+            duration: 10, // Actual Seedance duration
+            customGenerated: true,
+            artDirectorPreview: false, // This is now real generation
+            liveGeneration: true,
+            seedanceGenerated: true
+          };
+          
+        } catch (error) {
+          console.error(`🎬 ❌ Seedance generation failed:`, error.message);
+          
+          // Fallback to preview mode if API fails
+          console.log(`🎬 Falling back to Art Director preview mode`);
+          
+          return {
+            videoId,
+            url: `art-director-preview://${videoId}`, // Preview fallback
+            seedanceUrl: `https://seedance.delivery/art-director/${videoId}.mp4`,
+            title: `Art Director: ${animalType.charAt(0).toUpperCase() + animalType.slice(1)} ${strategicIntent.split(' ').slice(0, 3).join(' ')}`,
+            description: `Custom Art Director interpretation: ${animalType} executing brand purpose "${strategicIntent}" (Preview Mode)`,
+            artDirectorBrief: prompt,
+            prompt,
+            animalType,
+            width: spec.width,
+            height: spec.height,
+            aspectRatio: spec.ratio,
+            duration: 15,
+            customGenerated: true,
+            artDirectorPreview: true,
+            previewMode: true,
+            error: 'Seedance API unavailable - showing preview'
+          };
+        }
         
         return {
           videoId,
