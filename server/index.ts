@@ -123,7 +123,7 @@ async function startServer() {
       "frame-ancestors 'self' https://www.google.com"
     ].join('; '));
     
-    // Standardized Permissions Policy (removing unrecognized features)
+    // Standardized Permissions Policy (removing deprecated 'unload' feature)
     res.setHeader('Permissions-Policy', [
       'camera=()',
       'fullscreen=()',
@@ -137,8 +137,7 @@ async function startServer() {
       'sync-xhr=()',
       'usb=()',
       'screen-wake-lock=()',
-      'web-share=()',
-      'unload=()'
+      'web-share=()'
     ].join(', '));
     
     next();
