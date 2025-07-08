@@ -133,10 +133,10 @@ export default function Splash() {
                 </div>
                 
                 {/* Video Feature Description */}
-                <div className="mt-4 text-center">
-                  <p className="text-sm text-black font-medium">
+                <div className="mt-4 flex justify-center">
+                  <div className="bg-black text-white px-6 py-2 rounded-full text-sm font-medium">
                     Includes video shorts fast, text-to-video animation
-                  </p>
+                  </div>
                 </div>
               </div>
               <div className="absolute inset-0 bg-gradient-atomiq rounded-2xl blur-3xl opacity-20 scale-110"></div>
