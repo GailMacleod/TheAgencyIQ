@@ -16,6 +16,8 @@ const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
 });
 
+// VideoService class for managing video generation and prompts
+class VideoService {
   // User prompt history storage (in-memory for session variety)
   static userPromptHistory = new Map();
   
@@ -787,3 +789,5 @@ const replicate = new Replicate({
     };
   }
 }
+
+module.exports = VideoService;

@@ -47,11 +47,6 @@ export const postSchedule = pgTable("post_schedule", {
   videoApproved: boolean("video_approved").default(false),
   videoData: jsonb("video_data"), // Stores video metadata, URL, Art Director info
   approvedAt: timestamp("approved_at"), // When user approved this post+video combination
-  // Video approval fields
-  hasVideo: boolean("has_video").default(false),
-  videoApproved: boolean("video_approved").default(false),
-  videoData: jsonb("video_data"), // Stores video metadata, URL, Art Director info
-  approvedAt: timestamp("approved_at"), // When user approved this post+video combination
 });
 
 // Post ledger for 30-day rolling quota tracking
