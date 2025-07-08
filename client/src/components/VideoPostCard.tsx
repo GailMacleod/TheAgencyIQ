@@ -180,6 +180,38 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
         if (progressInterval) clearInterval(progressInterval);
         setVideoData(data);
         setHasGeneratedVideo(true);
+        
+        // Poll for real Seedance video completion
+        const pollForSeedanceVideo = async () => {
+          for (let attempt = 0; attempt < 10; attempt++) {
+            try {
+              const seedanceResponse = await fetch('/api/video/latest-seedance');
+              const seedanceData = await seedanceResponse.json();
+              
+              if (seedanceData.success && seedanceData.video?.url) {
+                console.log('✅ Real Seedance video available:', seedanceData.video.url);
+                setVideoData(prev => ({
+                  ...prev,
+                  url: seedanceData.video.url,
+                  seedanceGenerated: true,
+                  realVideo: true
+                }));
+                toast({
+                  title: "Real Video Ready!",
+                  description: "Seedance video generation completed successfully"
+                });
+                break;
+              }
+            } catch (error) {
+              console.log('Polling for Seedance video...', attempt + 1);
+            }
+            await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+          }
+        };
+        
+        // Start polling after a brief delay
+        setTimeout(pollForSeedanceVideo, 2000);
+        
         toast({
           title: "Art Director Video Ready!",
           description: `${data.animalType} video generated in ${renderingTime}s (${data.size})`
