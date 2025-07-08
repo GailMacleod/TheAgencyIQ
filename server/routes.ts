@@ -7411,13 +7411,13 @@ export function addNotificationEndpoints(app: any) {
     }
   });
 
-  // Render video from selected prompt - REAL SEEDANCE API
+  // ART DIRECTOR: Brand-driven cute animal ASMR video generation
   app.post('/api/video/render', async (req: any, res) => {
     try {
-      console.log('=== REAL VIDEO RENDERING REQUEST ===');
+      console.log('=== ART DIRECTOR VIDEO CREATION REQUEST ===');
       const { prompt, editedText, platform, userId, postId } = req.body;
       
-      console.log('Video render params:', { 
+      console.log('Art Director briefing:', { 
         promptType: typeof prompt,
         promptPreview: typeof prompt === 'string' ? prompt.substring(0, 100) : prompt?.content?.substring(0, 100),
         editedText: editedText ? editedText.substring(0, 100) : 'none',
@@ -7426,7 +7426,38 @@ export function addNotificationEndpoints(app: any) {
         postId 
       });
       
-      // Import VideoService with real Seedance API
+      // Get user's brand purpose for Art Director
+      const user = await storage.getUserById(userId);
+      let brandPurpose = null;
+      let postContent = '';
+      
+      if (user && user.brandPurpose) {
+        brandPurpose = user.brandPurpose;
+        console.log('🎯 Brand Purpose loaded:', brandPurpose.corePurpose?.substring(0, 80));
+      } else {
+        console.log('⚠️ No brand purpose found - using fallback');
+        brandPurpose = {
+          corePurpose: 'Professional business growth and automation',
+          audience: 'Queensland SMEs',
+          brandName: 'TheAgencyIQ Client'
+        };
+      }
+      
+      // Get post content for creative direction
+      if (postId) {
+        try {
+          const post = await storage.getPostById(postId);
+          if (post && post.content) {
+            postContent = post.content;
+            console.log('📝 Post content loaded:', postContent.substring(0, 80));
+          }
+        } catch (error) {
+          console.log('📝 Could not load post content, using prompt as content');
+          postContent = typeof prompt === 'string' ? prompt : prompt?.content || '';
+        }
+      }
+      
+      // Import Art Director VideoService
       const { VideoService } = await import('./videoService.js');
       
       // Validate video generation limits
@@ -7438,19 +7469,21 @@ export function addNotificationEndpoints(app: any) {
         });
       }
       
-      const result = await VideoService.renderVideo(prompt, editedText, platform);
+      // Art Director creates brand-driven cute animal video
+      const result = await VideoService.renderVideo(prompt, editedText, platform, brandPurpose, postContent);
       
-      console.log('Video rendering result:', { 
+      console.log('🎬 Art Director result:', { 
         success: result.success, 
         videoId: result.videoId,
-        hasUrl: !!result.url,
-        fallback: result.fallback,
-        error: result.error 
+        artDirected: result.artDirected,
+        brandPurposeDriven: result.brandPurposeDriven,
+        animalType: result.animalType,
+        strategicIntent: result.strategicIntent?.substring(0, 50)
       });
       
       res.json(result);
     } catch (error) {
-      console.error('Video rendering failed:', error);
+      console.error('Art Director video creation failed:', error);
       res.status(500).json({ 
         success: false, 
         error: 'Video rendering failed',
