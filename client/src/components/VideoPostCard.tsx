@@ -382,40 +382,76 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                   {videoData && (
                     <div className="space-y-4">
                       <div className="text-center">
-                        <h3 className="font-medium mb-2">Video Preview ({post.platform})</h3>
-                        <div className={`relative bg-gray-100 rounded-lg overflow-hidden mx-auto ${
-                          post.platform === 'Instagram' ? 'max-w-xs' : 'max-w-lg'
+                        <h3 className="font-medium mb-2">🎬 Art Director Video Preview ({post.platform})</h3>
+                        
+                        {/* Video Info */}
+                        <div className="bg-purple-50 rounded-lg p-3 mb-4">
+                          <div className="text-sm font-medium text-purple-800 mb-2">
+                            {videoData.title}
+                          </div>
+                          <div className="text-xs text-purple-600 mb-2">
+                            {videoData.description}
+                          </div>
+                          {videoData.artDirected && (
+                            <div className="flex justify-center gap-2">
+                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                                ✅ Art Directed
+                              </Badge>
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                                🎯 Brand Purpose Driven
+                              </Badge>
+                              <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">
+                                🐾 {videoData.animalType}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className={`relative bg-black rounded-lg overflow-hidden mx-auto shadow-lg ${
+                          post.platform === 'Instagram' ? 'w-64 h-[456px]' : 'w-96 h-56'
                         }`}>
                           <video
                             src={videoData.url}
                             controls
                             muted
-                            autoPlay
-                            className={`w-full object-contain ${
-                              post.platform === 'Instagram' ? 'aspect-[9/16]' : 'aspect-video'
-                            }`}
+                            playsInline
+                            onLoadStart={() => setVideoLoading(true)}
+                            onLoadedData={() => setVideoLoading(false)}
+                            onError={() => {
+                              setVideoLoading(false);
+                              console.error('Video failed to load:', videoData.url);
+                            }}
+                            className="w-full h-full object-cover"
                             aria-label={`Generated ${post.platform} video preview`}
                           />
                           
                           {/* Video Loading Indicator */}
                           {videoLoading && (
-                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center">
                               <div className="text-center text-white">
                                 <LoaderIcon className="w-8 h-8 animate-spin mx-auto mb-2" />
-                                <p className="text-sm">Loading video...</p>
+                                <p className="text-sm">Loading cute video...</p>
                               </div>
                             </div>
                           )}
                           
-
+                          {/* Platform Badge Overlay */}
+                          <div className="absolute top-2 right-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {post.platform}
+                            </Badge>
+                          </div>
                         </div>
                         
-                        <div className="flex justify-center gap-2 mt-2">
+                        <div className="flex justify-center gap-2 mt-3">
                           <Badge variant="outline" className="text-xs">
-                            {videoData.quality}
+                            {videoData.quality || '1080p'}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
-                            {videoData.size}
+                            {videoData.size || '1.2MB'}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {videoData.aspectRatio || '16:9'}
                           </Badge>
                         </div>
                       </div>
