@@ -23,13 +23,13 @@ export class VideoService {
             type: 'Strategic ASMR Short-Form',
             content: prompts.shortForm,
             duration: '15-30s',
-            style: 'ASMR business strategy - whispered insights with visual appeal'
+            style: 'ASMR business strategy - whispered professional insights'
           },
           {
             type: 'Brand-Aligned ASMR',
             content: prompts.asmr,
             duration: '30-45s',
-            style: 'Strategic ASMR - soothing narration with brand purpose focus'
+            style: 'Strategic ASMR - soothing business guidance with tactile elements'
           }
         ]
       };
@@ -64,23 +64,9 @@ export class VideoService {
     const foundTerms = businessTerms.filter(term => contentWords.includes(term));
     
     return {
-      shortForm: `ASMR Business Strategy Video: "${postContent.substring(0, 120)}"
-        Visual: Soft-focused modern office with gentle lighting, minimal distractions
-        Audio: Whispered professional narration explaining strategic insights from post content
-        Text overlay: Key strategic points appearing softly
-        Duration: ${spec.duration}
-        Style: ASMR ${spec.style} - gentle, strategic, calming business guidance
-        Brand alignment: ${coreMessage}
-        Queensland focus: ${foundTerms.includes('queensland') ? 'Local market insights' : 'SME growth strategies'}`,
+      shortForm: `Professional businesswoman in modern office speaking softly about ${foundTerms.join(' and ') || 'business growth'}. She whispers: "${postContent.substring(0, 120)}..." while organizing papers gently. Soft lighting, minimal background noise. Close-up shots of hands typing slowly on laptop keyboard. ASMR business coaching style with strategic insights delivered in whispered, calming tone. Queensland SME focus.`,
         
-      asmr: `Strategic ASMR Short-Form: "${coreMessage}"
-        Visual: Close-up gentle business visuals - soft keyboard typing, paper rustling, strategic planning materials
-        Audio: Whispered strategic insights about "${postContent.substring(0, 100)}"
-        Sound effects: Gentle paper sounds, soft pen writing, calm office ambiance
-        Duration: ${spec.duration}
-        Style: ASMR business strategy - soothing yet authoritative delivery
-        Content focus: ${foundTerms.join(', ') || 'business transformation and growth'}
-        Execution: Short-form ASMR with strategic depth based on brand purpose`
+      asmr: `ASMR business strategy session. Close-up footage of hands organizing business documents, gentle keyboard typing sounds, soft paper shuffling. Whispered voiceover explains: "${postContent.substring(0, 100)}...". Professional woman's voice speaks quietly about ${coreMessage.toLowerCase()}. Calming office ambiance, soft pen writing sounds, gentle page turning. Strategic business insights delivered in soothing ASMR style for ${foundTerms.join(' and ') || 'entrepreneurs'}.`
     };
   }
 
@@ -89,14 +75,17 @@ export class VideoService {
       console.log(`🎬 Starting REAL Seedance video rendering for ${platform}...`);
       const startTime = Date.now();
       
-      // Use actual text content for video generation - prioritize edited text, then prompt content
+      // Enhanced ASMR prompt processing for Seedance API
       let videoPrompt;
       if (editedText && editedText.trim()) {
-        videoPrompt = editedText.trim();
+        // User customized prompt - enhance with ASMR context
+        videoPrompt = `ASMR business video: Professional woman softly whispering "${editedText.trim()}". Close-up shots of hands organizing papers, gentle keyboard typing, soft business sounds. Calming office environment with warm lighting.`;
       } else if (prompt && typeof prompt === 'object' && prompt.content) {
+        // Use the enhanced ASMR prompt content directly
         videoPrompt = prompt.content;
       } else if (typeof prompt === 'string') {
-        videoPrompt = prompt;
+        // Basic string prompt - enhance with ASMR context
+        videoPrompt = `ASMR business content: ${prompt}. Professional woman speaking softly about business strategy, gentle office sounds, calming atmosphere.`;
       } else {
         throw new Error('No valid video prompt provided');
       }
