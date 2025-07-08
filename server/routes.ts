@@ -7418,8 +7418,9 @@ export function addNotificationEndpoints(app: any) {
       const { prompt, editedText, platform, userId, postId } = req.body;
       
       console.log('Video render params:', { 
-        promptPreview: typeof prompt === 'string' ? prompt.substring(0, 50) : prompt?.content?.substring(0, 50),
-        editedText: editedText?.substring(0, 50),
+        promptType: typeof prompt,
+        promptPreview: typeof prompt === 'string' ? prompt.substring(0, 100) : prompt?.content?.substring(0, 100),
+        editedText: editedText ? editedText.substring(0, 100) : 'none',
         platform,
         userId,
         postId 

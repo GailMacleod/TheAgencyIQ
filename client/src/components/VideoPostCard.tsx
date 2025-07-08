@@ -298,7 +298,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                   {/* Prompt Selection */}
                   {prompts.length > 0 && !selectedPrompt && !isRendering && !videoData && (
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium">Choose Your Video Style:</h3>
+                      <h3 className="text-sm font-medium">Choose Your ASMR Strategy Style:</h3>
                       {prompts.map((prompt, index) => (
                         <Card
                           key={index}
@@ -311,10 +311,11 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <h4 className="font-medium text-sm mb-1">
-                                  {prompt.type === 'short-form' ? '⚡ Short-Form' : '🎧 ASMR'}
+                                  {prompt.type.includes('Strategic') ? '🎧 Strategic ASMR' : 
+                                   prompt.type.includes('Brand-Aligned') ? '💼 Brand ASMR' : '⚡ ASMR Content'}
                                 </h4>
                                 <p className="text-xs text-gray-600 mb-2">{prompt.style}</p>
-                                <p className="text-xs text-gray-800">{prompt.content}</p>
+                                <p className="text-xs text-gray-800 line-clamp-3">{prompt.content}</p>
                               </div>
                               <Badge variant="secondary" className="text-xs">
                                 {prompt.duration}
@@ -331,7 +332,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="editText" className="text-sm font-medium">
-                          Edit Prompt (max 10 words)
+                          Add Strategic Focus (max 10 words)
                         </Label>
                         <Input
                           id="editText"
@@ -342,7 +343,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                               setEditedText(e.target.value);
                             }
                           }}
-                          placeholder="Add your custom text here..."
+                          placeholder="Optional: Add strategic emphasis (e.g., 'Queensland growth', 'automation success')..."
                           className="mt-1"
                         />
                         <p className="text-xs text-gray-500 mt-1">

@@ -20,16 +20,16 @@ export class VideoService {
         success: true,
         prompts: [
           {
-            type: 'short-form',
+            type: 'Strategic ASMR Short-Form',
             content: prompts.shortForm,
             duration: '15-30s',
-            style: 'Dynamic, engaging, professional'
+            style: 'ASMR business strategy - whispered insights with visual appeal'
           },
           {
-            type: 'ASMR',
+            type: 'Brand-Aligned ASMR',
             content: prompts.asmr,
-            duration: '30-60s',
-            style: 'Calm, soothing, whispered narration'
+            duration: '30-45s',
+            style: 'Strategic ASMR - soothing narration with brand purpose focus'
           }
         ]
       };
@@ -58,18 +58,29 @@ export class VideoService {
 
     const spec = platformSpecs[platform] || platformSpecs['Instagram'];
     
+    // Extract strategic themes from brand-aligned post content
+    const contentWords = postContent.toLowerCase();
+    const businessTerms = ['automation', 'efficiency', 'productivity', 'growth', 'success', 'professional', 'business', 'entrepreneur', 'sme', 'queensland', 'time-poor', 'visibility', 'competitive'];
+    const foundTerms = businessTerms.filter(term => contentWords.includes(term));
+    
     return {
-      shortForm: `${brandName} - ${postContent.substring(0, 100)}... 
-        Visual: Clean, modern business aesthetic with ${spec.aspect} ratio
-        Text overlay: Key business message
+      shortForm: `ASMR Business Strategy Video: "${postContent.substring(0, 120)}"
+        Visual: Soft-focused modern office with gentle lighting, minimal distractions
+        Audio: Whispered professional narration explaining strategic insights from post content
+        Text overlay: Key strategic points appearing softly
         Duration: ${spec.duration}
-        Style: ${spec.style}, professional branding`,
+        Style: ASMR ${spec.style} - gentle, strategic, calming business guidance
+        Brand alignment: ${coreMessage}
+        Queensland focus: ${foundTerms.includes('queensland') ? 'Local market insights' : 'SME growth strategies'}`,
         
-      asmr: `Gentle whispered narration: "${coreMessage}"
-        Visual: Soft, calming business imagery
-        Audio: Whispered voice explaining "${postContent.substring(0, 80)}..."
+      asmr: `Strategic ASMR Short-Form: "${coreMessage}"
+        Visual: Close-up gentle business visuals - soft keyboard typing, paper rustling, strategic planning materials
+        Audio: Whispered strategic insights about "${postContent.substring(0, 100)}"
+        Sound effects: Gentle paper sounds, soft pen writing, calm office ambiance
         Duration: ${spec.duration}
-        Style: ASMR business content, soothing professional tone`
+        Style: ASMR business strategy - soothing yet authoritative delivery
+        Content focus: ${foundTerms.join(', ') || 'business transformation and growth'}
+        Execution: Short-form ASMR with strategic depth based on brand purpose`
     };
   }
 
@@ -78,8 +89,19 @@ export class VideoService {
       console.log(`🎬 Starting REAL Seedance video rendering for ${platform}...`);
       const startTime = Date.now();
       
-      // Use actual text content for video generation
-      const videoPrompt = editedText || prompt.content || prompt;
+      // Use actual text content for video generation - prioritize edited text, then prompt content
+      let videoPrompt;
+      if (editedText && editedText.trim()) {
+        videoPrompt = editedText.trim();
+      } else if (prompt && typeof prompt === 'object' && prompt.content) {
+        videoPrompt = prompt.content;
+      } else if (typeof prompt === 'string') {
+        videoPrompt = prompt;
+      } else {
+        throw new Error('No valid video prompt provided');
+      }
+      
+      console.log('🎬 Using video prompt:', videoPrompt.substring(0, 100) + '...');
       
       // Platform-specific video requirements (URLs only, no local storage)
       const platformSettings = {
