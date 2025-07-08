@@ -368,51 +368,10 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                         <h3 className="font-medium mb-2">Video Preview</h3>
                         <div className="relative bg-gray-100 rounded-lg overflow-hidden max-w-lg mx-auto">
                           <video
-                            key={`video-${videoData.videoId}-${Date.now()}`}
-                            src={videoData.url}
-                            muted
+                            src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
                             controls
-                            playsInline
-                            preload="metadata"
+                            muted
                             className="w-full aspect-video object-contain"
-                            onLoadStart={() => {
-                              console.log('Video loading started');
-                              setVideoLoading(true);
-                            }}
-                            onLoadedMetadata={() => {
-                              console.log('Video metadata loaded');
-                              setVideoLoading(false);
-                              setError(null);
-                            }}
-                            onCanPlay={() => {
-                              console.log('Video can play');
-                              setVideoLoading(false);
-                              setError(null);
-                            }}
-                            onEnded={() => {
-                              console.log('Video playback ended - focusing on approval');
-                              setVideoLoading(false);
-                              // Focus back on UI - video has finished playing once
-                            }}
-                            onPlay={() => {
-                              console.log('Video autoplay started successfully');
-                              setVideoLoading(false);
-                            }}
-                            onPause={() => {
-                              console.log('Video paused - manual controls available');
-                            }}
-                            onError={(e) => {
-                              console.error('Video load error:', e);
-                              setVideoLoading(false);
-                              // Try direct URL if proxy fails
-                              const video = e.target as HTMLVideoElement;
-                              if (video.src !== 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4') {
-                                video.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-                              } else {
-                                setError('Video playback failed');
-                              }
-                            }}
-
                           />
                           
                           {/* Video Loading Indicator */}
