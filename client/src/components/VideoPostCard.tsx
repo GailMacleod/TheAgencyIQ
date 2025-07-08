@@ -192,15 +192,16 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
         setVideoData(data);
         setHasGeneratedVideo(true);
         
-        // Poll for real Seedance video completion
+        // IMMEDIATE and aggressive polling for real Seedance video
         const pollForSeedanceVideo = async () => {
-          for (let attempt = 0; attempt < 10; attempt++) {
+          console.log('🚀 Starting IMMEDIATE Seedance video polling...');
+          for (let attempt = 0; attempt < 20; attempt++) {
             try {
               const seedanceResponse = await fetch('/api/video/latest-seedance');
               const seedanceData = await seedanceResponse.json();
               
-              if (seedanceData.success && seedanceData.video?.url) {
-                console.log('✅ Real Seedance video available:', seedanceData.video.url);
+              if (seedanceData.success && seedanceData.video?.url && seedanceData.video.url.includes('replicate.delivery')) {
+                console.log('✅ REAL SEEDANCE VIDEO FOUND:', seedanceData.video.url);
                 setVideoData(prev => ({
                   ...prev,
                   url: seedanceData.video.url,
@@ -209,19 +210,20 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                 }));
                 toast({
                   title: "Real Video Ready!",
-                  description: "Seedance video generation completed successfully"
+                  description: "Seedance video is now playing"
                 });
-                break;
+                return; // Exit polling
               }
             } catch (error) {
-              console.log('Polling for Seedance video...', attempt + 1);
+              console.log('Polling attempt', attempt + 1, 'failed');
             }
-            await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Check every 1 second
           }
+          console.log('❌ Seedance polling completed - no video found');
         };
         
-        // Start polling after a brief delay
-        setTimeout(pollForSeedanceVideo, 2000);
+        // Start polling IMMEDIATELY - no delay
+        pollForSeedanceVideo();
         
         toast({
           title: "Art Director Video Ready!",
@@ -473,16 +475,19 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           Video URL: {videoData.url ? 'Available' : 'No URL'} | Mode: {videoData.realVideo ? 'Real' : 'Preview'}
                         </div>
                         
-                        {/* Debug: Manual video refresh button */}
+                        {/* POWER REFRESH: Force load latest Seedance video */}
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={async () => {
                             try {
+                              console.log('🔄 POWER REFRESH: Forcing latest Seedance video load...');
                               const response = await fetch('/api/video/latest-seedance');
                               const data = await response.json();
-                              if (data.success && data.video?.url) {
-                                console.log('🔄 Manual refresh - found real video:', data.video.url);
+                              console.log('🔄 Power refresh response:', data);
+                              
+                              if (data.success && data.video?.url && data.video.url.includes('replicate.delivery')) {
+                                console.log('✅ POWER REFRESH SUCCESS:', data.video.url);
                                 setVideoData(prev => ({
                                   ...prev,
                                   url: data.video.url,
@@ -491,16 +496,26 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                                 }));
                                 toast({
                                   title: "Video Refreshed",
-                                  description: "Real Seedance video is now available"
+                                  description: "Real Seedance video is now playing"
+                                });
+                              } else {
+                                console.log('❌ Power refresh: No real video found');
+                                toast({
+                                  title: "No Real Video",
+                                  description: "Real Seedance video not yet available"
                                 });
                               }
                             } catch (error) {
-                              console.log('Manual refresh failed:', error);
+                              console.log('Power refresh failed:', error);
+                              toast({
+                                title: "Refresh Failed",
+                                description: "Unable to check for real video"
+                              });
                             }
                           }}
                           className="mb-2"
                         >
-                          🔄 Refresh Video
+                          🔄 Force Real Video
                         </Button>
                         
                         {/* Video Info */}
