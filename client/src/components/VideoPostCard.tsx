@@ -46,6 +46,7 @@ interface VideoData {
 }
 
 export function VideoPostCard({ post, onVideoApproved, brandData, userId }: VideoPostCardProps) {
+
   // Add publish functionality for approved posts
   const publishApprovedPost = async () => {
     try {
@@ -95,7 +96,73 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
   const [error, setError] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoDuration, setVideoDuration] = useState(15); // Default to 15s, will update when video loads
+  const [isEditingText, setIsEditingText] = useState(false);
+  const [editedContent, setEditedContent] = useState(post.content);
   const { toast } = useToast();
+
+  // Save edited text content
+  const saveEditedText = async () => {
+    try {
+      const response = await fetch('/api/posts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          postId: post.id, 
+          content: editedContent 
+        })
+      });
+
+      if (response.ok) {
+        setIsEditingText(false);
+        toast({
+          title: "Content Updated",
+          description: "Post content has been saved successfully"
+        });
+        // Update the post content locally
+        post.content = editedContent;
+      } else {
+        throw new Error('Failed to save content');
+      }
+    } catch (error) {
+      console.error('Failed to save content:', error);
+      toast({
+        title: "Save Failed",
+        description: "Unable to save content changes",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Approve post (text only or with video)
+  const approvePost = async () => {
+    try {
+      const response = await fetch('/api/approve-post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ postId: post.id })
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Post Approved",
+          description: `${post.platform} post approved and ready for publishing`,
+        });
+        // Update post status locally
+        post.status = 'approved';
+      } else {
+        throw new Error('Failed to approve post');
+      }
+    } catch (error) {
+      console.error('Failed to approve post:', error);
+      toast({
+        title: "Approval Failed",
+        description: "Unable to approve post",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Check if video generation is allowed for this post - FORCE SHOW FOR ALL POSTS
   const canGenerateVideo = true; // Always show video button
@@ -419,9 +486,62 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
             </Badge>
           </div>
         </div>
-        <CardDescription className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
-          {post.content}
-        </CardDescription>
+        {/* Editable Post Content */}
+        <div className="mt-3">
+          {isEditingText ? (
+            <div className="space-y-3">
+              <textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-md text-sm resize-none min-h-[100px] focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="Edit your post content..."
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={saveEditedText}
+                  size="sm"
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Save Changes
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsEditingText(false);
+                    setEditedContent(post.content);
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <CardDescription className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
+                {post.content}
+              </CardDescription>
+              <div className="flex gap-2 mt-3">
+                <Button
+                  onClick={() => setIsEditingText(true)}
+                  variant="outline"
+                  size="sm"
+                >
+                  Edit Content
+                </Button>
+                {post.status !== 'approved' && (
+                  <Button
+                    onClick={approvePost}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Approve Post
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
         <div className="mt-2 text-xs font-medium text-purple-600">
           ⚡ AI Video Generation Available
         </div>
