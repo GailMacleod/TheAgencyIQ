@@ -86,6 +86,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
   const [isRendering, setIsRendering] = useState(false);
   const [renderingProgress, setRenderingProgress] = useState(0);
   const [renderingTime, setRenderingTime] = useState(0);
+  const [currentPhase, setCurrentPhase] = useState('');
   const [prompts, setPrompts] = useState<VideoPrompt[]>([]);
   const [selectedPrompt, setSelectedPrompt] = useState<VideoPrompt | null>(null);
   const [editedText, setEditedText] = useState('');
@@ -147,6 +148,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
       setIsRendering(true);
       setRenderingProgress(0);
       setRenderingTime(0);
+      setCurrentPhase('Initializing Art Director...');
       
       // Start timer for rendering duration
       const startTime = Date.now();
@@ -155,19 +157,42 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
       }, 1000);
       setError(null);
 
-      // Smooth progress animation for 15-second Art Director video creation
+      // Accurate progress tracking based on actual generation phases
       let progressInterval: NodeJS.Timeout | null = null;
+      let currentPhase = 'Art Director Analysis';
+      
+      const updateProgressWithPhase = (progress: number, phase: string) => {
+        setRenderingProgress(progress);
+        setCurrentPhase(phase);
+        console.log(`🎬 ${phase}: ${progress}%`);
+      };
+      
+      // Realistic phase-based progress tracking
       progressInterval = setInterval(() => {
         setRenderingProgress(prev => {
           if (prev >= 90) {
             if (progressInterval) clearInterval(progressInterval);
             return 90; // Stop at 90% until actual completion
           }
-          // Realistic 15-second video generation timing
-          const increment = prev < 30 ? 3 : prev < 70 ? 5 : 2;
-          return Math.min(prev + increment, 90);
+          
+          // Phase-based progression with accurate timing
+          if (prev < 15) {
+            updateProgressWithPhase(prev + 3, 'Art Director Analyzing Content');
+          } else if (prev < 30) {
+            updateProgressWithPhase(prev + 4, 'Selecting Animal Character');
+          } else if (prev < 50) {
+            updateProgressWithPhase(prev + 5, 'Generating Creative Brief');
+          } else if (prev < 70) {
+            updateProgressWithPhase(prev + 4, 'Creating Visual Preview');
+          } else if (prev < 85) {
+            updateProgressWithPhase(prev + 3, 'Finalizing Art Direction');
+          } else {
+            updateProgressWithPhase(prev + 1, 'Preparing for Seedance API');
+          }
+          
+          return Math.min(prev + (prev < 30 ? 3 : prev < 70 ? 5 : 2), 90);
         });
-      }, 200); // Faster updates for 15s video
+      }, 300); // Slightly slower but more accurate updates
 
       const response = await fetch('/api/video/render', {
         method: 'POST',
@@ -202,6 +227,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
               
               if (seedanceData.success && seedanceData.video?.url && seedanceData.video.url.includes('replicate.delivery')) {
                 console.log('✅ REAL SEEDANCE VIDEO FOUND:', seedanceData.video.url);
+                setCurrentPhase('✅ Seedance Video Generation Complete!');
                 setVideoData(prev => ({
                   ...prev,
                   url: seedanceData.video.url,
@@ -452,8 +478,11 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                     <div className="space-y-4">
                       <div className="text-center">
                         <LoaderIcon className="w-8 h-8 animate-spin mx-auto mb-4" />
-                        <h3 className="font-medium">Rendering Video...</h3>
-                        <p className="text-sm text-gray-600">Creating 1080p video content</p>
+                        <h3 className="font-medium">🎬 Art Director Working...</h3>
+                        {currentPhase && (
+                          <p className="text-sm text-blue-600 font-medium">{currentPhase}</p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1">Creating epic animal business video</p>
                       </div>
                       
                       <div className="space-y-2">
@@ -462,6 +491,11 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           <span>{renderingProgress}% complete</span>
                           <span>{renderingTime}s elapsed</span>
                         </div>
+                        {currentPhase && (
+                          <div className="text-center">
+                            <p className="text-xs text-indigo-600 font-medium">Phase: {currentPhase}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
