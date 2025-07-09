@@ -54,11 +54,10 @@ async function buildForReplit() {
       define: {
         'process.env.NODE_ENV': '"production"'
       },
-      jsx: 'automatic',
-      jsxImportSource: 'react',
-      banner: {
-        js: 'import React from "react";'
-      }
+      jsx: 'transform',
+      jsxFactory: 'React.createElement',
+      jsxFragment: 'React.Fragment',
+      inject: [join(__dirname, 'client/src/react-shim.js')]
     });
 
     console.log('🖥️ Building server bundle...');

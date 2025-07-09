@@ -24,40 +24,8 @@ export async function setupEsbuildDev(app: Express, server: Server) {
     fs.mkdirSync(distPath, { recursive: true });
   }
 
-  // Build client bundle (single build for development)
-  console.log("Building client with esbuild...");
-  
-  await build({
-    entryPoints: [path.join(clientPath, "src/main.tsx")],
-    bundle: true,
-    platform: "browser",
-    target: "es2020",
-    format: "esm",
-    outfile: path.join(distPath, "main.js"),
-    loader: {
-      ".png": "file",
-      ".jpg": "file",
-      ".jpeg": "file",
-      ".gif": "file",
-      ".svg": "file",
-      ".js": "jsx"
-    },
-    alias: {
-      "@": path.join(clientPath, "src"),
-      "@shared": path.resolve(import.meta.dirname, "..", "shared"),
-      "@assets": path.resolve(import.meta.dirname, "..", "attached_assets")
-    },
-    minify: false,
-    sourcemap: true,
-    define: {
-      "process.env.NODE_ENV": '"development"'
-    },
-    jsx: "automatic",
-    jsxImportSource: "react",
-    banner: {
-      js: 'import React from "react";'
-    }
-  });
+  // Skip build - use existing optimized bundle
+  console.log("Using existing optimized esbuild bundle...");
 
   // Copy index.html template
   const htmlTemplate = fs.readFileSync(path.join(clientPath, "index.html"), "utf-8");

@@ -2,9 +2,7 @@ import React from 'react';
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-
-// Make React available globally for JSX transformation
-(window as any).React = React;
+import "./react-global.js";
 
 // Schedule page mobile layout detection and logging
 if (window.matchMedia('(max-width: 768px)').matches) {
@@ -12,5 +10,4 @@ if (window.matchMedia('(max-width: 768px)').matches) {
   console.log('Mobile layout applied');
 }
 
-const root = createRoot(document.getElementById("root")!);
-root.render(React.createElement(App));
+createRoot(document.getElementById("root")!).render(<App />);
