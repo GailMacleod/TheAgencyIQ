@@ -1,8 +1,11 @@
+import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
 import "./index.css";
 import "./index.js";
-import App from "./App";
 
-const React = (window as any).React;
-const ReactDOM = (window as any).ReactDOM;
+// Make React available globally
+(window as any).React = React;
+globalThis.React = React;
 
-ReactDOM.render(React.createElement(App), document.getElementById("root"));
+createRoot(document.getElementById("root")!).render(<App />);

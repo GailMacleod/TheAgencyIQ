@@ -21,7 +21,7 @@ app.use(express.static('dist', {
 
 app.use(express.static('public'));
 
-app.get('*', (req, res) => res.sendFile('dist/index.html', { root: __dirname }));
+app.get('*', (req, res) => res.sendFile('dist/index.html', { root: path.join(__dirname, '..') }));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
