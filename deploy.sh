@@ -1,4 +1,2 @@
 #!/bin/bash
-./build.sh && tsx server/index.ts &
-sleep 3
-curl http://localhost:5000
+./build.sh && node server/index.ts
