@@ -4,12 +4,11 @@ import App from "./App";
 import "./index.css";
 import "./index.js";
 
-// Make React available globally IMMEDIATELY - this must be first
-declare global {
-  var React: any;
-}
+// Make React available globally and assign to window before any JSX processing
+(window as any).React = React;
 globalThis.React = React;
-window.React = React;
 
-// Now render the app
+// Ensure React is available for JSX transpilation
+(window as any).jsx = React.createElement;
+
 createRoot(document.getElementById("root")!).render(React.createElement(App));
