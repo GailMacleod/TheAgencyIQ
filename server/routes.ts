@@ -7501,6 +7501,63 @@ export function addNotificationEndpoints(app: any) {
     }
   });
 
+  // DATA CLEANUP AND QUOTA MANAGEMENT ENDPOINTS
+  
+  // Perform comprehensive data cleanup
+  app.post('/api/data-cleanup', requireAuth, async (req: any, res) => {
+    try {
+      const { DataCleanupService } = await import('./data-cleanup-service');
+      const userId = req.body.userId || req.session?.userId;
+      
+      console.log('🧹 Starting data cleanup for user:', userId);
+      const result = await DataCleanupService.performDataCleanup(userId);
+      
+      console.log('📊 Cleanup completed:', result);
+      res.json(result);
+    } catch (error) {
+      console.error('❌ Data cleanup failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Data cleanup failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Get quota dashboard
+  app.get('/api/quota-dashboard', requireAuth, async (req: any, res) => {
+    try {
+      const { DataCleanupService } = await import('./data-cleanup-service');
+      const dashboard = await DataCleanupService.getQuotaDashboard();
+      res.json(dashboard);
+    } catch (error) {
+      console.error('❌ Quota dashboard failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch quota dashboard' 
+      });
+    }
+  });
+
+  // Detect quota anomalies
+  app.get('/api/quota-anomalies', requireAuth, async (req: any, res) => {
+    try {
+      const { DataCleanupService } = await import('./data-cleanup-service');
+      const anomalies = await DataCleanupService.detectQuotaAnomalies();
+      res.json({
+        success: true,
+        anomalies,
+        count: anomalies.length
+      });
+    } catch (error) {
+      console.error('❌ Quota anomaly detection failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to detect quota anomalies' 
+      });
+    }
+  });
+
   // VIDEO GENERATION API ENDPOINTS - WORKING VERSION
   // Generate video prompts for post content
   app.post('/api/video/generate-prompts', async (req: any, res) => {
