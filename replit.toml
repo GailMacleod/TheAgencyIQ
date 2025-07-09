@@ -1,0 +1,15 @@
+[build]
+command = "node build.js"
+
+[run]
+command = "node start.js"
+
+[deployment]
+build = "node build.js"
+run = "node start.js"
+
+[env]
+NODE_ENV = "production"
+
+[deployment.env]
+NODE_ENV = "production"
