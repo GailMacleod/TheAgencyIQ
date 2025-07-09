@@ -5428,82 +5428,90 @@ Continue building your Value Proposition Canvas systematically.`;
     try {
       const userId = req.session.userId || 1;
 
-      // Get user and connected platforms
+      // Get user and published posts with analytics data
       const user = await storage.getUser(userId);
-      const connections = await storage.getPlatformConnectionsByUser(userId);
+      const posts = await storage.getPostsByUser(userId);
 
       if (!user) {
         return res.status(400).json({ message: "User not found" });
       }
 
-      // Get real analytics from connected platforms
-      const connectedPlatforms = connections.filter(conn => conn.isActive);
-      
+      // Filter published posts that have analytics data
+      const publishedPosts = posts.filter(post => 
+        post.status === 'published' && 
+        post.analytics && 
+        typeof post.analytics === 'object'
+      );
+
       let totalPosts = 0;
       let totalReach = 0;
       let totalEngagement = 0;
-      const realPlatformStats: any[] = [];
+      const platformStats: any[] = [];
 
-      // Fetch real analytics from each connected platform
-      for (const connection of connectedPlatforms) {
-        try {
-          let platformAnalytics;
+      // Aggregate analytics data from published posts by platform
+      const platformData: Record<string, {posts: number, reach: number, engagement: number, impressions: number}> = {};
+
+      publishedPosts.forEach(post => {
+        if (post.analytics && typeof post.analytics === 'object') {
+          // Handle different analytics data formats
+          const analytics = post.analytics;
           
-          switch (connection.platform) {
-            case 'facebook':
-              platformAnalytics = await fetchFacebookAnalytics(connection.accessToken);
-              break;
-            case 'instagram':
-              platformAnalytics = await fetchInstagramAnalytics(connection.accessToken);
-              break;
-            case 'linkedin':
-              platformAnalytics = await fetchLinkedInAnalytics(connection.accessToken);
-              break;
-            case 'x':
-              platformAnalytics = await fetchTwitterAnalytics(connection.accessToken, connection.refreshToken || '');
-              break;
-            case 'youtube':
-              platformAnalytics = await fetchYouTubeAnalytics(connection.accessToken);
-              break;
-            default:
-              continue;
-          }
-
-          if (platformAnalytics) {
-            totalPosts += platformAnalytics.totalPosts;
-            totalReach += platformAnalytics.totalReach;
-            totalEngagement += platformAnalytics.totalEngagement;
-
-            realPlatformStats.push({
-              platform: connection.platform,
-              posts: platformAnalytics.totalPosts,
-              reach: platformAnalytics.totalReach,
-              engagement: parseFloat(platformAnalytics.engagementRate),
-              performance: Math.min(100, Math.round((platformAnalytics.totalPosts * 10) + (parseFloat(platformAnalytics.engagementRate) * 5))),
-              isPlaceholder: false
+          // If analytics contains platform-specific data
+          if (analytics.facebook || analytics.instagram || analytics.linkedin || analytics.x || analytics.youtube) {
+            Object.keys(analytics).forEach(platform => {
+              const platformAnalytics = analytics[platform];
+              if (platformAnalytics && platformAnalytics.success && platformAnalytics.analytics) {
+                const data = platformAnalytics.analytics;
+                if (!platformData[platform]) {
+                  platformData[platform] = { posts: 0, reach: 0, engagement: 0, impressions: 0 };
+                }
+                platformData[platform].posts += 1;
+                platformData[platform].reach += data.reach || 0;
+                platformData[platform].engagement += data.engagement || 0;
+                platformData[platform].impressions += data.impressions || 0;
+              }
             });
           }
-        } catch (error) {
-          console.error(`Failed to fetch analytics for ${connection.platform}:`, error);
-          // Add platform with zero data if API call fails
-          realPlatformStats.push({
-            platform: connection.platform,
-            posts: 0,
-            reach: 0,
-            engagement: 0,
-            performance: 0,
-            isPlaceholder: true
-          });
+          // If analytics is a direct analytics object (from PostPublisher)
+          else if (analytics.platform) {
+            const platform = analytics.platform;
+            if (!platformData[platform]) {
+              platformData[platform] = { posts: 0, reach: 0, engagement: 0, impressions: 0 };
+            }
+            platformData[platform].posts += 1;
+            platformData[platform].reach += analytics.reach || 0;
+            platformData[platform].engagement += analytics.engagement || 0;
+            platformData[platform].impressions += analytics.impressions || 0;
+          }
         }
-      }
+      });
+
+      // Convert aggregated data to platform stats
+      Object.keys(platformData).forEach(platform => {
+        const data = platformData[platform];
+        totalPosts += data.posts;
+        totalReach += data.reach;
+        totalEngagement += data.engagement;
+
+        const engagementRate = data.reach > 0 ? (data.engagement / data.reach * 100) : 0;
+        
+        platformStats.push({
+          platform,
+          posts: data.posts,
+          reach: data.reach,
+          engagement: engagementRate,
+          performance: Math.min(100, Math.round((data.posts * 10) + (engagementRate * 5))),
+          isPlaceholder: false
+        });
+      });
 
       const hasRealData = totalPosts > 0;
 
-      // Add platforms without connections to show complete overview
+      // Add platforms without data to show complete overview
       const allPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube', 'tiktok'];
       for (const platform of allPlatforms) {
-        if (!realPlatformStats.find(stat => stat.platform === platform)) {
-          realPlatformStats.push({
+        if (!platformStats.find(stat => stat.platform === platform)) {
+          platformStats.push({
             platform,
             posts: 0,
             reach: 0,
@@ -5566,7 +5574,7 @@ Continue building your Value Proposition Canvas systematically.`;
         targetConversions: targets.conversions,
         brandAwareness: hasRealData ? Math.min(100, Math.round((totalReach / targets.reach) * 100)) : 0,
         targetBrandAwareness: 100,
-        platformBreakdown: realPlatformStats,
+        platformBreakdown: platformStats,
         monthlyTrends: hasRealData ? [
           {
             month: "May 2025",
@@ -7458,6 +7466,69 @@ async function fetchTwitterAnalytics(accessToken: string, refreshToken: string) 
   } catch (error) {
     console.error('Twitter API error:', error);
     throw new Error('Failed to fetch Twitter analytics');
+  }
+}
+
+async function fetchYouTubeAnalytics(accessToken: string) {
+  try {
+    // YouTube API v3 requires API key or OAuth
+    const response = await axios.get(
+      'https://www.googleapis.com/youtube/v3/search',
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        params: {
+          part: 'snippet',
+          forMine: true,
+          type: 'video',
+          maxResults: 50
+        }
+      }
+    );
+    
+    const videos = response.data.items || [];
+    let totalReach = 0;
+    let totalEngagement = 0;
+
+    // For each video, fetch detailed statistics
+    for (const video of videos) {
+      try {
+        const statsResponse = await axios.get(
+          'https://www.googleapis.com/youtube/v3/videos',
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            params: {
+              part: 'statistics',
+              id: video.id.videoId
+            }
+          }
+        );
+        
+        const stats = statsResponse.data.items?.[0]?.statistics;
+        if (stats) {
+          totalReach += parseInt(stats.viewCount || 0);
+          totalEngagement += parseInt(stats.likeCount || 0) + parseInt(stats.commentCount || 0);
+        }
+      } catch (error) {
+        console.error(`Failed to fetch stats for video ${video.id.videoId}:`, error);
+      }
+    }
+
+    return {
+      platform: 'youtube',
+      totalPosts: videos.length,
+      totalReach,
+      totalEngagement,
+      engagementRate: totalReach > 0 ? (totalEngagement / totalReach * 100).toFixed(2) : '0'
+    };
+  } catch (error) {
+    console.error('YouTube API error:', error);
+    throw new Error('Failed to fetch YouTube analytics');
   }
 }
 
