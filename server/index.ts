@@ -8,15 +8,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 app.use(express.static(path.join(__dirname, '../dist'), { 
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html')) {
-      res.set('Content-Type', 'text/html');
-    } else if (path.endsWith('.js')) {
-      res.set('Content-Type', 'application/javascript');
-    } else if (path.endsWith('.css')) {
-      res.set('Content-Type', 'text/css');
-    }
-  }
+  setHeaders: (res) => res.set('Content-Type', 'application/javascript') 
 }));
 app.use(express.static(path.join(__dirname, '../public')));
 
