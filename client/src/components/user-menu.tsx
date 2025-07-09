@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Menu, X, User, CreditCard, LogOut, Building2, Calendar, Share2, BarChart3, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

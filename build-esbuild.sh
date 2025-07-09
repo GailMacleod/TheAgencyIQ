@@ -29,7 +29,9 @@ npx esbuild client/src/main.tsx \
   --define:process.env.NODE_ENV='"production"' \
   --platform=browser \
   --target=es2020 \
-  --jsx=automatic
+  --jsx=transform \
+  --jsx-factory=React.createElement \
+  --jsx-fragment=React.Fragment
 
 # Build server bundle
 echo "🖥️ Building server bundle..."
