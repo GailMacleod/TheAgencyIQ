@@ -55,7 +55,10 @@ async function buildForReplit() {
         'process.env.NODE_ENV': '"production"'
       },
       jsx: 'automatic',
-      jsxImportSource: 'react'
+      jsxImportSource: 'react',
+      banner: {
+        js: 'import React from "react";'
+      }
     });
 
     console.log('🖥️ Building server bundle...');

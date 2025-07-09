@@ -2,7 +2,7 @@
 command = "node build-replit.js"
 
 [run]
-command = "node start-production-july9.js"
+command = "node dist/server.js"
 
 [deployment]
 build = "node build-replit.js"

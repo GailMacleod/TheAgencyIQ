@@ -53,7 +53,10 @@ export async function setupEsbuildDev(app: Express, server: Server) {
       "process.env.NODE_ENV": '"development"'
     },
     jsx: "automatic",
-    jsxImportSource: "react"
+    jsxImportSource: "react",
+    banner: {
+      js: 'import React from "react";'
+    }
   });
 
   // Copy index.html template
