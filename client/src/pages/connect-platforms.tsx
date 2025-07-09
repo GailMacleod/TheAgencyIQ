@@ -1,4 +1,3 @@
-import React from "react";
 import { useLocation } from "wouter";
 import { Facebook, Instagram, Linkedin, Twitter, Youtube, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";

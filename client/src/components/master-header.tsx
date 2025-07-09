@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, BarChart3, Calendar, Settings, User } from "lucide-react";
 import { Link } from "wouter";

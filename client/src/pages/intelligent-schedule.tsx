@@ -1,4 +1,3 @@
-import React from "react";
 import { useLocation } from "wouter";
 import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play, Eye, ThumbsUp, X, Sparkles, Brain, Target, Users, MapPin, Edit3, Save } from "lucide-react";
 import CalendarCard from "@/components/calendar-card";
