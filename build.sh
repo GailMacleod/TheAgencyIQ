@@ -1,0 +1,2 @@
+#!/bin/bash
+npx esbuild client/src/main.tsx --bundle --outfile=dist/main.js --platform=browser --format=esm --loader:.tsx=tsx --loader:.png=file --minify --define:import.meta.env.VITE_GA_MEASUREMENT_ID='"G-XXXXXXXXXX"' --external:@assets/* --alias:@assets=./attached_assets --jsx=automatic
