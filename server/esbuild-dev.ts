@@ -52,9 +52,8 @@ export async function setupEsbuildDev(app: Express, server: Server) {
     define: {
       "process.env.NODE_ENV": '"development"'
     },
-    jsx: "transform",
-    jsxFactory: "React.createElement",
-    jsxFragment: "React.Fragment"
+    jsx: "automatic",
+    jsxImportSource: "react"
   });
 
   // Copy index.html template

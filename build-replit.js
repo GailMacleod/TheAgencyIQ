@@ -53,7 +53,9 @@ async function buildForReplit() {
       sourcemap: false,
       define: {
         'process.env.NODE_ENV': '"production"'
-      }
+      },
+      jsx: 'automatic',
+      jsxImportSource: 'react'
     });
 
     console.log('🖥️ Building server bundle...');
