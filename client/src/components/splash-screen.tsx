@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-const agencyLogoPath = "/attached_assets/agency_logo_1749083054761.png";
+import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
 
 interface SplashScreenProps {
   onComplete: () => void;

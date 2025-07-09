@@ -529,29 +529,11 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up static file serving (NO VITE)...');
-      console.log('📁 Using client files directly (development mode)');
-      
-      // Serve attached assets
-      app.use('/attached_assets', express.static('attached_assets'));
-      
-      // Serve client files directly
-      app.use(express.static(path.join(process.cwd(), 'client')));
-      app.use('/src', express.static(path.join(process.cwd(), 'client/src')));
-      
-      // Root route - serve index.html directly
-      app.get('/', (req, res) => {
-        res.sendFile(path.join(process.cwd(), 'client/index.html'));
-      });
-      
-      // Serve React app for all non-API routes
-      app.get('*', (req, res) => {
-        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.sendFile(path.join(process.cwd(), 'client/index.html'));
-        }
-      });
-      
-      console.log('✅ Static file serving setup complete (NO VITE)');
+      console.log('⚡ Setting up development Vite...');
+      const { setupVite, serveStatic } = await import('./vite');
+      await setupVite(app, httpServer);
+      serveStatic(app);
+      console.log('✅ Vite setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
