@@ -4,12 +4,11 @@ import App from "./App";
 import "./index.css";
 import "./index.js";
 
-// Make React available globally FIRST
+// Make React available globally IMMEDIATELY - this must be first
 declare global {
-  interface Window {
-    React: typeof React;
-  }
+  var React: any;
 }
+globalThis.React = React;
 window.React = React;
 
 // Now render the app
