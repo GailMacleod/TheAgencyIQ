@@ -5,7 +5,7 @@
 
 import axios from 'axios';
 import Replicate from 'replicate';
-import { PostQuotaService } from './PostQuotaService.js';
+// PostQuotaService will be imported dynamically when needed
 
 // Seedance API configuration - Official Replicate Integration
 const REPLICATE_API_BASE = 'https://api.replicate.com/v1';
@@ -790,4 +790,4 @@ class VideoService {
   }
 }
 
-module.exports = VideoService;
+export default VideoService;
