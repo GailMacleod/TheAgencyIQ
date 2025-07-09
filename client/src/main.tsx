@@ -1,8 +1,10 @@
-import './react-shim.js';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
+
+// Ensure React is globally available
+(window as any).React = React;
 
 // Schedule page mobile layout detection and logging
 if (window.matchMedia('(max-width: 768px)').matches) {
