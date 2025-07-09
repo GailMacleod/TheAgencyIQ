@@ -27,14 +27,21 @@ export async function setupEsbuildDev(app: Express, server: Server) {
   // Skip build - use existing optimized bundle
   console.log("Using existing optimized esbuild bundle...");
 
-  // Copy index.html template
-  const htmlTemplate = fs.readFileSync(path.join(clientPath, "index.html"), "utf-8");
-  const htmlContent = htmlTemplate.replace(
-    '<script type="module" src="/src/main.tsx"></script>',
-    '<script src="/main.js"></script>'
-  );
-  
-  fs.writeFileSync(path.join(distPath, "index.html"), htmlContent);
+  // Copy working HTML directly from dist/index.html.working
+  const workingHtmlPath = path.join(process.cwd(), 'dist/index.html.working');
+  if (fs.existsSync(workingHtmlPath)) {
+    const workingHtml = fs.readFileSync(workingHtmlPath, "utf-8");
+    fs.writeFileSync(path.join(distPath, "index.html"), workingHtml);
+    console.log('✅ Using working HTML from July 9th deployment');
+  } else {
+    // Fallback to template
+    const htmlTemplate = fs.readFileSync(path.join(clientPath, "index.html"), "utf-8");
+    const htmlContent = htmlTemplate.replace(
+      '<script type="module" src="/src/main.tsx"></script>',
+      '<script src="/main.js"></script>'
+    );
+    fs.writeFileSync(path.join(distPath, "index.html"), htmlContent);
+  }
   
   console.log("✅ esbuild development setup complete");
 }
