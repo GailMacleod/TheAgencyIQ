@@ -31,7 +31,7 @@ export async function setupEsbuildDev(app: Express, server: Server) {
   const htmlTemplate = fs.readFileSync(path.join(clientPath, "index.html"), "utf-8");
   const htmlContent = htmlTemplate.replace(
     '<script type="module" src="/src/main.tsx"></script>',
-    '<script type="module" src="/main.js"></script>'
+    '<script src="/main.js"></script>'
   );
   
   fs.writeFileSync(path.join(distPath, "index.html"), htmlContent);

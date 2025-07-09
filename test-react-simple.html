@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple React Test</title>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        console.log('1. Loading main.js...');
+        
+        // Create script element and load main.js
+        const script = document.createElement('script');
+        script.src = '/main.js';
+        script.onload = function() {
+            console.log('2. main.js loaded');
+            console.log('3. window.React =', typeof window.React, window.React);
+            
+            setTimeout(() => {
+                console.log('4. After timeout - window.React =', typeof window.React, window.React);
+                
+                // Test direct React usage
+                if (window.React && window.React.createElement) {
+                    console.log('5. React.createElement available');
+                    const element = window.React.createElement('div', {}, 'Hello World');
+                    console.log('6. Created element:', element);
+                } else {
+                    console.error('7. React.createElement not available');
+                }
+            }, 100);
+        };
+        script.onerror = function() {
+            console.error('2. Failed to load main.js');
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
