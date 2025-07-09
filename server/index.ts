@@ -529,11 +529,11 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development Vite...');
-      const { setupVite, serveStatic } = await import('./vite');
-      await setupVite(app, httpServer);
+      console.log('⚡ Setting up development esbuild...');
+      const { setupEsbuildDev, serveStatic } = await import('./esbuild-dev');
+      await setupEsbuildDev(app, httpServer);
       serveStatic(app);
-      console.log('✅ Vite setup complete');
+      console.log('✅ esbuild development setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
