@@ -1,8 +1,8 @@
-import "./react-init.js";
-import React from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App";
 import "./index.css";
 import "./index.js";
+import App from "./App";
 
-createRoot(document.getElementById("root")!).render(<App />);
+const React = (window as any).React;
+const ReactDOM = (window as any).ReactDOM;
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
