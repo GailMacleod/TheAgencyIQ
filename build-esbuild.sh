@@ -27,11 +27,11 @@ npx esbuild client/src/main.tsx \
   --minify \
   --sourcemap \
   --define:process.env.NODE_ENV='"production"' \
+  --define:import.meta.env.VITE_GA_MEASUREMENT_ID='"G-XXXXXXXXXX"' \
   --platform=browser \
   --target=es2020 \
-  --jsx=transform \
-  --jsx-factory=React.createElement \
-  --jsx-fragment=React.Fragment
+  --jsx=automatic \
+  --jsx-import-source=react
 
 # Build server bundle
 echo "🖥️ Building server bundle..."
