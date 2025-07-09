@@ -11,7 +11,7 @@ mkdir -p dist
 
 # Build client bundle
 echo "📦 Building client bundle..."
-npx esbuild client/src/main.tsx \
+npx esbuild client/src/main-simple.tsx \
   --bundle \
   --outfile=dist/main.js \
   --platform=browser \
@@ -29,8 +29,10 @@ npx esbuild client/src/main.tsx \
   --define:import.meta.env.VITE_GA_MEASUREMENT_ID='"G-XXXXXXXXXX"' \
   --define:import.meta.env.VITE_STRIPE_PRICE_ID_STARTER='"price_starter"' \
   --define:import.meta.env.VITE_STRIPE_PRICE_ID_GROWTH='"price_growth"' \
-  --jsx=automatic \
-  --jsx-import-source=react \
+  --jsx=transform \
+  --jsx-factory=React.createElement \
+  --jsx-fragment=React.Fragment \
+  --inject:./react-shim.js \
   --minify
 
 # Build server bundle
