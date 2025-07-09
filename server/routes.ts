@@ -7525,7 +7525,7 @@ export function addNotificationEndpoints(app: any) {
         audience: 'Queensland SMEs'
       };
       
-      const { VideoService } = await import('./videoService.js');
+      const VideoService = (await import('./videoService.js')).default;
       
       console.log('Generating varied video prompts for:', { 
         userId: authenticatedUserId,
@@ -7580,7 +7580,7 @@ export function addNotificationEndpoints(app: any) {
 
       
       // Import Art Director VideoService
-      const { VideoService } = await import('./videoService.js');
+      const VideoService = (await import('./videoService.js')).default;
       
       // Validate video generation limits
       const validation = VideoService.validateVideoLimits(userId, postId);
@@ -7652,7 +7652,7 @@ export function addNotificationEndpoints(app: any) {
   app.post('/api/post/publish-approved', async (req: any, res) => {
     try {
       const { userId, postId, platforms } = req.body;
-      const { VideoService } = await import('./videoService.js');
+      const VideoService = (await import('./videoService.js')).default;
       
       // Get the approved post with video data
       const post = await storage.getPost(postId);
