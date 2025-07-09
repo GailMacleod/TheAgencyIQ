@@ -14,8 +14,10 @@ echo "📦 Building client bundle..."
 npx esbuild client/src/main.tsx \
   --bundle \
   --outfile=dist/main.js \
+  --platform=browser \
   --format=esm \
   --loader:.js=jsx \
+  --loader:.tsx=tsx \
   --loader:.png=file \
   --loader:.jpg=file \
   --loader:.jpeg=file \
@@ -24,14 +26,12 @@ npx esbuild client/src/main.tsx \
   --alias:@=./client/src \
   --alias:@shared=./shared \
   --alias:@assets=./attached_assets \
-  --minify \
-  --sourcemap \
-  --define:process.env.NODE_ENV='"production"' \
   --define:import.meta.env.VITE_GA_MEASUREMENT_ID='"G-XXXXXXXXXX"' \
-  --platform=browser \
-  --target=es2020 \
+  --define:import.meta.env.VITE_STRIPE_PRICE_ID_STARTER='"price_starter"' \
+  --define:import.meta.env.VITE_STRIPE_PRICE_ID_GROWTH='"price_growth"' \
   --jsx=automatic \
-  --jsx-import-source=react
+  --jsx-import-source=react \
+  --minify
 
 # Build server bundle
 echo "🖥️ Building server bundle..."
