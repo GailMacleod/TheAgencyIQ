@@ -483,20 +483,29 @@ export class PostPublisher {
       remainingPosts = Math.max(0, remainingPosts - 1);
       await storage.updateUser(userId, { remainingPosts });
       
+      // Extract analytics data from successful publications
+      const analyticsData: any = {};
+      for (const [platform, result] of Object.entries(results)) {
+        if (result.success && result.analytics) {
+          analyticsData[platform] = result.analytics;
+        }
+      }
+      
       // Update post status based on results
       const overallSuccess = successfulPublications === totalAttempts;
       await storage.updatePost(postId, {
         status: overallSuccess ? "published" : "partial",
         publishedAt: new Date(),
-        analytics: results
+        analytics: analyticsData
       });
 
       console.log(`Post ${postId} published to ${successfulPublications}/${totalAttempts} platforms. User ${user.email} has ${remainingPosts} posts remaining.`);
+      console.log(`Analytics data saved:`, analyticsData);
     } else {
       // All publications failed - mark as failed and preserve allocation
       await storage.updatePost(postId, {
         status: "failed",
-        analytics: results
+        analytics: null
       });
 
       console.log(`Post ${postId} failed to publish to all platforms. Allocation preserved. User ${user.email} still has ${remainingPosts} posts remaining.`);

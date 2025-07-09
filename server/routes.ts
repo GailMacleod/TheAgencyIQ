@@ -5431,6 +5431,7 @@ Continue building your Value Proposition Canvas systematically.`;
       // Get user and published posts with analytics data
       const user = await storage.getUser(userId);
       const posts = await storage.getPostsByUser(userId);
+      const connections = await storage.getPlatformConnectionsByUser(userId);
 
       if (!user) {
         return res.status(400).json({ message: "User not found" });
@@ -5453,36 +5454,21 @@ Continue building your Value Proposition Canvas systematically.`;
 
       publishedPosts.forEach(post => {
         if (post.analytics && typeof post.analytics === 'object') {
-          // Handle different analytics data formats
           const analytics = post.analytics;
           
-          // If analytics contains platform-specific data
-          if (analytics.facebook || analytics.instagram || analytics.linkedin || analytics.x || analytics.youtube) {
-            Object.keys(analytics).forEach(platform => {
-              const platformAnalytics = analytics[platform];
-              if (platformAnalytics && platformAnalytics.success && platformAnalytics.analytics) {
-                const data = platformAnalytics.analytics;
-                if (!platformData[platform]) {
-                  platformData[platform] = { posts: 0, reach: 0, engagement: 0, impressions: 0 };
-                }
-                platformData[platform].posts += 1;
-                platformData[platform].reach += data.reach || 0;
-                platformData[platform].engagement += data.engagement || 0;
-                platformData[platform].impressions += data.impressions || 0;
+          // Handle new PostPublisher format: {platform: {reach, engagement, impressions, ...}}
+          Object.keys(analytics).forEach(platform => {
+            const platformAnalytics = analytics[platform];
+            if (platformAnalytics && typeof platformAnalytics === 'object') {
+              if (!platformData[platform]) {
+                platformData[platform] = { posts: 0, reach: 0, engagement: 0, impressions: 0 };
               }
-            });
-          }
-          // If analytics is a direct analytics object (from PostPublisher)
-          else if (analytics.platform) {
-            const platform = analytics.platform;
-            if (!platformData[platform]) {
-              platformData[platform] = { posts: 0, reach: 0, engagement: 0, impressions: 0 };
+              platformData[platform].posts += 1;
+              platformData[platform].reach += platformAnalytics.reach || 0;
+              platformData[platform].engagement += platformAnalytics.engagement || 0;
+              platformData[platform].impressions += platformAnalytics.impressions || 0;
             }
-            platformData[platform].posts += 1;
-            platformData[platform].reach += analytics.reach || 0;
-            platformData[platform].engagement += analytics.engagement || 0;
-            platformData[platform].impressions += analytics.impressions || 0;
-          }
+          });
         }
       });
 
