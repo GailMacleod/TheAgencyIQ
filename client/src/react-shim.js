@@ -1,10 +1,12 @@
-// React shim for global availability
+// React Global Assignment for July 9th Configuration
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+import ReactDOM from 'react-dom/client';
 
-// Make React available globally
+// Make React globally available
 globalThis.React = React;
-globalThis.ReactDOM = { createRoot };
+globalThis.ReactDOM = ReactDOM;
+window.React = React;
+window.ReactDOM = ReactDOM;
 
-// Export for module usage
-export { React, createRoot };
+export { React, ReactDOM };
+export const { createRoot } = ReactDOM;

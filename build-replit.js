@@ -34,7 +34,7 @@ async function buildForReplit() {
       bundle: true,
       platform: 'browser',
       target: 'es2020',
-      format: 'esm',
+      format: 'iife',
       outfile: join(staticDir, 'main.js'),
       loader: {
         '.png': 'file',
@@ -108,6 +108,8 @@ async function buildForReplit() {
 </html>`;
 
     writeFileSync(join(distDir, 'index.html'), htmlContent);
+    
+    // Copy the client index.html is NOT needed - we use the production template above
 
     console.log('📁 Copying static assets...');
     
