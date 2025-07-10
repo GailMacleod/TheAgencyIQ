@@ -1,9 +1,11 @@
-// Mock plugin for @replit/vite-plugin-cartographer
-export default function replitCartographer() {
+// Mock Replit cartographer plugin for development
+export function cartographer() {
   return {
-    name: 'replit-cartographer-mock',
+    name: 'mock-cartographer',
     configResolved() {
-      // Mock implementation - does nothing
+      // Mock implementation - do nothing
     }
   };
 }
+
+export default { cartographer };

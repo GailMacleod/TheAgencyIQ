@@ -1,9 +1,9 @@
-// Mock plugin for @replit/vite-plugin-runtime-error-modal  
-export default function replitRuntimeErrorModal() {
+// Mock Replit runtime error modal plugin for development
+export default function runtimeErrorOverlay() {
   return {
-    name: 'replit-runtime-error-modal-mock',
+    name: 'mock-runtime-error-overlay',
     configResolved() {
-      // Mock implementation - does nothing
+      // Mock implementation - do nothing
     }
   };
 }
