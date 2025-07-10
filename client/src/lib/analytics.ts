@@ -8,6 +8,12 @@ declare global {
 
 // Initialize Google Analytics
 export const initGA = () => {
+  // Disable in development to avoid CORS issues
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Analytics disabled in development mode');
+    return;
+  }
+
   const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
 
   if (!measurementId) {
