@@ -56,6 +56,7 @@ export function ContextualTooltip({
                 size="sm"
                 className="p-0 h-auto ml-2"
                 onClick={() => setIsVisible(false)}
+                aria-label="Close help tooltip"
               >
                 <X className="w-3 h-3" />
               </Button>

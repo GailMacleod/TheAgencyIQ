@@ -75,6 +75,7 @@ export function QuickActionsPanel({ remainingPosts = 0, totalPosts = 52 }: Quick
               key={action.id}
               onClick={action.onClick}
               disabled={action.disabled}
+              aria-label={`${action.label}: ${action.description}`}
               className={`${action.color} text-white h-auto p-4 flex flex-col items-center space-y-2 hover:scale-105 transition-transform`}
             >
               <action.icon className="w-6 h-6" />

@@ -26,6 +26,34 @@ async function startServer() {
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Allow-Credentials', 'true');
     
+    // Enhanced security headers with corrected Permissions-Policy
+    res.header('Content-Security-Policy', 
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; " +
+      "img-src 'self' data: https: blob:; " +
+      "connect-src 'self' https: wss: ws:; " +
+      "frame-src 'self' https://www.facebook.com https://accounts.google.com; " +
+      "frame-ancestors 'self' https://www.facebook.com;"
+    );
+    
+    // Fixed Permissions-Policy - removed unrecognized features
+    res.header('Permissions-Policy', 
+      'camera=(), ' +
+      'microphone=(), ' +
+      'geolocation=(), ' +
+      'payment=(), ' +
+      'usb=(), ' +
+      'accelerometer=(), ' +
+      'gyroscope=(), ' +
+      'magnetometer=()'
+    );
+    
+    res.header('X-Frame-Options', 'SAMEORIGIN');
+    res.header('X-Content-Type-Options', 'nosniff');
+    res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    
     if (req.method === 'OPTIONS') {
       res.sendStatus(200);
       return;

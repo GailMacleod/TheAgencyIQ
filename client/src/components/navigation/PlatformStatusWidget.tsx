@@ -95,6 +95,7 @@ export function PlatformStatusWidget() {
             size="sm"
             variant="outline"
             onClick={() => refetch()}
+            aria-label="Refresh platform connection status"
             className="flex-1"
           >
             <RefreshCw className="w-3 h-3 mr-1" />
@@ -103,6 +104,7 @@ export function PlatformStatusWidget() {
           <Button
             size="sm"
             onClick={() => setLocation('/token-status')}
+            aria-label="Manage platform connections"
             className="flex-1"
           >
             Manage
