@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
+import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
 interface PlatformConnection {
   id: number;
@@ -257,7 +258,7 @@ export default function ConnectPlatforms() {
     <div className="min-h-screen bg-gray-50">
       <MasterHeader showUserMenu={true} />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6 flex justify-between items-center">
           <BackButton to="/brand-purpose" label="Back to Brand Purpose" />
           <Button 
@@ -275,8 +276,10 @@ export default function ConnectPlatforms() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Object.entries(platformConfig).map(([platform, config]) => {
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          <div className="xl:col-span-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {Object.entries(platformConfig).map(([platform, config]) => {
             const connected = isConnected(platform);
             const connection = getConnection(platform);
             const Icon = config.icon;
@@ -371,38 +374,44 @@ export default function ConnectPlatforms() {
               </Card>
             );
           })}
-        </div>
-
-        {connections && Array.isArray(connections) && connections.length > 0 && (
-          <div className="mt-8 text-center">
-            <Button
-              onClick={() => setLocation("/intelligent-schedule")}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-              size="lg"
-            >
-              Continue to AI Schedule
-            </Button>
-          </div>
-        )}
-
-
-        <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-start space-x-3">
-            <div className="flex-shrink-0">
-              <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">Secure Connection</h3>
-              <p className="text-blue-800 text-sm mb-3">
-                We securely connect to your social media accounts. Your login details are protected and 
-                your posts will be published directly to your real accounts.
-              </p>
-              <div className="text-xs text-blue-700">
-                <p>• Your account information stays private and secure</p>
-                <p>• Posts publish directly to your actual social media</p>
-                <p>• All connections use official platform security</p>
+
+            {connections && Array.isArray(connections) && connections.length > 0 && (
+              <div className="mt-8 text-center">
+                <Button
+                  onClick={() => setLocation("/intelligent-schedule")}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  size="lg"
+                >
+                  Continue to AI Schedule
+                </Button>
+              </div>
+            )}
+
+            <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-900 mb-2">Secure Connection</h3>
+                  <p className="text-blue-800 text-sm mb-3">
+                    We securely connect to your social media accounts. Your login details are protected and 
+                    your posts will be published directly to your real accounts.
+                  </p>
+                  <div className="text-xs text-blue-700">
+                    <p>• Your account information stays private and secure</p>
+                    <p>• Posts publish directly to your actual social media</p>
+                    <p>• All connections use official platform security</p>
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
+          
+          {/* Training Wizard Sidebar */}
+          <div className="xl:col-span-1">
+            <OnboardingWizard />
           </div>
         </div>
       </div>

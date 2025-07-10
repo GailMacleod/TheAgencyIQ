@@ -17,6 +17,7 @@ import BackButton from "@/components/back-button";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
 import AutoPostingEnforcer from "@/components/auto-posting-enforcer";
 import { VideoPostCard } from "@/components/VideoPostCard";
+import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
 interface Post {
   id: number;
@@ -735,6 +736,12 @@ function IntelligentSchedule() {
           </div>
         )}
       </div>
+      
+      {/* Training Wizard */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <OnboardingWizard />
+      </div>
+      
       <MasterFooter />
     </div>
   );

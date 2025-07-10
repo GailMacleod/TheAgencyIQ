@@ -12,6 +12,7 @@ import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
 import MetaPixelStatus from "@/components/meta-pixel-status";
+import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
 interface AnalyticsData {
   totalPosts: number;
@@ -378,6 +379,11 @@ export default function Analytics() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Training Wizard */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <OnboardingWizard />
       </div>
 
       <MasterFooter />
