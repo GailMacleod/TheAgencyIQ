@@ -71,6 +71,45 @@ export default function Splash() {
                 <SiTiktok className="w-8 h-8" style={{ color: '#000000' }} />
                 <SiX className="w-8 h-8" style={{ color: '#000000' }} />
               </div>
+
+              {/* Trust Badges - Security & Compliance */}
+              <div className="trust-badges flex justify-center items-center space-x-6 pt-8">
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="font-medium">SSL Secured</span>
+                </div>
+                
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="font-medium">GDPR Compliant</span>
+                </div>
+                
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="font-medium">99.9% Uptime</span>
+                </div>
+                
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm8 2a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="font-medium">SOC 2 Type II</span>
+                </div>
+              </div>
             </div>
 
             <div className="relative animate-slide-in-right">
@@ -156,6 +195,34 @@ export default function Splash() {
                 Choose Your Plan
               </Button>
             </Link>
+            
+            {/* Trust indicators for pricing section */}
+            <div className="flex justify-center items-center space-x-8 pt-6">
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <span className="font-medium">30-Day Money Back</span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <span className="font-medium">Cancel Anytime</span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <span className="font-medium">Secure Payment</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -249,7 +316,58 @@ export default function Splash() {
             </p>
           </div>
           
-          <div className="border-t border-border mt-12 pt-8 text-center space-y-4">
+          <div className="border-t border-border mt-12 pt-8 text-center space-y-6">
+            {/* Enhanced Security & Compliance Trust Badges */}
+            <div className="flex flex-wrap justify-center items-center gap-8 py-6">
+              <div className="flex items-center space-x-3 text-sm">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">256-bit SSL</div>
+                  <div className="text-xs text-muted-foreground">Bank-grade encryption</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3 text-sm">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">ISO 27001</div>
+                  <div className="text-xs text-muted-foreground">Certified secure</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3 text-sm">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">ACCC Registered</div>
+                  <div className="text-xs text-muted-foreground">Australian business</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3 text-sm">
+                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">Privacy Act</div>
+                  <div className="text-xs text-muted-foreground">Data protection compliant</div>
+                </div>
+              </div>
+            </div>
+            
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-sm text-muted-foreground">
               <a href="https://app.theagencyiq.ai/terms" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
                 Terms of Service
@@ -258,6 +376,12 @@ export default function Splash() {
               <a href="https://app.theagencyiq.ai/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
                 Privacy Policy
               </a>
+              <span className="hidden sm:block">•</span>
+              <a href="https://app.theagencyiq.ai/security" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                Security Policy
+              </a>
+              <span className="hidden sm:block">•</span>
+              <span className="text-green-600 font-medium">Contact Support - support@theagencyiq.ai</span>
             </div>
             <p className="text-muted-foreground">
               &copy; 2024 MacleodGlobal trading as The AgencyIQ. All rights reserved.
