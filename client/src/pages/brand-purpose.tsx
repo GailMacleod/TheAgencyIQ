@@ -17,6 +17,7 @@ import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
 import { Bot, Lightbulb } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
 const brandPurposeSchema = z.object({
   brandName: z.string().min(2, "Brand name must be at least 2 characters").max(600, "Brand name must be 600 characters or less"),
@@ -494,10 +495,72 @@ export default function BrandPurpose() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <h2 className="text-2xl font-normal text-center mb-8" style={{ color: '#333333' }}>
-            {isExistingData ? 'update your brand purpose' : 'define your brand purpose'}
-          </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-md p-8">
+              <h2 className="text-2xl font-normal text-center mb-8" style={{ color: '#333333' }}>
+                {isExistingData ? 'update your brand purpose' : 'define your brand purpose'}
+              </h2>
+          
+              <div className="space-y-4">
+                {showGuidance && guidance && (
+                  <Card className="bg-blue-50 border-blue-200">
+                    <CardContent className="p-6">
+                      <div className="flex items-start space-x-3">
+                        <Bot className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <h3 className="font-semibold text-blue-900 mb-2">AI Strategy Guidance</h3>
+                          <div className="text-sm text-blue-800 whitespace-pre-wrap">{guidance}</div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-3"
+                            onClick={() => setShowGuidance(false)}
+                          >
+                            Dismiss
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {/* AI Suggestions Section */}
+                {Object.keys(aiSuggestions).length > 0 && (
+                  <Card className="bg-green-50 border-green-200">
+                    <CardContent className="p-6">
+                      <div className="flex items-start space-x-3">
+                        <Lightbulb className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-green-900 mb-3">Smart Field Suggestions</h3>
+                          <div className="space-y-3">
+                            {Object.entries(aiSuggestions).map(([field, suggestion]) => (
+                              <div key={field} className="bg-white p-4 rounded-lg border border-green-200">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-green-900 mb-1">
+                                      {field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                    </div>
+                                    <div className="text-sm text-green-700 mb-2">{suggestion}</div>
+                                  </div>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => applySuggestion(field, suggestion)}
+                                    className="ml-2"
+                                  >
+                                    Apply
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
           
           {isExistingData && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -1281,6 +1344,13 @@ export default function BrandPurpose() {
               {loading ? "Saving Brand Purpose..." : "Save Brand Purpose & Continue"}
             </Button>
           </form>
+            </div>
+          </div>
+          
+          {/* Training Wizard Sidebar */}
+          <div className="lg:col-span-1">
+            <OnboardingWizard />
+          </div>
         </div>
       </div>
       

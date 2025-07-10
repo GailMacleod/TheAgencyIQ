@@ -197,6 +197,14 @@ export default function OnboardingWizard() {
       actionUrl: "/intelligent-schedule",
       content: (
         <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+            <h4 className="font-medium text-red-900 mb-2">⚠️ Important Subscription Rules:</h4>
+            <ul className="text-sm text-red-700 space-y-1">
+              <li>• Posts don't roll over - use all posts within your 30-day cycle</li>
+              <li>• Multiple posting builds brand recognition and trust</li>
+              <li>• Consistent presence keeps you top-of-mind with customers</li>
+            </ul>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="border rounded-lg p-4">
               <h4 className="font-medium mb-3 flex items-center">
@@ -226,9 +234,9 @@ export default function OnboardingWizard() {
         </div>
       ),
       tips: [
-        "Start with manual approval to build confidence",
-        "Monitor analytics to optimize posting times",
-        "Use the emergency pause if needed"
+        "Use all posts within 30 days - they don't carry over",
+        "Consistent posting builds stronger brand recognition",
+        "Multiple posts per week keeps customers engaged"
       ]
     },
     {
@@ -325,13 +333,14 @@ export default function OnboardingWizard() {
 
   if (!isVisible) return null;
 
-  // Minimized state - floating button
+  // Minimized state - floating button (always visible across pages)
   if (isMinimized) {
     return (
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsMinimized(false)}
           className="bg-[#3b5cff] hover:bg-[#2a4bd8] text-white rounded-full w-16 h-16 shadow-lg flex items-center justify-center"
+          title="Open Training Guide"
         >
           <Target className="w-6 h-6" />
         </Button>
