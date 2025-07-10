@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import SplashScreen from "@/components/splash-screen";
 import GrokWidget from "@/components/grok-widget";
+import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 import NotFound from "@/pages/not-found";
 import { initGA } from "./lib/analytics";
 import { useAnalytics } from "./hooks/use-analytics";
@@ -242,6 +243,7 @@ function App() {
           ) : (
             <>
               <Router />
+              <OnboardingWizard />
               <GrokWidget />
             </>
           )}
