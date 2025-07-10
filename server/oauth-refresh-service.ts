@@ -231,10 +231,16 @@ export class OAuthRefreshService {
 
   private static async refreshXToken(connection: any, userId: number): Promise<RefreshResult> {
     try {
-      if (!process.env.X_CONSUMER_KEY || !process.env.X_CONSUMER_SECRET) {
+      console.log(`[OAUTH-REFRESH] Attempting X token refresh for user ${userId}`);
+      
+      const consumerKey = process.env.X_CONSUMER_KEY;
+      const consumerSecret = process.env.X_CONSUMER_SECRET;
+      
+      if (!consumerKey || !consumerSecret) {
+        console.log(`[OAUTH-REFRESH] X consumer credentials status: KEY=${!!consumerKey}, SECRET=${!!consumerSecret}`);
         return {
           success: false,
-          error: 'X API credentials not configured',
+          error: 'X consumer credentials not configured in environment',
           requiresReauth: true
         };
       }
@@ -247,21 +253,23 @@ export class OAuthRefreshService {
         };
       }
 
+      console.log(`[OAUTH-REFRESH] X credentials available, attempting refresh with consumer key: ${consumerKey.substring(0, 10)}...`);
+      
+      // X OAuth 2.0 refresh token request using URLSearchParams
+      const refreshData = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: connection.refreshToken,
+        client_id: consumerKey
+      });
+
       // X OAuth 2.0 token refresh
       const response = await axios.post(
         'https://api.twitter.com/2/oauth2/token',
-        {
-          grant_type: 'refresh_token',
-          refresh_token: connection.refreshToken,
-          client_id: process.env.X_CONSUMER_KEY
-        },
+        refreshData,
         {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          auth: {
-            username: process.env.X_CONSUMER_KEY,
-            password: process.env.X_CONSUMER_SECRET
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`
           }
         }
       );
@@ -287,10 +295,14 @@ export class OAuthRefreshService {
       };
       
     } catch (error: any) {
-      console.error('[OAUTH-REFRESH] X refresh failed:', error.response?.data || error.message);
+      console.error('[OAUTH-REFRESH] X refresh failed:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
       return {
         success: false,
-        error: 'X token refresh failed',
+        error: error.response?.data?.error_description || error.message,
         requiresReauth: true
       };
     }
