@@ -50,6 +50,17 @@
   }
 }
 
+/* Extra bold standout text styling */
+.text-shadow-standout {
+  text-shadow: 
+    0 0 10px rgba(255, 255, 255, 0.8),
+    0 0 20px rgba(255, 255, 255, 0.6),
+    2px 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(244, 114, 182, 0.4);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
 @layer base {
   :root {
     /* AtomIQ Brand Colors */
