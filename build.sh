@@ -1,2 +1,0 @@
-#!/bin/bash
-npx esbuild client/src/main.tsx --bundle --outfile=dist/main.js --platform=browser --format=iife --loader:.tsx=tsx --minify --external:@assets/* --define:import.meta.env.VITE_GA_MEASUREMENT_ID='"G-XXXXXXXXXX"' --define:import.meta.env.VITE_STRIPE_PRICE_ID_STARTER='"price_starter"' --define:import.meta.env.VITE_STRIPE_PRICE_ID_GROWTH='"price_growth"' --define:import.meta.env.VITE_STRIPE_PRICE_ID_PROFESSIONAL='"price_professional"' --define:process.env.NODE_ENV='"development"'

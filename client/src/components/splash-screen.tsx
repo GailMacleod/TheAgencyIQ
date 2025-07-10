@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-// Use direct path to logo in dist folder
-const agencyLogoPath = "/agency_logo_1749083054761.png";
+import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
 
 interface SplashScreenProps {
   onComplete: () => void;
