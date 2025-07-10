@@ -334,7 +334,7 @@ export default function Subscription() {
                         transform-gpu will-change-transform
                         active:scale-95 active:transition-none
                         ${plan.popular 
-                          ? 'btn-atomiq-primary animate-enhanced-pulse hover:animate-none hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-400' 
+                          ? 'bg-gradient-to-r from-blue-500 via-cyan-400 to-pink-400 text-white animate-enhanced-pulse hover:animate-none hover:from-blue-600 hover:via-cyan-500 hover:to-pink-500 shadow-lg shadow-pink-200/50' 
                           : 'btn-atomiq-secondary hover:bg-gray-100 dark:hover:bg-gray-700'
                         }`}
                       onClick={() => handleSelectPlan(plan.id)}

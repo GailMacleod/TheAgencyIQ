@@ -179,15 +179,16 @@ export default function Splash() {
             <Link href="/subscription">
               <Button 
                 size="lg" 
-                className="bg-gradient-atomiq hover:opacity-90 text-white px-8 py-4 text-lg
+                className="bg-gradient-to-r from-blue-500 via-cyan-400 to-pink-400 hover:opacity-90 text-white px-8 py-4 text-lg font-bold
                           animate-enhanced-pulse hover:animate-none
                           transition-all duration-300 ease-in-out
                           hover:scale-105 hover:shadow-2xl
                           transform-gpu will-change-transform
-                          hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-400
-                          active:scale-95 active:transition-none"
+                          hover:from-blue-600 hover:via-cyan-500 hover:to-pink-500
+                          active:scale-95 active:transition-none
+                          shadow-lg shadow-pink-200/50"
               >
-                Choose Your Plan
+                SUBSCRIBE
               </Button>
             </Link>
             
