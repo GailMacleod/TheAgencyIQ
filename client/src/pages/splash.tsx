@@ -213,30 +213,39 @@ export default function Splash() {
               <div className="w-16 h-16 bg-gradient-atomiq rounded-2xl flex items-center justify-center mb-6 mx-auto">
                 <Target className="h-8 w-8 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-4">Brand Purpose Definition</h4>
+              <h4 className="text-xl font-semibold mb-4">Define Your Brand</h4>
               <p className="text-muted-foreground leading-relaxed">
-                Define your brand's core purpose, target audience, and business goals with intelligent AI guidance and strategic insights.
+                Core purpose and audience for your business
               </p>
+              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
+                <p className="text-sm font-medium text-[#3b5cff]">Build a brand that resonates with your ideal customers</p>
+              </div>
             </div>
 
             <div className="card-atomiq-feature animate-fade-in-up stagger-2">
               <div className="w-16 h-16 bg-gradient-secondary rounded-2xl flex items-center justify-center mb-6 mx-auto">
                 <Users className="h-8 w-8 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-4">Platform Connections</h4>
+              <h4 className="text-xl font-semibold mb-4">Connect Social Accounts</h4>
               <p className="text-muted-foreground leading-relaxed">
-                Seamlessly connect all your social media platforms: Facebook, Instagram, LinkedIn, YouTube, and TikTok.
+                Link Facebook, Instagram, LinkedIn, YouTube, X easily
               </p>
+              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
+                <p className="text-sm font-medium text-[#3b5cff]">Connect once, post everywhere automatically</p>
+              </div>
             </div>
 
             <div className="card-atomiq-feature animate-fade-in-up stagger-3">
               <div className="w-16 h-16 bg-gradient-atomiq rounded-2xl flex items-center justify-center mb-6 mx-auto">
                 <Zap className="h-8 w-8 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-4">AI Content Generation</h4>
+              <h4 className="text-xl font-semibold mb-4">Create Content & Videos</h4>
               <p className="text-muted-foreground leading-relaxed">
-                Generate engaging, brand-aligned content automatically using advanced AI technology based on your unique brand purpose.
+                AI makes engaging posts and short videos tailored to your brand
               </p>
+              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
+                <p className="text-sm font-medium text-[#3b5cff]">Make viral videos that sell your story</p>
+              </div>
             </div>
 
             <div className="card-atomiq-feature animate-fade-in-up stagger-4">
@@ -245,28 +254,37 @@ export default function Splash() {
               </div>
               <h4 className="text-xl font-semibold mb-4">Smart Scheduling</h4>
               <p className="text-muted-foreground leading-relaxed">
-                Optimize posting times and maintain consistent presence across all platforms with intelligent scheduling algorithms.
+                Auto-post content at best times
               </p>
+              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
+                <p className="text-sm font-medium text-[#3b5cff]">Post when your audience is most active</p>
+              </div>
             </div>
 
             <div className="card-atomiq-feature animate-fade-in-up stagger-5">
               <div className="w-16 h-16 bg-gradient-atomiq rounded-2xl flex items-center justify-center mb-6 mx-auto">
                 <BarChart3 className="h-8 w-8 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-4">Analytics & Insights</h4>
+              <h4 className="text-xl font-semibold mb-4">Track Results</h4>
               <p className="text-muted-foreground leading-relaxed">
-                Track performance metrics and receive actionable insights to continuously improve your social media strategy.
+                See real views, likes, and growth
               </p>
+              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
+                <p className="text-sm font-medium text-[#3b5cff]">Know what's working to grow faster</p>
+              </div>
             </div>
 
             <div className="card-atomiq-feature animate-fade-in-up stagger-6">
               <div className="w-16 h-16 bg-gradient-secondary rounded-2xl flex items-center justify-center mb-6 mx-auto">
                 <Sparkles className="h-8 w-8 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-4">Queensland Focus</h4>
+              <h4 className="text-xl font-semibold mb-4">Monitor & Improve</h4>
               <p className="text-muted-foreground leading-relaxed">
-                Specifically designed for Queensland small businesses with local market insights and compliance considerations.
+                Watch activity and boost your strategy
               </p>
+              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
+                <p className="text-sm font-medium text-[#3b5cff]">Keep improving to stay ahead of competitors</p>
+              </div>
             </div>
           </div>
         </div>
