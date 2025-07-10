@@ -64,7 +64,7 @@ export function PlatformStatusWidget() {
   const totalCount = connections?.length || 0;
 
   return (
-    <Card data-guide="platform-status">
+    <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">Platform Connections</CardTitle>

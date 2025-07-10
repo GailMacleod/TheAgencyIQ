@@ -32,8 +32,6 @@ import InstagramFix from "@/pages/instagram-fix";
 import DataDeletionStatus from "@/pages/data-deletion-status";
 import MetaPixelTest from "@/pages/meta-pixel-test";
 import BulletproofDashboard from "@/pages/bulletproof-dashboard";
-import OnboardingPage from "@/pages/onboarding";
-import EnhancedDashboardPage from "@/pages/enhanced-dashboard";
 
 function Router() {
   // Track page views when routes change
@@ -42,7 +40,6 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Splash} />
-      <Route path="/onboarding" component={OnboardingPage} />
       <Route path="/subscription" component={Subscription} />
       <Route path="/brand-purpose" component={BrandPurpose} />
       <Route path="/platform-connections" component={ConnectPlatforms} />
@@ -57,7 +54,7 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/redeem-certificate" component={RedeemCertificate} />
       <Route path="/admin" component={AdminDashboard} />
-      <Route path="/dashboard" component={EnhancedDashboardPage} />
+      <Route path="/dashboard" component={ConnectPlatforms} />
       <Route path="/connection-repair" component={ConnectionRepair} />
       <Route path="/oauth-reconnect" component={OAuthReconnect} />
       <Route path="/token-status" component={TokenStatus} />
