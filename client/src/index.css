@@ -3,6 +3,17 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes subtle-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(59, 92, 255, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 92, 255, 0.6), 0 0 30px rgba(59, 92, 255, 0.4);
+    transform: scale(1.02);
+  }
+}
+
 @layer base {
   :root {
     /* AtomIQ Brand Colors */

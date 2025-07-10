@@ -1,18 +1,34 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Zap, Target, Calendar, BarChart3, Users, Sparkles, CheckCircle, ArrowRight, Cpu, Lightbulb, Film } from "lucide-react";
 import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import GrokWidget from "@/components/grok-widget";
 import UserMenu from "@/components/user-menu";
 import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
 
 export default function Splash() {
+  const [location] = useLocation();
+  const [showSignupAnimation, setShowSignupAnimation] = useState(false);
+  
   const { data: user } = useQuery({
     queryKey: ["/api/user"],
     retry: false,
   });
+
+  // Check if user completed wizard and trigger signup button animation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.split('?')[1] || '');
+    if (urlParams.get('wizard-completed') === 'true') {
+      setShowSignupAnimation(true);
+      // Remove the parameter from URL after triggering animation
+      window.history.replaceState({}, '', '/');
+      // Reset animation after 3 seconds
+      setTimeout(() => setShowSignupAnimation(false), 3000);
+    }
+  }, [location]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,7 +52,15 @@ export default function Splash() {
                     <Button variant="ghost" className="nav-link">Sign In</Button>
                   </Link>
                   <Link href="/subscription">
-                    <Button className="btn-atomiq-primary">Get Started</Button>
+                    <Button 
+                      className={`btn-atomiq-primary transition-all duration-500 ${
+                        showSignupAnimation 
+                          ? 'animate-pulse ring-4 ring-blue-300 ring-opacity-50 scale-105 shadow-lg' 
+                          : ''
+                      }`}
+                    >
+                      Get Started
+                    </Button>
                   </Link>
                 </>
               )}

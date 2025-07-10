@@ -283,6 +283,11 @@ export default function OnboardingWizard() {
     if (currentStep < wizardSteps.length - 1) {
       setCompletedSteps([...completedSteps, currentStep]);
       setCurrentStep(currentStep + 1);
+    } else {
+      // Final step completed - return to landing page with animation trigger
+      setCompletedSteps([...completedSteps, currentStep]);
+      setLocation('/?wizard-completed=true');
+      setIsVisible(false);
     }
   };
 
@@ -305,6 +310,11 @@ export default function OnboardingWizard() {
       if (currentStep < wizardSteps.length - 1) {
         setCompletedSteps([...completedSteps, currentStep]);
         setCurrentStep(currentStep + 1);
+      } else {
+        // Final step - complete wizard and return to landing page
+        setCompletedSteps([...completedSteps, currentStep]);
+        setLocation('/?wizard-completed=true');
+        setIsVisible(false);
       }
     } else {
       handleNext();
