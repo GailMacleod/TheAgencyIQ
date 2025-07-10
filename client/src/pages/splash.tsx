@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import GrokWidget from "@/components/grok-widget";
 import UserMenu from "@/components/user-menu";
 import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
+import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
 export default function Splash() {
   const [location] = useLocation();
@@ -100,61 +101,8 @@ export default function Splash() {
 
             <div className="relative animate-slide-in-right">
               <div className="relative z-10">
-                <div className="card-atomiq p-8 space-y-6 max-w-md ml-auto">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Workflow Progress</span>
-                      <span className="text-xs text-muted-foreground">75% Complete</span>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm">Brand Purpose Defined</span>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                          <span className="text-sm">The AgencyIQ automates posts to your social media accounts (have your login details ready).</span>
-                        </div>
-                        <div className="pl-6 space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span className="text-xs">Facebook</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-                            <span className="text-xs">Instagram</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-black rounded-full"></div>
-                            <span className="text-xs">TikTok</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                            <span className="text-xs">YouTube</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-blue-700 rounded-full"></div>
-                            <span className="text-xs">LinkedIn</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-black rounded-full"></div>
-                            <span className="text-xs">X</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm">Content Generating...</span>
-                      </div>
-                    </div>
-                    <div className="border-t pt-4">
-                      <p className="text-xs text-muted-foreground mb-2">52 posts scheduled this month</p>
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div className="bg-gradient-atomiq h-2 rounded-full w-3/4 transition-all duration-1000"></div>
-                      </div>
-                    </div>
-                  </div>
+                <div className="max-w-md ml-auto">
+                  <OnboardingWizard />
                 </div>
                 
                 {/* Video Feature Description - Centered under card */}
