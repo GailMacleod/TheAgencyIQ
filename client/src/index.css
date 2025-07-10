@@ -14,6 +14,22 @@
   }
 }
 
+@keyframes enhanced-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+
+/* Enhanced button animations with slower, more elegant pulse */
+.animate-enhanced-pulse {
+  animation: enhanced-pulse 3.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @layer base {
   :root {
     /* AtomIQ Brand Colors */

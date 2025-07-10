@@ -177,7 +177,16 @@ export default function Splash() {
             
             <p className="tracking-wider uppercase font-extrabold text-[20px] text-[#3b5cff]">BETA - LIMITED USERS</p>
             <Link href="/subscription">
-              <Button size="lg" className="bg-gradient-atomiq hover:opacity-90 text-white px-8 py-4 text-lg">
+              <Button 
+                size="lg" 
+                className="bg-gradient-atomiq hover:opacity-90 text-white px-8 py-4 text-lg
+                          animate-enhanced-pulse hover:animate-none
+                          transition-all duration-300 ease-in-out
+                          hover:scale-105 hover:shadow-2xl
+                          transform-gpu will-change-transform
+                          hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-400
+                          active:scale-95 active:transition-none"
+              >
                 Choose Your Plan
               </Button>
             </Link>

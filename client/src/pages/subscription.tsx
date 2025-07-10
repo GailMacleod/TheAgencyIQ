@@ -328,11 +328,15 @@ export default function Subscription() {
                     </div>
                   ) : (
                     <Button 
-                      className={`w-full text-lg py-6 ${
-                        plan.popular 
-                          ? 'btn-atomiq-primary'
-                          : 'btn-atomiq-secondary'
-                      }`}
+                      className={`w-full text-lg py-6 
+                        transition-all duration-300 ease-in-out
+                        hover:scale-105 hover:shadow-xl
+                        transform-gpu will-change-transform
+                        active:scale-95 active:transition-none
+                        ${plan.popular 
+                          ? 'btn-atomiq-primary animate-enhanced-pulse hover:animate-none hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-400' 
+                          : 'btn-atomiq-secondary hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
                       onClick={() => handleSelectPlan(plan.id)}
                     >
                       Select {plan.name}
