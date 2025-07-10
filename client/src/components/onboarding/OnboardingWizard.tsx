@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Circle, ArrowRight, ArrowLeft, X, Target, Users, Zap, Calendar, BarChart3, Play } from "lucide-react";
+import { CheckCircle, Circle, ArrowRight, ArrowLeft, X, Target, Users, Zap, Calendar, BarChart3, Play, CreditCard } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface WizardStep {
@@ -64,6 +64,60 @@ export default function OnboardingWizard() {
     },
     {
       id: 2,
+      title: "Choose Your Subscription",
+      description: "Select your plan and start your 30-day content cycle",
+      icon: <CreditCard className="w-6 h-6" />,
+      actionText: "Choose Plan",
+      actionUrl: "/subscription",
+      content: (
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+            <h4 className="font-medium text-red-900 mb-2">⚠️ Important Subscription Rules:</h4>
+            <ul className="text-sm text-red-700 space-y-1">
+              <li>• Posts don't roll over - use all posts within your 30-day cycle</li>
+              <li>• Multiple posting builds brand recognition and trust</li>
+              <li>• Consistent presence keeps you top-of-mind with customers</li>
+            </ul>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <h4 className="font-medium text-purple-900 mb-2">Starter Plan</h4>
+              <p className="text-2xl font-bold text-purple-600">$19.99</p>
+              <ul className="text-sm text-purple-700 space-y-1">
+                <li>• 12 posts per month</li>
+                <li>• 3 platforms</li>
+                <li>• Basic analytics</li>
+              </ul>
+            </div>
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-medium text-blue-900 mb-2">Growth Plan</h4>
+              <p className="text-2xl font-bold text-blue-600">$41.99</p>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• 27 posts per month</li>
+                <li>• 5 platforms</li>
+                <li>• Advanced analytics</li>
+              </ul>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h4 className="font-medium text-green-900 mb-2">Professional Plan</h4>
+              <p className="text-2xl font-bold text-green-600">$99.99</p>
+              <ul className="text-sm text-green-700 space-y-1">
+                <li>• 52 posts per month</li>
+                <li>• 5 platforms</li>
+                <li>• Premium analytics</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      ),
+      tips: [
+        "Use all posts within 30 days - they don't carry over",
+        "Higher plans unlock more content variety",
+        "You can upgrade anytime during your cycle"
+      ]
+    },
+    {
+      id: 3,
       title: "Define Your Brand Purpose",
       description: "Tell us about your business so AI can create perfect content",
       icon: <Target className="w-6 h-6" />,
@@ -106,12 +160,12 @@ export default function OnboardingWizard() {
       ]
     },
     {
-      id: 3,
+      id: 4,
       title: "Connect Social Platforms",
       description: "Link your social media accounts for seamless posting",
       icon: <Users className="w-6 h-6" />,
       actionText: "Connect Platforms",
-      actionUrl: "/platform-connections",
+      actionUrl: "/connect-platforms",
       content: (
         <div className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -147,7 +201,7 @@ export default function OnboardingWizard() {
       ]
     },
     {
-      id: 4,
+      id: 5,
       title: "Generate AI Content",
       description: "Create 52 professional posts tailored to your brand",
       icon: <Zap className="w-6 h-6" />,
@@ -189,57 +243,6 @@ export default function OnboardingWizard() {
       ]
     },
     {
-      id: 5,
-      title: "Schedule & Publish",
-      description: "Set up automated posting for consistent presence",
-      icon: <Calendar className="w-6 h-6" />,
-      actionText: "View Schedule",
-      actionUrl: "/intelligent-schedule",
-      content: (
-        <div className="space-y-4">
-          <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-            <h4 className="font-medium text-red-900 mb-2">⚠️ Important Subscription Rules:</h4>
-            <ul className="text-sm text-red-700 space-y-1">
-              <li>• Posts don't roll over - use all posts within your 30-day cycle</li>
-              <li>• Multiple posting builds brand recognition and trust</li>
-              <li>• Consistent presence keeps you top-of-mind with customers</li>
-            </ul>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-3 flex items-center">
-                <Calendar className="w-4 h-4 mr-2 text-[#3b5cff]" />
-                Smart Scheduling
-              </h4>
-              <ul className="text-sm space-y-2">
-                <li>• Optimal posting times for each platform</li>
-                <li>• Even distribution across the month</li>
-                <li>• Queensland timezone optimization</li>
-                <li>• Weekend and holiday adjustments</li>
-              </ul>
-            </div>
-            <div className="border rounded-lg p-4">
-              <h4 className="font-medium mb-3 flex items-center">
-                <Play className="w-4 h-4 mr-2 text-green-500" />
-                Publishing Options
-              </h4>
-              <ul className="text-sm space-y-2">
-                <li>• Automatic publishing (recommended)</li>
-                <li>• Manual approval for each post</li>
-                <li>• Bulk approval for trusted content</li>
-                <li>• Emergency pause functionality</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      ),
-      tips: [
-        "Use all posts within 30 days - they don't carry over",
-        "Consistent posting builds stronger brand recognition",
-        "Multiple posts per week keeps customers engaged"
-      ]
-    },
-    {
       id: 6,
       title: "Monitor & Optimize",
       description: "Track performance and improve your strategy",
@@ -249,40 +252,36 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           <div className="bg-green-50 border border-green-200 p-6 rounded-lg">
-            <h3 className="font-semibold text-green-900 mb-3">🎉 You're all set!</h3>
-            <p className="text-green-700 mb-4">
-              Your social media automation is now active. Here's what happens next:
-            </p>
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">1</div>
-                <div>
-                  <div className="font-medium">Posts publish automatically</div>
-                  <div className="text-sm text-green-600">Based on your schedule and platform optimization</div>
-                </div>
+            <h3 className="font-semibold mb-3">Analytics Dashboard Features:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-medium text-green-900 mb-2">Performance Metrics:</h4>
+                <ul className="text-sm text-green-700 space-y-1">
+                  <li>• Reach and impressions per post</li>
+                  <li>• Engagement rates by platform</li>
+                  <li>• Click-through rates</li>
+                  <li>• Audience growth tracking</li>
+                  <li>• Best performing content types</li>
+                </ul>
               </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">2</div>
-                <div>
-                  <div className="font-medium">Analytics track performance</div>
-                  <div className="text-sm text-green-600">Monitor reach, engagement, and growth metrics</div>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">3</div>
-                <div>
-                  <div className="font-medium">Monthly content refresh</div>
-                  <div className="text-sm text-green-600">New posts generated based on performance data</div>
-                </div>
+              <div>
+                <h4 className="font-medium text-blue-900 mb-2">Optimization Insights:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• Optimal posting times analysis</li>
+                  <li>• Platform-specific recommendations</li>
+                  <li>• Content theme performance</li>
+                  <li>• Audience demographic insights</li>
+                  <li>• ROI tracking and reporting</li>
+                </ul>
               </div>
             </div>
           </div>
         </div>
       ),
       tips: [
-        "Check analytics weekly for insights",
-        "Adjust strategy based on performance",
-        "Engage with comments and messages manually"
+        "Check analytics weekly to optimize your strategy",
+        "Focus on engagement rates over follower counts",
+        "Use insights to refine your content approach"
       ]
     }
   ];
