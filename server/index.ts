@@ -2,6 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import { createServer } from 'http';
 import path from 'path';
+import { initializeMonitoring, logInfo, logError } from './monitoring';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -15,6 +16,9 @@ function log(message: string, source = "express") {
 }
 
 async function startServer() {
+  // Initialize monitoring
+  initializeMonitoring();
+  
   const app = express();
 
   // Essential middleware
