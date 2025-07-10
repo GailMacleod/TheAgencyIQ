@@ -3030,11 +3030,30 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Get platform connections status
+  // Get platform connections status with OAuth validation
   app.get("/api/platform-connections", requireActiveSubscription, async (req: any, res) => {
     try {
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
-      res.json(connections);
+      
+      // Add OAuth status validation
+      const { OAuthStatusChecker } = await import('./oauth-status-checker');
+      const tokenValidations = await OAuthStatusChecker.validateAllUserTokens(req.session.userId);
+      
+      // Merge connection data with validation results
+      const connectionsWithStatus = connections.map(conn => {
+        const validation = tokenValidations.find(v => v.platform === conn.platform);
+        return {
+          ...conn,
+          oauthStatus: validation || { 
+            isValid: false, 
+            needsRefresh: true, 
+            error: 'Token validation failed',
+            platform: conn.platform 
+          }
+        };
+      });
+
+      res.json(connectionsWithStatus);
     } catch (error: any) {
       console.error('Get connections error:', error);
       res.status(500).json({ message: "Error fetching connections" });
@@ -6663,8 +6682,57 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Get connected platforms for current user
-  app.get("/api/platform-connections", async (req: any, res) => {
+  // OAuth token refresh endpoint
+  app.post("/api/oauth/refresh/:platform", requireActiveSubscription, async (req: any, res) => {
+    try {
+      const { platform } = req.params;
+      const userId = req.session.userId;
+      
+      const { OAuthStatusChecker } = await import('./oauth-status-checker');
+      const connections = await storage.getPlatformConnectionsByUser(userId);
+      const connection = connections.find(c => c.platform === platform);
+      
+      if (!connection) {
+        return res.status(404).json({ error: `No ${platform} connection found` });
+      }
+      
+      // Validate current token status
+      let validation;
+      switch (platform) {
+        case 'facebook':
+          validation = await OAuthStatusChecker.validateFacebookToken(connection.accessToken);
+          break;
+        case 'instagram':
+          validation = await OAuthStatusChecker.validateInstagramToken(connection.accessToken);
+          break;
+        case 'youtube':
+          validation = await OAuthStatusChecker.validateYouTubeToken(connection.accessToken);
+          break;
+        case 'x':
+          validation = await OAuthStatusChecker.validateXToken(connection.accessToken, connection.refreshToken);
+          break;
+        case 'linkedin':
+          validation = await OAuthStatusChecker.validateLinkedInToken(connection.accessToken);
+          break;
+        default:
+          return res.status(400).json({ error: `Unsupported platform: ${platform}` });
+      }
+      
+      res.json({
+        platform,
+        currentStatus: validation,
+        refreshRequired: validation.needsRefresh,
+        message: validation.isValid ? 'Token is valid' : 'Token requires refresh - please reconnect via OAuth'
+      });
+      
+    } catch (error: any) {
+      console.error('OAuth refresh error:', error);
+      res.status(500).json({ error: 'Failed to refresh OAuth token' });
+    }
+  });
+
+  // Get connected platforms for current user (backup endpoint)
+  app.get("/api/platform-connections-backup", async (req: any, res) => {
     try {
       if (!req.session?.userId) {
         return res.json([]); // Return empty array if not authenticated
