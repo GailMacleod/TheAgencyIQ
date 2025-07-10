@@ -340,136 +340,76 @@ export default function OnboardingWizard() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="relative">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <CardTitle className="text-2xl text-[#3b5cff]">
-                Getting Started Guide
-              </CardTitle>
-              <p className="text-muted-foreground mt-1">
-                Step {currentStep + 1} of {wizardSteps.length}
-              </p>
+    <div className="card-atomiq p-8 space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Training Guide</span>
+          <span className="text-xs text-muted-foreground">Step {currentStep + 1} of {wizardSteps.length}</span>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-3 h-3 bg-[#3b5cff] rounded-full flex items-center justify-center">
+              {wizardSteps[currentStep].icon && (
+                <div className="w-2 h-2 bg-white rounded-full"></div>
+              )}
             </div>
-            <div className="flex space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsMinimized(true)}
-                className="text-muted-foreground hover:text-foreground"
-                title="Minimize wizard"
-              >
-                <Circle className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsVisible(false)}
-                className="text-muted-foreground hover:text-foreground"
-                title="Close wizard"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
+            <span className="text-sm font-medium">{wizardSteps[currentStep].title}</span>
           </div>
           
-          <Progress value={progressPercentage} className="mb-4" />
-          
-          {/* Step indicators */}
-          <div className="flex justify-between items-center mb-6 overflow-x-auto">
-            {wizardSteps.map((step, index) => (
-              <button
-                key={step.id}
-                onClick={() => handleStepClick(index)}
-                className={`flex flex-col items-center space-y-1 p-2 rounded-lg transition-colors min-w-0 ${
-                  index === currentStep
-                    ? 'bg-[#3b5cff]/10 text-[#3b5cff]'
-                    : completedSteps.includes(index)
-                    ? 'text-green-600 hover:bg-green-50'
-                    : 'text-muted-foreground hover:bg-muted/50'
-                }`}
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  index === currentStep
-                    ? 'bg-[#3b5cff] text-white'
-                    : completedSteps.includes(index)
-                    ? 'bg-green-500 text-white'
-                    : 'border-2 border-muted-foreground'
-                }`}>
-                  {completedSteps.includes(index) ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    <span className="text-sm font-medium">{index + 1}</span>
-                  )}
-                </div>
-                <span className="text-xs text-center truncate max-w-20">
-                  {step.title.split(' ')[0]}
-                </span>
-              </button>
-            ))}
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          <div className="text-center space-y-2">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#3b5cff] to-purple-500 rounded-full flex items-center justify-center text-white">
-                {wizardSteps[currentStep].icon}
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold">{wizardSteps[currentStep].title}</h2>
-            <p className="text-muted-foreground text-lg">{wizardSteps[currentStep].description}</p>
-          </div>
-
-          <div className="space-y-6">
-            {wizardSteps[currentStep].content}
+          <div className="pl-6 space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {wizardSteps[currentStep].description}
+            </p>
             
-            {/* Tips section */}
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">💡 Pro Tips:</h4>
-              <ul className="space-y-1">
-                {wizardSteps[currentStep].tips.map((tip, index) => (
-                  <li key={index} className="text-sm text-blue-700 flex items-start space-x-2">
-                    <Circle className="w-3 h-3 mt-0.5 fill-current" />
-                    <span>{tip}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="space-y-1">
+              {wizardSteps[currentStep].tips.slice(0, 2).map((tip, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <div className="w-1.5 h-1.5 bg-[#3b5cff] rounded-full"></div>
+                  <span className="text-xs">{tip}</span>
+                </div>
+              ))}
             </div>
           </div>
-
-          {/* Navigation */}
-          <div className="flex justify-between items-center pt-6 border-t">
+        </div>
+        
+        <div className="border-t pt-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Progress</span>
+              <span className="text-xs text-muted-foreground">{Math.round(progressPercentage)}% Complete</span>
+            </div>
+            <div className="w-full bg-gradient-to-r from-blue-200 to-cyan-200 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between mt-4 space-x-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={handlePrevious}
               disabled={currentStep === 0}
-              className="flex items-center space-x-2"
+              className="text-xs"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Previous</span>
+              <ArrowLeft className="w-3 h-3 mr-1" />
+              Prev
             </Button>
-
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="outline"
-                onClick={() => setIsMinimized(true)}
-              >
-                Minimize
-              </Button>
-              
-              <Button
-                onClick={handleAction}
-                className="bg-[#3b5cff] hover:bg-[#2a4bd8] text-white flex items-center space-x-2"
-              >
-                <span>{wizardSteps[currentStep].actionText}</span>
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
+            
+            <Button
+              onClick={handleAction}
+              size="sm"
+              className="bg-[#3b5cff] hover:bg-[#2a4bd8] text-white text-xs"
+            >
+              {wizardSteps[currentStep].actionText}
+              <ArrowRight className="w-3 h-3 ml-1" />
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
