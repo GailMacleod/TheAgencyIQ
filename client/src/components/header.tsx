@@ -12,6 +12,8 @@ import {
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { MobileNavigationMenu } from "./navigation/MobileNavigationMenu";
+import { QuickTooltip } from "./navigation/ContextualTooltip";
 
 interface HeaderProps {
   showBack?: string;
@@ -74,13 +76,16 @@ export default function Header({
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center">
-              <img 
-                src="attached_assets/agency_logo_1749083054761.png" 
-                alt="AiQ" 
-                className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
-              />
-            </Link>
+            <div className="flex items-center space-x-4">
+              <MobileNavigationMenu />
+              <Link href="/" className="flex items-center">
+                <img 
+                  src="attached_assets/agency_logo_1749083054761.png" 
+                  alt="AiQ" 
+                  className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                />
+              </Link>
+            </div>
             
             <div className="flex items-center space-x-2">
               <Button variant="ghost" className="text-gray-700 hover:text-gray-900">
