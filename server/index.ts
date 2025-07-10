@@ -6,9 +6,10 @@ const app = express();
 app.use(express.static('dist'));
 app.use(express.static('public'));
 
-// Handle React routing
+// Serve the main HTML file for all routes (SPA routing)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist/standalone.html'));
+  // Use index.html which now has the proper configuration
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 app.listen(5000, () => {
