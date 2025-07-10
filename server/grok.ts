@@ -657,7 +657,7 @@ Ready to automate this process? Our AI generates platform-specific content based
 - Strategic posting schedule optimization
 - Queensland market insights integration
 
-**Video Generation**: AI Art Director creates viral-worthy animal videos that stop scrolling and drive engagement
+**Video Generation**: AI Art Director creates professional cinematic business videos that stop scrolling and drive engagement
 
 **Business Impact**: 
 - Save 10+ hours weekly on content creation

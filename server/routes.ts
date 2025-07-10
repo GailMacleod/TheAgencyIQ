@@ -7663,7 +7663,7 @@ export function addNotificationEndpoints(app: any) {
     }
   });
 
-  // ART DIRECTOR: Brand-driven cute animal ASMR video generation
+  // ART DIRECTOR: Professional cinematic video generation
   app.post('/api/video/render', async (req: any, res) => {
     try {
       console.log('=== ART DIRECTOR VIDEO CREATION REQUEST ===');
@@ -7705,7 +7705,7 @@ export function addNotificationEndpoints(app: any) {
         });
       }
       
-      // Art Director creates brand-driven cute animal video
+      // Art Director creates professional cinematic video
       const result = await VideoService.renderVideo(prompt, editedText, platform, brandPurpose, postContent);
       
       console.log('🎬 Art Director result:', { 

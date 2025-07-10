@@ -557,7 +557,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
             <li>• <strong>Three options:</strong> Choose from two AI prompts or create your own custom prompt</li>
             <li>• <strong>10-second duration:</strong> All videos are automatically capped at 10 seconds for optimal engagement</li>
             <li>• <strong>Platform optimized:</strong> Videos are automatically formatted for {post.platform}</li>
-            <li>• <strong>Art Director system:</strong> AI creates viral-worthy cute animal videos with business messaging</li>
+            <li>• <strong>Art Director system:</strong> AI creates professional cinematic business videos with strategic messaging</li>
           </ul>
           <div className="mt-2 p-2 bg-purple-50 rounded text-xs text-purple-700">
             <strong>Tip:</strong> Click "Generate Video" to see your options and create scroll-stopping content!
@@ -595,7 +595,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
               <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>🎬 Art Director Video Generation for {post.platform}</DialogTitle>
-                  <p className="text-sm text-gray-600">Create brand-driven cute animal ASMR videos</p>
+                  <p className="text-sm text-gray-600">Create professional cinematic business videos</p>
                 </DialogHeader>
                 
                 <div className="space-y-6">
@@ -635,11 +635,11 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           <p><strong>Remember:</strong> One video per post, 10-second duration, optimized for {post.platform}</p>
                         </div>
                         <div className="mt-2 p-2 bg-purple-100 rounded text-xs text-purple-600">
-                          <strong>Art Director:</strong> Creates viral cute animal videos with your business messaging
+                          <strong>Art Director:</strong> Creates professional cinematic videos with your business messaging
                         </div>
                       </div>
                       
-                      <h3 className="text-sm font-medium">Choose Your ASMR Strategy Style:</h3>
+                      <h3 className="text-sm font-medium">Choose Your Video Style:</h3>
                       {prompts.map((prompt, index) => (
                         <Card
                           key={index}
@@ -652,8 +652,9 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <h4 className="font-medium text-sm mb-1">
-                                  {prompt.type.includes('Strategic') ? '🎧 Strategic ASMR' : 
-                                   prompt.type.includes('Brand-Aligned') ? '💼 Brand ASMR' : '⚡ ASMR Content'}
+                                  {prompt.type.includes('Epic') ? '🎬 Epic Corporate' : 
+                                   prompt.type.includes('Documentary') ? '📹 Business Documentary' : 
+                                   prompt.type.includes('Tech') ? '💻 Tech Showcase' : '⚡ Professional Video'}
                                 </h4>
                                 <p className="text-xs text-gray-600 mb-2">{prompt.style}</p>
                                 <p className="text-xs text-gray-800 line-clamp-3">{prompt.content}</p>

@@ -61,7 +61,7 @@ export function VideoPromptSelector({ prompts, onSelect, isLoading }: VideoPromp
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge variant={prompt.type === 'ASMR' ? 'secondary' : 'default'}>
+                  <Badge variant={prompt.type.includes('Epic') ? 'default' : 'secondary'}>
                     {prompt.type}
                   </Badge>
                   <span className="text-sm text-gray-600">{prompt.duration}</span>
