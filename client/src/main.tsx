@@ -1,7 +1,14 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App";
-import "./index.css";
-import "./index.js";
+import MinimalApp from "./minimal-app";
 
-createRoot(document.getElementById("root")!).render(React.createElement(App));
+// Ensure React is available globally
+(window as any).React = React;
+
+const rootElement = document.getElementById("root");
+if (rootElement) {
+  const root = createRoot(rootElement);
+  root.render(React.createElement(MinimalApp));
+} else {
+  console.error("Root element not found!");
+}
