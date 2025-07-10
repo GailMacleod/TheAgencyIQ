@@ -1598,6 +1598,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OAuth token refresh endpoint for automatic token validation and refresh
+  app.post("/api/oauth/refresh/:platform", async (req, res) => {
+    try {
+      const { platform } = req.params;
+      const userId = req.session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Session required" });
+      }
+      
+      console.log(`[OAUTH-REFRESH] Attempting to refresh ${platform} token for user ${userId}`);
+      
+      // Import OAuthRefreshService and attempt refresh
+      const { OAuthRefreshService } = await import('./oauth-refresh-service');
+      const refreshResult = await OAuthRefreshService.validateAndRefreshConnection(platform, userId);
+      
+      // Get current OAuth status for response
+      const { OAuthStatusChecker } = await import('./oauth-status-checker');
+      let currentStatus;
+      
+      // Get the latest token (refreshed if successful)
+      const connections = await storage.getPlatformConnectionsByUser(userId);
+      const connection = connections.find(c => c.platform === platform);
+      
+      if (connection) {
+        switch (platform) {
+          case 'facebook':
+            currentStatus = await OAuthStatusChecker.validateFacebookToken(connection.accessToken);
+            break;
+          case 'instagram':
+            currentStatus = await OAuthStatusChecker.validateInstagramToken(connection.accessToken);
+            break;
+          case 'youtube':
+            currentStatus = await OAuthStatusChecker.validateYouTubeToken(connection.accessToken);
+            break;
+          case 'x':
+            currentStatus = await OAuthStatusChecker.validateXToken(connection.accessToken, connection.refreshToken);
+            break;
+          case 'linkedin':
+            currentStatus = await OAuthStatusChecker.validateLinkedInToken(connection.accessToken);
+            break;
+          default:
+            currentStatus = { platform, isValid: false, error: 'Unsupported platform' };
+        }
+      } else {
+        currentStatus = { platform, isValid: false, error: 'No connection found' };
+      }
+      
+      res.json({
+        platform,
+        refreshAttempted: true,
+        refreshResult: {
+          success: refreshResult.success,
+          error: refreshResult.error,
+          requiresReauth: refreshResult.requiresReauth
+        },
+        currentStatus,
+        refreshRequired: refreshResult.requiresReauth,
+        message: refreshResult.success 
+          ? `${platform} token refreshed successfully`
+          : `${platform} token refresh failed - ${refreshResult.error}`
+      });
+      
+    } catch (error: any) {
+      console.error(`[OAUTH-REFRESH] Error refreshing ${req.params.platform}:`, error);
+      res.status(500).json({ 
+        error: "OAuth refresh failed", 
+        details: error.message,
+        platform: req.params.platform 
+      });
+    }
+  });
+
   // SMS verification code sending endpoint with Twilio integration
   app.post("/api/send-sms-code", async (req, res) => {
     try {

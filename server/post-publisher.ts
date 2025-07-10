@@ -2,6 +2,7 @@ import { storage } from './storage';
 import axios from 'axios';
 import crypto from 'crypto';
 import { PostRetryService } from './post-retry-service';
+import { OAuthRefreshService } from './oauth-refresh-service';
 
 interface PublishResult {
   success: boolean;
@@ -12,8 +13,26 @@ interface PublishResult {
 
 export class PostPublisher {
   
-  static async publishToFacebook(accessToken: string, content: string): Promise<PublishResult> {
+  static async publishToFacebook(accessToken: string, content: string, userId?: number): Promise<PublishResult> {
     try {
+      // Validate and refresh token if needed
+      if (userId) {
+        console.log(`[OAUTH-REFRESH] Validating Facebook token for user ${userId}`);
+        const refreshResult = await OAuthRefreshService.validateAndRefreshConnection('facebook', userId);
+        
+        if (!refreshResult.success) {
+          console.error(`[OAUTH-REFRESH] Facebook token validation failed:`, refreshResult.error);
+          return {
+            success: false,
+            error: `Facebook authentication failed: ${refreshResult.error}. Please reconnect your Facebook account.`
+          };
+        }
+        
+        // Use refreshed token if available
+        accessToken = refreshResult.newAccessToken || accessToken;
+        console.log(`[OAUTH-REFRESH] Facebook token validated successfully`);
+      }
+      
       // Validate access token format
       if (!accessToken || accessToken.length < 10) {
         throw new Error('Invalid or missing Facebook access token');
@@ -133,8 +152,26 @@ export class PostPublisher {
     }
   }
 
-  static async publishToInstagram(accessToken: string, content: string, imageUrl?: string): Promise<PublishResult> {
+  static async publishToInstagram(accessToken: string, content: string, imageUrl?: string, userId?: number): Promise<PublishResult> {
     try {
+      // Validate and refresh token if needed
+      if (userId) {
+        console.log(`[OAUTH-REFRESH] Validating Instagram token for user ${userId}`);
+        const refreshResult = await OAuthRefreshService.validateAndRefreshConnection('instagram', userId);
+        
+        if (!refreshResult.success) {
+          console.error(`[OAUTH-REFRESH] Instagram token validation failed:`, refreshResult.error);
+          return {
+            success: false,
+            error: `Instagram authentication failed: ${refreshResult.error}. Please reconnect your Instagram account.`
+          };
+        }
+        
+        // Use refreshed token if available
+        accessToken = refreshResult.newAccessToken || accessToken;
+        console.log(`[OAUTH-REFRESH] Instagram token validated successfully`);
+      }
+      
       // Validate access token format
       if (!accessToken || accessToken.length < 10) {
         throw new Error('Invalid or missing Instagram access token');
@@ -211,8 +248,26 @@ export class PostPublisher {
     }
   }
 
-  static async publishToLinkedIn(accessToken: string, content: string): Promise<PublishResult> {
+  static async publishToLinkedIn(accessToken: string, content: string, userId?: number): Promise<PublishResult> {
     try {
+      // Validate and refresh token if needed
+      if (userId) {
+        console.log(`[OAUTH-REFRESH] Validating LinkedIn token for user ${userId}`);
+        const refreshResult = await OAuthRefreshService.validateAndRefreshConnection('linkedin', userId);
+        
+        if (!refreshResult.success) {
+          console.error(`[OAUTH-REFRESH] LinkedIn token validation failed:`, refreshResult.error);
+          return {
+            success: false,
+            error: `LinkedIn authentication failed: ${refreshResult.error}. Please reconnect your LinkedIn account.`
+          };
+        }
+        
+        // Use refreshed token if available
+        accessToken = refreshResult.newAccessToken || accessToken;
+        console.log(`[OAUTH-REFRESH] LinkedIn token validated successfully`);
+      }
+      
       // Validate access token format
       if (!accessToken || accessToken.length < 10) {
         throw new Error('Invalid or missing LinkedIn access token');
@@ -296,8 +351,27 @@ export class PostPublisher {
     }
   }
 
-  static async publishToTwitter(accessToken: string, tokenSecret: string, content: string): Promise<PublishResult> {
+  static async publishToTwitter(accessToken: string, tokenSecret: string, content: string, userId?: number): Promise<PublishResult> {
     try {
+      // Validate and refresh token if needed
+      if (userId) {
+        console.log(`[OAUTH-REFRESH] Validating X/Twitter token for user ${userId}`);
+        const refreshResult = await OAuthRefreshService.validateAndRefreshConnection('x', userId);
+        
+        if (!refreshResult.success) {
+          console.error(`[OAUTH-REFRESH] X/Twitter token validation failed:`, refreshResult.error);
+          return {
+            success: false,
+            error: `X/Twitter authentication failed: ${refreshResult.error}. Please reconnect your X account.`
+          };
+        }
+        
+        // Use refreshed tokens if available
+        accessToken = refreshResult.newAccessToken || accessToken;
+        tokenSecret = refreshResult.newRefreshToken || tokenSecret;
+        console.log(`[OAUTH-REFRESH] X/Twitter token validated successfully`);
+      }
+      
       // Validate access token format
       if (!accessToken || accessToken.length < 10) {
         throw new Error('Invalid or missing Twitter access token');
@@ -367,8 +441,26 @@ export class PostPublisher {
     }
   }
 
-  static async publishToYouTube(accessToken: string, content: string, videoData?: any): Promise<PublishResult> {
+  static async publishToYouTube(accessToken: string, content: string, videoData?: any, userId?: number): Promise<PublishResult> {
     try {
+      // Validate and refresh token if needed
+      if (userId) {
+        console.log(`[OAUTH-REFRESH] Validating YouTube token for user ${userId}`);
+        const refreshResult = await OAuthRefreshService.validateAndRefreshConnection('youtube', userId);
+        
+        if (!refreshResult.success) {
+          console.error(`[OAUTH-REFRESH] YouTube token validation failed:`, refreshResult.error);
+          return {
+            success: false,
+            error: `YouTube authentication failed: ${refreshResult.error}. Please reconnect your YouTube account.`
+          };
+        }
+        
+        // Use refreshed token if available
+        accessToken = refreshResult.newAccessToken || accessToken;
+        console.log(`[OAUTH-REFRESH] YouTube token validated successfully`);
+      }
+      
       // Validate access token format
       if (!accessToken || accessToken.length < 10) {
         throw new Error('Invalid or missing YouTube access token');
@@ -449,19 +541,19 @@ export class PostPublisher {
 
       switch (platform) {
         case 'facebook':
-          publishResult = await this.publishToFacebook(connection.accessToken, post.content);
+          publishResult = await this.publishToFacebook(connection.accessToken, post.content, userId);
           break;
         case 'instagram':
-          publishResult = await this.publishToInstagram(connection.accessToken, post.content);
+          publishResult = await this.publishToInstagram(connection.accessToken, post.content, undefined, userId);
           break;
         case 'linkedin':
-          publishResult = await this.publishToLinkedIn(connection.accessToken, post.content);
+          publishResult = await this.publishToLinkedIn(connection.accessToken, post.content, userId);
           break;
         case 'x':
-          publishResult = await this.publishToTwitter(connection.accessToken, connection.refreshToken || '', post.content);
+          publishResult = await this.publishToTwitter(connection.accessToken, connection.refreshToken || '', post.content, userId);
           break;
         case 'youtube':
-          publishResult = await this.publishToYouTube(connection.accessToken, post.content);
+          publishResult = await this.publishToYouTube(connection.accessToken, post.content, undefined, userId);
           break;
         default:
           publishResult = {
