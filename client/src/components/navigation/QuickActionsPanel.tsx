@@ -57,7 +57,7 @@ export function QuickActionsPanel({ remainingPosts = 0, totalPosts = 52 }: Quick
   ];
 
   return (
-    <Card className="mb-6">
+    <Card className="mb-6" data-guide="quick-actions">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
