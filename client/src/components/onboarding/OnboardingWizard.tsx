@@ -21,6 +21,7 @@ export default function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isVisible, setIsVisible] = useState(true);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [, setLocation] = useLocation();
 
   const wizardSteps: WizardStep[] = [
@@ -298,8 +299,13 @@ export default function OnboardingWizard() {
   const handleAction = () => {
     const step = wizardSteps[currentStep];
     if (step.actionUrl) {
+      // Navigate to the URL but keep wizard open for guidance
       setLocation(step.actionUrl);
-      setIsVisible(false);
+      // Move to next step instead of closing wizard
+      if (currentStep < wizardSteps.length - 1) {
+        setCompletedSteps([...completedSteps, currentStep]);
+        setCurrentStep(currentStep + 1);
+      }
     } else {
       handleNext();
     }
@@ -308,6 +314,20 @@ export default function OnboardingWizard() {
   const progressPercentage = ((currentStep + 1) / wizardSteps.length) * 100;
 
   if (!isVisible) return null;
+
+  // Minimized state - floating button
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button
+          onClick={() => setIsMinimized(false)}
+          className="bg-[#3b5cff] hover:bg-[#2a4bd8] text-white rounded-full w-16 h-16 shadow-lg flex items-center justify-center"
+        >
+          <Target className="w-6 h-6" />
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -322,14 +342,26 @@ export default function OnboardingWizard() {
                 Step {currentStep + 1} of {wizardSteps.length}
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsVisible(false)}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-4 h-4" />
-            </Button>
+            <div className="flex space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMinimized(true)}
+                className="text-muted-foreground hover:text-foreground"
+                title="Minimize wizard"
+              >
+                <Circle className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsVisible(false)}
+                className="text-muted-foreground hover:text-foreground"
+                title="Close wizard"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
           
           <Progress value={progressPercentage} className="mb-4" />
@@ -412,9 +444,9 @@ export default function OnboardingWizard() {
             <div className="flex items-center space-x-3">
               <Button
                 variant="outline"
-                onClick={() => setIsVisible(false)}
+                onClick={() => setIsMinimized(true)}
               >
-                Skip Guide
+                Minimize
               </Button>
               
               <Button
