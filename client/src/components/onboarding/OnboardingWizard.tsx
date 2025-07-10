@@ -118,6 +118,54 @@ export default function OnboardingWizard() {
     },
     {
       id: 3,
+      title: "Generate AI Content",
+      description: "Create your posts automatically after login",
+      icon: <Zap className="w-6 h-6" />,
+      actionText: "Generate Posts",
+      actionUrl: "/intelligent-schedule",
+      content: (
+        <div className="space-y-4">
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
+            <h3 className="font-semibold mb-3">AI Content Generation Features:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-medium text-purple-900 mb-2">Content Types:</h4>
+                <ul className="text-sm text-purple-700 space-y-1">
+                  <li>• Educational posts</li>
+                  <li>• Behind-the-scenes content</li>
+                  <li>• Customer testimonials</li>
+                  <li>• Product showcases</li>
+                  <li>• Industry insights</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium text-blue-900 mb-2">Smart Features:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• Platform-specific optimization</li>
+                  <li>• Queensland events integration</li>
+                  <li>• Optimal posting times</li>
+                  <li>• Hashtag optimization</li>
+                  <li>• Call-to-action suggestions</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+            <h4 className="font-medium text-amber-900 mb-2">⚠️ After Login:</h4>
+            <p className="text-sm text-amber-700">
+              You'll be redirected here to generate your posts. Use the brand purpose page to tell AI about your business first.
+            </p>
+          </div>
+        </div>
+      ),
+      tips: [
+        "This is where you'll land after login",
+        "Generate your posts after completing brand purpose",
+        "Review and edit posts before approving"
+      ]
+    },
+    {
+      id: 4,
       title: "Define Your Brand Purpose",
       description: "Tell us about your business so AI can create perfect content",
       icon: <Target className="w-6 h-6" />,
@@ -125,42 +173,40 @@ export default function OnboardingWizard() {
       actionUrl: "/brand-purpose",
       content: (
         <div className="space-y-4">
-          <div className="border-l-4 border-[#3b5cff] pl-4">
-            <h3 className="font-semibold mb-2">Why this matters:</h3>
-            <p className="text-muted-foreground">
-              Our AI uses your brand purpose to create content that resonates with your specific audience and business goals.
-            </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              { name: "Facebook", color: "#1877F2", description: "Business pages & groups" },
+              { name: "Instagram", color: "#E4405F", description: "Posts & stories" },
+              { name: "LinkedIn", color: "#0A66C2", description: "Professional content" },
+              { name: "YouTube", color: "#FF0000", description: "Video descriptions" },
+              { name: "X (Twitter)", color: "#000000", description: "Quick updates" }
+            ].map((platform) => (
+              <div key={platform.name} className="border rounded-lg p-3 text-center">
+                <div 
+                  className="w-8 h-8 rounded-full mx-auto mb-2"
+                  style={{ backgroundColor: platform.color }}
+                ></div>
+                <div className="text-sm font-medium">{platform.name}</div>
+                <div className="text-xs text-muted-foreground">{platform.description}</div>
+              </div>
+            ))}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">What we'll ask:</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Your business name and industry</li>
-                <li>• Core products or services</li>
-                <li>• Target audience demographics</li>
-                <li>• Business goals and challenges</li>
-              </ul>
-            </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <h4 className="font-medium text-green-900 mb-2">What you'll get:</h4>
-              <ul className="text-sm text-green-700 space-y-1">
-                <li>• Personalized content strategy</li>
-                <li>• Brand-aligned post generation</li>
-                <li>• Audience-specific messaging</li>
-                <li>• Queensland market optimization</li>
-              </ul>
-            </div>
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+            <h4 className="font-medium text-amber-900 mb-2">Security Note:</h4>
+            <p className="text-sm text-amber-700">
+              We use OAuth 2.0 secure authentication. Your passwords are never stored, and you can revoke access anytime.
+            </p>
           </div>
         </div>
       ),
       tips: [
-        "Be specific about your target audience for better results",
-        "Include your unique value proposition",
-        "Mention any local Queensland connections"
+        "Connect at least 3 platforms for maximum reach",
+        "Business accounts work better than personal ones",
+        "You can add more platforms later"
       ]
     },
     {
-      id: 4,
+      id: 5,
       title: "Connect Social Platforms",
       description: "Link your social media accounts for seamless posting",
       icon: <Users className="w-6 h-6" />,
@@ -198,48 +244,6 @@ export default function OnboardingWizard() {
         "Connect at least 3 platforms for maximum reach",
         "Business accounts work better than personal ones",
         "You can add more platforms later"
-      ]
-    },
-    {
-      id: 5,
-      title: "Generate AI Content",
-      description: "Create 52 professional posts tailored to your brand",
-      icon: <Zap className="w-6 h-6" />,
-      actionText: "Generate Content",
-      actionUrl: "/intelligent-schedule",
-      content: (
-        <div className="space-y-4">
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
-            <h3 className="font-semibold mb-3">AI Content Generation Features:</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-medium text-purple-900 mb-2">Content Types:</h4>
-                <ul className="text-sm text-purple-700 space-y-1">
-                  <li>• Educational posts</li>
-                  <li>• Behind-the-scenes content</li>
-                  <li>• Customer testimonials</li>
-                  <li>• Product showcases</li>
-                  <li>• Industry insights</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-medium text-blue-900 mb-2">Smart Features:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Platform-specific optimization</li>
-                  <li>• Queensland events integration</li>
-                  <li>• Optimal posting times</li>
-                  <li>• Hashtag optimization</li>
-                  <li>• Call-to-action suggestions</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
-      tips: [
-        "Review and edit posts before approving",
-        "AI learns from your preferences over time",
-        "You can regenerate individual posts if needed"
       ]
     },
     {
