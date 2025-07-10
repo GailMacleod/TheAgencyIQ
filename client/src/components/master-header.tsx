@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, BarChart3, Calendar, Settings, User } from "lucide-react";
 import { Link } from "wouter";
 import UserMenu from "@/components/user-menu";
-import agencyLogo from "@assets/agency_logo_1749083054761.png";
+// Use direct path to logo in dist folder
+const agencyLogo = "/agency_logo_1749083054761.png";
 
 interface MasterHeaderProps {
   showLogin?: boolean;
