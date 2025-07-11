@@ -177,23 +177,23 @@ export default function OnboardingWizard() {
       route: "/brand-purpose",
       content: (
         <div className="space-y-4">
-          <div className="bg-gradient-to-r from-[#3b5cff]/10 to-purple-500/10 p-6 rounded-lg">
+          <div className="bg-white border border-gray-200 p-6 rounded-lg">
             <h3 className="font-semibold text-lg mb-3">What you'll accomplish:</h3>
             <ul className="space-y-2">
               <li className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-gray-800" />
                 <span>Define your brand purpose and target audience</span>
               </li>
               <li className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-gray-800" />
                 <span>Connect all your social media platforms</span>
               </li>
               <li className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-gray-800" />
                 <span>Generate 52 AI-powered posts for your business</span>
               </li>
               <li className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-gray-800" />
                 <span>Schedule and publish content automatically</span>
               </li>
             </ul>
@@ -216,16 +216,16 @@ export default function OnboardingWizard() {
       route: "/brand-purpose",
       content: (
         <div className="space-y-4">
-          <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-            <h4 className="font-medium text-red-900 mb-2">⚠️ Important Subscription Rules:</h4>
-            <ul className="text-sm text-red-700 space-y-1">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">⚠️ Important Subscription Rules:</h4>
+            <ul className="text-sm text-gray-800 space-y-1">
               <li>Posts don't roll over - use all posts within your 30-day cycle</li>
               <li>Multiple posting builds brand recognition and trust</li>
               <li>Consistent presence keeps you top-of-mind with customers</li>
             </ul>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-purple-50 p-4 rounded-lg">
+            <div className="bg-white p-4 rounded-lg">
               <h4 className="font-medium text-purple-900 mb-2">Starter Plan</h4>
               <p className="text-2xl font-bold text-purple-600">$19.99</p>
               <ul className="text-sm text-purple-700 space-y-1">
@@ -234,19 +234,19 @@ export default function OnboardingWizard() {
                 <li>Basic analytics</li>
               </ul>
             </div>
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">Growth Plan</h4>
-              <p className="text-2xl font-bold text-blue-600">$41.99</p>
-              <ul className="text-sm text-blue-700 space-y-1">
+            <div className="bg-white p-4 rounded-lg">
+              <h4 className="font-medium text-gray-800 mb-2">Growth Plan</h4>
+              <p className="text-2xl font-bold text-gray-800">$41.99</p>
+              <ul className="text-sm text-gray-800 space-y-1">
                 <li>27 posts per month</li>
                 <li>5 platforms</li>
                 <li>Advanced analytics</li>
               </ul>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <h4 className="font-medium text-green-900 mb-2">Professional Plan</h4>
-              <p className="text-2xl font-bold text-green-600">$99.99</p>
-              <ul className="text-sm text-green-700 space-y-1">
+            <div className="bg-white p-4 rounded-lg">
+              <h4 className="font-medium text-gray-800 mb-2">Professional Plan</h4>
+              <p className="text-2xl font-bold text-gray-800">$99.99</p>
+              <ul className="text-sm text-gray-800 space-y-1">
                 <li>52 posts per month</li>
                 <li>5 platforms</li>
                 <li>Premium analytics</li>
@@ -272,22 +272,22 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           {userStatus.userType === 'returning' ? (
-            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-              <h4 className="font-medium text-green-900 mb-2">✅ Returning Subscriber:</h4>
-              <p className="text-sm text-green-700">
+            <div className="bg-white border border-gray-200 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-800 mb-2">✅ Returning Subscriber:</h4>
+              <p className="text-sm text-gray-800">
                 You're already logged in with an active subscription! This is your main content generation hub.
               </p>
             </div>
           ) : (
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">🎯 New User Guide:</h4>
-              <p className="text-sm text-blue-700">
+            <div className="bg-white border border-gray-200 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-800 mb-2">🎯 New User Guide:</h4>
+              <p className="text-sm text-gray-800">
                 After choosing your subscription, you'll access this powerful content generation interface.
               </p>
             </div>
           )}
           
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
+          <div className="bg-white p-6 rounded-lg">
             <h3 className="font-semibold mb-3">🎬 Video Generation Mastery:</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -301,8 +301,8 @@ export default function OnboardingWizard() {
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium text-blue-900 mb-2">Video Workflow:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
+                <h4 className="font-medium text-gray-800 mb-2">Video Workflow:</h4>
+                <ul className="text-sm text-gray-800 space-y-1">
                   <li>1. Click "Generate Video" button</li>
                   <li>2. Choose auto-prompt or edit custom</li>
                   <li>3. Review generated video preview</li>
@@ -313,16 +313,16 @@ export default function OnboardingWizard() {
             </div>
           </div>
           
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-            <h4 className="font-medium text-amber-900 mb-2">⚠️ Connection Status:</h4>
-            <p className="text-sm text-amber-700">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">⚠️ Connection Status:</h4>
+            <p className="text-sm text-gray-800">
               If your platform connections are disconnected, you'll see reconnection prompts. Click "Reconnect Now" to fix OAuth issues.
             </p>
           </div>
           
-          <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">✏️ Edit Post Features:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">✏️ Edit Post Features:</h4>
+            <ul className="text-sm text-gray-800 space-y-1">
               <li>Edit content text for each platform</li>
               <li>Add or remove video content</li>
               <li>Adjust scheduling times</li>
@@ -349,9 +349,9 @@ export default function OnboardingWizard() {
       route: "/intelligent-schedule",
       content: (
         <div className="space-y-4">
-          <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-            <h4 className="font-medium text-red-900 mb-2">🚨 Connection Status Warnings:</h4>
-            <ul className="text-sm text-red-700 space-y-1">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">🚨 Connection Status Warnings:</h4>
+            <ul className="text-sm text-gray-800 space-y-1">
               <li><strong>If disconnected:</strong> You'll see "Reconnect [Platform] Now" messages</li>
               <li><strong>OAuth errors:</strong> Click reconnect buttons immediately</li>
               <li><strong>Publishing failures:</strong> Check connection status first</li>
@@ -378,9 +378,9 @@ export default function OnboardingWizard() {
             ))}
           </div>
           
-          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-            <h4 className="font-medium text-green-900 mb-2">✅ Connection Management:</h4>
-            <ul className="text-sm text-green-700 space-y-1">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">✅ Connection Management:</h4>
+            <ul className="text-sm text-gray-800 space-y-1">
               <li>Green status = Connected and ready</li>
               <li>Red status = Disconnected, needs reconnection</li>
               <li>Click "Connect" or "Reconnect" buttons</li>
@@ -389,9 +389,9 @@ export default function OnboardingWizard() {
             </ul>
           </div>
           
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-            <h4 className="font-medium text-amber-900 mb-2">🔒 Security Note:</h4>
-            <p className="text-sm text-amber-700">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">🔒 Security Note:</h4>
+            <p className="text-sm text-gray-800">
               We use OAuth 2.0 secure authentication. Your passwords are never stored, and you can revoke access anytime.
             </p>
           </div>
@@ -414,22 +414,22 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           {userStatus.userType === 'returning' ? (
-            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-              <h4 className="font-medium text-green-900 mb-2">✅ Returning Subscriber:</h4>
-              <p className="text-sm text-green-700">
+            <div className="bg-white border border-gray-200 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-800 mb-2">✅ Returning Subscriber:</h4>
+              <p className="text-sm text-gray-800">
                 You're already logged in with an active subscription! This is your main content generation hub.
               </p>
             </div>
           ) : (
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">🎯 New User Guide:</h4>
-              <p className="text-sm text-blue-700">
+            <div className="bg-white border border-gray-200 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-800 mb-2">🎯 New User Guide:</h4>
+              <p className="text-sm text-gray-800">
                 After connecting your platforms, you'll access this powerful content generation interface.
               </p>
             </div>
           )}
           
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
+          <div className="bg-white p-6 rounded-lg">
             <h3 className="font-semibold mb-3">🎬 Video Generation Mastery:</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -443,8 +443,8 @@ export default function OnboardingWizard() {
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium text-blue-900 mb-2">Video Workflow:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
+                <h4 className="font-medium text-gray-800 mb-2">Video Workflow:</h4>
+                <ul className="text-sm text-gray-800 space-y-1">
                   <li>1. Click "Generate Video" button</li>
                   <li>2. Choose auto-prompt or edit custom</li>
                   <li>3. Review generated video preview</li>
@@ -455,9 +455,9 @@ export default function OnboardingWizard() {
             </div>
           </div>
           
-          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-            <h4 className="font-medium text-green-900 mb-2">🤖 AI Content Generation:</h4>
-            <ul className="text-sm text-green-700 space-y-1">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">🤖 AI Content Generation:</h4>
+            <ul className="text-sm text-gray-800 space-y-1">
               <li>Generate 52 posts automatically</li>
               <li>Queensland market focused content</li>
               <li>Platform-specific optimization</li>
@@ -483,18 +483,18 @@ export default function OnboardingWizard() {
       route: "/analytics",
       content: (
         <div className="space-y-4">
-          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-            <h4 className="font-medium text-green-900 mb-2">📊 Your Analytics Dashboard:</h4>
-            <p className="text-sm text-green-700">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">📊 Your Analytics Dashboard:</h4>
+            <p className="text-sm text-gray-800">
               Monitor how your 128 posts are performing across all platforms and get insights to improve engagement.
             </p>
           </div>
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
+          <div className="bg-white p-6 rounded-lg">
             <h3 className="font-semibold mb-3">Analytics Features:</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h4 className="font-medium text-blue-900 mb-2">Performance Metrics:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
+                <h4 className="font-medium text-gray-800 mb-2">Performance Metrics:</h4>
+                <ul className="text-sm text-gray-800 space-y-1">
                   <li>Reach and impressions per post</li>
                   <li>Engagement rates by platform</li>
                   <li>Click-through rates</li>
@@ -504,7 +504,7 @@ export default function OnboardingWizard() {
               </div>
               <div>
                 <h4 className="font-medium text-purple-900 mb-2">Optimization Insights:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
+                <ul className="text-sm text-gray-800 space-y-1">
                   <li>Optimal posting times analysis</li>
                   <li>Platform-specific recommendations</li>
                   <li>Content theme performance</li>
@@ -538,19 +538,19 @@ export default function OnboardingWizard() {
           <h3 className="font-semibold text-lg mb-3">🚀 What you'll unlock:</h3>
           <ul className="space-y-2">
             <li className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
+              <CheckCircle className="w-4 h-4 text-gray-800" />
               <span>52 AI-generated posts per month</span>
             </li>
             <li className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
+              <CheckCircle className="w-4 h-4 text-gray-800" />
               <span>Automatic publishing to all 5 platforms</span>
             </li>
             <li className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
+              <CheckCircle className="w-4 h-4 text-gray-800" />
               <span>Professional video content generation</span>
             </li>
             <li className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
+              <CheckCircle className="w-4 h-4 text-gray-800" />
               <span>Advanced analytics and insights</span>
             </li>
           </ul>
@@ -711,18 +711,13 @@ export default function OnboardingWizard() {
   const isSplashPage = location === '/';
   
   return (
-    <div className="border border-gray-200/50 rounded-2xl p-8 space-y-6">
+    <div className="bg-white border border-gray-200 rounded-lg p-8 space-y-6">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             {isDemoMode && (
-              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+              <Badge variant="outline" className="text-xs bg-white text-gray-800 border-gray-200">
                 Demo Mode
-              </Badge>
-            )}
-            {userStatus.userType === 'returning' && (
-              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                Returning Subscriber
               </Badge>
             )}
           </div>
@@ -808,7 +803,7 @@ export default function OnboardingWizard() {
                   size="sm"
                   className="bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] text-white text-xs font-medium shadow-lg"
                 >
-                  {currentStep === wizardSteps.length - 1 ? 'Subscribe Now' : 'Next'}
+                  {currentStep === wizardSteps.length - 1 ? 'Complete Demo' : 'Next'}
                   <ArrowRight className="w-3 h-3 ml-1" />
                 </Button>
               ) : (
