@@ -219,9 +219,9 @@ export default function OnboardingWizard() {
           <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
             <h4 className="font-medium text-red-900 mb-2">⚠️ Important Subscription Rules:</h4>
             <ul className="text-sm text-red-700 space-y-1">
-              <li>• Posts don't roll over - use all posts within your 30-day cycle</li>
-              <li>• Multiple posting builds brand recognition and trust</li>
-              <li>• Consistent presence keeps you top-of-mind with customers</li>
+              <li>Posts don't roll over - use all posts within your 30-day cycle</li>
+              <li>Multiple posting builds brand recognition and trust</li>
+              <li>Consistent presence keeps you top-of-mind with customers</li>
             </ul>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -229,27 +229,27 @@ export default function OnboardingWizard() {
               <h4 className="font-medium text-purple-900 mb-2">Starter Plan</h4>
               <p className="text-2xl font-bold text-purple-600">$19.99</p>
               <ul className="text-sm text-purple-700 space-y-1">
-                <li>• 12 posts per month</li>
-                <li>• 3 platforms</li>
-                <li>• Basic analytics</li>
+                <li>12 posts per month</li>
+                <li>3 platforms</li>
+                <li>Basic analytics</li>
               </ul>
             </div>
             <div className="bg-blue-50 p-4 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-2">Growth Plan</h4>
               <p className="text-2xl font-bold text-blue-600">$41.99</p>
               <ul className="text-sm text-blue-700 space-y-1">
-                <li>• 27 posts per month</li>
-                <li>• 5 platforms</li>
-                <li>• Advanced analytics</li>
+                <li>27 posts per month</li>
+                <li>5 platforms</li>
+                <li>Advanced analytics</li>
               </ul>
             </div>
             <div className="bg-green-50 p-4 rounded-lg">
               <h4 className="font-medium text-green-900 mb-2">Professional Plan</h4>
               <p className="text-2xl font-bold text-green-600">$99.99</p>
               <ul className="text-sm text-green-700 space-y-1">
-                <li>• 52 posts per month</li>
-                <li>• 5 platforms</li>
-                <li>• Premium analytics</li>
+                <li>52 posts per month</li>
+                <li>5 platforms</li>
+                <li>Premium analytics</li>
               </ul>
             </div>
           </div>
@@ -293,21 +293,21 @@ export default function OnboardingWizard() {
               <div>
                 <h4 className="font-medium text-purple-900 mb-2">Video Rules:</h4>
                 <ul className="text-sm text-purple-700 space-y-1">
-                  <li>• <strong>One video per post maximum</strong></li>
-                  <li>• Use auto-generated prompts or edit your own</li>
-                  <li>• Approve video to embed in post</li>
-                  <li>• Delete video if not satisfied</li>
-                  <li>• Can approve post without video</li>
+                  <li><strong>One video per post maximum</strong></li>
+                  <li>Use auto-generated prompts or edit your own</li>
+                  <li>Approve video to embed in post</li>
+                  <li>Delete video if not satisfied</li>
+                  <li>Can approve post without video</li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-medium text-blue-900 mb-2">Video Workflow:</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• 1. Click "Generate Video" button</li>
-                  <li>• 2. Choose auto-prompt or edit custom</li>
-                  <li>• 3. Review generated video preview</li>
-                  <li>• 4. Approve to embed or delete</li>
-                  <li>• 5. Edit post content if needed</li>
+                  <li>1. Click "Generate Video" button</li>
+                  <li>2. Choose auto-prompt or edit custom</li>
+                  <li>3. Review generated video preview</li>
+                  <li>4. Approve to embed or delete</li>
+                  <li>5. Edit post content if needed</li>
                 </ul>
               </div>
             </div>
@@ -323,11 +323,11 @@ export default function OnboardingWizard() {
           <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">✏️ Edit Post Features:</h4>
             <ul className="text-sm text-blue-700 space-y-1">
-              <li>• Edit content text for each platform</li>
-              <li>• Add or remove video content</li>
-              <li>• Adjust scheduling times</li>
-              <li>• Preview before approving</li>
-              <li>• Approve posts individually</li>
+              <li>Edit content text for each platform</li>
+              <li>Add or remove video content</li>
+              <li>Adjust scheduling times</li>
+              <li>Preview before approving</li>
+              <li>Approve posts individually</li>
             </ul>
           </div>
         </div>
@@ -352,10 +352,10 @@ export default function OnboardingWizard() {
           <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
             <h4 className="font-medium text-red-900 mb-2">🚨 Connection Status Warnings:</h4>
             <ul className="text-sm text-red-700 space-y-1">
-              <li>• <strong>If disconnected:</strong> You'll see "Reconnect [Platform] Now" messages</li>
-              <li>• <strong>OAuth errors:</strong> Click reconnect buttons immediately</li>
-              <li>• <strong>Publishing failures:</strong> Check connection status first</li>
-              <li>• <strong>Token expiry:</strong> Platforms disconnect after 60 days</li>
+              <li><strong>If disconnected:</strong> You'll see "Reconnect [Platform] Now" messages</li>
+              <li><strong>OAuth errors:</strong> Click reconnect buttons immediately</li>
+              <li><strong>Publishing failures:</strong> Check connection status first</li>
+              <li><strong>Token expiry:</strong> Platforms disconnect after 60 days</li>
             </ul>
           </div>
           
@@ -381,11 +381,11 @@ export default function OnboardingWizard() {
           <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
             <h4 className="font-medium text-green-900 mb-2">✅ Connection Management:</h4>
             <ul className="text-sm text-green-700 space-y-1">
-              <li>• Green status = Connected and ready</li>
-              <li>• Red status = Disconnected, needs reconnection</li>
-              <li>• Click "Connect" or "Reconnect" buttons</li>
-              <li>• Test connections before publishing</li>
-              <li>• Check this page if posts fail to publish</li>
+              <li>Green status = Connected and ready</li>
+              <li>Red status = Disconnected, needs reconnection</li>
+              <li>Click "Connect" or "Reconnect" buttons</li>
+              <li>Test connections before publishing</li>
+              <li>Check this page if posts fail to publish</li>
             </ul>
           </div>
           
@@ -435,21 +435,21 @@ export default function OnboardingWizard() {
               <div>
                 <h4 className="font-medium text-purple-900 mb-2">Video Rules:</h4>
                 <ul className="text-sm text-purple-700 space-y-1">
-                  <li>• <strong>One video per post maximum</strong></li>
-                  <li>• Use auto-generated prompts or edit your own</li>
-                  <li>• Approve video to embed in post</li>
-                  <li>• Delete video if not satisfied</li>
-                  <li>• Can approve post without video</li>
+                  <li><strong>One video per post maximum</strong></li>
+                  <li>Use auto-generated prompts or edit your own</li>
+                  <li>Approve video to embed in post</li>
+                  <li>Delete video if not satisfied</li>
+                  <li>Can approve post without video</li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-medium text-blue-900 mb-2">Video Workflow:</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• 1. Click "Generate Video" button</li>
-                  <li>• 2. Choose auto-prompt or edit custom</li>
-                  <li>• 3. Review generated video preview</li>
-                  <li>• 4. Approve to embed or delete</li>
-                  <li>• 5. Edit post content if needed</li>
+                  <li>1. Click "Generate Video" button</li>
+                  <li>2. Choose auto-prompt or edit custom</li>
+                  <li>3. Review generated video preview</li>
+                  <li>4. Approve to embed or delete</li>
+                  <li>5. Edit post content if needed</li>
                 </ul>
               </div>
             </div>
@@ -458,11 +458,11 @@ export default function OnboardingWizard() {
           <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
             <h4 className="font-medium text-green-900 mb-2">🤖 AI Content Generation:</h4>
             <ul className="text-sm text-green-700 space-y-1">
-              <li>• Generate 52 posts automatically</li>
-              <li>• Queensland market focused content</li>
-              <li>• Platform-specific optimization</li>
-              <li>• Brand voice consistency</li>
-              <li>• Event-driven scheduling</li>
+              <li>Generate 52 posts automatically</li>
+              <li>Queensland market focused content</li>
+              <li>Platform-specific optimization</li>
+              <li>Brand voice consistency</li>
+              <li>Event-driven scheduling</li>
             </ul>
           </div>
         </div>
@@ -495,21 +495,21 @@ export default function OnboardingWizard() {
               <div>
                 <h4 className="font-medium text-blue-900 mb-2">Performance Metrics:</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Reach and impressions per post</li>
-                  <li>• Engagement rates by platform</li>
-                  <li>• Click-through rates</li>
-                  <li>• Audience growth tracking</li>
-                  <li>• Best performing content types</li>
+                  <li>Reach and impressions per post</li>
+                  <li>Engagement rates by platform</li>
+                  <li>Click-through rates</li>
+                  <li>Audience growth tracking</li>
+                  <li>Best performing content types</li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-medium text-purple-900 mb-2">Optimization Insights:</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Optimal posting times analysis</li>
-                  <li>• Platform-specific recommendations</li>
-                  <li>• Content theme performance</li>
-                  <li>• Audience demographic insights</li>
-                  <li>• ROI tracking and reporting</li>
+                  <li>Optimal posting times analysis</li>
+                  <li>Platform-specific recommendations</li>
+                  <li>Content theme performance</li>
+                  <li>Audience demographic insights</li>
+                  <li>ROI tracking and reporting</li>
                 </ul>
               </div>
             </div>
@@ -711,16 +711,10 @@ export default function OnboardingWizard() {
   const isSplashPage = location === '/';
   
   return (
-    <div className={`backdrop-blur-md border border-gray-200/50 rounded-2xl shadow-2xl p-8 space-y-6 ${
-      isSplashPage ? 'bg-white/60' : 'bg-white/95'
-    }`}>
+    <div className="border border-gray-200/50 rounded-2xl p-8 space-y-6">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs">AIQ</span>
-            </div>
-            <span className="text-sm font-medium text-gray-800">Training Guide</span>
             {isDemoMode && (
               <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                 Demo Mode
@@ -735,30 +729,20 @@ export default function OnboardingWizard() {
           <span className="text-xs text-gray-500">Step {currentStep + 1} of {wizardSteps.length}</span>
         </div>
         
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] rounded-full flex items-center justify-center">
-              <div className="text-white text-sm">
-                {wizardSteps[currentStep].icon}
-              </div>
-            </div>
-            <div className="flex-1">
-              <span className="text-sm font-semibold text-gray-800">{wizardSteps[currentStep].title}</span>
-              <p className="text-xs text-gray-600 mt-1">
-                {wizardSteps[currentStep].description}
-              </p>
-            </div>
+        <div className="text-center space-y-3">
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-gray-800">{wizardSteps[currentStep].title}</h3>
+            <p className="text-sm text-gray-600">
+              {wizardSteps[currentStep].description}
+            </p>
           </div>
           
-          <div className="pl-11 space-y-2">
-            <div className="space-y-1">
-              {wizardSteps[currentStep].tips.slice(0, 2).map((tip, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] rounded-full"></div>
-                  <span className="text-xs text-gray-600">{tip}</span>
-                </div>
-              ))}
-            </div>
+          <div className="space-y-2">
+            {wizardSteps[currentStep].tips.slice(0, 2).map((tip, index) => (
+              <div key={index} className="text-sm text-gray-600">
+                {tip}
+              </div>
+            ))}
           </div>
         </div>
         
