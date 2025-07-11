@@ -1,7 +1,7 @@
 import passport from 'passport';
 // import { Strategy as FacebookStrategy } from 'passport-facebook'; // DISABLED - using custom implementation
 import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
-import { Strategy as TwitterStrategy } from 'passport-twitter';
+// import { Strategy as TwitterStrategy } from 'passport-twitter'; // Using OAuth 2.0 instead
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from './storage';
 
@@ -169,52 +169,8 @@ passport.use(new LinkedInStrategy({
     : done(new Error(result.error));
 }));
 
-// X (Twitter) OAuth Strategy - WORKING OAuth 1.0a Implementation
-passport.use(new TwitterStrategy({
-  consumerKey: process.env.X_CONSUMER_KEY!,
-  consumerSecret: process.env.X_CONSUMER_SECRET!,
-  callbackURL: `${OAUTH_REDIRECT_BASE}/api/auth/x/callback`,
-  userProfileURL: "https://api.twitter.com/1.1/account/verify_credentials.json?include_email=true",
-  passReqToCallback: true
-}, async (req: any, token: string, tokenSecret: string, profile: any, done: any) => {
-  try {
-    console.log('X OAuth 1.0a strategy executing for user:', profile.username);
-    
-    const userId = req.session?.xUserId;
-    if (!userId) {
-      return done(new Error('No user session found'));
-    }
-
-    // Remove existing X connections for this user
-    const existingConnections = await storage.getPlatformConnectionsByUser(userId);
-    const existingX = existingConnections.find(conn => conn.platform === 'x');
-    if (existingX) {
-      await storage.deletePlatformConnection(existingX.id);
-    }
-
-    // Create new X connection with OAuth 1.0a tokens
-    const connectionData = {
-      userId: userId,
-      platform: 'x',
-      platformUserId: profile.id,
-      platformUsername: profile.username,
-      accessToken: token,
-      tokenSecret: tokenSecret,
-      refreshToken: null,
-      expiresAt: null, // OAuth 1.0a tokens don't expire
-      isActive: true
-    };
-
-    await storage.createPlatformConnection(connectionData);
-    
-    console.log(`✅ X OAuth 1.0a connection created for user ${userId}: @${profile.username}`);
-    
-    return done(null, { success: true, platform: 'x', username: profile.username });
-  } catch (error) {
-    console.error('X OAuth 1.0a strategy error:', error);
-    return done(error);
-  }
-}));
+// X (Twitter) OAuth Strategy - Custom OAuth 2.0 Implementation
+// Note: No official passport-x-oauth2 strategy exists, so we'll handle OAuth 2.0 manually
 
 // YouTube (Google) OAuth Strategy with unified callback handling
 passport.use('youtube', new GoogleStrategy({

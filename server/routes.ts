@@ -6801,7 +6801,7 @@ Continue building your Value Proposition Canvas systematically.`;
 
   // LinkedIn refresh function removed - using direct connections
 
-  // X OAuth 1.0a - Working implementation  
+  // X OAuth 2.0 - Manual implementation
   app.get("/api/auth/x", async (req, res) => {
     try {
       const userId = req.session?.userId;
@@ -6809,68 +6809,35 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.redirect('/connect-platforms?error=no_session');
       }
 
-      console.log('🔗 X OAuth 1.0a initiation for user:', userId);
+      console.log('🔗 X OAuth 2.0 initiation for user:', userId);
       
       // Store userId in session for callback
       req.session.xUserId = userId;
       await new Promise((resolve) => req.session.save(() => resolve(void 0)));
 
-      // Use passport authenticate for X OAuth 1.0a
-      passport.authenticate('twitter')(req, res);
+      // X OAuth 2.0 authorization URL
+      const clientId = process.env.X_OAUTH_CLIENT_ID!;
+      const redirectUri = encodeURIComponent(`${OAUTH_REDIRECT_BASE}/api/auth/x/callback`);
+      const scope = encodeURIComponent('tweet.read tweet.write users.read offline.access');
+      const state = 'x_oauth_state_' + userId;
+      
+      const authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}&code_challenge=challenge&code_challenge_method=plain`;
+      
+      res.redirect(authUrl);
     } catch (error) {
-      console.error('X OAuth 1.0a initiation failed:', error);
+      console.error('X OAuth 2.0 initiation failed:', error);
       res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
     }
   });
 
-  // X OAuth 1.0a Callback - Fixed popup communication
-  app.get("/api/auth/x/callback", 
-    passport.authenticate('twitter', { session: false }), 
-    async (req, res) => {
-      try {
-        const userId = req.session?.xUserId;
-        if (!userId) {
-          console.error('X OAuth: No userId in session');
-          return res.send(`
-            <script>
-              if (window.opener) {
-                window.opener.postMessage("oauth_failure", "*");
-              }
-              window.close();
-            </script>
-          `);
-        }
-
-        // Get the authentication result from passport
-        const result = req.user as any;
-        if (!result || !result.success) {
-          console.error('X OAuth 1.0a failed:', result?.error || 'Unknown error');
-          return res.send(`
-            <script>
-              if (window.opener) {
-                window.opener.postMessage("oauth_failure", "*");
-              }
-              window.close();
-            </script>
-          `);
-        }
-
-        console.log(`✅ X OAuth 1.0a connection successful for user ${userId}:`, result.platform);
-        
-        // Clean up session
-        delete req.session.xUserId;
-        
-        res.send(`
-          <script>
-            if (window.opener) {
-              window.opener.postMessage("oauth_success", "*");
-            }
-            window.close();
-          </script>
-        `);
-      } catch (error) {
-        console.error('X OAuth 1.0a callback error:', error);
-        res.send(`
+  // X OAuth 2.0 Callback - Manual implementation
+  app.get("/api/auth/x/callback", async (req, res) => {
+    try {
+      const { code, state, error } = req.query;
+      
+      if (error) {
+        console.error('X OAuth 2.0 authorization error:', error);
+        return res.send(`
           <script>
             if (window.opener) {
               window.opener.postMessage("oauth_failure", "*");
@@ -6879,8 +6846,117 @@ Continue building your Value Proposition Canvas systematically.`;
           </script>
         `);
       }
+
+      const userId = req.session?.xUserId;
+      if (!userId) {
+        console.error('X OAuth: No userId in session');
+        return res.send(`
+          <script>
+            if (window.opener) {
+              window.opener.postMessage("oauth_failure", "*");
+            }
+            window.close();
+          </script>
+        `);
+      }
+
+      // Exchange code for access token
+      const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${Buffer.from(`${process.env.X_OAUTH_CLIENT_ID}:${process.env.X_OAUTH_CLIENT_SECRET}`).toString('base64')}`
+        },
+        body: new URLSearchParams({
+          code: code as string,
+          grant_type: 'authorization_code',
+          redirect_uri: `${OAUTH_REDIRECT_BASE}/api/auth/x/callback`,
+          code_verifier: 'challenge'
+        })
+      });
+
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenData.access_token) {
+        console.error('X OAuth 2.0 token exchange failed:', tokenData);
+        return res.send(`
+          <script>
+            if (window.opener) {
+              window.opener.postMessage("oauth_failure", "*");
+            }
+            window.close();
+          </script>
+        `);
+      }
+
+      // Get user profile
+      const userResponse = await fetch('https://api.twitter.com/2/users/me', {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`
+        }
+      });
+
+      const userData = await userResponse.json();
+      
+      if (!userData.data) {
+        console.error('X OAuth 2.0 user profile fetch failed:', userData);
+        return res.send(`
+          <script>
+            if (window.opener) {
+              window.opener.postMessage("oauth_failure", "*");
+            }
+            window.close();
+          </script>
+        `);
+      }
+
+      // Remove existing X connections for this user
+      const existingConnections = await storage.getPlatformConnectionsByUser(userId);
+      const existingX = existingConnections.find(conn => conn.platform === 'x');
+      if (existingX) {
+        await storage.deletePlatformConnection(existingX.id);
+      }
+
+      // Create new X connection
+      const connectionData = {
+        userId: userId,
+        platform: 'x',
+        platformUserId: userData.data.id,
+        platformUsername: userData.data.username,
+        accessToken: tokenData.access_token,
+        tokenSecret: null,
+        refreshToken: tokenData.refresh_token || null,
+        expiresAt: tokenData.expires_in ? new Date(Date.now() + (tokenData.expires_in * 1000)) : null,
+        isActive: true
+      };
+
+      await storage.createPlatformConnection(connectionData);
+      
+      console.log(`✅ X OAuth 2.0 connection created for user ${userId}: @${userData.data.username}`);
+      
+      // Clean up session
+      delete req.session.xUserId;
+      
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage("oauth_success", "*");
+          }
+          window.close();
+        </script>
+      `);
+    } catch (error) {
+      console.error('X OAuth 2.0 callback error:', error);
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage("oauth_failure", "*");
+          }
+          window.close();
+        </script>
+      `);
     }
-  );
+  });
 
   // Simple platform connection with username/password
   app.post("/api/connect-platform", requireAuth, async (req: any, res) => {
