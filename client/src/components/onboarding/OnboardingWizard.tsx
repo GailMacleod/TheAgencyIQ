@@ -163,23 +163,29 @@ export default function OnboardingWizard() {
     {
       id: 3,
       title: "Generate AI Content",
-      description: "Create your posts automatically after login",
+      description: "Create your posts automatically (returning subscribers start here)",
       icon: <Zap className="w-6 h-6" />,
       actionText: "Generate Posts",
       actionUrl: "/intelligent-schedule",
       content: (
         <div className="space-y-4">
+          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+            <h4 className="font-medium text-green-900 mb-2">✅ Returning Subscribers:</h4>
+            <p className="text-sm text-green-700">
+              You're already logged in with an active subscription! This is your main content generation hub.
+            </p>
+          </div>
           <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
-            <h3 className="font-semibold mb-3">AI Content Generation Features:</h3>
+            <h3 className="font-semibold mb-3">What You Can Do Here:</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h4 className="font-medium text-purple-900 mb-2">Content Types:</h4>
+                <h4 className="font-medium text-purple-900 mb-2">Content Management:</h4>
                 <ul className="text-sm text-purple-700 space-y-1">
-                  <li>• Educational posts</li>
-                  <li>• Behind-the-scenes content</li>
-                  <li>• Customer testimonials</li>
-                  <li>• Product showcases</li>
-                  <li>• Industry insights</li>
+                  <li>• View your existing 128 posts</li>
+                  <li>• Edit and approve posts</li>
+                  <li>• Generate new content</li>
+                  <li>• Schedule posts for optimal times</li>
+                  <li>• Add videos to posts</li>
                 </ul>
               </div>
               <div>
@@ -187,66 +193,71 @@ export default function OnboardingWizard() {
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• Platform-specific optimization</li>
                   <li>• Queensland events integration</li>
-                  <li>• Optimal posting times</li>
-                  <li>• Hashtag optimization</li>
-                  <li>• Call-to-action suggestions</li>
+                  <li>• AI-powered content suggestions</li>
+                  <li>• Calendar and list views</li>
+                  <li>• Professional plan (52 posts/month)</li>
                 </ul>
               </div>
             </div>
           </div>
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-            <h4 className="font-medium text-amber-900 mb-2">⚠️ After Login:</h4>
-            <p className="text-sm text-amber-700">
-              You'll be redirected here to generate your posts. Use the brand purpose page to tell AI about your business first.
-            </p>
+          <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">💡 Pro Tips:</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• Use "Generate AI-Powered Schedule" for fresh content</li>
+              <li>• Edit posts before approving to match your voice</li>
+              <li>• Add videos to increase engagement</li>
+              <li>• Check analytics to see what's working</li>
+            </ul>
           </div>
         </div>
       ),
       tips: [
-        "This is where you'll land after login",
-        "Generate your posts after completing brand purpose",
-        "Review and edit posts before approving"
+        "This is your main content hub - you're already here!",
+        "Existing posts show you're set up and ready",
+        "Use the video generation feature for more engaging content"
       ]
     },
     {
       id: 4,
       title: "Define Your Brand Purpose",
-      description: "Tell us about your business so AI can create perfect content",
+      description: "Fine-tune your AI content by updating your brand purpose",
       icon: <Target className="w-6 h-6" />,
-      actionText: "Define Brand Purpose",
+      actionText: "Update Brand Purpose",
       actionUrl: "/brand-purpose",
       content: (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {[
-              { name: "Facebook", color: "#1877F2", description: "Business pages & groups" },
-              { name: "Instagram", color: "#E4405F", description: "Posts & stories" },
-              { name: "LinkedIn", color: "#0A66C2", description: "Professional content" },
-              { name: "YouTube", color: "#FF0000", description: "Video descriptions" },
-              { name: "X (Twitter)", color: "#000000", description: "Quick updates" }
-            ].map((platform) => (
-              <div key={platform.name} className="border rounded-lg p-3 text-center">
-                <div 
-                  className="w-8 h-8 rounded-full mx-auto mb-2"
-                  style={{ backgroundColor: platform.color }}
-                ></div>
-                <div className="text-sm font-medium">{platform.name}</div>
-                <div className="text-xs text-muted-foreground">{platform.description}</div>
-              </div>
-            ))}
+          <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">📝 Brand Purpose helps AI create better content:</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• Your business name and what you do</li>
+              <li>• Who your target audience is</li>
+              <li>• What problems you solve for customers</li>
+              <li>• Your unique value proposition</li>
+              <li>• Your business goals and motivations</li>
+            </ul>
           </div>
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-            <h4 className="font-medium text-amber-900 mb-2">Security Note:</h4>
-            <p className="text-sm text-amber-700">
-              We use OAuth 2.0 secure authentication. Your passwords are never stored, and you can revoke access anytime.
+          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+            <h4 className="font-medium text-green-900 mb-2">✅ AI Content Benefits:</h4>
+            <ul className="text-sm text-green-700 space-y-1">
+              <li>• Content matches your business voice</li>
+              <li>• Posts target your specific audience</li>
+              <li>• Mentions your products/services naturally</li>
+              <li>• Queensland market optimization</li>
+              <li>• Brand consistency across all platforms</li>
+            </ul>
+          </div>
+          <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
+            <h4 className="font-medium text-purple-900 mb-2">💡 Pro Tip:</h4>
+            <p className="text-sm text-purple-700">
+              The more detailed your brand purpose, the better your AI-generated content will be. Take time to fill it out completely!
             </p>
           </div>
         </div>
       ),
       tips: [
-        "Connect at least 3 platforms for maximum reach",
-        "Business accounts work better than personal ones",
-        "You can add more platforms later"
+        "Update your brand purpose to improve AI content quality",
+        "Add specific details about your target audience",
+        "Include your unique selling points and goals"
       ]
     },
     {
@@ -285,26 +296,32 @@ export default function OnboardingWizard() {
         </div>
       ),
       tips: [
-        "Connect at least 3 platforms for maximum reach",
-        "Business accounts work better than personal ones",
-        "You can add more platforms later"
+        "Check platform connection status",
+        "Reconnect if you see OAuth errors",
+        "Add more platforms to expand reach"
       ]
     },
     {
       id: 6,
       title: "Monitor & Optimize",
-      description: "Track performance and improve your strategy",
+      description: "Track your content performance and improve results",
       icon: <BarChart3 className="w-6 h-6" />,
       actionText: "View Analytics",
       actionUrl: "/analytics",
       content: (
         <div className="space-y-4">
-          <div className="bg-green-50 border border-green-200 p-6 rounded-lg">
-            <h3 className="font-semibold mb-3">Analytics Dashboard Features:</h3>
+          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+            <h4 className="font-medium text-green-900 mb-2">📊 Your Analytics Dashboard:</h4>
+            <p className="text-sm text-green-700">
+              Monitor how your 128 posts are performing across all platforms and get insights to improve engagement.
+            </p>
+          </div>
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
+            <h3 className="font-semibold mb-3">Analytics Features:</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h4 className="font-medium text-green-900 mb-2">Performance Metrics:</h4>
-                <ul className="text-sm text-green-700 space-y-1">
+                <h4 className="font-medium text-blue-900 mb-2">Performance Metrics:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
                   <li>• Reach and impressions per post</li>
                   <li>• Engagement rates by platform</li>
                   <li>• Click-through rates</li>
@@ -313,7 +330,7 @@ export default function OnboardingWizard() {
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium text-blue-900 mb-2">Optimization Insights:</h4>
+                <h4 className="font-medium text-purple-900 mb-2">Optimization Insights:</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• Optimal posting times analysis</li>
                   <li>• Platform-specific recommendations</li>
@@ -327,9 +344,9 @@ export default function OnboardingWizard() {
         </div>
       ),
       tips: [
-        "Check analytics weekly to optimize your strategy",
-        "Focus on engagement rates over follower counts",
-        "Use insights to refine your content approach"
+        "Review analytics to see which posts perform best",
+        "Use engagement data to optimize future content",
+        "Mobile-responsive design with swipe navigation"
       ]
     }
   ];
