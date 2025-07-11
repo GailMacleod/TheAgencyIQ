@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Facebook, Instagram, Linkedin, Twitter, Youtube, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Hash, Youtube, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +56,7 @@ const platformConfig: Record<string, PlatformConfig> = {
   },
   x: {
     name: "X",
-    icon: Twitter,
+    icon: Hash,
     color: "bg-black",
     description: "Share quick updates and engage in real-time conversations"
   },
@@ -460,136 +460,107 @@ export default function ConnectPlatforms() {
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
           <div className="xl:col-span-3">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-4">
               {Object.entries(platformConfig).map(([platform, config]) => {
-            const connected = isConnected(platform);
-            const connection = getConnection(platform);
-            const connectionStatus = getConnectionStatus(platform);
-            const Icon = config.icon;
-            
-
-
-            return (
-              <Card key={platform} className="overflow-hidden">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${config.color} text-white`}>
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      <CardTitle className="text-lg">{config.name}</CardTitle>
-                    </div>
-                    <div className="flex flex-col items-end space-y-1">
-                      {(config as PlatformConfig).pending ? (
-                        <Badge className="bg-orange-100 text-orange-800 text-xs">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Coming Soon
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-green-100 text-green-800 text-xs">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Available
-                        </Badge>
-                      )}
-                      {connectionStatus === 'connected' ? (
-                        <Badge className="bg-green-100 text-green-800 text-xs">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Connected
-                        </Badge>
-                      ) : connectionStatus === 'expired' ? (
-                        <Badge className="text-xs bg-red-100 text-red-800 border-red-300">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Expired - Reconnect
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-red-100 text-red-800 text-xs">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Disconnected
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">
-                    {config.description}
-                  </p>
-
-                  {connectionStatus === 'connected' && connection ? (
-                    <div className="space-y-3">
-                      <div className="text-sm">
-                        <p className="font-medium text-gray-900">Account: {connection.platformUsername}</p>
-                        <p className="text-gray-500">
-                          Connected {new Date(connection.connectedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Button
-                        onClick={() => disconnectMutation.mutate(platform)}
-                        variant="outline"
-                        className="w-full text-red-600 border-red-300 hover:bg-red-50"
-                        disabled={disconnectMutation.isPending}
-                      >
-                        Disconnect
-                      </Button>
-                    </div>
-                  ) : connectionStatus === 'expired' && connection ? (
-                    <div className="space-y-3">
-                      <div className="text-sm">
-                        <p className="font-medium text-gray-900">Account: {connection.platformUsername}</p>
-                        <p className="text-red-600">
-                          Token expired - reconnection required
-                        </p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          onClick={() => handleReconnect(platform)}
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                          disabled={reconnecting[platform]}
-                        >
-                          {reconnecting[platform] ? 'Reconnecting...' : 'Expired - Reconnect'}
-                        </Button>
-                        <Button
-                          onClick={() => disconnectMutation.mutate(platform)}
-                          variant="outline"
-                          className="flex-1 text-red-600 border-red-300 hover:bg-red-50"
-                          disabled={disconnectMutation.isPending}
-                        >
-                          Disconnect
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {(config as PlatformConfig).pending ? (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-gray-600 mb-2">
-                            Coming Soon
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Connection coming soon
-                          </p>
+                const connected = isConnected(platform);
+                const connection = getConnection(platform);
+                const connectionStatus = getConnectionStatus(platform);
+                const Icon = config.icon;
+                
+                return (
+                  <Card key={platform} className="w-full mb-4">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center space-x-6 flex-1">
+                          <div className={`p-3 rounded-lg ${config.color} text-white flex-shrink-0`}>
+                            <Icon className="w-8 h-8" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="text-xl font-semibold text-gray-900">{config.name}</h3>
+                              {connectionStatus === 'connected' ? (
+                                <Badge className="bg-green-100 text-green-800 text-xs">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Connected
+                                </Badge>
+                              ) : connectionStatus === 'expired' ? (
+                                <Badge className="text-xs bg-red-100 text-red-800 border-red-300">
+                                  <AlertCircle className="w-3 h-3 mr-1" />
+                                  Expired - Reconnect
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-gray-100 text-gray-800 text-xs">
+                                  <AlertCircle className="w-3 h-3 mr-1" />
+                                  Disconnected
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">
+                              {config.description}
+                            </p>
+                            {connectionStatus === 'connected' && connection ? (
+                              <div className="text-sm">
+                                <p className="font-medium text-gray-900">Account: {connection.platformUsername}</p>
+                                <p className="text-gray-500">
+                                  Connected {new Date(connection.connectedAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            ) : connectionStatus === 'expired' && connection ? (
+                              <div className="text-sm">
+                                <p className="font-medium text-gray-900">Account: {connection.platformUsername}</p>
+                                <p className="text-red-600">
+                                  Token expired - reconnection required
+                                </p>
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
-                      ) : (
-                        <div className="text-center">
-                          <p className="text-sm text-gray-600 mb-4">
-                            Connect using secure OAuth authentication
-                          </p>
-                          <Button
-                            onClick={() => handleOAuthConnect(platform)}
-                            className="w-full"
-                            disabled={connecting[platform]}
-                          >
-                            {connecting[platform] ? 'Connecting...' : 'CONNECT'}
-                          </Button>
+                        
+                        <div className="flex space-x-2 flex-shrink-0">
+                          {connectionStatus === 'connected' && connection ? (
+                            <Button
+                              onClick={() => disconnectMutation.mutate(platform)}
+                              variant="outline"
+                              className="text-red-600 border-red-300 hover:bg-red-50 min-w-[120px]"
+                              disabled={disconnectMutation.isPending}
+                            >
+                              Disconnect
+                            </Button>
+                          ) : connectionStatus === 'expired' && connection ? (
+                            <>
+                              <Button
+                                onClick={() => handleReconnect(platform)}
+                                className="text-white border-0 min-w-[160px]"
+                                style={{ backgroundColor: '#00f0ff' }}
+                                disabled={reconnecting[platform]}
+                              >
+                                {reconnecting[platform] ? 'Reconnecting...' : 'Expired - Reconnect'}
+                              </Button>
+                              <Button
+                                onClick={() => disconnectMutation.mutate(platform)}
+                                variant="outline"
+                                className="text-red-600 border-red-300 hover:bg-red-50 min-w-[120px]"
+                                disabled={disconnectMutation.isPending}
+                              >
+                                Disconnect
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              onClick={() => handleOAuthConnect(platform)}
+                              className="text-white border-0 min-w-[120px]"
+                              style={{ backgroundColor: connectionStatus === 'connected' ? '#3250fa' : '#00f0ff' }}
+                              disabled={connecting[platform]}
+                            >
+                              {connecting[platform] ? 'Connecting...' : 'CONNECT'}
+                            </Button>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {connections && Array.isArray(connections) && connections.length > 0 && (
