@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const loginSchema = z.object({
   phone: z.string().min(10, "Valid phone number is required"),
@@ -25,6 +26,7 @@ export default function Login() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const queryClient = useQueryClient();
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -38,7 +40,27 @@ export default function Login() {
     try {
       setLoading(true);
       
+      // Perform login
       await apiRequest("POST", "/api/auth/login", data);
+      
+      // Fetch user data, posts, and analytics after successful login
+      try {
+        const [userStatus, posts, analytics] = await Promise.all([
+          apiRequest("GET", "/api/user-status"),
+          apiRequest("GET", "/api/posts"),
+          apiRequest("GET", "/api/analytics")
+        ]);
+        
+        // Cache the fetched data in React Query
+        queryClient.setQueryData(["/api/user-status"], userStatus);
+        queryClient.setQueryData(["/api/posts"], posts);
+        queryClient.setQueryData(["/api/analytics"], analytics);
+        
+        console.log("User data fetched on login:", { userStatus, posts: posts?.length, analytics });
+      } catch (fetchError) {
+        console.warn("Failed to fetch user data on login:", fetchError);
+        // Don't block login if data fetch fails
+      }
       
       toast({
         title: "Login Successful",

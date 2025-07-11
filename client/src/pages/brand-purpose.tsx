@@ -212,6 +212,34 @@ export default function BrandPurpose() {
     retry: false,
   });
 
+  // Save brand purpose mutation with proper error handling
+  const saveBrandPurposeMutation = useMutation({
+    mutationFn: async (formData: BrandPurposeForm) => {
+      try {
+        const response = await apiRequest("POST", "/api/brand-purpose", formData);
+        return response.json();
+      } catch (error) {
+        console.error("Save brand purpose failed:", error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: isExistingData ? "Brand Purpose Updated" : "Brand Purpose Saved",
+        description: isExistingData ? "Your brand purpose has been updated and will inform your content schedule" : "Your brand purpose has been saved and will inform your content schedule",
+      });
+      setLocation("/schedule");
+    },
+    onError: (error: any) => {
+      console.error("Brand purpose save error:", error);
+      toast({
+        title: "Save Failed",
+        description: error.message || "Failed to save brand purpose",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Generate guidance mutation with proper error handling
   const guidanceMutation = useMutation({
     mutationFn: async (formData: Partial<BrandPurposeForm>) => {
@@ -365,14 +393,8 @@ export default function BrandPurpose() {
         logoUrl,
       };
       
-      await apiRequest("POST", "/api/brand-purpose", brandData);
-      
-      toast({
-        title: isExistingData ? "Brand Purpose Updated" : "Brand Purpose Saved",
-        description: isExistingData ? "Your brand purpose has been updated and will inform your content schedule" : "Your brand purpose has been saved and will inform your content schedule",
-      });
-      
-      setLocation("/schedule");
+      // Use the save mutation for proper error handling
+      saveBrandPurposeMutation.mutate(brandData);
     } catch (error: any) {
       console.error("Brand purpose error:", error);
       toast({

@@ -178,9 +178,16 @@ function IntelligentSchedule() {
     }
   };
 
-  // Fetch user data
+  // Fetch user data (may be cached from login)
   const { data: user, isLoading: userLoading, error: userError } = useQuery({
     queryKey: ["/api/user"],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Fetch user status data (cached from login)
+  const { data: userStatus, isLoading: userStatusLoading } = useQuery({
+    queryKey: ["/api/user-status"],
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch brand purpose data
@@ -225,12 +232,19 @@ function IntelligentSchedule() {
     }
   }, [userError, userLoading, setLocation]);
 
-  // Fetch posts only after user is authenticated
+  // Fetch posts only after user is authenticated (may be cached from login)
   const { data: posts, isLoading: postsLoading, refetch: refetchPosts } = useQuery({
     queryKey: ["/api/posts"],
     enabled: !!user && !userLoading,
     retry: 2,
-    staleTime: 30000,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+
+  // Fetch analytics data (cached from login)
+  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: ["/api/analytics"],
+    enabled: !!user && !userLoading,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
 
