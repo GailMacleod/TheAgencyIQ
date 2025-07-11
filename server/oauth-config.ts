@@ -150,7 +150,7 @@ passport.use('instagram', new FacebookStrategy({
   clientID: process.env.FACEBOOK_APP_ID!,
   clientSecret: process.env.FACEBOOK_APP_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/instagram/callback`,
-  scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement'],
+  scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement', 'public_content'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   const result = await handleOAuthCallback({
@@ -186,29 +186,35 @@ passport.use(new LinkedInStrategy({
 }));
 
 // X (Twitter) OAuth Strategy - REINTEGRATED with Passport.js
-// Note: Using OAuth 1.0a for Twitter/X platform
-passport.use(new TwitterStrategy({
-  consumerKey: process.env.X_CONSUMER_KEY || process.env.X_0AUTH_CLIENT_ID!,
-  consumerSecret: process.env.X_CONSUMER_SECRET || process.env.X_0AUTH_CLIENT_SECRET!,
-  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`,
-  passReqToCallback: true
-}, async (req: any, accessToken: string, tokenSecret: string, profile: any, done: any) => {
-  try {
-    const result = await handleOAuthCallback({
-      req,
-      profile,
-      tokens: { accessToken, tokenSecret },
-      platform: 'x'
-    });
-    
-    return result.success 
-      ? done(null, result) 
-      : done(new Error(result.error));
-  } catch (error: any) {
-    console.error('X OAuth error:', error.message);
-    return done(error);
-  }
-}));
+// Note: Using OAuth 1.0a for Twitter/X platform with offline.access scope
+try {
+  passport.use(new TwitterStrategy({
+    consumerKey: process.env.X_CONSUMER_KEY || process.env.X_OAUTH_CLIENT_ID || 'dummy_key',
+    consumerSecret: process.env.X_CONSUMER_SECRET || process.env.X_OAUTH_CLIENT_SECRET || 'dummy_secret',
+    callbackURL: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`,
+    passReqToCallback: true
+  }, async (req: any, accessToken: string, tokenSecret: string, profile: any, done: any) => {
+    try {
+      const result = await handleOAuthCallback({
+        req,
+        profile,
+        tokens: { accessToken, tokenSecret },
+        platform: 'x'
+      });
+      
+      return result.success 
+        ? done(null, result) 
+        : done(new Error(result.error));
+    } catch (error: any) {
+      console.error('X OAuth error:', error.message);
+      return done(error);
+    }
+  }));
+  console.log('✅ X OAuth strategy configured successfully');
+} catch (error: any) {
+  console.error('❌ X OAuth strategy configuration failed:', error.message);
+  console.log('⚠️  X OAuth will be disabled - check X_CONSUMER_KEY and X_CONSUMER_SECRET environment variables');
+}
 
 // YouTube (Google) OAuth Strategy with unified callback handling
 passport.use('youtube', new GoogleStrategy({

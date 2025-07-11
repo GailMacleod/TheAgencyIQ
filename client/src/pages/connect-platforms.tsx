@@ -217,13 +217,13 @@ export default function ConnectPlatforms() {
         console.log('Attempting LinkedIn OAuth with existing credentials');
       }
       
-      // Map platform names to OAuth routes
+      // Map platform names to OAuth routes - FIXED FOR PASSPORT.JS
       const oauthRoutes: { [key: string]: string } = {
-        'facebook': '/api/auth/facebook',
-        'instagram': '/api/auth/instagram',
-        'linkedin': '/api/auth/linkedin',
-        'x': '/api/auth/x',
-        'youtube': '/api/auth/youtube'
+        'facebook': '/auth/facebook',
+        'instagram': '/auth/instagram',
+        'linkedin': '/auth/linkedin',
+        'x': '/auth/twitter',
+        'youtube': '/auth/youtube'
       };
       
       const oauthUrl = oauthRoutes[platform];

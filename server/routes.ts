@@ -2864,7 +2864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Instagram OAuth with Passport.js (using Facebook strategy)
   app.get('/auth/instagram', configuredPassport.authenticate('instagram', {
-    scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement']
+    scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement', 'public_content']
   }));
 
   app.get('/auth/instagram/callback',
