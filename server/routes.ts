@@ -156,9 +156,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Initialize Passport and OAuth strategies
-  const { passport: configuredPassport } = await import('./oauth-config.js');
+  const { passport: configuredPassport, configurePassportStrategies } = await import('./oauth-config.js');
   app.use(configuredPassport.initialize());
   app.use(configuredPassport.session());
+  
+  // Configure all Passport.js strategies
+  configurePassportStrategies();
 
   // Global error and request logging middleware
   app.use((req: any, res: any, next: any) => {
@@ -2844,28 +2847,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect('/connect/youtube');
   });
   
-  // Facebook OAuth - DISABLED (using custom implementation in authModule.ts)
-  // These routes were causing "Invalid verification code format" errors
-  // Custom Facebook OAuth implementation is in authModule.ts
-  console.log('Facebook OAuth routes at line 2035 disabled - using custom implementation');
+  // PASSPORT.JS OAUTH ROUTES - SIMPLIFIED AND REINTEGRATED
+  
+  // Facebook OAuth with Passport.js
+  app.get('/auth/facebook', configuredPassport.authenticate('facebook', {
+    scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement']
+  }));
 
-  // Instagram OAuth route removed - handled by main Instagram route
+  app.get('/auth/facebook/callback',
+    configuredPassport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
+    (req, res) => {
+      console.log('✅ Facebook OAuth callback successful');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
+    }
+  );
 
+  // Instagram OAuth with Passport.js (using Facebook strategy)
+  app.get('/auth/instagram', configuredPassport.authenticate('instagram', {
+    scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement']
+  }));
 
+  app.get('/auth/instagram/callback',
+    configuredPassport.authenticate('instagram', { failureRedirect: '/connect-platforms?error=instagram' }),
+    (req, res) => {
+      console.log('✅ Instagram OAuth callback successful');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
+    }
+  );
 
-  // LinkedIn OAuth route removed - handled by main LinkedIn route
+  // LinkedIn OAuth with Passport.js
+  app.get('/auth/linkedin', configuredPassport.authenticate('linkedin', {
+    scope: ['r_liteprofile', 'w_member_social']
+  }));
 
-  // X (Twitter) OAuth
+  app.get('/auth/linkedin/callback',
+    configuredPassport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
+    (req, res) => {
+      console.log('✅ LinkedIn OAuth callback successful');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
+    }
+  );
+
+  // X (Twitter) OAuth with Passport.js
   app.get('/auth/twitter', configuredPassport.authenticate('twitter'));
 
   app.get('/auth/twitter/callback',
     configuredPassport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=twitter' }),
     (req, res) => {
+      console.log('✅ X (Twitter) OAuth callback successful');
       res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     }
   );
 
-  // YouTube OAuth
+  // YouTube OAuth with Passport.js
   app.get('/auth/youtube', configuredPassport.authenticate('youtube', {
     scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload']
   }));
@@ -2873,6 +2907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/auth/youtube/callback',
     configuredPassport.authenticate('youtube', { failureRedirect: '/connect-platforms?error=youtube' }),
     (req, res) => {
+      console.log('✅ YouTube OAuth callback successful');
       res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     }
   );

@@ -28,13 +28,10 @@ export class DirectPublisher {
         return { success: false, error: 'Facebook credentials not configured' };
       }
 
-      // Generate app secret proof for secure server-side calls
-      const proof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
-      
+      // FIXED: Remove appsecret_proof requirement for Facebook publishing
       // Use the user access token for posting if available
       const userToken = process.env.FACEBOOK_USER_ACCESS_TOKEN;
       const finalToken = userToken || accessToken;
-      const finalProof = crypto.createHmac('sha256', appSecret).update(finalToken).digest('hex');
       
       // Try posting to personal timeline with user token, then page with page token
       const endpoints = [
@@ -48,8 +45,8 @@ export class DirectPublisher {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             message: content,
-            access_token: endpoint.token,
-            appsecret_proof: crypto.createHmac('sha256', appSecret).update(endpoint.token).digest('hex')
+            access_token: endpoint.token
+            // REMOVED: appsecret_proof requirement
           }).toString()
         });
 

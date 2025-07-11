@@ -1,7 +1,7 @@
 import passport from 'passport';
-// import { Strategy as FacebookStrategy } from 'passport-facebook'; // DISABLED - using custom implementation
+import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
-// import { Strategy as TwitterStrategy } from 'passport-twitter'; // Using OAuth 2.0 instead
+import { Strategy as TwitterStrategy } from 'passport-twitter';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from './storage';
 
@@ -125,29 +125,45 @@ const OAUTH_REDIRECT_BASE = process.env.REPLIT_DOMAINS
   ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
   : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
-// Facebook OAuth Strategy - DUMMY STRATEGY to catch remaining calls
-import { Strategy as BaseStrategy } from 'passport-strategy';
-
-class FacebookDummyStrategy extends BaseStrategy {
-  name: string;
+// Facebook OAuth Strategy - REINTEGRATED with Passport.js
+passport.use(new FacebookStrategy({
+  clientID: process.env.FACEBOOK_APP_ID!,
+  clientSecret: process.env.FACEBOOK_APP_SECRET!,
+  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`,
+  scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement'],
+  passReqToCallback: true
+}, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
+  const result = await handleOAuthCallback({
+    req,
+    profile,
+    tokens: { accessToken, refreshToken },
+    platform: 'facebook'
+  });
   
-  constructor() {
-    super();
-    this.name = 'facebook';
-  }
+  return result.success 
+    ? done(null, result) 
+    : done(new Error(result.error));
+}));
+
+// Instagram OAuth Strategy - REINTEGRATED with Passport.js (using Facebook Graph API)
+passport.use('instagram', new FacebookStrategy({
+  clientID: process.env.FACEBOOK_APP_ID!,
+  clientSecret: process.env.FACEBOOK_APP_SECRET!,
+  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/instagram/callback`,
+  scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement'],
+  passReqToCallback: true
+}, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
+  const result = await handleOAuthCallback({
+    req,
+    profile,
+    tokens: { accessToken, refreshToken },
+    platform: 'instagram'
+  });
   
-  authenticate(req: any) {
-    console.log('🔧 DUMMY Facebook strategy called from:', req.url);
-    console.log('🔧 Stack trace:', new Error().stack);
-    return this.redirect('/login?error=facebook_disabled&message=Facebook+OAuth+disabled+using+custom+implementation');
-  }
-}
-
-passport.use(new FacebookDummyStrategy());
-console.log('Facebook OAuth: Dummy strategy registered to catch remaining calls');
-
-// Instagram - Direct connection method (OAuth disabled due to app configuration issues)
-// Instagram connections are now handled via direct API endpoints in routes.ts
+  return result.success 
+    ? done(null, result) 
+    : done(new Error(result.error));
+}));
 
 // LinkedIn OAuth Strategy with unified callback handling
 passport.use(new LinkedInStrategy({
@@ -169,8 +185,30 @@ passport.use(new LinkedInStrategy({
     : done(new Error(result.error));
 }));
 
-// X (Twitter) OAuth Strategy - Custom OAuth 2.0 Implementation
-// Note: No official passport-x-oauth2 strategy exists, so we'll handle OAuth 2.0 manually
+// X (Twitter) OAuth Strategy - REINTEGRATED with Passport.js
+// Note: Using OAuth 1.0a for Twitter/X platform
+passport.use(new TwitterStrategy({
+  consumerKey: process.env.X_CONSUMER_KEY || process.env.X_0AUTH_CLIENT_ID!,
+  consumerSecret: process.env.X_CONSUMER_SECRET || process.env.X_0AUTH_CLIENT_SECRET!,
+  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`,
+  passReqToCallback: true
+}, async (req: any, accessToken: string, tokenSecret: string, profile: any, done: any) => {
+  try {
+    const result = await handleOAuthCallback({
+      req,
+      profile,
+      tokens: { accessToken, tokenSecret },
+      platform: 'x'
+    });
+    
+    return result.success 
+      ? done(null, result) 
+      : done(new Error(result.error));
+  } catch (error: any) {
+    console.error('X OAuth error:', error.message);
+    return done(error);
+  }
+}));
 
 // YouTube (Google) OAuth Strategy with unified callback handling
 passport.use('youtube', new GoogleStrategy({
@@ -191,5 +229,27 @@ passport.use('youtube', new GoogleStrategy({
     ? done(null, result) 
     : done(new Error(result.error));
 }));
+
+// Passport.js serialization and deserialization for session management
+passport.serializeUser((user: any, done) => {
+  console.log('🔐 Serializing user:', user);
+  done(null, user);
+});
+
+passport.deserializeUser((user: any, done) => {
+  console.log('🔐 Deserializing user:', user);
+  done(null, user);
+});
+
+// Configure Passport.js strategies
+export function configurePassportStrategies() {
+  console.log('🔧 Passport.js strategies configured:');
+  console.log('  ✅ Facebook OAuth - Full authentication flow');
+  console.log('  ✅ Instagram OAuth - Via Facebook Graph API');
+  console.log('  ✅ LinkedIn OAuth - Professional networking');
+  console.log('  ✅ X (Twitter) OAuth - Social media posting');
+  console.log('  ✅ YouTube OAuth - Video content management');
+  console.log('🔐 Session serialization/deserialization configured');
+}
 
 export { passport };

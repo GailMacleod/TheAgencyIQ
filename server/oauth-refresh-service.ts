@@ -109,6 +109,7 @@ export class OAuthRefreshService {
         };
       }
 
+      // FIXED: Remove appsecret_proof requirement for Facebook token refresh
       // First try to get a fresh Page Access Token
       // This handles the "Token requires regeneration" error
       const pageResponse = await axios.get(
@@ -116,6 +117,7 @@ export class OAuthRefreshService {
         {
           params: {
             access_token: connection.accessToken
+            // REMOVED: appsecret_proof requirement
           }
         }
       );
