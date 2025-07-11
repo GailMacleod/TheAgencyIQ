@@ -330,66 +330,15 @@ export default function OnboardingWizard() {
         "Check connection status warnings in platform connections"
       ]
     },
+
     {
       id: 4,
-      title: "Define Your Brand Purpose",
-      description: "Fine-tune your AI content by updating your brand purpose",
-      icon: <Target className="w-6 h-6" />,
-      actionText: "Update Brand Purpose",
-      actionUrl: "/brand-purpose",
-      content: (
-        <div className="space-y-4">
-          {userStatus.userType === 'returning' ? (
-            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-              <h4 className="font-medium text-green-900 mb-2">🔄 Update Your Brand Purpose:</h4>
-              <p className="text-sm text-green-700">
-                Refine your brand purpose to optimize AI content generation for your existing posts.
-              </p>
-            </div>
-          ) : (
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">📝 Brand Purpose helps AI create better content:</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Your business name and what you do</li>
-                <li>• Who your target audience is</li>
-                <li>• What problems you solve for customers</li>
-                <li>• Your unique value proposition</li>
-                <li>• Your business goals and motivations</li>
-              </ul>
-            </div>
-          )}
-          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-            <h4 className="font-medium text-green-900 mb-2">✅ AI Content Benefits:</h4>
-            <ul className="text-sm text-green-700 space-y-1">
-              <li>• Content matches your business voice</li>
-              <li>• Posts target your specific audience</li>
-              <li>• Mentions your products/services naturally</li>
-              <li>• Queensland market optimization</li>
-              <li>• Brand consistency across all platforms</li>
-            </ul>
-          </div>
-          <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
-            <h4 className="font-medium text-purple-900 mb-2">💡 Pro Tip:</h4>
-            <p className="text-sm text-purple-700">
-              The more detailed your brand purpose, the better your AI-generated content will be. Take time to fill it out completely!
-            </p>
-          </div>
-        </div>
-      ),
-      tips: [
-        "Update your brand purpose to improve AI content quality",
-        "Add specific details about your target audience",
-        "Include your unique selling points and goals"
-      ]
-    },
-    {
-      id: 5,
-      title: "Generate AI Content & Video",
-      description: "Create posts with video generation features",
-      icon: <Zap className="w-6 h-6" />,
-      actionText: "Generate Content",
-      actionUrl: "/intelligent-schedule",
-      route: "/analytics",
+      title: "Connect Platforms",
+      description: "Link your social media accounts for publishing",
+      icon: <Users className="w-6 h-6" />,
+      actionText: "Connect Platforms",
+      actionUrl: "/connect-platforms",
+      route: "/intelligent-schedule",
       content: (
         <div className="space-y-4">
           <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
@@ -444,6 +393,76 @@ export default function OnboardingWizard() {
         "Always check connection status before publishing",
         "Reconnect immediately when you see OAuth errors",
         "Connected platforms show green status indicators"
+      ]
+    },
+    {
+      id: 5,
+      title: "Generate AI Content & Video",
+      description: "Create posts with video generation features",
+      icon: <Zap className="w-6 h-6" />,
+      actionText: "Generate Content",
+      actionUrl: "/intelligent-schedule",
+      route: "/analytics",
+      content: (
+        <div className="space-y-4">
+          {userStatus.userType === 'returning' ? (
+            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+              <h4 className="font-medium text-green-900 mb-2">✅ Returning Subscriber:</h4>
+              <p className="text-sm text-green-700">
+                You're already logged in with an active subscription! This is your main content generation hub.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+              <h4 className="font-medium text-blue-900 mb-2">🎯 New User Guide:</h4>
+              <p className="text-sm text-blue-700">
+                After connecting your platforms, you'll access this powerful content generation interface.
+              </p>
+            </div>
+          )}
+          
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
+            <h3 className="font-semibold mb-3">🎬 Video Generation Mastery:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-medium text-purple-900 mb-2">Video Rules:</h4>
+                <ul className="text-sm text-purple-700 space-y-1">
+                  <li>• <strong>One video per post maximum</strong></li>
+                  <li>• Use auto-generated prompts or edit your own</li>
+                  <li>• Approve video to embed in post</li>
+                  <li>• Delete video if not satisfied</li>
+                  <li>• Can approve post without video</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium text-blue-900 mb-2">Video Workflow:</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• 1. Click "Generate Video" button</li>
+                  <li>• 2. Choose auto-prompt or edit custom</li>
+                  <li>• 3. Review generated video preview</li>
+                  <li>• 4. Approve to embed or delete</li>
+                  <li>• 5. Edit post content if needed</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+            <h4 className="font-medium text-green-900 mb-2">🤖 AI Content Generation:</h4>
+            <ul className="text-sm text-green-700 space-y-1">
+              <li>• Generate 52 posts automatically</li>
+              <li>• Queensland market focused content</li>
+              <li>• Platform-specific optimization</li>
+              <li>• Brand voice consistency</li>
+              <li>• Event-driven scheduling</li>
+            </ul>
+          </div>
+        </div>
+      ),
+      tips: [
+        "Master video generation: one video per post, auto or custom prompts",
+        "Edit posts to match your brand voice before approval",
+        "AI generates content optimized for Queensland market"
       ]
     },
     {
