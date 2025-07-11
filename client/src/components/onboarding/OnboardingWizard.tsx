@@ -771,7 +771,7 @@ export default function OnboardingWizard() {
                 </Button>
               </div>
             ) : (
-              // Normal mode - full navigation
+              // Normal mode - simplified navigation
               <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"
@@ -782,15 +782,6 @@ export default function OnboardingWizard() {
                 >
                   <ArrowLeft className="w-3 h-3 mr-1" />
                   Prev
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSkip}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Skip
                 </Button>
               </div>
             )}
@@ -807,39 +798,15 @@ export default function OnboardingWizard() {
                   <ArrowRight className="w-3 h-3 ml-1" />
                 </Button>
               ) : (
-                // Normal mode - action and next buttons
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSkipWizard}
-                    className="text-xs"
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Skip All
-                  </Button>
-                  
-                  <Button
-                    onClick={handleAction}
-                    size="sm"
-                    className="bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] text-white text-xs font-medium shadow-lg"
-                  >
-                    {wizardSteps[currentStep].actionText}
-                    <ArrowRight className="w-3 h-3 ml-1" />
-                  </Button>
-                  
-                  {wizardSteps[currentStep].route && (
-                    <Button
-                      onClick={handleNext}
-                      size="sm"
-                      variant="outline"
-                      className="text-xs"
-                    >
-                      Next
-                      <ArrowRight className="w-3 h-3 ml-1" />
-                    </Button>
-                  )}
-                </>
+                // Normal mode - only next button
+                <Button
+                  onClick={handleNext}
+                  size="sm"
+                  className="bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] text-white text-xs font-medium shadow-lg"
+                >
+                  Next
+                  <ArrowRight className="w-3 h-3 ml-1" />
+                </Button>
               )}
             </div>
           </div>
