@@ -1,152 +1,308 @@
-import { logError, logInfo } from '../monitoring';
-import { db } from '../storage';
-import { platformConnections } from '../../shared/schema';
-import { eq } from 'drizzle-orm';
+import { storage } from '../storage';
+
+interface RefreshResult {
+  success: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: Date;
+  error?: string;
+}
+
+interface TokenValidationResult {
+  isValid: boolean;
+  error?: string;
+  needsRefresh: boolean;
+  expiresAt?: Date;
+}
 
 export class OAuthRefreshService {
   /**
-   * Validate and refresh OAuth token before publishing
+   * Validate and refresh OAuth tokens for a user's platform connection
    */
-  static async validateAndRefreshConnection(userId: number, platform: string): Promise<{
-    isValid: boolean;
-    error?: string;
-    refreshed?: boolean;
-  }> {
+  static async validateAndRefreshConnection(userId: string, platform: string): Promise<RefreshResult> {
     try {
-      const connection = await db.query.platformConnections.findFirst({
-        where: eq(platformConnections.userId, userId),
-      });
-
+      const connection = await storage.getPlatformConnection(userId, platform);
       if (!connection) {
-        return { isValid: false, error: 'No platform connection found' };
+        return { success: false, error: 'No connection found' };
       }
 
-      const platformData = connection.platforms as any;
-      const tokenData = platformData[platform];
-
-      if (!tokenData) {
-        return { isValid: false, error: `No ${platform} connection found` };
+      // Check if token is expired or will expire soon
+      const isExpired = this.isTokenExpired(connection.expiresAt);
+      if (!isExpired) {
+        // Token is still valid
+        return { success: true };
       }
 
-      // Check if token is expired
-      const isExpired = await this.isTokenExpired(tokenData, platform);
-      
-      if (isExpired) {
-        const refreshResult = await this.refreshToken(userId, platform, tokenData);
-        return refreshResult;
-      }
-
-      return { isValid: true };
+      // Attempt to refresh the token
+      return await this.refreshToken(connection, platform);
     } catch (error) {
-      logError(error as Error, { userId, platform });
-      return { isValid: false, error: 'Token validation failed' };
+      console.error(`OAuth refresh error for ${platform}:`, error);
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * Check if token is expired
+   * Validate token without refreshing
    */
-  private static async isTokenExpired(tokenData: any, platform: string): Promise<boolean> {
-    switch (platform) {
-      case 'facebook':
-      case 'instagram':
-        // Meta tokens expire after 60 days
-        const metaExpiry = new Date(tokenData.tokenExpiry || 0);
-        return Date.now() > metaExpiry.getTime();
-      
-      case 'linkedin':
-        // LinkedIn tokens expire after 60 days
-        const linkedinExpiry = new Date(tokenData.tokenExpiry || 0);
-        return Date.now() > linkedinExpiry.getTime();
-      
-      case 'youtube':
-        // YouTube refresh tokens don't expire
-        return false;
-      
-      case 'x':
-        // X OAuth 2.0 tokens expire after 2 hours
-        const xExpiry = new Date(tokenData.tokenExpiry || 0);
-        return Date.now() > xExpiry.getTime();
-      
-      default:
-        return true;
-    }
-  }
-
-  /**
-   * Refresh expired token
-   */
-  private static async refreshToken(userId: number, platform: string, tokenData: any): Promise<{
-    isValid: boolean;
-    error?: string;
-    refreshed?: boolean;
-  }> {
+  static async validateToken(accessToken: string, platform: string): Promise<TokenValidationResult> {
     try {
       switch (platform) {
         case 'facebook':
+          return await this.validateFacebookToken(accessToken);
         case 'instagram':
-          return await this.refreshMetaToken(userId, platform, tokenData);
-        
+          return await this.validateInstagramToken(accessToken);
         case 'linkedin':
-          return await this.refreshLinkedInToken(userId, tokenData);
-        
-        case 'youtube':
-          return await this.refreshYouTubeToken(userId, tokenData);
-        
+          return await this.validateLinkedInToken(accessToken);
         case 'x':
-          return await this.refreshXToken(userId, tokenData);
-        
+          return await this.validateXToken(accessToken);
+        case 'youtube':
+          return await this.validateYouTubeToken(accessToken);
         default:
-          return { isValid: false, error: 'Platform not supported' };
+          return { isValid: false, error: 'Unsupported platform', needsRefresh: false };
       }
     } catch (error) {
-      logError(error as Error, { userId, platform });
-      return { isValid: false, error: 'Token refresh failed' };
+      return { isValid: false, error: error.message, needsRefresh: true };
     }
   }
 
   /**
-   * Refresh Meta (Facebook/Instagram) token
+   * Refresh OAuth token for specific platform
    */
-  private static async refreshMetaToken(userId: number, platform: string, tokenData: any): Promise<{
-    isValid: boolean;
-    error?: string;
-    refreshed?: boolean;
-  }> {
+  private static async refreshToken(connection: any, platform: string): Promise<RefreshResult> {
+    switch (platform) {
+      case 'facebook':
+        return await this.refreshFacebookToken(connection);
+      case 'instagram':
+        return await this.refreshInstagramToken(connection);
+      case 'linkedin':
+        return await this.refreshLinkedInToken(connection);
+      case 'x':
+        return await this.refreshXToken(connection);
+      case 'youtube':
+        return await this.refreshYouTubeToken(connection);
+      default:
+        return { success: false, error: 'Platform refresh not supported' };
+    }
+  }
+
+  /**
+   * Check if token is expired or will expire soon (within 1 hour)
+   */
+  private static isTokenExpired(expiresAt: Date | null): boolean {
+    if (!expiresAt) return false; // No expiry date means token doesn't expire
+    
+    const now = new Date();
+    const expiryTime = new Date(expiresAt);
+    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+    
+    return expiryTime <= oneHourFromNow;
+  }
+
+  /**
+   * Facebook token validation
+   */
+  private static async validateFacebookToken(accessToken: string): Promise<TokenValidationResult> {
     try {
-      const response = await fetch(
-        `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.FACEBOOK_CLIENT_ID}&client_secret=${process.env.FACEBOOK_CLIENT_SECRET}&fb_exchange_token=${tokenData.accessToken}`
-      );
-
+      const response = await fetch(`https://graph.facebook.com/me?access_token=${accessToken}`);
       const data = await response.json();
+      
+      if (data.error) {
+        return {
+          isValid: false,
+          error: `${data.error.message}`,
+          needsRefresh: data.error.code === 190 || data.error.code === 102
+        };
+      }
+      
+      return { isValid: true, needsRefresh: false };
+    } catch (error) {
+      return { isValid: false, error: error.message, needsRefresh: true };
+    }
+  }
 
-      if (data.access_token) {
-        // Update token in database
-        await this.updateTokenInDatabase(userId, platform, {
-          accessToken: data.access_token,
-          tokenExpiry: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000), // 50 days
-        });
+  /**
+   * Instagram token validation
+   */
+  private static async validateInstagramToken(accessToken: string): Promise<TokenValidationResult> {
+    try {
+      const response = await fetch(`https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`);
+      const data = await response.json();
+      
+      if (data.error) {
+        return {
+          isValid: false,
+          error: `${data.error.message}`,
+          needsRefresh: data.error.code === 190 || data.error.code === 102
+        };
+      }
+      
+      return { isValid: true, needsRefresh: false };
+    } catch (error) {
+      return { isValid: false, error: error.message, needsRefresh: true };
+    }
+  }
 
-        logInfo(`${platform} token refreshed successfully`, { userId });
-        return { isValid: true, refreshed: true };
+  /**
+   * LinkedIn token validation
+   */
+  private static async validateLinkedInToken(accessToken: string): Promise<TokenValidationResult> {
+    try {
+      const response = await fetch('https://api.linkedin.com/v2/me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        return {
+          isValid: false,
+          error: `Invalid access token`,
+          needsRefresh: response.status === 401 || response.status === 403
+        };
+      }
+      
+      return { isValid: true, needsRefresh: false };
+    } catch (error) {
+      return { isValid: false, error: error.message, needsRefresh: true };
+    }
+  }
+
+  /**
+   * X/Twitter token validation
+   */
+  private static async validateXToken(accessToken: string): Promise<TokenValidationResult> {
+    try {
+      const response = await fetch('https://api.twitter.com/2/users/me', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        return {
+          isValid: false,
+          error: `${response.status === 403 ? 'Authenticating with OAuth 2.0 Application-Only is forbidden for this endpoint.  Supported authentication types are [OAuth 1.0a User Context, OAuth 2.0 User Context].' : 'Invalid access token'}`,
+          needsRefresh: response.status === 401 || response.status === 403
+        };
+      }
+      
+      return { isValid: true, needsRefresh: false };
+    } catch (error) {
+      return { isValid: false, error: error.message, needsRefresh: true };
+    }
+  }
+
+  /**
+   * YouTube token validation
+   */
+  private static async validateYouTubeToken(accessToken: string): Promise<TokenValidationResult> {
+    try {
+      const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        return {
+          isValid: false,
+          error: `${response.status === 403 ? 'Method doesn\'t allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.' : 'Invalid access token'}`,
+          needsRefresh: response.status === 401 || response.status === 403
+        };
+      }
+      
+      return { isValid: true, needsRefresh: false };
+    } catch (error) {
+      return { isValid: false, error: error.message, needsRefresh: true };
+    }
+  }
+
+  /**
+   * Refresh Facebook token (extends long-lived token)
+   */
+  private static async refreshFacebookToken(connection: any): Promise<RefreshResult> {
+    try {
+      const appId = process.env.FACEBOOK_APP_ID;
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+      
+      if (!appId || !appSecret) {
+        return { success: false, error: 'Missing Facebook app credentials' };
       }
 
-      return { isValid: false, error: 'Failed to refresh Meta token' };
+      const response = await fetch(
+        `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${connection.accessToken}`
+      );
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        return { success: false, error: data.error.message };
+      }
+      
+      // Update connection with new token
+      const expiresAt = new Date(Date.now() + (data.expires_in * 1000));
+      await storage.updatePlatformConnectionByPlatform(connection.userId, connection.platform, {
+        accessToken: data.access_token,
+        expiresAt
+      });
+      
+      return {
+        success: true,
+        accessToken: data.access_token,
+        expiresAt
+      };
     } catch (error) {
-      logError(error as Error, { userId, platform });
-      return { isValid: false, error: 'Meta token refresh failed' };
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Refresh Instagram token (extends long-lived token)
+   */
+  private static async refreshInstagramToken(connection: any): Promise<RefreshResult> {
+    try {
+      const response = await fetch(
+        `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${connection.accessToken}`
+      );
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        return { success: false, error: data.error.message };
+      }
+      
+      // Update connection with new token
+      const expiresAt = new Date(Date.now() + (data.expires_in * 1000));
+      await storage.updatePlatformConnectionByPlatform(connection.userId, connection.platform, {
+        accessToken: data.access_token,
+        expiresAt
+      });
+      
+      return {
+        success: true,
+        accessToken: data.access_token,
+        expiresAt
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
     }
   }
 
   /**
    * Refresh LinkedIn token
    */
-  private static async refreshLinkedInToken(userId: number, tokenData: any): Promise<{
-    isValid: boolean;
-    error?: string;
-    refreshed?: boolean;
-  }> {
+  private static async refreshLinkedInToken(connection: any): Promise<RefreshResult> {
     try {
+      const clientId = process.env.LINKEDIN_CLIENT_ID;
+      const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+      
+      if (!clientId || !clientSecret || !connection.refreshToken) {
+        return { success: false, error: 'Missing LinkedIn credentials or refresh token' };
+      }
+
       const response = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
         method: 'POST',
         headers: {
@@ -154,41 +310,98 @@ export class OAuthRefreshService {
         },
         body: new URLSearchParams({
           grant_type: 'refresh_token',
-          refresh_token: tokenData.refreshToken,
-          client_id: process.env.LINKEDIN_CLIENT_ID!,
-          client_secret: process.env.LINKEDIN_CLIENT_SECRET!,
+          refresh_token: connection.refreshToken,
+          client_id: clientId,
+          client_secret: clientSecret,
         }),
       });
-
+      
       const data = await response.json();
-
-      if (data.access_token) {
-        await this.updateTokenInDatabase(userId, 'linkedin', {
-          accessToken: data.access_token,
-          refreshToken: data.refresh_token,
-          tokenExpiry: new Date(Date.now() + data.expires_in * 1000),
-        });
-
-        logInfo('LinkedIn token refreshed successfully', { userId });
-        return { isValid: true, refreshed: true };
+      
+      if (data.error) {
+        return { success: false, error: data.error_description || data.error };
       }
-
-      return { isValid: false, error: 'Failed to refresh LinkedIn token' };
+      
+      // Update connection with new token
+      const expiresAt = new Date(Date.now() + (data.expires_in * 1000));
+      await storage.updatePlatformConnectionByPlatform(connection.userId, connection.platform, {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token || connection.refreshToken,
+        expiresAt
+      });
+      
+      return {
+        success: true,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt
+      };
     } catch (error) {
-      logError(error as Error, { userId });
-      return { isValid: false, error: 'LinkedIn token refresh failed' };
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * Refresh YouTube token
+   * Refresh X token (OAuth 2.0)
    */
-  private static async refreshYouTubeToken(userId: number, tokenData: any): Promise<{
-    isValid: boolean;
-    error?: string;
-    refreshed?: boolean;
-  }> {
+  private static async refreshXToken(connection: any): Promise<RefreshResult> {
     try {
+      const clientId = process.env.X_CONSUMER_KEY;
+      const clientSecret = process.env.X_CONSUMER_SECRET;
+      
+      if (!clientId || !clientSecret || !connection.refreshToken) {
+        return { success: false, error: 'Missing X credentials or refresh token' };
+      }
+
+      const response = await fetch('https://api.twitter.com/2/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: connection.refreshToken,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        return { success: false, error: data.error_description || data.error };
+      }
+      
+      // Update connection with new token
+      const expiresAt = new Date(Date.now() + (data.expires_in * 1000));
+      await storage.updatePlatformConnectionByPlatform(connection.userId, connection.platform, {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token || connection.refreshToken,
+        expiresAt
+      });
+      
+      return {
+        success: true,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Refresh YouTube token (Google OAuth)
+   */
+  private static async refreshYouTubeToken(connection: any): Promise<RefreshResult> {
+    try {
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      
+      if (!clientId || !clientSecret || !connection.refreshToken) {
+        return { success: false, error: 'Missing Google credentials or refresh token' };
+      }
+
       const response = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: {
@@ -196,90 +409,34 @@ export class OAuthRefreshService {
         },
         body: new URLSearchParams({
           grant_type: 'refresh_token',
-          refresh_token: tokenData.refreshToken,
-          client_id: process.env.YOUTUBE_CLIENT_ID!,
-          client_secret: process.env.YOUTUBE_CLIENT_SECRET!,
+          refresh_token: connection.refreshToken,
+          client_id: clientId,
+          client_secret: clientSecret,
         }),
       });
-
+      
       const data = await response.json();
-
-      if (data.access_token) {
-        await this.updateTokenInDatabase(userId, 'youtube', {
-          accessToken: data.access_token,
-          tokenExpiry: new Date(Date.now() + data.expires_in * 1000),
-        });
-
-        logInfo('YouTube token refreshed successfully', { userId });
-        return { isValid: true, refreshed: true };
+      
+      if (data.error) {
+        return { success: false, error: data.error_description || data.error };
       }
-
-      return { isValid: false, error: 'Failed to refresh YouTube token' };
-    } catch (error) {
-      logError(error as Error, { userId });
-      return { isValid: false, error: 'YouTube token refresh failed' };
-    }
-  }
-
-  /**
-   * Refresh X token
-   */
-  private static async refreshXToken(userId: number, tokenData: any): Promise<{
-    isValid: boolean;
-    error?: string;
-    refreshed?: boolean;
-  }> {
-    try {
-      const response = await fetch('https://api.twitter.com/2/oauth2/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${Buffer.from(`${process.env.X_CONSUMER_KEY}:${process.env.X_CONSUMER_SECRET}`).toString('base64')}`,
-        },
-        body: new URLSearchParams({
-          grant_type: 'refresh_token',
-          refresh_token: tokenData.refreshToken,
-        }),
+      
+      // Update connection with new token
+      const expiresAt = new Date(Date.now() + (data.expires_in * 1000));
+      await storage.updatePlatformConnectionByPlatform(connection.userId, connection.platform, {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token || connection.refreshToken,
+        expiresAt
       });
-
-      const data = await response.json();
-
-      if (data.access_token) {
-        await this.updateTokenInDatabase(userId, 'x', {
-          accessToken: data.access_token,
-          refreshToken: data.refresh_token,
-          tokenExpiry: new Date(Date.now() + data.expires_in * 1000),
-        });
-
-        logInfo('X token refreshed successfully', { userId });
-        return { isValid: true, refreshed: true };
-      }
-
-      return { isValid: false, error: 'Failed to refresh X token' };
-    } catch (error) {
-      logError(error as Error, { userId });
-      return { isValid: false, error: 'X token refresh failed' };
-    }
-  }
-
-  /**
-   * Update token in database
-   */
-  private static async updateTokenInDatabase(userId: number, platform: string, tokenData: any): Promise<void> {
-    const connection = await db.query.platformConnections.findFirst({
-      where: eq(platformConnections.userId, userId),
-    });
-
-    if (connection) {
-      const platforms = connection.platforms as any;
-      platforms[platform] = {
-        ...platforms[platform],
-        ...tokenData,
+      
+      return {
+        success: true,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt
       };
-
-      await db.update(platformConnections)
-        .set({ platforms })
-        .where(eq(platformConnections.userId, userId));
+    } catch (error) {
+      return { success: false, error: error.message };
     }
   }
 }

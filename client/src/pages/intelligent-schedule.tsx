@@ -18,6 +18,7 @@ import { MetaPixelTracker } from "@/lib/meta-pixel";
 import AutoPostingEnforcer from "@/components/auto-posting-enforcer";
 import { VideoPostCard } from "@/components/VideoPostCard";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
+import { TokenStatusBanner } from "@/components/TokenStatusBanner";
 
 interface Post {
   id: number;
@@ -552,6 +553,9 @@ function IntelligentSchedule() {
           <p className="text-gray-600 text-lg mb-6">
             xAI analyzes your brand purpose, audience insights, and Queensland market data to create intelligent, strategic content
           </p>
+
+          {/* OAuth Token Status Banner */}
+          <TokenStatusBanner />
 
           {/* Brand Purpose Status */}
           {brandPurpose ? (

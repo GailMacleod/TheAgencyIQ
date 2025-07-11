@@ -26,6 +26,7 @@ import { requireActiveSubscription, requireAuth } from './middleware/subscriptio
 import { PostQuotaService } from './PostQuotaService';
 import { userFeedbackService } from './userFeedbackService.js';
 import RollbackAPI from './rollback-api';
+import { OAuthRefreshService } from './services/OAuthRefreshService';
 
 // Extended session types
 declare module 'express-session' {
@@ -2639,6 +2640,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OAuth Token Refresh API Routes
+  app.post("/api/oauth/refresh/:platform", requireAuth, async (req: any, res) => {
+    try {
+      const { platform } = req.params;
+      const userId = req.session.userId?.toString();
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+      
+      const result = await OAuthRefreshService.validateAndRefreshConnection(userId, platform);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: `${platform} token refreshed successfully`,
+          expiresAt: result.expiresAt
+        });
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          error: result.error || 'Token refresh failed',
+          needsReauth: true
+        });
+      }
+    } catch (error) {
+      console.error('OAuth refresh error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Internal server error during token refresh' 
+      });
+    }
+  });
+
+  // Validate all platform tokens
+  app.get("/api/oauth/validate-all", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId?.toString();
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+      
+      const connections = await storage.getPlatformConnectionsByUser(userId);
+      const validationResults = [];
+      
+      for (const connection of connections) {
+        try {
+          const validation = await OAuthRefreshService.validateToken(
+            connection.accessToken, 
+            connection.platform
+          );
+          
+          validationResults.push({
+            platform: connection.platform,
+            isValid: validation.isValid,
+            error: validation.error,
+            needsRefresh: validation.needsRefresh,
+            expiresAt: connection.expiresAt
+          });
+        } catch (error) {
+          validationResults.push({
+            platform: connection.platform,
+            isValid: false,
+            error: error.message,
+            needsRefresh: true,
+            expiresAt: connection.expiresAt
+          });
+        }
+      }
+      
+      res.json({ validationResults });
+    } catch (error) {
+      console.error('Token validation error:', error);
+      res.status(500).json({ error: 'Failed to validate tokens' });
+    }
+  });
+
+  // Auto-refresh expired tokens
+  app.post("/api/oauth/auto-refresh", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId?.toString();
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+      
+      const connections = await storage.getPlatformConnectionsByUser(userId);
+      const refreshResults = [];
+      
+      for (const connection of connections) {
+        try {
+          const validation = await OAuthRefreshService.validateToken(
+            connection.accessToken, 
+            connection.platform
+          );
+          
+          if (!validation.isValid && validation.needsRefresh) {
+            const refreshResult = await OAuthRefreshService.validateAndRefreshConnection(
+              userId, 
+              connection.platform
+            );
+            
+            refreshResults.push({
+              platform: connection.platform,
+              refreshed: refreshResult.success,
+              error: refreshResult.error
+            });
+          } else {
+            refreshResults.push({
+              platform: connection.platform,
+              refreshed: false,
+              reason: validation.isValid ? 'Token still valid' : 'Cannot refresh'
+            });
+          }
+        } catch (error) {
+          refreshResults.push({
+            platform: connection.platform,
+            refreshed: false,
+            error: error.message
+          });
+        }
+      }
+      
+      res.json({ refreshResults });
+    } catch (error) {
+      console.error('Auto-refresh error:', error);
+      res.status(500).json({ error: 'Failed to auto-refresh tokens' });
+    }
+  });
+
   // Supercharged Strategyzer-based guidance using Grok
   app.post("/api/generate-guidance", requireAuth, async (req: any, res) => {
     try {
@@ -2812,6 +2942,47 @@ Continue building your Value Proposition Canvas systematically.`;
     } catch (error) {
       console.error("Error fetching analytics:", error);
       res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // Token validation endpoint for all platforms
+  app.get('/api/oauth/validate-tokens', async (req: CustomRequest, res: Response) => {
+    try {
+      const userId = req.session.userId ? req.session.userId.toString() : '1';
+      const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
+      
+      console.log('Validating tokens for user:', userId);
+      
+      const validationResults = await Promise.all(
+        platforms.map(async (platform) => {
+          try {
+            const result = await OAuthRefreshService.validateAndRefreshConnection(userId, platform);
+            console.log(`Platform ${platform} validation result:`, result);
+            return {
+              platform,
+              ...result
+            };
+          } catch (error) {
+            console.error(`Platform ${platform} validation error:`, error);
+            return {
+              platform,
+              success: false,
+              error: error.message
+            };
+          }
+        })
+      );
+      
+      res.json({
+        success: true,
+        validationResults
+      });
+    } catch (error) {
+      console.error('Token validation error:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
     }
   });
 
