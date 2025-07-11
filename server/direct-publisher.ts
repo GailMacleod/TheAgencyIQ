@@ -200,6 +200,64 @@ export class DirectPublisher {
   }
 
   /**
+   * Publish to YouTube using OAuth 2.0 credentials
+   */
+  static async publishToYouTube(content: string): Promise<DirectPublishResult> {
+    try {
+      // Import database connection
+      const { db } = await import('./db');
+      const { platformConnections } = await import('../shared/schema');
+      const { eq, and } = await import('drizzle-orm');
+      
+      // Get active YouTube connection from database
+      const [connection] = await db
+        .select()
+        .from(platformConnections)
+        .where(and(
+          eq(platformConnections.platform, 'youtube'),
+          eq(platformConnections.isActive, true)
+        ))
+        .orderBy(platformConnections.connectedAt)
+        .limit(1);
+
+      if (!connection) {
+        return { success: false, error: 'No active YouTube connection found. Please complete OAuth 2.0 authorization first.' };
+      }
+
+      // YouTube API requires video upload - for text content, we'll create a community post
+      const response = await fetch('https://www.googleapis.com/youtube/v3/activities', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${connection.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          snippet: {
+            description: content
+          },
+          status: {
+            privacyStatus: 'public'
+          }
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return { 
+          success: false, 
+          error: `YouTube: ${result.error?.message || 'API error'}. Note: YouTube primarily supports video content, not text posts.` 
+        };
+      }
+
+      return { success: true, platformPostId: result.id };
+      
+    } catch (error: any) {
+      return { success: false, error: `YouTube error: ${error.message}` };
+    }
+  }
+
+  /**
    * Publish to any platform using direct credentials
    */
   static async publishToPlatform(platform: string, content: string): Promise<DirectPublishResult> {
@@ -211,7 +269,10 @@ export class DirectPublisher {
       case 'instagram':
         return await this.publishToInstagram(content);
       case 'twitter':
+      case 'x':
         return await this.publishToTwitter(content);
+      case 'youtube':
+        return await this.publishToYouTube(content);
       default:
         return { success: false, error: `Platform ${platform} not supported` };
     }
