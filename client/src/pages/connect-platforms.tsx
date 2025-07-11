@@ -1,5 +1,6 @@
 import { useLocation } from "wouter";
-import { Facebook, Instagram, Linkedin, Hash, Youtube, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Youtube, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { SiX } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +57,7 @@ const platformConfig: Record<string, PlatformConfig> = {
   },
   x: {
     name: "X",
-    icon: Hash,
+    icon: SiX,
     color: "bg-black",
     description: "Share quick updates and engage in real-time conversations"
   },
