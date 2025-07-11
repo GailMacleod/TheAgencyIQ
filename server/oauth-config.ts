@@ -169,24 +169,16 @@ passport.use(new LinkedInStrategy({
     : done(new Error(result.error));
 }));
 
-// X (Twitter) OAuth Strategy with unified callback handling
+// X (Twitter) OAuth Strategy - DISABLED - using direct connection (400 errors from api.twitter.com)
 passport.use(new TwitterStrategy({
-  consumerKey: process.env.X_CONSUMER_KEY!,
-  consumerSecret: process.env.X_CONSUMER_SECRET!,
+  consumerKey: 'dummy_x_consumer_key',
+  consumerSecret: 'dummy_x_consumer_secret',
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`,
   userProfileURL: "https://api.twitter.com/1.1/account/verify_credentials.json?include_email=true",
   passReqToCallback: true
 }, async (req: any, token: string, tokenSecret: string, profile: any, done: any) => {
-  const result = await handleOAuthCallback({
-    req,
-    profile,
-    tokens: { accessToken: token, tokenSecret },
-    platform: 'x'
-  });
-  
-  return result.success 
-    ? done(null, result) 
-    : done(new Error(result.error));
+  console.log('X OAuth strategy called - should not happen');
+  return done(new Error('X OAuth disabled - using direct connection (400 errors)'));
 }));
 
 // YouTube (Google) OAuth Strategy with unified callback handling

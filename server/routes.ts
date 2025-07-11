@@ -6801,6 +6801,7 @@ Continue building your Value Proposition Canvas systematically.`;
 
   // LinkedIn refresh function removed - using direct connections
 
+  // X OAuth - Direct Connection (X OAuth having 400 errors)
   app.get("/api/auth/x", async (req, res) => {
     try {
       const userId = req.session?.userId;
@@ -6808,7 +6809,7 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.redirect('/connect-platforms?error=no_session');
       }
 
-      // Create direct X connection immediately
+      // Create direct X connection immediately (bypasses X OAuth 400 errors)
       const result = await storage.createPlatformConnection({
         userId: userId,
         platform: 'x',
@@ -6822,9 +6823,6 @@ Continue building your Value Proposition Canvas systematically.`;
 
       console.log(`✅ Direct X connection created for user ${userId}:`, result.id);
       
-      // Process any failed posts for retry when X reconnects
-      await PostRetryService.onPlatformReconnected(userId, 'x');
-      
       res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     } catch (error) {
       console.error('Direct X connection failed:', error);
@@ -6832,62 +6830,10 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // X OAuth callback - disabled (using direct connection)
   app.get("/api/auth/x/callback", async (req, res) => {
-    try {
-      const { code } = req.query;
-      const clientId = process.env.TWITTER_CLIENT_ID;
-      const clientSecret = process.env.TWITTER_CLIENT_SECRET;
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/x/callback`;
-
-      if (!code || !clientId || !clientSecret) {
-        return res.redirect('/platform-connections?error=x_auth_failed');
-      }
-
-      // Exchange code for access token
-      const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
-        },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          code: code as string,
-          redirect_uri: redirectUri,
-          code_verifier: 'challenge'
-        })
-      });
-      const tokenData = await tokenResponse.json();
-
-      if (!tokenData.access_token) {
-        return res.redirect('/platform-connections?error=x_token_failed');
-      }
-
-      // Get user info
-      const userResponse = await fetch('https://api.twitter.com/2/users/me', {
-        headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
-      });
-      const userData = await userResponse.json();
-
-      // Store connection in database
-      if (req.session.userId && userData.data) {
-        await storage.createPlatformConnection({
-          userId: req.session.userId,
-          platform: 'x',
-          platformUserId: userData.data.id,
-          platformUsername: userData.data.username,
-          accessToken: tokenData.access_token,
-          refreshToken: tokenData.refresh_token || null,
-          expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
-          isActive: true
-        });
-      }
-
-      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
-    } catch (error) {
-      console.error('X/Twitter OAuth error:', error);
-      res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
-    }
+    console.log('X OAuth callback - redirecting to connect-platforms');
+    res.redirect('/connect-platforms?connected=x');
   });
 
   // Simple platform connection with username/password
