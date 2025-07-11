@@ -1,4 +1,5 @@
 import { storage } from '../storage';
+import crypto from 'crypto';
 
 interface RefreshResult {
   success: boolean;
@@ -104,7 +105,11 @@ export class OAuthRefreshService {
    */
   private static async validateFacebookToken(accessToken: string): Promise<TokenValidationResult> {
     try {
-      const response = await fetch(`https://graph.facebook.com/me?access_token=${accessToken}`);
+      // Generate appsecret_proof for Facebook API security
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+      const appsecret_proof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
+      
+      const response = await fetch(`https://graph.facebook.com/me?access_token=${accessToken}&appsecret_proof=${appsecret_proof}`);
       const data = await response.json();
       
       if (data.error) {
@@ -126,7 +131,11 @@ export class OAuthRefreshService {
    */
   private static async validateInstagramToken(accessToken: string): Promise<TokenValidationResult> {
     try {
-      const response = await fetch(`https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`);
+      // Generate appsecret_proof for Instagram API security (uses Facebook credentials)
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+      const appsecret_proof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
+      
+      const response = await fetch(`https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}&appsecret_proof=${appsecret_proof}`);
       const data = await response.json();
       
       if (data.error) {

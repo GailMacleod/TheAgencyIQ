@@ -6780,11 +6780,11 @@ Continue building your Value Proposition Canvas systematically.`;
     `);
   });
 
-  // Instagram OAuth callback - simplified for direct connections
+  // Instagram OAuth callback - handled by universal callback in server/index.ts
+  // This route is kept for direct API calls but actual OAuth is handled by /callback
   app.get("/api/auth/instagram/callback", async (req, res) => {
-    // Redirect any OAuth callbacks to direct connection success
-    console.log('Instagram OAuth callback - redirecting to success');
-    res.redirect('/platform-connections?connected=instagram');
+    console.log('Instagram OAuth callback - redirecting to connect-platforms');
+    res.redirect('/connect-platforms?connected=instagram');
   });
 
   // LinkedIn Direct Connection - Immediate working connection
