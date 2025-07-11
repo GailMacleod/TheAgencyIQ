@@ -3460,11 +3460,21 @@ Continue building your Value Proposition Canvas systematically.`;
     try {
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
       
+      // Find Facebook connection to share token with Instagram
+      const facebookConnection = connections.find(conn => conn.platform === 'facebook');
+      
       // Add OAuth status validation using existing OAuthRefreshService
       const connectionsWithStatus = await Promise.all(connections.map(async (conn) => {
         try {
+          let accessTokenToValidate = conn.accessToken;
+          
+          // Instagram uses Facebook's token since they share the same Meta Graph API
+          if (conn.platform === 'instagram' && facebookConnection) {
+            accessTokenToValidate = facebookConnection.accessToken;
+          }
+          
           // Validate token for this specific platform
-          const validationResult = await OAuthRefreshService.validateToken(conn.accessToken, conn.platform);
+          const validationResult = await OAuthRefreshService.validateToken(accessTokenToValidate, conn.platform);
           
           return {
             ...conn,

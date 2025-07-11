@@ -127,26 +127,12 @@ export class OAuthRefreshService {
   }
 
   /**
-   * Instagram token validation
+   * Instagram token validation - uses Facebook token since Instagram uses Facebook Graph API
    */
   private static async validateInstagramToken(accessToken: string): Promise<TokenValidationResult> {
     try {
-      // Generate appsecret_proof for Instagram API security (uses Facebook credentials)
-      const appSecret = process.env.FACEBOOK_APP_SECRET;
-      const appsecret_proof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
-      
-      const response = await fetch(`https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}&appsecret_proof=${appsecret_proof}`);
-      const data = await response.json();
-      
-      if (data.error) {
-        return {
-          isValid: false,
-          error: `${data.error.message}`,
-          needsRefresh: data.error.code === 190 || data.error.code === 102
-        };
-      }
-      
-      return { isValid: true, needsRefresh: false };
+      // Instagram uses the same Facebook access token, so validate using Facebook's method
+      return await this.validateFacebookToken(accessToken);
     } catch (error) {
       return { isValid: false, error: error.message, needsRefresh: true };
     }
