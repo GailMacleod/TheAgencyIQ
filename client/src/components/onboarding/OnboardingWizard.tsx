@@ -435,7 +435,7 @@ export default function OnboardingWizard() {
   const functionalWizardSteps: WizardStep[] = [
     {
       id: 0,
-      title: "Generate smart content",
+      title: "Learn more",
       description: "Start by creating your social media posts",
       icon: <Zap className="w-4 h-4" />,
       actionText: "Generate",
