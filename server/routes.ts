@@ -5859,7 +5859,7 @@ Continue building your Value Proposition Canvas systematically.`;
         subscriptionPlan: user.subscriptionPlan,
         stripeSubscriptionId: user.stripeSubscriptionId,
         stripeCustomerId: user.stripeCustomerId,
-        subscriptionActive: stripeSubscription?.status === 'active',
+        subscriptionActive: stripeSubscription?.status === 'active' || stripeSubscription?.status === 'trialing',
         subscriptionStatus: stripeSubscription?.status || 'none',
         remainingPosts: user.remainingPosts,
         totalPosts: user.totalPosts,

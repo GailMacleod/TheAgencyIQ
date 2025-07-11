@@ -30,17 +30,21 @@ async function verifyAndSyncBilling() {
     
     console.log(`✅ Found ${allCustomers.length} customers in Stripe`);
     
-    // Check active subscriptions
+    // Check active subscriptions (including trialing)
     const allActiveSubscriptions = [];
     for (const customer of allCustomers) {
-      const subscriptions = await stripe.subscriptions.list({
+      const activeSubscriptions = await stripe.subscriptions.list({
         customer: customer.id,
         status: 'active',
       });
-      allActiveSubscriptions.push(...subscriptions.data);
+      const trialingSubscriptions = await stripe.subscriptions.list({
+        customer: customer.id,
+        status: 'trialing',
+      });
+      allActiveSubscriptions.push(...activeSubscriptions.data, ...trialingSubscriptions.data);
     }
     
-    console.log(`📊 Active subscriptions in Stripe: ${allActiveSubscriptions.length}`);
+    console.log(`📊 Active subscriptions in Stripe: ${allActiveSubscriptions.length} (including trialing)`);
     
     if (allActiveSubscriptions.length === 1) {
       const subscription = allActiveSubscriptions[0];
