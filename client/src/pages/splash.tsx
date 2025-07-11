@@ -130,7 +130,7 @@ export default function Splash() {
                   <img 
                     src="/attached_assets/On Pencil_distance education_e-learning_online education_online learning_online courses_icon_1752204074861.png" 
                     alt="Education Icon"
-                    className="w-12 h-12 object-contain"
+                    className="w-15 h-15 object-contain"
                     style={{ imageRendering: 'pixelated' }}
                   />
                   <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium">
