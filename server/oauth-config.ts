@@ -169,16 +169,26 @@ passport.use(new LinkedInStrategy({
     : done(new Error(result.error));
 }));
 
-// X (Twitter) OAuth Strategy - DISABLED - using OAuth 2.0 Authorization Code Flow with PKCE
+// X (Twitter) OAuth Strategy - RESTORED - using OAuth 1.0a (original working implementation)
 passport.use(new TwitterStrategy({
-  consumerKey: 'dummy_x_consumer_key',
-  consumerSecret: 'dummy_x_consumer_secret',
-  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`,
+  consumerKey: process.env.X_CONSUMER_KEY!,
+  consumerSecret: process.env.X_CONSUMER_SECRET!,
+  callbackURL: `${OAUTH_REDIRECT_BASE}/api/auth/x/callback`,
   userProfileURL: "https://api.twitter.com/1.1/account/verify_credentials.json?include_email=true",
   passReqToCallback: true
 }, async (req: any, token: string, tokenSecret: string, profile: any, done: any) => {
-  console.log('X OAuth 1.0a strategy called - should not happen, using OAuth 2.0');
-  return done(new Error('X OAuth 1.0a disabled - using OAuth 2.0 Authorization Code Flow with PKCE'));
+  console.log('X OAuth 1.0a strategy executing for user:', profile.username);
+  
+  const result = await handleOAuthCallback({
+    req,
+    profile,
+    tokens: { accessToken: token, tokenSecret },
+    platform: 'x'
+  });
+  
+  return result.success 
+    ? done(null, result) 
+    : done(new Error(result.error));
 }));
 
 // YouTube (Google) OAuth Strategy with unified callback handling
