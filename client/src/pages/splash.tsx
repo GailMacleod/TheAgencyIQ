@@ -13,6 +13,7 @@ import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 export default function Splash() {
   const [location] = useLocation();
   const [showSignupAnimation, setShowSignupAnimation] = useState(false);
+  const [revealAnimation, setRevealAnimation] = useState(false);
   
   const { data: user } = useQuery({
     queryKey: ["/api/user"],
@@ -31,13 +32,54 @@ export default function Splash() {
     }
   }, [location]);
 
+  // Trigger animated reveal on page load
+  useEffect(() => {
+    // Start animation after a short delay
+    const timer = setTimeout(() => {
+      setRevealAnimation(true);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Animated Reveal Overlay */}
+      <div className="fixed inset-0 z-[100] pointer-events-none">
+        {/* Left Panel */}
+        <div 
+          className={`absolute top-0 left-0 w-1/2 h-full bg-[#3B82F6] transition-transform duration-1000 ease-out ${
+            revealAnimation ? 'transform -translate-x-full' : 'transform translate-x-0'
+          }`}
+        />
+        {/* Right Panel */}
+        <div 
+          className={`absolute top-0 right-0 w-1/2 h-full bg-[#3B82F6] transition-transform duration-1000 ease-out ${
+            revealAnimation ? 'transform translate-x-full' : 'transform translate-x-0'
+          }`}
+        />
+        
+        {/* AIQ Icon in center during animation */}
+        <div 
+          className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-opacity duration-500 ${
+            revealAnimation ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl">
+            <span className="text-[#3B82F6] font-bold text-2xl">AIQ</span>
+          </div>
+        </div>
+      </div>
+
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border/40">
         <div className="container-atomiq">
           <div className="flex justify-between items-center h-20">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-3">
+              {/* AIQ Icon */}
+              <div className="w-10 h-10 bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">AIQ</span>
+              </div>
               <img 
                 src={agencyLogoPath} 
                 alt="The AgencyIQ" 

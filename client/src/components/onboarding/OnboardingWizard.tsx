@@ -615,7 +615,7 @@ export default function OnboardingWizard() {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsMinimized(false)}
-          className="bg-[#3b5cff] hover:bg-[#2a4bd8] text-white rounded-full w-16 h-16 shadow-lg flex items-center justify-center"
+          className="bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] text-white rounded-full w-16 h-16 shadow-xl border-2 border-white/20 flex items-center justify-center"
           title="Open Training Guide"
         >
           <Target className="w-6 h-6" />
@@ -625,40 +625,44 @@ export default function OnboardingWizard() {
   }
 
   return (
-    <div className="card-atomiq p-8 space-y-6">
+    <div className="bg-white/95 backdrop-blur-md border border-gray-200/50 rounded-2xl shadow-2xl p-8 space-y-6">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium">Training Guide</span>
+            <div className="w-6 h-6 bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-xs">AIQ</span>
+            </div>
+            <span className="text-sm font-medium text-gray-800">Training Guide</span>
             {userStatus.userType === 'returning' && (
               <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                 Returning Subscriber
               </Badge>
             )}
           </div>
-          <span className="text-xs text-muted-foreground">Step {currentStep + 1} of {wizardSteps.length}</span>
+          <span className="text-xs text-gray-500">Step {currentStep + 1} of {wizardSteps.length}</span>
         </div>
         
         <div className="space-y-3">
           <div className="flex items-center space-x-3">
-            <div className="w-3 h-3 bg-[#3b5cff] rounded-full flex items-center justify-center">
-              {wizardSteps[currentStep].icon && (
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-              )}
+            <div className="w-8 h-8 bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] rounded-full flex items-center justify-center">
+              <div className="text-white text-sm">
+                {wizardSteps[currentStep].icon}
+              </div>
             </div>
-            <span className="text-sm font-medium">{wizardSteps[currentStep].title}</span>
+            <div className="flex-1">
+              <span className="text-sm font-semibold text-gray-800">{wizardSteps[currentStep].title}</span>
+              <p className="text-xs text-gray-600 mt-1">
+                {wizardSteps[currentStep].description}
+              </p>
+            </div>
           </div>
           
-          <div className="pl-6 space-y-2">
-            <p className="text-xs text-muted-foreground">
-              {wizardSteps[currentStep].description}
-            </p>
-            
+          <div className="pl-11 space-y-2">
             <div className="space-y-1">
               {wizardSteps[currentStep].tips.slice(0, 2).map((tip, index) => (
                 <div key={index} className="flex items-center space-x-2">
-                  <div className="w-1.5 h-1.5 bg-[#3b5cff] rounded-full"></div>
-                  <span className="text-xs">{tip}</span>
+                  <div className="w-1.5 h-1.5 bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] rounded-full"></div>
+                  <span className="text-xs text-gray-600">{tip}</span>
                 </div>
               ))}
             </div>
@@ -671,9 +675,9 @@ export default function OnboardingWizard() {
               <span className="text-sm font-medium">Progress</span>
               <span className="text-xs text-muted-foreground">{Math.round(progressPercentage)}% Complete</span>
             </div>
-            <div className="w-full bg-gradient-to-r from-blue-200 to-cyan-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
-                className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-300" 
+                className="bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] h-2 rounded-full transition-all duration-300" 
                 style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
@@ -716,7 +720,7 @@ export default function OnboardingWizard() {
               <Button
                 onClick={handleAction}
                 size="sm"
-                className="bg-[#3b5cff] hover:bg-[#2a4bd8] text-white text-xs"
+                className="bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] text-white text-xs font-medium shadow-lg"
               >
                 {wizardSteps[currentStep].actionText}
                 <ArrowRight className="w-3 h-3 ml-1" />
