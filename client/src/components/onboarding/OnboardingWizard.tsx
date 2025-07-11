@@ -435,7 +435,7 @@ export default function OnboardingWizard() {
   const functionalWizardSteps: WizardStep[] = [
     {
       id: 0,
-      title: "Generate AI Content",
+      title: "Generate smart content",
       description: "Start by creating your social media posts",
       icon: <Zap className="w-4 h-4" />,
       actionText: "Generate",
@@ -639,24 +639,14 @@ export default function OnboardingWizard() {
                 </CardTitle>
               </div>
             </div>
-            <div className="flex items-center space-x-1">
-              <Button
-                onClick={handleMinimize}
-                variant="ghost"
-                size="sm"
-                className="text-gray-500 hover:text-gray-700"
-              >
-                {isMinimized ? <Play className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-              </Button>
-              <Button
-                onClick={handleSkip}
-                variant="ghost"
-                size="sm"
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
+            <Button
+              onClick={handleMinimize}
+              variant="ghost"
+              size="sm"
+              className="text-gray-500 hover:text-gray-700"
+            >
+              {isMinimized ? <Play className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+            </Button>
           </div>
           {!isMinimized && (
             <div className="mt-3">
