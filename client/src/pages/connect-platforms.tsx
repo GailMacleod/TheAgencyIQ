@@ -139,8 +139,9 @@ export default function ConnectPlatforms() {
         // ENHANCED: Aggressive refresh for real-time UI synchronization
         console.log('🔄 OAuth success - initiating aggressive refresh sequence');
         
-        // Immediate invalidation
+        // Immediate invalidation and forced refresh
         queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+        queryClient.removeQueries({ queryKey: ['/api/platform-connections'] });
         
         // Sequential refresh attempts with extended timing for better UX
         const refreshSequence = [250, 750, 1500, 3000, 5000];
@@ -148,6 +149,7 @@ export default function ConnectPlatforms() {
           setTimeout(() => {
             console.log(`🔄 Refresh attempt ${index + 1}/${refreshSequence.length} after ${delay}ms`);
             queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+            queryClient.removeQueries({ queryKey: ['/api/platform-connections'] });
             refetch();
           }, delay);
         });
@@ -440,14 +442,24 @@ export default function ConnectPlatforms() {
     onSuccess: (data, platform) => {
       console.log(`✅ Successfully disconnected ${platform}:`, data);
       
-      // FIXED: Platform-specific cache invalidation to prevent global state reset
+      // FIXED: Aggressive cache clearing to ensure UI synchronization
       queryClient.invalidateQueries({ 
         queryKey: ['/api/platform-connections'], 
         exact: true 
       });
       
+      // Remove cached data completely to force fresh fetch
+      queryClient.removeQueries({ queryKey: ['/api/platform-connections'] });
+      
       // Force immediate refetch to sync individual platform state
       refetch();
+      
+      // Additional refresh after small delay to ensure backend sync
+      setTimeout(() => {
+        console.log(`🔄 Additional refresh for ${platform} disconnect`);
+        queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+        refetch();
+      }, 1000);
       
       toast({
         title: "Platform Disconnected",
@@ -524,6 +536,18 @@ export default function ConnectPlatforms() {
     const activeConnection = connections.find((conn: PlatformConnection) => 
       conn.platform === platform && conn.isActive
     );
+    
+    console.log(`🔍 Platform ${platform} connection check:`, {
+      hasConnections: !!connections,
+      connectionCount: connections?.length || 0,
+      activeConnection: !!activeConnection,
+      connectionDetails: activeConnection ? {
+        id: activeConnection.id,
+        platform: activeConnection.platform,
+        username: activeConnection.platformUsername,
+        isActive: activeConnection.isActive
+      } : null
+    });
     
     return !!activeConnection;
   };

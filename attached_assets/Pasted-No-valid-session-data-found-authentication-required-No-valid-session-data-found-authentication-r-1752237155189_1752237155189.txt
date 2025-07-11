@@ -1,0 +1,43 @@
+No valid session data found - authentication required
+No valid session data found - authentication required
+No valid session data found - authentication required
+No valid session data found - authentication required
+Session establishment request: {
+  body: {},
+  sessionId: 'aiq_mcysp7ce_9bt133lkmud',
+  existingUserId: undefined
+}
+Session establishment request: {
+  body: {},
+  sessionId: 'aiq_mcysp7cj_7mdt7kxmu2f',
+  existingUserId: undefined
+}
+No valid session data found - authentication required
+Demo session established for gailm@macleodglba.com.au
+Demo session established for gailm@macleodglba.com.au
+Login attempt for phone: +61424835189
+Login successful - User ID assigned to session: 2 for gailm@macleodglba.com.au
+📊 Quota calculation for user 2: 21 published posts, 31/52 remaining
+🔧 User 2 connections: 5 total → 5 unique active per platform
+🔧 User 2 connections: 5 total → 5 unique active per platform
+🔧 User 2 connections: 5 total → 5 unique active per platform
+🔧 User 2 connections: 4 total → 4 unique active per platform
+🔧 User 2 connections: 4 total → 4 unique active per platform
+🔗 OAuth initiation for linkedin with user ID: 2
+🔗 OAuth initiation for linkedin:
+📍 Callback URI: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/callback
+OAuth connection initiated for linkedin
+🔧 User 2 connections: 4 total → 4 unique active per platform
+🔗 OAuth initiation for linkedin with user ID: 2
+🔗 OAuth initiation for linkedin:
+📍 Callback URI: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/callback
+OAuth connection initiated for linkedin
+🔗 OAuth initiation for linkedin with user ID: 2
+🔗 OAuth initiation for linkedin:
+📍 Callback URI: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/callback
+OAuth connection initiated for linkedin
+🔗 OAuth initiation for linkedin with user ID: 2
+🔗 OAuth initiation for linkedin:
+📍 Callback URI: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/callback
+OAuth connection initiated for linkedin
+🔧 User 2 connections: 4 total → 4 unique active per platform
