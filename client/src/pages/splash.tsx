@@ -127,20 +127,19 @@ export default function Splash() {
             <Link href="/subscription">
               <Button 
                 size="lg" 
-                className="relative overflow-hidden bg-gradient-to-r from-blue-500 via-cyan-400 to-pink-400 hover:opacity-90 text-white px-8 py-4 text-xl font-black tracking-wider
-                          animate-bounce hover:animate-none
+                className="relative overflow-hidden text-white px-8 py-4 text-xl font-black tracking-wider
                           transition-all duration-300 ease-in-out
-                          hover:scale-110 hover:shadow-2xl
+                          hover:scale-105 hover:shadow-2xl
                           transform-gpu will-change-transform
-                          hover:from-blue-600 hover:via-cyan-500 hover:to-pink-500
                           active:scale-95 active:transition-none
-                          shadow-lg shadow-pink-200/50
-                          text-shadow-standout
-                          before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/20 before:to-transparent 
-                          before:translate-x-[-100%] before:animate-pulse
-                          hover:before:translate-x-[100%] hover:before:transition-transform hover:before:duration-700"
+                          text-shadow-standout"
+                style={{
+                  background: 'linear-gradient(-45deg, #3b5cff, #00f0ff, #ff538f, #915fd7, #3b5cff)',
+                  backgroundSize: '400% 400%',
+                  animation: 'gradient-wave 3s ease-in-out infinite, vignette-pulse 2s ease-in-out infinite alternate'
+                }}
               >
-                <span className="relative z-10 animate-pulse">SUBSCRIBE NOW</span>
+                <span className="relative z-10">SUBSCRIBE NOW</span>
               </Button>
             </Link>
             
