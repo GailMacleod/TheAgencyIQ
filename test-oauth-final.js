@@ -4,147 +4,151 @@
  */
 
 async function testCompleteOAuthSystem() {
-  console.log('🔥 FINAL OAUTH SYSTEM TEST - COMPLETE INTEGRATION');
-  console.log('================================================');
-  
   const baseUrl = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
-  const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
+  
+  console.log('🔐 COMPLETE OAUTH SYSTEM TEST');
+  console.log('=============================');
   
   try {
-    // Step 1: Verify all OAuth credentials are loaded
-    console.log('\n🔑 Step 1: Verifying OAuth credentials...');
-    
-    const credentialTests = [
-      { platform: 'facebook', env: 'FACEBOOK_APP_ID', expected: '1409057863445071' },
-      { platform: 'instagram', env: 'FACEBOOK_APP_ID', expected: '1409057863445071' },
-      { platform: 'linkedin', env: 'LINKEDIN_CLIENT_ID', expected: '86rso45pajc7wj' },
-      { platform: 'x', env: 'X_OAUTH_CLIENT_ID', expected: 'cW5vZXdCQjZwSmVsM24wYVpCV3Y6MTpjaQ' },
-      { platform: 'youtube', env: 'GOOGLE_CLIENT_ID', expected: '396147044734-d43uag27mphlk9k2l38jdhk9ju722v1j.apps.googleuserscontent.com' }
-    ];
-    
-    for (const test of credentialTests) {
-      const response = await fetch(`${baseUrl}/connect/${test.platform}`, {
-        method: 'GET',
-        credentials: 'include',
-        redirect: 'manual'
-      });
-      
-      if (response.status === 302) {
-        const location = response.headers.get('location');
-        const hasCorrectClientId = location.includes(`client_id=${test.expected}`);
-        
-        console.log(`✅ ${test.platform.padEnd(9)}: ${hasCorrectClientId ? 'Correct credentials' : 'Credential mismatch'}`);
-        console.log(`   Client ID: ${test.expected.substring(0, 20)}...`);
-        
-        // Verify OAuth 2.0 scopes
-        if (test.platform === 'x' && location.includes('tweet.write')) {
-          console.log(`   OAuth 2.0: ✅ Proper X OAuth 2.0 scopes configured`);
-        }
-      } else {
-        console.log(`❌ ${test.platform}: OAuth redirect failed`);
-      }
-    }
-    
-    // Step 2: Test token exchange simulation
-    console.log('\n🔄 Step 2: Testing token exchange simulation...');
-    
-    const testTokenExchange = async (platform) => {
-      const mockState = Buffer.from(JSON.stringify({
-        platform: platform,
-        timestamp: Date.now(),
-        userId: 2
-      })).toString('base64');
-      
-      const response = await fetch(`${baseUrl}/callback?code=test_${platform}_code_${Date.now()}&state=${mockState}`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-      
-      const html = await response.text();
-      const success = html.includes('oauth_success');
-      
-      console.log(`${platform.padEnd(9)}: ${success ? '✅ Token exchange ready' : '❌ Token exchange failed'}`);
-      
-      return success;
-    };
-    
-    // Test token exchange for key platforms
-    await testTokenExchange('facebook');
-    await testTokenExchange('linkedin');
-    await testTokenExchange('x');
-    
-    // Step 3: Check current platform status
-    console.log('\n📊 Step 3: Current platform connection status...');
-    
-    const connectionsResponse = await fetch(`${baseUrl}/api/platform-connections`, {
+    // First, get current posts to find one to publish
+    console.log('📋 Getting current posts...');
+    const postsResponse = await fetch(`${baseUrl}/api/posts`, {
       credentials: 'include'
     });
     
-    if (connectionsResponse.ok) {
-      const connections = await connectionsResponse.json();
+    if (!postsResponse.ok) {
+      console.error('Failed to get posts:', await postsResponse.text());
+      return;
+    }
+    
+    const posts = await postsResponse.json();
+    console.log(`Found ${posts.length} posts`);
+    
+    // Find a draft post to publish
+    const draftPost = posts.find(p => p.status === 'draft');
+    if (!draftPost) {
+      console.log('No draft posts found');
+      return;
+    }
+    
+    console.log(`Using draft post: ${draftPost.id} - "${draftPost.content.substring(0, 50)}..."`);
+    
+    // Test publishing to each platform individually
+    const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
+    const results = [];
+    
+    for (const platform of platforms) {
+      console.log(`\n🚀 Testing ${platform.toUpperCase()} publishing...`);
       
-      // Get latest connection per platform
-      const latestConnections = {};
-      connections.forEach(conn => {
-        if (!latestConnections[conn.platform] || 
-            new Date(conn.connectedAt) > new Date(latestConnections[conn.platform].connectedAt)) {
-          latestConnections[conn.platform] = conn;
-        }
-      });
-      
-      console.log(`Found ${connections.length} total connections across ${Object.keys(latestConnections).length} platforms`);
-      
-      platforms.forEach(platform => {
-        const conn = latestConnections[platform];
-        if (conn) {
-          const status = conn.oauthStatus;
-          const isExpired = status?.needsReauth || !status?.isValid;
-          
-          console.log(`${platform.padEnd(9)}: ${isExpired ? '❌ Expired' : '✅ Valid'} - ${isExpired ? 'Needs reconnection' : 'Ready'}`);
-          
-          if (status?.error) {
-            console.log(`           Error: ${status.error.substring(0, 80)}...`);
-          }
+      try {
+        const publishResponse = await fetch(`${baseUrl}/api/publish-post`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            postId: draftPost.id,
+            platform: platform
+          })
+        });
+        
+        console.log(`${platform} response status: ${publishResponse.status}`);
+        
+        if (publishResponse.ok) {
+          const result = await publishResponse.json();
+          results.push({
+            platform,
+            success: true,
+            message: result.message,
+            postId: result.postId,
+            remainingPosts: result.remainingPosts
+          });
+          console.log(`✅ ${platform} SUCCESS: ${result.message}`);
         } else {
-          console.log(`${platform.padEnd(9)}: 🚫 No connection found`);
+          const errorResult = await publishResponse.json();
+          results.push({
+            platform,
+            success: false,
+            error: errorResult.message || errorResult.error,
+            status: publishResponse.status
+          });
+          console.log(`❌ ${platform} FAILED: ${errorResult.message || errorResult.error}`);
         }
+        
+      } catch (error) {
+        results.push({
+          platform,
+          success: false,
+          error: error.message
+        });
+        console.log(`❌ ${platform} ERROR: ${error.message}`);
+      }
+    }
+    
+    // Summary results
+    console.log('\n📊 OAUTH SYSTEM TEST RESULTS');
+    console.log('============================');
+    
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+    
+    console.log(`✅ Successful Platforms: ${successful.length}/5`);
+    console.log(`❌ Failed Platforms: ${failed.length}/5`);
+    
+    if (successful.length > 0) {
+      console.log('\nSuccessful Platforms:');
+      successful.forEach(r => {
+        console.log(`  ${r.platform}: ${r.message || 'Published successfully'}`);
       });
     }
     
-    // Step 4: OAuth system readiness report
-    console.log('\n🎯 OAUTH SYSTEM READINESS REPORT');
-    console.log('================================');
+    if (failed.length > 0) {
+      console.log('\nFailed Platforms:');
+      failed.forEach(r => {
+        console.log(`  ${r.platform}: ${r.error}`);
+      });
+    }
     
-    const readinessChecks = [
-      '✅ All 5 platform OAuth credentials configured',
-      '✅ Facebook OAuth 2.0 with updated scopes (no publish_actions)',
-      '✅ Instagram OAuth using Facebook credentials',
-      '✅ LinkedIn OAuth 2.0 with publishing scopes',
-      '✅ X OAuth 2.0 with proper Client ID/Secret (not Consumer Keys)',
-      '✅ YouTube OAuth 2.0 with Google credentials',
-      '✅ Token exchange system operational',
-      '✅ Real access token storage in database',
-      '✅ User profile fetching from each platform',
-      '✅ Popup OAuth flow with postMessage communication'
-    ];
+    // OAuth token analysis
+    console.log('\n🔍 TOKEN ANALYSIS');
+    console.log('=================');
     
-    readinessChecks.forEach(check => console.log(check));
+    const needsReauth = failed.filter(r => 
+      r.error && (
+        r.error.includes('Invalid access token') ||
+        r.error.includes('Cannot parse access token') ||
+        r.error.includes('Token expired') ||
+        r.error.includes('not connected')
+      )
+    );
     
-    console.log('\n🔥 NEXT STEPS FOR MANUAL TESTING:');
-    console.log('=================================');
-    console.log('1. Visit: /connect-platforms page');
-    console.log('2. Click "Reconnect" for expired platforms');
-    console.log('3. Complete OAuth in popup windows');
-    console.log('4. Verify tokens are exchanged and stored');
-    console.log('5. Test publishing to connected platforms');
-    console.log('');
-    console.log('All platforms currently show "Expired" because existing');
-    console.log('tokens are old authorization codes, not real access tokens.');
-    console.log('The system correctly identifies this and requests re-authentication.');
+    if (needsReauth.length > 0) {
+      console.log(`🔄 Platforms needing OAuth re-authentication: ${needsReauth.length}`);
+      needsReauth.forEach(r => {
+        console.log(`  ${r.platform}: ${r.error}`);
+      });
+      
+      console.log('\n📋 NEXT STEPS:');
+      console.log('1. Visit /connect-platforms page');
+      console.log('2. Click "Reconnect" buttons for failed platforms');
+      console.log('3. Complete OAuth flow in popup windows');
+      console.log('4. Retry publishing test');
+    }
+    
+    // Overall system status
+    const systemStatus = successful.length >= 3 ? 'READY' : 'NEEDS_SETUP';
+    console.log(`\n🎯 SYSTEM STATUS: ${systemStatus}`);
+    
+    if (systemStatus === 'READY') {
+      console.log('✅ OAuth system is operational and ready for production use');
+    } else {
+      console.log('⚠️  OAuth system requires token refresh before full functionality');
+    }
     
   } catch (error) {
-    console.error('❌ OAuth system test failed:', error);
+    console.error('❌ Complete OAuth test failed:', error.message);
   }
 }
 
-testCompleteOAuthSystem().catch(console.error);
+testCompleteOAuthSystem();
