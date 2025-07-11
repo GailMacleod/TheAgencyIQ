@@ -432,7 +432,7 @@ export default function ConnectPlatforms() {
                       <div className="flex space-x-2">
                         <Button
                           onClick={() => handleReconnect(platform)}
-                          className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white"
+                          className="flex-1 hover:bg-yellow-700 bg-[#3250fa] text-[#fff]"
                           disabled={reconnecting[platform]}
                         >
                           {reconnecting[platform] ? 'Reconnecting...' : 'Reconnect'}
