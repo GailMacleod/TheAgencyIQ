@@ -82,7 +82,8 @@ export default function ConnectPlatforms() {
     queryKey: ['/api/platform-connections'],
     retry: 2,
     refetchOnWindowFocus: true,
-    refetchInterval: 30000 // Auto-refresh every 30 seconds for live status
+    refetchInterval: 10000, // More frequent refresh for better UI sync
+    staleTime: 0 // Always consider data stale to force refresh
   });
 
   // Derive connection state from single source of truth
@@ -95,6 +96,20 @@ export default function ConnectPlatforms() {
         state[conn.platform] = true;
       }
     });
+    
+    // Debug logging for connection state changes
+    console.log('🔄 Platform connection state updated:', {
+      totalConnections: connections.length,
+      activeConnections: Object.keys(state).length,
+      platformStates: state,
+      connections: connections.map(c => ({
+        platform: c.platform,
+        id: c.id,
+        isActive: c.isActive,
+        username: c.platformUsername
+      }))
+    });
+    
     return state;
   }, [connections]);
 
@@ -110,14 +125,29 @@ export default function ConnectPlatforms() {
         setConnecting({});
         setReconnecting({});
         
-        // Force refresh of unified connection state and invalidate cache
+        // Force refresh of unified connection state with multiple attempts
         queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-        refetch();
+        
+        // Sequential refresh attempts
+        setTimeout(() => {
+          refetch();
+        }, 500);
+        
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          refetch();
+        }, 1500);
+        
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          refetch();
+        }, 3000);
         
         toast({
           title: "Connection Successful",
           description: "Platform has been connected successfully",
-          variant: "default"
+          variant: "default",
+          duration: 4000
         });
       } else if (e.data === 'oauth_failure') {
         // Clear connecting states
@@ -127,14 +157,15 @@ export default function ConnectPlatforms() {
         toast({
           title: "OAuth Failed",
           description: "Authentication failed. Please try again.",
-          variant: "destructive"
+          variant: "destructive",
+          duration: 5000
         });
       }
     };
     
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [refetch, toast]);
+  }, [refetch, toast, queryClient]);
 
   // Refresh connection data when returning from OAuth callback
   useEffect(() => {
@@ -142,14 +173,23 @@ export default function ConnectPlatforms() {
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('connected') || urlParams.get('success')) {
-      // OAuth callback success - refresh unified connection state
-      refetch();
+      // OAuth callback success - refresh unified connection state with multiple attempts
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+      
+      setTimeout(() => {
+        refetch();
+      }, 500);
+      
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+        refetch();
+      }, 1500);
       
       // Clean up URL parameters
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, document.title, cleanUrl);
     }
-  }, [refetch]);
+  }, [refetch, queryClient]);
 
   // OAuth connection for platforms
   const handleOAuthConnect = async (platform: string) => {
@@ -218,25 +258,42 @@ export default function ConnectPlatforms() {
         
         if (event.data === 'oauth_success') {
           console.log(`✅ OAuth success for ${platform}`);
-          popup.close();
+          
+          // Delay popup close to allow for processing
+          setTimeout(() => {
+            popup.close();
+          }, 2000);
           
           // Clear connecting state
           setConnecting(prev => ({ ...prev, [platform]: false }));
           
-          // Force refresh of unified connection state and invalidate cache
+          // Force refresh of unified connection state with multiple attempts
           queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-          refetch();
+          
+          // Sequential refresh attempts to ensure state sync
+          setTimeout(() => {
+            refetch();
+          }, 500);
+          
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+            refetch();
+          }, 1500);
           
           // Show success message
           toast({
             title: "Connection Successful",
             description: `Successfully connected to ${platform}`,
             variant: "default",
-            duration: 3000
+            duration: 4000
           });
         } else if (event.data === 'oauth_failure') {
           console.log(`❌ OAuth failure for ${platform}`);
-          popup.close();
+          
+          // Delay popup close to show error
+          setTimeout(() => {
+            popup.close();
+          }, 1500);
           
           // Clear connecting state
           setConnecting(prev => ({ ...prev, [platform]: false }));
@@ -261,11 +318,23 @@ export default function ConnectPlatforms() {
           // Always clear connecting state when popup closes
           setConnecting(prev => ({ ...prev, [platform]: false }));
           
-          // Force refresh of unified connection state and invalidate cache
+          // Force refresh of unified connection state with extended timing
           queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          
+          // Multiple refresh attempts to ensure state sync
           setTimeout(() => {
             refetch();
-          }, 1000);
+          }, 500);
+          
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+            refetch();
+          }, 1500);
+          
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+            refetch();
+          }, 3000);
         }
       }, 1000);
     } catch (error: any) {
@@ -505,6 +574,23 @@ export default function ConnectPlatforms() {
           <p className="text-gray-600 text-lg">
             Connect your social media accounts to enable automated posting with real API credentials
           </p>
+          <div className="mt-4 flex justify-center gap-4">
+            <Button
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+                refetch();
+                toast({
+                  title: "Refreshed",
+                  description: "Connection status updated",
+                  variant: "default"
+                });
+              }}
+              variant="outline"
+              size="sm"
+            >
+              Refresh Status
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
@@ -515,6 +601,14 @@ export default function ConnectPlatforms() {
                 const connection = getConnection(platform);
                 const connectionStatus = getConnectionStatus(platform);
                 const Icon = config.icon;
+                
+                // Debug logging for button state
+                console.log(`🔘 Button state for ${platform}:`, {
+                  connected,
+                  connectionStatus,
+                  hasConnection: !!connection,
+                  platformConnectionState: platformConnectionState[platform]
+                });
                 
                 return (
                   <Card key={platform} className="w-full mb-4">

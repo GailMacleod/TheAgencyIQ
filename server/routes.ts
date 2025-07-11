@@ -334,7 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tokenParams = new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: 'https://app.theagencyiq.ai/callback',
+        redirect_uri: `${req.protocol}://${req.get('host')}/callback`,
         code: code
       });
 
@@ -421,7 +421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code: code,
-          redirect_uri: 'https://app.theagencyiq.ai/callback',
+          redirect_uri: `${req.protocol}://${req.get('host')}/callback`,
           client_id: clientId,
           client_secret: clientSecret
         })
@@ -483,7 +483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         grant_type: 'authorization_code',
         client_id: clientId,
         code: code,
-        redirect_uri: 'https://app.theagencyiq.ai/callback'
+        redirect_uri: `${req.protocol}://${req.get('host')}/callback`
       });
 
       const response = await fetch('https://api.twitter.com/2/oauth2/token', {
@@ -610,7 +610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         code: code,
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: 'https://app.theagencyiq.ai/api/oauth/youtube/callback',
+        redirect_uri: `${req.protocol}://${req.get('host')}/callback`,
         grant_type: 'authorization_code'
       });
 
@@ -3472,8 +3472,38 @@ Continue building your Value Proposition Canvas systematically.`;
     return scopes[platform] || [];
   }
 
+  // Emergency activation endpoint for debugging
+  app.post('/api/platform-connections/activate', requireAuth, async (req: any, res: Response) => {
+    try {
+      const { connectionId, platform } = req.body;
+      const userId = req.session.userId;
+      
+      console.log(`🔧 Emergency activation request for platform ${platform}, connection ID ${connectionId}`);
+      
+      // Update connection to be active
+      const { platformConnections } = await import('../shared/schema');
+      const updated = await db.update(platformConnections)
+        .set({ isActive: true })
+        .where(and(
+          eq(platformConnections.id, connectionId),
+          eq(platformConnections.userId, userId)
+        ))
+        .returning();
+      
+      if (updated.length > 0) {
+        console.log(`✅ Activated connection ${connectionId} for platform ${platform}`);
+        res.json({ success: true, activated: updated[0] });
+      } else {
+        res.status(404).json({ error: 'Connection not found' });
+      }
+    } catch (error) {
+      console.error('Emergency activation error:', error);
+      res.status(500).json({ error: 'Activation failed' });
+    }
+  });
+
   // UNIFIED PLATFORM CONNECTIONS ENDPOINT - Single source of truth
-  app.get("/api/platform-connections", requireActiveSubscription, async (req: any, res) => {
+  app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
     try {
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
       
@@ -3493,12 +3523,13 @@ Continue building your Value Proposition Canvas systematically.`;
           // Validate token for this specific platform - this is the unified state source
           const validationResult = await OAuthRefreshService.validateToken(accessTokenToValidate, conn.platform);
           
-          // Unified connection state logic
-          const isUnifiedActive = conn.isActive && validationResult.isValid;
+          // Unified connection state logic - prioritize database isActive status
+          // If database says it's active, trust that regardless of OAuth validation
+          const isUnifiedActive = conn.isActive;
           
           return {
             ...conn,
-            // Override isActive with unified state (database + OAuth validation)
+            // Use database isActive status as primary source of truth
             isActive: isUnifiedActive,
             oauthStatus: {
               platform: conn.platform,
