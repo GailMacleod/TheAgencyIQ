@@ -5,6 +5,7 @@ import {
   brandPurpose,
   verificationCodes,
   giftCertificates,
+  giftCertificateActionLog,
   subscriptionAnalytics,
   postLedger,
   postSchedule,
@@ -20,6 +21,8 @@ import {
   type InsertVerificationCode,
   type GiftCertificate,
   type InsertGiftCertificate,
+  type GiftCertificateActionLog,
+  type InsertGiftCertificateActionLog,
   type SubscriptionAnalytics,
   type InsertSubscriptionAnalytics,
 } from "@shared/schema";
@@ -64,10 +67,19 @@ export interface IStorage {
   getVerificationCode(phone: string, code: string): Promise<VerificationCode | undefined>;
   markVerificationCodeUsed(id: number): Promise<void>;
 
-  // Gift certificate operations
-  createGiftCertificate(certificate: InsertGiftCertificate): Promise<GiftCertificate>;
+  // Gift certificate operations with enhanced user tracking
+  createGiftCertificate(certificate: InsertGiftCertificate, createdBy?: number): Promise<GiftCertificate>;
   getGiftCertificate(code: string): Promise<GiftCertificate | undefined>;
   redeemGiftCertificate(code: string, userId: number): Promise<GiftCertificate>;
+  getAllGiftCertificates(): Promise<GiftCertificate[]>;
+  getGiftCertificatesByCreator(createdBy: number): Promise<GiftCertificate[]>;
+  getGiftCertificatesByRedeemer(redeemedBy: number): Promise<GiftCertificate[]>;
+  
+  // Gift certificate action logging
+  logGiftCertificateAction(action: InsertGiftCertificateActionLog): Promise<GiftCertificateActionLog>;
+  getGiftCertificateActionLog(certificateId: number): Promise<GiftCertificateActionLog[]>;
+  getGiftCertificateActionLogByCode(certificateCode: string): Promise<GiftCertificateActionLog[]>;
+  getGiftCertificateActionLogByUser(userId: number): Promise<GiftCertificateActionLog[]>;
 
   // Platform connection search operations
   getPlatformConnectionsByPlatformUserId(platformUserId: string): Promise<PlatformConnection[]>;
@@ -337,12 +349,31 @@ export class DatabaseStorage implements IStorage {
       .where(eq(verificationCodes.id, id));
   }
 
-  // Gift certificate operations
-  async createGiftCertificate(insertCertificate: InsertGiftCertificate): Promise<GiftCertificate> {
+  // Gift certificate operations with enhanced user tracking
+  async createGiftCertificate(insertCertificate: InsertGiftCertificate, createdBy?: number): Promise<GiftCertificate> {
+    const certificateData = {
+      ...insertCertificate,
+      createdBy
+    };
+    
     const [certificate] = await db
       .insert(giftCertificates)
-      .values(insertCertificate)
+      .values(certificateData)
       .returning();
+    
+    // Log the creation action
+    await this.logGiftCertificateAction({
+      certificateId: certificate.id,
+      certificateCode: certificate.code,
+      actionType: 'created',
+      actionBy: createdBy,
+      actionDetails: {
+        plan: certificate.plan,
+        createdFor: certificate.createdFor
+      },
+      success: true
+    });
+    
     return certificate;
   }
 
@@ -364,7 +395,83 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(giftCertificates.code, code))
       .returning();
+    
+    // Log the redemption action
+    await this.logGiftCertificateAction({
+      certificateId: certificate.id,
+      certificateCode: certificate.code,
+      actionType: 'redeemed',
+      actionBy: userId,
+      actionDetails: {
+        plan: certificate.plan,
+        originalCreatedFor: certificate.createdFor
+      },
+      success: true
+    });
+    
     return certificate;
+  }
+
+  async getAllGiftCertificates(): Promise<GiftCertificate[]> {
+    const certificates = await db
+      .select()
+      .from(giftCertificates)
+      .orderBy(desc(giftCertificates.createdAt));
+    return certificates;
+  }
+
+  async getGiftCertificatesByCreator(createdBy: number): Promise<GiftCertificate[]> {
+    const certificates = await db
+      .select()
+      .from(giftCertificates)
+      .where(eq(giftCertificates.createdBy, createdBy))
+      .orderBy(desc(giftCertificates.createdAt));
+    return certificates;
+  }
+
+  async getGiftCertificatesByRedeemer(redeemedBy: number): Promise<GiftCertificate[]> {
+    const certificates = await db
+      .select()
+      .from(giftCertificates)
+      .where(eq(giftCertificates.redeemedBy, redeemedBy))
+      .orderBy(desc(giftCertificates.redeemedAt));
+    return certificates;
+  }
+
+  // Gift certificate action logging
+  async logGiftCertificateAction(action: InsertGiftCertificateActionLog): Promise<GiftCertificateActionLog> {
+    const [logEntry] = await db
+      .insert(giftCertificateActionLog)
+      .values(action)
+      .returning();
+    return logEntry;
+  }
+
+  async getGiftCertificateActionLog(certificateId: number): Promise<GiftCertificateActionLog[]> {
+    const logs = await db
+      .select()
+      .from(giftCertificateActionLog)
+      .where(eq(giftCertificateActionLog.certificateId, certificateId))
+      .orderBy(desc(giftCertificateActionLog.createdAt));
+    return logs;
+  }
+
+  async getGiftCertificateActionLogByCode(certificateCode: string): Promise<GiftCertificateActionLog[]> {
+    const logs = await db
+      .select()
+      .from(giftCertificateActionLog)
+      .where(eq(giftCertificateActionLog.certificateCode, certificateCode))
+      .orderBy(desc(giftCertificateActionLog.createdAt));
+    return logs;
+  }
+
+  async getGiftCertificateActionLogByUser(userId: number): Promise<GiftCertificateActionLog[]> {
+    const logs = await db
+      .select()
+      .from(giftCertificateActionLog)
+      .where(eq(giftCertificateActionLog.actionBy, userId))
+      .orderBy(desc(giftCertificateActionLog.createdAt));
+    return logs;
   }
 
   async getPlatformConnectionsByPlatformUserId(platformUserId: string): Promise<PlatformConnection[]> {

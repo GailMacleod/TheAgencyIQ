@@ -129,9 +129,27 @@ export const giftCertificates = pgTable("gift_certificates", {
   plan: varchar("plan", { length: 20 }).notNull(),
   isUsed: boolean("is_used").default(false),
   createdFor: varchar("created_for", { length: 100 }).notNull(),
+  createdBy: integer("created_by").references(() => users.id), // Track who created the certificate
   redeemedBy: integer("redeemed_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   redeemedAt: timestamp("redeemed_at"),
+});
+
+// Gift Certificate Action Log for comprehensive tracking
+export const giftCertificateActionLog = pgTable("gift_certificate_action_log", {
+  id: serial("id").primaryKey(),
+  certificateId: integer("certificate_id").notNull().references(() => giftCertificates.id),
+  certificateCode: varchar("certificate_code", { length: 50 }).notNull(),
+  actionType: varchar("action_type", { length: 30 }).notNull(), // 'created', 'redeemed', 'viewed', 'attempted_redeem'
+  actionBy: integer("action_by").references(() => users.id), // NULL for anonymous actions
+  actionByEmail: varchar("action_by_email", { length: 255 }), // Track email for non-users
+  actionDetails: jsonb("action_details"), // Store additional context
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  sessionId: varchar("session_id", { length: 100 }),
+  success: boolean("success").default(true),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Subscription Analytics table for tracking post performance and limits
@@ -186,6 +204,11 @@ export const insertGiftCertificateSchema = createInsertSchema(giftCertificates).
   redeemedAt: true,
 });
 
+export const insertGiftCertificateActionLogSchema = createInsertSchema(giftCertificateActionLog).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertSubscriptionAnalyticsSchema = createInsertSchema(subscriptionAnalytics).omit({
   id: true,
   createdAt: true,
@@ -217,5 +240,7 @@ export type VerificationCode = typeof verificationCodes.$inferSelect;
 export type InsertVerificationCode = z.infer<typeof insertVerificationCodeSchema>;
 export type GiftCertificate = typeof giftCertificates.$inferSelect;
 export type InsertGiftCertificate = z.infer<typeof insertGiftCertificateSchema>;
+export type GiftCertificateActionLog = typeof giftCertificateActionLog.$inferSelect;
+export type InsertGiftCertificateActionLog = z.infer<typeof insertGiftCertificateActionLogSchema>;
 export type SubscriptionAnalytics = typeof subscriptionAnalytics.$inferSelect;
 export type InsertSubscriptionAnalytics = z.infer<typeof insertSubscriptionAnalyticsSchema>;

@@ -1480,6 +1480,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate gift certificates endpoint (admin only - based on actual purchase)
   app.post("/api/generate-gift-certificates", async (req, res) => {
     try {
+      // BULLETPROOF AUTHENTICATION: Require valid user session
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
       const { count = 10, plan = 'professional', createdFor = 'Testing Program' } = req.body;
       
       // Generate unique certificate codes
@@ -1492,16 +1498,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           plan,
           isUsed: false,
           createdFor
-        });
+        }, userId); // Pass the authenticated user ID
         
         certificates.push(certificate.code);
       }
 
-      console.log(`Generated ${count} gift certificates for ${plan} plan`);
+      console.log(`✅ Generated ${count} gift certificates for ${plan} plan by user ${userId}`);
       res.json({ 
         message: `Generated ${count} gift certificates`,
         certificates,
         plan,
+        createdBy: userId,
         instructions: "Users can redeem these at /api/redeem-gift-certificate after logging in"
       });
 
@@ -1527,15 +1534,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Password is required" });
       }
 
-      // Get the certificate
+      // Get the certificate and log the viewing action
       const certificate = await storage.getGiftCertificate(code);
       if (!certificate) {
+        // Log failed attempt to find certificate
+        await storage.logGiftCertificateAction({
+          certificateId: 0, // Unknown certificate
+          certificateCode: code,
+          actionType: 'attempted_redeem',
+          actionBy: null,
+          actionByEmail: email,
+          actionDetails: {
+            error: 'Certificate not found',
+            attemptedEmail: email
+          },
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+          sessionId: req.sessionID,
+          success: false,
+          errorMessage: 'Invalid certificate code'
+        });
         return res.status(404).json({ message: "Invalid certificate code" });
       }
 
       if (certificate.isUsed) {
+        // Log failed attempt to redeem used certificate
+        await storage.logGiftCertificateAction({
+          certificateId: certificate.id,
+          certificateCode: certificate.code,
+          actionType: 'attempted_redeem',
+          actionBy: null,
+          actionByEmail: email,
+          actionDetails: {
+            error: 'Certificate already redeemed',
+            attemptedEmail: email,
+            originalRedeemer: certificate.redeemedBy
+          },
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+          sessionId: req.sessionID,
+          success: false,
+          errorMessage: 'Certificate has already been redeemed'
+        });
         return res.status(400).json({ message: "Certificate has already been redeemed" });
       }
+
+      // Log successful certificate viewing
+      await storage.logGiftCertificateAction({
+        certificateId: certificate.id,
+        certificateCode: certificate.code,
+        actionType: 'viewed',
+        actionBy: null,
+        actionByEmail: email,
+        actionDetails: {
+          plan: certificate.plan,
+          attemptedEmail: email
+        },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        sessionId: req.sessionID,
+        success: true
+      });
 
       // Check if email already exists
       const existingUser = await storage.getUserByEmail(email);
@@ -1602,6 +1661,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Gift certificate redemption error:', error);
       res.status(500).json({ message: "Certificate redemption failed: " + error.message });
+    }
+  });
+
+  // Get all gift certificates (admin only)
+  app.get("/api/admin/gift-certificates", async (req, res) => {
+    try {
+      // BULLETPROOF AUTHENTICATION: Require valid user session
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const certificates = await storage.getAllGiftCertificates();
+      res.json({ certificates });
+
+    } catch (error: any) {
+      console.error('Gift certificates retrieval error:', error);
+      res.status(500).json({ message: "Failed to retrieve gift certificates" });
+    }
+  });
+
+  // Get gift certificate action logs (admin only)
+  app.get("/api/admin/gift-certificate-logs/:certificateCode", async (req, res) => {
+    try {
+      // BULLETPROOF AUTHENTICATION: Require valid user session
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { certificateCode } = req.params;
+      const logs = await storage.getGiftCertificateActionLogByCode(certificateCode);
+      res.json({ logs });
+
+    } catch (error: any) {
+      console.error('Gift certificate logs retrieval error:', error);
+      res.status(500).json({ message: "Failed to retrieve certificate logs" });
+    }
+  });
+
+  // Get user's gift certificate actions
+  app.get("/api/my-gift-certificate-actions", async (req, res) => {
+    try {
+      // BULLETPROOF AUTHENTICATION: Require valid user session
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const [createdCertificates, redeemedCertificates, actionLogs] = await Promise.all([
+        storage.getGiftCertificatesByCreator(userId),
+        storage.getGiftCertificatesByRedeemer(userId),
+        storage.getGiftCertificateActionLogByUser(userId)
+      ]);
+
+      res.json({ 
+        createdCertificates,
+        redeemedCertificates,
+        actionLogs,
+        summary: {
+          totalCreated: createdCertificates.length,
+          totalRedeemed: redeemedCertificates.length,
+          totalActions: actionLogs.length
+        }
+      });
+
+    } catch (error: any) {
+      console.error('User gift certificate actions retrieval error:', error);
+      res.status(500).json({ message: "Failed to retrieve gift certificate actions" });
     }
   });
 

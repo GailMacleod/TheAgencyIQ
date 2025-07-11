@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { useToast } from '../hooks/use-toast';
-import { Download, Users, Gift, Calendar, Database } from 'lucide-react';
+import { Download, Users, Gift, Calendar, Database, Activity } from 'lucide-react';
+import GiftCertificateTracker from './GiftCertificateTracker';
 
 interface GiftCertificate {
   code: string;
@@ -36,6 +37,7 @@ const AdminDashboard: React.FC = () => {
   const [exportLoading, setExportLoading] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [adminToken, setAdminToken] = useState('');
+  const [activeTab, setActiveTab] = useState<'overview' | 'certificates'>('overview');
   const { toast } = useToast();
 
   // Role-based access control
@@ -220,8 +222,32 @@ const AdminDashboard: React.FC = () => {
         </Card>
       )}
 
-      {/* Summary Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 rounded-lg bg-gray-100 p-1">
+        {[
+          { id: 'overview', label: 'System Overview', icon: Database },
+          { id: 'certificates', label: 'Gift Certificate Tracker', icon: Activity }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex items-center gap-2 flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Summary Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -401,6 +427,13 @@ const AdminDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+        </>
+      )}
+
+      {/* Gift Certificate Tracker Tab */}
+      {activeTab === 'certificates' && (
+        <GiftCertificateTracker />
+      )}
     </div>
   );
 };
