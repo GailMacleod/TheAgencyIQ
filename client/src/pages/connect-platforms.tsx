@@ -182,8 +182,29 @@ export default function ConnectPlatforms() {
         throw new Error(`OAuth not configured for ${platform}`);
       }
       
-      // Redirect to OAuth flow
-      window.location.href = oauthUrl;
+      // Use popup window for OAuth to avoid iframe issues
+      const popup = window.open(
+        oauthUrl,
+        'oauth',
+        'width=600,height=700,scrollbars=yes,resizable=yes'
+      );
+      
+      if (!popup) {
+        throw new Error('Popup blocked - please allow popups for OAuth');
+      }
+      
+      // Monitor popup for completion
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          setConnecting(prev => ({ ...prev, [platform]: false }));
+          
+          // Refresh connection data after OAuth completion
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          }, 1000);
+        }
+      }, 1000);
     } catch (error: any) {
       // Enhanced user-friendly error messages
       let errorMessage = "Failed to initiate connection";
@@ -238,14 +259,43 @@ export default function ConnectPlatforms() {
           description: `${platform} token has been successfully refreshed`
         });
       } else {
-        // Token refresh failed, redirect to OAuth
+        // Token refresh failed, use popup for OAuth
         toast({
           title: "Re-authentication Required",
-          description: `Redirecting to ${platform} OAuth flow...`
+          description: `Opening ${platform} OAuth flow...`
         });
-        // Store the reconnection intent
-        setReconnecting(prev => ({ ...prev, [platform]: false }));
-        await handleOAuthConnect(platform);
+        
+        // Map platform names to OAuth routes
+        const oauthRoutes: { [key: string]: string } = {
+          'facebook': '/api/auth/facebook',
+          'linkedin': '/api/auth/linkedin',
+          'x': '/api/auth/x',
+          'youtube': '/api/auth/youtube'
+        };
+        
+        const oauthUrl = oauthRoutes[platform];
+        if (oauthUrl) {
+          // Use popup window for OAuth
+          const popup = window.open(
+            oauthUrl,
+            'oauth',
+            'width=600,height=700,scrollbars=yes,resizable=yes'
+          );
+          
+          if (popup) {
+            // Monitor popup for completion
+            const checkClosed = setInterval(() => {
+              if (popup.closed) {
+                clearInterval(checkClosed);
+                
+                // Refresh connection data after OAuth completion
+                setTimeout(() => {
+                  queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+                }, 1000);
+              }
+            }, 1000);
+          }
+        }
       }
     } catch (error) {
       toast({
