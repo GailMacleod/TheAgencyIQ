@@ -673,7 +673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Store tokens securely
         const connection = await storage.createPlatformConnection({
-          userId: req.session?.userId || 2,
+          userId: req.session?.userId,
           platform: 'youtube',
           platformUserId: platformUserId,
           platformUsername: platformUsername,
@@ -1226,12 +1226,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     
-    // TEMPORARY: Demo user fallback for existing authenticated user only
-    // This will be removed once proper authentication is implemented
+    // ENHANCED: Check for authenticated user by email (for demo purposes only)
+    // This maintains session for existing authenticated users
     try {
-      const demoUser = await storage.getUser(2);
-      if (demoUser && req.session?.id) {
-        req.session.userId = 2;
+      const knownUser = await storage.getUserByEmail('gailm@macleodglba.com.au');
+      if (knownUser && req.session?.id) {
+        req.session.userId = knownUser.id;
         await new Promise<void>((resolve, reject) => {
           req.session.save((err: any) => {
             if (err) reject(err);
@@ -1239,22 +1239,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         });
         
-        console.log(`Demo session established for ${demoUser.email}`);
+        console.log(`Demo session established for ${knownUser.email}`);
         return res.json({ 
           success: true, 
-          user: demoUser,
+          user: knownUser,
           sessionEstablished: true 
         });
       }
     } catch (error) {
-      console.error('Demo session establishment failed:', error);
+      console.error('Known user session establishment failed:', error);
     }
     
     // No valid user found - require authentication
+    console.log('No valid session data found - authentication required');
     res.status(401).json({ 
       success: false, 
-      message: 'Authentication required - please log in',
-      requiresLogin: true
+      message: 'No valid session data found - authentication required',
+      requiresAuthentication: true
     });
   });
 
@@ -4203,7 +4204,14 @@ Continue building your Value Proposition Canvas systematically.`;
   app.post("/api/youtube/callback", async (req: any, res) => {
     try {
       const { code, state } = req.body;
-      const userId = req.session?.userId || 2;
+      const userId = req.session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication required"
+        });
+      }
       
       if (!code) {
         return res.status(400).json({
@@ -4296,7 +4304,14 @@ Continue building your Value Proposition Canvas systematically.`;
   app.post("/api/linkedin/callback", async (req: any, res) => {
     try {
       const { code, state } = req.body;
-      const userId = req.session?.userId || 2;
+      const userId = req.session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication required"
+        });
+      }
       
       if (!code) {
         return res.status(400).json({
@@ -6007,8 +6022,11 @@ Continue building your Value Proposition Canvas systematically.`;
   // AI content generation with thinking process
   app.post("/api/ai/generate-content", async (req, res) => {
     try {
-      // For demo purposes, use mock user ID if no session
-      const userId = req.session.userId || 1;
+      // Require authenticated session
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
 
       // Ensure user exists first
       let user = await storage.getUser(userId);
@@ -6142,7 +6160,10 @@ Continue building your Value Proposition Canvas systematically.`;
   // Analytics dashboard data
   app.get("/api/analytics", requireActiveSubscription, async (req: any, res) => {
     try {
-      const userId = req.session.userId || 1;
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
 
       // Get user and published posts with analytics data
       const user = await storage.getUser(userId);
@@ -6309,7 +6330,10 @@ Continue building your Value Proposition Canvas systematically.`;
   // Yearly analytics dashboard data
   app.get("/api/yearly-analytics", async (req, res) => {
     try {
-      const userId = req.session.userId || 1;
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
 
       // Get user and brand purpose data
       const user = await storage.getUser(userId);
@@ -6485,7 +6509,10 @@ Continue building your Value Proposition Canvas systematically.`;
   // Brand purpose data for analytics
   app.get("/api/brand-purpose", async (req, res) => {
     try {
-      const userId = req.session.userId || 1;
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const brandPurpose = await storage.getBrandPurposeByUser(userId);
       
       if (!brandPurpose) {
@@ -6851,14 +6878,19 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.redirect('/connect-platforms?error=facebook_auth_failed');
       }
 
-      let userId = 2;
+      let userId;
       if (state) {
         try {
           const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
-          userId = stateData.userId || 2;
+          userId = stateData.userId;
         } catch (e) {
-          // Use default userId
+          console.error('State parsing error:', e);
+          return res.redirect('/connect-platforms?error=facebook_state_invalid');
         }
+      }
+      
+      if (!userId) {
+        return res.redirect('/connect-platforms?error=facebook_no_user');
       }
 
       if (!req.session.userId) {
@@ -7995,7 +8027,14 @@ Continue building your Value Proposition Canvas systematically.`;
   app.post('/api/submit-feedback', async (req: Request, res: Response) => {
     try {
       const { feedbackType, message, platform, postId, rating, metadata } = req.body;
-      const userId = (req as any).session?.userId || 2; // Default user for demo
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Authentication required' 
+        });
+      }
 
       if (!feedbackType || !message) {
         return res.status(400).json({ 
@@ -8051,7 +8090,14 @@ Continue building your Value Proposition Canvas systematically.`;
 
   app.get('/api/user-feedback', async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).session?.userId || 2;
+      const userId = (req as any).session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Authentication required' 
+        });
+      }
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       
@@ -8385,7 +8431,7 @@ export function addNotificationEndpoints(app: any) {
       }
 
       // Get authenticated user for prompt variety tracking
-      const authenticatedUserId = req.session?.userId || userId || 'default';
+      const authenticatedUserId = req.session?.userId || userId;
 
       // Use fallback brand data for video generation
       const brandData = {
