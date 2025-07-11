@@ -25,7 +25,18 @@ export function useTokenValidation() {
   // Query to get current token status
   const { data: tokenStatus, isLoading } = useQuery<TokenStatus[]>({
     queryKey: ['/api/platform-connections'],
-    select: (data: any[]) => data.map(conn => conn.oauthStatus),
+    select: (data: any[]) => {
+      // Filter out connections without oauthStatus and map to TokenStatus
+      return data
+        .filter(conn => conn.oauthStatus) // Only include connections with oauthStatus
+        .map(conn => ({
+          platform: conn.oauthStatus.platform,
+          isValid: conn.oauthStatus.isValid,
+          error: conn.oauthStatus.error,
+          needsRefresh: conn.oauthStatus.needsRefresh,
+          expiresAt: conn.oauthStatus.expiresAt
+        }));
+    },
     refetchInterval: 5 * 60 * 1000, // Check every 5 minutes
     staleTime: 2 * 60 * 1000, // Consider stale after 2 minutes
   });
@@ -102,7 +113,7 @@ export function useTokenValidation() {
 
   // Get validation results
   const getValidationResults = (): TokenValidationResult => {
-    if (!tokenStatus) {
+    if (!tokenStatus || tokenStatus.length === 0) {
       return { validTokens: [], expiredTokens: [], needsAttention: false };
     }
 

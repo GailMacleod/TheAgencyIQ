@@ -18,6 +18,16 @@ export function PlatformStatusWidget() {
   
   const { data: connections, isLoading, refetch } = useQuery<PlatformConnection[]>({
     queryKey: ['/api/platform-connections'],
+    select: (data: any[]) => {
+      // Transform the API response to match our expected interface
+      return data.map(conn => ({
+        platform: conn.platform,
+        connected: conn.isActive, // Use database isActive status
+        status: conn.oauthStatus?.isValid ? 'healthy' : (conn.oauthStatus?.needsRefresh ? 'warning' : 'error'),
+        lastRefresh: conn.connectedAt,
+        tokenExpiry: conn.oauthStatus?.expiresAt
+      }));
+    },
     refetchInterval: 60000 // Refresh every minute
   });
 
