@@ -88,19 +88,27 @@ export default function UserMenu() {
 
   const cancelSubscriptionMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/cancel-subscription"),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/platform-connections"] });
+      
+      const summary = data.summary;
+      
       toast({
         title: "Subscription Cancelled",
-        description: "Your subscription has been cancelled successfully.",
+        description: `Your subscription has been cancelled successfully. ${summary?.platformConnectionsRevoked || 0} platform connections revoked, ${summary?.postsDeleted || 0} posts deleted.`,
+        duration: 8000,
       });
+      
+      console.log("Subscription cancellation summary:", summary);
     },
     onError: (error: any) => {
       console.error("Cancel subscription error:", error);
       toast({
         title: "Error",
-        description: "Failed to cancel subscription. Please contact support.",
+        description: error.response?.data?.message || "Failed to cancel subscription. Please contact support.",
         variant: "destructive",
+        duration: 8000,
       });
     },
   });
@@ -144,7 +152,20 @@ export default function UserMenu() {
   });
 
   const handleCancelSubscription = () => {
-    if (window.confirm("Are you sure you want to cancel your subscription? This action cannot be undone.")) {
+    const confirmMessage = `⚠️ PERMANENT SUBSCRIPTION CANCELLATION
+
+This will immediately:
+• Cancel your subscription and billing
+• Close ALL platform connections (Facebook, Instagram, LinkedIn, X, YouTube)
+• Delete ALL your posts and content
+• Remove ALL your brand purpose data
+• Revoke ALL OAuth tokens from connected platforms
+
+This action CANNOT be undone. All your data will be permanently deleted.
+
+Are you absolutely sure you want to proceed?`;
+
+    if (window.confirm(confirmMessage)) {
       cancelSubscriptionMutation.mutate();
     }
   };

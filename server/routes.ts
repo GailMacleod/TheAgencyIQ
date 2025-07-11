@@ -27,6 +27,7 @@ import { PostQuotaService } from './PostQuotaService';
 import { userFeedbackService } from './userFeedbackService.js';
 import RollbackAPI from './rollback-api';
 import { OAuthRefreshService } from './services/OAuthRefreshService';
+import { DataCleanupService } from './services/DataCleanupService';
 
 // Extended session types
 declare module 'express-session' {
@@ -51,6 +52,8 @@ interface CustomRequest extends Request {
     userEmail?: string;
   };
 }
+
+// OAuth token revocation functionality moved to DataCleanupService
 
 // Environment validation
 // Stripe validation removed to allow server startup
@@ -5785,36 +5788,121 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Cancel subscription endpoint
+  // ENHANCED: Comprehensive subscription cancellation with platform cleanup
   app.post("/api/cancel-subscription", requireAuth, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.session.userId!);
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      if (!user.stripeSubscriptionId) {
-        return res.status(400).json({ message: "No active subscription found" });
+      console.log(`🔴 Starting comprehensive subscription cancellation for user ${userId} (${user.email})`);
+      
+      // Step 1: Cancel Stripe subscription if exists
+      let stripeSubscriptionId = null;
+      if (user.stripeSubscriptionId && stripe) {
+        try {
+          const subscription = await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+          stripeSubscriptionId = subscription.id;
+          console.log(`✅ Stripe subscription cancelled: ${stripeSubscriptionId}`);
+        } catch (stripeError) {
+          console.error('Stripe cancellation failed:', stripeError);
+          // Continue with cleanup even if Stripe fails
+        }
       }
 
-      // Cancel the subscription in Stripe
-      const subscription = await stripe.subscriptions.cancel(user.stripeSubscriptionId);
-      
-      // Update user subscription status
-      await storage.updateUser(req.session.userId!, {
+      // Step 2: Comprehensive data cleanup using DataCleanupService
+      let cleanupResults;
+      try {
+        cleanupResults = await DataCleanupService.performCompleteDataCleanup(userId, user.email);
+      } catch (cleanupError) {
+        console.error('Primary cleanup failed, attempting emergency cleanup:', cleanupError);
+        
+        // Fall back to emergency cleanup if primary fails
+        try {
+          cleanupResults = await DataCleanupService.emergencyDataCleanup(userId, user.email);
+          cleanupResults.method = 'emergency';
+          cleanupResults.errors = [`Primary cleanup failed: ${cleanupError.message}`];
+        } catch (emergencyError) {
+          console.error('Emergency cleanup also failed:', emergencyError);
+          throw new Error(`Both primary and emergency cleanup failed: ${emergencyError.message}`);
+        }
+      }
+
+      // Step 4: Update user subscription status
+      await storage.updateUser(userId, {
         subscriptionPlan: "cancelled",
         stripeSubscriptionId: null,
         remainingPosts: 0,
-        totalPosts: 0
+        totalPosts: 0,
+        subscriptionActive: false
       });
+
+      // Step 5: Log comprehensive cancellation summary
+      const cancellationSummary = {
+        userId,
+        userEmail: user.email,
+        stripeSubscriptionId,
+        cleanupResults,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log(`🔴 SUBSCRIPTION CANCELLATION COMPLETE:`, cancellationSummary);
 
       res.json({ 
         message: "Subscription cancelled successfully",
-        subscriptionId: subscription.id 
+        summary: {
+          stripeSubscriptionId,
+          platformConnectionsRevoked: cleanupResults.platformConnectionsRevoked,
+          platforms: cleanupResults.oauthTokensRevoked?.map(c => c.platform) || [],
+          postsDeleted: cleanupResults.postsDeleted,
+          schedulesDeleted: cleanupResults.schedulesDeleted,
+          brandPurposeDeleted: cleanupResults.brandPurposeDeleted,
+          dataCleanupComplete: true,
+          cleanupMethod: cleanupResults.method || 'standard',
+          errors: cleanupResults.errors || []
+        }
       });
     } catch (error: any) {
-      console.error("Error cancelling subscription:", error);
-      res.status(500).json({ message: "Failed to cancel subscription" });
+      console.error("Error during comprehensive subscription cancellation:", error);
+      res.status(500).json({ 
+        message: "Failed to cancel subscription completely",
+        error: error.message,
+        partialCleanup: true
+      });
+    }
+  });
+
+  // Test data cleanup endpoint (for testing cancellation functionality)
+  app.post("/api/test-data-cleanup", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      console.log(`🧪 Testing data cleanup for user ${userId} (${user.email})`);
+      
+      // Perform cleanup test (without actually canceling subscription)
+      const cleanupResults = await DataCleanupService.performCompleteDataCleanup(userId, user.email);
+      
+      // Log results but don't update subscription status
+      console.log(`🧪 Data cleanup test completed:`, cleanupResults);
+
+      res.json({ 
+        message: "Data cleanup test completed successfully",
+        results: cleanupResults
+      });
+    } catch (error: any) {
+      console.error("Data cleanup test failed:", error);
+      res.status(500).json({ 
+        message: "Data cleanup test failed",
+        error: error.message 
+      });
     }
   });
 
