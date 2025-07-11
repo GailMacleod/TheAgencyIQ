@@ -777,58 +777,90 @@ export default function OnboardingWizard() {
           </div>
           
           <div className="flex items-center justify-between mt-4 space-x-2">
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrevious}
-                disabled={currentStep === 0}
-                className="text-xs"
-              >
-                <ArrowLeft className="w-3 h-3 mr-1" />
-                Prev
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSkip}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                Skip
-              </Button>
-            </div>
+            {isDemoMode ? (
+              // Demo mode - simple navigation
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevious}
+                  disabled={currentStep === 0}
+                  className="text-xs"
+                >
+                  <ArrowLeft className="w-3 h-3 mr-1" />
+                  Prev
+                </Button>
+              </div>
+            ) : (
+              // Normal mode - full navigation
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevious}
+                  disabled={currentStep === 0}
+                  className="text-xs"
+                >
+                  <ArrowLeft className="w-3 h-3 mr-1" />
+                  Prev
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSkip}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Skip
+                </Button>
+              </div>
+            )}
             
             <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSkipWizard}
-                className="text-xs"
-              >
-                <X className="w-3 h-3 mr-1" />
-                Skip All
-              </Button>
-              
-              <Button
-                onClick={handleAction}
-                size="sm"
-                className="bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] text-white text-xs font-medium shadow-lg"
-              >
-                {wizardSteps[currentStep].actionText}
-                <ArrowRight className="w-3 h-3 ml-1" />
-              </Button>
-              
-              {wizardSteps[currentStep].route && (
+              {isDemoMode ? (
+                // Demo mode - only Next button
                 <Button
                   onClick={handleNext}
                   size="sm"
-                  variant="outline"
-                  className="text-xs"
+                  className="bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] text-white text-xs font-medium shadow-lg"
                 >
-                  Next
+                  {currentStep === wizardSteps.length - 1 ? 'Subscribe Now' : 'Next'}
                   <ArrowRight className="w-3 h-3 ml-1" />
                 </Button>
+              ) : (
+                // Normal mode - action and next buttons
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSkipWizard}
+                    className="text-xs"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Skip All
+                  </Button>
+                  
+                  <Button
+                    onClick={handleAction}
+                    size="sm"
+                    className="bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] text-white text-xs font-medium shadow-lg"
+                  >
+                    {wizardSteps[currentStep].actionText}
+                    <ArrowRight className="w-3 h-3 ml-1" />
+                  </Button>
+                  
+                  {wizardSteps[currentStep].route && (
+                    <Button
+                      onClick={handleNext}
+                      size="sm"
+                      variant="outline"
+                      className="text-xs"
+                    >
+                      Next
+                      <ArrowRight className="w-3 h-3 ml-1" />
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>

@@ -1962,6 +1962,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get current user - simplified for consistency
+  // User status endpoint for demo mode detection
+  app.get("/api/user-status", async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.json({ 
+          hasActiveSubscription: false,
+          userType: 'new',
+          hasBrandSetup: false,
+          hasConnections: false,
+          currentUrl: req.url
+        });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.json({ 
+          hasActiveSubscription: false,
+          userType: 'new',
+          hasBrandSetup: false,
+          hasConnections: false,
+          currentUrl: req.url
+        });
+      }
+
+      // Check if user has active subscription
+      const hasActiveSubscription = user.subscriptionPlan && user.subscriptionPlan !== 'free';
+      
+      // Check if user has brand setup
+      const brandPurposes = await storage.getBrandPurposesByUser(userId);
+      const hasBrandSetup = brandPurposes.length > 0;
+      
+      // Check if user has platform connections
+      const connections = await storage.getPlatformConnectionsByUser(userId);
+      const hasConnections = connections.length > 0;
+
+      res.json({
+        hasActiveSubscription,
+        userType: hasActiveSubscription ? 'returning' : 'new',
+        hasBrandSetup,
+        hasConnections,
+        currentUrl: req.url
+      });
+    } catch (error) {
+      console.error('Error checking user status:', error);
+      res.json({ 
+        hasActiveSubscription: false,
+        userType: 'new',
+        hasBrandSetup: false,
+        hasConnections: false,
+        currentUrl: req.url
+      });
+    }
+  });
+
   app.get("/api/user", async (req: any, res) => {
     try {
       if (!req.session?.userId) {
