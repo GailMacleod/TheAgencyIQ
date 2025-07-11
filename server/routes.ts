@@ -6810,11 +6810,11 @@ Continue building your Value Proposition Canvas systematically.`;
       }
 
       // X OAuth 2.0 Authorization Code Flow with PKCE
-      const clientId = process.env.X_OAUTH_CLIENT_ID;
+      const clientId = process.env.X_OAUTH_CLIENT_ID || process.env.X_CONSUMER_KEY;
       const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/x/callback`;
       
       if (!clientId) {
-        console.error('X OAuth: Missing X_OAUTH_CLIENT_ID environment variable');
+        console.error('X OAuth: Missing X_OAUTH_CLIENT_ID/X_CONSUMER_KEY environment variable');
         return res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
       }
 
@@ -6838,6 +6838,11 @@ Continue building your Value Proposition Canvas systematically.`;
       authUrl.searchParams.set('state', Buffer.from(JSON.stringify({ userId })).toString('base64'));
 
       console.log(`🔗 X OAuth 2.0 redirect to:`, authUrl.toString());
+      console.log('X OAuth credentials being used:', {
+        clientId: clientId?.substring(0, 10) + '...',
+        hasSecret: !!clientSecret,
+        redirectUri
+      });
       res.redirect(authUrl.toString());
     } catch (error) {
       console.error('X OAuth initiation failed:', error);
@@ -6860,13 +6865,18 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
       }
 
-      // Get credentials from environment
-      const clientId = process.env.X_OAUTH_CLIENT_ID;
-      const clientSecret = process.env.X_OAUTH_CLIENT_SECRET;
+      // Get credentials from environment (try OAuth 2.0 first, fallback to consumer keys)
+      const clientId = process.env.X_OAUTH_CLIENT_ID || process.env.X_CONSUMER_KEY;
+      const clientSecret = process.env.X_OAUTH_CLIENT_SECRET || process.env.X_CONSUMER_SECRET;
       const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/x/callback`;
       
       if (!clientId || !clientSecret) {
-        console.error('X OAuth: Missing credentials');
+        console.error('X OAuth: Missing credentials', {
+          hasOAuthClientId: !!process.env.X_OAUTH_CLIENT_ID,
+          hasOAuthClientSecret: !!process.env.X_OAUTH_CLIENT_SECRET,
+          hasConsumerKey: !!process.env.X_CONSUMER_KEY,
+          hasConsumerSecret: !!process.env.X_CONSUMER_SECRET
+        });
         return res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
       }
 
