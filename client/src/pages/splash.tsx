@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import GrokWidget from "@/components/grok-widget";
 import UserMenu from "@/components/user-menu";
-import agencyLogoPath from "@assets/agency_logo_1749083054761.png";
+import agencyLogoPath from "@assets/agency_logo_512x512 (1)_1752200321498.png";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
 export default function Splash() {
@@ -59,14 +59,18 @@ export default function Splash() {
           }`}
         />
         
-        {/* AIQ Icon in center during animation */}
+        {/* AIQ Logo in center during animation */}
         <div 
           className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-opacity duration-500 ${
             revealAnimation ? 'opacity-0' : 'opacity-100'
           }`}
         >
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl">
-            <span className="text-[#3B82F6] font-bold text-2xl">AIQ</span>
+            <img 
+              src={agencyLogoPath} 
+              alt="AIQ Logo" 
+              className="h-12 w-auto"
+            />
           </div>
         </div>
       </div>
@@ -75,11 +79,7 @@ export default function Splash() {
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border/40">
         <div className="container-atomiq">
           <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-3">
-              {/* AIQ Icon */}
-              <div className="w-10 h-10 bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">AIQ</span>
-              </div>
+            <div className="flex items-center">
               <img 
                 src={agencyLogoPath} 
                 alt="The AgencyIQ" 

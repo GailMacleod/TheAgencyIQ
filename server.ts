@@ -242,7 +242,7 @@ app.get(['/manifest.json', '/public/js/beacon.js'], (req, res) => {
       background_color: "#ffffff",
       theme_color: "#000000",
       icons: [{
-        src: "/attached_assets/agency_logo_1749083054761.png",
+        src: "/attached_assets/agency_logo_512x512 (1)_1752200321498.png",
         sizes: "512x512",
         type: "image/png"
       }]

@@ -20,7 +20,7 @@ npx esbuild client/src/main.tsx \
   --target=es2020 \
   --define:process.env.NODE_ENV='"production"' \
   --define:import.meta.env.VITE_GA_MEASUREMENT_ID='""' \
-  --external:@assets/agency_logo_1749083054761.png
+  --external:@assets/agency_logo_512x512\ \(1\)_1752200321498.png
 
 # Copy static files
 echo "📋 Copying static files..."
