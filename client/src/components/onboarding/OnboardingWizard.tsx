@@ -189,8 +189,8 @@ export default function OnboardingWizard() {
     },
     {
       id: 3,
-      title: "Generate AI Content",
-      description: "Create your posts automatically (returning subscribers start here)",
+      title: "Generate AI Content & Video",
+      description: "Master content creation with video generation features",
       icon: <Zap className="w-6 h-6" />,
       actionText: "Generate Posts",
       actionUrl: "/intelligent-schedule",
@@ -202,46 +202,56 @@ export default function OnboardingWizard() {
               You're already logged in with an active subscription! This is your main content generation hub.
             </p>
           </div>
+          
           <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
-            <h3 className="font-semibold mb-3">What You Can Do Here:</h3>
+            <h3 className="font-semibold mb-3">🎬 Video Generation Mastery:</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h4 className="font-medium text-purple-900 mb-2">Content Management:</h4>
+                <h4 className="font-medium text-purple-900 mb-2">Video Rules:</h4>
                 <ul className="text-sm text-purple-700 space-y-1">
-                  <li>• View your existing 128 posts</li>
-                  <li>• Edit and approve posts</li>
-                  <li>• Generate new content</li>
-                  <li>• Schedule posts for optimal times</li>
-                  <li>• Add videos to posts</li>
+                  <li>• <strong>One video per post maximum</strong></li>
+                  <li>• Use auto-generated prompts or edit your own</li>
+                  <li>• Approve video to embed in post</li>
+                  <li>• Delete video if not satisfied</li>
+                  <li>• Can approve post without video</li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium text-blue-900 mb-2">Smart Features:</h4>
+                <h4 className="font-medium text-blue-900 mb-2">Video Workflow:</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Platform-specific optimization</li>
-                  <li>• Queensland events integration</li>
-                  <li>• AI-powered content suggestions</li>
-                  <li>• Calendar and list views</li>
-                  <li>• Professional plan (52 posts/month)</li>
+                  <li>• 1. Click "Generate Video" button</li>
+                  <li>• 2. Choose auto-prompt or edit custom</li>
+                  <li>• 3. Review generated video preview</li>
+                  <li>• 4. Approve to embed or delete</li>
+                  <li>• 5. Edit post content if needed</li>
                 </ul>
               </div>
             </div>
           </div>
+          
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+            <h4 className="font-medium text-amber-900 mb-2">⚠️ Connection Status:</h4>
+            <p className="text-sm text-amber-700">
+              If your platform connections are disconnected, you'll see reconnection prompts. Click "Reconnect Now" to fix OAuth issues.
+            </p>
+          </div>
+          
           <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">💡 Pro Tips:</h4>
+            <h4 className="font-medium text-blue-900 mb-2">✏️ Edit Post Features:</h4>
             <ul className="text-sm text-blue-700 space-y-1">
-              <li>• Use "Generate AI-Powered Schedule" for fresh content</li>
-              <li>• Edit posts before approving to match your voice</li>
-              <li>• Add videos to increase engagement</li>
-              <li>• Check analytics to see what's working</li>
+              <li>• Edit content text for each platform</li>
+              <li>• Add or remove video content</li>
+              <li>• Adjust scheduling times</li>
+              <li>• Preview before approving</li>
+              <li>• Approve posts individually</li>
             </ul>
           </div>
         </div>
       ),
       tips: [
-        "This is your main content hub - you're already here!",
-        "Existing posts show you're set up and ready",
-        "Use the video generation feature for more engaging content"
+        "Master video generation: one video per post, auto or custom prompts",
+        "Edit posts to match your brand voice before approval",
+        "Check connection status warnings in platform connections"
       ]
     },
     {
@@ -290,12 +300,22 @@ export default function OnboardingWizard() {
     {
       id: 5,
       title: "Connect Social Platforms",
-      description: "Link your social media accounts for seamless posting",
+      description: "Monitor and manage your platform connections",
       icon: <Users className="w-6 h-6" />,
       actionText: "Connect Platforms",
       actionUrl: "/connect-platforms",
       content: (
         <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+            <h4 className="font-medium text-red-900 mb-2">🚨 Connection Status Warnings:</h4>
+            <ul className="text-sm text-red-700 space-y-1">
+              <li>• <strong>If disconnected:</strong> You'll see "Reconnect [Platform] Now" messages</li>
+              <li>• <strong>OAuth errors:</strong> Click reconnect buttons immediately</li>
+              <li>• <strong>Publishing failures:</strong> Check connection status first</li>
+              <li>• <strong>Token expiry:</strong> Platforms disconnect after 60 days</li>
+            </ul>
+          </div>
+          
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {[
               { name: "Facebook", color: "#1877F2", description: "Business pages & groups" },
@@ -314,8 +334,20 @@ export default function OnboardingWizard() {
               </div>
             ))}
           </div>
+          
+          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+            <h4 className="font-medium text-green-900 mb-2">✅ Connection Management:</h4>
+            <ul className="text-sm text-green-700 space-y-1">
+              <li>• Green status = Connected and ready</li>
+              <li>• Red status = Disconnected, needs reconnection</li>
+              <li>• Click "Connect" or "Reconnect" buttons</li>
+              <li>• Test connections before publishing</li>
+              <li>• Check this page if posts fail to publish</li>
+            </ul>
+          </div>
+          
           <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-            <h4 className="font-medium text-amber-900 mb-2">Security Note:</h4>
+            <h4 className="font-medium text-amber-900 mb-2">🔒 Security Note:</h4>
             <p className="text-sm text-amber-700">
               We use OAuth 2.0 secure authentication. Your passwords are never stored, and you can revoke access anytime.
             </p>
@@ -323,9 +355,9 @@ export default function OnboardingWizard() {
         </div>
       ),
       tips: [
-        "Check platform connection status",
-        "Reconnect if you see OAuth errors",
-        "Add more platforms to expand reach"
+        "Always check connection status before publishing",
+        "Reconnect immediately when you see OAuth errors",
+        "Connected platforms show green status indicators"
       ]
     },
     {
