@@ -131,7 +131,7 @@ export default function Splash() {
                   Technology Intelligence - BETA
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                  <span className="block bg-gradient-atomiq bg-clip-text text-transparent">Automate Social Media, get your sleep back</span>
+                  <span className="block bg-gradient-atomiq bg-clip-text text-transparent">Set & Forget Social Media for QLD Small Business</span>
                   
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">Complete waterfall workflow to drive small businesses's online social presence.</p>
