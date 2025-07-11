@@ -6823,7 +6823,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // X OAuth 1.0a Callback - Restored working implementation
+  // X OAuth 1.0a Callback - Fixed popup communication
   app.get("/api/auth/x/callback", 
     passport.authenticate('twitter', { session: false }), 
     async (req, res) => {
@@ -6831,14 +6831,28 @@ Continue building your Value Proposition Canvas systematically.`;
         const userId = req.session?.xUserId;
         if (!userId) {
           console.error('X OAuth: No userId in session');
-          return res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
+          return res.send(`
+            <script>
+              if (window.opener) {
+                window.opener.postMessage("oauth_failure", "*");
+              }
+              window.close();
+            </script>
+          `);
         }
 
         // Get the authentication result from passport
         const result = req.user as any;
         if (!result || !result.success) {
           console.error('X OAuth 1.0a failed:', result?.error || 'Unknown error');
-          return res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
+          return res.send(`
+            <script>
+              if (window.opener) {
+                window.opener.postMessage("oauth_failure", "*");
+              }
+              window.close();
+            </script>
+          `);
         }
 
         console.log(`✅ X OAuth 1.0a connection successful for user ${userId}:`, result.platform);
@@ -6846,10 +6860,24 @@ Continue building your Value Proposition Canvas systematically.`;
         // Clean up session
         delete req.session.xUserId;
         
-        res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
+        res.send(`
+          <script>
+            if (window.opener) {
+              window.opener.postMessage("oauth_success", "*");
+            }
+            window.close();
+          </script>
+        `);
       } catch (error) {
         console.error('X OAuth 1.0a callback error:', error);
-        res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
+        res.send(`
+          <script>
+            if (window.opener) {
+              window.opener.postMessage("oauth_failure", "*");
+            }
+            window.close();
+          </script>
+        `);
       }
     }
   );

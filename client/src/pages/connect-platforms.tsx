@@ -77,9 +77,26 @@ export default function ConnectPlatforms() {
   // Listen for OAuth success messages from popup
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
+      console.log('OAuth popup message received:', e.data);
+      
       if (e.data === 'oauth_success') {
+        // Clear any connecting states
+        setConnecting({});
+        setReconnecting({});
+        
+        // Refresh connections immediately
         refreshConnections();
+        
+        toast({
+          title: "Connection Successful",
+          description: "Platform has been connected successfully",
+          variant: "default"
+        });
       } else if (e.data === 'oauth_failure') {
+        // Clear any connecting states
+        setConnecting({});
+        setReconnecting({});
+        
         toast({
           title: "OAuth Failed",
           description: "Authentication failed. Please try again.",
@@ -223,6 +240,8 @@ export default function ConnectPlatforms() {
       const checkClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkClosed);
+          
+          // Always clear connecting state when popup closes
           setConnecting(prev => ({ ...prev, [platform]: false }));
           
           // Refresh connection data after OAuth completion
@@ -297,6 +316,8 @@ export default function ConnectPlatforms() {
       const checkClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkClosed);
+          
+          // Always clear reconnecting state when popup closes
           setReconnecting(prev => ({ ...prev, [platform]: false }));
           
           // Refresh connection data after OAuth completion
