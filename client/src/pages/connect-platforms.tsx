@@ -372,13 +372,7 @@ export default function ConnectPlatforms() {
       new Date(b.connectedAt).getTime() - new Date(a.connectedAt).getTime()
     )[0];
     
-    // Debug log the connection data
-    console.log(`Platform ${platform} connection data:`, {
-      username: mostRecentConnection.platformUsername,
-      connectedAt: mostRecentConnection.connectedAt,
-      isActive: mostRecentConnection.isActive,
-      oauthStatus: mostRecentConnection.oauthStatus
-    });
+
     
     return mostRecentConnection;
   };
@@ -389,14 +383,11 @@ export default function ConnectPlatforms() {
     
     // Check OAuth token validity first
     if (connection.oauthStatus?.isValid === false) {
-      console.log(`Platform ${platform} has invalid OAuth token - returning EXPIRED:`, connection.oauthStatus);
       return 'expired';
     }
     
     // If OAuth is valid or not set, check active status
-    const status = connection.isActive ? 'connected' : 'disconnected';
-    console.log(`Platform ${platform} status: ${status}`, 'Connected:', connection.isActive, 'OAuth valid:', connection.oauthStatus?.isValid);
-    return status;
+    return connection.isActive ? 'connected' : 'disconnected';
   };
 
   if (isLoading) {
@@ -440,6 +431,8 @@ export default function ConnectPlatforms() {
             const connection = getConnection(platform);
             const connectionStatus = getConnectionStatus(platform);
             const Icon = config.icon;
+            
+
 
             return (
               <Card key={platform} className="overflow-hidden">
