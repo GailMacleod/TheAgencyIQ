@@ -3446,11 +3446,11 @@ Continue building your Value Proposition Canvas systematically.`;
   // Helper function to get platform scopes
   function getPlatformScopes(platform: string): string[] {
     const scopes = {
-      facebook: ['pages_manage_posts', 'pages_read_engagement', 'public_profile'],
+      facebook: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement'],
       instagram: ['instagram_basic', 'instagram_content_publish'],
-      linkedin: ['w_member_social', 'r_liteprofile'],
-      x: ['tweet.write', 'users.read'],
-      youtube: ['https://www.googleapis.com/auth/youtube.upload']
+      linkedin: ['r_liteprofile', 'w_member_social'],
+      x: ['tweet.write', 'users.read', 'tweet.read', 'offline.access'],
+      youtube: ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly']
     };
     return scopes[platform] || [];
   }
@@ -4303,7 +4303,7 @@ Continue building your Value Proposition Canvas systematically.`;
       const redirectUri = 'https://app.theagencyiq.ai/callback';
       
       // Include all necessary permissions for publishing  
-      const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement';
+      const scope = 'pages_show_list,pages_manage_posts,pages_read_engagement';
       const state = Buffer.from(JSON.stringify({ 
         userId: req.session.userId,
         reconnect: true 
@@ -6570,7 +6570,7 @@ Continue building your Value Proposition Canvas systematically.`;
       console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
       console.log(`🎯 REPL_SLUG: ${process.env.REPL_SLUG}, REPL_OWNER: ${process.env.REPL_OWNER}`);
       
-      const scope = 'public_profile,pages_show_list,pages_manage_posts,pages_read_engagement';
+      const scope = 'pages_show_list,pages_manage_posts,pages_read_engagement';
       const state = Buffer.from(JSON.stringify({ userId, platform: 'facebook' })).toString('base64');
       
       if (!clientId) {
@@ -6681,10 +6681,10 @@ Continue building your Value Proposition Canvas systematically.`;
 
       console.log(`✅ Direct Facebook connection created for user ${userId}:`, result.id);
       
-      res.redirect('/platform-connections?connected=facebook');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     } catch (error) {
       console.error('Direct Facebook connection failed:', error);
-      res.redirect('/platform-connections?error=facebook_connection_failed');
+      res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
     }
   });
 
@@ -6822,10 +6822,10 @@ Continue building your Value Proposition Canvas systematically.`;
       // Process any failed posts for retry when LinkedIn reconnects
       await PostRetryService.onPlatformReconnected(userId, 'linkedin');
       
-      res.redirect('/platform-connections?connected=linkedin');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     } catch (error) {
       console.error('Direct LinkedIn connection failed:', error);
-      res.redirect('/platform-connections?error=linkedin_connection_failed');
+      res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
     }
   });
 
@@ -6942,10 +6942,10 @@ Continue building your Value Proposition Canvas systematically.`;
       console.log(`✅ Token expires: ${expiresAt?.toISOString() || 'No expiration'}`);
 
       // Redirect to platform connections page with success
-      res.redirect('/connect-platforms?connected=linkedin');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     } catch (error) {
       console.error('LinkedIn OAuth callback error:', error);
-      res.redirect('/connect-platforms?error=linkedin_callback_failed');
+      res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
     }
   });
 
@@ -7016,10 +7016,10 @@ Continue building your Value Proposition Canvas systematically.`;
       // Process any failed posts for retry when X reconnects
       await PostRetryService.onPlatformReconnected(userId, 'x');
       
-      res.redirect('/platform-connections?connected=x');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     } catch (error) {
       console.error('Direct X connection failed:', error);
-      res.redirect('/platform-connections?error=x_connection_failed');
+      res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
     }
   });
 
@@ -7074,10 +7074,10 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      res.redirect('/platform-connections?connected=x');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     } catch (error) {
       console.error('X/Twitter OAuth error:', error);
-      res.redirect('/platform-connections?error=x_callback_failed');
+      res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
     }
   });
 
@@ -7686,7 +7686,7 @@ Continue building your Value Proposition Canvas systematically.`;
   app.get('/auth/youtube/callback',
     passport.authenticate('youtube', { failureRedirect: '/platform-connections?error=youtube_failed' }),
     (req, res) => {
-      res.redirect('/platform-connections?success=youtube_connected');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     }
   );
 

@@ -268,13 +268,13 @@ export default function ConnectPlatforms() {
     try {
       setReconnecting(prev => ({ ...prev, [platform]: true }));
       
-      // Map platform names to OAuth routes
+      // Map platform names to OAuth routes with force_reauth
       const oauthRoutes: { [key: string]: string } = {
-        'facebook': '/api/auth/facebook',
-        'instagram': '/api/auth/instagram',
-        'linkedin': '/api/auth/linkedin',
-        'x': '/api/auth/x',
-        'youtube': '/api/auth/youtube'
+        'facebook': '/api/auth/facebook?force_reauth=true',
+        'instagram': '/api/auth/instagram?force_reauth=true',
+        'linkedin': '/api/auth/linkedin?force_reauth=true',
+        'x': '/api/auth/x?force_reauth=true',
+        'youtube': '/api/auth/youtube?force_reauth=true'
       };
       
       const oauthUrl = oauthRoutes[platform];
@@ -292,6 +292,19 @@ export default function ConnectPlatforms() {
       if (!popup) {
         throw new Error('Popup blocked - please allow popups for OAuth');
       }
+      
+      // Monitor popup for completion
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          setReconnecting(prev => ({ ...prev, [platform]: false }));
+          
+          // Refresh connection data after OAuth completion
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          }, 1000);
+        }
+      }, 1000);
       
     } catch (error: any) {
       toast({

@@ -154,7 +154,7 @@ passport.use(new LinkedInStrategy({
   clientID: process.env.LINKEDIN_CLIENT_ID!,
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/linkedin/callback`,
-  scope: ['profile', 'w_member_social', 'email'],
+  scope: ['r_liteprofile', 'w_member_social'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   const result = await handleOAuthCallback({
@@ -194,7 +194,7 @@ passport.use('youtube', new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID!,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/youtube/callback`,
-  scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload'],
+  scope: ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   const result = await handleOAuthCallback({
