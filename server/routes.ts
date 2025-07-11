@@ -25,6 +25,7 @@ import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, auth
 import { requireActiveSubscription, requireAuth } from './middleware/subscriptionAuth';
 import { PostQuotaService } from './PostQuotaService';
 import { userFeedbackService } from './userFeedbackService.js';
+import RollbackAPI from './rollback-api';
 
 // Extended session types
 declare module 'express-session' {
@@ -3012,6 +3013,34 @@ Continue building your Value Proposition Canvas systematically.`;
       console.error('Error running quota debug:', error);
       res.status(500).json({ message: "Debug execution failed" });
     }
+  });
+
+  // Rollback System API Endpoints
+  const rollbackAPI = new RollbackAPI();
+  
+  // Create snapshot
+  app.post("/api/rollback/create", requireAuth, async (req: any, res) => {
+    await rollbackAPI.createSnapshot(req, res);
+  });
+  
+  // List snapshots
+  app.get("/api/rollback/snapshots", requireAuth, async (req: any, res) => {
+    await rollbackAPI.listSnapshots(req, res);
+  });
+  
+  // Get rollback status
+  app.get("/api/rollback/status", requireAuth, async (req: any, res) => {
+    await rollbackAPI.getStatus(req, res);
+  });
+  
+  // Rollback to snapshot
+  app.post("/api/rollback/:snapshotId", requireAuth, async (req: any, res) => {
+    await rollbackAPI.rollbackToSnapshot(req, res);
+  });
+  
+  // Delete snapshot
+  app.delete("/api/rollback/:snapshotId", requireAuth, async (req: any, res) => {
+    await rollbackAPI.deleteSnapshot(req, res);
   });
 
   // Generate content calendar
