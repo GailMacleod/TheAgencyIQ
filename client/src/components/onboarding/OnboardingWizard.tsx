@@ -624,8 +624,13 @@ export default function OnboardingWizard() {
     );
   }
 
+  // Check if we're on the splash page
+  const isSplashPage = location === '/';
+  
   return (
-    <div className="bg-white/95 backdrop-blur-md border border-gray-200/50 rounded-2xl shadow-2xl p-8 space-y-6">
+    <div className={`backdrop-blur-md border border-gray-200/50 rounded-2xl shadow-2xl p-8 space-y-6 ${
+      isSplashPage ? 'bg-white/60' : 'bg-white/95'
+    }`}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">

@@ -114,8 +114,8 @@ export default function Splash() {
       {/* Hero Section */}
       <section className="hero-gradient section-spacing">
         <div className="container-atomiq">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8 animate-fade-in-up">
+          <div className="flex flex-col items-center justify-center min-h-[80vh] text-center space-y-12">
+            <div className="space-y-8 animate-fade-in-up max-w-4xl">
               <div className="space-y-6">
                 <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium">
                   <Lightbulb className="h-4 w-4 mr-2" />
@@ -125,7 +125,7 @@ export default function Splash() {
                   <span className="block bg-gradient-atomiq bg-clip-text text-transparent">Automate Social Media, get your sleep back</span>
                   
                 </h1>
-                <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">Complete waterfall workflow to drive small businesses's online social presence.</p>
+                <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">Complete waterfall workflow to drive small businesses's online social presence.</p>
               </div>
               
               {/* Platform logos for education */}
@@ -136,18 +136,16 @@ export default function Splash() {
                 <SiYoutube className="w-8 h-8" style={{ color: '#FF0000' }} />
                 <SiX className="w-8 h-8" style={{ color: '#000000' }} />
               </div>
-
-
             </div>
 
             <div className="relative animate-slide-in-right">
               <div className="relative z-10">
-                <div className="max-w-md ml-auto">
+                <div className="max-w-md mx-auto">
                   <OnboardingWizard />
                 </div>
                 
                 {/* Video Feature Description - Centered under card */}
-                <div className="mt-6 flex justify-center max-w-md ml-auto">
+                <div className="mt-6 flex justify-center">
                   <div className="px-6 py-2 rounded-full text-sm font-bold text-black flex items-center gap-2" style={{ backgroundColor: '#00f0ff' }}>
                     <Film className="w-4 h-4" />
                     Includes video shorts fast, text-to-video animation
