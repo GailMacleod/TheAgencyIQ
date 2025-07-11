@@ -86,9 +86,16 @@ export default function Splash() {
                 className="h-12 w-auto"
               />
             </div>
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4">
               {!isLoading && user ? (
-                <UserMenu />
+                <div className="flex items-center space-x-4">
+                  <Link href="/login">
+                    <Button variant="ghost" className="text-gray-700 hover:text-primary font-medium">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <UserMenu />
+                </div>
               ) : (
                 <>
                   <Link href="/login">

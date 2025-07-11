@@ -1991,8 +1991,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hasActiveSubscription = user.subscriptionPlan && user.subscriptionPlan !== 'free';
       
       // Check if user has brand setup
-      const brandPurposes = await storage.getBrandPurposesByUser(userId);
-      const hasBrandSetup = brandPurposes.length > 0;
+      let hasBrandSetup = false;
+      try {
+        const brandPurposes = await storage.getBrandPurposesByUser(userId);
+        hasBrandSetup = brandPurposes.length > 0;
+      } catch (error) {
+        // Fallback if method doesn't exist
+        hasBrandSetup = false;
+      }
       
       // Check if user has platform connections
       const connections = await storage.getPlatformConnectionsByUser(userId);
