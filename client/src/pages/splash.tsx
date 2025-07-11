@@ -15,7 +15,7 @@ export default function Splash() {
   const [showSignupAnimation, setShowSignupAnimation] = useState(false);
   const [revealAnimation, setRevealAnimation] = useState(false);
   
-  const { data: user } = useQuery({
+  const { data: user, isLoading } = useQuery({
     queryKey: ["/api/user"],
     retry: false,
   });
@@ -87,16 +87,18 @@ export default function Splash() {
               />
             </div>
             <div className="flex items-center space-x-6">
-              {user ? (
+              {!isLoading && user ? (
                 <UserMenu />
               ) : (
                 <>
                   <Link href="/login">
-                    <Button variant="ghost" className="nav-link">Sign In</Button>
+                    <Button variant="ghost" className="text-gray-700 hover:text-primary font-medium">
+                      Sign In
+                    </Button>
                   </Link>
                   <Link href="/subscription">
                     <Button 
-                      className={`btn-atomiq-primary transition-all duration-500 ${
+                      className={`bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] text-white font-medium px-6 py-2 rounded-lg shadow-lg transition-all duration-500 ${
                         showSignupAnimation 
                           ? 'animate-pulse ring-4 ring-blue-300 ring-opacity-50 scale-105 shadow-lg' 
                           : ''
