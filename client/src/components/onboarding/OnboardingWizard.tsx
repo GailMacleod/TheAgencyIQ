@@ -41,6 +41,7 @@ export default function OnboardingWizard() {
     currentUrl: ''
   });
   const [location, setLocation] = useLocation();
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // Save progress to localStorage
   const saveProgress = () => {
@@ -81,16 +82,20 @@ export default function OnboardingWizard() {
         
         if (response.ok) {
           const statusData = await response.json();
+          const hasActiveSubscription = statusData.hasActiveSubscription || false;
           setUserStatus({
             userType: statusData.userType || 'new',
-            hasActiveSubscription: statusData.hasActiveSubscription || false,
+            hasActiveSubscription,
             hasBrandSetup: statusData.hasBrandSetup || false,
             hasConnections: statusData.hasConnections || false,
             currentUrl: location
           });
           
+          // Enable demo mode for non-subscribers on splash page
+          setIsDemoMode(!hasActiveSubscription && location === '/');
+          
           // Skip subscription step for returning subscribers
-          if (statusData.hasActiveSubscription) {
+          if (hasActiveSubscription) {
             setSkippedSteps(prev => [...prev, 2]);
           }
         } else {
@@ -109,6 +114,9 @@ export default function OnboardingWizard() {
               hasConnections: false, // Default to false without specific endpoint
               currentUrl: location
             });
+            
+            // Enable demo mode for non-subscribers on splash page
+            setIsDemoMode(!hasActiveSubscription && location === '/');
             
             if (hasActiveSubscription) {
               setSkippedSteps(prev => [...prev, 2]);
@@ -159,7 +167,7 @@ export default function OnboardingWizard() {
     }
   }, [location]);
 
-  const wizardSteps: WizardStep[] = [
+  const baseWizardSteps: WizardStep[] = [
     {
       id: 1,
       title: "Welcome to TheAgencyIQ",
@@ -516,6 +524,62 @@ export default function OnboardingWizard() {
     }
   ];
 
+  // Add demo CTA step for non-subscribers
+  const demoCTAStep: WizardStep = {
+    id: 7,
+    title: "Ready to Get Started?",
+    description: "Subscribe now to unlock all features and start automating your social media",
+    icon: <CreditCard className="w-6 h-6" />,
+    actionText: "Subscribe Now",
+    actionUrl: "/subscription",
+    content: (
+      <div className="space-y-4">
+        <div className="bg-gradient-to-r from-[#3B82F6]/10 to-[#8B5CF6]/10 p-6 rounded-lg">
+          <h3 className="font-semibold text-lg mb-3">🚀 What you'll unlock:</h3>
+          <ul className="space-y-2">
+            <li className="flex items-center space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <span>52 AI-generated posts per month</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <span>Automatic publishing to all 5 platforms</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <span>Professional video content generation</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <span>Advanced analytics and insights</span>
+            </li>
+          </ul>
+        </div>
+        <div className="text-center">
+          <p className="text-sm text-gray-600 mb-4">
+            Start your 30-day content automation journey today
+          </p>
+          <Button
+            onClick={() => setLocation('/subscription')}
+            className="bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] text-white font-bold px-8 py-3 rounded-lg shadow-lg transform transition-all duration-200 hover:scale-105"
+          >
+            Subscribe Now
+          </Button>
+        </div>
+      </div>
+    ),
+    tips: [
+      "Choose the plan that fits your business needs",
+      "All plans include AI content generation",
+      "30-day money-back guarantee"
+    ]
+  };
+
+  // Create wizard steps based on demo mode
+  const wizardSteps: WizardStep[] = isDemoMode 
+    ? [...baseWizardSteps, demoCTAStep]
+    : baseWizardSteps;
+
   const handleNext = () => {
     if (currentStep < wizardSteps.length - 1) {
       setCompletedSteps([...completedSteps, currentStep]);
@@ -529,16 +593,20 @@ export default function OnboardingWizard() {
       
       setCurrentStep(nextStep);
       
-      // Navigate to the next route if available
-      const nextRoute = wizardSteps[currentStep]?.route;
-      if (nextRoute) {
-        setLocation(nextRoute);
+      // Navigate to the next route if available (only in non-demo mode)
+      if (!isDemoMode) {
+        const nextRoute = wizardSteps[currentStep]?.route;
+        if (nextRoute) {
+          setLocation(nextRoute);
+        }
       }
     } else {
       // Final step completed - return to landing page with animation trigger
       setCompletedSteps([...completedSteps, currentStep]);
-      setLocation('/?wizard-completed=true');
-      setIsVisible(false);
+      if (!isDemoMode) {
+        setLocation('/?wizard-completed=true');
+        setIsVisible(false);
+      }
     }
   };
 
@@ -572,6 +640,21 @@ export default function OnboardingWizard() {
 
   const handleAction = () => {
     const step = wizardSteps[currentStep];
+    
+    // In demo mode, don't navigate to live routes - just advance to next step
+    if (isDemoMode) {
+      if (currentStep < wizardSteps.length - 1) {
+        setCompletedSteps([...completedSteps, currentStep]);
+        setCurrentStep(currentStep + 1);
+      } else {
+        // Final step in demo mode - navigate to subscription page
+        setCompletedSteps([...completedSteps, currentStep]);
+        setLocation('/subscription');
+      }
+      return;
+    }
+    
+    // Normal mode - navigate to URLs
     if (step.actionUrl) {
       // Navigate to the URL but keep wizard open for guidance
       setLocation(step.actionUrl);
@@ -638,6 +721,11 @@ export default function OnboardingWizard() {
               <span className="text-white font-bold text-xs">AIQ</span>
             </div>
             <span className="text-sm font-medium text-gray-800">Training Guide</span>
+            {isDemoMode && (
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                Demo Mode
+              </Badge>
+            )}
             {userStatus.userType === 'returning' && (
               <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                 Returning Subscriber
