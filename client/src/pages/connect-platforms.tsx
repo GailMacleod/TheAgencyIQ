@@ -55,7 +55,7 @@ const platformConfig: Record<string, PlatformConfig> = {
     description: "Build professional networks and share business content"
   },
   x: {
-    name: "X (Twitter)",
+    name: "X",
     icon: Twitter,
     color: "bg-black",
     description: "Share quick updates and engage in real-time conversations"
@@ -256,7 +256,7 @@ export default function ConnectPlatforms() {
       let actionMessage = "";
 
       if (platform === 'x') {
-        errorMessage = "X (Twitter) connection failed";
+        errorMessage = "X connection failed";
         actionMessage = "Please reconnect X now by clicking the connect button again";
       } else if (platform === 'facebook') {
         errorMessage = "Facebook connection failed";
@@ -278,6 +278,8 @@ export default function ConnectPlatforms() {
         variant: "destructive",
         duration: 8000 // Longer duration for actionable messages
       });
+    } finally {
+      // Always clear connecting state
       setConnecting(prev => ({ ...prev, [platform]: false }));
     }
   };
@@ -333,7 +335,6 @@ export default function ConnectPlatforms() {
         description: error.message || "Failed to reconnect platform",
         variant: "destructive"
       });
-    } finally {
       setReconnecting(prev => ({ ...prev, [platform]: false }));
     }
   };
