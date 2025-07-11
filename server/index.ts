@@ -224,12 +224,26 @@ async function startServer() {
   // OAuth connection routes
   app.get('/connect/:platform', (req, res) => {
     const platform = req.params.platform.toLowerCase();
-    req.session.userId = 2;
+    
+    // CRITICAL FIX: Only use authenticated user sessions
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage("oauth_failure", "*");
+          }
+          window.close();
+        </script>
+      `);
+    }
+    
+    console.log(`🔗 OAuth initiation for ${platform} with user ID: ${userId}`);
     
     const state = Buffer.from(JSON.stringify({
       platform,
       timestamp: Date.now(),
-      userId: req.session.userId
+      userId: userId
     })).toString('base64');
     
     // Use dynamic callback URI based on environment
@@ -454,7 +468,15 @@ async function startServer() {
       // Store platform connection in database
       try {
         const { storage } = await import('./storage');
-        const userId = stateData.userId || req.session.userId || 2;
+        const userId = stateData.userId || req.session.userId;
+        
+        // CRITICAL FIX: Only use valid authenticated user sessions
+        if (!userId) {
+          console.error('❌ OAuth callback: No authenticated user found in session');
+          return res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
+        }
+        
+        console.log(`💾 Storing OAuth connection for user ${userId} on platform ${platform}`);
         
         // Save platform connection to database
         await storage.createPlatformConnection({
@@ -468,7 +490,7 @@ async function startServer() {
           isActive: true
         });
         
-        console.log(`✅ OAuth success for ${platform} - stored in session AND database`);
+        console.log(`✅ OAuth success for ${platform} with user ${userId} - stored in session AND database`);
       } catch (dbError) {
         console.error('Database storage error:', dbError);
         console.log(`✅ OAuth success for ${platform} - stored in session only (DB error)`);

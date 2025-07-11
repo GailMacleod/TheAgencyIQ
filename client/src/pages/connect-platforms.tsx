@@ -205,31 +205,9 @@ export default function ConnectPlatforms() {
     try {
       setConnecting(prev => ({ ...prev, [platform]: true }));
       
-      // Instagram OAuth fix for user_id: 2
+      // Instagram uses same OAuth flow as Facebook
       if (platform === 'instagram') {
-        const response = await fetch('/api/brand-purpose', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ action: 'instagram-oauth-fix' })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          // Force refresh of unified connection state and invalidate cache
-          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-          refetch();
-          toast({
-            title: "Instagram OAuth Fixed",
-            description: `${result.message}: ${result.username}`
-          });
-        } else {
-          throw new Error(result.error || 'Instagram OAuth fix failed');
-        }
-        
-        setConnecting(prev => ({ ...prev, [platform]: false }));
-        return;
+        console.log('Instagram OAuth initiated - using Facebook OAuth flow');
       }
       
       // Try LinkedIn OAuth directly - let's see if the credentials work
@@ -240,6 +218,7 @@ export default function ConnectPlatforms() {
       // Map platform names to OAuth routes
       const oauthRoutes: { [key: string]: string } = {
         'facebook': '/api/auth/facebook',
+        'instagram': '/api/auth/instagram',
         'linkedin': '/api/auth/linkedin',
         'x': '/api/auth/x',
         'youtube': '/api/auth/youtube'

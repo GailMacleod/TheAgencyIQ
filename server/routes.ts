@@ -404,15 +404,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true
       });
       
-      res.json({
-        success: true,
-        connectionId: connection.id,
-        message: 'Facebook connected successfully'
-      });
+      console.log(`✅ Facebook connected successfully for user ${sessionUserId}: ${connection.id}`);
+      
+      // Send popup success message
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage("oauth_success", "*");
+          }
+          window.close();
+        </script>
+      `);
       
     } catch (error) {
       console.error('Facebook callback error:', error);
-      res.status(500).json({ error: 'Failed to process Facebook authorization' });
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage("oauth_failure", "*");
+          }
+          window.close();
+        </script>
+      `);
     }
   });
 
@@ -473,15 +486,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true
       });
       
-      res.json({
-        success: true,
-        connectionId: connection.id,
-        message: 'LinkedIn connected successfully'
-      });
+      console.log(`✅ LinkedIn connected successfully for user ${sessionUserId}: ${connection.id}`);
+      
+      // Send popup success message
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage("oauth_success", "*");
+          }
+          window.close();
+        </script>
+      `);
       
     } catch (error) {
       console.error('LinkedIn callback error:', error);
-      res.status(500).json({ error: 'Failed to process LinkedIn authorization' });
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage("oauth_failure", "*");
+          }
+          window.close();
+        </script>
+      `);
     }
   });
 
@@ -553,14 +579,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true
       });
       
-      res.json({
-        success: true,
-        connectionId: connection.id,
-        message: 'X connected successfully'
-      });
+      console.log(`✅ X connected successfully for user ${sessionUserId}: ${connection.id}`);
+      
+      // Send popup success message
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage("oauth_success", "*");
+          }
+          window.close();
+        </script>
+      `);
     } catch (error) {
       console.error('X callback error:', error);
-      res.status(500).json({ error: 'Failed to process X authorization' });
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage("oauth_failure", "*");
+          }
+          window.close();
+        </script>
+      `);
     }
   });
 
@@ -671,9 +710,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // CRITICAL FIX: Only use valid authenticated session userId
+        const sessionUserId = req.session?.userId;
+        if (!sessionUserId) {
+          return res.send(`
+            <script>
+              if (window.opener) {
+                window.opener.postMessage("oauth_failure", "*");
+              }
+              window.close();
+            </script>
+          `);
+        }
+        
         // Store tokens securely
         const connection = await storage.createPlatformConnection({
-          userId: req.session?.userId,
+          userId: sessionUserId,
           platform: 'youtube',
           platformUserId: platformUserId,
           platformUsername: platformUsername,
@@ -683,30 +735,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isActive: true
         });
         
-        // Store in environment for immediate use
-        process.env.YOUTUBE_ACCESS_TOKEN = tokenResult.access_token;
-        if (tokenResult.refresh_token) {
-          process.env.YOUTUBE_REFRESH_TOKEN = tokenResult.refresh_token;
-        }
+        console.log(`✅ YouTube connected successfully for user ${sessionUserId}: ${connection.id}`);
         
-        res.json({
-          success: true,
-          connectionId: connection.id,
-          message: 'YouTube platform connected successfully',
-          username: platformUsername,
-          accessToken: tokenResult.access_token.substring(0, 20) + '...',
-          channelId: platformUserId
-        });
+        // Send popup success message
+        res.send(`
+          <script>
+            if (window.opener) {
+              window.opener.postMessage("oauth_success", "*");
+            }
+            window.close();
+          </script>
+        `);
       } else {
         console.error('YouTube token exchange failed:', tokenResult);
-        res.status(400).json({ 
-          error: 'Failed to exchange authorization code',
-          details: tokenResult 
-        });
+        res.send(`
+          <script>
+            if (window.opener) {
+              window.opener.postMessage("oauth_failure", "*");
+            }
+            window.close();
+          </script>
+        `);
       }
     } catch (error) {
       console.error('YouTube callback error:', error);
-      res.status(500).json({ error: 'Failed to process YouTube authorization' });
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage("oauth_failure", "*");
+          }
+          window.close();
+        </script>
+      `);
     }
   });
 
@@ -2750,18 +2810,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API auth routes that redirect to OAuth providers
   app.get('/api/auth/facebook', (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
     res.redirect('/connect/facebook');
   });
   
-  // Instagram OAuth route removed - handled by main Instagram route
+  app.get('/api/auth/instagram', (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    res.redirect('/connect/instagram');
+  });
   
-  // LinkedIn OAuth route removed - handled by main LinkedIn route
+  app.get('/api/auth/linkedin', (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    res.redirect('/connect/linkedin');
+  });
   
   app.get('/api/auth/x', (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
     res.redirect('/connect/x');
   });
   
   app.get('/api/auth/youtube', (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
     res.redirect('/connect/youtube');
   });
   
