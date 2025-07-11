@@ -1,123 +1,167 @@
 /**
- * Publish Test to All Platforms
- * Uses existing posts and proper OAuth system
+ * PUBLISH TEST TO ALL PLATFORMS
+ * Uses the unified state management system to publish "TEST" to all connected platforms
  */
 
-async function publishTestToAllPlatforms() {
-  const baseUrl = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
-  
-  console.log('🚀 PUBLISHING TEST TO ALL PLATFORMS');
-  console.log('===================================');
-  
-  try {
-    // Get existing posts to find one to publish
-    console.log('📋 Getting existing posts...');
-    const postsResponse = await fetch(`${baseUrl}/api/posts`, {
-      credentials: 'include',
+class PlatformPublisher {
+  constructor() {
+    this.baseUrl = 'http://localhost:5000';
+    this.cookies = '';
+    this.testContent = 'TEST';
+  }
+
+  async publishToAllPlatforms() {
+    console.log('🚀 PUBLISHING TEST TO ALL PLATFORMS');
+    console.log('===================================');
+    
+    try {
+      // Step 1: Establish session
+      await this.establishSession();
+      
+      // Step 2: Get platform connections using unified endpoint
+      const connections = await this.getConnections();
+      
+      // Step 3: Publish to each platform
+      await this.publishToEachPlatform(connections);
+      
+      console.log('\n✅ PUBLISHING TEST COMPLETE');
+      
+    } catch (error) {
+      console.error('❌ Publishing failed:', error);
+    }
+  }
+
+  async establishSession() {
+    console.log('\n📡 Establishing session...');
+    
+    const response = await fetch(`${this.baseUrl}/api/establish-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'gailm@macleodglba.com.au',
+        password: 'password123'
+      })
+    });
+
+    if (response.ok) {
+      const setCookie = response.headers.get('set-cookie');
+      if (setCookie) {
+        this.cookies = setCookie;
+      }
+      console.log('✅ Session established successfully');
+    } else {
+      throw new Error(`Session establishment failed: ${response.status}`);
+    }
+  }
+
+  async getConnections() {
+    console.log('\n🔗 Getting platform connections...');
+    
+    const response = await fetch(`${this.baseUrl}/api/platform-connections`, {
+      method: 'GET',
       headers: {
-        'Cookie': 'connect.sid=aiq_mcyk6glu_e2yqw9cgwi7'
+        'Cookie': this.cookies,
+        'Content-Type': 'application/json'
       }
     });
-    
-    if (!postsResponse.ok) {
-      console.error('Failed to get posts:', await postsResponse.text());
-      return;
-    }
-    
-    const posts = await postsResponse.json();
-    console.log(`Found ${posts.length} posts`);
-    
-    // Find a draft post to publish
-    const draftPost = posts.find(p => p.status === 'draft');
-    if (!draftPost) {
-      console.log('No draft posts found, creating a new one...');
+
+    if (response.ok) {
+      const connections = await response.json();
+      const publishableConnections = connections.filter(conn => 
+        conn.isActive && conn.oauthStatus?.isValid && !conn.oauthStatus?.needsRefresh
+      );
       
-      // Create a new post with proper date format
-      const createResponse = await fetch(`${baseUrl}/api/posts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': 'connect.sid=aiq_mcyk6glu_e2yqw9cgwi7'
-        },
-        body: JSON.stringify({
-          content: 'Test - Publishing to all platforms',
-          platform: 'facebook',
-          scheduledFor: new Date(),
-          status: 'draft'
-        })
-      });
+      console.log(`✅ Found ${publishableConnections.length} publishable connections`);
       
-      if (!createResponse.ok) {
-        console.error('Failed to create post:', await createResponse.text());
-        return;
+      if (publishableConnections.length > 0) {
+        console.log('📝 Ready to publish to:');
+        publishableConnections.forEach(conn => {
+          console.log(`  - ${conn.platform}: ${conn.platformUsername || 'Connected'}`);
+        });
       }
       
-      const newPost = await createResponse.json();
-      console.log('Created new post:', newPost.id);
-      
-      // Now publish this post
-      await publishPost(newPost.id, baseUrl);
+      return publishableConnections;
     } else {
-      console.log(`Using existing draft post: ${draftPost.id}`);
-      await publishPost(draftPost.id, baseUrl);
+      throw new Error(`Failed to get connections: ${response.status}`);
+    }
+  }
+
+  async publishToEachPlatform(connections) {
+    console.log('\n📤 Publishing to platforms...');
+    
+    const publishResults = [];
+    
+    for (const connection of connections) {
+      console.log(`\n🔄 Publishing to ${connection.platform}...`);
+      
+      try {
+        const result = await this.publishToPlatform(connection);
+        publishResults.push(result);
+        
+        if (result.success) {
+          console.log(`✅ ${connection.platform}: Published successfully`);
+        } else {
+          console.log(`❌ ${connection.platform}: ${result.error}`);
+        }
+      } catch (error) {
+        console.log(`❌ ${connection.platform}: ${error.message}`);
+        publishResults.push({
+          platform: connection.platform,
+          success: false,
+          error: error.message
+        });
+      }
     }
     
-  } catch (error) {
-    console.error('❌ Test failed:', error.message);
+    // Summary
+    console.log('\n📊 PUBLISHING SUMMARY:');
+    const successful = publishResults.filter(r => r.success).length;
+    const failed = publishResults.filter(r => !r.success).length;
+    
+    console.log(`✅ Successful: ${successful}`);
+    console.log(`❌ Failed: ${failed}`);
+    
+    publishResults.forEach(result => {
+      const emoji = result.success ? '✅' : '❌';
+      console.log(`${emoji} ${result.platform}: ${result.success ? 'Success' : result.error}`);
+    });
   }
-}
 
-async function publishPost(postId, baseUrl) {
-  console.log(`🚀 Publishing post ${postId} to all platforms...`);
-  
-  try {
-    // Use the PostPublisher API with all platforms
-    const publishResponse = await fetch(`${baseUrl}/api/publish-post`, {
+  async publishToPlatform(connection) {
+    // Use the direct publishing endpoint with correct action parameter
+    const response = await fetch(`${this.baseUrl}/api/direct-publish`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Cookie': 'connect.sid=aiq_mcyk6glu_e2yqw9cgwi7'
+        'Cookie': this.cookies,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        postId: postId,
-        platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
+        action: 'test_publish_all',
+        content: this.testContent,
+        platforms: [connection.platform]
       })
     });
     
-    console.log('Publish response status:', publishResponse.status);
-    
-    if (!publishResponse.ok) {
-      const errorText = await publishResponse.text();
-      console.error('Publish failed:', errorText);
-      return;
+    if (response.ok) {
+      const result = await response.json();
+      const platformResult = result.results && result.results[connection.platform];
+      
+      return {
+        platform: connection.platform,
+        success: platformResult ? platformResult.success : false,
+        result: platformResult || result
+      };
+    } else {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      return {
+        platform: connection.platform,
+        success: false,
+        error: error.error || error.message || `HTTP ${response.status}`
+      };
     }
-    
-    const result = await publishResponse.json();
-    console.log('\n📊 Publishing Results:');
-    console.log(JSON.stringify(result, null, 2));
-    
-    if (result.results) {
-      console.log('\n📋 Platform Results Summary:');
-      Object.entries(result.results).forEach(([platform, platformResult]) => {
-        const status = platformResult.success ? '✅ SUCCESS' : '❌ FAILED';
-        console.log(`  ${platform.toUpperCase()}: ${status}`);
-        if (platformResult.error) {
-          console.log(`    Error: ${platformResult.error}`);
-        }
-        if (platformResult.platformPostId) {
-          console.log(`    Post ID: ${platformResult.platformPostId}`);
-        }
-      });
-    }
-    
-    console.log(`\n📈 Overall Success: ${result.success ? 'Yes' : 'No'}`);
-    if (result.remainingPosts !== undefined) {
-      console.log(`🔢 Remaining Posts: ${result.remainingPosts}`);
-    }
-    
-  } catch (error) {
-    console.error('❌ Publishing failed:', error.message);
   }
 }
 
-publishTestToAllPlatforms();
+// Run the publisher
+const publisher = new PlatformPublisher();
+publisher.publishToAllPlatforms().catch(console.error);
