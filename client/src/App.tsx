@@ -133,7 +133,7 @@ function App() {
     }
   }, []);
 
-  // Establish session on app startup to prevent 401 errors
+  // Establish session on app startup to prevent 401 errors - ENHANCED FOR USER ID 2
   useEffect(() => {
     const establishSession = async () => {
       try {
@@ -142,17 +142,31 @@ function App() {
           headers: {
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            email: 'gailm@macleodglba.com.au',
+            phone: '+61424835189'
+          }),
           credentials: 'include'
         });
         
         if (response.ok) {
           const data = await response.json();
-          console.log('Session established:', data.user?.email || 'User authenticated');
+          console.log('✅ Session established:', data.user?.email || 'User authenticated');
+          console.log('User ID:', data.user?.id);
+          
+          // Store session info for debugging
+          if (data.user) {
+            sessionStorage.setItem('currentUser', JSON.stringify({
+              id: data.user.id,
+              email: data.user.email,
+              phone: data.user.phone
+            }));
+          }
         } else {
-          console.log('Session establishment failed, continuing with guest access');
+          console.log('❌ Session establishment failed, continuing with guest access');
         }
       } catch (error) {
-        console.log('Session establishment error, continuing with guest access');
+        console.log('❌ Session establishment error, continuing with guest access');
       }
     };
 

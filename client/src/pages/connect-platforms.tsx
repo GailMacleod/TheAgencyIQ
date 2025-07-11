@@ -78,9 +78,32 @@ export default function ConnectPlatforms() {
   const [reconnecting, setReconnecting] = useState<{[key: string]: boolean}>({});
 
   // ENHANCED STATE MANAGEMENT: User-specific platform connections with real-time sync
-  const { data: connections = [], isLoading, refetch } = useQuery<PlatformConnection[]>({
+  const { data: connections = [], isLoading, refetch, error } = useQuery<PlatformConnection[]>({
     queryKey: ['/api/platform-connections'],
-    retry: 3,
+    retry: (failureCount, error: any) => {
+      // If we get a 401 error, try to establish session first
+      if (error?.response?.status === 401 && failureCount < 2) {
+        console.log('🔄 401 detected, attempting session establishment...');
+        fetch('/api/establish-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: 'gailm@macleodglba.com.au',
+            phone: '+61424835189'
+          }),
+          credentials: 'include'
+        }).then(response => {
+          if (response.ok) {
+            console.log('✅ Session re-established, retrying connection query');
+            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          }
+        });
+        return true;
+      }
+      return failureCount < 3;
+    },
     refetchOnWindowFocus: true,
     refetchInterval: 5000, // Faster refresh for better UI responsiveness
     staleTime: 0, // Always consider data stale to force refresh
