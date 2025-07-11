@@ -50,6 +50,17 @@
   }
 }
 
+@keyframes button-pulse {
+  0%, 100% {
+    background-color: #3250fa;
+    box-shadow: 0 0 20px rgba(50, 80, 250, 0.3);
+  }
+  50% {
+    background-color: #00f0ff;
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.5);
+  }
+}
+
 @keyframes gradient-wave {
   0% {
     background-position: 0% 50%;

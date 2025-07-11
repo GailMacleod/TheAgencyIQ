@@ -187,12 +187,10 @@ export default function Splash() {
                           transition-all duration-300 ease-in-out
                           hover:scale-105 hover:shadow-2xl
                           transform-gpu will-change-transform
-                          active:scale-95 active:transition-none
-                          text-shadow-standout"
+                          active:scale-95 active:transition-none"
                 style={{
-                  background: 'linear-gradient(-45deg, #3b5cff, #00f0ff, #ff538f, #915fd7, #3b5cff)',
-                  backgroundSize: '400% 400%',
-                  animation: 'gradient-wave 3s ease-in-out infinite, vignette-pulse 2s ease-in-out infinite alternate'
+                  background: '#3250fa',
+                  animation: 'button-pulse 2s ease-in-out infinite'
                 }}
               >
                 <span className="relative z-10">SUBSCRIBE NOW</span>
