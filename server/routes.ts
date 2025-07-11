@@ -1926,37 +1926,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Logging out user ${userId}`);
       }
       
-      // Immediately clear session and prevent auto-recovery
-      req.session = null;
+      // Destroy session from database/store
+      req.session.destroy((err: any) => {
+        if (err) {
+          console.error('Session destruction error:', err);
+        }
+      });
       
-      // Clear all possible session cookies
+      // Clear all possible session cookies with comprehensive options
       res.clearCookie('connect.sid', {
         path: '/',
         httpOnly: true,
-        secure: false, // Set to true in production
-        sameSite: 'lax'
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        domain: undefined // Clear for all domains
       });
       
-      res.clearCookie('sessionId');
-      res.clearCookie('userId');
+      // Clear additional cookies that might persist
+      res.clearCookie('sessionId', { path: '/' });
+      res.clearCookie('userId', { path: '/' });
+      res.clearCookie('userEmail', { path: '/' });
+      res.clearCookie('subscriptionStatus', { path: '/' });
+      
+      // Set cache control headers to prevent caching
+      res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
       
       console.log('User logged out successfully - session completely cleared');
       res.json({ 
         success: true,
         message: "Logged out successfully",
-        redirect: "/" 
+        redirect: "/",
+        clearCache: true // Signal frontend to clear local storage
       });
       
     } catch (error: any) {
       console.error('Logout error:', error);
       
       // Force session clear even on error
-      req.session = null;
-      res.clearCookie('connect.sid');
+      req.session.destroy((err: any) => {
+        if (err) console.error('Force session destroy error:', err);
+      });
+      res.clearCookie('connect.sid', { path: '/' });
+      res.clearCookie('sessionId', { path: '/' });
+      res.clearCookie('userId', { path: '/' });
       
       res.json({ 
         success: true,
-        message: "Logged out successfully" 
+        message: "Logged out successfully",
+        clearCache: true
       });
     }
   });

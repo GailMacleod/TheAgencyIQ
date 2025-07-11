@@ -48,13 +48,43 @@ export default function Header({
 
   const handleLogout = async () => {
     try {
-      await apiRequest("POST", "/api/logout", {});
+      await apiRequest("POST", "/api/auth/logout", {});
+      
+      // Clear all cached data immediately
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Clear any cached data
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          names.forEach(name => {
+            caches.delete(name);
+          });
+        });
+      }
+      
+      // Clear specific application data
+      localStorage.removeItem('onboarding-progress');
+      localStorage.removeItem('wizardProgress');
+      localStorage.removeItem('userPreferences');
+      
+      console.log('Complete session cleanup on logout');
+      
       toast({
         title: "Logged Out",
         description: "You have been logged out successfully",
       });
-      setLocation("/");
+      
+      // Force page reload to ensure complete session cleanup
+      window.location.replace("/");
     } catch (error: any) {
+      console.error("Logout error:", error);
+      
+      // Force logout even on error
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.replace("/");
+      
       toast({
         title: "Logout Failed",
         description: error.message || "Failed to log out",

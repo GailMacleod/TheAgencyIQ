@@ -34,20 +34,41 @@ export default function UserMenu() {
 
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/auth/logout"),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       // Clear all cached data immediately
       queryClient.clear();
       queryClient.invalidateQueries();
       
-      // Clear localStorage and sessionStorage
+      // Clear localStorage and sessionStorage completely
       localStorage.clear();
       sessionStorage.clear();
       
+      // Clear any cached data
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          names.forEach(name => {
+            caches.delete(name);
+          });
+        });
+      }
+      
+      // Clear specific application data
+      localStorage.removeItem('onboarding-progress');
+      localStorage.removeItem('wizardProgress');
+      localStorage.removeItem('userPreferences');
+      
+      console.log('Complete session cleanup on logout');
+      
       // Force page reload to ensure complete session cleanup
-      window.location.href = "/";
+      window.location.replace("/");
     },
     onError: (error: any) => {
       console.error("Logout error:", error);
+      
+      // Force logout even on error
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.replace("/");
       
       // Even on error, force logout locally
       queryClient.clear();

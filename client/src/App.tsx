@@ -58,10 +58,41 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/video-gen" component={VideoGen} />
       <Route path="/logout" component={() => {
-        // Handle logout as a route
+        // Handle logout as a route with complete session clearing
         fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-          .then(() => {
-            window.location.href = '/';
+          .then(response => response.json())
+          .then(data => {
+            if (data.clearCache) {
+              // Clear all local storage and session storage
+              localStorage.clear();
+              sessionStorage.clear();
+              
+              // Clear any cached data
+              if ('caches' in window) {
+                caches.keys().then(names => {
+                  names.forEach(name => {
+                    caches.delete(name);
+                  });
+                });
+              }
+              
+              // Clear onboarding progress specifically
+              localStorage.removeItem('onboarding-progress');
+              localStorage.removeItem('wizardProgress');
+              localStorage.removeItem('userPreferences');
+              
+              console.log('Local storage cleared on logout');
+            }
+            
+            // Force page reload to clear any cached state
+            window.location.replace('/');
+          })
+          .catch(error => {
+            console.error('Logout error:', error);
+            // Force logout even on error
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.replace('/');
           });
         return null;
       }} />
