@@ -270,7 +270,7 @@ export default function ConnectPlatforms() {
           'facebook': '/api/auth/facebook',
           'instagram': '/api/auth/instagram',
           'linkedin': '/api/auth/linkedin',
-          'x': '/api/auth/twitter',
+          'x': '/api/auth/x',
           'youtube': '/api/auth/youtube'
         };
         
@@ -280,7 +280,7 @@ export default function ConnectPlatforms() {
           const popup = window.open(
             oauthUrl,
             'oauth',
-            'width=600,height=700,scrollbars=yes,resizable=yes'
+            'width=500,height=600,scrollbars=yes,resizable=yes'
           );
           
           if (popup) {
@@ -514,10 +514,10 @@ export default function ConnectPlatforms() {
                       <div className="flex space-x-2">
                         <Button
                           onClick={() => handleReconnect(platform)}
-                          className="flex-1 hover:bg-yellow-700 bg-[#3250fa] text-[#fff]"
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                           disabled={reconnecting[platform]}
                         >
-                          {reconnecting[platform] ? 'Reconnecting...' : 'Reconnect'}
+                          {reconnecting[platform] ? 'Reconnecting...' : 'Expired - Reconnect'}
                         </Button>
                         <Button
                           onClick={() => disconnectMutation.mutate(platform)}
