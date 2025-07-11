@@ -242,73 +242,55 @@ export default function ConnectPlatforms() {
     try {
       setReconnecting(prev => ({ ...prev, [platform]: true }));
       
-      // First try token refresh
-      const refreshResponse = await fetch(`/api/oauth/refresh/${platform}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
-      });
+      // Map platform names to OAuth routes
+      const oauthRoutes: { [key: string]: string } = {
+        'facebook': '/api/auth/facebook',
+        'instagram': '/api/auth/instagram',
+        'linkedin': '/api/auth/linkedin',
+        'x': '/api/auth/x',
+        'youtube': '/api/auth/youtube'
+      };
       
-      const refreshData = await refreshResponse.json();
-      
-      if (refreshData.refreshResult?.success) {
-        // Token refresh successful - refresh connection data
-        await queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-        toast({
-          title: "Token Refreshed",
-          description: `${platform} token has been successfully refreshed`
-        });
-      } else if (refreshData.refreshResult?.needs_reauth) {
-        // Token refresh failed, needs re-authentication - use popup for OAuth
-        toast({
-          title: "Re-authentication Required",
-          description: `Opening ${platform} OAuth flow...`
-        });
-        
-        // Map platform names to OAuth routes
-        const oauthRoutes: { [key: string]: string } = {
-          'facebook': '/api/auth/facebook',
-          'instagram': '/api/auth/instagram',
-          'linkedin': '/api/auth/linkedin',
-          'x': '/api/auth/x',
-          'youtube': '/api/auth/youtube'
-        };
-        
-        const oauthUrl = oauthRoutes[platform];
-        if (oauthUrl) {
-          // Use popup window for OAuth
-          const popup = window.open(
-            oauthUrl,
-            'oauth',
-            'width=500,height=600,scrollbars=yes,resizable=yes'
-          );
-          
-          if (popup) {
-            // Monitor popup for completion
-            const checkClosed = setInterval(() => {
-              if (popup.closed) {
-                clearInterval(checkClosed);
-                
-                // Refresh connection data after OAuth completion
-                setTimeout(() => {
-                  queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-                }, 1000);
-              }
-            }, 1000);
-          }
-        }
-      } else {
-        // Other failure - show error
-        toast({
-          title: "Token Refresh Failed",
-          description: refreshData.refreshResult?.error || 'Unknown error occurred',
-          variant: "destructive"
-        });
+      const oauthUrl = oauthRoutes[platform];
+      if (!oauthUrl) {
+        throw new Error(`OAuth not configured for ${platform}`);
       }
-    } catch (error) {
+      
+      // Open OAuth popup
+      const popup = window.open(
+        oauthUrl,
+        'oauth',
+        'width=500,height=600'
+      );
+      
+      if (!popup) {
+        throw new Error('Popup blocked - please allow popups for OAuth');
+      }
+      
+      // Monitor popup for completion
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          
+          // Refresh connection data after OAuth completion
+          setTimeout(async () => {
+            try {
+              await queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+              toast({
+                title: "Reconnection Complete",
+                description: `${platform} has been successfully reconnected`
+              });
+            } catch (error) {
+              console.warn('Failed to refresh connection data:', error);
+            }
+          }, 1000);
+        }
+      }, 1000);
+      
+    } catch (error: any) {
       toast({
-        title: "Reconnect Failed",
-        description: `Failed to reconnect ${platform}. Please try again.`,
+        title: "Reconnection Failed",
+        description: error.message || "Failed to reconnect platform",
         variant: "destructive"
       });
     } finally {
