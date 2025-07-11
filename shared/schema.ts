@@ -37,7 +37,7 @@ export const postSchedule = pgTable("post_schedule", {
   postId: text("post_id").primaryKey(), // UUID
   userId: text("user_id").notNull(), // Mobile number UID
   content: text("content").notNull(),
-  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'tiktok', 'x'
+  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
   status: text("status").notNull().default("draft"), // 'draft', 'approved', 'scheduled', 'posted'
   isCounted: boolean("is_counted").notNull().default(false), // True only if posted successfully
   scheduledAt: timestamp("scheduled_at"),
@@ -65,7 +65,7 @@ export const postLedger = pgTable("post_ledger", {
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'tiktok', 'x'
+  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
   content: text("content").notNull(),
   status: text("status").notNull().default("draft"), // 'draft', 'approved', 'scheduled', 'published', 'failed'
   publishedAt: timestamp("published_at"),
@@ -81,7 +81,7 @@ export const posts = pgTable("posts", {
 export const platformConnections = pgTable("platform_connections", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'tiktok', 'x'
+  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
   platformUserId: text("platform_user_id").notNull(),
   platformUsername: text("platform_username").notNull(),
   accessToken: text("access_token").notNull(),

@@ -2742,13 +2742,7 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.status(400).json({ message: "Platform, username, and password are required" });
       }
 
-      // For pending platforms (TikTok only)
-      if (platform === 'tiktok') {
-        return res.status(202).json({ 
-          message: `TikTok connection coming soon`,
-          pending: true
-        });
-      }
+
 
       // Import authentication functions
       const { 
@@ -5589,7 +5583,7 @@ Continue building your Value Proposition Canvas systematically.`;
       const hasRealData = totalPosts > 0;
 
       // Add platforms without data to show complete overview
-      const allPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube', 'tiktok'];
+      const allPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
       for (const platform of allPlatforms) {
         if (!platformStats.find(stat => stat.platform === platform)) {
           platformStats.push({
@@ -6719,7 +6713,7 @@ Continue building your Value Proposition Canvas systematically.`;
       }
 
       // Validate platform is supported
-      const supportedPlatforms = ['facebook', 'instagram', 'linkedin', 'youtube', 'tiktok', 'x'];
+      const supportedPlatforms = ['facebook', 'instagram', 'linkedin', 'youtube', 'x'];
       if (!supportedPlatforms.includes(platform)) {
         return res.status(400).json({ message: "Unsupported platform" });
       }
@@ -7271,13 +7265,7 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.json({ redirectUrl: oauthUrl });
       }
 
-      // For pending platforms (TikTok only)
-      if (platform === 'tiktok') {
-        return res.status(202).json({ 
-          message: `TikTok OAuth approval pending. Manual connection available.`,
-          pending: true 
-        });
-      }
+
 
       res.status(400).json({ message: "Unsupported platform" });
     } catch (error: any) {

@@ -60,17 +60,7 @@ const platformConfig: Record<string, PlatformConfig> = {
     color: "bg-red-600", 
     description: "Upload videos and grow your YouTube channel"
   },
-  tiktok: {
-    name: "TikTok",
-    icon: () => (
-      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
-        <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 015.2-2.88V11.2a6.59 6.59 0 00-1.49-.17 6.8 6.8 0 106.8 6.8V8.77a8.14 8.14 0 004.16 1.13V6.69z"/>
-      </svg>
-    ),
-    color: "bg-black",
-    description: "Share short videos on TikTok",
-    pending: true
-  }
+
 };
 
 export default function ConnectPlatforms() {
@@ -373,7 +363,7 @@ export default function ConnectPlatforms() {
                             Coming Soon
                           </p>
                           <p className="text-xs text-gray-500">
-                            TikTok connection available soon
+                            Connection coming soon
                           </p>
                         </div>
                       ) : (

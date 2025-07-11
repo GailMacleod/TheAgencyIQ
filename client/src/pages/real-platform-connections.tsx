@@ -18,7 +18,7 @@ import {
   AlertCircle,
   Clock
 } from "lucide-react";
-import { SiTiktok, SiX } from "react-icons/si";
+import { SiX } from "react-icons/si";
 
 interface PlatformConnection {
   id: number;
@@ -69,14 +69,7 @@ const platforms = [
     approved: true,
     description: 'Upload videos and manage your YouTube channel'
   },
-  {
-    id: 'tiktok',
-    name: 'TikTok',
-    icon: SiTiktok,
-    color: 'bg-black',
-    approved: false,
-    description: 'Share short videos on TikTok (OAuth pending)'
-  }
+
 ];
 
 export default function RealPlatformConnections() {
@@ -317,7 +310,7 @@ export default function RealPlatformConnections() {
                   <p>✓ LinkedIn: Professional content publishing and engagement metrics</p>
                   <p>✓ X (Twitter): Tweet publishing and audience analytics</p>
                   <p>✓ YouTube: Video management and channel analytics</p>
-                  <p>⏳ TikTok: OAuth application under platform review</p>
+
                 </div>
               </div>
             </div>

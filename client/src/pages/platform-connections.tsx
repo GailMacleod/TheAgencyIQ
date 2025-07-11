@@ -6,7 +6,7 @@ import MasterFooter from "@/components/master-footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckIcon } from "lucide-react";
-import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "react-icons/si";
+import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiX } from "react-icons/si";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { trackMilestone } from "@/lib/analytics";
@@ -101,7 +101,6 @@ export default function PlatformConnections() {
     { id: 'instagram', name: 'instagram', icon: SiInstagram, color: 'platform-instagram' },
     { id: 'linkedin', name: 'linkedin', icon: SiLinkedin, color: 'platform-linkedin' },
     { id: 'youtube', name: 'youtube', icon: SiYoutube, color: 'platform-youtube' },
-    { id: 'tiktok', name: 'tiktok', icon: SiTiktok, color: 'platform-tiktok' },
     { id: 'x', name: 'x (twitter)', icon: SiX, color: 'platform-x' },
   ];
 
@@ -123,9 +122,6 @@ export default function PlatformConnections() {
     } else if (platformId === 'youtube') {
       username = window.prompt(`Enter your Google email (for YouTube):`) || '';
       password = window.prompt(`Enter your Google password:`) || '';
-    } else if (platformId === 'tiktok') {
-      username = window.prompt(`Enter your TikTok username or email:`) || '';
-      password = window.prompt(`Enter your TikTok password:`) || '';
     } else if (platformId === 'x') {
       username = window.prompt(`Enter your X (Twitter) username or email:`) || '';
       password = window.prompt(`Enter your X (Twitter) password:`) || '';

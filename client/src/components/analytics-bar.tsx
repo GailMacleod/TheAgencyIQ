@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { TrendingUp, Eye, Users, Target } from "lucide-react";
-import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "react-icons/si";
+import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiX } from "react-icons/si";
 import { cn } from "@/lib/utils";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
 
@@ -33,8 +33,6 @@ const getPlatformIcon = (platform: string) => {
       return <SiLinkedin {...iconProps} style={{ color: '#0A66C2' }} />;
     case 'youtube':
       return <SiYoutube {...iconProps} style={{ color: '#FF0000' }} />;
-    case 'tiktok':
-      return <SiTiktok {...iconProps} style={{ color: '#000000' }} />;
     case 'x':
       return <SiX {...iconProps} style={{ color: '#000000' }} />;
     default:

@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Zap, Target, Calendar, BarChart3, Users, Sparkles, CheckCircle, ArrowRight, Cpu, Lightbulb, Film } from "lucide-react";
-import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiTiktok, SiX } from "react-icons/si";
+import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiX } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import GrokWidget from "@/components/grok-widget";
@@ -92,7 +92,6 @@ export default function Splash() {
                 <SiInstagram className="w-8 h-8" style={{ color: '#E4405F' }} />
                 <SiLinkedin className="w-8 h-8" style={{ color: '#0A66C2' }} />
                 <SiYoutube className="w-8 h-8" style={{ color: '#FF0000' }} />
-                <SiTiktok className="w-8 h-8" style={{ color: '#000000' }} />
                 <SiX className="w-8 h-8" style={{ color: '#000000' }} />
               </div>
 
