@@ -7495,26 +7495,39 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Direct publishing endpoint - bypasses all validation
+  // Direct publishing endpoint - with automatic token refresh
   app.post("/api/direct-publish", requireAuth, async (req: any, res) => {
     try {
       const { action, userId: targetUserId, content, platforms } = req.body;
       const userId = targetUserId || req.session.userId;
 
       if (action === 'test_publish_all') {
-        // Test publishing to all platforms
+        // Test publishing to all platforms with automatic token refresh
         const { DirectPublisher } = await import('./direct-publisher');
+        const { OAuthRefreshService } = await import('./oauth-refresh-service');
+        
         const testContent = content || "TheAgencyIQ Test Post";
-        const testPlatforms = platforms || ['facebook', 'instagram', 'linkedin', 'twitter', 'youtube'];
+        const testPlatforms = platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
         
         const results = {};
         let successCount = 0;
         let failureCount = 0;
         
-        // Test each platform
+        // Test each platform with automatic token refresh
         for (const platform of testPlatforms) {
           try {
-            console.log(`🧪 Testing ${platform} direct publish...`);
+            console.log(`🧪 Testing ${platform} direct publish with token refresh...`);
+            
+            // Step 1: Attempt to refresh/validate token first
+            const refreshResult = await OAuthRefreshService.validateAndRefreshConnection(platform, userId);
+            
+            if (refreshResult.success) {
+              console.log(`✅ ${platform} token validated/refreshed successfully`);
+            } else {
+              console.log(`⚠️ ${platform} token refresh failed: ${refreshResult.error}`);
+            }
+            
+            // Step 2: Attempt to publish (will use refreshed token if available)
             const result = await DirectPublisher.publishToPlatform(platform, testContent);
             results[platform] = result;
             
@@ -7543,6 +7556,10 @@ Continue building your Value Proposition Canvas systematically.`;
               }
             } else {
               failureCount++;
+              // Add refresh suggestion to error message
+              if (refreshResult.requiresReauth) {
+                result.error = `${result.error} | Requires OAuth reconnection via platform connections page`;
+              }
               console.log(`❌ ${platform} publish failed: ${result.error}`);
             }
           } catch (error) {
@@ -7673,6 +7690,43 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // REMOVED: /api/check-live-status - Unified into /api/platform-connections endpoint above
+
+  // OAuth token refresh endpoint
+  app.post("/api/oauth/refresh/:platform", requireAuth, async (req: any, res) => {
+    try {
+      const { platform } = req.params;
+      const userId = req.session.userId;
+
+      if (!platform) {
+        return res.status(400).json({ success: false, error: "Platform is required" });
+      }
+
+      const { OAuthRefreshService } = await import('./oauth-refresh-service');
+      const result = await OAuthRefreshService.validateAndRefreshConnection(platform, userId);
+
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: `${platform} token refreshed successfully`,
+          expiresAt: result.expiresAt 
+        });
+      } else {
+        res.json({ 
+          success: false, 
+          error: result.error,
+          requiresReauth: result.requiresReauth || false
+        });
+      }
+
+    } catch (error: any) {
+      console.error(`OAuth refresh error for ${req.params.platform}:`, error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Token refresh failed",
+        requiresReauth: true
+      });
+    }
+  });
 
   // Get real platform analytics
   app.get("/api/platform-analytics/:platform", requireAuth, async (req: any, res) => {

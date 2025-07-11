@@ -97,42 +97,96 @@ export class OAuthRefreshService {
 
   private static async refreshFacebookToken(connection: any, userId: number): Promise<RefreshResult> {
     try {
-      // Meta long-lived token refresh (valid for 60 days)
-      const response = await axios.get(
-        `https://graph.facebook.com/v18.0/oauth/access_token`,
+      console.log(`[OAUTH-REFRESH] Attempting Facebook token refresh for user ${userId}`);
+      
+      // Check if we have the required environment variables
+      if (!process.env.FACEBOOK_APP_ID || !process.env.FACEBOOK_APP_SECRET) {
+        console.error('[OAUTH-REFRESH] Facebook credentials not configured');
+        return {
+          success: false,
+          error: 'Facebook app credentials not configured in environment',
+          requiresReauth: true
+        };
+      }
+
+      // First try to get a fresh Page Access Token
+      // This handles the "Token requires regeneration" error
+      const pageResponse = await axios.get(
+        `https://graph.facebook.com/v18.0/me/accounts`,
         {
           params: {
-            grant_type: 'fb_exchange_token',
-            client_id: process.env.FACEBOOK_APP_ID,
-            client_secret: process.env.FACEBOOK_APP_SECRET,
-            fb_exchange_token: connection.accessToken
+            access_token: connection.accessToken
           }
         }
       );
 
-      const { access_token, expires_in } = response.data;
-      const expiresAt = new Date(Date.now() + (expires_in * 1000));
+      if (pageResponse.data.data && pageResponse.data.data.length > 0) {
+        // Use the first page's access token (should be a Page Access Token)
+        const pageAccessToken = pageResponse.data.data[0].access_token;
+        
+        // Exchange for long-lived token
+        const response = await axios.get(
+          `https://graph.facebook.com/v18.0/oauth/access_token`,
+          {
+            params: {
+              grant_type: 'fb_exchange_token',
+              client_id: process.env.FACEBOOK_APP_ID,
+              client_secret: process.env.FACEBOOK_APP_SECRET,
+              fb_exchange_token: pageAccessToken
+            }
+          }
+        );
 
-      // Update database
-      const { storage } = await import('./storage');
-      await storage.updatePlatformConnection(connection.id, {
-        accessToken: access_token,
-        expiresAt: expiresAt
-      });
+        const { access_token, expires_in } = response.data;
+        const expiresAt = new Date(Date.now() + (expires_in * 1000));
 
-      console.log(`[OAUTH-REFRESH] Facebook token refreshed successfully, expires: ${expiresAt.toISOString()}`);
-      
-      return {
-        success: true,
-        newAccessToken: access_token,
-        expiresAt: expiresAt
-      };
+        // Update database
+        const { storage } = await import('./storage');
+        await storage.updatePlatformConnection(connection.id, {
+          accessToken: access_token,
+          expiresAt: expiresAt
+        });
+
+        console.log(`[OAUTH-REFRESH] Facebook token refreshed successfully, expires: ${expiresAt.toISOString()}`);
+        
+        return {
+          success: true,
+          newAccessToken: access_token,
+          expiresAt: expiresAt
+        };
+      } else {
+        // No pages found, need full reauth
+        return {
+          success: false,
+          error: 'No Facebook pages found. Please ensure your Facebook account manages a page.',
+          requiresReauth: true
+        };
+      }
       
     } catch (error: any) {
       console.error('[OAUTH-REFRESH] Facebook refresh failed:', error.response?.data || error.message);
+      
+      // Enhanced error handling for specific Facebook errors
+      if (error.response?.data?.error) {
+        const fbError = error.response.data.error;
+        if (fbError.code === 190) {
+          return {
+            success: false,
+            error: 'Facebook token expired. Please reconnect your Facebook account.',
+            requiresReauth: true
+          };
+        } else if (fbError.code === 102) {
+          return {
+            success: false,
+            error: 'Facebook API session key invalid. Please reconnect your Facebook account.',
+            requiresReauth: true
+          };
+        }
+      }
+      
       return {
         success: false,
-        error: 'Facebook token refresh failed',
+        error: 'Facebook token refresh failed. Please reconnect your Facebook account.',
         requiresReauth: true
       };
     }
@@ -140,7 +194,9 @@ export class OAuthRefreshService {
 
   private static async refreshInstagramToken(connection: any, userId: number): Promise<RefreshResult> {
     try {
-      // Instagram uses Facebook's token refresh mechanism
+      console.log(`[OAUTH-REFRESH] Attempting Instagram token refresh for user ${userId}`);
+      
+      // First try Instagram-specific refresh
       const response = await axios.get(
         `https://graph.instagram.com/refresh_access_token`,
         {
@@ -171,9 +227,28 @@ export class OAuthRefreshService {
       
     } catch (error: any) {
       console.error('[OAUTH-REFRESH] Instagram refresh failed:', error.response?.data || error.message);
+      
+      // Enhanced error handling for Instagram-specific errors
+      if (error.response?.data?.error) {
+        const igError = error.response.data.error;
+        if (igError.code === 190) {
+          return {
+            success: false,
+            error: 'Instagram token expired. Please reconnect your Instagram account.',
+            requiresReauth: true
+          };
+        } else if (igError.message && igError.message.includes('Cannot parse access token')) {
+          return {
+            success: false,
+            error: 'Instagram token format invalid. Please reconnect your Instagram account.',
+            requiresReauth: true
+          };
+        }
+      }
+      
       return {
         success: false,
-        error: 'Instagram token refresh failed',
+        error: 'Instagram token refresh failed. Please reconnect your Instagram account.',
         requiresReauth: true
       };
     }
@@ -310,22 +385,37 @@ export class OAuthRefreshService {
 
   private static async refreshLinkedInToken(connection: any, userId: number): Promise<RefreshResult> {
     try {
-      if (!connection.refreshToken) {
+      console.log(`[OAUTH-REFRESH] Attempting LinkedIn token refresh for user ${userId}`);
+      
+      // Check if we have the required environment variables
+      if (!process.env.LINKEDIN_CLIENT_ID || !process.env.LINKEDIN_CLIENT_SECRET) {
+        console.error('[OAUTH-REFRESH] LinkedIn credentials not configured');
         return {
           success: false,
-          error: 'No refresh token available for LinkedIn',
+          error: 'LinkedIn app credentials not configured in environment',
           requiresReauth: true
         };
       }
 
+      if (!connection.refreshToken) {
+        return {
+          success: false,
+          error: 'No refresh token available for LinkedIn. Please reconnect your LinkedIn account.',
+          requiresReauth: true
+        };
+      }
+
+      // LinkedIn OAuth 2.0 token refresh
+      const refreshData = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: connection.refreshToken,
+        client_id: process.env.LINKEDIN_CLIENT_ID,
+        client_secret: process.env.LINKEDIN_CLIENT_SECRET
+      });
+
       const response = await axios.post(
         'https://www.linkedin.com/oauth/v2/accessToken',
-        {
-          grant_type: 'refresh_token',
-          refresh_token: connection.refreshToken,
-          client_id: process.env.LINKEDIN_CLIENT_ID,
-          client_secret: process.env.LINKEDIN_CLIENT_SECRET
-        },
+        refreshData,
         {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
@@ -355,9 +445,28 @@ export class OAuthRefreshService {
       
     } catch (error: any) {
       console.error('[OAUTH-REFRESH] LinkedIn refresh failed:', error.response?.data || error.message);
+      
+      // Enhanced error handling for LinkedIn-specific errors
+      if (error.response?.data?.error) {
+        const linkedInError = error.response.data.error;
+        if (linkedInError === 'invalid_grant') {
+          return {
+            success: false,
+            error: 'LinkedIn refresh token expired. Please reconnect your LinkedIn account.',
+            requiresReauth: true
+          };
+        } else if (linkedInError === 'invalid_client') {
+          return {
+            success: false,
+            error: 'LinkedIn app credentials invalid. Please check app configuration.',
+            requiresReauth: true
+          };
+        }
+      }
+      
       return {
         success: false,
-        error: 'LinkedIn token refresh failed',
+        error: 'LinkedIn token refresh failed. Please reconnect your LinkedIn account.',
         requiresReauth: true
       };
     }

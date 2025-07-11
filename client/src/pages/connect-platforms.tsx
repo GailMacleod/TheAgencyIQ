@@ -74,9 +74,31 @@ export default function ConnectPlatforms() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+  const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
+  const [reconnecting, setReconnecting] = useState<{[key: string]: boolean}>({});
+
+  // UNIFIED STATE MANAGEMENT: Single source of truth from /api/platform-connections
+  const { data: connections = [], isLoading, refetch } = useQuery<PlatformConnection[]>({
+    queryKey: ['/api/platform-connections'],
+    retry: 2,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000 // Auto-refresh every 30 seconds for live status
+  });
+
+  // Derive connection state from single source of truth
+  const platformConnectionState = useMemo(() => {
+    const state: {[key: string]: boolean} = {};
+    connections.forEach(conn => {
+      // Use database connection status as single source of truth
+      state[conn.platform] = conn.isActive && (!conn.oauthStatus || conn.oauthStatus.isValid !== false);
+    });
+    return state;
+  }, [connections]);
+
   // Unified OAuth success/failure message handling
   useEffect(() => {
+    if (!refetch) return; // Ensure refetch is defined
+
     const handleMessage = (e: MessageEvent) => {
       console.log('OAuth popup message received:', e.data);
       
@@ -108,30 +130,12 @@ export default function ConnectPlatforms() {
     
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [refetch]);
-  const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
-  const [reconnecting, setReconnecting] = useState<{[key: string]: boolean}>({});
-
-  // UNIFIED STATE MANAGEMENT: Single source of truth from /api/platform-connections
-  const { data: connections = [], isLoading, refetch } = useQuery<PlatformConnection[]>({
-    queryKey: ['/api/platform-connections'],
-    retry: 2,
-    refetchOnWindowFocus: true,
-    refetchInterval: 30000 // Auto-refresh every 30 seconds for live status
-  });
-
-  // Derive connection state from single source of truth
-  const platformConnectionState = useMemo(() => {
-    const state: {[key: string]: boolean} = {};
-    connections.forEach(conn => {
-      // Use database connection status as single source of truth
-      state[conn.platform] = conn.isActive && (!conn.oauthStatus || conn.oauthStatus.isValid !== false);
-    });
-    return state;
-  }, [connections]);
+  }, [refetch, toast]);
 
   // Refresh connection data when returning from OAuth callback
   useEffect(() => {
+    if (!refetch) return; // Ensure refetch is defined
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('connected') || urlParams.get('success')) {
       // OAuth callback success - refresh unified connection state
@@ -376,6 +380,51 @@ export default function ConnectPlatforms() {
     }
   });
 
+  // Test publishing functionality with automatic token refresh
+  const testPublishMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/direct-publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          action: 'test_publish_all',
+          content: 'OAuth Token Test - Platform Connection Verification',
+          platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
+        })
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Refresh unified connection state after test
+      refetch();
+      
+      const successCount = data.summary?.successCount || 0;
+      const failureCount = data.summary?.failureCount || 0;
+      
+      if (successCount > 0) {
+        toast({
+          title: "Test Publishing Successful",
+          description: `Published to ${successCount} platforms successfully. ${failureCount} failed.`,
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Test Publishing Failed",
+          description: "All platforms failed publishing. Please reconnect your OAuth accounts.",
+          variant: "destructive"
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Test Publishing Failed", 
+        description: "Failed to test publish. Please check your connections.",
+        variant: "destructive"
+      });
+    }
+  });
+
 
 
 
@@ -557,14 +606,26 @@ export default function ConnectPlatforms() {
             </div>
 
             {connections && Array.isArray(connections) && connections.length > 0 && (
-              <div className="mt-8 text-center">
-                <Button
-                  onClick={() => setLocation("/intelligent-schedule")}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                  size="lg"
-                >
-                  Continue to AI Schedule
-                </Button>
+              <div className="mt-8 text-center space-y-4">
+                <div className="flex justify-center space-x-4">
+                  <Button
+                    onClick={() => testPublishMutation.mutate()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={testPublishMutation.isPending}
+                  >
+                    {testPublishMutation.isPending ? 'Testing...' : 'Test Publishing'}
+                  </Button>
+                  <Button
+                    onClick={() => setLocation("/intelligent-schedule")}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    size="lg"
+                  >
+                    Continue to AI Schedule
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Test publishing will verify OAuth tokens with automatic refresh and won't consume your quota
+                </p>
               </div>
             )}
 
