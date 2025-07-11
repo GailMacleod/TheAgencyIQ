@@ -3387,23 +3387,36 @@ Continue building your Value Proposition Canvas systematically.`;
     try {
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
       
-      // Add OAuth status validation
-      const { OAuthStatusChecker } = await import('./oauth-status-checker');
-      const tokenValidations = await OAuthStatusChecker.validateAllUserTokens(req.session.userId);
-      
-      // Merge connection data with validation results
-      const connectionsWithStatus = connections.map(conn => {
-        const validation = tokenValidations.find(v => v.platform === conn.platform);
-        return {
-          ...conn,
-          oauthStatus: validation || { 
-            isValid: false, 
-            needsRefresh: true, 
-            error: 'Token validation failed',
-            platform: conn.platform 
-          }
-        };
-      });
+      // Add OAuth status validation using existing OAuthRefreshService
+      const connectionsWithStatus = await Promise.all(connections.map(async (conn) => {
+        try {
+          // Validate token for this specific platform
+          const validationResult = await OAuthRefreshService.validatePlatformToken(conn.platform, req.session.userId);
+          
+          return {
+            ...conn,
+            oauthStatus: {
+              platform: conn.platform,
+              isValid: validationResult.isValid,
+              needsRefresh: !validationResult.isValid,
+              error: validationResult.error || (validationResult.isValid ? undefined : 'Token validation failed'),
+              requiredScopes: validationResult.requiredScopes || []
+            }
+          };
+        } catch (error) {
+          console.error(`OAuth validation failed for ${conn.platform}:`, error);
+          return {
+            ...conn,
+            oauthStatus: {
+              platform: conn.platform,
+              isValid: false,
+              needsRefresh: true,
+              error: 'Token validation failed',
+              requiredScopes: []
+            }
+          };
+        }
+      }));
 
       res.json(connectionsWithStatus);
     } catch (error: any) {

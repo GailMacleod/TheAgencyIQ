@@ -121,6 +121,19 @@ export default function ConnectPlatforms() {
     });
   }, []);
 
+  // Refresh connection data when returning from OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('connected') || urlParams.get('success')) {
+      // OAuth callback success - refresh connection data
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+      
+      // Clean up URL parameters
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, [queryClient]);
+
   // OAuth connection for platforms
   const handleOAuthConnect = async (platform: string) => {
     try {
@@ -218,8 +231,8 @@ export default function ConnectPlatforms() {
       const refreshData = await refreshResponse.json();
       
       if (refreshData.refreshResult?.success) {
-        // Token refresh successful
-        queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+        // Token refresh successful - refresh connection data
+        await queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
         toast({
           title: "Token Refreshed",
           description: `${platform} token has been successfully refreshed`
@@ -230,6 +243,8 @@ export default function ConnectPlatforms() {
           title: "Re-authentication Required",
           description: `Redirecting to ${platform} OAuth flow...`
         });
+        // Store the reconnection intent
+        setReconnecting(prev => ({ ...prev, [platform]: false }));
         await handleOAuthConnect(platform);
       }
     } catch (error) {
@@ -298,9 +313,18 @@ export default function ConnectPlatforms() {
 
   const getConnection = (platform: string) => {
     if (!connections || !Array.isArray(connections)) return null;
-    return connections.find((conn: PlatformConnection) => 
+    
+    // Get all connections for this platform and return the most recent one
+    const platformConnections = connections.filter((conn: PlatformConnection) => 
       conn.platform === platform && conn.isActive
     );
+    
+    if (platformConnections.length === 0) return null;
+    
+    // Sort by connection date (most recent first) and return the first one
+    return platformConnections.sort((a, b) => 
+      new Date(b.connectedAt).getTime() - new Date(a.connectedAt).getTime()
+    )[0];
   };
 
   const getConnectionStatus = (platform: string) => {
