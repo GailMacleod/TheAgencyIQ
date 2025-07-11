@@ -3382,6 +3382,18 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Helper function to get platform scopes
+  function getPlatformScopes(platform: string): string[] {
+    const scopes = {
+      facebook: ['pages_manage_posts', 'pages_read_engagement', 'public_profile'],
+      instagram: ['instagram_basic', 'instagram_content_publish'],
+      linkedin: ['w_member_social', 'r_liteprofile'],
+      x: ['tweet.write', 'users.read'],
+      youtube: ['https://www.googleapis.com/auth/youtube.upload']
+    };
+    return scopes[platform] || [];
+  }
+
   // Get platform connections status with OAuth validation
   app.get("/api/platform-connections", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -3391,16 +3403,16 @@ Continue building your Value Proposition Canvas systematically.`;
       const connectionsWithStatus = await Promise.all(connections.map(async (conn) => {
         try {
           // Validate token for this specific platform
-          const validationResult = await OAuthRefreshService.validatePlatformToken(conn.platform, req.session.userId);
+          const validationResult = await OAuthRefreshService.validateToken(conn.accessToken, conn.platform);
           
           return {
             ...conn,
             oauthStatus: {
               platform: conn.platform,
               isValid: validationResult.isValid,
-              needsRefresh: !validationResult.isValid,
+              needsRefresh: validationResult.needsRefresh,
               error: validationResult.error || (validationResult.isValid ? undefined : 'Token validation failed'),
-              requiredScopes: validationResult.requiredScopes || []
+              requiredScopes: getPlatformScopes(conn.platform)
             }
           };
         } catch (error) {
@@ -3412,7 +3424,7 @@ Continue building your Value Proposition Canvas systematically.`;
               isValid: false,
               needsRefresh: true,
               error: 'Token validation failed',
-              requiredScopes: []
+              requiredScopes: getPlatformScopes(conn.platform)
             }
           };
         }

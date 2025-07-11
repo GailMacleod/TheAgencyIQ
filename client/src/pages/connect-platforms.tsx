@@ -409,7 +409,7 @@ export default function ConnectPlatforms() {
                           Connected
                         </Badge>
                       ) : connectionStatus === 'expired' ? (
-                        <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                        <Badge className="text-xs" style={{ backgroundColor: '#00f0ff20', color: '#00f0ff', border: '1px solid #00f0ff' }}>
                           <AlertCircle className="w-3 h-3 mr-1" />
                           Expired - Reconnect
                         </Badge>
@@ -449,7 +449,7 @@ export default function ConnectPlatforms() {
                     <div className="space-y-3">
                       <div className="text-sm">
                         <p className="font-medium text-gray-900">Account: {connection.platformUsername}</p>
-                        <p className="text-yellow-600">
+                        <p style={{ color: '#00f0ff' }}>
                           Token expired - reconnection required
                         </p>
                       </div>
