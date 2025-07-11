@@ -128,7 +128,7 @@ export default function Splash() {
               <div className="space-y-4">
                 <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium">
                   <Lightbulb className="h-4 w-4 mr-2" />
-                  Technology Intelligence
+                  Technology Intelligence - BETA
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
                   <span className="block bg-gradient-atomiq bg-clip-text text-transparent">Automate Social Media, get your sleep back</span>
@@ -171,7 +171,7 @@ export default function Splash() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="space-y-6">
             
-            <p className="tracking-wider uppercase font-extrabold text-[20px] text-[#3b5cff]">BETA - LIMITED USERS</p>
+
             <Link href="/subscription">
               <Button 
                 size="lg" 
