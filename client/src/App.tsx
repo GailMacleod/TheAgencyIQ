@@ -33,6 +33,7 @@ import InstagramFix from "@/pages/instagram-fix";
 import DataDeletionStatus from "@/pages/data-deletion-status";
 import MetaPixelTest from "@/pages/meta-pixel-test";
 import BulletproofDashboard from "@/pages/bulletproof-dashboard";
+import VideoGen from "@/pages/video-gen";
 
 function Router() {
   // Track page views when routes change
@@ -55,6 +56,15 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/redeem-certificate" component={RedeemCertificate} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/video-gen" component={VideoGen} />
+      <Route path="/logout" component={() => {
+        // Handle logout as a route
+        fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+          .then(() => {
+            window.location.href = '/';
+          });
+        return null;
+      }} />
       <Route path="/dashboard" component={ConnectPlatforms} />
       <Route path="/connection-repair" component={ConnectionRepair} />
       <Route path="/oauth-reconnect" component={OAuthReconnect} />

@@ -174,10 +174,32 @@ export default function ConnectPlatforms() {
       // Redirect to OAuth flow
       window.location.href = oauthUrl;
     } catch (error: any) {
+      // Enhanced user-friendly error messages
+      let errorMessage = "Failed to initiate connection";
+      let actionMessage = "";
+
+      if (platform === 'x') {
+        errorMessage = "X (Twitter) connection failed";
+        actionMessage = "Please reconnect X now by clicking the connect button again";
+      } else if (platform === 'facebook') {
+        errorMessage = "Facebook connection failed";
+        actionMessage = "Please reconnect Facebook now - check your Facebook account permissions";
+      } else if (platform === 'instagram') {
+        errorMessage = "Instagram connection failed";
+        actionMessage = "Please reconnect Instagram now - ensure your Instagram is linked to Facebook";
+      } else if (platform === 'linkedin') {
+        errorMessage = "LinkedIn connection failed";
+        actionMessage = "Please reconnect LinkedIn now - check your LinkedIn account permissions";
+      } else if (platform === 'youtube') {
+        errorMessage = "YouTube connection failed";
+        actionMessage = "Please reconnect YouTube now - check your Google account permissions";
+      }
+
       toast({
-        title: "Connection Failed",
-        description: error.message || "Failed to initiate connection",
-        variant: "destructive"
+        title: errorMessage,
+        description: actionMessage || error.message || "Failed to initiate connection",
+        variant: "destructive",
+        duration: 8000 // Longer duration for actionable messages
       });
       setConnecting(prev => ({ ...prev, [platform]: false }));
     }

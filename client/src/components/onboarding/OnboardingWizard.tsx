@@ -22,7 +22,51 @@ export default function OnboardingWizard() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isVisible, setIsVisible] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [skippedSteps, setSkippedSteps] = useState<number[]>([]);
+  const [isSkipped, setIsSkipped] = useState(false);
   const [, setLocation] = useLocation();
+
+  // Save progress to localStorage
+  const saveProgress = () => {
+    const progress = {
+      currentStep,
+      completedSteps,
+      skippedSteps,
+      isSkipped,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('onboarding-progress', JSON.stringify(progress));
+  };
+
+  // Load progress from localStorage
+  const loadProgress = () => {
+    const saved = localStorage.getItem('onboarding-progress');
+    if (saved) {
+      const progress = JSON.parse(saved);
+      // Only load if saved within last 24 hours
+      if (Date.now() - progress.timestamp < 24 * 60 * 60 * 1000) {
+        setCurrentStep(progress.currentStep);
+        setCompletedSteps(progress.completedSteps);
+        setSkippedSteps(progress.skippedSteps || []);
+        setIsSkipped(progress.isSkipped || false);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Load progress on mount
+  useEffect(() => {
+    const hasProgress = loadProgress();
+    if (hasProgress) {
+      console.log('Onboarding progress restored');
+    }
+  }, []);
+
+  // Save progress when state changes
+  useEffect(() => {
+    saveProgress();
+  }, [currentStep, completedSteps, skippedSteps, isSkipped]);
 
   const wizardSteps: WizardStep[] = [
     {
@@ -308,6 +352,24 @@ export default function OnboardingWizard() {
     }
   };
 
+  const handleSkip = () => {
+    const stepId = wizardSteps[currentStep].id;
+    setSkippedSteps([...skippedSteps, stepId]);
+    handleNext();
+  };
+
+  const handleSkipWizard = () => {
+    setIsSkipped(true);
+    setIsVisible(false);
+    localStorage.setItem('onboarding-skipped', 'true');
+  };
+
+  const handleResumeWizard = () => {
+    setIsSkipped(false);
+    setIsVisible(true);
+    localStorage.removeItem('onboarding-skipped');
+  };
+
   const handleStepClick = (stepIndex: number) => {
     setCurrentStep(stepIndex);
   };
@@ -335,6 +397,21 @@ export default function OnboardingWizard() {
   const progressPercentage = ((currentStep + 1) / wizardSteps.length) * 100;
 
   if (!isVisible) return null;
+
+  // Skipped state - floating resume button
+  if (isSkipped) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button
+          onClick={handleResumeWizard}
+          className="bg-orange-500 hover:bg-orange-600 text-white rounded-full w-16 h-16 shadow-lg flex items-center justify-center"
+          title="Resume Training Guide"
+        >
+          <Play className="w-6 h-6" />
+        </Button>
+      </div>
+    );
+  }
 
   // Minimized state - floating button (always visible across pages)
   if (isMinimized) {
@@ -400,25 +477,48 @@ export default function OnboardingWizard() {
           </div>
           
           <div className="flex items-center justify-between mt-4 space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrevious}
-              disabled={currentStep === 0}
-              className="text-xs"
-            >
-              <ArrowLeft className="w-3 h-3 mr-1" />
-              Prev
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevious}
+                disabled={currentStep === 0}
+                className="text-xs"
+              >
+                <ArrowLeft className="w-3 h-3 mr-1" />
+                Prev
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSkip}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Skip
+              </Button>
+            </div>
             
-            <Button
-              onClick={handleAction}
-              size="sm"
-              className="bg-[#3b5cff] hover:bg-[#2a4bd8] text-white text-xs"
-            >
-              {wizardSteps[currentStep].actionText}
-              <ArrowRight className="w-3 h-3 ml-1" />
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSkipWizard}
+                className="text-xs"
+              >
+                <X className="w-3 h-3 mr-1" />
+                Skip All
+              </Button>
+              
+              <Button
+                onClick={handleAction}
+                size="sm"
+                className="bg-[#3b5cff] hover:bg-[#2a4bd8] text-white text-xs"
+              >
+                {wizardSteps[currentStep].actionText}
+                <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

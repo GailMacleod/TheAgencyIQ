@@ -34,20 +34,56 @@ const AdminDashboard: React.FC = () => {
   const [dataLocation, setDataLocation] = useState<DataLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [exportLoading, setExportLoading] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [adminToken, setAdminToken] = useState('');
   const { toast } = useToast();
+
+  // Role-based access control
+  const checkAdminAccess = async () => {
+    try {
+      const response = await fetch('/api/admin/verify', {
+        headers: { 
+          Authorization: `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setIsAuthorized(data.isAdmin);
+        return data.isAdmin;
+      }
+      return false;
+    } catch (error) {
+      console.error('Admin verification error:', error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Check admin authorization first
+        const hasAccess = await checkAdminAccess();
+        if (!hasAccess) {
+          toast({
+            title: "Access Denied",
+            description: "You don't have admin privileges to access this dashboard",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+
         // Fetch data location first
         const locationResponse = await fetch('/api/locate-data');
         const locationData = await locationResponse.json();
         setDataLocation(locationData);
 
-        // Fetch user data with admin token
+        // Fetch user data with validated admin token
         const response = await fetch('/api/admin/users', {
           headers: { 
-            Authorization: 'Bearer YOUR_ADMIN_TOKEN',
+            Authorization: `Bearer ${adminToken}`,
             'Content-Type': 'application/json'
           }
         });

@@ -61,6 +61,39 @@ interface MetricCard {
 
 export default function Analytics() {
   const [currentMonth] = useState(new Date());
+  const [currentView, setCurrentView] = useState<'overview' | 'platforms' | 'trends'>('overview');
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Swipe gesture handling for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      // Swipe left - next view
+      if (currentView === 'overview') setCurrentView('platforms');
+      else if (currentView === 'platforms') setCurrentView('trends');
+    }
+    
+    if (isRightSwipe) {
+      // Swipe right - previous view
+      if (currentView === 'trends') setCurrentView('platforms');
+      else if (currentView === 'platforms') setCurrentView('overview');
+    }
+  };
 
   const { data: analytics, isLoading } = useQuery<AnalyticsData>({
     queryKey: ["/api/analytics"],
