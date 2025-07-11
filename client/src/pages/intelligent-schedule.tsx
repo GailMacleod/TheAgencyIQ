@@ -179,7 +179,7 @@ function IntelligentSchedule() {
   };
 
   // Fetch user data
-  const { data: user, isLoading: userLoading } = useQuery({
+  const { data: user, isLoading: userLoading, error: userError } = useQuery({
     queryKey: ["/api/user"],
   });
 
@@ -197,6 +197,33 @@ function IntelligentSchedule() {
     refetchOnWindowFocus: true,
     staleTime: 0, // Always fetch fresh quota data on navigation
   });
+
+  // Check if user needs to choose subscription - redirect if no active subscription
+  useEffect(() => {
+    if (user && !userLoading && !subscriptionLoading) {
+      // If user exists but has no subscription plan or it's empty/default
+      if (!user.subscriptionPlan || user.subscriptionPlan === '' || user.subscriptionPlan === 'none') {
+        console.log('User has no active subscription, redirecting to subscription selection');
+        setLocation('/subscription');
+        return;
+      }
+      
+      // If user has subscription but subscriptionUsage shows no allocation
+      if (subscriptionUsage && subscriptionUsage.totalAllocation === 0) {
+        console.log('User subscription needs activation, redirecting to subscription selection');
+        setLocation('/subscription');
+        return;
+      }
+    }
+  }, [user, userLoading, subscriptionUsage, subscriptionLoading, setLocation]);
+
+  // Redirect to login if authentication failed
+  useEffect(() => {
+    if (userError && !userLoading) {
+      console.log('Authentication failed, redirecting to login');
+      setLocation('/login');
+    }
+  }, [userError, userLoading, setLocation]);
 
   // Fetch posts only after user is authenticated
   const { data: posts, isLoading: postsLoading, refetch: refetchPosts } = useQuery({
@@ -460,7 +487,7 @@ function IntelligentSchedule() {
   };
 
   // Show loading states
-  if (userLoading) {
+  if (userLoading || subscriptionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -471,11 +498,13 @@ function IntelligentSchedule() {
     );
   }
 
-  if (!user) {
+  // Don't render main content if user is being redirected
+  if (!user || !subscriptionUsage || subscriptionUsage.totalAllocation === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <p className="text-gray-600">Please wait while we authenticate your session...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Setting up your account...</p>
         </div>
       </div>
     );

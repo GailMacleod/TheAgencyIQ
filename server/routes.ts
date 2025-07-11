@@ -1878,7 +1878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // If phone numbers don't match, update to SMS-verified number
           if (user.phone !== smsVerifiedPhone) {
-            console.log(`Phone number corrected for ${email}: ${smsVerifiedPhone} (was ${user.phone})`);
+            console.log(`Phone number corrected for ${user.email}: ${smsVerifiedPhone} (was ${user.phone})`);
             
             // Update user record with SMS-verified phone
             await storage.updateUser(user.id, { phone: smsVerifiedPhone });

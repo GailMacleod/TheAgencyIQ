@@ -14,8 +14,10 @@ export const requireActiveSubscription = async (req: any, res: any, next: any) =
       return res.status(401).json({ message: "User not found" });
     }
 
-    // Allow access if subscription is active
-    if (user.subscriptionActive) {
+    // Allow access if subscription is active OR user has a valid subscription plan
+    if (user.subscriptionActive || user.subscription_active || 
+        (user.subscriptionPlan && user.subscriptionPlan !== 'none' && user.subscriptionPlan !== '') ||
+        (user.subscription_plan && user.subscription_plan !== 'none' && user.subscription_plan !== '')) {
       return next();
     }
 
