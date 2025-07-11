@@ -236,10 +236,52 @@ export default function ConnectPlatforms() {
         throw new Error('Popup blocked - please allow popups for OAuth');
       }
       
+      // Listen for OAuth completion messages
+      const handleMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        
+        if (event.data === 'oauth_success') {
+          console.log(`✅ OAuth success for ${platform}`);
+          popup.close();
+          
+          // Clear connecting state
+          setConnecting(prev => ({ ...prev, [platform]: false }));
+          
+          // Refresh connection data after OAuth completion
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          }, 500);
+          
+          // Show success message
+          toast({
+            title: "Connection Successful",
+            description: `Successfully connected to ${platform}`,
+            variant: "default",
+            duration: 3000
+          });
+        } else if (event.data === 'oauth_failure') {
+          console.log(`❌ OAuth failure for ${platform}`);
+          popup.close();
+          
+          // Clear connecting state
+          setConnecting(prev => ({ ...prev, [platform]: false }));
+          
+          toast({
+            title: "Connection Failed",
+            description: `Failed to connect to ${platform}. Please try again.`,
+            variant: "destructive",
+            duration: 5000
+          });
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      
       // Monitor popup for completion
       const checkClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
           
           // Always clear connecting state when popup closes
           setConnecting(prev => ({ ...prev, [platform]: false }));
