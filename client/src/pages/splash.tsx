@@ -177,9 +177,7 @@ export default function Splash() {
       {/* Call to Action Section */}
       <section className="py-20 bg-muted/30" id="pricing">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="space-y-6">
-            
-
+          <div className="space-y-4">
             <Link href="/subscription">
               <Button 
                 size="lg" 
@@ -198,7 +196,7 @@ export default function Splash() {
             </Link>
             
             {/* Subscription Options */}
-            <div className="mt-8 bg-white rounded-lg border border-gray-200 p-4 max-w-2xl mx-auto">
+            <div className="mt-4 bg-white rounded-lg border border-gray-200 p-4 max-w-2xl mx-auto">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold mb-1 text-gray-900">Starter</h4>
@@ -222,9 +220,9 @@ export default function Splash() {
         </div>
       </section>
       {/* Features Section */}
-      <section id="features" className="section-spacing bg-white">
+      <section id="features" className="py-16 bg-white">
         <div className="container-atomiq">
-          <div className="text-center space-y-4 mb-16">
+          <div className="text-center space-y-4 mb-12">
             
             <h3 className="text-4xl md:text-5xl font-bold text-[#3b5cff]">6 Simple Steps </h3>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
