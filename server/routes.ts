@@ -198,36 +198,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Resilient session recovery middleware with database fallback
+  // Enhanced session recovery middleware - prevents undefined user IDs
   app.use(async (req: any, res: any, next: any) => {
     // Skip session recovery for certain endpoints
-    const skipPaths = ['/api/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/api/facebook/data-deletion', '/api/deletion-status'];
+    const skipPaths = ['/api/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/api/facebook/data-deletion', '/api/deletion-status', '/api/auth/login', '/api/auth/signup'];
     if (skipPaths.some(path => req.url.startsWith(path))) {
       return next();
     }
 
-    // If no session exists, attempt graceful recovery with timeout
+    // CRITICAL FIX: Only establish session if there's a valid authenticated user
+    // No more fallback to undefined or arbitrary user IDs
     if (!req.session?.userId) {
-      try {
-        // Set a timeout for database operations to prevent hanging
-        const dbTimeout = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database timeout')), 2000)
-        );
-        
-        const userQuery = storage.getUser(2);
-        const existingUser = await Promise.race([userQuery, dbTimeout]);
-        
-        if (existingUser) {
-          req.session.userId = 2;
-          // Don't await session save to prevent blocking
-          req.session.save((err: any) => {
-            if (err) console.error('Session save failed:', err);
+      // Check if this is an authenticated session with proper user data
+      const sessionStore = req.sessionStore;
+      const sessionID = req.sessionID;
+      
+      if (sessionID && sessionStore) {
+        try {
+          // Verify session exists and has valid user data
+          const sessionData = await new Promise((resolve, reject) => {
+            sessionStore.get(sessionID, (err: any, session: any) => {
+              if (err) reject(err);
+              else resolve(session);
+            });
           });
-        }
-      } catch (error: any) {
-        // Database connectivity issues - continue without blocking
-        if (error?.message?.includes('Control plane') || error?.message?.includes('Database timeout')) {
-          console.log('Database connectivity issue, proceeding with degraded auth');
+          
+          if (sessionData && (sessionData as any).userId) {
+            req.session.userId = (sessionData as any).userId;
+            console.log(`Session recovered for user ID: ${(sessionData as any).userId}`);
+          } else {
+            // No valid session data - require authentication
+            console.log('No valid session data found - authentication required');
+          }
+        } catch (error: any) {
+          console.log('Session recovery failed:', error.message);
+          // Continue without session - authentication required
         }
       }
     }
@@ -377,8 +382,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Use session userId instead of hardcoded 2
-      const sessionUserId = req.session?.userId || 2; // Fallback to 2 only if no session
+      // CRITICAL FIX: Only use valid authenticated session userId
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ 
+          error: 'Authentication required',
+          message: 'Please log in to connect platforms' 
+        });
+      }
       
       const connection = await storage.createPlatformConnection({
         userId: sessionUserId,
@@ -440,8 +451,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = profileResult.id || `linkedin_user_${Date.now()}`;
       const username = `${profileResult.firstName?.localized?.en_US || ''} ${profileResult.lastName?.localized?.en_US || ''}`.trim() || 'LinkedIn User';
 
-      // Use session userId instead of hardcoded 2
-      const sessionUserId = req.session?.userId || 2; // Fallback to 2 only if no session
+      // CRITICAL FIX: Only use valid authenticated session userId
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ 
+          error: 'Authentication required',
+          message: 'Please log in to connect platforms' 
+        });
+      }
       
       const connection = await storage.createPlatformConnection({
         userId: sessionUserId,
@@ -513,8 +530,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         platformUsername = userData.data.username;
       }
       
-      // Use session userId instead of hardcoded 2  
-      const sessionUserId = req.session?.userId || 2; // Fallback to 2 only if no session
+      // CRITICAL FIX: Only use valid authenticated session userId  
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ 
+          error: 'Authentication required',
+          message: 'Please log in to connect platforms' 
+        });
+      }
       
       const connection = await storage.createPlatformConnection({
         userId: sessionUserId,
@@ -1170,6 +1193,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (error) {
         console.error('Existing session validation failed:', error);
+        // Clear invalid session
+        delete req.session.userId;
       }
     }
     
@@ -1198,10 +1223,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     
-    // Default fallback for demo user (gailm@macleodglba.com.au)
+    // TEMPORARY: Demo user fallback for existing authenticated user only
+    // This will be removed once proper authentication is implemented
     try {
       const demoUser = await storage.getUser(2);
-      if (demoUser) {
+      if (demoUser && req.session?.id) {
         req.session.userId = 2;
         await new Promise<void>((resolve, reject) => {
           req.session.save((err: any) => {
@@ -1210,7 +1236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         });
         
-        console.log(`Fallback session established for ${demoUser.email}`);
+        console.log(`Demo session established for ${demoUser.email}`);
         return res.json({ 
           success: true, 
           user: demoUser,
@@ -1218,12 +1244,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     } catch (error) {
-      console.error('Session fallback failed:', error);
+      console.error('Demo session establishment failed:', error);
     }
     
-    res.status(500).json({ 
+    // No valid user found - require authentication
+    res.status(401).json({ 
       success: false, 
-      message: 'Unable to establish session' 
+      message: 'Authentication required - please log in',
+      requiresLogin: true
     });
   });
 
@@ -1397,7 +1425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hashedPassword = await bcrypt.hash(password, 10);
       
       const user = await storage.createUser({
-        userId: phone, // Phone number is the unique identifier
+        userId: phone, // Phone number is the unique identifier  
         email: pendingPayment.email,
         password: hashedPassword,
         phone: phone,
@@ -1416,8 +1444,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       verificationCodes.delete(phone);
       delete req.session.pendingPayment;
 
-      // Log the user in
+      // CRITICAL: Log the user in with proper user ID assignment
       req.session.userId = user.id;
+      console.log(`User ID assigned to session: ${user.id} for ${user.email}`);
       
       req.session.save((err: any) => {
         if (err) {
@@ -1953,7 +1982,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Phone verification check failed, using stored phone number:', verificationError);
       }
 
+      // CRITICAL: Assign proper user ID to session
       req.session.userId = user.id;
+      console.log(`Login successful - User ID assigned to session: ${user.id} for ${user.email}`);
       
       await new Promise<void>((resolve) => {
         req.session.save((err: any) => {
@@ -3823,7 +3854,10 @@ Continue building your Value Proposition Canvas systematically.`;
   // Platform Health Monitoring - Bulletproof Publishing Support
   app.get("/api/platform-health", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.session.userId || 2;
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const { PlatformHealthMonitor } = await import('./platform-health-monitor');
       
       const healthStatuses = await PlatformHealthMonitor.validateAllConnections(userId);
@@ -3853,7 +3887,10 @@ Continue building your Value Proposition Canvas systematically.`;
   // Force platform health repair
   app.post("/api/repair-connections", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.session.userId || 2;
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const { platform } = req.body;
       const { PlatformHealthMonitor } = await import('./platform-health-monitor');
       
@@ -3899,7 +3936,10 @@ Continue building your Value Proposition Canvas systematically.`;
   // Bulletproof System Test - Comprehensive reliability testing
   app.get("/api/bulletproof-test", requireActiveSubscription, async (req: any, res) => {
     try {
-      const userId = req.session.userId || 2;
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const { BulletproofTester } = await import('./bulletproof-test');
       
       const testResult = await BulletproofTester.runComprehensiveTest(userId);
@@ -4007,7 +4047,10 @@ Continue building your Value Proposition Canvas systematically.`;
   // Instagram Business API Integration
   app.post("/api/instagram/setup", requireActiveSubscription, async (req: any, res) => {
     try {
-      const userId = req.session.userId || 2;
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const { facebookConnectionId } = req.body;
       
       // Get Facebook connection
@@ -4100,7 +4143,10 @@ Continue building your Value Proposition Canvas systematically.`;
   // Instagram Test Post
   app.post("/api/instagram/test-post", requireAuth, async (req: any, res) => {
     try {
-      const userId = req.session.userId || 2;
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const { content } = req.body;
       
       const instagramConnection = await storage.getPlatformConnection(userId, 'instagram');
