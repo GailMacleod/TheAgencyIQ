@@ -530,8 +530,15 @@ export default function ConnectPlatforms() {
 
 
   const isConnected = (platform: string) => {
-    // Use unified connection state derived from database
-    return platformConnectionState[platform] === true;
+    // FIXED: Direct check of connections array for real-time accuracy
+    if (!connections || !Array.isArray(connections)) return false;
+    
+    // Find active connection for this platform
+    const activeConnection = connections.find((conn: PlatformConnection) => 
+      conn.platform === platform && conn.isActive
+    );
+    
+    return !!activeConnection;
   };
 
   const getConnection = (platform: string) => {
@@ -643,7 +650,7 @@ export default function ConnectPlatforms() {
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
                               <h3 className="text-xl font-semibold text-gray-900">{config.name}</h3>
-                              {connectionStatus === 'connected' ? (
+                              {connected ? (
                                 <Badge className="bg-green-100 text-green-800 text-xs">
                                   <CheckCircle className="w-3 h-3 mr-1" />
                                   Connected
@@ -663,7 +670,7 @@ export default function ConnectPlatforms() {
                             <p className="text-sm text-gray-600 mb-2">
                               {config.description}
                             </p>
-                            {connectionStatus === 'connected' && connection ? (
+                            {connected && connection ? (
                               <div className="text-sm">
                                 <p className="font-medium text-gray-900">Account: {connection.platformUsername}</p>
                                 <p className="text-gray-500">
@@ -682,7 +689,7 @@ export default function ConnectPlatforms() {
                         </div>
                         
                         <div className="flex space-x-2 flex-shrink-0">
-                          {connectionStatus === 'connected' && connection ? (
+                          {connected ? (
                             <Button
                               onClick={() => disconnectMutation.mutate(platform)}
                               variant="outline"
@@ -714,10 +721,10 @@ export default function ConnectPlatforms() {
                             <Button
                               onClick={() => handleOAuthConnect(platform)}
                               className="text-white border-0 min-w-[120px]"
-                              style={{ backgroundColor: connectionStatus === 'connected' ? '#3250fa' : '#00f0ff' }}
+                              style={{ backgroundColor: connected ? '#3250fa' : '#00f0ff' }}
                               disabled={connecting[platform]}
                             >
-                              {connecting[platform] ? 'Connecting...' : 'CONNECT'}
+                              {connecting[platform] ? 'Connecting...' : connected ? 'CONNECTED' : 'CONNECT'}
                             </Button>
                           )}
                         </div>
