@@ -24,6 +24,7 @@ export default function OnboardingWizard() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [skippedSteps, setSkippedSteps] = useState<number[]>([]);
   const [isSkipped, setIsSkipped] = useState(false);
+  const [isReturningSubscriber, setIsReturningSubscriber] = useState(false);
   const [, setLocation] = useLocation();
 
   // Save progress to localStorage
@@ -54,6 +55,32 @@ export default function OnboardingWizard() {
     }
     return false;
   };
+
+  // Check if user is returning subscriber
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      try {
+        const response = await fetch('/api/user', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          const hasActiveSubscription = userData.subscriptionPlan && userData.subscriptionPlan !== 'free';
+          setIsReturningSubscriber(hasActiveSubscription);
+          
+          // If returning subscriber, skip subscription step (step 2)
+          if (hasActiveSubscription) {
+            setSkippedSteps(prev => [...prev, 2]);
+          }
+        }
+      } catch (error) {
+        console.log('Could not check user status:', error);
+      }
+    };
+    
+    checkUserStatus();
+  }, []);
 
   // Load progress on mount
   useEffect(() => {
@@ -354,7 +381,15 @@ export default function OnboardingWizard() {
   const handleNext = () => {
     if (currentStep < wizardSteps.length - 1) {
       setCompletedSteps([...completedSteps, currentStep]);
-      setCurrentStep(currentStep + 1);
+      
+      // Skip subscription step (step 1, index 1) for returning subscribers
+      let nextStep = currentStep + 1;
+      if (isReturningSubscriber && nextStep === 1) {
+        nextStep = 2; // Skip to step 3 (Generate AI Content)
+        setSkippedSteps(prev => [...prev, 2]); // Mark subscription step as skipped
+      }
+      
+      setCurrentStep(nextStep);
     } else {
       // Final step completed - return to landing page with animation trigger
       setCompletedSteps([...completedSteps, currentStep]);
@@ -449,7 +484,14 @@ export default function OnboardingWizard() {
     <div className="card-atomiq p-8 space-y-6">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Training Guide</span>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium">Training Guide</span>
+            {isReturningSubscriber && (
+              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                Returning Subscriber
+              </Badge>
+            )}
+          </div>
           <span className="text-xs text-muted-foreground">Step {currentStep + 1} of {wizardSteps.length}</span>
         </div>
         

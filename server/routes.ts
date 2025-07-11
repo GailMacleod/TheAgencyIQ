@@ -1880,14 +1880,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (user.phone !== smsVerifiedPhone) {
             console.log(`Phone number corrected for ${user.email}: ${smsVerifiedPhone} (was ${user.phone})`);
             
+            // Truncate phone number to fit varchar(15) limit
+            const truncatedPhone = smsVerifiedPhone.substring(0, 15);
+            
             // Update user record with SMS-verified phone
-            await storage.updateUser(user.id, { phone: smsVerifiedPhone });
-            verifiedPhone = smsVerifiedPhone;
+            await storage.updateUser(user.id, { phone: truncatedPhone });
+            verifiedPhone = truncatedPhone;
             
             // Update any existing post ledger records
             const { postLedger } = await import('../shared/schema');
             await db.update(postLedger)
-              .set({ userId: smsVerifiedPhone })
+              .set({ userId: truncatedPhone })
               .where(eq(postLedger.userId, user.phone as string));
               
             console.log(`Updated post ledger records from ${user.phone} to ${smsVerifiedPhone}`);
