@@ -368,21 +368,35 @@ export default function ConnectPlatforms() {
     if (platformConnections.length === 0) return null;
     
     // Sort by connection date (most recent first) and return the first one
-    return platformConnections.sort((a, b) => 
+    const mostRecentConnection = platformConnections.sort((a, b) => 
       new Date(b.connectedAt).getTime() - new Date(a.connectedAt).getTime()
     )[0];
+    
+    // Debug log the connection data
+    console.log(`Platform ${platform} connection data:`, {
+      username: mostRecentConnection.platformUsername,
+      connectedAt: mostRecentConnection.connectedAt,
+      isActive: mostRecentConnection.isActive,
+      oauthStatus: mostRecentConnection.oauthStatus
+    });
+    
+    return mostRecentConnection;
   };
 
   const getConnectionStatus = (platform: string) => {
     const connection = getConnection(platform);
     if (!connection) return 'disconnected';
     
-    // Check OAuth token validity
+    // Check OAuth token validity first
     if (connection.oauthStatus?.isValid === false) {
+      console.log(`Platform ${platform} has invalid OAuth token - returning EXPIRED:`, connection.oauthStatus);
       return 'expired';
     }
     
-    return connection.isActive ? 'connected' : 'disconnected';
+    // If OAuth is valid or not set, check active status
+    const status = connection.isActive ? 'connected' : 'disconnected';
+    console.log(`Platform ${platform} status: ${status}`, 'Connected:', connection.isActive, 'OAuth valid:', connection.oauthStatus?.isValid);
+    return status;
   };
 
   if (isLoading) {
