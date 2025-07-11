@@ -35,10 +35,12 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   getUserByPhone(phone: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User>;
   updateUserPhone(oldPhone: string, newPhone: string): Promise<User>;
   updateUserStripeInfo(id: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
+  updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User>;
 
   // Post operations
   getPostsByUser(userId: number): Promise<Post[]>;
@@ -112,6 +114,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId));
+    return user;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -174,6 +181,18 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date() 
       })
       .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        stripeCustomerId,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
       .returning();
     return user;
   }

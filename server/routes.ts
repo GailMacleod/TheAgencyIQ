@@ -1044,25 +1044,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const sig = req.headers['stripe-signature'];
     let event;
 
+    console.log('🔔 Stripe webhook received - verifying signature...');
+
     try {
       if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
-        console.log('Stripe webhook received but Stripe not configured');
-        return res.status(200).json({ received: true });
+        console.error('❌ Stripe webhook configuration missing');
+        return res.status(500).json({ error: 'Webhook not configured' });
       }
 
       event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      console.log(`✅ Webhook signature verified for event: ${event.type}`);
     } catch (err: any) {
-      console.error('Stripe webhook signature verification failed:', err.message);
+      console.error('❌ Stripe webhook signature verification failed:', err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    console.log(`🔔 Stripe webhook received: ${event.type}`);
+    console.log(`🔔 Processing Stripe webhook: ${event.type}`);
 
     try {
       switch (event.type) {
         case 'checkout.session.completed':
           const session = event.data.object;
-          console.log('Payment successful:', session.id);
+          console.log('💳 Payment successful:', session.id);
           
           // Handle successful payment
           if (session.metadata?.userId) {
@@ -1077,31 +1080,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         case 'invoice.payment_succeeded':
           const invoice = event.data.object;
-          console.log('Invoice payment succeeded:', invoice.id);
+          console.log('📄 Invoice payment succeeded:', invoice.id);
+          
+          // Find user by subscription ID and ensure database sync
+          if (invoice.subscription) {
+            const user = await storage.getUserByStripeSubscriptionId(invoice.subscription);
+            if (user) {
+              // Ensure subscription is marked as active
+              await storage.updateUser(user.id, {
+                subscriptionPlan: 'professional',
+                stripeSubscriptionId: invoice.subscription
+              });
+              console.log(`✅ User ${user.id} subscription synchronized after payment`);
+            }
+          }
           break;
 
         case 'invoice.payment_failed':
           const failedInvoice = event.data.object;
-          console.log('Invoice payment failed:', failedInvoice.id);
+          console.log('❌ Invoice payment failed:', failedInvoice.id);
+          
+          // Handle failed payment - could pause subscription
+          if (failedInvoice.subscription) {
+            const user = await storage.getUserByStripeSubscriptionId(failedInvoice.subscription);
+            if (user) {
+              console.log(`⚠️ Payment failed for user ${user.id} - subscription may be paused`);
+            }
+          }
           break;
 
         case 'customer.subscription.updated':
           const subscription = event.data.object;
-          console.log('Subscription updated:', subscription.id);
+          console.log('🔄 Subscription updated:', subscription.id, 'Status:', subscription.status);
+          
+          // Sync subscription status changes
+          const user = await storage.getUserByStripeSubscriptionId(subscription.id);
+          if (user) {
+            let newPlan = 'free';
+            if (subscription.status === 'active' || subscription.status === 'trialing') {
+              // Determine plan based on amount
+              const amount = subscription.items.data[0]?.price?.unit_amount || 0;
+              if (amount >= 9999) { // $99.99 AUD
+                newPlan = 'professional';
+              } else if (amount >= 4199) { // $41.99 AUD
+                newPlan = 'growth';
+              } else if (amount >= 1999) { // $19.99 AUD
+                newPlan = 'starter';
+              }
+            }
+            
+            await storage.updateUser(user.id, {
+              subscriptionPlan: newPlan,
+              stripeSubscriptionId: subscription.status === 'canceled' ? null : subscription.id
+            });
+            console.log(`✅ User ${user.id} subscription updated to ${newPlan} (${subscription.status})`);
+          }
           break;
 
         case 'customer.subscription.deleted':
           const deletedSubscription = event.data.object;
-          console.log('Subscription cancelled:', deletedSubscription.id);
+          console.log('🗑️ Subscription cancelled:', deletedSubscription.id);
+          
+          // Handle subscription cancellation
+          const canceledUser = await storage.getUserByStripeSubscriptionId(deletedSubscription.id);
+          if (canceledUser) {
+            await storage.updateUser(canceledUser.id, {
+              subscriptionPlan: 'free',
+              stripeSubscriptionId: null
+            });
+            console.log(`✅ User ${canceledUser.id} subscription cancelled - reverted to free plan`);
+          }
+          break;
+
+        case 'customer.subscription.created':
+          const newSubscription = event.data.object;
+          console.log('🆕 New subscription created:', newSubscription.id);
+          
+          // Handle new subscription creation
+          const customer = await stripe.customers.retrieve(newSubscription.customer);
+          if (customer && customer.email) {
+            const user = await storage.getUserByEmail(customer.email);
+            if (user) {
+              const amount = newSubscription.items.data[0]?.price?.unit_amount || 0;
+              let plan = 'professional';
+              if (amount >= 9999) plan = 'professional';
+              else if (amount >= 4199) plan = 'growth';
+              else if (amount >= 1999) plan = 'starter';
+              
+              await storage.updateUser(user.id, {
+                subscriptionPlan: plan,
+                stripeSubscriptionId: newSubscription.id,
+                stripeCustomerId: customer.id
+              });
+              console.log(`✅ User ${user.id} linked to new ${plan} subscription`);
+            }
+          }
           break;
 
         default:
-          console.log(`Unhandled event type: ${event.type}`);
+          console.log(`ℹ️ Unhandled event type: ${event.type}`);
       }
 
-      res.status(200).json({ received: true });
+      console.log(`✅ Webhook ${event.type} processed successfully`);
+      res.status(200).json({ received: true, event: event.type });
     } catch (error) {
-      console.error('Stripe webhook processing error:', error);
+      console.error('❌ Stripe webhook processing error:', error);
       res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
