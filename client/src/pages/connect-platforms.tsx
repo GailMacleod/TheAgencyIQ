@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
@@ -75,18 +75,18 @@ export default function ConnectPlatforms() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Listen for OAuth success messages from popup
+  // Unified OAuth success/failure message handling
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       console.log('OAuth popup message received:', e.data);
       
       if (e.data === 'oauth_success') {
-        // Clear any connecting states
+        // Clear connecting states
         setConnecting({});
         setReconnecting({});
         
-        // Refresh connections immediately
-        refreshConnections();
+        // Force refresh of unified connection state
+        refetch();
         
         toast({
           title: "Connection Successful",
@@ -94,7 +94,7 @@ export default function ConnectPlatforms() {
           variant: "default"
         });
       } else if (e.data === 'oauth_failure') {
-        // Clear any connecting states
+        // Clear connecting states
         setConnecting({});
         setReconnecting({});
         
@@ -108,75 +108,40 @@ export default function ConnectPlatforms() {
     
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
-  
-  const refreshConnections = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-    toast({
-      title: "Connection Updated",
-      description: "Platform connection has been refreshed"
-    });
-  };
+  }, [refetch]);
   const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
-  const [connectedPlatforms, setConnectedPlatforms] = useState<{[key: string]: boolean}>({});
   const [reconnecting, setReconnecting] = useState<{[key: string]: boolean}>({});
 
-  // Fetch platform connections with OAuth token validation status
-  const { data: connections = [], isLoading } = useQuery<PlatformConnection[]>({
+  // UNIFIED STATE MANAGEMENT: Single source of truth from /api/platform-connections
+  const { data: connections = [], isLoading, refetch } = useQuery<PlatformConnection[]>({
     queryKey: ['/api/platform-connections'],
     retry: 2,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000 // Auto-refresh every 30 seconds for live status
   });
 
-  // Fetch session connection state
-  const { data: sessionState } = useQuery({
-    queryKey: ['/api/get-connection-state'],
-    retry: 2
-  });
-
-  // Sync local state with session state
-  useEffect(() => {
-    if (sessionState?.connectedPlatforms) {
-      setConnectedPlatforms(sessionState.connectedPlatforms);
-    }
-  }, [sessionState]);
-
-  // Check live platform status on component load
-  useEffect(() => {
-    const validPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
-    validPlatforms.forEach(plat => {
-      fetch('/api/check-live-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ platform: plat })
-      })
-      .then(res => res.json())
-      .then(data => {
-        // Update connection status based on API response
-        const isConnected = data.status === 'connected';
-        console.log(`Platform ${plat} status:`, data.status, 'Connected:', isConnected);
-        setConnectedPlatforms(prev => ({
-          ...prev,
-          [data.platform]: isConnected
-        }));
-      })
-      .catch(err => console.warn(`Live status check failed for ${plat}:`, err));
+  // Derive connection state from single source of truth
+  const platformConnectionState = useMemo(() => {
+    const state: {[key: string]: boolean} = {};
+    connections.forEach(conn => {
+      // Use database connection status as single source of truth
+      state[conn.platform] = conn.isActive && (!conn.oauthStatus || conn.oauthStatus.isValid !== false);
     });
-  }, []);
+    return state;
+  }, [connections]);
 
   // Refresh connection data when returning from OAuth callback
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('connected') || urlParams.get('success')) {
-      // OAuth callback success - refresh connection data
-      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+      // OAuth callback success - refresh unified connection state
+      refetch();
       
       // Clean up URL parameters
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, document.title, cleanUrl);
     }
-  }, [queryClient]);
+  }, [refetch]);
 
   // OAuth connection for platforms
   const handleOAuthConnect = async (platform: string) => {
@@ -195,7 +160,7 @@ export default function ConnectPlatforms() {
         const result = await response.json();
         
         if (result.success) {
-          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          refetch(); // Refresh unified connection state
           toast({
             title: "Instagram OAuth Fixed",
             description: `${result.message}: ${result.username}`
@@ -248,9 +213,9 @@ export default function ConnectPlatforms() {
           // Clear connecting state
           setConnecting(prev => ({ ...prev, [platform]: false }));
           
-          // Refresh connection data after OAuth completion
+          // Refresh unified connection state after OAuth completion
           setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+            refetch();
           }, 500);
           
           // Show success message
@@ -287,9 +252,9 @@ export default function ConnectPlatforms() {
           // Always clear connecting state when popup closes
           setConnecting(prev => ({ ...prev, [platform]: false }));
           
-          // Refresh connection data after OAuth completion
+          // Refresh unified connection state after OAuth completion
           setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+            refetch();
           }, 1000);
         }
       }, 1000);
@@ -365,9 +330,9 @@ export default function ConnectPlatforms() {
           // Always clear reconnecting state when popup closes
           setReconnecting(prev => ({ ...prev, [platform]: false }));
           
-          // Refresh connection data after OAuth completion
+          // Refresh unified connection state after OAuth completion
           setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+            refetch();
           }, 1000);
         }
       }, 1000);
@@ -394,16 +359,8 @@ export default function ConnectPlatforms() {
       return response.json();
     },
     onSuccess: (data) => {
-      // Update local state based on backend response
-      if (data.action === 'syncState' && data.version === '1.3') {
-        setConnectedPlatforms(prev => ({
-          ...prev,
-          [data.platform]: data.isConnected
-        }));
-      }
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/get-connection-state'] });
+      // Refresh unified connection state
+      refetch();
       
       toast({
         title: "Platform Disconnected",
@@ -424,16 +381,8 @@ export default function ConnectPlatforms() {
 
 
   const isConnected = (platform: string) => {
-    // Always prioritize live platform status over database records
-    if (connectedPlatforms.hasOwnProperty(platform)) {
-      return connectedPlatforms[platform] === true;
-    }
-    
-    // Fallback to database only if no live status available
-    if (!connections || !Array.isArray(connections)) return false;
-    return connections.some((conn: PlatformConnection) => 
-      conn.platform === platform && conn.isActive
-    );
+    // Use unified connection state derived from database
+    return platformConnectionState[platform] === true;
   };
 
   const getConnection = (platform: string) => {
@@ -457,12 +406,6 @@ export default function ConnectPlatforms() {
   };
 
   const getConnectionStatus = (platform: string) => {
-    // Use live platform status first (this is what console shows as "connected")
-    if (connectedPlatforms.hasOwnProperty(platform)) {
-      return connectedPlatforms[platform] === true ? 'connected' : 'disconnected';
-    }
-    
-    // Fallback to database connection status
     const connection = getConnection(platform);
     if (!connection) return 'disconnected';
     
@@ -471,8 +414,8 @@ export default function ConnectPlatforms() {
       return 'expired';
     }
     
-    // If OAuth is valid or not set, check active status
-    return connection.isActive ? 'connected' : 'disconnected';
+    // Use unified connection state
+    return platformConnectionState[platform] === true ? 'connected' : 'disconnected';
   };
 
   if (isLoading) {

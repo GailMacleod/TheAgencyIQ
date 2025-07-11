@@ -723,11 +723,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }).then(r => r.json()).then(data => {
               if (data.success) {
                 document.body.innerHTML = '<h1>Facebook Integration Complete!</h1><p>You can now close this window.</p>';
+                // Notify parent window for unified state refresh
+                if (window.opener) {
+                  window.opener.postMessage('oauth_success', '*');
+                }
               } else {
                 document.body.innerHTML = '<h1>Facebook Integration Failed</h1><p>Error: ' + JSON.stringify(data.error) + '</p>';
+                // Notify parent window for unified state refresh
+                if (window.opener) {
+                  window.opener.postMessage('oauth_failure', '*');
+                }
               }
             }).catch(err => {
               document.body.innerHTML = '<h1>Facebook Integration Error</h1><p>' + err.message + '</p>';
+              // Notify parent window for unified state refresh
+              if (window.opener) {
+                window.opener.postMessage('oauth_failure', '*');
+              }
             });
           </script>
         `);
@@ -744,11 +756,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }).then(r => r.json()).then(data => {
               if (data.success) {
                 document.body.innerHTML = '<h1>LinkedIn Integration Complete!</h1><p>You can now close this window.</p>';
+                // Notify parent window for unified state refresh
+                if (window.opener) {
+                  window.opener.postMessage('oauth_success', '*');
+                }
               } else {
                 document.body.innerHTML = '<h1>LinkedIn Integration Failed</h1><p>Error: ' + JSON.stringify(data.error) + '</p>';
+                // Notify parent window for unified state refresh
+                if (window.opener) {
+                  window.opener.postMessage('oauth_failure', '*');
+                }
               }
             }).catch(err => {
               document.body.innerHTML = '<h1>LinkedIn Integration Error</h1><p>' + err.message + '</p>';
+              // Notify parent window for unified state refresh
+              if (window.opener) {
+                window.opener.postMessage('oauth_failure', '*');
+              }
             });
           </script>
         `);
@@ -765,11 +789,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }).then(r => r.json()).then(data => {
               if (data.success) {
                 document.body.innerHTML = '<h1>YouTube Integration Complete!</h1><p>You can now close this window.</p>';
+                // Notify parent window for unified state refresh
+                if (window.opener) {
+                  window.opener.postMessage('oauth_success', '*');
+                }
               } else {
                 document.body.innerHTML = '<h1>YouTube Integration Failed</h1><p>Error: ' + JSON.stringify(data.error) + '</p>';
+                // Notify parent window for unified state refresh
+                if (window.opener) {
+                  window.opener.postMessage('oauth_failure', '*');
+                }
               }
             }).catch(err => {
               document.body.innerHTML = '<h1>YouTube Integration Error</h1><p>' + err.message + '</p>';
+              // Notify parent window for unified state refresh
+              if (window.opener) {
+                window.opener.postMessage('oauth_failure', '*');
+              }
             });
           </script>
         `);
@@ -3436,7 +3472,7 @@ Continue building your Value Proposition Canvas systematically.`;
     return scopes[platform] || [];
   }
 
-  // Get platform connections status with OAuth validation
+  // UNIFIED PLATFORM CONNECTIONS ENDPOINT - Single source of truth
   app.get("/api/platform-connections", requireActiveSubscription, async (req: any, res) => {
     try {
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
@@ -3454,11 +3490,16 @@ Continue building your Value Proposition Canvas systematically.`;
             accessTokenToValidate = facebookConnection.accessToken;
           }
           
-          // Validate token for this specific platform
+          // Validate token for this specific platform - this is the unified state source
           const validationResult = await OAuthRefreshService.validateToken(accessTokenToValidate, conn.platform);
+          
+          // Unified connection state logic
+          const isUnifiedActive = conn.isActive && validationResult.isValid;
           
           return {
             ...conn,
+            // Override isActive with unified state (database + OAuth validation)
+            isActive: isUnifiedActive,
             oauthStatus: {
               platform: conn.platform,
               isValid: validationResult.isValid,
@@ -3471,6 +3512,8 @@ Continue building your Value Proposition Canvas systematically.`;
           console.error(`OAuth validation failed for ${conn.platform}:`, error);
           return {
             ...conn,
+            // Mark as inactive if validation fails
+            isActive: false,
             oauthStatus: {
               platform: conn.platform,
               isValid: false,
@@ -3482,7 +3525,10 @@ Continue building your Value Proposition Canvas systematically.`;
         }
       }));
 
-      res.json(connectionsWithStatus);
+      // Sort by platform name for consistent UI ordering
+      const sortedConnections = connectionsWithStatus.sort((a, b) => a.platform.localeCompare(b.platform));
+
+      res.json(sortedConnections);
     } catch (error: any) {
       console.error('Get connections error:', error);
       res.status(500).json({ message: "Error fetching connections" });
@@ -7626,58 +7672,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Check live platform status
-  app.post("/api/check-live-status", async (req: any, res) => {
-    try {
-      const { platform } = req.body;
-      
-      if (!platform) {
-        return res.status(400).json({ error: 'Platform required' });
-      }
-
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.json({ 
-          platform,
-          status: 'disconnected',
-          error: 'User not authenticated' 
-        });
-      }
-
-      // Check database for platform connections
-      const connections = await db.select()
-        .from(platformConnections)
-        .where(
-          eq(platformConnections.userId, userId)
-        )
-        .where(
-          eq(platformConnections.platform, platform)
-        )
-        .where(
-          eq(platformConnections.isActive, true)
-        );
-
-      if (connections.length > 0) {
-        const connection = connections[0];
-        return res.json({ 
-          platform,
-          status: 'connected',
-          name: connection.platformUsername || `${platform} account`,
-          connectedAt: connection.connectedAt
-        });
-      } else {
-        return res.json({ 
-          platform,
-          status: 'disconnected',
-          error: 'No active connection found' 
-        });
-      }
-
-    } catch (error: any) {
-      console.error('Live status check error:', error);
-      res.status(500).json({ error: 'Status check failed' });
-    }
-  });
+  // REMOVED: /api/check-live-status - Unified into /api/platform-connections endpoint above
 
   // Get real platform analytics
   app.get("/api/platform-analytics/:platform", requireAuth, async (req: any, res) => {
