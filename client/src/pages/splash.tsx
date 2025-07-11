@@ -126,9 +126,17 @@ export default function Splash() {
           <div className="flex flex-col items-center justify-center text-center space-y-8">
             <div className="space-y-6 animate-fade-in-up max-w-4xl">
               <div className="space-y-4">
-                <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium">
-                  <Lightbulb className="h-4 w-4 mr-2" />
-                  Technology Intelligence - BETA
+                <div className="flex flex-col items-center space-y-2">
+                  <img 
+                    src="/attached_assets/On Pencil_distance education_e-learning_online education_online learning_online courses_icon_1752204074861.png" 
+                    alt="Education Icon"
+                    className="w-12 h-12 object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium">
+                    <Lightbulb className="h-4 w-4 mr-2" />
+                    Technology Intelligence - BETA
+                  </div>
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
                   <span className="block bg-gradient-atomiq bg-clip-text text-transparent">Set & forget social media for QLD small business</span>
