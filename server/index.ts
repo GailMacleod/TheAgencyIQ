@@ -241,10 +241,10 @@ async function startServer() {
     console.log(`📍 Callback URI: ${callbackUri}`);
     
     const redirectUrls: {[key: string]: string} = {
-      facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=public_profile,pages_show_list,pages_manage_posts,pages_read_engagement,publish_actions&response_type=code&state=${state}`,
-      x: `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CLIENT_ID || process.env.X_0AUTH_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=tweet.read%20tweet.write%20users.read&state=${state}&code_challenge=challenge&code_challenge_method=plain`,
-      linkedin: `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID || '86pwc38hsqem'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=r_liteprofile%20r_emailaddress%20w_member_social&state=${state}`,
-      instagram: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID || '1409057863445071'}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement&response_type=code&state=${state}`,
+      facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=public_profile,pages_show_list,pages_manage_posts,pages_read_engagement&response_type=code&state=${state}`,
+      x: `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.X_CONSUMER_KEY}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=tweet.read%20tweet.write%20users.read&state=${state}&code_challenge=challenge&code_challenge_method=plain`,
+      linkedin: `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=r_liteprofile%20r_emailaddress%20w_member_social&state=${state}`,
+      instagram: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement&response_type=code&state=${state}`,
       youtube: `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUri)}&scope=https://www.googleapis.com/auth/youtube.upload&state=${state}`
     };
     
@@ -294,6 +294,141 @@ async function startServer() {
         stateData: stateData
       });
       
+      // Exchange authorization code for access token
+      console.log(`🔄 Exchanging authorization code for ${platform} access token...`);
+      let accessToken = '';
+      let refreshToken = '';
+      let platformUsername = '';
+      
+      const callbackUri = process.env.NODE_ENV === 'production' 
+        ? 'https://app.theagencyiq.ai/callback'
+        : `https://${process.env.REPLIT_DEV_DOMAIN}/callback`;
+      
+      if (platform === 'facebook' || platform === 'instagram') {
+        // Facebook/Instagram token exchange
+        const tokenResponse = await fetch('https://graph.facebook.com/v18.0/oauth/access_token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: process.env.FACEBOOK_APP_ID!,
+            client_secret: process.env.FACEBOOK_APP_SECRET!,
+            redirect_uri: callbackUri,
+            code: code as string
+          })
+        });
+        
+        const tokenData = await tokenResponse.json();
+        if (tokenData.access_token) {
+          accessToken = tokenData.access_token;
+          
+          // Get user profile
+          const profileResponse = await fetch(`https://graph.facebook.com/me?access_token=${accessToken}`);
+          const profileData = await profileResponse.json();
+          platformUsername = profileData.name || `${platform}_user`;
+          
+          console.log(`✅ ${platform} token exchange successful`);
+        } else {
+          throw new Error(`${platform} token exchange failed: ${tokenData.error?.message}`);
+        }
+        
+      } else if (platform === 'linkedin') {
+        // LinkedIn token exchange
+        const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code as string,
+            redirect_uri: callbackUri,
+            client_id: process.env.LINKEDIN_CLIENT_ID!,
+            client_secret: process.env.LINKEDIN_CLIENT_SECRET!
+          })
+        });
+        
+        const tokenData = await tokenResponse.json();
+        if (tokenData.access_token) {
+          accessToken = tokenData.access_token;
+          refreshToken = tokenData.refresh_token || '';
+          
+          // Get user profile
+          const profileResponse = await fetch('https://api.linkedin.com/v2/people/~', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          const profileData = await profileResponse.json();
+          platformUsername = profileData.localizedFirstName || 'linkedin_user';
+          
+          console.log(`✅ LinkedIn token exchange successful`);
+        } else {
+          throw new Error(`LinkedIn token exchange failed: ${tokenData.error_description}`);
+        }
+        
+      } else if (platform === 'youtube') {
+        // YouTube (Google) token exchange
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code as string,
+            redirect_uri: callbackUri,
+            client_id: process.env.GOOGLE_CLIENT_ID!,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET!
+          })
+        });
+        
+        const tokenData = await tokenResponse.json();
+        if (tokenData.access_token) {
+          accessToken = tokenData.access_token;
+          refreshToken = tokenData.refresh_token || '';
+          
+          // Get user profile
+          const profileResponse = await fetch('https://www.googleapis.com/oauth2/v1/userinfo', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          const profileData = await profileResponse.json();
+          platformUsername = profileData.name || 'youtube_user';
+          
+          console.log(`✅ YouTube token exchange successful`);
+        } else {
+          throw new Error(`YouTube token exchange failed: ${tokenData.error_description}`);
+        }
+        
+      } else if (platform === 'x') {
+        // X (Twitter) OAuth 2.0 token exchange
+        const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Basic ${Buffer.from(`${process.env.X_CONSUMER_KEY}:${process.env.X_CONSUMER_SECRET}`).toString('base64')}`
+          },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code as string,
+            redirect_uri: callbackUri,
+            code_verifier: 'challenge'
+          })
+        });
+        
+        const tokenData = await tokenResponse.json();
+        if (tokenData.access_token) {
+          accessToken = tokenData.access_token;
+          refreshToken = tokenData.refresh_token || '';
+          
+          // Get user profile
+          const profileResponse = await fetch('https://api.twitter.com/2/users/me', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          const profileData = await profileResponse.json();
+          platformUsername = profileData.data?.username || 'x_user';
+          
+          console.log(`✅ X token exchange successful`);
+        } else {
+          console.log(`⚠️ X token exchange failed, using authorization code: ${tokenData.error}`);
+          accessToken = code as string;
+          platformUsername = 'x_user';
+        }
+      }
+      
       // Store OAuth token in session
       if (!req.session.oauthTokens) {
         console.log('🆕 Creating new oauthTokens session object');
@@ -302,7 +437,8 @@ async function startServer() {
       
       console.log('💾 Storing OAuth token in session...');
       req.session.oauthTokens[platform] = {
-        code: code as string,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
         timestamp: new Date().toISOString(),
         status: 'connected'
       };
@@ -315,7 +451,7 @@ async function startServer() {
         });
       });
       
-      // Also store in database for UI connection status
+      // Store platform connection in database
       try {
         const { storage } = await import('./storage');
         const userId = stateData.userId || req.session.userId || 2;
@@ -325,9 +461,9 @@ async function startServer() {
           userId: userId,
           platform: platform,
           platformUserId: `${platform}_user_${userId}`,
-          platformUsername: `${platform}_account`,
-          accessToken: code as string,
-          refreshToken: null,
+          platformUsername: platformUsername,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
           expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
           isActive: true
         });
