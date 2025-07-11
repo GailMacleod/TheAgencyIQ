@@ -88,7 +88,7 @@ export default function ConnectPlatforms() {
     refetchOnReconnect: true // Refetch when connection is restored
   });
 
-  // FIXED: Filter unique active connections by platform - only most recent per platform
+  // FIXED: Platform connection state debugging for unique active connections
   const platformConnectionState = useMemo(() => {
     const state: {[key: string]: boolean} = {};
     
@@ -114,20 +114,11 @@ export default function ConnectPlatforms() {
         // Only set state for the most recent connection
         state[platform] = true;
         
-        // Log duplicate cleanup
+        // Log duplicate cleanup only when there are duplicates
         if (activeConns.length > 1) {
           console.log(`🔧 Platform ${platform}: Found ${activeConns.length} active connections, using most recent (ID: ${mostRecent.id})`);
         }
       }
-    });
-    
-    // Enhanced debug logging for connection state changes
-    console.log('🔄 Platform connection state updated (user-specific unique per platform):', {
-      totalConnections: connections.length,
-      uniqueActiveConnections: Object.keys(state).length,
-      platformStates: state,
-      expectedPlatforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
-      timestamp: new Date().toISOString()
     });
     
     return state;
@@ -449,31 +440,48 @@ export default function ConnectPlatforms() {
     }
   };
 
-  // Disconnect platform mutation
+  // FIXED: Disconnect platform mutation with specific platform targeting
   const disconnectMutation = useMutation({
     mutationFn: async (platform: string) => {
+      console.log(`🔌 Disconnecting platform: ${platform}`);
+      
       const response = await fetch('/api/disconnect-platform', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ platform })
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       return response.json();
     },
-    onSuccess: (data) => {
-      // Force refresh of unified connection state and invalidate cache
-      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+    onSuccess: (data, platform) => {
+      console.log(`✅ Successfully disconnected ${platform}:`, data);
+      
+      // FIXED: Platform-specific cache invalidation to prevent global state reset
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/platform-connections'], 
+        exact: true 
+      });
+      
+      // Force immediate refetch to sync individual platform state
       refetch();
       
       toast({
         title: "Platform Disconnected",
-        description: "Platform has been successfully disconnected"
+        description: `${platform} has been successfully disconnected`,
+        variant: "default"
       });
     },
-    onError: () => {
+    onError: (error, platform) => {
+      console.error(`❌ Failed to disconnect ${platform}:`, error);
+      
       toast({
         title: "Disconnect Failed", 
-        description: "Failed to disconnect platform. Please try again.",
+        description: `Failed to disconnect ${platform}. Please try again.`,
         variant: "destructive"
       });
     }
@@ -631,13 +639,7 @@ export default function ConnectPlatforms() {
                 const connectionStatus = getConnectionStatus(platform);
                 const Icon = config.icon;
                 
-                // Debug logging for button state
-                console.log(`🔘 Button state for ${platform}:`, {
-                  connected,
-                  connectionStatus,
-                  hasConnection: !!connection,
-                  platformConnectionState: platformConnectionState[platform]
-                });
+                // FIXED: Independent platform button state logic
                 
                 return (
                   <Card key={platform} className="w-full mb-4">
@@ -689,14 +691,18 @@ export default function ConnectPlatforms() {
                         </div>
                         
                         <div className="flex space-x-2 flex-shrink-0">
+                          {/* FIXED: Independent button state logic to prevent global state reset */}
                           {connected ? (
                             <Button
-                              onClick={() => disconnectMutation.mutate(platform)}
+                              onClick={() => {
+                                console.log(`🔌 Disconnect button clicked for ${platform}`);
+                                disconnectMutation.mutate(platform);
+                              }}
                               variant="outline"
                               className="text-red-600 border-red-300 hover:bg-red-50 min-w-[120px]"
                               disabled={disconnectMutation.isPending}
                             >
-                              Disconnect
+                              {disconnectMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
                             </Button>
                           ) : connectionStatus === 'expired' && connection ? (
                             <>
@@ -709,22 +715,28 @@ export default function ConnectPlatforms() {
                                 {reconnecting[platform] ? 'Reconnecting...' : 'Expired - Reconnect'}
                               </Button>
                               <Button
-                                onClick={() => disconnectMutation.mutate(platform)}
+                                onClick={() => {
+                                  console.log(`🔌 Disconnect button clicked for expired ${platform}`);
+                                  disconnectMutation.mutate(platform);
+                                }}
                                 variant="outline"
                                 className="text-red-600 border-red-300 hover:bg-red-50 min-w-[120px]"
                                 disabled={disconnectMutation.isPending}
                               >
-                                Disconnect
+                                {disconnectMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
                               </Button>
                             </>
                           ) : (
                             <Button
-                              onClick={() => handleOAuthConnect(platform)}
+                              onClick={() => {
+                                console.log(`🔗 Connect button clicked for ${platform}`);
+                                handleOAuthConnect(platform);
+                              }}
                               className="text-white border-0 min-w-[120px]"
-                              style={{ backgroundColor: connected ? '#3250fa' : '#00f0ff' }}
+                              style={{ backgroundColor: '#00f0ff' }}
                               disabled={connecting[platform]}
                             >
-                              {connecting[platform] ? 'Connecting...' : connected ? 'CONNECTED' : 'CONNECT'}
+                              {connecting[platform] ? 'Connecting...' : 'CONNECT'}
                             </Button>
                           )}
                         </div>
