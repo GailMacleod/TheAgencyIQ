@@ -3532,15 +3532,37 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // UNIFIED PLATFORM CONNECTIONS ENDPOINT - Single source of truth with duplicate filtering
+  // UNIFIED PLATFORM CONNECTIONS ENDPOINT - Single source of truth with user-platform uniqueness
   app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
     try {
-      const allConnections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      const userId = req.session.userId;
+      const allConnections = await storage.getPlatformConnectionsByUser(userId);
       
-      // FIXED: Return only active connections (cleanup already done in database)
-      const connections = allConnections.filter(conn => conn.isActive);
+      // ENHANCED: Enforce unique active connection per user-platform combination
+      const platformGroups: {[key: string]: any[]} = {};
+      allConnections.forEach(conn => {
+        if (!platformGroups[conn.platform]) {
+          platformGroups[conn.platform] = [];
+        }
+        platformGroups[conn.platform].push(conn);
+      });
       
-      console.log(`🔧 Filtered connections: ${allConnections.length} total → ${connections.length} active connections`);
+      // Keep only the most recent active connection per platform for this user
+      const uniqueConnections: any[] = [];
+      Object.entries(platformGroups).forEach(([platform, conns]) => {
+        const activeConns = conns.filter(c => c.isActive);
+        if (activeConns.length > 0) {
+          // Sort by connection date (most recent first)
+          const sorted = activeConns.sort((a, b) => 
+            new Date(b.connectedAt).getTime() - new Date(a.connectedAt).getTime()
+          );
+          uniqueConnections.push(sorted[0]);
+        }
+      });
+      
+      console.log(`🔧 User ${userId} connections: ${allConnections.length} total → ${uniqueConnections.length} unique active per platform`);
+      
+      const connections = uniqueConnections;
       
       // Find Facebook connection to share token with Instagram
       const facebookConnection = connections.find(conn => conn.platform === 'facebook');

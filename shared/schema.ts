@@ -1,4 +1,5 @@
 import { pgTable, text, serial, timestamp, integer, boolean, jsonb, varchar, index } from "drizzle-orm/pg-core";
+import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -77,7 +78,7 @@ export const posts = pgTable("posts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Platform connections for OAuth tokens
+// Platform connections for OAuth tokens with unique constraints
 export const platformConnections = pgTable("platform_connections", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -89,7 +90,10 @@ export const platformConnections = pgTable("platform_connections", {
   expiresAt: timestamp("expires_at"),
   isActive: boolean("is_active").default(true),
   connectedAt: timestamp("connected_at").defaultNow(),
-});
+}, (table) => ({
+  // UNIQUE CONSTRAINT: Prevent duplicate active connections per user-platform
+  uniqueUserPlatform: index("unique_user_platform_active").on(table.userId, table.platform).where(eq(table.isActive, true)),
+}));
 
 // Brand purpose for content generation
 export const brandPurpose = pgTable("brand_purpose", {

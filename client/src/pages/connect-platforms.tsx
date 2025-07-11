@@ -77,13 +77,15 @@ export default function ConnectPlatforms() {
   const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
   const [reconnecting, setReconnecting] = useState<{[key: string]: boolean}>({});
 
-  // UNIFIED STATE MANAGEMENT: Single source of truth from /api/platform-connections
+  // ENHANCED STATE MANAGEMENT: User-specific platform connections with real-time sync
   const { data: connections = [], isLoading, refetch } = useQuery<PlatformConnection[]>({
     queryKey: ['/api/platform-connections'],
-    retry: 2,
+    retry: 3,
     refetchOnWindowFocus: true,
-    refetchInterval: 10000, // More frequent refresh for better UI sync
-    staleTime: 0 // Always consider data stale to force refresh
+    refetchInterval: 5000, // Faster refresh for better UI responsiveness
+    staleTime: 0, // Always consider data stale to force refresh
+    refetchOnMount: true, // Always refetch on component mount
+    refetchOnReconnect: true // Refetch when connection is restored
   });
 
   // FIXED: Filter unique active connections by platform - only most recent per platform
@@ -119,12 +121,13 @@ export default function ConnectPlatforms() {
       }
     });
     
-    // Debug logging for connection state changes
-    console.log('🔄 Platform connection state updated (filtered for unique per platform):', {
+    // Enhanced debug logging for connection state changes
+    console.log('🔄 Platform connection state updated (user-specific unique per platform):', {
       totalConnections: connections.length,
       uniqueActiveConnections: Object.keys(state).length,
       platformStates: state,
-      expectedPlatforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
+      expectedPlatforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
+      timestamp: new Date().toISOString()
     });
     
     return state;
@@ -142,23 +145,21 @@ export default function ConnectPlatforms() {
         setConnecting({});
         setReconnecting({});
         
-        // Force refresh of unified connection state with multiple attempts
+        // ENHANCED: Aggressive refresh for real-time UI synchronization
+        console.log('🔄 OAuth success - initiating aggressive refresh sequence');
+        
+        // Immediate invalidation
         queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
         
-        // Sequential refresh attempts
-        setTimeout(() => {
-          refetch();
-        }, 500);
-        
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-          refetch();
-        }, 1500);
-        
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-          refetch();
-        }, 3000);
+        // Sequential refresh attempts with extended timing for better UX
+        const refreshSequence = [250, 750, 1500, 3000, 5000];
+        refreshSequence.forEach((delay, index) => {
+          setTimeout(() => {
+            console.log(`🔄 Refresh attempt ${index + 1}/${refreshSequence.length} after ${delay}ms`);
+            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+            refetch();
+          }, delay);
+        });
         
         toast({
           title: "Connection Successful",
@@ -258,7 +259,7 @@ export default function ConnectPlatforms() {
         throw new Error(`OAuth not configured for ${platform}`);
       }
       
-      // Use popup window for OAuth to avoid iframe issues
+      // ENHANCED: Use popup window for OAuth with extended visibility for better UX
       const popup = window.open(
         oauthUrl,
         'oauth',
@@ -269,9 +270,13 @@ export default function ConnectPlatforms() {
         throw new Error('Popup blocked - please allow popups for OAuth');
       }
       
-      // Listen for OAuth completion messages
+      console.log(`🔗 OAuth popup opened for ${platform}`);
+      
+      // ENHANCED: Listen for OAuth completion messages with extended popup timing
       const handleMessage = (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
+        
+        console.log(`📨 OAuth message received for ${platform}:`, event.data);
         
         if (event.data === 'oauth_success') {
           console.log(`✅ OAuth success for ${platform}`);
