@@ -6801,7 +6801,7 @@ Continue building your Value Proposition Canvas systematically.`;
 
   // LinkedIn refresh function removed - using direct connections
 
-  // X OAuth 1.0a - Restored working implementation
+  // X OAuth 1.0a - Working implementation  
   app.get("/api/auth/x", async (req, res) => {
     try {
       const userId = req.session?.userId;
@@ -6809,7 +6809,6 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.redirect('/connect-platforms?error=no_session');
       }
 
-      // Use Passport OAuth 1.0a for X (Twitter)
       console.log('🔗 X OAuth 1.0a initiation for user:', userId);
       
       // Store userId in session for callback
@@ -6817,7 +6816,6 @@ Continue building your Value Proposition Canvas systematically.`;
       await new Promise((resolve) => req.session.save(() => resolve(void 0)));
 
       // Use passport authenticate for X OAuth 1.0a
-      req.session.returnTo = '/connect-platforms';
       passport.authenticate('twitter')(req, res);
     } catch (error) {
       console.error('X OAuth 1.0a initiation failed:', error);

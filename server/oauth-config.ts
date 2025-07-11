@@ -169,7 +169,7 @@ passport.use(new LinkedInStrategy({
     : done(new Error(result.error));
 }));
 
-// X (Twitter) OAuth Strategy - RESTORED - using OAuth 1.0a (original working implementation)
+// X (Twitter) OAuth Strategy - WORKING OAuth 1.0a Implementation
 passport.use(new TwitterStrategy({
   consumerKey: process.env.X_CONSUMER_KEY!,
   consumerSecret: process.env.X_CONSUMER_SECRET!,
@@ -177,18 +177,43 @@ passport.use(new TwitterStrategy({
   userProfileURL: "https://api.twitter.com/1.1/account/verify_credentials.json?include_email=true",
   passReqToCallback: true
 }, async (req: any, token: string, tokenSecret: string, profile: any, done: any) => {
-  console.log('X OAuth 1.0a strategy executing for user:', profile.username);
-  
-  const result = await handleOAuthCallback({
-    req,
-    profile,
-    tokens: { accessToken: token, tokenSecret },
-    platform: 'x'
-  });
-  
-  return result.success 
-    ? done(null, result) 
-    : done(new Error(result.error));
+  try {
+    console.log('X OAuth 1.0a strategy executing for user:', profile.username);
+    
+    const userId = req.session?.xUserId;
+    if (!userId) {
+      return done(new Error('No user session found'));
+    }
+
+    // Remove existing X connections for this user
+    const existingConnections = await storage.getPlatformConnectionsByUser(userId);
+    const existingX = existingConnections.find(conn => conn.platform === 'x');
+    if (existingX) {
+      await storage.deletePlatformConnection(existingX.id);
+    }
+
+    // Create new X connection with OAuth 1.0a tokens
+    const connectionData = {
+      userId: userId,
+      platform: 'x',
+      platformUserId: profile.id,
+      platformUsername: profile.username,
+      accessToken: token,
+      tokenSecret: tokenSecret,
+      refreshToken: null,
+      expiresAt: null, // OAuth 1.0a tokens don't expire
+      isActive: true
+    };
+
+    await storage.createPlatformConnection(connectionData);
+    
+    console.log(`✅ X OAuth 1.0a connection created for user ${userId}: @${profile.username}`);
+    
+    return done(null, { success: true, platform: 'x', username: profile.username });
+  } catch (error) {
+    console.error('X OAuth 1.0a strategy error:', error);
+    return done(error);
+  }
 }));
 
 // YouTube (Google) OAuth Strategy with unified callback handling
