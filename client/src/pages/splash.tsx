@@ -156,83 +156,53 @@ export default function Splash() {
             </p>
           </div>
 
-          <div className="feature-grid">
-            <div className="card-atomiq-feature animate-fade-in-up stagger-1">
-              <div className="w-16 h-16 bg-gradient-atomiq rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                <Target className="h-8 w-8 text-white" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-cyan-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
+                <Target className="h-4 w-4 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-4">Define Your Brand</h4>
-              <p className="text-muted-foreground leading-relaxed">
-                Core purpose and audience for your business
-              </p>
-              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
-                <p className="text-sm font-medium text-[#3b5cff]">Build a brand that resonates with your ideal customers</p>
-              </div>
+              <h4 className="text-sm font-semibold mb-2 text-gray-900">Define Brand</h4>
+              <p className="text-xs text-[#3b5cff] font-medium">Resonate with customers</p>
             </div>
 
-            <div className="card-atomiq-feature animate-fade-in-up stagger-2">
-              <div className="w-16 h-16 bg-gradient-secondary rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                <Users className="h-8 w-8 text-white" />
+            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-purple-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
+                <Users className="h-4 w-4 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-4">Connect Social Accounts</h4>
-              <p className="text-muted-foreground leading-relaxed">
-                Link Facebook, Instagram, LinkedIn, YouTube, X easily
-              </p>
-              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
-                <p className="text-sm font-medium text-[#3b5cff]">Connect once, post everywhere automatically</p>
-              </div>
+              <h4 className="text-sm font-semibold mb-2 text-gray-900">Connect Accounts</h4>
+              <p className="text-xs text-[#3b5cff] font-medium">Post everywhere automatically</p>
             </div>
 
-            <div className="card-atomiq-feature animate-fade-in-up stagger-3">
-              <div className="w-16 h-16 bg-gradient-atomiq rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                <Zap className="h-8 w-8 text-white" />
+            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-cyan-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
+                <Zap className="h-4 w-4 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-4">Create Content & Videos</h4>
-              <p className="text-muted-foreground leading-relaxed">
-                AI makes engaging posts and short videos tailored to your brand
-              </p>
-              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
-                <p className="text-sm font-medium text-[#3b5cff]">Make viral videos that sell your story</p>
-              </div>
+              <h4 className="text-sm font-semibold mb-2 text-gray-900">Generate Content</h4>
+              <p className="text-xs text-[#3b5cff] font-medium">Create viral brand stories</p>
             </div>
 
-            <div className="card-atomiq-feature animate-fade-in-up stagger-4">
-              <div className="w-16 h-16 bg-gradient-secondary rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                <Calendar className="h-8 w-8 text-white" />
+            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-purple-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
+                <Calendar className="h-4 w-4 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-4">Smart Scheduling</h4>
-              <p className="text-muted-foreground leading-relaxed">
-                Auto-post content at best times
-              </p>
-              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
-                <p className="text-sm font-medium text-[#3b5cff]">Post when your audience is most active</p>
-              </div>
+              <h4 className="text-sm font-semibold mb-2 text-gray-900">Schedule Posts</h4>
+              <p className="text-xs text-[#3b5cff] font-medium">Post when active</p>
             </div>
 
-            <div className="card-atomiq-feature animate-fade-in-up stagger-5">
-              <div className="w-16 h-16 bg-gradient-atomiq rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                <BarChart3 className="h-8 w-8 text-white" />
+            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-cyan-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
+                <BarChart3 className="h-4 w-4 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-4">Track Results</h4>
-              <p className="text-muted-foreground leading-relaxed">
-                See real views, likes, and growth
-              </p>
-              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
-                <p className="text-sm font-medium text-[#3b5cff]">Know what's working to grow faster</p>
-              </div>
+              <h4 className="text-sm font-semibold mb-2 text-gray-900">Track Analytics</h4>
+              <p className="text-xs text-[#3b5cff] font-medium">See what works</p>
             </div>
 
-            <div className="card-atomiq-feature animate-fade-in-up stagger-6">
-              <div className="w-16 h-16 bg-gradient-secondary rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                <Sparkles className="h-8 w-8 text-white" />
+            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-purple-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
+                <Sparkles className="h-4 w-4 text-white" />
               </div>
-              <h4 className="text-xl font-semibold mb-4">Monitor & Improve</h4>
-              <p className="text-muted-foreground leading-relaxed">
-                Watch activity and boost your strategy
-              </p>
-              <div className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-50 to-pink-50 rounded-lg">
-                <p className="text-sm font-medium text-[#3b5cff]">Keep improving to stay ahead of competitors</p>
-              </div>
+              <h4 className="text-sm font-semibold mb-2 text-gray-900">Monitor Strategy</h4>
+              <p className="text-xs text-[#3b5cff] font-medium">Stay ahead</p>
             </div>
           </div>
         </div>
