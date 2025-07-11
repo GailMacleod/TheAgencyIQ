@@ -15,6 +15,15 @@ interface WizardStep {
   actionText: string;
   actionUrl?: string;
   tips: string[];
+  route?: string;
+}
+
+interface UserStatus {
+  userType: 'new' | 'returning';
+  hasActiveSubscription: boolean;
+  hasBrandSetup: boolean;
+  hasConnections: boolean;
+  currentUrl: string;
 }
 
 export default function OnboardingWizard() {
@@ -24,8 +33,14 @@ export default function OnboardingWizard() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [skippedSteps, setSkippedSteps] = useState<number[]>([]);
   const [isSkipped, setIsSkipped] = useState(false);
-  const [isReturningSubscriber, setIsReturningSubscriber] = useState(false);
-  const [, setLocation] = useLocation();
+  const [userStatus, setUserStatus] = useState<UserStatus>({
+    userType: 'new',
+    hasActiveSubscription: false,
+    hasBrandSetup: false,
+    hasConnections: false,
+    currentUrl: ''
+  });
+  const [location, setLocation] = useLocation();
 
   // Save progress to localStorage
   const saveProgress = () => {
@@ -56,22 +71,48 @@ export default function OnboardingWizard() {
     return false;
   };
 
-  // Check if user is returning subscriber
+  // Check user status and detect user type
   useEffect(() => {
     const checkUserStatus = async () => {
       try {
-        const response = await fetch('/api/user', {
+        const response = await fetch('/api/user-status', {
           credentials: 'include'
         });
         
         if (response.ok) {
-          const userData = await response.json();
-          const hasActiveSubscription = userData.subscriptionPlan && userData.subscriptionPlan !== 'free';
-          setIsReturningSubscriber(hasActiveSubscription);
+          const statusData = await response.json();
+          setUserStatus({
+            userType: statusData.userType || 'new',
+            hasActiveSubscription: statusData.hasActiveSubscription || false,
+            hasBrandSetup: statusData.hasBrandSetup || false,
+            hasConnections: statusData.hasConnections || false,
+            currentUrl: location
+          });
           
-          // If returning subscriber, skip subscription step (step 2)
-          if (hasActiveSubscription) {
+          // Skip subscription step for returning subscribers
+          if (statusData.hasActiveSubscription) {
             setSkippedSteps(prev => [...prev, 2]);
+          }
+        } else {
+          // Fallback to /api/user if user-status endpoint doesn't exist
+          const fallbackResponse = await fetch('/api/user', {
+            credentials: 'include'
+          });
+          
+          if (fallbackResponse.ok) {
+            const userData = await fallbackResponse.json();
+            const hasActiveSubscription = userData.subscriptionPlan && userData.subscriptionPlan !== 'free';
+            setUserStatus({
+              userType: hasActiveSubscription ? 'returning' : 'new',
+              hasActiveSubscription,
+              hasBrandSetup: userData.brandName ? true : false,
+              hasConnections: false, // Default to false without specific endpoint
+              currentUrl: location
+            });
+            
+            if (hasActiveSubscription) {
+              setSkippedSteps(prev => [...prev, 2]);
+            }
           }
         }
       } catch (error) {
@@ -80,7 +121,7 @@ export default function OnboardingWizard() {
     };
     
     checkUserStatus();
-  }, []);
+  }, [location]);
 
   // Load progress on mount
   useEffect(() => {
@@ -95,6 +136,29 @@ export default function OnboardingWizard() {
     saveProgress();
   }, [currentStep, completedSteps, skippedSteps, isSkipped]);
 
+  // Dynamic step highlighting based on current URL
+  const getStepFromUrl = (url: string): number => {
+    const urlToStepMap: { [key: string]: number } = {
+      '/': 0,
+      '/subscription': 1,
+      '/brand-purpose': 2,
+      '/connect-platforms': 3,
+      '/intelligent-schedule': 4,
+      '/schedule': 4,
+      '/analytics': 5,
+      '/video-gen': 4 // Video generation is part of content step
+    };
+    return urlToStepMap[url] || currentStep;
+  };
+
+  // Update current step based on URL
+  useEffect(() => {
+    const urlStep = getStepFromUrl(location);
+    if (urlStep !== currentStep && !isSkipped) {
+      setCurrentStep(urlStep);
+    }
+  }, [location]);
+
   const wizardSteps: WizardStep[] = [
     {
       id: 1,
@@ -102,6 +166,7 @@ export default function OnboardingWizard() {
       description: "Your AI-powered social media automation platform",
       icon: <Target className="w-6 h-6" />,
       actionText: "Get Started",
+      route: "/brand-purpose",
       content: (
         <div className="space-y-4">
           <div className="bg-gradient-to-r from-[#3b5cff]/10 to-purple-500/10 p-6 rounded-lg">
@@ -140,6 +205,7 @@ export default function OnboardingWizard() {
       icon: <CreditCard className="w-6 h-6" />,
       actionText: "Choose Plan",
       actionUrl: "/subscription",
+      route: "/brand-purpose",
       content: (
         <div className="space-y-4">
           <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
@@ -189,19 +255,29 @@ export default function OnboardingWizard() {
     },
     {
       id: 3,
-      title: "Generate AI Content & Video",
-      description: "Master content creation with video generation features",
-      icon: <Zap className="w-6 h-6" />,
-      actionText: "Generate Posts",
-      actionUrl: "/intelligent-schedule",
+      title: "Define Brand Purpose",
+      description: "Tell us about your business and target audience",
+      icon: <Target className="w-6 h-6" />,
+      actionText: "Define Brand",
+      actionUrl: "/brand-purpose",
+      route: "/connect-platforms",
       content: (
         <div className="space-y-4">
-          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-            <h4 className="font-medium text-green-900 mb-2">✅ Returning Subscribers:</h4>
-            <p className="text-sm text-green-700">
-              You're already logged in with an active subscription! This is your main content generation hub.
-            </p>
-          </div>
+          {userStatus.userType === 'returning' ? (
+            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+              <h4 className="font-medium text-green-900 mb-2">✅ Returning Subscriber:</h4>
+              <p className="text-sm text-green-700">
+                You're already logged in with an active subscription! This is your main content generation hub.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+              <h4 className="font-medium text-blue-900 mb-2">🎯 New User Guide:</h4>
+              <p className="text-sm text-blue-700">
+                After choosing your subscription, you'll access this powerful content generation interface.
+              </p>
+            </div>
+          )}
           
           <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
             <h3 className="font-semibold mb-3">🎬 Video Generation Mastery:</h3>
@@ -263,16 +339,25 @@ export default function OnboardingWizard() {
       actionUrl: "/brand-purpose",
       content: (
         <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">📝 Brand Purpose helps AI create better content:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li>• Your business name and what you do</li>
-              <li>• Who your target audience is</li>
-              <li>• What problems you solve for customers</li>
-              <li>• Your unique value proposition</li>
-              <li>• Your business goals and motivations</li>
-            </ul>
-          </div>
+          {userStatus.userType === 'returning' ? (
+            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+              <h4 className="font-medium text-green-900 mb-2">🔄 Update Your Brand Purpose:</h4>
+              <p className="text-sm text-green-700">
+                Refine your brand purpose to optimize AI content generation for your existing posts.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+              <h4 className="font-medium text-blue-900 mb-2">📝 Brand Purpose helps AI create better content:</h4>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Your business name and what you do</li>
+                <li>• Who your target audience is</li>
+                <li>• What problems you solve for customers</li>
+                <li>• Your unique value proposition</li>
+                <li>• Your business goals and motivations</li>
+              </ul>
+            </div>
+          )}
           <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
             <h4 className="font-medium text-green-900 mb-2">✅ AI Content Benefits:</h4>
             <ul className="text-sm text-green-700 space-y-1">
@@ -299,11 +384,12 @@ export default function OnboardingWizard() {
     },
     {
       id: 5,
-      title: "Connect Social Platforms",
-      description: "Monitor and manage your platform connections",
-      icon: <Users className="w-6 h-6" />,
-      actionText: "Connect Platforms",
-      actionUrl: "/connect-platforms",
+      title: "Generate AI Content & Video",
+      description: "Create posts with video generation features",
+      icon: <Zap className="w-6 h-6" />,
+      actionText: "Generate Content",
+      actionUrl: "/intelligent-schedule",
+      route: "/analytics",
       content: (
         <div className="space-y-4">
           <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
@@ -367,6 +453,7 @@ export default function OnboardingWizard() {
       icon: <BarChart3 className="w-6 h-6" />,
       actionText: "View Analytics",
       actionUrl: "/analytics",
+      route: "/analytics",
       content: (
         <div className="space-y-4">
           <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
@@ -416,12 +503,18 @@ export default function OnboardingWizard() {
       
       // Skip subscription step (step 1, index 1) for returning subscribers
       let nextStep = currentStep + 1;
-      if (isReturningSubscriber && nextStep === 1) {
-        nextStep = 2; // Skip to step 3 (Generate AI Content)
-        setSkippedSteps(prev => [...prev, 2]); // Mark subscription step as skipped
+      if (userStatus.userType === 'returning' && nextStep === 1) {
+        nextStep = 2; // Skip to step 3 (Define Brand Purpose)
+        setSkippedSteps(prev => [...prev, 1]); // Mark subscription step as skipped
       }
       
       setCurrentStep(nextStep);
+      
+      // Navigate to the next route if available
+      const nextRoute = wizardSteps[currentStep]?.route;
+      if (nextRoute) {
+        setLocation(nextRoute);
+      }
     } else {
       // Final step completed - return to landing page with animation trigger
       setCompletedSteps([...completedSteps, currentStep]);
@@ -518,7 +611,7 @@ export default function OnboardingWizard() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Training Guide</span>
-            {isReturningSubscriber && (
+            {userStatus.userType === 'returning' && (
               <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                 Returning Subscriber
               </Badge>
@@ -609,6 +702,18 @@ export default function OnboardingWizard() {
                 {wizardSteps[currentStep].actionText}
                 <ArrowRight className="w-3 h-3 ml-1" />
               </Button>
+              
+              {wizardSteps[currentStep].route && (
+                <Button
+                  onClick={handleNext}
+                  size="sm"
+                  variant="outline"
+                  className="text-xs"
+                >
+                  Next
+                  <ArrowRight className="w-3 h-3 ml-1" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
