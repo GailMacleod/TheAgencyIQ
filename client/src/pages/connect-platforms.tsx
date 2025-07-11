@@ -86,28 +86,45 @@ export default function ConnectPlatforms() {
     staleTime: 0 // Always consider data stale to force refresh
   });
 
-  // Derive connection state from single source of truth
+  // FIXED: Filter unique active connections by platform - only most recent per platform
   const platformConnectionState = useMemo(() => {
     const state: {[key: string]: boolean} = {};
+    
+    // Group connections by platform
+    const platformGroups: {[key: string]: PlatformConnection[]} = {};
     connections.forEach(conn => {
-      // Use database connection status as single source of truth
-      // A connection is considered active if it exists and is marked as active in the database
-      if (conn.isActive) {
-        state[conn.platform] = true;
+      if (!platformGroups[conn.platform]) {
+        platformGroups[conn.platform] = [];
+      }
+      platformGroups[conn.platform].push(conn);
+    });
+    
+    // For each platform, find the most recent active connection
+    Object.entries(platformGroups).forEach(([platform, conns]) => {
+      const activeConns = conns.filter(c => c.isActive);
+      if (activeConns.length > 0) {
+        // Sort by connection date (most recent first)
+        const sorted = activeConns.sort((a, b) => 
+          new Date(b.connectedAt).getTime() - new Date(a.connectedAt).getTime()
+        );
+        const mostRecent = sorted[0];
+        
+        // Only set state for the most recent connection
+        state[platform] = true;
+        
+        // Log duplicate cleanup
+        if (activeConns.length > 1) {
+          console.log(`🔧 Platform ${platform}: Found ${activeConns.length} active connections, using most recent (ID: ${mostRecent.id})`);
+        }
       }
     });
     
     // Debug logging for connection state changes
-    console.log('🔄 Platform connection state updated:', {
+    console.log('🔄 Platform connection state updated (filtered for unique per platform):', {
       totalConnections: connections.length,
-      activeConnections: Object.keys(state).length,
+      uniqueActiveConnections: Object.keys(state).length,
       platformStates: state,
-      connections: connections.map(c => ({
-        platform: c.platform,
-        id: c.id,
-        isActive: c.isActive,
-        username: c.platformUsername
-      }))
+      expectedPlatforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
     });
     
     return state;

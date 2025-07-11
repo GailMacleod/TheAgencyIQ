@@ -3472,6 +3472,36 @@ Continue building your Value Proposition Canvas systematically.`;
     return scopes[platform] || [];
   }
 
+  // Emergency deactivation endpoint for cleanup
+  app.post('/api/platform-connections/deactivate', requireAuth, async (req: any, res: Response) => {
+    try {
+      const { connectionId, platform } = req.body;
+      const userId = req.session.userId;
+      
+      console.log(`🔧 Emergency deactivation request for platform ${platform}, connection ID ${connectionId}`);
+      
+      // Update connection to be inactive
+      const { platformConnections } = await import('../shared/schema');
+      const updated = await db.update(platformConnections)
+        .set({ isActive: false })
+        .where(and(
+          eq(platformConnections.id, connectionId),
+          eq(platformConnections.userId, userId)
+        ))
+        .returning();
+      
+      if (updated.length > 0) {
+        console.log(`✅ Deactivated connection ${connectionId} for platform ${platform}`);
+        res.json({ success: true, deactivated: updated[0] });
+      } else {
+        res.status(404).json({ error: 'Connection not found' });
+      }
+    } catch (error) {
+      console.error('Emergency deactivation error:', error);
+      res.status(500).json({ error: 'Deactivation failed' });
+    }
+  });
+
   // Emergency activation endpoint for debugging
   app.post('/api/platform-connections/activate', requireAuth, async (req: any, res: Response) => {
     try {
@@ -3502,10 +3532,15 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // UNIFIED PLATFORM CONNECTIONS ENDPOINT - Single source of truth
+  // UNIFIED PLATFORM CONNECTIONS ENDPOINT - Single source of truth with duplicate filtering
   app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
     try {
-      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      const allConnections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      
+      // FIXED: Return only active connections (cleanup already done in database)
+      const connections = allConnections.filter(conn => conn.isActive);
+      
+      console.log(`🔧 Filtered connections: ${allConnections.length} total → ${connections.length} active connections`);
       
       // Find Facebook connection to share token with Instagram
       const facebookConnection = connections.find(conn => conn.platform === 'facebook');
