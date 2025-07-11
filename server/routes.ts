@@ -2539,9 +2539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect('/connect/facebook');
   });
   
-  app.get('/api/auth/instagram', (req, res) => {
-    res.redirect('/connect/instagram');
-  });
+  // Instagram OAuth route removed - handled by main Instagram route
   
   app.get('/api/auth/linkedin', (req, res) => {
     res.redirect('/connect/linkedin');
@@ -2560,27 +2558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Custom Facebook OAuth implementation is in authModule.ts
   console.log('Facebook OAuth routes at line 2035 disabled - using custom implementation');
 
-  // Instagram Direct Connection - bypasses OAuth completely with priority routing
-  app.get('/auth/instagram', requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      console.log(`Instagram direct connection for user ${userId}`);
-      
-      const { InstagramFixFinal } = await import('./instagram-fix-final');
-      const result = await InstagramFixFinal.createInstantConnection(userId);
-      
-      if (result.success) {
-        console.log(`Instagram connection successful: ${result.connectionId}`);
-        res.redirect('/connect-platforms?success=instagram');
-      } else {
-        console.error(`Instagram connection failed: ${result.error}`);
-        res.redirect('/connect-platforms?error=instagram_connection_failed');
-      }
-    } catch (error) {
-      console.error('Instagram direct connection error:', error);
-      res.redirect('/connect-platforms?error=instagram_connection_error');
-    }
-  });
+  // Instagram OAuth route removed - handled by main Instagram route
 
 
 
@@ -2592,29 +2570,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/auth/linkedin/callback',
     configuredPassport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
     (req, res) => {
-      res.redirect('/connect-platforms?success=linkedin');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     }
   );
 
   // X (Twitter) OAuth
-  app.get('/auth/twitter', requireAuth, configuredPassport.authenticate('twitter'));
+  app.get('/auth/twitter', configuredPassport.authenticate('twitter'));
 
   app.get('/auth/twitter/callback',
     configuredPassport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=twitter' }),
     (req, res) => {
-      res.redirect('/connect-platforms?success=twitter');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     }
   );
 
   // YouTube OAuth
-  app.get('/auth/youtube', requireAuth, configuredPassport.authenticate('youtube', {
+  app.get('/auth/youtube', configuredPassport.authenticate('youtube', {
     scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload']
   }));
 
   app.get('/auth/youtube/callback',
     configuredPassport.authenticate('youtube', { failureRedirect: '/connect-platforms?error=youtube' }),
     (req, res) => {
-      res.redirect('/connect-platforms?success=youtube');
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     }
   );
 
@@ -3447,7 +3425,7 @@ Continue building your Value Proposition Canvas systematically.`;
   function getPlatformScopes(platform: string): string[] {
     const scopes = {
       facebook: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement'],
-      instagram: ['instagram_basic', 'instagram_content_publish'],
+      instagram: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement'],
       linkedin: ['r_liteprofile', 'w_member_social'],
       x: ['tweet.write', 'users.read', 'tweet.read', 'offline.access'],
       youtube: ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly']
@@ -6688,7 +6666,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Instagram Direct Connection - Immediate working connection
+  // Instagram OAuth - Uses Facebook Graph API
   app.get("/api/auth/instagram", async (req, res) => {
     try {
       const userId = req.session?.userId;
@@ -6696,27 +6674,28 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.redirect('/connect-platforms?error=no_session');
       }
 
-      // Create direct Instagram connection immediately
-      const result = await storage.createPlatformConnection({
-        userId: userId,
-        platform: 'instagram',
-        platformUserId: `ig_${userId}_${Date.now()}`,
-        platformUsername: 'Instagram Account',
-        accessToken: `ig_token_${Date.now()}_${userId}`,
-        refreshToken: null,
-        expiresAt: null,
-        isActive: true
-      });
-
-      console.log(`✅ Direct Instagram connection created for user ${userId}:`, result.id);
+      const clientId = process.env.FACEBOOK_APP_ID;
+      const redirectUri = process.env.NODE_ENV === 'production' 
+        ? 'https://app.theagencyiq.ai/callback'
+        : `https://${process.env.REPLIT_DEV_DOMAIN}/callback`;
       
-      // Process any failed posts for retry when Instagram reconnects
-      await PostRetryService.onPlatformReconnected(userId, 'instagram');
+      console.log(`🔗 Instagram OAuth initiation:`);
+      console.log(`📍 Callback URI: ${redirectUri}`);
       
-      res.redirect('/platform-connections?connected=instagram');
+      // Instagram uses Facebook's OAuth with valid scopes only
+      const scope = 'pages_show_list,pages_manage_posts,pages_read_engagement';
+      const state = Buffer.from(JSON.stringify({ userId, platform: 'instagram' })).toString('base64');
+      
+      if (!clientId) {
+        console.error('Facebook App ID not configured');
+        return res.status(500).json({ message: "Facebook App ID not configured" });
+      }
+      
+      const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
+      res.redirect(authUrl);
     } catch (error) {
-      console.error('Direct Instagram connection failed:', error);
-      res.redirect('/platform-connections?error=instagram_connection_failed');
+      console.error('Instagram OAuth initiation error:', error);
+      res.status(500).json({ message: "Failed to initiate Instagram OAuth" });
     }
   });
 
