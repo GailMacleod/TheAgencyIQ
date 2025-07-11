@@ -141,6 +141,35 @@ export default function Splash() {
               </Button>
             </Link>
             
+            {/* Subscription Options */}
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
+                <div className="w-6 h-6 bg-gradient-to-r from-[#3b5cff] to-cyan-500 rounded-full flex items-center justify-center mb-2 mx-auto">
+                  <Zap className="h-3 w-3 text-white" />
+                </div>
+                <h4 className="text-sm font-semibold mb-1 text-gray-900">Starter</h4>
+                <p className="text-xs text-[#3b5cff] font-medium mb-1">$19.99/month</p>
+                <p className="text-xs text-gray-600">12 posts (10 + 2 free)</p>
+              </div>
+
+              <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
+                <div className="w-6 h-6 bg-gradient-to-r from-[#3b5cff] to-purple-500 rounded-full flex items-center justify-center mb-2 mx-auto">
+                  <Target className="h-3 w-3 text-white" />
+                </div>
+                <h4 className="text-sm font-semibold mb-1 text-gray-900">Growth</h4>
+                <p className="text-xs text-[#3b5cff] font-medium mb-1">$41.99/month</p>
+                <p className="text-xs text-gray-600">27 posts (25 + 2 free)</p>
+              </div>
+
+              <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
+                <div className="w-6 h-6 bg-gradient-to-r from-[#3b5cff] to-cyan-500 rounded-full flex items-center justify-center mb-2 mx-auto">
+                  <Sparkles className="h-3 w-3 text-white" />
+                </div>
+                <h4 className="text-sm font-semibold mb-1 text-gray-900">Professional</h4>
+                <p className="text-xs text-[#3b5cff] font-medium mb-1">$99.99/month</p>
+                <p className="text-xs text-gray-600">52 posts (50 + 2 free)</p>
+              </div>
+            </div>
 
           </div>
         </div>
