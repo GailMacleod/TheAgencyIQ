@@ -447,7 +447,7 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-6 rounded-lg">
-            <h3 className="font-semibold text-lg mb-3">🤖 AI Content Generation:</h3>
+            <h3 className="font-semibold text-lg mb-3">AI Content Generation:</h3>
             <p className="text-sm text-gray-600 mb-4">
               Start here! Generate engaging content tailored to Queensland markets with automatic scheduling and video creation.
             </p>
@@ -483,7 +483,7 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-800 mb-2">🎯 Brand Purpose Setup:</h4>
+            <h4 className="font-medium text-gray-800 mb-2">Brand Purpose Setup:</h4>
             <p className="text-sm text-gray-600">
               {userStatus.hasBrandSetup ? 
                 "Your brand purpose is configured. You can update it anytime." :
@@ -508,7 +508,7 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-800 mb-2">🔗 Platform Connections:</h4>
+            <h4 className="font-medium text-gray-800 mb-2">Platform Connections:</h4>
             <p className="text-sm text-gray-600">
               {userStatus.hasConnections ? 
                 "Platform connections are active. Check status regularly." :
@@ -533,7 +533,7 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-800 mb-2">📊 Analytics Dashboard:</h4>
+            <h4 className="font-medium text-gray-800 mb-2">Analytics Dashboard:</h4>
             <p className="text-sm text-gray-600">
               Track performance metrics and get actionable insights to improve your social media strategy.
             </p>
