@@ -2534,6 +2534,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // OAuth Authentication Routes
   
+  // API auth routes that redirect to OAuth providers
+  app.get('/api/auth/facebook', (req, res) => {
+    res.redirect('/connect/facebook');
+  });
+  
+  app.get('/api/auth/instagram', (req, res) => {
+    res.redirect('/connect/instagram');
+  });
+  
+  app.get('/api/auth/linkedin', (req, res) => {
+    res.redirect('/connect/linkedin');
+  });
+  
+  app.get('/api/auth/x', (req, res) => {
+    res.redirect('/connect/x');
+  });
+  
+  app.get('/api/auth/youtube', (req, res) => {
+    res.redirect('/connect/youtube');
+  });
+  
   // Facebook OAuth - DISABLED (using custom implementation in authModule.ts)
   // These routes were causing "Invalid verification code format" errors
   // Custom Facebook OAuth implementation is in authModule.ts

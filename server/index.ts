@@ -276,12 +276,12 @@ async function startServer() {
     
     if (error) {
       console.error(`❌ OAuth error received: ${error}`);
-      return res.redirect('/platform-connections?error=' + encodeURIComponent(error as string));
+      return res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
     }
     
     if (!code || !state) {
       console.error('❌ OAuth callback missing required parameters');
-      return res.redirect('/platform-connections?error=missing_parameters');
+      return res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
     }
 
     try {
@@ -337,39 +337,10 @@ async function startServer() {
         console.error('Database storage error:', dbError);
         console.log(`✅ OAuth success for ${platform} - stored in session only (DB error)`);
       }
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head><title>OAuth Success - TheAgencyIQ</title></head>
-        <body>
-          <h1>OAuth Success!</h1>
-          <p>Successfully connected to ${platform}</p>
-          <script>
-            setTimeout(() => {
-              if (window.opener) {
-                window.opener.postMessage({ type: 'oauth_success', platform: '${platform}' }, '*');
-                window.close();
-              } else {
-                window.location.href = '/platform-connections';
-              }
-            }, 1000);
-          </script>
-        </body>
-        </html>
-      `);
+      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     } catch (error) {
       console.error('OAuth callback error:', error);
-      res.status(500).send(`
-        <!DOCTYPE html>
-        <html>
-        <head><title>OAuth Error - TheAgencyIQ</title></head>
-        <body>
-          <h1>OAuth Error</h1>
-          <p>Error processing OAuth callback: ${(error as Error).message}</p>
-          <p><a href="/platform-connections">Return to Platform Connections</a></p>
-        </body>
-        </html>
-      `);
+      res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
     }
   });
 

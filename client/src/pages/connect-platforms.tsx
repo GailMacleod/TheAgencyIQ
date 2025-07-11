@@ -73,6 +73,32 @@ export default function ConnectPlatforms() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Listen for OAuth success messages from popup
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data === 'oauth_success') {
+        refreshConnections();
+      } else if (e.data === 'oauth_failure') {
+        toast({
+          title: "OAuth Failed",
+          description: "Authentication failed. Please try again.",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+  
+  const refreshConnections = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+    toast({
+      title: "Connection Updated",
+      description: "Platform connection has been refreshed"
+    });
+  };
   const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
   const [connectedPlatforms, setConnectedPlatforms] = useState<{[key: string]: boolean}>({});
   const [reconnecting, setReconnecting] = useState<{[key: string]: boolean}>({});
@@ -260,32 +286,12 @@ export default function ConnectPlatforms() {
       const popup = window.open(
         oauthUrl,
         'oauth',
-        'width=500,height=600'
+        'width=600,height=700'
       );
       
       if (!popup) {
         throw new Error('Popup blocked - please allow popups for OAuth');
       }
-      
-      // Monitor popup for completion
-      const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed);
-          
-          // Refresh connection data after OAuth completion
-          setTimeout(async () => {
-            try {
-              await queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-              toast({
-                title: "Reconnection Complete",
-                description: `${platform} has been successfully reconnected`
-              });
-            } catch (error) {
-              console.warn('Failed to refresh connection data:', error);
-            }
-          }, 1000);
-        }
-      }, 1000);
       
     } catch (error: any) {
       toast({
