@@ -19,6 +19,12 @@ interface PlatformConnection {
   platformUsername: string;
   isActive: boolean;
   connectedAt: string;
+  oauthStatus?: {
+    platform: string;
+    isValid: boolean;
+    error?: string;
+    needsRefresh: boolean;
+  };
 }
 
 interface PlatformConfig {
@@ -69,11 +75,13 @@ export default function ConnectPlatforms() {
   const queryClient = useQueryClient();
   const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
   const [connectedPlatforms, setConnectedPlatforms] = useState<{[key: string]: boolean}>({});
+  const [reconnecting, setReconnecting] = useState<{[key: string]: boolean}>({});
 
-  // Fetch platform connections from database
+  // Fetch platform connections with OAuth token validation status
   const { data: connections = [], isLoading } = useQuery<PlatformConnection[]>({
     queryKey: ['/api/platform-connections'],
-    retry: 2
+    retry: 2,
+    refetchOnWindowFocus: true
   });
 
   // Fetch session connection state
@@ -195,6 +203,46 @@ export default function ConnectPlatforms() {
     }
   };
 
+  // Reconnect platform token
+  const handleReconnect = async (platform: string) => {
+    try {
+      setReconnecting(prev => ({ ...prev, [platform]: true }));
+      
+      // First try token refresh
+      const refreshResponse = await fetch(`/api/oauth/refresh/${platform}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      
+      const refreshData = await refreshResponse.json();
+      
+      if (refreshData.refreshResult?.success) {
+        // Token refresh successful
+        queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+        toast({
+          title: "Token Refreshed",
+          description: `${platform} token has been successfully refreshed`
+        });
+      } else {
+        // Token refresh failed, redirect to OAuth
+        toast({
+          title: "Re-authentication Required",
+          description: `Redirecting to ${platform} OAuth flow...`
+        });
+        await handleOAuthConnect(platform);
+      }
+    } catch (error) {
+      toast({
+        title: "Reconnect Failed",
+        description: `Failed to reconnect ${platform}. Please try again.`,
+        variant: "destructive"
+      });
+    } finally {
+      setReconnecting(prev => ({ ...prev, [platform]: false }));
+    }
+  };
+
   // Disconnect platform mutation
   const disconnectMutation = useMutation({
     mutationFn: async (platform: string) => {
@@ -255,6 +303,18 @@ export default function ConnectPlatforms() {
     );
   };
 
+  const getConnectionStatus = (platform: string) => {
+    const connection = getConnection(platform);
+    if (!connection) return 'disconnected';
+    
+    // Check OAuth token validity
+    if (connection.oauthStatus?.isValid === false) {
+      return 'expired';
+    }
+    
+    return connection.isActive ? 'connected' : 'disconnected';
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -294,6 +354,7 @@ export default function ConnectPlatforms() {
               {Object.entries(platformConfig).map(([platform, config]) => {
             const connected = isConnected(platform);
             const connection = getConnection(platform);
+            const connectionStatus = getConnectionStatus(platform);
             const Icon = config.icon;
 
             return (
@@ -318,15 +379,20 @@ export default function ConnectPlatforms() {
                           Available
                         </Badge>
                       )}
-                      {connected ? (
+                      {connectionStatus === 'connected' ? (
                         <Badge className="bg-green-100 text-green-800 text-xs">
                           <CheckCircle className="w-3 h-3 mr-1" />
                           Connected
                         </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
+                      ) : connectionStatus === 'expired' ? (
+                        <Badge className="bg-yellow-100 text-yellow-800 text-xs">
                           <AlertCircle className="w-3 h-3 mr-1" />
-                          Not Connected
+                          Expired - Reconnect
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-red-100 text-red-800 text-xs">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          Disconnected
                         </Badge>
                       )}
                     </div>
@@ -338,7 +404,7 @@ export default function ConnectPlatforms() {
                     {config.description}
                   </p>
 
-                  {connected && connection ? (
+                  {connectionStatus === 'connected' && connection ? (
                     <div className="space-y-3">
                       <div className="text-sm">
                         <p className="font-medium text-gray-900">Account: {connection.platformUsername}</p>
@@ -354,6 +420,32 @@ export default function ConnectPlatforms() {
                       >
                         Disconnect
                       </Button>
+                    </div>
+                  ) : connectionStatus === 'expired' && connection ? (
+                    <div className="space-y-3">
+                      <div className="text-sm">
+                        <p className="font-medium text-gray-900">Account: {connection.platformUsername}</p>
+                        <p className="text-yellow-600">
+                          Token expired - reconnection required
+                        </p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={() => handleReconnect(platform)}
+                          className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white"
+                          disabled={reconnecting[platform]}
+                        >
+                          {reconnecting[platform] ? 'Reconnecting...' : 'Reconnect'}
+                        </Button>
+                        <Button
+                          onClick={() => disconnectMutation.mutate(platform)}
+                          variant="outline"
+                          className="flex-1 text-red-600 border-red-300 hover:bg-red-50"
+                          disabled={disconnectMutation.isPending}
+                        >
+                          Disconnect
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
