@@ -90,7 +90,10 @@ export default function ConnectPlatforms() {
     const state: {[key: string]: boolean} = {};
     connections.forEach(conn => {
       // Use database connection status as single source of truth
-      state[conn.platform] = conn.isActive && (!conn.oauthStatus || conn.oauthStatus.isValid !== false);
+      // A connection is considered active if it exists and is marked as active in the database
+      if (conn.isActive) {
+        state[conn.platform] = true;
+      }
     });
     return state;
   }, [connections]);
@@ -107,7 +110,8 @@ export default function ConnectPlatforms() {
         setConnecting({});
         setReconnecting({});
         
-        // Force refresh of unified connection state
+        // Force refresh of unified connection state and invalidate cache
+        queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
         refetch();
         
         toast({
@@ -164,7 +168,9 @@ export default function ConnectPlatforms() {
         const result = await response.json();
         
         if (result.success) {
-          refetch(); // Refresh unified connection state
+          // Force refresh of unified connection state and invalidate cache
+          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          refetch();
           toast({
             title: "Instagram OAuth Fixed",
             description: `${result.message}: ${result.username}`
@@ -217,10 +223,9 @@ export default function ConnectPlatforms() {
           // Clear connecting state
           setConnecting(prev => ({ ...prev, [platform]: false }));
           
-          // Refresh unified connection state after OAuth completion
-          setTimeout(() => {
-            refetch();
-          }, 500);
+          // Force refresh of unified connection state and invalidate cache
+          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
+          refetch();
           
           // Show success message
           toast({
@@ -256,7 +261,8 @@ export default function ConnectPlatforms() {
           // Always clear connecting state when popup closes
           setConnecting(prev => ({ ...prev, [platform]: false }));
           
-          // Refresh unified connection state after OAuth completion
+          // Force refresh of unified connection state and invalidate cache
+          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
           setTimeout(() => {
             refetch();
           }, 1000);
@@ -334,7 +340,8 @@ export default function ConnectPlatforms() {
           // Always clear reconnecting state when popup closes
           setReconnecting(prev => ({ ...prev, [platform]: false }));
           
-          // Refresh unified connection state after OAuth completion
+          // Force refresh of unified connection state and invalidate cache
+          queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
           setTimeout(() => {
             refetch();
           }, 1000);
@@ -363,7 +370,8 @@ export default function ConnectPlatforms() {
       return response.json();
     },
     onSuccess: (data) => {
-      // Refresh unified connection state
+      // Force refresh of unified connection state and invalidate cache
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
       refetch();
       
       toast({
@@ -396,7 +404,8 @@ export default function ConnectPlatforms() {
       return response.json();
     },
     onSuccess: (data) => {
-      // Refresh unified connection state after test
+      // Force refresh of unified connection state and invalidate cache
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
       refetch();
       
       const successCount = data.summary?.successCount || 0;
@@ -449,8 +458,6 @@ export default function ConnectPlatforms() {
       new Date(b.connectedAt).getTime() - new Date(a.connectedAt).getTime()
     )[0];
     
-
-    
     return mostRecentConnection;
   };
 
@@ -458,13 +465,13 @@ export default function ConnectPlatforms() {
     const connection = getConnection(platform);
     if (!connection) return 'disconnected';
     
-    // Check OAuth token validity first
+    // Check OAuth token validity if available
     if (connection.oauthStatus?.isValid === false) {
       return 'expired';
     }
     
-    // Use unified connection state
-    return platformConnectionState[platform] === true ? 'connected' : 'disconnected';
+    // If connection exists and is active, it's connected
+    return connection.isActive ? 'connected' : 'disconnected';
   };
 
   if (isLoading) {
