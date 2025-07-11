@@ -112,11 +112,11 @@ export default function Splash() {
         </div>
       </nav>
       {/* Hero Section */}
-      <section className="hero-gradient section-spacing">
+      <section className="hero-gradient py-12">
         <div className="container-atomiq">
-          <div className="flex flex-col items-center justify-center min-h-[80vh] text-center space-y-12">
-            <div className="space-y-8 animate-fade-in-up max-w-4xl">
-              <div className="space-y-6">
+          <div className="flex flex-col items-center justify-center text-center space-y-8">
+            <div className="space-y-6 animate-fade-in-up max-w-4xl">
+              <div className="space-y-4">
                 <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium">
                   <Lightbulb className="h-4 w-4 mr-2" />
                   Technology Intelligence
@@ -145,7 +145,7 @@ export default function Splash() {
                 </div>
                 
                 {/* Video Feature Description - Centered under card */}
-                <div className="mt-6 flex justify-center">
+                <div className="mt-4 flex justify-center">
                   <div className="px-6 py-2 rounded-full text-sm font-bold text-black flex items-center gap-2" style={{ backgroundColor: '#00f0ff' }}>
                     <Film className="w-4 h-4" />
                     Includes video shorts fast, text-to-video animation
