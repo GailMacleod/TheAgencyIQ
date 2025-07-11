@@ -424,11 +424,12 @@ export default function ConnectPlatforms() {
 
 
   const isConnected = (platform: string) => {
-    // Check session state first (for UI sync), then database connections
+    // Always prioritize live platform status over database records
     if (connectedPlatforms.hasOwnProperty(platform)) {
       return connectedPlatforms[platform] === true;
     }
     
+    // Fallback to database only if no live status available
     if (!connections || !Array.isArray(connections)) return false;
     return connections.some((conn: PlatformConnection) => 
       conn.platform === platform && conn.isActive
@@ -456,6 +457,12 @@ export default function ConnectPlatforms() {
   };
 
   const getConnectionStatus = (platform: string) => {
+    // Use live platform status first (this is what console shows as "connected")
+    if (connectedPlatforms.hasOwnProperty(platform)) {
+      return connectedPlatforms[platform] === true ? 'connected' : 'disconnected';
+    }
+    
+    // Fallback to database connection status
     const connection = getConnection(platform);
     if (!connection) return 'disconnected';
     
