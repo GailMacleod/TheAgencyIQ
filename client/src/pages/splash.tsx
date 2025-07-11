@@ -127,47 +127,41 @@ export default function Splash() {
             <Link href="/subscription">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-blue-500 via-cyan-400 to-pink-400 hover:opacity-90 text-white px-8 py-4 text-xl font-black tracking-wider
-                          animate-enhanced-pulse hover:animate-none
+                className="relative overflow-hidden bg-gradient-to-r from-blue-500 via-cyan-400 to-pink-400 hover:opacity-90 text-white px-8 py-4 text-xl font-black tracking-wider
+                          animate-bounce hover:animate-none
                           transition-all duration-300 ease-in-out
-                          hover:scale-105 hover:shadow-2xl
+                          hover:scale-110 hover:shadow-2xl
                           transform-gpu will-change-transform
                           hover:from-blue-600 hover:via-cyan-500 hover:to-pink-500
                           active:scale-95 active:transition-none
                           shadow-lg shadow-pink-200/50
-                          text-shadow-standout"
+                          text-shadow-standout
+                          before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/20 before:to-transparent 
+                          before:translate-x-[-100%] before:animate-pulse
+                          hover:before:translate-x-[100%] hover:before:transition-transform hover:before:duration-700"
               >
-                SUBSCRIBE
+                <span className="relative z-10 animate-pulse">SUBSCRIBE NOW</span>
               </Button>
             </Link>
             
             {/* Subscription Options */}
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
-                <div className="w-6 h-6 bg-gradient-to-r from-[#3b5cff] to-cyan-500 rounded-full flex items-center justify-center mb-2 mx-auto">
-                  <Zap className="h-3 w-3 text-white" />
+            <div className="mt-8 bg-white rounded-lg border border-gray-200 p-4 max-w-2xl mx-auto">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold mb-1 text-gray-900">Starter</h4>
+                  <p className="text-xs text-[#3b5cff] font-medium mb-1">$19.99/month</p>
+                  <p className="text-xs text-gray-600">12 posts (10 + 2 free)</p>
                 </div>
-                <h4 className="text-sm font-semibold mb-1 text-gray-900">Starter</h4>
-                <p className="text-xs text-[#3b5cff] font-medium mb-1">$19.99/month</p>
-                <p className="text-xs text-gray-600">12 posts (10 + 2 free)</p>
-              </div>
-
-              <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
-                <div className="w-6 h-6 bg-gradient-to-r from-[#3b5cff] to-purple-500 rounded-full flex items-center justify-center mb-2 mx-auto">
-                  <Target className="h-3 w-3 text-white" />
+                <div className="flex-1 border-l border-r border-gray-200 px-4">
+                  <h4 className="text-sm font-semibold mb-1 text-gray-900">Growth</h4>
+                  <p className="text-xs text-[#3b5cff] font-medium mb-1">$41.99/month</p>
+                  <p className="text-xs text-gray-600">27 posts (25 + 2 free)</p>
                 </div>
-                <h4 className="text-sm font-semibold mb-1 text-gray-900">Growth</h4>
-                <p className="text-xs text-[#3b5cff] font-medium mb-1">$41.99/month</p>
-                <p className="text-xs text-gray-600">27 posts (25 + 2 free)</p>
-              </div>
-
-              <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
-                <div className="w-6 h-6 bg-gradient-to-r from-[#3b5cff] to-cyan-500 rounded-full flex items-center justify-center mb-2 mx-auto">
-                  <Sparkles className="h-3 w-3 text-white" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold mb-1 text-gray-900">Professional</h4>
+                  <p className="text-xs text-[#3b5cff] font-medium mb-1">$99.99/month</p>
+                  <p className="text-xs text-gray-600">52 posts (50 + 2 free)</p>
                 </div>
-                <h4 className="text-sm font-semibold mb-1 text-gray-900">Professional</h4>
-                <p className="text-xs text-[#3b5cff] font-medium mb-1">$99.99/month</p>
-                <p className="text-xs text-gray-600">52 posts (50 + 2 free)</p>
               </div>
             </div>
 
