@@ -91,12 +91,18 @@ export default function OnboardingWizard() {
             currentUrl: location
           });
           
-          // Enable demo mode for non-subscribers on splash page
-          setIsDemoMode(!hasActiveSubscription && location === '/');
+          // Set mode based on subscription status and current page
+          const isDemo = !hasActiveSubscription;
+          setIsDemoMode(isDemo);
           
-          // Skip subscription step for returning subscribers
-          if (hasActiveSubscription) {
-            setSkippedSteps(prev => [...prev, 2]);
+          // Set appropriate starting step based on architecture
+          if (!isDemo) {
+            // Subscriber flow: different step mapping
+            const urlStep = getSubscriberStepFromUrl(location);
+            setCurrentStep(urlStep);
+          } else {
+            // Non-subscriber flow: demo mode steps
+            setCurrentStep(0);
           }
         } else {
           // Fallback to /api/user if user-status endpoint doesn't exist
@@ -115,11 +121,18 @@ export default function OnboardingWizard() {
               currentUrl: location
             });
             
-            // Enable demo mode for non-subscribers on splash page
-            setIsDemoMode(!hasActiveSubscription && location === '/');
+            // Set mode based on subscription status
+            const isDemo = !hasActiveSubscription;
+            setIsDemoMode(isDemo);
             
-            if (hasActiveSubscription) {
-              setSkippedSteps(prev => [...prev, 2]);
+            // Set appropriate starting step based on architecture
+            if (!isDemo) {
+              // Subscriber flow: different step mapping
+              const urlStep = getSubscriberStepFromUrl(location);
+              setCurrentStep(urlStep);
+            } else {
+              // Non-subscriber flow: demo mode steps
+              setCurrentStep(0);
             }
           }
         }
@@ -144,7 +157,7 @@ export default function OnboardingWizard() {
     saveProgress();
   }, [currentStep, completedSteps, skippedSteps, isSkipped]);
 
-  // Dynamic step highlighting based on current URL
+  // Demo mode step mapping (non-subscribers)
   const getStepFromUrl = (url: string): number => {
     const urlToStepMap: { [key: string]: number } = {
       '/': 0,
@@ -154,24 +167,47 @@ export default function OnboardingWizard() {
       '/intelligent-schedule': 4,
       '/schedule': 4,
       '/analytics': 5,
-      '/video-gen': 4 // Video generation is part of content step
+      '/video-gen': 4
     };
     return urlToStepMap[url] || currentStep;
   };
 
+  // Subscriber step mapping (different architecture)
+  const getSubscriberStepFromUrl = (url: string): number => {
+    // Subscriber flow: (1) AI Content → (2) Brand Purpose → (3) Connect Platforms → (4) Analytics
+    const urlToStepMap: { [key: string]: number } = {
+      '/': 0,
+      '/intelligent-schedule': 0, // Main starting point for subscribers
+      '/schedule': 0,
+      '/video-gen': 0, // Part of content generation
+      '/brand-purpose': 1,
+      '/connect-platforms': 2,
+      '/analytics': 3,
+      '/subscription': 1 // Subscription management for existing users
+    };
+    return urlToStepMap[url] || 0;
+  };
+
   // Update current step based on URL - dynamic highlighting
   useEffect(() => {
-    const urlStep = getStepFromUrl(location);
-    if (!isDemoMode && urlStep !== currentStep && !isSkipped) {
+    let urlStep: number;
+    if (isDemoMode) {
+      urlStep = getStepFromUrl(location);
+    } else {
+      urlStep = getSubscriberStepFromUrl(location);
+    }
+    
+    if (urlStep !== currentStep && !isSkipped) {
       setCurrentStep(urlStep);
     }
-  }, [location, isDemoMode]);
+  }, [location, isDemoMode, currentStep, isSkipped]);
 
-  // Get page-specific guidance based on current URL and user status
+  // Get page-specific guidance based on architecture and user status
   const getPageGuidance = () => {
     const url = location.split('?')[0];
     
     if (isDemoMode) {
+      // Non-subscriber demo guidance
       const guidanceMap: Record<string, string> = {
         '/': 'Welcome to the demo! See how our platform works before subscribing.',
         '/subscription': 'Choose your plan to unlock full features and start automating.',
@@ -183,36 +219,45 @@ export default function OnboardingWizard() {
       return guidanceMap[url] || 'Explore the demo to see how automation transforms your business.';
     }
     
-    // Functional mode - page-specific guidance
+    // Subscriber functional guidance (different architecture)
     const guidanceMap: Record<string, string> = {
-      '/': 'Ready to automate? Access your dashboard and start creating content.',
-      '/subscription': 'Manage your subscription and upgrade for more features.',
-      '/brand-purpose': 'Define your brand here, then generate personalized content.',
-      '/connect-platforms': 'Connect your social media accounts here, then generate content.',
-      '/intelligent-schedule': 'Create and schedule your AI-powered content here.',
-      '/analytics': 'Monitor your performance here and optimize your strategy.'
+      '/': 'Welcome back! Start by generating AI content for your business.',
+      '/intelligent-schedule': 'Generate your AI content here, then define your brand purpose.',
+      '/schedule': 'Generate your AI content here, then define your brand purpose.',
+      '/video-gen': 'Create video content here, then define your brand purpose.',
+      '/brand-purpose': 'Define your brand purpose here, then connect your platforms.',
+      '/connect-platforms': 'Connect your social media accounts here, then monitor analytics.',
+      '/analytics': 'Monitor your performance here and optimize your strategy.',
+      '/subscription': 'Manage your subscription and upgrade for more features.'
     };
     
-    return guidanceMap[url] || 'Navigate through your automation workflow using the menu.';
+    return guidanceMap[url] || 'Continue your automation workflow using the menu.';
   };
 
-  // Get logical navigation route based on current step
+  // Get logical navigation route based on architecture and current step
   const getLogicalNavigation = () => {
     if (isDemoMode) {
-      return currentStep === 5 ? '/subscription' : null; // Demo ends with subscription CTA
+      // Demo flow: Welcome → Subscription → Preview pages
+      const navigationMap: Record<number, string> = {
+        0: '/subscription',
+        1: '/brand-purpose', 
+        2: '/connect-platforms',
+        3: '/intelligent-schedule',
+        4: '/analytics',
+        5: '/subscription' // Final step leads to subscription
+      };
+      return navigationMap[currentStep] || '/subscription';
     }
     
-    // Functional mode - logical routing
+    // Subscriber flow: AI Content → Brand Purpose → Connect Platforms → Analytics
     const navigationMap: Record<number, string> = {
-      0: '/subscription',
-      1: '/brand-purpose', 
-      2: '/connect-platforms',
-      3: '/intelligent-schedule',
-      4: '/analytics',
-      5: '/'
+      0: '/brand-purpose',  // From AI content to brand purpose
+      1: '/connect-platforms', // From brand purpose to connections
+      2: '/analytics',      // From connections to analytics
+      3: '/intelligent-schedule' // From analytics back to content
     };
     
-    return navigationMap[currentStep] || '/';
+    return navigationMap[currentStep] || '/intelligent-schedule';
   };
 
   // Demo mode wizard steps (informational only)
@@ -386,23 +431,26 @@ export default function OnboardingWizard() {
     }
   ];
 
-  // Functional mode wizard steps (for subscribers)
+  // Functional mode wizard steps (subscriber architecture)
   const functionalWizardSteps: WizardStep[] = [
     {
       id: 0,
-      title: "Welcome Back",
-      description: "Let's optimize your social media automation",
+      title: "Generate AI Content",
+      description: "Start by creating your social media posts",
       icon: <Zap className="w-4 h-4" />,
-      actionText: "Continue",
-      route: "/brand-purpose",
+      actionText: "Generate",
+      route: "/intelligent-schedule",
       tips: [
-        "Your subscription is active and ready",
-        "Complete setup to start generating content"
+        "This is where subscribers start their workflow",
+        "Generate content first, then set up brand purpose"
       ],
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-6 rounded-lg">
-            <h3 className="font-semibold text-lg mb-3">Account Status:</h3>
+            <h3 className="font-semibold text-lg mb-3">🤖 AI Content Generation:</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Start here! Generate engaging content tailored to Queensland markets with automatic scheduling and video creation.
+            </p>
             <ul className="space-y-2">
               <li className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
@@ -473,28 +521,6 @@ export default function OnboardingWizard() {
     },
     {
       id: 3,
-      title: "Generate AI Content",
-      description: "Create and schedule your social media posts",
-      icon: <Zap className="w-4 h-4" />,
-      actionText: "Generate",
-      route: "/intelligent-schedule",
-      tips: [
-        "AI creates Queensland-focused content",
-        "Includes video generation and scheduling"
-      ],
-      content: (
-        <div className="space-y-4">
-          <div className="bg-white border border-gray-200 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-800 mb-2">🤖 AI Content Generation:</h4>
-            <p className="text-sm text-gray-600">
-              Generate engaging content tailored to Queensland markets with automatic scheduling and video creation.
-            </p>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: 4,
       title: "Monitor Performance",
       description: "Track analytics and optimize your strategy",
       icon: <BarChart3 className="w-4 h-4" />,
