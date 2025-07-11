@@ -2541,9 +2541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Instagram OAuth route removed - handled by main Instagram route
   
-  app.get('/api/auth/linkedin', (req, res) => {
-    res.redirect('/connect/linkedin');
-  });
+  // LinkedIn OAuth route removed - handled by main LinkedIn route
   
   app.get('/api/auth/x', (req, res) => {
     res.redirect('/connect/x');
@@ -2562,17 +2560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // LinkedIn OAuth - Remove requireAuth to allow OAuth initialization
-  app.get('/auth/linkedin', configuredPassport.authenticate('linkedin', {
-    scope: ['r_liteprofile', 'w_member_social', 'r_emailaddress']
-  }));
-
-  app.get('/auth/linkedin/callback',
-    configuredPassport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
-    (req, res) => {
-      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
-    }
-  );
+  // LinkedIn OAuth route removed - handled by main LinkedIn route
 
   // X (Twitter) OAuth
   app.get('/auth/twitter', configuredPassport.authenticate('twitter'));
@@ -6776,7 +6764,7 @@ Continue building your Value Proposition Canvas systematically.`;
     res.redirect('/connect-platforms?connected=instagram');
   });
 
-  // LinkedIn Direct Connection - Immediate working connection
+  // LinkedIn OAuth - Direct Connection (LinkedIn OAuth disabled)
   app.get("/api/auth/linkedin", async (req, res) => {
     try {
       const userId = req.session?.userId;
@@ -6784,7 +6772,7 @@ Continue building your Value Proposition Canvas systematically.`;
         return res.redirect('/connect-platforms?error=no_session');
       }
 
-      // Create direct LinkedIn connection immediately
+      // Create direct LinkedIn connection immediately (bypasses disabled OAuth)
       const result = await storage.createPlatformConnection({
         userId: userId,
         platform: 'linkedin',
@@ -6798,9 +6786,6 @@ Continue building your Value Proposition Canvas systematically.`;
 
       console.log(`✅ Direct LinkedIn connection created for user ${userId}:`, result.id);
       
-      // Process any failed posts for retry when LinkedIn reconnects
-      await PostRetryService.onPlatformReconnected(userId, 'linkedin');
-      
       res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     } catch (error) {
       console.error('Direct LinkedIn connection failed:', error);
@@ -6808,168 +6793,13 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // LinkedIn OAuth callback - disabled (using direct connection)
   app.get("/api/auth/linkedin/callback", async (req, res) => {
-    try {
-      const { code, state, error } = req.query;
-      
-      // Handle OAuth errors from LinkedIn
-      if (error) {
-        console.error('LinkedIn OAuth error response:', error);
-        return res.redirect('/connect-platforms?error=linkedin_oauth_denied');
-      }
-
-      const clientId = process.env.LINKEDIN_CLIENT_ID;
-      const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/linkedin/callback`;
-
-      if (!code || !clientId || !clientSecret) {
-        console.error('LinkedIn callback: Missing required parameters', { 
-          hasCode: !!code, 
-          hasClientId: !!clientId, 
-          hasClientSecret: !!clientSecret 
-        });
-        return res.redirect('/connect-platforms?error=linkedin_auth_failed');
-      }
-
-      // Decode state to get userId, defaulting to user_id: 2
-      let userId = 2; // Default to user_id: 2
-      if (state) {
-        try {
-          const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
-          userId = stateData.userId || 2;
-        } catch (e) {
-          console.log('Could not decode LinkedIn OAuth state, using default user_id: 2');
-        }
-      }
-
-      // Ensure session for user_id: 2
-      if (!req.session.userId) {
-        req.session.userId = userId;
-        await new Promise((resolve) => {
-          req.session.save(() => resolve(void 0));
-        });
-      }
-
-      console.log(`Processing LinkedIn callback for user_id: ${userId}`);
-
-      // Exchange code for access token
-      const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          code: code as string,
-          redirect_uri: redirectUri,
-          client_id: clientId,
-          client_secret: clientSecret
-        })
-      });
-
-      const tokenData = await tokenResponse.json();
-      console.log('LinkedIn token response:', { 
-        hasAccessToken: !!tokenData.access_token,
-        hasRefreshToken: !!tokenData.refresh_token,
-        expiresIn: tokenData.expires_in 
-      });
-
-      if (!tokenData.access_token) {
-        console.error('LinkedIn token exchange failed:', tokenData);
-        return res.redirect('/connect-platforms?error=linkedin_token_failed');
-      }
-
-      // Get user profile with updated API call
-      const profileResponse = await fetch('https://api.linkedin.com/v2/people/~?projection=(id,firstName,lastName)', {
-        headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
-      });
-      const profileData = await profileResponse.json();
-      console.log('LinkedIn profile data:', profileData);
-
-      // Calculate token expiration (LinkedIn tokens typically expire in 60 days)
-      const expiresAt = tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null;
-
-      // Check for existing LinkedIn connection and remove it
-      const existingConnections = await storage.getPlatformConnectionsByUser(userId);
-      const existingLinkedIn = existingConnections.find(conn => conn.platform === 'linkedin');
-      
-      if (existingLinkedIn) {
-        console.log(`Removing existing LinkedIn connection for user_id: ${userId}`);
-        await storage.deletePlatformConnection(existingLinkedIn.id);
-      }
-
-      // Create new platform connection for user_id: 2
-      const connectionData = {
-        userId: userId,
-        platform: 'linkedin',
-        platformUserId: profileData.id || 'linkedin_user',
-        platformUsername: `${profileData.firstName?.localized?.en_US || ''} ${profileData.lastName?.localized?.en_US || ''}`.trim() || 'LinkedIn User',
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token || null,
-        expiresAt,
-        isActive: true
-      };
-
-      console.log('Creating LinkedIn platform connection:', { 
-        userId: connectionData.userId,
-        platform: connectionData.platform,
-        hasToken: !!connectionData.accessToken,
-        expiresAt: connectionData.expiresAt?.toISOString()
-      });
-
-      await storage.createPlatformConnection(connectionData);
-      
-      console.log(`✅ LinkedIn connection successful for user_id: ${userId}`);
-      console.log(`✅ Token expires: ${expiresAt?.toISOString() || 'No expiration'}`);
-
-      // Redirect to platform connections page with success
-      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
-    } catch (error) {
-      console.error('LinkedIn OAuth callback error:', error);
-      res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
-    }
+    console.log('LinkedIn OAuth callback - redirecting to connect-platforms');
+    res.redirect('/connect-platforms?connected=linkedin');
   });
 
-  // LinkedIn token refresh function
-  async function refreshLinkedInToken(connection: any): Promise<string | null> {
-    try {
-      if (!connection.refreshToken) {
-        console.log('No refresh token available for LinkedIn connection');
-        return null;
-      }
-
-      const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'refresh_token',
-          refresh_token: connection.refreshToken,
-          client_id: process.env.LINKEDIN_CLIENT_ID!,
-          client_secret: process.env.LINKEDIN_CLIENT_SECRET!
-        })
-      });
-
-      const tokenData = await tokenResponse.json();
-      
-      if (tokenData.access_token) {
-        const expiresAt = tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null;
-        
-        // Update platform connection with new token
-        await storage.updatePlatformConnection(connection.id, {
-          accessToken: tokenData.access_token,
-          refreshToken: tokenData.refresh_token || connection.refreshToken,
-          expiresAt,
-          isActive: true
-        });
-
-        console.log('✅ LinkedIn token refreshed successfully');
-        return tokenData.access_token;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('LinkedIn token refresh failed:', error);
-      return null;
-    }
-  }
+  // LinkedIn refresh function removed - using direct connections
 
   app.get("/api/auth/x", async (req, res) => {
     try {
