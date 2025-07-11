@@ -159,13 +159,61 @@ export default function OnboardingWizard() {
     return urlToStepMap[url] || currentStep;
   };
 
-  // Update current step based on URL
+  // Update current step based on URL - dynamic highlighting
   useEffect(() => {
     const urlStep = getStepFromUrl(location);
-    if (urlStep !== currentStep && !isSkipped) {
+    if (!isDemoMode && urlStep !== currentStep && !isSkipped) {
       setCurrentStep(urlStep);
     }
-  }, [location]);
+  }, [location, isDemoMode]);
+
+  // Get page-specific guidance based on current URL and user status
+  const getPageGuidance = () => {
+    const url = location.split('?')[0];
+    
+    if (isDemoMode) {
+      const guidanceMap: Record<string, string> = {
+        '/': 'Welcome to the demo! See how our platform works before subscribing.',
+        '/subscription': 'Choose your plan to unlock full features and start automating.',
+        '/brand-purpose': 'Preview: Define your brand identity for AI content generation.',
+        '/connect-platforms': 'Preview: Connect your social media accounts for publishing.',
+        '/intelligent-schedule': 'Preview: Generate and schedule AI-powered content.',
+        '/analytics': 'Preview: Monitor your social media performance and growth.'
+      };
+      return guidanceMap[url] || 'Explore the demo to see how automation transforms your business.';
+    }
+    
+    // Functional mode - page-specific guidance
+    const guidanceMap: Record<string, string> = {
+      '/': 'Ready to automate? Access your dashboard and start creating content.',
+      '/subscription': 'Manage your subscription and upgrade for more features.',
+      '/brand-purpose': 'Define your brand here, then generate personalized content.',
+      '/connect-platforms': 'Connect your social media accounts here, then generate content.',
+      '/intelligent-schedule': 'Create and schedule your AI-powered content here.',
+      '/analytics': 'Monitor your performance here and optimize your strategy.'
+    };
+    
+    return guidanceMap[url] || 'Navigate through your automation workflow using the menu.';
+  };
+
+  // Get logical navigation route based on current step
+  const getLogicalNavigation = () => {
+    if (isDemoMode) {
+      return currentStep === 5 ? '/subscription' : null; // Demo ends with subscription CTA
+    }
+    
+    // Functional mode - logical routing
+    const navigationMap: Record<number, string> = {
+      0: '/subscription',
+      1: '/brand-purpose', 
+      2: '/connect-platforms',
+      3: '/intelligent-schedule',
+      4: '/analytics',
+      5: '/'
+    };
+    
+    return navigationMap[currentStep] || '/';
+  };
 
   // Demo mode wizard steps (informational only)
   const demoWizardSteps: WizardStep[] = [
@@ -480,12 +528,10 @@ export default function OnboardingWizard() {
         setCurrentStep(currentStep + 1);
       }
     } else {
-      // Functional mode: navigate to actual routes
-      const currentWizardStep = wizardSteps[currentStep];
-      if (currentWizardStep?.route) {
-        setLocation(currentWizardStep.route);
-      } else if (currentStep < wizardSteps.length - 1) {
-        setCurrentStep(currentStep + 1);
+      // Functional mode: navigate to logical route
+      const nextRoute = getLogicalNavigation();
+      if (nextRoute) {
+        setLocation(nextRoute);
       }
     }
   };
@@ -588,9 +634,14 @@ export default function OnboardingWizard() {
           </div>
           {!isMinimized && (
             <div className="mt-3">
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-gray-600 mb-2">
                 {currentWizardStep?.description}
               </p>
+              <div className="bg-blue-50 border border-blue-200 p-2 rounded-md">
+                <p className="text-sm text-blue-800">
+                  💡 {getPageGuidance()}
+                </p>
+              </div>
               <div className="flex items-center space-x-2 mb-3">
                 <Progress 
                   value={((currentStep + 1) / wizardSteps.length) * 100} 
