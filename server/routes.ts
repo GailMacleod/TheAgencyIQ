@@ -2492,6 +2492,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OAuth refresh endpoints
+  app.post('/api/oauth/refresh/:platform', requireAuth, async (req: any, res) => {
+    try {
+      const { platform } = req.params;
+      const userId = req.session.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'Session required' });
+      }
+      
+      console.log(`[OAUTH-REFRESH] Attempting to refresh ${platform} token for user ${userId}`);
+      
+      const { OAuthRefreshService } = await import('./services/OAuthRefreshService');
+      const refreshResult = await OAuthRefreshService.validateAndRefreshConnection(userId.toString(), platform);
+      
+      if (refreshResult.success) {
+        console.log(`[OAUTH-REFRESH] Successfully refreshed ${platform} token for user ${userId}`);
+        res.json({ 
+          success: true, 
+          refreshResult,
+          message: `${platform} token refreshed successfully` 
+        });
+      } else {
+        console.log(`[OAUTH-REFRESH] Failed to refresh ${platform} token for user ${userId}: ${refreshResult.error}`);
+        res.json({ 
+          success: false, 
+          refreshResult,
+          message: `Token refresh failed: ${refreshResult.error}` 
+        });
+      }
+    } catch (error) {
+      console.error('OAuth refresh error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message,
+        message: 'Internal server error during token refresh' 
+      });
+    }
+  });
+
   // OAuth Authentication Routes
   
   // Facebook OAuth - DISABLED (using custom implementation in authModule.ts)

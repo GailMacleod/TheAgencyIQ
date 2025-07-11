@@ -6,6 +6,7 @@ interface RefreshResult {
   refreshToken?: string;
   expiresAt?: Date;
   error?: string;
+  needs_reauth?: boolean;
 }
 
 interface TokenValidationResult {
@@ -229,9 +230,42 @@ export class OAuthRefreshService {
       const appSecret = process.env.FACEBOOK_APP_SECRET;
       
       if (!appId || !appSecret) {
-        return { success: false, error: 'Missing Facebook app credentials' };
+        return { success: false, error: 'Missing Facebook app credentials', needs_reauth: true };
       }
 
+      // Try refresh_token first if available
+      if (connection.refreshToken) {
+        const refreshResponse = await fetch('https://graph.facebook.com/oauth/access_token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: connection.refreshToken,
+            client_id: appId,
+            client_secret: appSecret
+          })
+        });
+
+        const refreshData = await refreshResponse.json();
+        
+        if (!refreshData.error) {
+          const expiresAt = new Date(Date.now() + (refreshData.expires_in * 1000));
+          await storage.updatePlatformConnectionByPlatform(connection.userId, connection.platform, {
+            accessToken: refreshData.access_token,
+            refreshToken: refreshData.refresh_token || connection.refreshToken,
+            expiresAt
+          });
+          
+          return {
+            success: true,
+            accessToken: refreshData.access_token,
+            refreshToken: refreshData.refresh_token,
+            expiresAt
+          };
+        }
+      }
+
+      // Fall back to token exchange
       const response = await fetch(
         `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${connection.accessToken}`
       );
@@ -239,7 +273,7 @@ export class OAuthRefreshService {
       const data = await response.json();
       
       if (data.error) {
-        return { success: false, error: data.error.message };
+        return { success: false, error: data.error.message, needs_reauth: true };
       }
       
       // Update connection with new token
@@ -255,7 +289,7 @@ export class OAuthRefreshService {
         expiresAt
       };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, needs_reauth: true };
     }
   }
 
@@ -264,6 +298,39 @@ export class OAuthRefreshService {
    */
   private static async refreshInstagramToken(connection: any): Promise<RefreshResult> {
     try {
+      // Try refresh_token first if available
+      if (connection.refreshToken) {
+        const refreshResponse = await fetch('https://graph.instagram.com/oauth/access_token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: connection.refreshToken,
+            client_id: process.env.INSTAGRAM_CLIENT_ID,
+            client_secret: process.env.INSTAGRAM_CLIENT_SECRET
+          })
+        });
+
+        const refreshData = await refreshResponse.json();
+        
+        if (!refreshData.error) {
+          const expiresAt = new Date(Date.now() + (refreshData.expires_in * 1000));
+          await storage.updatePlatformConnectionByPlatform(connection.userId, connection.platform, {
+            accessToken: refreshData.access_token,
+            refreshToken: refreshData.refresh_token || connection.refreshToken,
+            expiresAt
+          });
+          
+          return {
+            success: true,
+            accessToken: refreshData.access_token,
+            refreshToken: refreshData.refresh_token,
+            expiresAt
+          };
+        }
+      }
+
+      // Fall back to long-lived token refresh
       const response = await fetch(
         `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${connection.accessToken}`
       );
@@ -271,7 +338,7 @@ export class OAuthRefreshService {
       const data = await response.json();
       
       if (data.error) {
-        return { success: false, error: data.error.message };
+        return { success: false, error: data.error.message, needs_reauth: true };
       }
       
       // Update connection with new token
@@ -287,7 +354,7 @@ export class OAuthRefreshService {
         expiresAt
       };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, needs_reauth: true };
     }
   }
 
@@ -300,7 +367,7 @@ export class OAuthRefreshService {
       const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
       
       if (!clientId || !clientSecret || !connection.refreshToken) {
-        return { success: false, error: 'Missing LinkedIn credentials or refresh token' };
+        return { success: false, error: 'Missing LinkedIn credentials or refresh token', needs_reauth: true };
       }
 
       const response = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -319,7 +386,7 @@ export class OAuthRefreshService {
       const data = await response.json();
       
       if (data.error) {
-        return { success: false, error: data.error_description || data.error };
+        return { success: false, error: data.error_description || data.error, needs_reauth: true };
       }
       
       // Update connection with new token
@@ -337,12 +404,12 @@ export class OAuthRefreshService {
         expiresAt
       };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, needs_reauth: true };
     }
   }
 
   /**
-   * Refresh X token (OAuth 2.0)
+   * Refresh X token (OAuth 2.0 with PKCE)
    */
   private static async refreshXToken(connection: any): Promise<RefreshResult> {
     try {
@@ -350,9 +417,10 @@ export class OAuthRefreshService {
       const clientSecret = process.env.X_CONSUMER_SECRET;
       
       if (!clientId || !clientSecret || !connection.refreshToken) {
-        return { success: false, error: 'Missing X credentials or refresh token' };
+        return { success: false, error: 'Missing X credentials or refresh token', needs_reauth: true };
       }
 
+      // X OAuth 2.0 with PKCE and User Context
       const response = await fetch('https://api.twitter.com/2/oauth2/token', {
         method: 'POST',
         headers: {
@@ -362,13 +430,14 @@ export class OAuthRefreshService {
         body: new URLSearchParams({
           grant_type: 'refresh_token',
           refresh_token: connection.refreshToken,
+          client_id: clientId,
         }),
       });
       
       const data = await response.json();
       
       if (data.error) {
-        return { success: false, error: data.error_description || data.error };
+        return { success: false, error: data.error_description || data.error, needs_reauth: true };
       }
       
       // Update connection with new token
@@ -386,7 +455,7 @@ export class OAuthRefreshService {
         expiresAt
       };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, needs_reauth: true };
     }
   }
 
@@ -399,7 +468,7 @@ export class OAuthRefreshService {
       const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
       
       if (!clientId || !clientSecret || !connection.refreshToken) {
-        return { success: false, error: 'Missing Google credentials or refresh token' };
+        return { success: false, error: 'Missing Google credentials or refresh token', needs_reauth: true };
       }
 
       const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -418,7 +487,7 @@ export class OAuthRefreshService {
       const data = await response.json();
       
       if (data.error) {
-        return { success: false, error: data.error_description || data.error };
+        return { success: false, error: data.error_description || data.error, needs_reauth: true };
       }
       
       // Update connection with new token
@@ -436,7 +505,7 @@ export class OAuthRefreshService {
         expiresAt
       };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, needs_reauth: true };
     }
   }
 }

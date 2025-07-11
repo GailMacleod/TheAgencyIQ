@@ -258,8 +258,8 @@ export default function ConnectPlatforms() {
           title: "Token Refreshed",
           description: `${platform} token has been successfully refreshed`
         });
-      } else {
-        // Token refresh failed, use popup for OAuth
+      } else if (refreshData.refreshResult?.needs_reauth) {
+        // Token refresh failed, needs re-authentication - use popup for OAuth
         toast({
           title: "Re-authentication Required",
           description: `Opening ${platform} OAuth flow...`
@@ -268,8 +268,9 @@ export default function ConnectPlatforms() {
         // Map platform names to OAuth routes
         const oauthRoutes: { [key: string]: string } = {
           'facebook': '/api/auth/facebook',
+          'instagram': '/api/auth/instagram',
           'linkedin': '/api/auth/linkedin',
-          'x': '/api/auth/x',
+          'x': '/api/auth/twitter',
           'youtube': '/api/auth/youtube'
         };
         
@@ -296,6 +297,13 @@ export default function ConnectPlatforms() {
             }, 1000);
           }
         }
+      } else {
+        // Other failure - show error
+        toast({
+          title: "Token Refresh Failed",
+          description: refreshData.refreshResult?.error || 'Unknown error occurred',
+          variant: "destructive"
+        });
       }
     } catch (error) {
       toast({
@@ -459,7 +467,7 @@ export default function ConnectPlatforms() {
                           Connected
                         </Badge>
                       ) : connectionStatus === 'expired' ? (
-                        <Badge className="text-xs" style={{ backgroundColor: '#00f0ff20', color: '#00f0ff', border: '1px solid #00f0ff' }}>
+                        <Badge className="text-xs bg-red-100 text-red-800 border-red-300">
                           <AlertCircle className="w-3 h-3 mr-1" />
                           Expired - Reconnect
                         </Badge>
@@ -499,7 +507,7 @@ export default function ConnectPlatforms() {
                     <div className="space-y-3">
                       <div className="text-sm">
                         <p className="font-medium text-gray-900">Account: {connection.platformUsername}</p>
-                        <p style={{ color: '#00f0ff' }}>
+                        <p className="text-red-600">
                           Token expired - reconnection required
                         </p>
                       </div>
