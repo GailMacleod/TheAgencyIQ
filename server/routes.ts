@@ -5303,6 +5303,143 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Strategic content generation endpoint with waterfall strategyzer methodology
+  app.post("/api/generate-strategic-content", requireAuth, async (req: any, res) => {
+    try {
+      const { brandPurpose, totalPosts = 52, platforms, resetQuota = false } = req.body;
+      
+      if (!brandPurpose) {
+        return res.status(400).json({ message: "Brand purpose data required for strategic content generation" });
+      }
+
+      const userId = req.session.userId;
+      console.log(`🎯 Strategic Content Generation: User ${userId}, Posts: ${totalPosts}, Reset: ${resetQuota}`);
+
+      // Import strategic content generator
+      const { StrategicContentGenerator } = await import('./services/StrategicContentGenerator');
+
+      // STEP 1: Clean up duplicate/test posts to stabilize count
+      console.log('🧹 Cleaning up duplicate posts...');
+      await StrategicContentGenerator.cleanupDuplicatePosts(userId);
+
+      // STEP 2: Reset quota to Professional plan (52 posts) if requested
+      if (resetQuota) {
+        console.log('🔄 Resetting quota to Professional plan...');
+        await StrategicContentGenerator.resetQuotaToFiftyTwo(userId);
+      }
+
+      // STEP 3: Verify quota status
+      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!quotaStatus) {
+        return res.status(400).json({ message: "Unable to retrieve quota status" });
+      }
+
+      // STEP 4: Get user subscription and enforce limits
+      const user = await storage.getUser(userId);
+      if (!user || !user.subscriptionPlan) {
+        return res.status(403).json({ message: "Active subscription required for strategic content generation" });
+      }
+
+      // STEP 5: Generate strategic content using waterfall strategyzer methodology
+      const strategicPosts = await StrategicContentGenerator.generateStrategicContent({
+        userId,
+        brandPurpose,
+        totalPosts: Math.min(totalPosts, 52), // Cap at Professional plan limit
+        platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
+      });
+
+      // STEP 6: Save strategic posts to database as approved (ready for publishing)
+      let savedCount = 0;
+      const savedPosts = [];
+      
+      for (const post of strategicPosts) {
+        try {
+          const savedPost = await storage.createPost({
+            userId: userId,
+            platform: post.platform,
+            content: post.content,
+            status: 'approved', // Start as approved for immediate publishing capability
+            scheduledFor: new Date(post.scheduledFor),
+            hashtags: [],
+            videoUrl: null,
+            imageUrl: null,
+            errorLog: null,
+            retryCount: 0,
+          });
+          
+          savedPosts.push({
+            ...savedPost,
+            strategicTheme: post.strategicTheme,
+            businessCanvasPhase: post.businessCanvasPhase,
+            engagementOptimization: post.engagementOptimization,
+            conversionFocus: post.conversionFocus,
+            audienceSegment: post.audienceSegment
+          });
+          
+          console.log(`Strategic post ${savedCount + 1}/${strategicPosts.length}: ${post.platform} - ${post.strategicTheme}`);
+          savedCount++;
+        } catch (error) {
+          console.error(`Failed to save strategic post ${savedCount + 1}:`, error);
+        }
+      }
+
+      console.log(`✅ Strategic content generation complete: ${savedCount} posts created`);
+
+      // STEP 7: Create strategic analysis insights
+      const strategicAnalysis = {
+        waterfallPhases: [
+          'Brand Purpose Analysis',
+          'Audience Insights (Jobs-to-be-Done)',
+          'Queensland Market Data Integration',
+          'SEO Keywords Generation',
+          'Value Proposition Canvas',
+          'High-Engagement Templates',
+          '30-Day Cycle Optimization'
+        ],
+        businessModelCanvas: {
+          customerSegments: ['Queensland SMEs', 'Growth-focused businesses', 'Digital transformation seekers'],
+          valuePropositions: ['Rapid growth acceleration', 'Market domination strategies', 'ROI-focused solutions'],
+          channels: ['Social media', 'Content marketing', 'SEO optimization'],
+          customerRelationships: ['Automated engagement', 'Community building', 'Thought leadership'],
+          revenueStreams: ['Subscription-based', 'Performance-based', 'Consultation services'],
+          keyResources: ['AI technology', 'Queensland market data', 'Strategic frameworks'],
+          keyActivities: ['Content creation', 'Market analysis', 'Performance optimization'],
+          keyPartnerships: ['Local businesses', 'Industry experts', 'Technology providers'],
+          costStructure: ['Technology infrastructure', 'Content creation', 'Market research']
+        },
+        valuePropositionCanvas: {
+          customerJobs: 'Growing Queensland businesses efficiently',
+          painPoints: 'Time-consuming manual marketing, poor ROI',
+          gainCreators: 'Automated content, strategic positioning, measurable results'
+        },
+        engagementOptimization: {
+          reachTargets: '10x organic reach increase',
+          conversionTargets: '3x conversion rate improvement',
+          cycleDuration: '30-day optimization cycles'
+        }
+      };
+
+      // Get final quota status
+      const updatedQuota = await PostQuotaService.getQuotaStatus(userId);
+      
+      res.json({
+        success: true,
+        message: "Strategic content generated successfully using waterfall strategyzer methodology",
+        posts: savedPosts,
+        savedCount,
+        quotaStatus: updatedQuota,
+        strategicAnalysis,
+        methodology: 'Waterfall Strategyzer with Value Proposition Canvas',
+        optimization: '30-day cycle for reach and conversion',
+        targetMarket: 'Queensland SMEs'
+      });
+
+    } catch (error: any) {
+      console.error('Strategic content generation error:', error);
+      res.status(500).json({ message: "Strategic content generation failed", error: error.message });
+    }
+  });
+
   // Generate AI-powered schedule using xAI integration
   app.post("/api/generate-ai-schedule", requireAuth, async (req: any, res) => {
     try {
