@@ -655,7 +655,7 @@ export default function OnboardingWizard() {
               <div className="flex items-center min-w-0">
                 {isDemoMode && (
                   <Badge variant="secondary" className="mr-1 sm:mr-2 text-xs shrink-0">
-                    Demo Mode
+                    Learn more
                   </Badge>
                 )}
                 <div className="w-2 h-2 bg-blue-500 rounded-full mr-1 sm:mr-2 shrink-0"></div>
