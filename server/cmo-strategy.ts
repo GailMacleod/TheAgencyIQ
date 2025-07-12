@@ -63,7 +63,7 @@ export interface BrandDominationStrategy {
   marketDomination: string[];
 }
 
-export async function analyzeCMOStrategy(brandPurpose: string, targetAudience: string): Promise<CMOTeamInsights> {
+export async function analyseCMOStrategy(brandPurpose: string, targetAudience: string): Promise<CMOTeamInsights> {
   const prompt = `As a CMO leading a strategic team, analyze this brand purpose: "${brandPurpose}" for target audience: "${targetAudience}"
 
 Provide insights from each team member for unstoppable market domination:
@@ -109,7 +109,7 @@ Focus on Queensland small business market with emphasis on immediate results and
   return JSON.parse(response.choices[0].message.content || "{}");
 }
 
-export async function generateJobsToBeDoneAnalysis(
+export async function generateJobsToBeDoneAnalyse(
   brandPurpose: string,
   targetAudience: string,
   painPoints: string,
@@ -271,10 +271,10 @@ export async function adaptToAnyBrand(
   totalPosts: number
 ): Promise<any[]> {
   // Step 1: Generate CMO team insights
-  const cmoInsights = await analyzeCMOStrategy(brandPurpose, targetAudience);
+  const cmoInsights = await analyseCMOStrategy(brandPurpose, targetAudience);
   
   // Step 2: Perform Jobs-to-be-Done analysis
-  const jtbdAnalysis = await generateJobsToBeDoneAnalysis(
+  const jtbdAnalysis = await generateJobsToBeDoneAnalyse(
     brandPurpose, 
     targetAudience, 
     painPoints, 

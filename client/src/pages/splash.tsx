@@ -144,7 +144,7 @@ export default function Splash() {
                 <h2 className="md:text-5xl lg:text-6xl font-bold text-[55px] text-[#00f0ff]">
                   Social media for small businesses
                 </h2>
-                <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">Complete waterfall workflow to drive small businesses's online social presence.</p>
+                <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">Complete waterfall workflow to drive small businesses' online social presence.</p>
               </div>
               
               {/* Platform logos for education */}

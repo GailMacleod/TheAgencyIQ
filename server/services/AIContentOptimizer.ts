@@ -257,7 +257,7 @@ export class AIContentOptimizer {
       return {
         bestTimes: ['9:00 AM', '12:00 PM', '6:00 PM'],
         timezone: 'Australia/Brisbane',
-        dayOptimization: {
+        dayOptimisation: {
           'Monday': '9:00 AM',
           'Tuesday': '12:00 PM',
           'Wednesday': '10:00 AM',

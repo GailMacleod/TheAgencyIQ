@@ -82,14 +82,14 @@ export class StrategicContentGenerator {
     const contentTemplates = await this.generateEngagementTemplates(valueCanvas, seoKeywords);
     
     // Phase 7: 30-Day Cycle Optimization for Reach/Conversion
-    const optimizedContent = await this.optimize30DayCycle(
+    const optimisedContent = await this.optimise30DayCycle(
       contentTemplates,
       params.totalPosts,
       params.platforms,
       marketData
     );
     
-    return optimizedContent;
+    return optimisedContent;
   }
 
   /**
@@ -236,7 +236,7 @@ export class StrategicContentGenerator {
 
   /**
    * PHASE 6: High-Engagement Templates with Sales CTAs
-   * Generates platform-specific content templates optimized for engagement
+   * Generates platform-specific content templates optimised for engagement
    */
   private static async generateEngagementTemplates(valueCanvas: ValuePropositionCanvas, seoKeywords: string[]): Promise<any[]> {
     console.log('🎨 Phase 6: Creating engagement templates...');
@@ -255,7 +255,7 @@ export class StrategicContentGenerator {
     // Always-On Beacon Solution Templates
     templates.push({
       theme: 'always-on-beacon',
-      contentType: 'solution-focused',
+      contentType: 'solution-focussed',
       cta: 'Get Your Beacon',
       platforms: ['instagram', 'facebook'],
       focus: 'professional visibility'
@@ -291,7 +291,7 @@ export class StrategicContentGenerator {
     // Show Up Automatically Templates
     templates.push({
       theme: 'show-up-automatically',
-      contentType: 'benefit-focused',
+      contentType: 'benefit-focussed',
       cta: 'Start Showing Up',
       platforms: ['linkedin', 'youtube'],
       focus: 'automation benefit'
@@ -310,16 +310,16 @@ export class StrategicContentGenerator {
   }
 
   /**
-   * PHASE 7: 30-Day Cycle Optimization for Reach/Conversion
-   * Optimizes content distribution across 30-day cycles
+   * PHASE 7: 30-Day Cycle Optimisation for Reach/Conversion
+   * Optimises content distribution across 30-day cycles
    */
-  private static async optimize30DayCycle(
+  private static async optimise30DayCycle(
     templates: any[],
     totalPosts: number,
     platforms: string[],
     marketData: QueenslandMarketInsights
   ): Promise<StrategicPost[]> {
-    console.log('📈 Phase 7: Optimizing 30-day cycle...');
+    console.log('📈 Phase 7: Optimising 30-day cycle...');
     
     const strategicPosts: StrategicPost[] = [];
     const postsPerPlatform = Math.ceil(totalPosts / platforms.length);
@@ -343,7 +343,7 @@ export class StrategicContentGenerator {
           scheduledFor: scheduledDate.toISOString(),
           strategicTheme: template.theme,
           businessCanvasPhase: this.getBusinessCanvasPhase(j),
-          engagementOptimization: template.focus,
+          engagementOptimisation: template.focus,
           conversionFocus: template.cta,
           audienceSegment: this.getAudienceSegment(platform)
         };

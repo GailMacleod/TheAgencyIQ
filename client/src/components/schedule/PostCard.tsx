@@ -52,25 +52,25 @@ export function PostCard({
     onEditCancel?.();
   };
 
-  const getPlatformColor = (platform: string): string => {
-    const colors = {
+  const getPlatformColour = (platform: string): string => {
+    const colours = {
       facebook: 'bg-blue-500',
       instagram: 'bg-pink-500',
       linkedin: 'bg-blue-700',
       youtube: 'bg-red-500',
       x: 'bg-black',
     };
-    return colors[platform as keyof typeof colors] || 'bg-gray-500';
+    return colours[platform as keyof typeof colours] || 'bg-gray-500';
   };
 
-  const getStatusColor = (status: string): string => {
-    const colors = {
+  const getStatusColour = (status: string): string => {
+    const colours = {
       draft: 'bg-gray-100 text-gray-800',
       approved: 'bg-green-100 text-green-800',
       published: 'bg-blue-100 text-blue-800',
       failed: 'bg-red-100 text-red-800',
     };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colours[status as keyof typeof colours] || 'bg-gray-100 text-gray-800';
   };
 
   return (
@@ -80,9 +80,9 @@ export function PostCard({
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${getPlatformColor(post.platform)}`} />
+              <div className={`w-3 h-3 rounded-full ${getPlatformColour(post.platform)}`} />
               <span className="font-medium capitalize">{post.platform}</span>
-              <Badge variant="outline" className={getStatusColor(post.status)}>
+              <Badge variant="outline" className={getStatusColour(post.status)}>
                 {post.status}
               </Badge>
             </div>

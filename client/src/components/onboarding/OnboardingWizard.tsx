@@ -287,7 +287,7 @@ export default function OnboardingWizard() {
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">Queensland business focused</span>
+                <span className="text-sm">Queensland business focussed</span>
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
@@ -376,7 +376,7 @@ export default function OnboardingWizard() {
       icon: <Zap className="w-4 h-4" />,
       actionText: "Generate",
       tips: [
-        "AI creates Queensland-focused content",
+        "AI creates Queensland-focussed content",
         "Includes video generation capabilities"
       ],
       content: (

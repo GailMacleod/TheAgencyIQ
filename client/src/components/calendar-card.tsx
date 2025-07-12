@@ -28,7 +28,7 @@ const platformIcons = {
   youtube: SiYoutube,
 };
 
-const platformColors = {
+const platformColours = {
   facebook: "text-blue-600",
   instagram: "text-pink-500",
   linkedin: "text-blue-700",
@@ -130,7 +130,7 @@ export default function CalendarCard({ date, posts, events = [] }: CalendarCardP
                 <div className="space-y-2">
                   {timePosts.map((post) => {
                     const IconComponent = platformIcons[post.platform as keyof typeof platformIcons];
-                    const colorClass = platformColors[post.platform as keyof typeof platformColors];
+                    const colorClass = platformColours[post.platform as keyof typeof platformColours];
                     
                     return (
                       <div

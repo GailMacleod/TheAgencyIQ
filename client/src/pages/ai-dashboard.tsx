@@ -71,10 +71,10 @@ export default function AIDashboard() {
     refetchInterval: 300000 // 5 minutes
   });
 
-  // Content optimization mutation
-  const optimizeContentMutation = useMutation({
+  // Content optimisation mutation
+  const optimiseContentMutation = useMutation({
     mutationFn: async ({ contentType, platform }: { contentType: string; platform: string }) => {
-      const response = await apiRequest('POST', '/api/ai/optimize-content', {
+      const response = await apiRequest('POST', '/api/ai/optimise-content', {
         contentType,
         platform
       });
@@ -82,16 +82,16 @@ export default function AIDashboard() {
     },
     onSuccess: (data) => {
       toast({
-        title: "Content Optimized",
-        description: "AI has generated optimized content for maximum engagement",
+        title: "Content Optimised",
+        description: "AI has generated optimised content for maximum engagement",
         variant: "default",
         duration: 4000
       });
     },
     onError: (error) => {
       toast({
-        title: "Optimization Failed",
-        description: "Failed to optimize content. Please try again.",
+        title: "Optimisation Failed",
+        description: "Failed to optimise content. Please try again.",
         variant: "destructive",
         duration: 4000
       });
@@ -111,15 +111,15 @@ export default function AIDashboard() {
     onSuccess: (data) => {
       toast({
         title: "SEO Generated",
-        description: "Keywords, hashtags, and meta tags optimized for Queensland market",
+        description: "Keywords, hashtags, and meta tags optimised for Queensland market",
         variant: "default",
         duration: 4000
       });
     }
   });
 
-  const handleOptimizeContent = () => {
-    optimizeContentMutation.mutate({
+  const handleOptimiseContent = () => {
+    optimiseContentMutation.mutate({
       contentType: selectedContentType,
       platform: selectedPlatform
     });
@@ -160,13 +160,13 @@ export default function AIDashboard() {
         <Brain className="w-8 h-8 text-blue-600" />
         <div>
           <h1 className="text-3xl font-bold">AI Content & Analytics Dashboard</h1>
-          <p className="text-gray-600">World-class AI optimization for Queensland small businesses</p>
+          <p className="text-gray-600">World-class AI optimisation for Queensland small businesses</p>
         </div>
       </div>
 
-      <Tabs defaultValue="optimize" className="w-full">
+      <Tabs defaultValue="optimise" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="optimize" className="flex items-center gap-2">
+          <TabsTrigger value="optimise" className="flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
             Content AI
           </TabsTrigger>
@@ -184,13 +184,13 @@ export default function AIDashboard() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="optimize" className="space-y-4">
+        <TabsContent value="optimise" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Zap className="w-5 h-5 text-yellow-500" />
-                  AI Content Optimization
+                  AI Content Optimisation
                 </CardTitle>
                 <CardDescription>
                   Generate personalized content templates for high engagement and sales CTAs
@@ -232,25 +232,25 @@ export default function AIDashboard() {
                 </div>
 
                 <Button 
-                  onClick={handleOptimizeContent}
-                  disabled={optimizeContentMutation.isPending}
+                  onClick={handleOptimiseContent}
+                  disabled={optimiseContentMutation.isPending}
                   className="w-full"
                 >
-                  {optimizeContentMutation.isPending ? 'Optimizing...' : 'Generate Optimized Content'}
+                  {optimiseContentMutation.isPending ? 'Optimising...' : 'Generate Optimised Content'}
                 </Button>
 
-                {optimizeContentMutation.data && (
+                {optimiseContentMutation.data && (
                   <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Optimized Content</h4>
-                    <p className="text-sm mb-3">{optimizeContentMutation.data.content?.content}</p>
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Optimised Content</h4>
+                    <p className="text-sm mb-3">{optimiseContentMutation.data.content?.content}</p>
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {optimizeContentMutation.data.content?.hashtags?.slice(0, 5).map((tag: string, i: number) => (
+                      {optimiseContentMutation.data.content?.hashtags?.slice(0, 5).map((tag: string, i: number) => (
                         <Badge key={i} variant="secondary" className="text-xs">{tag}</Badge>
                       ))}
                     </div>
                     <div className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-300">
-                      <span>Engagement Score: {optimizeContentMutation.data.content?.engagementScore}%</span>
-                      <span>Optimal Time: {optimizeContentMutation.data.content?.optimalTiming}</span>
+                      <span>Engagement Score: {optimiseContentMutation.data.content?.engagementScore}%</span>
+                      <span>Optimal Time: {optimiseContentMutation.data.content?.optimalTiming}</span>
                     </div>
                   </div>
                 )}
@@ -261,7 +261,7 @@ export default function AIDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Search className="w-5 h-5 text-green-500" />
-                  SEO Optimization
+                  SEO Optimisation
                 </CardTitle>
                 <CardDescription>
                   Generate keywords, hashtags, and meta tags for Queensland market
