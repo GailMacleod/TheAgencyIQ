@@ -165,7 +165,7 @@ export default function Splash() {
                 <div className="mt-4 flex justify-center">
                   <div className="px-6 py-2 rounded-full text-sm font-bold text-black flex items-center gap-2" style={{ backgroundColor: '#00f0ff' }}>
                     <Film className="w-4 h-4" />
-                    Includes video, shorts fast, text-to-video animation
+                    Includes text-to-video generation
                   </div>
                 </div>
               </div>
