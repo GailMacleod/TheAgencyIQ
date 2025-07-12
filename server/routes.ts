@@ -3075,23 +3075,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OAuth Authentication Routes
   
   // API auth routes that redirect to OAuth providers
-  app.get('/api/auth/facebook', (req, res) => {
-    // Allow public access for OAuth connections
+  app.get('/api/auth/facebook', requireAuth, (req, res) => {
     res.redirect('/connect/facebook');
   });
   
-  app.get('/api/auth/instagram', (req, res) => {
-    // Allow public access for OAuth connections
+  app.get('/api/auth/instagram', requireAuth, (req, res) => {
     res.redirect('/connect/instagram');
   });
   
-  app.get('/api/auth/linkedin', (req, res) => {
-    // Allow public access for OAuth connections
+  app.get('/api/auth/linkedin', requireAuth, (req, res) => {
     res.redirect('/connect/linkedin');
   });
   
-  app.get('/api/auth/x', (req, res) => {
-    // Allow public access for OAuth connections
+  app.get('/api/auth/x', requireAuth, (req, res) => {
     res.redirect('/connect/x');
   });
   
