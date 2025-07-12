@@ -135,7 +135,7 @@ export default function Splash() {
                   />
                   <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium">
                     <Lightbulb className="h-4 w-4 mr-2" />
-                    Technology Intelligence - BETA
+                    BETA
                   </div>
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-[#3250fa] text-[58px]">
