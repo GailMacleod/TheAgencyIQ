@@ -604,13 +604,14 @@ export default function OnboardingWizard() {
 
   // Skip floating button
   const FloatingResumeButton = () => (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-2 right-2 sm:bottom-4 sm:right-4 z-50">
       <Button
         onClick={handleResume}
-        className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg"
+        className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg text-xs sm:text-sm px-2 sm:px-4"
         size="sm"
       >
-        Resume Guide
+        <span className="hidden sm:inline">Resume Guide</span>
+        <span className="sm:hidden">Resume</span>
       </Button>
     </div>
   );
@@ -622,22 +623,22 @@ export default function OnboardingWizard() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)]">
+    <div className="fixed bottom-2 right-2 sm:bottom-4 sm:right-4 z-50 w-[calc(100vw-1rem)] sm:w-80 max-w-[calc(100vw-1rem)]">
       <Card className="bg-white border-gray-200 shadow-lg">
         <CardHeader 
-          className={`pb-3 ${isMinimized ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+          className={`pb-2 sm:pb-3 ${isMinimized ? 'cursor-pointer hover:bg-gray-50' : ''}`}
           onClick={isMinimized ? handleMinimize : undefined}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center">
+            <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
+              <div className="flex items-center min-w-0">
                 {isDemoMode && (
-                  <Badge variant="secondary" className="mr-2 text-xs">
+                  <Badge variant="secondary" className="mr-1 sm:mr-2 text-xs shrink-0">
                     Demo Mode
                   </Badge>
                 )}
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                <CardTitle className="text-lg font-semibold text-gray-800">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mr-1 sm:mr-2 shrink-0"></div>
+                <CardTitle className="text-sm sm:text-lg font-semibold text-gray-800 truncate">
                   {currentWizardStep?.title}
                 </CardTitle>
               </div>
@@ -646,27 +647,27 @@ export default function OnboardingWizard() {
               onClick={handleMinimize}
               variant="ghost"
               size="sm"
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 shrink-0"
             >
               {isMinimized ? <Play className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
             </Button>
           </div>
           {!isMinimized && (
-            <div className="mt-3">
-              <p className="text-sm text-gray-600 mb-2">
+            <div className="mt-2 sm:mt-3">
+              <p className="text-xs sm:text-sm text-gray-600 mb-2">
                 {currentWizardStep?.description}
               </p>
               <div className="bg-blue-50 border border-blue-200 p-2 rounded-md">
-                <p className="text-sm text-blue-800">
+                <p className="text-xs sm:text-sm text-blue-800">
                   {getPageGuidance()}
                 </p>
               </div>
-              <div className="flex items-center space-x-2 mb-3">
+              <div className="flex items-center space-x-2 mb-2 sm:mb-3">
                 <Progress 
                   value={((currentStep + 1) / wizardSteps.length) * 100} 
                   className="flex-1 h-2"
                 />
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 shrink-0">
                   {currentStep + 1} / {wizardSteps.length}
                 </span>
               </div>
@@ -675,20 +676,23 @@ export default function OnboardingWizard() {
         </CardHeader>
         
         {!isMinimized && (
-          <CardContent className="pt-0">
-            <div className="space-y-4">
-              {currentWizardStep?.content}
+          <CardContent className="pt-0 px-3 sm:px-6">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="text-xs sm:text-sm">
+                {currentWizardStep?.content}
+              </div>
               
-              <div className="flex items-center justify-between pt-4">
+              <div className="flex items-center justify-between pt-3 sm:pt-4">
                 <Button
                   onClick={handlePrevious}
                   disabled={currentStep === 0}
                   variant="outline"
                   size="sm"
-                  className="flex items-center space-x-1"
+                  className="flex items-center space-x-1 text-xs sm:text-sm px-2 sm:px-3"
                 >
                   <ArrowLeft className="w-3 h-3" />
-                  <span>Previous</span>
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Prev</span>
                 </Button>
                 
                 <div className="flex space-x-2">
@@ -699,15 +703,22 @@ export default function OnboardingWizard() {
                         isDemoMode 
                           ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' 
                           : 'bg-blue-500 hover:bg-blue-600'
-                      } text-white`}
+                      } text-white text-xs sm:text-sm px-2 sm:px-3`}
                       size="sm"
                     >
-                      {isDemoMode ? 'Subscribe Now' : 'Complete'}
+                      {isDemoMode ? (
+                        <>
+                          <span className="hidden sm:inline">Subscribe Now</span>
+                          <span className="sm:hidden">Subscribe</span>
+                        </>
+                      ) : (
+                        'Complete'
+                      )}
                     </Button>
                   ) : (
                     <Button
                       onClick={handleNext}
-                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                      className="bg-blue-500 hover:bg-blue-600 text-white text-xs sm:text-sm px-2 sm:px-3"
                       size="sm"
                     >
                       Next
