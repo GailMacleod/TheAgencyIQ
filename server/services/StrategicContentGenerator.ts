@@ -11,6 +11,7 @@ import { eq, and } from 'drizzle-orm';
 import { analyzeCMOStrategy, generateJobsToBeDoneAnalysis, createBrandDominationStrategy } from '../cmo-strategy';
 import { generateContentCalendar } from '../grok';
 import OpenAI from 'openai';
+import { createHash } from 'crypto';
 
 const aiClient = new OpenAI({
   baseURL: "https://api.x.ai/v1",
@@ -242,49 +243,67 @@ export class StrategicContentGenerator {
     
     const templates = [];
     
-    // Authority Building Templates
+    // Invisible Business Problem Templates
     templates.push({
-      theme: 'authority',
-      contentType: 'educational',
-      cta: 'Learn More',
+      theme: 'invisible-business-problem',
+      contentType: 'problem-awareness',
+      cta: 'Stop Being Invisible',
       platforms: ['linkedin', 'facebook'],
-      focus: 'thought leadership'
+      focus: 'invisible business pain'
     });
     
-    // Problem-Solution Templates
+    // Always-On Beacon Solution Templates
     templates.push({
-      theme: 'problem-solution',
-      contentType: 'testimonial',
-      cta: 'Get Started',
+      theme: 'always-on-beacon',
+      contentType: 'solution-focused',
+      cta: 'Get Your Beacon',
       platforms: ['instagram', 'facebook'],
-      focus: 'pain relief'
+      focus: 'professional visibility'
     });
     
-    // Social Proof Templates
+    // Validation Not Visibility Templates
     templates.push({
-      theme: 'social-proof',
-      contentType: 'case-study',
-      cta: 'See Results',
+      theme: 'validation-not-visibility',
+      contentType: 'differentiation',
+      cta: 'Get Validated',
       platforms: ['linkedin', 'youtube'],
-      focus: 'credibility'
+      focus: 'validation messaging'
     });
     
-    // Urgency & Scarcity Templates
+    // Presence Polish Power Templates
     templates.push({
-      theme: 'urgency',
-      contentType: 'promotional',
-      cta: 'Act Now',
+      theme: 'presence-polish-power',
+      contentType: 'transformation',
+      cta: 'Get Big Brand Power',
       platforms: ['x', 'instagram'],
-      focus: 'conversion'
+      focus: 'big brand presence'
     });
     
-    // Community Building Templates
+    // Silence Kills Growth Templates
     templates.push({
-      theme: 'community',
-      contentType: 'engagement',
-      cta: 'Join Us',
+      theme: 'silence-kills-growth',
+      contentType: 'urgency',
+      cta: 'Break The Silence',
       platforms: ['facebook', 'instagram'],
-      focus: 'relationship building'
+      focus: 'growth urgency'
+    });
+    
+    // Show Up Automatically Templates
+    templates.push({
+      theme: 'show-up-automatically',
+      contentType: 'benefit-focused',
+      cta: 'Start Showing Up',
+      platforms: ['linkedin', 'youtube'],
+      focus: 'automation benefit'
+    });
+    
+    // Too Busy To Show Up Templates
+    templates.push({
+      theme: 'too-busy-to-show-up',
+      contentType: 'relatable-pain',
+      cta: 'Let Us Show Up',
+      platforms: ['facebook', 'x'],
+      focus: 'busy business owner'
     });
     
     return templates;
@@ -320,7 +339,7 @@ export class StrategicContentGenerator {
         const post: StrategicPost = {
           id: strategicPosts.length + 1,
           platform,
-          content: await this.generateStrategicPostContent(platform, template, marketData),
+          content: await this.generateStrategicPostContent(platform, template, marketData, params.brandPurpose),
           scheduledFor: scheduledDate.toISOString(),
           strategicTheme: template.theme,
           businessCanvasPhase: this.getBusinessCanvasPhase(j),
@@ -339,24 +358,35 @@ export class StrategicContentGenerator {
   /**
    * Generate strategic post content for specific platform and template
    */
-  private static async generateStrategicPostContent(platform: string, template: any, marketData: QueenslandMarketInsights): Promise<string> {
-    const prompt = `Generate ${platform} post content using this template:
+  private static async generateStrategicPostContent(platform: string, template: any, marketData: QueenslandMarketInsights, brandPurpose: any): Promise<string> {
+    const prompt = `Generate ${platform} post content for TheAgencyIQ that MUST align with this specific brand purpose:
+
+    BRAND PURPOSE: "${brandPurpose.corePurpose}"
     
-    Theme: ${template.theme}
-    Content Type: ${template.contentType}
-    CTA: ${template.cta}
-    Focus: ${template.focus}
+    CORE VALUE PROPOSITION: "You're invisible, that's not good. AgencyIQ gives you a beacon that's always on."
     
-    Queensland Context: ${JSON.stringify(marketData.keyIndustries)}
+    THE PAIN: "You're invisible, and silence is killing your growth."
+    THE GAIN: "You show up. Week in, week out. Professionally. Strategically. Automatically."
     
-    Requirements:
-    - ${this.getPlatformRequirements(platform)}
-    - Include strong call-to-action
-    - Focus on Queensland SME audience
-    - Use strategic keywords naturally
-    - Optimize for engagement and conversion
+    BRAND PROMISE: "Keep me visible even when I am too busy to show up, not just visibility, but validation. For those who want what the big brands have: presence, polish, and power, without the army it takes to get there."
     
-    Generate compelling content that drives action.`;
+    Template to use:
+    - Theme: ${template.theme}
+    - Content Type: ${template.contentType}
+    - CTA: ${template.cta}
+    - Focus: ${template.focus}
+    
+    CRITICAL REQUIREMENTS:
+    1. ${this.getPlatformRequirements(platform)}
+    2. MUST address the "invisible business" problem directly
+    3. MUST position TheAgencyIQ as the solution that provides "presence, polish, and power"
+    4. MUST speak to busy Queensland SME owners who need professional visibility
+    5. MUST emphasize "validation not just visibility" and "always on beacon"
+    6. MUST include urgency about silence killing growth
+    7. MUST offer hope of showing up "professionally, strategically, automatically"
+    8. Include strong call-to-action that drives immediate action
+    
+    Write content that makes invisible Queensland SMEs feel seen and understood, then compels them to take action.`;
 
     const response = await aiClient.chat.completions.create({
       model: "grok-2-1212",

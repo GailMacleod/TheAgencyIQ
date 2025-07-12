@@ -5354,6 +5354,24 @@ Continue building your Value Proposition Canvas systematically.`;
       
       for (const post of strategicPosts) {
         try {
+          // Generate idempotency key to prevent duplicate creation
+          const contentHash = createHash('md5').update(post.content).digest('hex');
+          const idempotencyKey = `strategic_${userId}_${savedCount}_${post.platform}_${Date.now()}`;
+          
+          // Check if post already exists with same content hash
+          const existingPost = await db.query.posts.findFirst({
+            where: and(
+              eq(posts.userId, userId),
+              eq(posts.platform, post.platform),
+              eq(posts.contentHash, contentHash)
+            )
+          });
+          
+          if (existingPost) {
+            console.log(`⚠️  Skipping duplicate post: ${post.platform} - ${post.strategicTheme}`);
+            continue;
+          }
+          
           const savedPost = await storage.createPost({
             userId: userId,
             platform: post.platform,
@@ -5365,6 +5383,9 @@ Continue building your Value Proposition Canvas systematically.`;
             imageUrl: null,
             errorLog: null,
             retryCount: 0,
+            contentHash: contentHash,
+            idempotencyKey: idempotencyKey,
+            generationId: `strategic_batch_${Date.now()}`
           });
           
           savedPosts.push({

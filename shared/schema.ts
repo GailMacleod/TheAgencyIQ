@@ -73,6 +73,10 @@ export const posts = pgTable("posts", {
   errorLog: text("error_log"),
   analytics: jsonb("analytics"), // Store analytics data: { reach: number, engagement: number, impressions: number }
   scheduledFor: timestamp("scheduled_for"),
+  // Idempotency and duplication prevention
+  contentHash: text("content_hash"), // MD5 hash of content for duplicate detection
+  generationId: text("generation_id"), // Unique ID for each generation batch
+  idempotencyKey: text("idempotency_key"), // Unique key for preventing duplicate creation
   aiRecommendation: text("ai_recommendation"),
   subscriptionCycle: text("subscription_cycle"), // Track which 30-day cycle this post belongs to
   createdAt: timestamp("created_at").defaultNow(),
