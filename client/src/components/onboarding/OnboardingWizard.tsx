@@ -276,24 +276,24 @@ export default function OnboardingWizard() {
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-6 rounded-lg">
             <h3 className="font-semibold text-lg mb-3">Platform Preview:</h3>
-            <ul className="space-y-2">
-              <li className="flex items-center space-x-2">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm">AI-powered content generation</span>
-              </li>
-              <li className="flex items-center space-x-2">
+              </div>
+              <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm">Multi-platform publishing</span>
-              </li>
-              <li className="flex items-center space-x-2">
+              </div>
+              <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm">Queensland business focused</span>
-              </li>
-              <li className="flex items-center space-x-2">
+              </div>
+              <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm">Advanced analytics and insights</span>
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
         </div>
       )
@@ -311,16 +311,16 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-800 mb-2">📋 Plan Options:</h4>
+            <h4 className="font-medium text-gray-800 mb-2">Plan Options:</h4>
             <div className="space-y-3">
               <div className="bg-white p-4 rounded-lg">
                 <h4 className="font-medium text-gray-800 mb-2">Professional Plan</h4>
                 <p className="text-2xl font-bold text-gray-600">$99.99</p>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>52 posts per month</li>
-                  <li>5 platforms</li>
-                  <li>Premium analytics</li>
-                </ul>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <div>52 posts per month</div>
+                  <div>5 platforms</div>
+                  <div>Premium analytics</div>
+                </div>
               </div>
             </div>
           </div>
@@ -340,7 +340,7 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-800 mb-2">🎯 Brand Setup Preview:</h4>
+            <h4 className="font-medium text-gray-800 mb-2">Brand Setup Preview:</h4>
             <p className="text-sm text-gray-600">
               Define your business purpose, target audience, and core messaging to generate personalized content that resonates with your Queensland customers.
             </p>
@@ -361,7 +361,7 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-800 mb-2">🔗 Platform Integration:</h4>
+            <h4 className="font-medium text-gray-800 mb-2">Platform Integration:</h4>
             <p className="text-sm text-gray-600">
               Securely connect your social media accounts to enable automatic posting across all major platforms.
             </p>
@@ -382,7 +382,7 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-800 mb-2">🤖 AI Content Preview:</h4>
+            <h4 className="font-medium text-gray-800 mb-2">AI Content Preview:</h4>
             <p className="text-sm text-gray-600">
               Advanced AI generates engaging content tailored to Queensland markets with automatic scheduling and video creation.
             </p>
@@ -403,28 +403,28 @@ export default function OnboardingWizard() {
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-6 rounded-lg">
-            <h3 className="font-semibold text-lg mb-3">🚀 Ready to Get Started?</h3>
+            <h3 className="font-semibold text-lg mb-3">Ready to Get Started?</h3>
             <p className="text-sm text-gray-600 mb-4">
               Subscribe now to unlock the full power of AI-driven social media automation for your Queensland business.
             </p>
-            <ul className="space-y-2">
-              <li className="flex items-center space-x-2">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm">52 AI-generated posts monthly</span>
-              </li>
-              <li className="flex items-center space-x-2">
+              </div>
+              <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm">Multi-platform publishing</span>
-              </li>
-              <li className="flex items-center space-x-2">
+              </div>
+              <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm">Queensland business focus</span>
-              </li>
-              <li className="flex items-center space-x-2">
+              </div>
+              <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm">Advanced analytics dashboard</span>
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
         </div>
       )
@@ -451,20 +451,20 @@ export default function OnboardingWizard() {
             <p className="text-sm text-gray-600 mb-4">
               Start here! Generate engaging content tailored to Queensland markets with automatic scheduling and video creation.
             </p>
-            <ul className="space-y-2">
-              <li className="flex items-center space-x-2">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm">Active subscription confirmed</span>
-              </li>
-              <li className="flex items-center space-x-2">
+              </div>
+              <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm">AI content generation enabled</span>
-              </li>
-              <li className="flex items-center space-x-2">
+              </div>
+              <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span className="text-sm">Multi-platform publishing ready</span>
-              </li>
-            </ul>
+              </div>
+            </div>
           </div>
         </div>
       )
@@ -658,7 +658,7 @@ export default function OnboardingWizard() {
               </p>
               <div className="bg-blue-50 border border-blue-200 p-2 rounded-md">
                 <p className="text-sm text-blue-800">
-                  💡 {getPageGuidance()}
+                  {getPageGuidance()}
                 </p>
               </div>
               <div className="flex items-center space-x-2 mb-3">
