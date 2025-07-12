@@ -139,7 +139,7 @@ export default function Splash() {
                   </div>
                 </div>
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                  <span className="block bg-gradient-atomiq bg-clip-text text-transparent">Set & forget, social media for small business</span>
+                  <span className="block bg-gradient-atomiq bg-clip-text text-transparent">Set & forget, social media for small businesses</span>
                   
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">Complete waterfall workflow to drive small businesses's online social presence.</p>
