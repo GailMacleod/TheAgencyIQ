@@ -8341,6 +8341,8 @@ Continue building your Value Proposition Canvas systematically.`;
     try {
       const { action, userId: targetUserId, content, platforms } = req.body;
       const userId = targetUserId || req.session.userId;
+      
+      console.log(`📝 Direct publish request: action=${action}, userId=${userId}, body:`, req.body);
 
       if (action === 'test_publish_all') {
         // Test publishing to all platforms with automatic token refresh
@@ -8461,6 +8463,142 @@ Continue building your Value Proposition Canvas systematically.`;
           message: `Force published ${publishedCount}/${pendingPosts.length} posts`,
           publishedCount,
           totalPosts: pendingPosts.length
+        });
+      }
+
+      if (action === 'publish_all') {
+        // QUOTA ENFORCEMENT: Check quota status before publishing
+        const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+        if (!quotaStatus) {
+          return res.status(400).json({ message: "Unable to retrieve quota status" });
+        }
+
+        // Get all approved posts for the user
+        const posts = await storage.getPostsByUser(userId);
+        const approvedPosts = posts.filter(post => post.status === 'approved');
+
+        if (approvedPosts.length === 0) {
+          return res.status(400).json({ message: "No approved posts found for publishing" });
+        }
+
+        // QUOTA ENFORCEMENT: Check if user has sufficient quota
+        if (quotaStatus.remainingPosts < approvedPosts.length) {
+          return res.status(403).json({ 
+            message: `Insufficient posts remaining. Need ${approvedPosts.length}, have ${quotaStatus.remainingPosts} remaining from ${quotaStatus.totalPosts} total (${quotaStatus.subscriptionPlan} plan)`,
+            remainingPosts: quotaStatus.remainingPosts,
+            quotaExceeded: true
+          });
+        }
+
+        const publishResults = [];
+        let successCount = 0;
+        let failureCount = 0;
+
+        // Import bulletproof publisher
+        const { BulletproofPublisher } = await import('./bulletproof-publisher');
+        const { DirectPublisher } = await import('./direct-publisher');
+
+        // Publish all approved posts using bulletproof system
+        for (const post of approvedPosts) {
+          try {
+            console.log(`Direct publishing: Publishing post ${post.id} to ${post.platform}`);
+            
+            // Get platform connection for token
+            const connections = await storage.getPlatformConnectionsByUser(userId);
+            const connection = connections.find(c => c.platform === post.platform && c.isActive);
+            
+            if (!connection) {
+              console.log(`❌ No active connection found for ${post.platform}`);
+              publishResults.push({
+                postId: post.id,
+                platform: post.platform,
+                status: 'failed',
+                error: `No active connection found for ${post.platform}`,
+                scheduledFor: post.scheduledFor
+              });
+              failureCount++;
+              continue;
+            }
+
+            // Attempt to refresh/validate token first
+            const refreshResult = await OAuthRefreshService.validateAndRefreshConnection(userId.toString(), post.platform);
+            
+            if (refreshResult.success) {
+              console.log(`✅ ${post.platform} token validated/refreshed successfully`);
+            } else {
+              console.log(`⚠️ ${post.platform} token refresh failed: ${refreshResult.error}`);
+            }
+
+            // Publish using DirectPublisher
+            const result = await DirectPublisher.publishToPlatform(post.platform, post.content, connection.accessToken);
+
+            if (result.success && result.platformPostId) {
+              // Update post status
+              await storage.updatePost(post.id, { 
+                status: 'published',
+                publishedAt: new Date(),
+                errorLog: null
+              });
+
+              // QUOTA ENFORCEMENT: Deduct from quota using PostQuotaService
+              await PostQuotaService.deductPost(userId, post.id);
+              successCount++;
+
+              publishResults.push({
+                postId: post.id,
+                platform: post.platform,
+                status: 'success',
+                platformPostId: result.platformPostId,
+                scheduledFor: post.scheduledFor,
+                publishedAt: new Date().toISOString()
+              });
+
+              console.log(`✅ Published post ${post.id} to ${post.platform}: ${result.platformPostId}`);
+            } else {
+              // Update post with error
+              await storage.updatePost(post.id, {
+                status: 'failed',
+                errorLog: result.error || 'Unknown publishing error'
+              });
+
+              failureCount++;
+              publishResults.push({
+                postId: post.id,
+                platform: post.platform,
+                status: 'failed',
+                error: result.error || 'Unknown publishing error',
+                scheduledFor: post.scheduledFor
+              });
+
+              console.log(`❌ Failed to publish post ${post.id} to ${post.platform}: ${result.error}`);
+            }
+          } catch (error: any) {
+            console.error(`Error publishing post ${post.id} to ${post.platform}:`, error);
+            
+            // Update post with error
+            await storage.updatePost(post.id, {
+              status: 'failed',
+              errorLog: error.message
+            });
+
+            failureCount++;
+            publishResults.push({
+              postId: post.id,
+              platform: post.platform,
+              status: 'failed',
+              error: error.message,
+              scheduledFor: post.scheduledFor
+            });
+          }
+        }
+
+        return res.json({
+          success: successCount > 0,
+          message: `Published ${successCount}/${approvedPosts.length} posts successfully`,
+          successCount,
+          failureCount,
+          totalPosts: approvedPosts.length,
+          results: publishResults
         });
       }
 

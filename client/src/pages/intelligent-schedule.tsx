@@ -457,12 +457,15 @@ function IntelligentSchedule() {
         description: "Auto-posting all AI-optimized content to your platforms...",
       });
 
-      const response = await fetch('/api/auto-post-schedule', {
+      const response = await fetch('/api/direct-publish', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include'
+        credentials: 'include',
+        body: JSON.stringify({
+          action: 'publish_all'
+        })
       });
 
       if (response.ok) {
@@ -474,9 +477,22 @@ function IntelligentSchedule() {
         });
 
         refetchPosts();
+        
+        // Invalidate platform connections to refresh connection state
+        queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
       } else {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to auto-post schedule');
+        
+        // Handle quota exceeded error
+        if (error.quotaExceeded) {
+          toast({
+            title: "Subscription Limit Reached",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(error.message || 'Failed to auto-post schedule');
+        }
       }
     } catch (error: any) {
       console.error('Error auto-posting schedule:', error);
