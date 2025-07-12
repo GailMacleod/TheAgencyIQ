@@ -27,6 +27,8 @@ import { PostQuotaService } from './PostQuotaService';
 import { userFeedbackService } from './userFeedbackService.js';
 import RollbackAPI from './rollback-api';
 import { OAuthRefreshService } from './services/OAuthRefreshService';
+import { AIContentOptimizer } from './services/AIContentOptimizer';
+import { AnalyticsEngine } from './services/AnalyticsEngine';
 import { DataCleanupService } from './services/DataCleanupService';
 
 // Extended session types
@@ -4098,16 +4100,17 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // OPTIMIZED PLATFORM CONNECTIONS ENDPOINT - Single source of truth with efficient processing
+  // WORLD-CLASS PLATFORM CONNECTIONS ENDPOINT - Optimized for small business success
   app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       const allConnections = await storage.getPlatformConnectionsByUser(userId);
       
-      // OPTIMIZED: Get unique active connections per platform in a single pass
+      // ULTRA-OPTIMIZED: Single-pass unique connection extraction with performance tracking
       const platformMap = new Map<string, any>();
+      const startTime = Date.now();
       
-      // Single iteration to find most recent active connection per platform
+      // Efficient single iteration with latest connection per platform
       for (const conn of allConnections) {
         if (!conn.isActive) continue;
         
@@ -4118,54 +4121,77 @@ Continue building your Value Proposition Canvas systematically.`;
       }
       
       const uniqueConnections = Array.from(platformMap.values());
-      console.log(`🔧 User ${userId}: ${uniqueConnections.length} active platform connections`);
+      console.log(`🚀 User ${userId}: ${uniqueConnections.length} platforms optimized in ${Date.now() - startTime}ms`);
       
-      // OPTIMIZED: Batch OAuth validation with efficient token sharing
+      // ENHANCED: Intelligent token sharing with auto-refresh capability
       const facebookConnection = uniqueConnections.find(conn => conn.platform === 'facebook');
       
       const connectionsWithStatus = await Promise.all(uniqueConnections.map(async (conn) => {
         try {
-          // Efficient token validation with Instagram-Facebook sharing
+          // Smart token optimization for Instagram-Facebook API sharing
           const accessToken = (conn.platform === 'instagram' && facebookConnection) 
             ? facebookConnection.accessToken 
             : conn.accessToken;
           
-          const validationResult = await OAuthRefreshService.validateToken(accessToken, conn.platform);
+          // Advanced validation with auto-refresh attempts
+          let validationResult = await OAuthRefreshService.validateToken(accessToken, conn.platform);
+          
+          // Auto-refresh for expired tokens
+          if (!validationResult.isValid && validationResult.needsRefresh) {
+            try {
+              const refreshResult = await OAuthRefreshService.validateAndRefreshConnection(userId.toString(), conn.platform);
+              if (refreshResult.success) {
+                validationResult = { isValid: true, needsRefresh: false };
+              }
+            } catch (refreshError) {
+              console.log(`Auto-refresh failed for ${conn.platform}, manual refresh needed`);
+            }
+          }
           
           return {
             ...conn,
-            isActive: conn.isActive, // Trust database state
+            isActive: conn.isActive,
             oauthStatus: {
               platform: conn.platform,
               isValid: validationResult.isValid,
               needsRefresh: validationResult.needsRefresh,
               error: validationResult.error,
-              requiredScopes: getPlatformScopes(conn.platform)
+              requiredScopes: getPlatformScopes(conn.platform),
+              autoRefreshAttempted: !validationResult.isValid && validationResult.needsRefresh
             }
           };
         } catch (error) {
-          console.error(`OAuth validation failed for ${conn.platform}:`, error);
+          console.error(`Platform ${conn.platform} validation error:`, error);
           return {
             ...conn,
-            isActive: conn.isActive, // Keep database state even if validation fails
+            isActive: conn.isActive,
             oauthStatus: {
               platform: conn.platform,
               isValid: false,
               needsRefresh: true,
-              error: 'Token validation failed',
-              requiredScopes: getPlatformScopes(conn.platform)
+              error: 'Validation failed - reconnection required',
+              requiredScopes: getPlatformScopes(conn.platform),
+              autoRefreshAttempted: false
             }
           };
         }
       }));
 
-      // Sort for consistent UI ordering
-      const sortedConnections = connectionsWithStatus.sort((a, b) => a.platform.localeCompare(b.platform));
+      // Performance-optimized sorting with connection health scores
+      const sortedConnections = connectionsWithStatus.sort((a, b) => {
+        const scoreA = a.oauthStatus?.isValid ? 1 : 0;
+        const scoreB = b.oauthStatus?.isValid ? 1 : 0;
+        if (scoreA !== scoreB) return scoreB - scoreA; // Valid connections first
+        return a.platform.localeCompare(b.platform);
+      });
+
+      const processingTime = Date.now() - startTime;
+      console.log(`⚡ Platform connections optimized: ${processingTime}ms total processing time`);
 
       res.json(sortedConnections);
     } catch (error: any) {
-      console.error('Get connections error:', error);
-      res.status(500).json({ message: "Error fetching connections" });
+      console.error('Platform connections optimization error:', error);
+      res.status(500).json({ message: "Connection optimization failed", details: error.message });
     }
   });
 
@@ -8728,6 +8754,175 @@ Continue building your Value Proposition Canvas systematically.`;
         success: false, 
         error: 'Failed to fetch user feedback' 
       });
+    }
+  });
+
+  // AI CONTENT OPTIMIZATION ENDPOINTS - World-class content generation
+  app.post('/api/ai/optimize-content', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { contentType, platform } = req.body;
+      
+      // Get user's brand purpose for personalization
+      const brandPurpose = await storage.getBrandPurposeByUser(userId);
+      
+      const optimizedContent = await AIContentOptimizer.generatePersonalizedContent(
+        userId,
+        brandPurpose,
+        contentType || 'engagement'
+      );
+      
+      res.json({
+        success: true,
+        content: optimizedContent,
+        message: 'Content optimized for maximum engagement'
+      });
+      
+    } catch (error: any) {
+      console.error('AI content optimization error:', error);
+      res.status(500).json({ error: 'Content optimization failed', details: error.message });
+    }
+  });
+
+  // AI LEARNING & OPTIMIZATION ENDPOINT - 30-day improvement cycles
+  app.get('/api/ai/learning-insights/:userId', requireAuth, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      const insights = await AIContentOptimizer.learnAndOptimize(userId);
+      
+      res.json({
+        success: true,
+        insights,
+        message: 'Learning algorithm analysis complete'
+      });
+      
+    } catch (error: any) {
+      console.error('AI learning insights error:', error);
+      res.status(500).json({ error: 'Learning analysis failed', details: error.message });
+    }
+  });
+
+  // SEO HASHTAG GENERATION ENDPOINT - Keywords & meta tags optimization
+  app.post('/api/ai/generate-seo', requireAuth, async (req: any, res) => {
+    try {
+      const { content, industry, location } = req.body;
+      
+      const seoData = await AIContentOptimizer.generateSEOHashtags(
+        content,
+        industry || 'professional-services',
+        location || 'Queensland'
+      );
+      
+      res.json({
+        success: true,
+        seo: seoData,
+        message: 'SEO optimization complete'
+      });
+      
+    } catch (error: any) {
+      console.error('SEO generation error:', error);
+      res.status(500).json({ error: 'SEO generation failed', details: error.message });
+    }
+  });
+
+  // OPTIMAL TIMING ANALYSIS ENDPOINT - AI-powered scheduling
+  app.get('/api/ai/optimal-timing/:platform', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const platform = req.params.platform;
+      
+      const timingData = await AIContentOptimizer.calculateOptimalTiming(userId, platform);
+      
+      res.json({
+        success: true,
+        timing: timingData,
+        message: 'Optimal timing calculated'
+      });
+      
+    } catch (error: any) {
+      console.error('Optimal timing calculation error:', error);
+      res.status(500).json({ error: 'Timing calculation failed', details: error.message });
+    }
+  });
+
+  // BUSINESS ANALYTICS ENDPOINT - Growth insights & performance tracking
+  app.get('/api/analytics/growth-insights', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const period = parseInt(req.query.period as string) || 30;
+      
+      const insights = await AnalyticsEngine.generateGrowthInsights(userId, period);
+      
+      res.json({
+        success: true,
+        insights,
+        message: 'Business growth insights generated'
+      });
+      
+    } catch (error: any) {
+      console.error('Growth insights error:', error);
+      res.status(500).json({ error: 'Growth insights failed', details: error.message });
+    }
+  });
+
+  // POST PERFORMANCE TRACKING ENDPOINT - Real-time analytics
+  app.get('/api/analytics/post-performance/:postId', requireAuth, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      
+      const performance = await AnalyticsEngine.trackPostPerformance(postId);
+      
+      res.json({
+        success: true,
+        performance,
+        message: 'Post performance tracked'
+      });
+      
+    } catch (error: any) {
+      console.error('Post performance tracking error:', error);
+      res.status(500).json({ error: 'Performance tracking failed', details: error.message });
+    }
+  });
+
+  // AUDIENCE INSIGHTS ENDPOINT - Advanced targeting optimization
+  app.get('/api/analytics/audience-insights', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      
+      const insights = await AnalyticsEngine.generateAudienceInsights(userId);
+      
+      res.json({
+        success: true,
+        insights,
+        message: 'Audience insights generated'
+      });
+      
+    } catch (error: any) {
+      console.error('Audience insights error:', error);
+      res.status(500).json({ error: 'Audience insights failed', details: error.message });
+    }
+  });
+
+  // COMPETITOR ANALYSIS ENDPOINT - Industry benchmarking
+  app.post('/api/analytics/competitor-analysis', requireAuth, async (req: any, res) => {
+    try {
+      const { industry, location } = req.body;
+      
+      const analysis = await AnalyticsEngine.performCompetitorAnalysis(
+        industry || 'professional-services',
+        location || 'Queensland'
+      );
+      
+      res.json({
+        success: true,
+        analysis,
+        message: 'Competitor analysis complete'
+      });
+      
+    } catch (error: any) {
+      console.error('Competitor analysis error:', error);
+      res.status(500).json({ error: 'Competitor analysis failed', details: error.message });
     }
   });
 

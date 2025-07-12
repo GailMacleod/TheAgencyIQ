@@ -20,6 +20,7 @@ import IntelligentSchedule from "@/pages/intelligent-schedule";
 import Login from "@/pages/login";
 import GrokTest from "@/pages/grok-test";
 import Analytics from "@/pages/analytics";
+import AIDashboard from "@/pages/ai-dashboard";
 import YearlyAnalytics from "@/pages/yearly-analytics";
 import Profile from "@/pages/profile";
 import ResetPassword from "@/pages/reset-password";
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/schedule" component={IntelligentSchedule} />
       <Route path="/intelligent-schedule" component={IntelligentSchedule} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/ai-dashboard" component={AIDashboard} />
       <Route path="/yearly-analytics" component={YearlyAnalytics} />
       <Route path="/profile" component={Profile} />
       <Route path="/grok-test" component={GrokTest} />
