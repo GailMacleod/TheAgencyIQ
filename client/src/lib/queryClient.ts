@@ -24,7 +24,33 @@ export async function apiRequest(
 
   console.log(`API call to ${url} returned ${response.status}`);
 
-  if (!response.ok || !contentType?.includes('application/json')) {
+  if (!response.ok) {
+    const text = await response.text();
+    console.error('API Error:', text);
+    
+    // Handle subscription validation responses
+    if (response.status === 401 || response.status === 403) {
+      try {
+        const errorData = JSON.parse(text);
+        if (errorData.requiresSubscription) {
+          // Redirect to subscription page for subscription requirement
+          window.location.href = '/subscription';
+          return;
+        }
+        if (errorData.requiresLogin) {
+          // Redirect to login page for authentication requirement
+          window.location.href = '/login';
+          return;
+        }
+      } catch (e) {
+        // If not JSON, treat as regular error
+      }
+    }
+    
+    throw new Error(`${response.status}: ${text}`);
+  }
+  
+  if (!contentType?.includes('application/json')) {
     const text = await response.text();
     console.error('Non-JSON response:', text);
     throw new Error('Invalid response: ' + text.substring(0, 50));

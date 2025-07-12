@@ -90,6 +90,67 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
   twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
 
+// Comprehensive subscription middleware - blocks ALL access except wizard
+const requirePaidSubscription = async (req: any, res: any, next: any) => {
+  // Allow wizard and subscription endpoints to be public
+  const publicPaths = [
+    '/api/subscription-plans',
+    '/api/user-status',
+    '/webhook',
+    '/api/webhook',
+    '/manifest.json',
+    '/',
+    '/subscription'
+  ];
+  
+  // Check if this is a public path
+  if (publicPaths.some(path => req.path === path || req.path.startsWith(path))) {
+    return next();
+  }
+  
+  // Check for authenticated session
+  if (!req.session?.userId) {
+    return res.status(401).json({ 
+      message: "Authentication required",
+      requiresLogin: true 
+    });
+  }
+  
+  try {
+    // Verify user exists and has active subscription
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      req.session.destroy((err: any) => {
+        if (err) console.error('Session destroy error:', err);
+      });
+      return res.status(401).json({ 
+        message: "User account not found",
+        requiresLogin: true 
+      });
+    }
+    
+    // Check subscription status
+    const hasActiveSubscription = user.subscriptionPlan && user.subscriptionPlan !== 'free';
+    if (!hasActiveSubscription) {
+      return res.status(403).json({ 
+        message: "Active subscription required",
+        requiresSubscription: true,
+        currentPlan: user.subscriptionPlan || 'free'
+      });
+    }
+    
+    // Refresh session and continue
+    req.session.touch();
+    next();
+  } catch (error: any) {
+    console.error('Subscription auth error:', error);
+    return res.status(500).json({ 
+      message: "Authentication error",
+      requiresLogin: true 
+    });
+  }
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Add global error handler for debugging 500 errors
@@ -156,6 +217,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
     name: 'connect.sid',
   }));
+
+  // Apply comprehensive subscription middleware to ALL routes
+  app.use(requirePaidSubscription);
 
   // Initialize Passport and OAuth strategies
   const { passport: configuredPassport, configurePassportStrategies } = await import('./oauth-config.js');
