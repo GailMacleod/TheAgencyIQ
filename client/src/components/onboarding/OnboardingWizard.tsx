@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Circle, ArrowRight, ArrowLeft, X, Target, Users, Zap, Calendar, BarChart3, Play, CreditCard } from "lucide-react";
+import { CheckCircle, Circle, ArrowRight, ArrowLeft, X, Target, Users, Zap, Calendar, BarChart3, Play, CreditCard, Minimize2, Maximize2 } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface WizardStep {
@@ -648,8 +648,9 @@ export default function OnboardingWizard() {
               variant="ghost"
               size="sm"
               className="text-gray-500 hover:text-gray-700 shrink-0"
+              title={isMinimized ? "Expand wizard" : "Minimize wizard"}
             >
-              {isMinimized ? <Play className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+              {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
             </Button>
           </div>
           {!isMinimized && (
