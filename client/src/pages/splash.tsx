@@ -138,10 +138,12 @@ export default function Splash() {
                     Technology Intelligence - BETA
                   </div>
                 </div>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                  <span className="block bg-gradient-atomiq bg-clip-text text-[#3250fa] text-[58px]">Set & forget</span>
-                  <span className="block bg-gradient-atomiq bg-clip-text text-[#3b5cff] text-[55px]">Social media for small businesses</span>
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-[#3250fa] text-[58px]">
+                  Set & forget
                 </h1>
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-[#3b5cff] text-[55px]">
+                  Social media for small businesses
+                </h2>
                 <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">Complete waterfall workflow to drive small businesses's online social presence.</p>
               </div>
               
