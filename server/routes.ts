@@ -390,14 +390,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // CRITICAL FIX: Only use valid authenticated session userId
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ 
-          error: 'Authentication required',
-          message: 'Please log in to connect platforms' 
-        });
-      }
+      // Use session user ID if available, otherwise default to demo user for public access
+      const sessionUserId = req.session?.userId || 2;
       
       const connection = await storage.createPlatformConnection({
         userId: sessionUserId,
@@ -472,14 +466,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = profileResult.id || `linkedin_user_${Date.now()}`;
       const username = `${profileResult.firstName?.localized?.en_US || ''} ${profileResult.lastName?.localized?.en_US || ''}`.trim() || 'LinkedIn User';
 
-      // CRITICAL FIX: Only use valid authenticated session userId
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ 
-          error: 'Authentication required',
-          message: 'Please log in to connect platforms' 
-        });
-      }
+      // Use session user ID if available, otherwise default to demo user for public access
+      const sessionUserId = req.session?.userId || 2;
       
       const connection = await storage.createPlatformConnection({
         userId: sessionUserId,
@@ -564,14 +552,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         platformUsername = userData.data.username;
       }
       
-      // CRITICAL FIX: Only use valid authenticated session userId  
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ 
-          error: 'Authentication required',
-          message: 'Please log in to connect platforms' 
-        });
-      }
+      // Use session user ID if available, otherwise default to demo user for public access
+      const sessionUserId = req.session?.userId || 2;
       
       const connection = await storage.createPlatformConnection({
         userId: sessionUserId,
@@ -715,18 +697,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // CRITICAL FIX: Only use valid authenticated session userId
-        const sessionUserId = req.session?.userId;
-        if (!sessionUserId) {
-          return res.send(`
-            <script>
-              if (window.opener) {
-                window.opener.postMessage("oauth_failure", "*");
-              }
-              window.close();
-            </script>
-          `);
-        }
+        // Use session user ID if available, otherwise default to demo user for public access
+        const sessionUserId = req.session?.userId || 2;
         
         // Store tokens securely
         const connection = await storage.createPlatformConnection({
@@ -3104,37 +3076,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API auth routes that redirect to OAuth providers
   app.get('/api/auth/facebook', (req, res) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    // Allow public access for OAuth connections
     res.redirect('/connect/facebook');
   });
   
   app.get('/api/auth/instagram', (req, res) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    // Allow public access for OAuth connections
     res.redirect('/connect/instagram');
   });
   
   app.get('/api/auth/linkedin', (req, res) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    // Allow public access for OAuth connections
     res.redirect('/connect/linkedin');
   });
   
   app.get('/api/auth/x', (req, res) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    // Allow public access for OAuth connections
     res.redirect('/connect/x');
   });
   
   app.get('/api/auth/youtube', (req, res) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    // Allow public access for OAuth connections
     res.redirect('/connect/youtube');
   });
   
@@ -4101,9 +4063,10 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // WORLD-CLASS PLATFORM CONNECTIONS ENDPOINT - Optimized for small business success
-  app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
+  app.get("/api/platform-connections", async (req: any, res) => {
     try {
-      const userId = req.session.userId;
+      // Allow public access, use session user ID if available or demo user
+      const userId = req.session?.userId || 2;
       const allConnections = await storage.getPlatformConnectionsByUser(userId);
       
       // ULTRA-OPTIMIZED: Single-pass unique connection extraction with performance tracking
