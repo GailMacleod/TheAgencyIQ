@@ -390,8 +390,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Use session user ID if available, otherwise default to demo user for public access
-      const sessionUserId = req.session?.userId || 2;
+      // CRITICAL: Only use valid authenticated session userId
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ 
+          error: 'Authentication required',
+          message: 'Please log in to connect platforms' 
+        });
+      }
       
       const connection = await storage.createPlatformConnection({
         userId: sessionUserId,
@@ -466,8 +472,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = profileResult.id || `linkedin_user_${Date.now()}`;
       const username = `${profileResult.firstName?.localized?.en_US || ''} ${profileResult.lastName?.localized?.en_US || ''}`.trim() || 'LinkedIn User';
 
-      // Use session user ID if available, otherwise default to demo user for public access
-      const sessionUserId = req.session?.userId || 2;
+      // CRITICAL: Only use valid authenticated session userId
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ 
+          error: 'Authentication required',
+          message: 'Please log in to connect platforms' 
+        });
+      }
       
       const connection = await storage.createPlatformConnection({
         userId: sessionUserId,
@@ -552,8 +564,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         platformUsername = userData.data.username;
       }
       
-      // Use session user ID if available, otherwise default to demo user for public access
-      const sessionUserId = req.session?.userId || 2;
+      // CRITICAL: Only use valid authenticated session userId
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ 
+          error: 'Authentication required',
+          message: 'Please log in to connect platforms' 
+        });
+      }
       
       const connection = await storage.createPlatformConnection({
         userId: sessionUserId,
@@ -697,8 +715,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Use session user ID if available, otherwise default to demo user for public access
-        const sessionUserId = req.session?.userId || 2;
+        // CRITICAL: Only use valid authenticated session userId
+        const sessionUserId = req.session?.userId;
+        if (!sessionUserId) {
+          return res.send(`
+            <script>
+              if (window.opener) {
+                window.opener.postMessage("oauth_failure", "*");
+              }
+              window.close();
+            </script>
+          `);
+        }
         
         // Store tokens securely
         const connection = await storage.createPlatformConnection({
@@ -3091,8 +3119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect('/connect/x');
   });
   
-  app.get('/api/auth/youtube', (req, res) => {
-    // Allow public access for OAuth connections
+  app.get('/api/auth/youtube', requireAuth, (req, res) => {
     res.redirect('/connect/youtube');
   });
   
@@ -4059,10 +4086,9 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // WORLD-CLASS PLATFORM CONNECTIONS ENDPOINT - Optimized for small business success
-  app.get("/api/platform-connections", async (req: any, res) => {
+  app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
     try {
-      // Allow public access, use session user ID if available or demo user
-      const userId = req.session?.userId || 2;
+      const userId = req.session.userId;
       const allConnections = await storage.getPlatformConnectionsByUser(userId);
       
       // ULTRA-OPTIMIZED: Single-pass unique connection extraction with performance tracking
