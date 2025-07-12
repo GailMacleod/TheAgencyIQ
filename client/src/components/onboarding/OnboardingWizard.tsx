@@ -134,10 +134,31 @@ export default function OnboardingWizard() {
               // Non-subscriber flow: demo mode steps
               setCurrentStep(0);
             }
+          } else {
+            // Default to demo mode for non-authenticated users
+            setIsDemoMode(true);
+            setCurrentStep(0);
+            setUserStatus({
+              userType: 'new',
+              hasActiveSubscription: false,
+              hasBrandSetup: false,
+              hasConnections: false,
+              currentUrl: location
+            });
           }
         }
       } catch (error) {
         console.log('Could not check user status:', error);
+        // Default to demo mode on any error
+        setIsDemoMode(true);
+        setCurrentStep(0);
+        setUserStatus({
+          userType: 'new',
+          hasActiveSubscription: false,
+          hasBrandSetup: false,
+          hasConnections: false,
+          currentUrl: location
+        });
       }
     };
     
