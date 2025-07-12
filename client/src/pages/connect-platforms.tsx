@@ -112,13 +112,15 @@ export default function ConnectPlatforms() {
     refetchOnMount: true,
     onSuccess: (data) => {
       // Intelligent success notifications for platform health
-      const validConnections = data.filter(conn => conn.oauthStatus?.isValid).length;
-      const totalConnections = data.length;
-      
-      if (validConnections === totalConnections && totalConnections > 0) {
-        console.log(`🚀 All ${totalConnections} platforms connected and optimized`);
-      } else if (validConnections > 0) {
-        console.log(`⚡ ${validConnections}/${totalConnections} platforms ready for publishing`);
+      if (data && Array.isArray(data)) {
+        const validConnections = data.filter(conn => conn.oauthStatus?.isValid).length;
+        const totalConnections = data.length;
+        
+        if (validConnections === totalConnections && totalConnections > 0) {
+          console.log(`🚀 All ${totalConnections} platforms connected and optimized`);
+        } else if (validConnections > 0) {
+          console.log(`⚡ ${validConnections}/${totalConnections} platforms ready for publishing`);
+        }
       }
     },
     onError: (error) => {
@@ -136,11 +138,13 @@ export default function ConnectPlatforms() {
   const platformConnectionState = useMemo(() => {
     // Simple Map-based state creation - server already provides unique connections
     const state: {[key: string]: boolean} = {};
-    connections.forEach(conn => {
-      if (conn.isActive) {
-        state[conn.platform] = true;
-      }
-    });
+    if (connections && Array.isArray(connections)) {
+      connections.forEach(conn => {
+        if (conn.isActive) {
+          state[conn.platform] = true;
+        }
+      });
+    }
     return state;
   }, [connections]);
 
