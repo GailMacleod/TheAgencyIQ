@@ -4098,67 +4098,48 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // UNIFIED PLATFORM CONNECTIONS ENDPOINT - Single source of truth with user-platform uniqueness
+  // OPTIMIZED PLATFORM CONNECTIONS ENDPOINT - Single source of truth with efficient processing
   app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       const allConnections = await storage.getPlatformConnectionsByUser(userId);
       
-      // ENHANCED: Enforce unique active connection per user-platform combination
-      const platformGroups: {[key: string]: any[]} = {};
-      allConnections.forEach(conn => {
-        if (!platformGroups[conn.platform]) {
-          platformGroups[conn.platform] = [];
+      // OPTIMIZED: Get unique active connections per platform in a single pass
+      const platformMap = new Map<string, any>();
+      
+      // Single iteration to find most recent active connection per platform
+      for (const conn of allConnections) {
+        if (!conn.isActive) continue;
+        
+        const existing = platformMap.get(conn.platform);
+        if (!existing || new Date(conn.connectedAt) > new Date(existing.connectedAt)) {
+          platformMap.set(conn.platform, conn);
         }
-        platformGroups[conn.platform].push(conn);
-      });
+      }
       
-      // Keep only the most recent active connection per platform for this user
-      const uniqueConnections: any[] = [];
-      Object.entries(platformGroups).forEach(([platform, conns]) => {
-        const activeConns = conns.filter(c => c.isActive);
-        if (activeConns.length > 0) {
-          // Sort by connection date (most recent first)
-          const sorted = activeConns.sort((a, b) => 
-            new Date(b.connectedAt).getTime() - new Date(a.connectedAt).getTime()
-          );
-          uniqueConnections.push(sorted[0]);
-        }
-      });
+      const uniqueConnections = Array.from(platformMap.values());
+      console.log(`🔧 User ${userId}: ${uniqueConnections.length} active platform connections`);
       
-      console.log(`🔧 User ${userId} connections: ${allConnections.length} total → ${uniqueConnections.length} unique active per platform`);
+      // OPTIMIZED: Batch OAuth validation with efficient token sharing
+      const facebookConnection = uniqueConnections.find(conn => conn.platform === 'facebook');
       
-      const connections = uniqueConnections;
-      
-      // Find Facebook connection to share token with Instagram
-      const facebookConnection = connections.find(conn => conn.platform === 'facebook');
-      
-      // Add OAuth status validation using existing OAuthRefreshService
-      const connectionsWithStatus = await Promise.all(connections.map(async (conn) => {
+      const connectionsWithStatus = await Promise.all(uniqueConnections.map(async (conn) => {
         try {
-          let accessTokenToValidate = conn.accessToken;
+          // Efficient token validation with Instagram-Facebook sharing
+          const accessToken = (conn.platform === 'instagram' && facebookConnection) 
+            ? facebookConnection.accessToken 
+            : conn.accessToken;
           
-          // Instagram uses Facebook's token since they share the same Meta Graph API
-          if (conn.platform === 'instagram' && facebookConnection) {
-            accessTokenToValidate = facebookConnection.accessToken;
-          }
-          
-          // Validate token for this specific platform - this is the unified state source
-          const validationResult = await OAuthRefreshService.validateToken(accessTokenToValidate, conn.platform);
-          
-          // Unified connection state logic - prioritize database isActive status
-          // If database says it's active, trust that regardless of OAuth validation
-          const isUnifiedActive = conn.isActive;
+          const validationResult = await OAuthRefreshService.validateToken(accessToken, conn.platform);
           
           return {
             ...conn,
-            // Use database isActive status as primary source of truth
-            isActive: isUnifiedActive,
+            isActive: conn.isActive, // Trust database state
             oauthStatus: {
               platform: conn.platform,
               isValid: validationResult.isValid,
               needsRefresh: validationResult.needsRefresh,
-              error: validationResult.error || (validationResult.isValid ? undefined : 'Token validation failed'),
+              error: validationResult.error,
               requiredScopes: getPlatformScopes(conn.platform)
             }
           };
@@ -4166,8 +4147,7 @@ Continue building your Value Proposition Canvas systematically.`;
           console.error(`OAuth validation failed for ${conn.platform}:`, error);
           return {
             ...conn,
-            // Mark as inactive if validation fails
-            isActive: false,
+            isActive: conn.isActive, // Keep database state even if validation fails
             oauthStatus: {
               platform: conn.platform,
               isValid: false,
@@ -4179,7 +4159,7 @@ Continue building your Value Proposition Canvas systematically.`;
         }
       }));
 
-      // Sort by platform name for consistent UI ordering
+      // Sort for consistent UI ordering
       const sortedConnections = connectionsWithStatus.sort((a, b) => a.platform.localeCompare(b.platform));
 
       res.json(sortedConnections);

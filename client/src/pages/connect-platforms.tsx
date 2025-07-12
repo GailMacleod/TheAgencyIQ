@@ -77,18 +77,15 @@ export default function ConnectPlatforms() {
   const [connecting, setConnecting] = useState<{[key: string]: boolean}>({});
   const [reconnecting, setReconnecting] = useState<{[key: string]: boolean}>({});
 
-  // ENHANCED STATE MANAGEMENT: User-specific platform connections with real-time sync
+  // OPTIMIZED STATE MANAGEMENT: Efficient platform connections with smart refresh
   const { data: connections = [], isLoading, refetch, error } = useQuery<PlatformConnection[]>({
     queryKey: ['/api/platform-connections'],
     retry: (failureCount, error: any) => {
-      // If we get a 401 error, try to establish session first
       if (error?.response?.status === 401 && failureCount < 2) {
-        console.log('🔄 401 detected, attempting session establishment...');
+        // Quick session recovery for 401 errors
         fetch('/api/establish-session', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: 'gailm@macleodglba.com.au',
             phone: '+61424835189'
@@ -96,7 +93,6 @@ export default function ConnectPlatforms() {
           credentials: 'include'
         }).then(response => {
           if (response.ok) {
-            console.log('✅ Session re-established, retrying connection query');
             queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
           }
         });
@@ -105,45 +101,20 @@ export default function ConnectPlatforms() {
       return failureCount < 3;
     },
     refetchOnWindowFocus: true,
-    refetchInterval: 5000, // Faster refresh for better UI responsiveness
-    staleTime: 0, // Always consider data stale to force refresh
-    refetchOnMount: true, // Always refetch on component mount
-    refetchOnReconnect: true // Refetch when connection is restored
+    refetchInterval: 10000, // Balanced refresh rate
+    staleTime: 5000, // 5 second cache for better performance
+    refetchOnMount: true
   });
 
-  // FIXED: Platform connection state debugging for unique active connections
+  // OPTIMIZED: Platform connection state with efficient processing
   const platformConnectionState = useMemo(() => {
+    // Simple Map-based state creation - server already provides unique connections
     const state: {[key: string]: boolean} = {};
-    
-    // Group connections by platform
-    const platformGroups: {[key: string]: PlatformConnection[]} = {};
     connections.forEach(conn => {
-      if (!platformGroups[conn.platform]) {
-        platformGroups[conn.platform] = [];
-      }
-      platformGroups[conn.platform].push(conn);
-    });
-    
-    // For each platform, find the most recent active connection
-    Object.entries(platformGroups).forEach(([platform, conns]) => {
-      const activeConns = conns.filter(c => c.isActive);
-      if (activeConns.length > 0) {
-        // Sort by connection date (most recent first)
-        const sorted = activeConns.sort((a, b) => 
-          new Date(b.connectedAt).getTime() - new Date(a.connectedAt).getTime()
-        );
-        const mostRecent = sorted[0];
-        
-        // Only set state for the most recent connection
-        state[platform] = true;
-        
-        // Log duplicate cleanup only when there are duplicates
-        if (activeConns.length > 1) {
-          console.log(`🔧 Platform ${platform}: Found ${activeConns.length} active connections, using most recent (ID: ${mostRecent.id})`);
-        }
+      if (conn.isActive) {
+        state[conn.platform] = true;
       }
     });
-    
     return state;
   }, [connections]);
 
@@ -170,52 +141,38 @@ export default function ConnectPlatforms() {
     }
   }, [userStatus, setLocation, toast]);
 
-  // Unified OAuth success/failure message handling
+  // OPTIMIZED: Unified OAuth message handling with efficient refresh
   useEffect(() => {
-    if (!refetch) return; // Ensure refetch is defined
+    if (!refetch) return;
 
     const handleMessage = (e: MessageEvent) => {
-      console.log('OAuth popup message received:', e.data);
-      
       if (e.data === 'oauth_success') {
-        // Clear connecting states
         setConnecting({});
         setReconnecting({});
         
-        // ENHANCED: Aggressive refresh for real-time UI synchronization
-        console.log('🔄 OAuth success - initiating aggressive refresh sequence');
-        
-        // Immediate invalidation and forced refresh
+        // Efficient refresh with single invalidation
         queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-        queryClient.removeQueries({ queryKey: ['/api/platform-connections'] });
         
-        // Sequential refresh attempts with extended timing for better UX
-        const refreshSequence = [250, 750, 1500, 3000, 5000];
-        refreshSequence.forEach((delay, index) => {
-          setTimeout(() => {
-            console.log(`🔄 Refresh attempt ${index + 1}/${refreshSequence.length} after ${delay}ms`);
-            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-            queryClient.removeQueries({ queryKey: ['/api/platform-connections'] });
-            refetch();
-          }, delay);
-        });
+        // Single delayed refresh to allow server processing
+        setTimeout(() => {
+          refetch();
+        }, 1000);
         
         toast({
           title: "Connection Successful",
-          description: "Platform has been connected successfully",
+          description: "Platform connected successfully",
           variant: "default",
-          duration: 4000
+          duration: 3000
         });
       } else if (e.data === 'oauth_failure') {
-        // Clear connecting states
         setConnecting({});
         setReconnecting({});
         
         toast({
-          title: "OAuth Failed",
+          title: "Connection Failed",
           description: "Authentication failed. Please try again.",
           variant: "destructive",
-          duration: 5000
+          duration: 4000
         });
       }
     };
@@ -224,23 +181,18 @@ export default function ConnectPlatforms() {
     return () => window.removeEventListener('message', handleMessage);
   }, [refetch, toast, queryClient]);
 
-  // Refresh connection data when returning from OAuth callback
+  // OPTIMIZED: OAuth callback handling with efficient refresh
   useEffect(() => {
-    if (!refetch) return; // Ensure refetch is defined
+    if (!refetch) return;
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('connected') || urlParams.get('success')) {
-      // OAuth callback success - refresh unified connection state with multiple attempts
+      // Single refresh for OAuth callback
       queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
       
       setTimeout(() => {
         refetch();
-      }, 500);
-      
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-        refetch();
-      }, 1500);
+      }, 1000);
       
       // Clean up URL parameters
       const cleanUrl = window.location.pathname;
@@ -307,18 +259,9 @@ export default function ConnectPlatforms() {
           // Clear connecting state
           setConnecting(prev => ({ ...prev, [platform]: false }));
           
-          // Force refresh of unified connection state with multiple attempts
+          // Efficient single refresh
           queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-          
-          // Sequential refresh attempts to ensure state sync
-          setTimeout(() => {
-            refetch();
-          }, 500);
-          
-          setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-            refetch();
-          }, 1500);
+          setTimeout(() => refetch(), 1000);
           
           // Show success message
           toast({
@@ -358,23 +301,9 @@ export default function ConnectPlatforms() {
           // Always clear connecting state when popup closes
           setConnecting(prev => ({ ...prev, [platform]: false }));
           
-          // Force refresh of unified connection state with extended timing
+          // Single efficient refresh
           queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-          
-          // Multiple refresh attempts to ensure state sync
-          setTimeout(() => {
-            refetch();
-          }, 500);
-          
-          setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-            refetch();
-          }, 1500);
-          
-          setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-            refetch();
-          }, 3000);
+          setTimeout(() => refetch(), 1000);
         }
       }, 1000);
     } catch (error: any) {
@@ -449,11 +378,9 @@ export default function ConnectPlatforms() {
           // Always clear reconnecting state when popup closes
           setReconnecting(prev => ({ ...prev, [platform]: false }));
           
-          // Force refresh of unified connection state and invalidate cache
+          // Single efficient refresh
           queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-          setTimeout(() => {
-            refetch();
-          }, 1000);
+          setTimeout(() => refetch(), 1000);
         }
       }, 1000);
       
