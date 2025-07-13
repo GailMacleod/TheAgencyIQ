@@ -8251,194 +8251,37 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // OAuth routes for social media platforms
-  app.get("/api/auth/facebook", async (req, res) => {
-    try {
-      // Ensure session is established for user_id: 2
-      let userId = req.session?.userId;
-      
-      if (!userId) {
-        // Auto-establish session for user_id: 2
-        const existingUser = await storage.getUser(2);
-        if (existingUser) {
-          userId = 2;
-          req.session.userId = 2;
-          await new Promise((resolve) => {
-            req.session.save(() => resolve(void 0));
-          });
-          console.log('Facebook OAuth: Session auto-established for user_id: 2');
-        } else {
-          return res.status(401).json({ message: "User session required for Facebook connection" });
-        }
-      }
-
-      const clientId = process.env.FACEBOOK_APP_ID;
-      
-      // Use dynamic callback URI based on environment
-      const redirectUri = process.env.NODE_ENV === 'production' 
-        ? 'https://app.theagencyiq.ai/callback'
-        : `https://${process.env.REPLIT_DEV_DOMAIN}/callback`;
-      
-      console.log(`🔗 Facebook OAuth initiation:`);
-      console.log(`📍 Callback URI: ${redirectUri}`);
-      console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
-      console.log(`🎯 REPL_SLUG: ${process.env.REPL_SLUG}, REPL_OWNER: ${process.env.REPL_OWNER}`);
-      
-      const scope = 'pages_show_list,pages_manage_posts,pages_read_engagement';
-      const state = Buffer.from(JSON.stringify({ userId, platform: 'facebook' })).toString('base64');
-      
-      if (!clientId) {
-        console.error('Facebook App ID not configured');
-        return res.status(500).json({ message: "Facebook App ID not configured" });
-      }
-      
-      const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
-      res.redirect(authUrl);
-    } catch (error) {
-      console.error('Facebook OAuth initiation error:', error);
-      res.status(500).json({ message: "Failed to initiate Facebook OAuth" });
-    }
+  // Facebook OAuth - Use passport strategy
+  app.get("/api/auth/facebook", requireAuth, (req, res, next) => {
+    passport.authenticate('facebook', { 
+      scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement']
+    })(req, res, next);
   });
 
-  app.get("/api/auth/facebook/callback", async (req, res) => {
-    try {
-      const { code, state, error } = req.query;
-      
-      if (error) {
-        return res.redirect('/connect-platforms?error=facebook_oauth_denied');
-      }
-
-      const clientId = process.env.FACEBOOK_APP_ID;
-      const clientSecret = process.env.FACEBOOK_APP_SECRET;
-      const redirectUri = 'https://app.theagencyiq.ai/callback';
-
-      if (!code || !clientId || !clientSecret) {
-        return res.redirect('/connect-platforms?error=facebook_auth_failed');
-      }
-
-      let userId;
-      if (state) {
-        try {
-          const stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
-          userId = stateData.userId;
-        } catch (e) {
-          console.error('State parsing error:', e);
-          return res.redirect('/connect-platforms?error=facebook_state_invalid');
-        }
-      }
-      
-      if (!userId) {
-        return res.redirect('/connect-platforms?error=facebook_no_user');
-      }
-
-      if (!req.session.userId) {
-        req.session.userId = userId;
-        await new Promise((resolve) => {
-          req.session.save(() => resolve(void 0));
-        });
-      }
-
-      // Exchange code for access token
-      const tokenResponse = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${clientSecret}&code=${code}`);
-      const tokenData = await tokenResponse.json();
-
-      if (!tokenData.access_token) {
-        return res.redirect('/connect-platforms?error=facebook_token_failed');
-      }
-
-      // Get user info
-      const userResponse = await fetch(`https://graph.facebook.com/me?access_token=${tokenData.access_token}&fields=id,name,email`);
-      const userData = await userResponse.json();
-
-      const expiresAt = tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null;
-
-      // Remove existing Facebook connection
-      const existingConnections = await storage.getPlatformConnectionsByUser(userId);
-      const existingFacebook = existingConnections.find(conn => conn.platform === 'facebook');
-      
-      if (existingFacebook) {
-        await storage.deletePlatformConnection(existingFacebook.id);
-      }
-
-      // Create new platform connection
-      await storage.createPlatformConnection({
-        userId: userId,
-        platform: 'facebook',
-        platformUserId: userData.id || 'facebook_user',
-        platformUsername: userData.name || 'Facebook User',
-        accessToken: tokenData.access_token,
-        refreshToken: null,
-        expiresAt,
-        isActive: true
-      });
-
-      res.redirect('/dashboard?connected=facebook');
-    } catch (error) {
-      res.redirect('/connect-platforms?error=facebook_callback_failed');
+  // Facebook callback handled by passport
+  app.get("/api/auth/facebook/callback", 
+    passport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
+    (req, res) => {
+      res.redirect('/connect-platforms?connected=facebook');
     }
+  );
+
+
+
+  // Instagram OAuth - Use passport strategy
+  app.get("/api/auth/instagram", requireAuth, (req, res, next) => {
+    passport.authenticate('instagram', { 
+      scope: ['instagram_basic', 'pages_show_list']
+    })(req, res, next);
   });
 
-  // Facebook OAuth - Direct connection method
-  app.get("/api/auth/facebook", async (req, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.redirect('/connect-platforms?error=no_session');
-      }
-
-      // Create direct Facebook connection immediately
-      const result = await storage.createPlatformConnection({
-        userId: userId,
-        platform: 'facebook',
-        platformUserId: `fb_${userId}_${Date.now()}`,
-        platformUsername: 'Facebook Page',
-        accessToken: `fb_token_${Date.now()}_${userId}`,
-        refreshToken: null,
-        expiresAt: null,
-        isActive: true
-      });
-
-      console.log(`✅ Direct Facebook connection created for user ${userId}:`, result.id);
-      
-      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
-    } catch (error) {
-      console.error('Direct Facebook connection failed:', error);
-      res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
+  // Instagram callback handled by passport
+  app.get("/api/auth/instagram/callback", 
+    passport.authenticate('instagram', { failureRedirect: '/connect-platforms?error=instagram' }),
+    (req, res) => {
+      res.redirect('/connect-platforms?connected=instagram');
     }
-  });
-
-  // Instagram OAuth - Uses Facebook Graph API
-  app.get("/api/auth/instagram", async (req, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.redirect('/connect-platforms?error=no_session');
-      }
-
-      const clientId = process.env.FACEBOOK_APP_ID;
-      const redirectUri = process.env.NODE_ENV === 'production' 
-        ? 'https://app.theagencyiq.ai/callback'
-        : `https://${process.env.REPLIT_DEV_DOMAIN}/callback`;
-      
-      console.log(`🔗 Instagram OAuth initiation:`);
-      console.log(`📍 Callback URI: ${redirectUri}`);
-      
-      // Instagram uses Facebook's OAuth with valid scopes only
-      const scope = 'pages_show_list,pages_manage_posts,pages_read_engagement';
-      const state = Buffer.from(JSON.stringify({ userId, platform: 'instagram' })).toString('base64');
-      
-      if (!clientId) {
-        console.error('Facebook App ID not configured');
-        return res.status(500).json({ message: "Facebook App ID not configured" });
-      }
-      
-      const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
-      res.redirect(authUrl);
-    } catch (error) {
-      console.error('Instagram OAuth initiation error:', error);
-      res.status(500).json({ message: "Failed to initiate Instagram OAuth" });
-    }
-  });
+  );
 
 
 
@@ -8562,28 +8405,35 @@ Continue building your Value Proposition Canvas systematically.`;
     res.redirect('/connect-platforms?connected=instagram');
   });
 
-  // LinkedIn OAuth - Use passport strategy with real credentials
+  // LinkedIn OAuth - Use passport strategy
   app.get("/api/auth/linkedin", requireAuth, (req, res, next) => {
     passport.authenticate('linkedin', { 
-      scope: ['r_liteprofile', 'w_member_social'],
-      state: req.session?.userId || '2'
+      scope: ['r_liteprofile', 'w_member_social']
     })(req, res, next);
   });
 
-  // LinkedIn OAuth callback - disabled (using direct connection)
-  app.get("/api/auth/linkedin/callback", async (req, res) => {
-    console.log('LinkedIn OAuth callback - redirecting to connect-platforms');
-    res.redirect('/connect-platforms?connected=linkedin');
-  });
+  // LinkedIn callback handled by passport
+  app.get("/api/auth/linkedin/callback", 
+    passport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
+    (req, res) => {
+      res.redirect('/connect-platforms?connected=linkedin');
+    }
+  );
 
   // LinkedIn refresh function removed - using direct connections
 
-  // X OAuth - Use passport strategy with real credentials
+  // X OAuth - Use passport strategy
   app.get("/api/auth/x", requireAuth, (req, res, next) => {
-    passport.authenticate('twitter', { 
-      state: req.session?.userId || '2'
-    })(req, res, next);
+    passport.authenticate('twitter')(req, res, next);
   });
+
+  // X callback handled by passport
+  app.get("/api/auth/x/callback", 
+    passport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=x' }),
+    (req, res) => {
+      res.redirect('/connect-platforms?connected=x');
+    }
+  );
 
   // X OAuth 2.0 Callback - Manual implementation
   app.get("/api/auth/x/callback", async (req, res) => {
