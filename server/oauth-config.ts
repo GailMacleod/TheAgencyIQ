@@ -174,16 +174,20 @@ passport.use(new FacebookStrategy({
   scope: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'], // Fixed: Removed invalid deprecated scopes
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
-  const result = await handleOAuthCallback({
-    req,
-    profile,
-    tokens: { accessToken, refreshToken },
-    platform: 'facebook'
-  });
-  
-  return result.success 
-    ? done(null, result) 
-    : done(new Error(result.error));
+  try {
+    const result = await handleOAuthCallback({
+      req,
+      profile,
+      tokens: { accessToken, refreshToken },
+      platform: 'facebook'
+    });
+    
+    // Return user object for proper session handling
+    const user = { platform: 'facebook', success: result.success, ...result };
+    return done(null, user);
+  } catch (error: any) {
+    return done(error);
+  }
 }));
 
 // Instagram OAuth Strategy - UPDATED SCOPES (Fixed invalid scopes)
