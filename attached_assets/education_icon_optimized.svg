@@ -13,46 +13,49 @@
   <!-- Black background to match original -->
   <rect width="120" height="120" fill="#000000"/>
   
-  <!-- Large cyan arrow pointing up and right -->
-  <path d="M15 90 L40 65 L65 40 L80 25 L85 30 L70 45 L45 70 L20 95 Z" fill="#00f0ff" opacity="0.9"/>
+  <!-- Large cyan pencil/arrow pointing up and right -->
+  <path d="M10 100 L35 75 L60 50 L85 25 L90 30 L87 33 L62 58 L37 83 L12 108 Z" fill="#00f0ff" opacity="0.9"/>
   
-  <!-- Arrow decorative elements -->
-  <path d="M20 85 L15 90 L25 95 Z" fill="#00f0ff"/>
-  <path d="M75 20 L80 25 L85 30 L80 35 L75 30 Z" fill="#00f0ff"/>
+  <!-- Pencil tip -->
+  <path d="M80 20 L85 25 L90 30 L87 33 L82 28 Z" fill="#00f0ff"/>
   
-  <!-- Dark diagonal bar behind person -->
-  <rect x="40" y="30" width="60" height="12" rx="6" fill="#2d3748" transform="rotate(30 70 36)"/>
+  <!-- Pencil body details -->
+  <line x1="15" y1="95" x2="80" y2="30" stroke="#000000" stroke-width="2"/>
+  <line x1="18" y1="92" x2="83" y2="27" stroke="#000000" stroke-width="2"/>
   
-  <!-- Person figure on laptop -->
-  <g transform="translate(70, 35)">
+  <!-- Dark diagonal surface for person to sit on -->
+  <rect x="30" y="40" width="45" height="8" rx="4" fill="#2d3748" transform="rotate(45 52.5 44)"/>
+  
+  <!-- Person sitting on pencil -->
+  <g transform="translate(60, 45) rotate(45)">
     <!-- Head -->
-    <circle cx="8" cy="8" r="6" fill="#ffffff"/>
+    <circle cx="0" cy="-8" r="5" fill="#ffffff"/>
     
     <!-- Hair -->
-    <path d="M2 5 Q8 0 14 5 Q12 8 8 8 Q4 8 2 5" fill="#1e2a4a"/>
+    <path d="M-4 -11 Q0 -13 4 -11 Q2 -8 0 -8 Q-2 -8 -4 -11" fill="#1e2a4a"/>
     
-    <!-- Glasses -->
-    <ellipse cx="6" cy="7" rx="2" ry="1.5" fill="none" stroke="#3250fa" stroke-width="1"/>
-    <ellipse cx="10" cy="7" rx="2" ry="1.5" fill="none" stroke="#3250fa" stroke-width="1"/>
-    <line x1="8" y1="7" x2="8" y2="7" stroke="#3250fa" stroke-width="1"/>
+    <!-- Blue glasses -->
+    <ellipse cx="-2" cy="-8" rx="1.5" ry="1" fill="none" stroke="#3250fa" stroke-width="1"/>
+    <ellipse cx="2" cy="-8" rx="1.5" ry="1" fill="none" stroke="#3250fa" stroke-width="1"/>
+    <line x1="0" y1="-8" x2="0" y2="-8" stroke="#3250fa" stroke-width="1"/>
     
     <!-- Body -->
-    <rect x="4" y="14" width="8" height="12" rx="4" fill="#3250fa"/>
+    <rect x="-3" y="-3" width="6" height="8" rx="3" fill="#3250fa"/>
     
     <!-- Arms -->
-    <rect x="0" y="16" width="6" height="3" rx="1.5" fill="#ffffff"/>
-    <rect x="10" y="16" width="10" height="3" rx="1.5" fill="#ffffff"/>
+    <rect x="-7" y="-1" width="4" height="2" rx="1" fill="#ffffff"/>
+    <rect x="3" y="-1" width="8" height="2" rx="1" fill="#ffffff"/>
     
     <!-- Laptop -->
-    <rect x="15" y="14" width="10" height="6" rx="1" fill="#1a202c"/>
-    <rect x="16" y="15" width="8" height="4" rx="0.5" fill="#2d3748"/>
-    <line x1="17" y1="16" x2="23" y2="16" stroke="#00f0ff" stroke-width="0.5"/>
-    <line x1="17" y1="17" x2="21" y2="17" stroke="#00f0ff" stroke-width="0.5"/>
-    <line x1="17" y1="18" x2="19" y2="18" stroke="#00f0ff" stroke-width="0.5"/>
+    <rect x="8" y="-3" width="7" height="4" rx="1" fill="#1a202c"/>
+    <rect x="8.5" y="-2.5" width="6" height="3" rx="0.5" fill="#2d3748"/>
+    <line x1="9" y1="-2" x2="14" y2="-2" stroke="#00f0ff" stroke-width="0.3"/>
+    <line x1="9" y1="-1.5" x2="12" y2="-1.5" stroke="#00f0ff" stroke-width="0.3"/>
+    <line x1="9" y1="-1" x2="11" y2="-1" stroke="#00f0ff" stroke-width="0.3"/>
     
     <!-- Legs -->
-    <rect x="5" y="26" width="3" height="8" rx="1.5" fill="#ffffff"/>
-    <rect x="8" y="26" width="3" height="8" rx="1.5" fill="#ffffff"/>
+    <rect x="-2" y="5" width="2" height="6" rx="1" fill="#ffffff"/>
+    <rect x="0" y="5" width="2" height="6" rx="1" fill="#ffffff"/>
   </g>
   
   <!-- White triangular accent at bottom -->
