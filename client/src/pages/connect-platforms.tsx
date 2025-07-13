@@ -482,55 +482,7 @@ export default function ConnectPlatforms() {
     }
   });
 
-  // ENHANCED: Token refresh mutation for expired platforms
-  const tokenRefreshMutation = useMutation({
-    mutationFn: async (platform: string) => {
-      console.log(`🔄 Refreshing token for ${platform}`);
-      
-      const response = await fetch(`/api/platform-connections/${platform}/refresh`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      return response.json();
-    },
-    onSuccess: (data, platform) => {
-      if (data.success) {
-        console.log(`✅ Token refreshed successfully for ${platform}`);
-        
-        // Update UI with fresh connection data
-        queryClient.invalidateQueries({ queryKey: ['/api/platform-connections'] });
-        refetch();
-        
-        toast({
-          title: "Token Refreshed",
-          description: `${platform} connection refreshed successfully`,
-          variant: "default"
-        });
-      } else {
-        console.log(`❌ Token refresh failed for ${platform}: ${data.error}`);
-        
-        toast({
-          title: "Refresh Failed",
-          description: data.message || 'Token refresh failed - manual reconnection required',
-          variant: "destructive"
-        });
-      }
-    },
-    onError: (error, platform) => {
-      console.error(`❌ Token refresh error for ${platform}:`, error);
-      
-      toast({
-        title: "Refresh Failed",
-        description: `Unable to refresh ${platform} token - please reconnect manually`,
-        variant: "destructive"
-      });
-    }
-  });
+
 
   // Test publishing functionality with automatic token refresh
   const testPublishMutation = useMutation({
@@ -729,7 +681,7 @@ export default function ConnectPlatforms() {
                               ) : connectionStatus === 'expired' ? (
                                 <Badge className="text-xs bg-red-100 text-red-800 border-red-300">
                                   <AlertCircle className="w-3 h-3 mr-1" />
-                                  Expired - Reconnect
+                                  Expired
                                 </Badge>
                               ) : (
                                 <Badge className="bg-gray-100 text-gray-800 text-xs">
@@ -776,23 +728,12 @@ export default function ConnectPlatforms() {
                           ) : connectionStatus === 'expired' && connection ? (
                             <>
                               <Button
-                                onClick={() => {
-                                  console.log(`🔄 Refresh token button clicked for ${platform}`);
-                                  tokenRefreshMutation.mutate(platform);
-                                }}
-                                className="text-white border-0 min-w-[140px]"
-                                style={{ backgroundColor: '#ff538f' }}
-                                disabled={tokenRefreshMutation.isPending}
-                              >
-                                {tokenRefreshMutation.isPending ? 'Refreshing...' : 'Refresh Token'}
-                              </Button>
-                              <Button
                                 onClick={() => handleReconnect(platform)}
                                 className="text-white border-0 min-w-[140px]"
                                 style={{ backgroundColor: '#00f0ff' }}
                                 disabled={reconnecting[platform]}
                               >
-                                {reconnecting[platform] ? 'Reconnecting...' : 'Reconnect'}
+                                {reconnecting[platform] ? 'Connecting...' : 'Connect'}
                               </Button>
                               <Button
                                 onClick={() => {
