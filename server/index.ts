@@ -264,10 +264,12 @@ async function startServer() {
       userId: userId
     })).toString('base64');
     
-    // Use dynamic callback URI based on environment
-    const callbackUri = process.env.NODE_ENV === 'production' 
-      ? 'https://app.theagencyiq.ai/callback'
-      : `https://${process.env.REPLIT_DEV_DOMAIN}/callback`;
+    // FIXED: Use root domain for Facebook OAuth callback to match Facebook app settings
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://app.theagencyiq.ai'
+      : `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    
+    const callbackUri = `${baseUrl}/`;  // Root callback to match Facebook whitelist
     
     console.log(`🔗 OAuth initiation for ${platform}:`);
     console.log(`📍 Callback URI: ${callbackUri}`);
