@@ -150,10 +150,10 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: true, // Enable secure cookies for HTTPS
+      secure: false, // Disable secure for development to allow cookie storage
       maxAge: sessionTtl,
       httpOnly: false, // Allow frontend access for session sync
-      sameSite: 'none', // Allow cross-site requests with cookies
+      sameSite: 'lax', // Change to lax for better browser compatibility
       path: '/', // Ensure cookie is available for all paths
       domain: undefined // Remove domain restriction for development
     },

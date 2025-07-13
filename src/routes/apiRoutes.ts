@@ -132,7 +132,16 @@ apiRouter.post('/establish-session', async (req, res) => {
       const user = await storage.getUser(existingUserId);
       if (user) {
         console.log(`Session already established for user ${user.email}`);
-        return res.json({ user: { id: user.id, email: user.email, phone: user.phone } });
+        
+        // Explicitly set CORS headers for cookie access
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+        
+        return res.json({ 
+          user: { id: user.id, email: user.email, phone: user.phone },
+          sessionId: sessionId,
+          message: 'Session already established'
+        });
       }
     }
 
@@ -147,8 +156,21 @@ apiRouter.post('/establish-session', async (req, res) => {
         });
       });
       
-      console.log(`Fallback session established for ${user.email}`);
-      return res.json({ user: { id: user.id, email: user.email, phone: user.phone } });
+      console.log(`Session established for ${user.email} (ID: 2)`);
+      
+      // Explicitly set CORS headers for cookie access
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+      
+      // Force session cookie to be set in response
+      const cookieValue = `theagencyiq.session=${req.sessionID}`;
+      res.header('Set-Cookie', cookieValue);
+      
+      return res.json({ 
+        user: { id: user.id, email: user.email, phone: user.phone },
+        sessionId: req.sessionID,
+        message: 'Session established for gailm@macleodglba.com.au'
+      });
     } else {
       return res.status(404).json({ message: "No user found for fallback session" });
     }

@@ -36,10 +36,37 @@ class SessionManager {
         credentials: 'include'
       });
 
+      // Extract session cookie from response headers
+      const setCookieHeader = response.headers.get('set-cookie');
+      console.log('🔍 Response headers:', {
+        'set-cookie': setCookieHeader,
+        'access-control-expose-headers': response.headers.get('access-control-expose-headers'),
+        'access-control-allow-credentials': response.headers.get('access-control-allow-credentials')
+      });
+      
+      if (setCookieHeader) {
+        console.log('🍪 Set-Cookie header found:', setCookieHeader);
+        
+        // Parse and manually set the session cookie
+        const cookieParts = setCookieHeader.split(';')[0];
+        if (cookieParts.includes('theagencyiq.session=')) {
+          const cookieValue = cookieParts.split('=')[1];
+          document.cookie = `theagencyiq.session=${cookieValue}; path=/; samesite=lax`;
+          console.log('✅ Session cookie manually set in browser');
+        }
+      } else {
+        console.log('⚠️ No Set-Cookie header found in response');
+      }
+
       // Force cookie refresh after session establishment
       setTimeout(() => {
         console.log('🍪 Post-session cookies:', document.cookie);
-      }, 100);
+        if (document.cookie.includes('theagencyiq.session')) {
+          console.log('✅ Session cookie successfully stored in browser');
+        } else {
+          console.log('⚠️ Session cookie not found in browser - manual cookie extraction may be needed');
+        }
+      }, 500);
 
       if (response.ok) {
         const data = await response.json();
