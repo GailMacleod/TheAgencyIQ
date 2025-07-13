@@ -1,6 +1,7 @@
 import express from 'express';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
+import cors from 'cors';
 import { createServer } from 'http';
 import path from 'path';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
@@ -149,6 +150,19 @@ async function startServer() {
       console.log('✅ Session store connection successful');
     }
   });
+
+  // CORS middleware with credentials support
+  app.use(cors({
+    origin: process.env.NODE_ENV === 'production' 
+      ? ['https://app.theagencyiq.ai', 'https://theagencyiq.ai']
+      : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173', 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Source', 'X-Retry-Session', 'Cookie'],
+    exposedHeaders: ['Set-Cookie'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+  }));
 
   // Enhanced session configuration for cookie persistence
   app.use(session({
