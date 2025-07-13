@@ -232,7 +232,10 @@ try {
     consumerKey: process.env.X_CONSUMER_KEY, // X API Key (Consumer Key)
     consumerSecret: process.env.X_CONSUMER_SECRET, // X API Secret Key (Consumer Secret)
     callbackURL: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`,
-    passReqToCallback: true
+    passReqToCallback: true,
+    userAuthorizationURL: 'https://api.twitter.com/oauth/authorize',
+    requestTokenURL: 'https://api.twitter.com/oauth/request_token',
+    accessTokenURL: 'https://api.twitter.com/oauth/access_token'
     // Note: OAuth 1.0a strategy doesn't use scopes, but API permissions are:
     // ["tweet.write", "tweet.read", "users.read", "offline.access"]
   }, async (req: any, accessToken: string, tokenSecret: string, profile: any, done: any) => {
