@@ -43,7 +43,7 @@ async function startServer() {
       "frame-ancestors 'self' https://www.facebook.com;"
     );
     
-    // Fixed Permissions-Policy - removed unrecognized features
+    // Fixed Permissions-Policy - removed unrecognized features including ambient-light-sensor
     res.header('Permissions-Policy', 
       'camera=(), ' +
       'microphone=(), ' +
@@ -52,7 +52,8 @@ async function startServer() {
       'usb=(), ' +
       'accelerometer=(), ' +
       'gyroscope=(), ' +
-      'magnetometer=()'
+      'magnetometer=(), ' +
+      'fullscreen=self'
     );
     
     res.header('X-Frame-Options', 'SAMEORIGIN');
@@ -127,7 +128,7 @@ async function startServer() {
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
+    createTableIfMissing: true, // Fix: Allow session table creation
     ttl: sessionTtl,
     tableName: "sessions",
   });
@@ -145,7 +146,7 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: process.env.NODE_ENV === 'production' ? true : false,
+      secure: false, // Fix: Set to false for development to enable session persistence
       maxAge: sessionTtl,
       httpOnly: false, // Allow frontend access for session sync
       sameSite: 'lax',
@@ -168,18 +169,16 @@ async function startServer() {
       "frame-ancestors 'self' https://www.google.com"
     ].join('; '));
     
-    // Standardized Permissions Policy (removing deprecated 'unload' feature)
+    // Fixed Permissions Policy - removed unsupported features, fixed sandbox flags
     res.setHeader('Permissions-Policy', [
       'camera=()',
-      'fullscreen=()',
+      'fullscreen=self',
       'geolocation=()',
       'gyroscope=()',
       'magnetometer=()',
       'microphone=()',
-      'midi=()',
       'payment=()',
       'picture-in-picture=()',
-      'sync-xhr=()',
       'usb=()',
       'screen-wake-lock=()',
       'web-share=()'

@@ -110,8 +110,9 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
   
   // Check for authenticated session
   if (!req.session?.userId) {
+    console.log(`❌ No user ID in session - authentication required`);
     return res.status(401).json({ 
-      message: "Authentication required",
+      message: "Not authenticated",
       requiresLogin: true 
     });
   }
@@ -222,9 +223,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Set session cookie and return success
           res.cookie('theagencyiq.session', req.sessionID, {
             httpOnly: false,
-            secure: process.env.NODE_ENV === 'production',
+            secure: false, // Force false for development
             sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            path: '/'
           });
           
           return res.json({
@@ -305,44 +307,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Enhanced session recovery middleware - prevents undefined user IDs
+  // Session debugging middleware - log session details
   app.use(async (req: any, res: any, next: any) => {
-    // Skip session recovery for certain endpoints
-    const skipPaths = ['/api/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/api/facebook/data-deletion', '/api/deletion-status', '/api/auth/login', '/api/auth/signup'];
+    // Skip session debugging for certain endpoints
+    const skipPaths = ['/api/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/api/facebook/data-deletion', '/api/deletion-status'];
     if (skipPaths.some(path => req.url.startsWith(path))) {
       return next();
     }
 
-    // CRITICAL FIX: Only establish session if there's a valid authenticated user
-    // No more fallback to undefined or arbitrary user IDs
-    if (!req.session?.userId) {
-      // Check if this is an authenticated session with proper user data
-      const sessionStore = req.sessionStore;
-      const sessionID = req.sessionID;
-      
-      if (sessionID && sessionStore) {
-        try {
-          // Verify session exists and has valid user data
-          const sessionData = await new Promise((resolve, reject) => {
-            sessionStore.get(sessionID, (err: any, session: any) => {
-              if (err) reject(err);
-              else resolve(session);
-            });
-          });
-          
-          if (sessionData && (sessionData as any).userId) {
-            req.session.userId = (sessionData as any).userId;
-            console.log(`Session recovered for user ID: ${(sessionData as any).userId}`);
-          } else {
-            // No valid session data - require authentication
-            console.log('No valid session data found - authentication required');
-          }
-        } catch (error: any) {
-          console.log('Session recovery failed:', error.message);
-          // Continue without session - authentication required
-        }
-      }
-    }
+    // Log session information for debugging
+    console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
+    console.log(`📋 Session ID: ${req.sessionID}`);
+    console.log(`📋 User ID: ${req.session?.userId}`);
+    console.log(`📋 Session Cookie: ${req.headers.cookie}`);
     
     next();
   });
