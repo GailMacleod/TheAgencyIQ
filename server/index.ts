@@ -190,24 +190,55 @@ async function startServer() {
     unset: 'keep'
   }));
 
-  // Cookie persistence middleware - ensure cookies are always set
+  // Enhanced cookie persistence middleware - bulletproof session handling
   app.use((req, res, next) => {
-    // Force cookie to be set on every response
+    // Intercept all response methods to ensure cookie persistence
     const originalSend = res.send;
-    res.send = function(data) {
-      // Ensure session cookie is present in response
+    const originalJson = res.json;
+    const originalEnd = res.end;
+    
+    // Enhanced cookie setting function
+    const ensureCookieSet = () => {
       if (req.sessionID && req.session) {
-        const cookieValue = `${req.sessionID}`;
-        res.cookie('theagencyiq.session', cookieValue, {
-          secure: false,
+        // Set cookie with signed session ID for security
+        const cookieOptions = {
+          secure: false, // Development mode
           maxAge: sessionTtl,
-          httpOnly: false,
-          sameSite: 'none',
-          path: '/'
-        });
+          httpOnly: false, // Allow frontend access
+          sameSite: 'none' as const, // Cross-origin support
+          path: '/',
+          signed: false // Express-session handles signing
+        };
+        
+        // Set both the session cookie and a backup cookie
+        res.cookie('theagencyiq.session', req.sessionID, cookieOptions);
+        res.cookie('aiq_backup_session', req.sessionID, cookieOptions);
+        
+        // Set explicit headers for debugging
+        res.header('X-Session-ID', req.sessionID);
+        res.header('X-User-ID', req.session.userId?.toString() || 'none');
+        res.header('Access-Control-Expose-Headers', 'X-Session-ID, X-User-ID');
       }
+    };
+    
+    // Override send method
+    res.send = function(data) {
+      ensureCookieSet();
       return originalSend.call(this, data);
     };
+    
+    // Override json method
+    res.json = function(data) {
+      ensureCookieSet();
+      return originalJson.call(this, data);
+    };
+    
+    // Override end method
+    res.end = function(data) {
+      ensureCookieSet();
+      return originalEnd.call(this, data);
+    };
+    
     next();
   });
 
