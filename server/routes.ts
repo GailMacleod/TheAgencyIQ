@@ -8562,33 +8562,12 @@ Continue building your Value Proposition Canvas systematically.`;
     res.redirect('/connect-platforms?connected=instagram');
   });
 
-  // LinkedIn OAuth - Direct Connection (LinkedIn OAuth disabled)
-  app.get("/api/auth/linkedin", async (req, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.redirect('/connect-platforms?error=no_session');
-      }
-
-      // Create direct LinkedIn connection immediately (bypasses disabled OAuth)
-      const result = await storage.createPlatformConnection({
-        userId: userId,
-        platform: 'linkedin',
-        platformUserId: `li_${userId}_${Date.now()}`,
-        platformUsername: 'LinkedIn Profile',
-        accessToken: `li_token_${Date.now()}_${userId}`,
-        refreshToken: null,
-        expiresAt: null,
-        isActive: true
-      });
-
-      console.log(`✅ Direct LinkedIn connection created for user ${userId}:`, result.id);
-      
-      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
-    } catch (error) {
-      console.error('Direct LinkedIn connection failed:', error);
-      res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
-    }
+  // LinkedIn OAuth - Use passport strategy with real credentials
+  app.get("/api/auth/linkedin", requireAuth, (req, res, next) => {
+    passport.authenticate('linkedin', { 
+      scope: ['r_liteprofile', 'w_member_social'],
+      state: req.session?.userId || '2'
+    })(req, res, next);
   });
 
   // LinkedIn OAuth callback - disabled (using direct connection)
@@ -8599,50 +8578,11 @@ Continue building your Value Proposition Canvas systematically.`;
 
   // LinkedIn refresh function removed - using direct connections
 
-  // X OAuth - Direct connection implementation (bypassing broken OAuth 2.0)
-  app.get("/api/auth/x", async (req, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.redirect('/connect-platforms?error=no_session');
-      }
-
-      console.log('🔗 X direct connection for user:', userId);
-      
-      // Create direct X connection like LinkedIn
-      const existingConnections = await storage.getPlatformConnectionsByUser(userId);
-      const existingX = existingConnections.find(conn => conn.platform === 'x');
-      
-      if (existingX) {
-        await storage.deletePlatformConnection(existingX.id);
-      }
-
-      const connectionId = await storage.createPlatformConnection({
-        userId: userId,
-        platform: 'x',
-        platformUserId: 'x_user_' + userId,
-        platformUsername: 'X Profile',
-        accessToken: 'direct_x_token_' + Date.now(),
-        tokenSecret: null,
-        refreshToken: null,
-        expiresAt: null,
-        isActive: true
-      });
-
-      console.log(`✅ Direct X connection created for user ${userId}:`, connectionId);
-      
-      res.send(`
-        <script>
-          if (window.opener) {
-            window.opener.postMessage("oauth_success", "*");
-          }
-          window.close();
-        </script>
-      `);
-    } catch (error) {
-      console.error('X direct connection failed:', error);
-      res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
-    }
+  // X OAuth - Use passport strategy with real credentials
+  app.get("/api/auth/x", requireAuth, (req, res, next) => {
+    passport.authenticate('twitter', { 
+      state: req.session?.userId || '2'
+    })(req, res, next);
   });
 
   // X OAuth 2.0 Callback - Manual implementation
