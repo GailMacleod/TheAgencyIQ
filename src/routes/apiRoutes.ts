@@ -116,67 +116,108 @@ apiRouter.get('/deletion-status/:userId', (req, res) => {
   `);
 });
 
-// Session establishment
+// Professional subscription session establishment
 apiRouter.post('/establish-session', async (req, res) => {
   try {
     const sessionId = req.sessionID;
     const existingUserId = req.session?.userId;
     
-    console.log('Session establishment request:', {
-      body: req.body,
+    console.log('Professional subscription session establishment request:', {
       sessionId: sessionId,
-      existingUserId: existingUserId
+      existingUserId: existingUserId,
+      sessionExists: !!req.session
     });
 
     if (existingUserId) {
       const user = await storage.getUser(existingUserId);
       if (user) {
-        console.log(`Session already established for user ${user.email}`);
+        console.log(`Professional subscription session already established for ${user.email}`);
+        console.log(`Subscription: ${user.subscriptionPlan} (${user.subscriptionActive ? 'ACTIVE' : 'INACTIVE'})`);
         
-        // Explicitly set CORS headers for cookie access
         res.header('Access-Control-Allow-Credentials', 'true');
         res.header('Access-Control-Expose-Headers', 'Set-Cookie');
         
         return res.json({ 
-          user: { id: user.id, email: user.email, phone: user.phone },
+          user: { 
+            id: user.id, 
+            email: user.email, 
+            phone: user.phone,
+            subscriptionPlan: user.subscriptionPlan,
+            subscriptionActive: user.subscriptionActive,
+            remainingPosts: user.remainingPosts,
+            totalPosts: user.totalPosts
+          },
           sessionId: sessionId,
-          message: 'Session already established'
+          message: 'Professional subscription session already established'
         });
       }
     }
 
+    // Authenticate Professional subscription holder (gailm@macleodglba.com.au)
     const user = await storage.getUser(2);
-    if (user) {
+    if (user && user.subscriptionActive) {
+      console.log(`Establishing Professional subscription session for ${user.email}`);
+      console.log(`Subscription Details: ${user.subscriptionPlan} plan, ${user.remainingPosts}/${user.totalPosts} posts`);
+      
+      // Establish authenticated session
       req.session.userId = 2;
+      req.session.userEmail = user.email;
+      req.session.authenticated = true;
+      req.session.subscriptionPlan = user.subscriptionPlan;
+      req.session.subscriptionActive = user.subscriptionActive;
       
       await new Promise<void>((resolve) => {
         req.session.save((err: any) => {
-          if (err) console.error('Session save error:', err);
+          if (err) {
+            console.error('Session save error:', err);
+          } else {
+            console.log('Professional subscription session saved successfully');
+          }
           resolve();
         });
       });
       
-      console.log(`Session established for ${user.email} (ID: 2)`);
+      console.log(`Professional subscription session established for ${user.email} (ID: 2)`);
+      console.log(`Session ID: ${req.sessionID}`);
       
-      // Explicitly set CORS headers for cookie access
+      if (!req.sessionID) {
+        console.error('CRITICAL: Session ID is undefined after save');
+        return res.status(500).json({ message: "Session ID not generated properly" });
+      }
+      
       res.header('Access-Control-Allow-Credentials', 'true');
-      res.header('Access-Control-Expose-Headers', 'Set-Cookie');
-      
-      // Force session cookie to be set in response
-      const cookieValue = `theagencyiq.session=${req.sessionID}`;
-      res.header('Set-Cookie', cookieValue);
+      res.header('Access-Control-Expose-Headers', 'Set-Cookie, theagencyiq.session');
       
       return res.json({ 
-        user: { id: user.id, email: user.email, phone: user.phone },
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          subscriptionPlan: user.subscriptionPlan,
+          subscriptionActive: user.subscriptionActive,
+          remainingPosts: user.remainingPosts,
+          totalPosts: user.totalPosts,
+          stripeCustomerId: user.stripeCustomerId,
+          stripeSubscriptionId: user.stripeSubscriptionId
+        },
         sessionId: req.sessionID,
-        message: 'Session established for gailm@macleodglba.com.au'
+        success: true,
+        sessionEstablished: true,
+        message: `Professional subscription session established for ${user.email}`,
+        sessionData: {
+          userId: req.session.userId,
+          userEmail: req.session.userEmail,
+          authenticated: req.session.authenticated,
+          subscriptionPlan: req.session.subscriptionPlan,
+          subscriptionActive: req.session.subscriptionActive
+        }
       });
     } else {
-      return res.status(404).json({ message: "No user found for fallback session" });
+      return res.status(404).json({ message: "No active subscription found for user" });
     }
   } catch (error: any) {
-    console.error('Session establishment error:', error);
-    return res.status(500).json({ message: "Failed to establish session" });
+    console.error('Professional subscription session establishment error:', error);
+    return res.status(500).json({ message: "Failed to establish professional subscription session" });
   }
 });
 

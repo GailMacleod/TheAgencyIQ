@@ -51,7 +51,7 @@ class SessionManager {
         const cookieParts = setCookieHeader.split(';')[0];
         if (cookieParts.includes('theagencyiq.session=')) {
           const cookieValue = cookieParts.split('=')[1];
-          document.cookie = `theagencyiq.session=${cookieValue}; path=/; samesite=lax`;
+          document.cookie = `theagencyiq.session=${cookieValue}; path=/; samesite=lax; max-age=86400`;
           console.log('✅ Session cookie manually set in browser');
         }
       } else {

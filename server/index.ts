@@ -135,30 +135,43 @@ async function startServer() {
     createTableIfMissing: true, // Fix: Allow session table creation
     ttl: sessionTtl,
     tableName: "sessions",
+    errorLog: (error) => {
+      console.error('Session store error:', error);
+    }
   });
 
+  // Test session store connection
+  console.log('🔧 Testing session store connection...');
+  sessionStore.get('test-connection', (err, session) => {
+    if (err) {
+      console.error('❌ Session store connection failed:', err);
+    } else {
+      console.log('✅ Session store connection successful');
+    }
+  });
+
+  // Simplified session configuration for single client
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
     resave: false,
-    saveUninitialized: true, // Changed to true to ensure session creation
-    name: 'theagencyiq.session', // Unified session name
+    saveUninitialized: true,
+    name: 'theagencyiq.session',
     genid: () => {
-      // Generate device-agnostic session ID with timestamp and random component
       const timestamp = Date.now().toString(36);
       const random = Math.random().toString(36).substring(2, 15);
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: false, // Disable secure for development to allow cookie storage
+      secure: false,
       maxAge: sessionTtl,
-      httpOnly: false, // Allow frontend access for session sync
-      sameSite: 'lax', // Change to lax for better browser compatibility
-      path: '/', // Ensure cookie is available for all paths
-      domain: undefined // Remove domain restriction for development
+      httpOnly: false, // Disable httpOnly for frontend access
+      sameSite: 'lax',
+      path: '/',
+      domain: undefined // Let express handle domain automatically
     },
-    // Force session save for all requests
-    rolling: true
+    rolling: true,
+    proxy: true // Trust proxy for secure cookies
   }));
 
   // Enhanced CSP for Facebook compliance, Google services, video content, and security

@@ -1584,13 +1584,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     
-    // ENHANCED: Check for authenticated user by email (for main customer)
-    // This maintains session for existing authenticated users
+    // ENHANCED: Check for authenticated Professional subscription user
+    // This maintains session for existing authenticated users with valid subscriptions
     try {
       const knownUser = await storage.getUserByEmail('gailm@macleodglba.com.au');
-      if (knownUser) {
+      if (knownUser && knownUser.subscriptionActive) {
         req.session.userId = knownUser.id;
         req.session.userEmail = knownUser.email;
+        req.session.subscriptionPlan = knownUser.subscriptionPlan;
+        req.session.subscriptionActive = knownUser.subscriptionActive;
         await new Promise<void>((resolve, reject) => {
           req.session.save((err: any) => {
             if (err) reject(err);
@@ -1598,12 +1600,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         });
         
-        console.log(`Demo session established for ${knownUser.email} (ID: ${knownUser.id})`);
+        console.log(`Professional subscription session established for ${knownUser.email} (ID: ${knownUser.id})`);
+        console.log(`Subscription Details: ${knownUser.subscriptionPlan} plan, ${knownUser.remainingPosts}/${knownUser.totalPosts} posts remaining`);
+        console.log(`Stripe Customer ID: ${knownUser.stripeCustomerId}, Subscription ID: ${knownUser.stripeSubscriptionId}`);
+        console.log(`Session ID: ${req.sessionID}`);
+        
+        // Ensure proper cookie headers are set
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+        
         return res.json({ 
           success: true, 
-          user: knownUser,
+          user: {
+            id: knownUser.id,
+            email: knownUser.email,
+            phone: knownUser.phone,
+            subscriptionPlan: knownUser.subscriptionPlan,
+            subscriptionActive: knownUser.subscriptionActive,
+            remainingPosts: knownUser.remainingPosts,
+            totalPosts: knownUser.totalPosts,
+            stripeCustomerId: knownUser.stripeCustomerId,
+            stripeSubscriptionId: knownUser.stripeSubscriptionId
+          },
+          sessionId: req.sessionID,
           sessionEstablished: true,
-          message: `Demo session established for ${knownUser.email}`
+          message: `Professional subscription session established for ${knownUser.email}`
         });
       }
     } catch (error) {
