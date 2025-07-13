@@ -4165,8 +4165,8 @@ Continue building your Value Proposition Canvas systematically.`;
             ? facebookConnection.accessToken 
             : conn.accessToken;
           
-          // Advanced validation with auto-refresh attempts
-          let validationResult = await OAuthRefreshService.validateToken(accessToken, conn.platform);
+          // Advanced validation with auto-refresh attempts - ENHANCED with expires_at checking
+          let validationResult = await OAuthRefreshService.validateToken(accessToken, conn.platform, conn.expiresAt);
           
           // Auto-refresh for expired tokens
           if (!validationResult.isValid && validationResult.needsRefresh) {

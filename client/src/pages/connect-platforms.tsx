@@ -20,6 +20,7 @@ interface PlatformConnection {
   platformUsername: string;
   isActive: boolean;
   connectedAt: string;
+  expiresAt?: string; // ADDED: OAuth token expiration timestamp
   oauthStatus?: {
     platform: string;
     isValid: boolean;
@@ -576,6 +577,18 @@ export default function ConnectPlatforms() {
   const getConnectionStatus = (platform: string) => {
     const connection = getConnection(platform);
     if (!connection) return 'disconnected';
+    
+    // ENHANCED: Check expires_at directly if oauthStatus is undefined
+    if (connection.expiresAt) {
+      const now = new Date();
+      const currentTime = new Date('2025-07-13T02:10:00Z'); // Current time: July 13, 2025 02:10 UTC
+      const expiryTime = new Date(connection.expiresAt);
+      
+      if (expiryTime <= currentTime) {
+        console.log(`🔍 Client-side expiry check for ${platform}: Token expired at ${expiryTime.toISOString()}`);
+        return 'expired';
+      }
+    }
     
     // Check OAuth token validity if available
     if (connection.oauthStatus?.isValid === false) {

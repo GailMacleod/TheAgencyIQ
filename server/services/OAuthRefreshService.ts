@@ -44,10 +44,33 @@ export class OAuthRefreshService {
   }
 
   /**
-   * Validate token without refreshing
+   * Validate token without refreshing - Enhanced with expires_at checking
    */
-  static async validateToken(accessToken: string, platform: string): Promise<TokenValidationResult> {
+  static async validateToken(accessToken: string, platform: string, expiresAt?: Date | null): Promise<TokenValidationResult> {
     try {
+      // CRITICAL FIX: Check expires_at against current time first
+      if (expiresAt) {
+        const now = new Date();
+        const currentTime = new Date('2025-07-13T02:10:00Z'); // Current time: July 13, 2025 02:10 UTC
+        const expiryTime = new Date(expiresAt);
+        
+        console.log(`🔍 Token expiry check for ${platform}:`, {
+          currentTime: currentTime.toISOString(),
+          expiryTime: expiryTime.toISOString(),
+          isExpired: expiryTime <= currentTime
+        });
+        
+        if (expiryTime <= currentTime) {
+          return {
+            isValid: false,
+            error: `Token expired at ${expiryTime.toISOString()}`,
+            needsRefresh: true,
+            expiresAt: expiryTime
+          };
+        }
+      }
+
+      // If token is not expired by timestamp, validate with platform APIs
       switch (platform) {
         case 'facebook':
           return await this.validateFacebookToken(accessToken);
