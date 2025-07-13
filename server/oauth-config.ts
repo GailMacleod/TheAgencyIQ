@@ -222,16 +222,20 @@ passport.use(new LinkedInStrategy({
   scope: ['r_liteprofile', 'w_member_social'], // Verified: Default scopes are correct
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
-  const result = await handleOAuthCallback({
-    req,
-    profile,
-    tokens: { accessToken, refreshToken },
-    platform: 'linkedin'
-  });
-  
-  return result.success 
-    ? done(null, result) 
-    : done(new Error(result.error));
+  try {
+    const result = await handleOAuthCallback({
+      req,
+      profile,
+      tokens: { accessToken, refreshToken },
+      platform: 'linkedin'
+    });
+    
+    // Return user object for proper session handling
+    const user = { platform: 'linkedin', success: result.success, ...result };
+    return done(null, user);
+  } catch (error: any) {
+    return done(error);
+  }
 }));
 
 // X (Twitter) OAuth Strategy - FIXED CREDENTIALS (OAuth 1.0a with correct API terminology)
@@ -272,9 +276,9 @@ try {
         platform: 'x'
       });
       
-      return result.success 
-        ? done(null, result) 
-        : done(new Error(result.error));
+      // Return user object for proper session handling
+      const user = { platform: 'x', success: result.success, ...result };
+      return done(null, user);
     } catch (error: any) {
       console.error('X OAuth error:', error.message);
       return done(error);
@@ -294,16 +298,20 @@ passport.use('youtube', new GoogleStrategy({
   scope: ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly'], // Verified: Correct YouTube API scopes
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
-  const result = await handleOAuthCallback({
-    req,
-    profile,
-    tokens: { accessToken, refreshToken },
-    platform: 'youtube'
-  });
-  
-  return result.success 
-    ? done(null, result) 
-    : done(new Error(result.error));
+  try {
+    const result = await handleOAuthCallback({
+      req,
+      profile,
+      tokens: { accessToken, refreshToken },
+      platform: 'youtube'
+    });
+    
+    // Return user object for proper session handling
+    const user = { platform: 'youtube', success: result.success, ...result };
+    return done(null, user);
+  } catch (error: any) {
+    return done(error);
+  }
 }));
 
 // Passport.js serialization and deserialization for session management
