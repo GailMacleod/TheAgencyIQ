@@ -47,7 +47,7 @@ class OAuthTokenPersistenceTest {
     
     try {
       const response = await axios.post(`${BASE_URL}/api/auth/login`, {
-        phone: '+61424835189',
+        email: 'gailm@macleodglba.com.au',
         password: 'password123'
       });
 
