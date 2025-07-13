@@ -1572,11 +1572,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     
-    // ENHANCED: Check for authenticated user by email (for demo purposes only)
+    // ENHANCED: Check for authenticated user by email (for main customer)
     // This maintains session for existing authenticated users
     try {
       const knownUser = await storage.getUserByEmail('gailm@macleodglba.com.au');
-      if (knownUser && req.session?.id) {
+      if (knownUser) {
         req.session.userId = knownUser.id;
         req.session.userEmail = knownUser.email;
         await new Promise<void>((resolve, reject) => {
@@ -2679,17 +2679,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/user", async (req: any, res) => {
     try {
+      console.log(`🔍 /api/user - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
+      
       if (!req.session?.userId) {
+        console.log('❌ No user ID in session - authentication required');
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-
-
       const user = await storage.getUser(req.session.userId);
       if (!user) {
+        console.log(`❌ User ${req.session.userId} not found in database`);
         return res.status(404).json({ message: "User not found" });
       }
 
+      console.log(`✅ User data retrieved for ${user.email} (ID: ${user.id})`);
+      
       res.json({ 
         id: user.id, 
         email: user.email, 

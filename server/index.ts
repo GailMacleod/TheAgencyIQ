@@ -123,8 +123,8 @@ async function startServer() {
   // Device-agnostic session configuration for mobile-to-desktop continuity
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Force session save to prevent loss
+    saveUninitialized: true, // Save empty sessions to establish connection
     name: 'theagencyiq.session', // Custom session name for consistency
     genid: () => {
       // Generate device-agnostic session ID with timestamp and random component
@@ -133,11 +133,12 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: process.env.NODE_ENV === 'production', 
+      secure: false, // Disable secure for development to ensure cookie works
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for device continuity
       httpOnly: false, // Allow frontend access for session sync
       sameSite: 'lax',
-      domain: process.env.NODE_ENV === 'production' ? '.theagencyiq.ai' : undefined // Cross-subdomain support
+      path: '/', // Ensure cookie is available for all paths
+      domain: undefined // Remove domain restriction for development
     }
   }));
 

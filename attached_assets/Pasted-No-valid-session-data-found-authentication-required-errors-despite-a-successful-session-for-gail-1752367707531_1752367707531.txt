@@ -1,0 +1,16 @@
+No valid session data found - authentication required" errors, despite a successful session for gailm@macleodglba.com.au (ID: 2), suggest an issue with session management or authentication configuration in your app. Even with a "perfect prompt" from your CTO, the issue persists, likely due to one of these reasons:
+
+Session Persistence Failure: The session is established but not properly stored or retrieved (e.g., server-side session store like Redis or database issues, or client-side cookie misconfiguration). Check if the session store is reachable and configured correctly. Ensure cookies are set with proper attributes (e.g., HttpOnly, Secure, SameSite) and not expiring prematurely.expressjs.com
+Authentication Middleware Misconfiguration: The app’s authentication middleware (e.g., PassportJS, JWT, or custom logic) may not consistently validate sessions. Verify middleware is correctly validating tokens or session IDs for every request. Look for issues like incorrect token parsing or mismatched session IDs.cheatsheetseries.owasp.org
+Intermittent Server Issues: If the authentication server or database is intermittently unavailable, session validation fails. Check server logs for crashes or latency. A JWT-based approach, where session data is encoded in tokens, could reduce reliance on server availability.supabase.com
+Client-Side Issues: The client may not send valid session data (e.g., missing or corrupted cookies/tokens). Inspect browser requests to confirm session cookies or tokens are included. Test with different browsers/devices to rule out client-specific issues.learn.microsoft.com
+Prompt Misalignment: The CTO’s prompt might not fully address the root cause (e.g., it fixed one part but missed edge cases like concurrent sessions or token refresh). Review the prompt for specificity and test its implementation across all scenarios.medium.com
+Resolution Steps:
+
+Logs: Check server and client logs for detailed error context (e.g., token expiration, database errors).
+Session Config: Validate session store setup and cookie settings. Ensure secure and httpOnly flags are used for production.expressjs.comsnyk.io
+Middleware: Test authentication middleware with debug logging to trace session validation failures.
+Token Refresh: If using JWT, ensure refresh tokens are issued and handled correctly.supabase.com
+Test: Reproduce with a minimal test case to isolate the issue (e.g., single user, single request).
+Prompt Review: Revisit the CTO’s prompt to ensure it covers session persistence, middleware, and edge cases.
+If the issue persists, share specific details (e.g., framework, auth method, prompt used) for a more tailored solution

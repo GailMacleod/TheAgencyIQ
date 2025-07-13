@@ -164,6 +164,14 @@ function App() {
               phone: data.user.phone
             }));
           }
+          
+          // Wait a moment to ensure session is properly saved before invalidating queries
+          setTimeout(() => {
+            // Force refresh all queries to use the new session
+            queryClient.invalidateQueries();
+            console.log('🔄 Queries invalidated after session establishment');
+          }, 100);
+          
         } else {
           console.log('❌ Session establishment failed, continuing with guest access');
         }
