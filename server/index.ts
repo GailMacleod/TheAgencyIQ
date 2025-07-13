@@ -31,7 +31,7 @@ async function startServer() {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, X-Retry-Session');
     res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+    res.header('Access-Control-Expose-Headers', 'Set-Cookie, Cookie');
     res.header('Vary', 'Origin, Access-Control-Request-Headers');
     res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
     
@@ -141,7 +141,7 @@ async function startServer() {
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true, // Changed to true to ensure session creation
     name: 'theagencyiq.session', // Unified session name
     genid: () => {
       // Generate device-agnostic session ID with timestamp and random component
@@ -158,7 +158,6 @@ async function startServer() {
       domain: undefined // Remove domain restriction for development
     },
     // Force session save for all requests
-    saveUninitialized: false,
     rolling: true
   }));
 

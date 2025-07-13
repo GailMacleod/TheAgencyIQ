@@ -10180,4 +10180,3 @@ export function addNotificationEndpoints(app: any) {
     }
   });
 }
-
