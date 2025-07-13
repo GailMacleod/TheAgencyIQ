@@ -2550,6 +2550,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public session endpoint for anonymous access - allows frontend to get initial session
+  app.get("/api/auth/session", async (req: any, res) => {
+    try {
+      console.log(`🔍 Public session check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
+      
+      // Always return session info, even if not authenticated
+      const sessionInfo = {
+        sessionId: req.sessionID,
+        authenticated: !!req.session?.userId,
+        userId: req.session?.userId || null,
+        userEmail: req.session?.userEmail || null
+      };
+      
+      if (req.session?.userId) {
+        try {
+          const user = await storage.getUser(req.session.userId);
+          if (user) {
+            sessionInfo.user = {
+              id: user.id,
+              email: user.email,
+              phone: user.phone,
+              subscriptionPlan: user.subscriptionPlan,
+              subscriptionActive: user.subscriptionActive ?? true,
+              remainingPosts: user.remainingPosts,
+              totalPosts: user.totalPosts
+            };
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+        }
+      }
+      
+      console.log(`✅ Session info returned: ${JSON.stringify(sessionInfo)}`);
+      res.json(sessionInfo);
+    } catch (error) {
+      console.error('Session check error:', error);
+      res.status(500).json({ message: "Session check failed" });
+    }
+  });
+
+  // Public session establishment endpoint for auto-login
+  app.post("/api/auth/establish-session", async (req: any, res) => {
+    try {
+      console.log(`🔍 Session establishment - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
+      
+      // If already authenticated, return existing session
+      if (req.session?.userId) {
+        const user = await storage.getUser(req.session.userId);
+        if (user) {
+          console.log(`✅ Existing session found for ${user.email} (ID: ${user.id})`);
+          return res.json({
+            success: true,
+            user: {
+              id: user.id,
+              email: user.email,
+              phone: user.phone,
+              subscriptionPlan: user.subscriptionPlan,
+              subscriptionActive: user.subscriptionActive ?? true,
+              remainingPosts: user.remainingPosts,
+              totalPosts: user.totalPosts
+            },
+            sessionId: req.sessionID,
+            message: 'Session already established'
+          });
+        }
+      }
+      
+      // Auto-establish session for User ID 2 (development mode)
+      const user = await storage.getUser(2);
+      if (user) {
+        req.session.userId = 2;
+        req.session.userEmail = user.email;
+        
+        // Force session save with callback
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) {
+              console.error('Session save error:', err);
+              reject(err);
+            } else {
+              console.log(`✅ Session auto-established for user ${user.id}: ${user.email}`);
+              console.log(`✅ Session ID: ${req.sessionID}`);
+              resolve();
+            }
+          });
+        });
+
+        // Set cookie explicitly to ensure persistence
+        res.cookie('theagencyiq.session', req.sessionID, {
+          httpOnly: false,
+          secure: false, // Force false for development
+          sameSite: 'lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          path: '/',
+          domain: undefined // Let express handle domain automatically
+        });
+        
+        console.log(`🍪 Cookie set in response: theagencyiq.session=${req.sessionID}`);
+        
+        console.log(`✅ Auto-login successful for ${user.email}`);
+        return res.json({
+          success: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            phone: user.phone,
+            subscriptionPlan: user.subscriptionPlan,
+            subscriptionActive: user.subscriptionActive ?? true,
+            remainingPosts: user.remainingPosts,
+            totalPosts: user.totalPosts
+          },
+          sessionId: req.sessionID,
+          message: 'Session established successfully'
+        });
+      }
+      
+      res.status(401).json({ success: false, message: 'Unable to establish session' });
+    } catch (error) {
+      console.error('Session establishment error:', error);
+      res.status(500).json({ success: false, message: 'Session establishment failed' });
+    }
+  });
+
   // Login with phone number
   app.post("/api/auth/login", async (req, res) => {
     res.setHeader('Content-Type', 'application/json');

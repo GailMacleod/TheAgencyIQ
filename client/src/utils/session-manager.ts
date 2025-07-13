@@ -17,32 +17,31 @@ class SessionManager {
       return this.sessionPromise;
     }
 
-    // Check if we already have a valid session cookie
-    if (document.cookie.includes('theagencyiq.session')) {
-      console.log('🔍 Existing session cookie found, verifying...');
+    // First check if we already have a valid session using the public endpoint
+    try {
+      const response = await fetch('/api/auth/session', {
+        method: 'GET',
+        credentials: 'include'
+      });
       
-      // Try to verify the existing session
-      try {
-        const response = await fetch('/api/user', {
-          method: 'GET',
-          credentials: 'include'
-        });
+      if (response.ok) {
+        const sessionData = await response.json();
+        console.log('🔍 Session check result:', sessionData);
         
-        if (response.ok) {
-          const userData = await response.json();
-          console.log('✅ Existing session verified for:', userData.email);
+        if (sessionData.authenticated && sessionData.user) {
+          console.log('✅ Existing session verified for:', sessionData.user.email);
           
           this.sessionInfo = {
-            id: 'existing',
-            user: userData,
+            id: sessionData.sessionId,
+            user: sessionData.user,
             established: true
           };
           
           return this.sessionInfo;
         }
-      } catch (error) {
-        console.log('⚠️ Session verification failed, creating new session');
       }
+    } catch (error) {
+      console.log('⚠️ Session verification failed, creating new session');
     }
 
     this.sessionPromise = this.doEstablishSession();
@@ -51,32 +50,14 @@ class SessionManager {
 
   private async doEstablishSession(): Promise<SessionInfo> {
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/auth/establish-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          email: 'gailm@macleodglba.com.au',
-          phone: '+61424835189'
-        }),
         credentials: 'include'
       });
-
-      // The browser automatically handles Set-Cookie headers when credentials: 'include' is used
-      // No need to manually extract - the cookie is automatically set by the browser
-      console.log('🔍 Cookie handling: Browser automatically processes Set-Cookie headers');
-      
-      // Check if cookie was set by browser after a brief delay
-      setTimeout(() => {
-        console.log('🍪 Current browser cookies:', document.cookie);
-        if (document.cookie.includes('theagencyiq.session')) {
-          console.log('✅ Session cookie successfully stored in browser');
-        } else {
-          console.log('⚠️ Session cookie not found in browser - checking response');
-        }
-      }, 100);
 
       if (response.ok) {
         const data = await response.json();
