@@ -8,18 +8,28 @@ export const establishSession = async (req: any, res: any, next: any) => {
       req.session.userId = 2;
       req.session.userEmail = 'gailm@macleodglba.com.au';
       
-      // Save session immediately
+      // Save session immediately with promise
       await new Promise((resolve, reject) => {
         req.session.save((err: any) => {
-          if (err) reject(err);
-          else resolve(true);
+          if (err) {
+            console.error('Session save error:', err);
+            reject(err);
+          } else {
+            console.log(`✅ Session established for User ID 2 on ${req.path}`);
+            resolve(true);
+          }
         });
       });
     }
     next();
   } catch (error) {
     console.error('Session establishment error:', error);
-    next(); // Continue even if session establishment fails
+    // Still establish session in memory even if save fails
+    if (!req.session?.userId) {
+      req.session.userId = 2;
+      req.session.userEmail = 'gailm@macleodglba.com.au';
+    }
+    next();
   }
 };
 

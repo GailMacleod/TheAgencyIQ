@@ -2945,8 +2945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user-status", establishSession, async (req: any, res) => {
     try {
       // Session establishment is now handled by middleware
-      
-      const userId = req.session?.userId || 2; // Default to User ID 2
+      const userId = req.session?.userId;
       
       if (!userId) {
         return res.status(401).json({ 
