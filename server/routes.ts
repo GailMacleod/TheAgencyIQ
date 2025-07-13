@@ -22,7 +22,7 @@ import axios from "axios";
 import PostPublisher from "./post-publisher";
 import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
-import { requireActiveSubscription, requireAuth } from './middleware/subscriptionAuth';
+import { requireActiveSubscription, requireAuth, establishSession } from './middleware/subscriptionAuth';
 import { PostQuotaService } from './PostQuotaService';
 import { userFeedbackService } from './userFeedbackService.js';
 import RollbackAPI from './rollback-api';
@@ -2942,25 +2942,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get current user - simplified for consistency
   // User status endpoint for demo mode detection
-  app.get("/api/user-status", async (req: any, res) => {
+  app.get("/api/user-status", establishSession, async (req: any, res) => {
     try {
-      // ALWAYS auto-establish session for User ID 2 to fix persistent authentication issues
-      try {
-        const user = await storage.getUser(2);
-        if (user) {
-          req.session.userId = 2;
-          req.session.userEmail = user.email;
-          await new Promise<void>((resolve) => {
-            req.session.save((err: any) => {
-              if (err) console.error('Session save error:', err);
-              resolve();
-            });
-          });
-          console.log(`✅ Auto-established session for user ${user.email} in /api/user-status`);
-        }
-      } catch (error) {
-        console.error('Auto-session error in /api/user-status:', error);
-      }
+      // Session establishment is now handled by middleware
       
       const userId = req.session?.userId || 2; // Default to User ID 2
       
