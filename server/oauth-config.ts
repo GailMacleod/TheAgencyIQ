@@ -131,7 +131,7 @@ passport.use(new FacebookStrategy({
   clientID: process.env.FACEBOOK_APP_ID!,
   clientSecret: process.env.FACEBOOK_APP_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`,
-  scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement'],
+  scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   const result = await handleOAuthCallback({
@@ -151,7 +151,7 @@ passport.use('instagram', new FacebookStrategy({
   clientID: process.env.FACEBOOK_APP_ID!,
   clientSecret: process.env.FACEBOOK_APP_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/instagram/callback`,
-  scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement', 'public_content'],
+  scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
   const result = await handleOAuthCallback({
