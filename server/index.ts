@@ -1,5 +1,6 @@
 import express from 'express';
 import session from 'express-session';
+import connectPg from 'connect-pg-simple';
 import { createServer } from 'http';
 import path from 'path';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
@@ -25,7 +26,7 @@ async function startServer() {
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Origin', 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Allow-Credentials', 'true');
@@ -121,11 +122,22 @@ async function startServer() {
   });
 
   // Device-agnostic session configuration for mobile-to-desktop continuity
+  // Configure PostgreSQL session store
+  const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: false,
+    ttl: sessionTtl,
+    tableName: "sessions",
+  });
+
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
-    resave: true, // Force session save to prevent loss
-    saveUninitialized: true, // Save empty sessions to establish connection
-    name: 'theagencyiq.session', // Custom session name for consistency
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    name: 'theagencyiq.session', // Unified session name
     genid: () => {
       // Generate device-agnostic session ID with timestamp and random component
       const timestamp = Date.now().toString(36);
@@ -133,8 +145,8 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: false, // Disable secure for development to ensure cookie works
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for device continuity
+      secure: process.env.NODE_ENV === 'production' ? true : false,
+      maxAge: sessionTtl,
       httpOnly: false, // Allow frontend access for session sync
       sameSite: 'lax',
       path: '/', // Ensure cookie is available for all paths

@@ -194,29 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     `);
   });
   
-  // Session configuration
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
-
-  app.use(session({
-    secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: false, // Allow non-HTTPS in development
-      maxAge: sessionTtl,
-      sameSite: 'lax',
-    },
-    name: 'connect.sid',
-  }));
+  // Session configuration moved to server/index.ts to prevent duplicates
 
   // Apply comprehensive subscription middleware to ALL routes
   app.use(requirePaidSubscription);

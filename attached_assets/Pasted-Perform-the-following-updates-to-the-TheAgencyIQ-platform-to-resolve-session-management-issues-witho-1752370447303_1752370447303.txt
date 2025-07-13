@@ -1,0 +1,109 @@
+Perform the following updates to the TheAgencyIQ platform to resolve session management issues without disrupting existing functionality:
+
+
+
+
+
+In server/routes.ts:
+
+
+
+
+
+Identify and remove any duplicate session middleware applied to routes (e.g., multiple instances of express-session or custom session checks).
+
+
+
+Ensure no session-related logic remains in routes.ts to prevent conflicts.
+
+
+
+In server/index.ts:
+
+
+
+
+
+Unify session configuration as the sole location for session setup.
+
+
+
+Use express-session with connect-redis for session storage.
+
+
+
+Configure session with:
+
+
+
+
+
+Redis store using localhost:6379.
+
+
+
+Secret: 'your-secret-key' (or existing secure key).
+
+
+
+resave: false, saveUninitialized: false.
+
+
+
+Cookie settings: secure: process.env.NODE_ENV === 'production' ? true : false, httpOnly: false (to allow frontend access), sameSite: 'lax', maxAge: 24 * 60 * 60 * 1000.
+
+
+
+Fix CORS configuration in server/index.ts:
+
+
+
+
+
+Replace wildcard (*) with specific origin: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev (Replit frontend URL).
+
+
+
+Set credentials: true to allow session cookies.
+
+
+
+Ensure methods include GET, POST, PUT, DELETE, and options include Access-Control-Allow-Credentials.
+
+
+
+Standardize cookie settings across the app:
+
+
+
+
+
+Ensure all session cookies use the unified configuration from server/index.ts.
+
+
+
+Verify no conflicting cookie settings in other files (e.g., routes.ts or middleware).
+
+
+
+Validate changes:
+
+
+
+
+
+Test session establishment for gailm@macleodglba.com.au (User ID: 2) to confirm the session ID persists and /api/user returns the correct user ID.
+
+
+
+Verify frontend can access session data with httpOnly: false.
+
+
+
+Check CORS allows credentials from the specified origin without errors.
+
+
+
+Confirm no duplicate middleware interferes with routes.
+
+Report the changes made, including removed duplicates, unified session config, and CORS settings. Do not modify unrelated functionality (e.g., brand purpose or quota logic).
