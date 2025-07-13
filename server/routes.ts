@@ -5301,7 +5301,7 @@ Continue building your Value Proposition Canvas systematically.`;
       }
 
       const planLimits = { starter: 12, growth: 27, professional: 52 };
-      const planPostLimit = Math.min(totalPosts, planLimits[user.subscriptionPlan as keyof typeof planLimits] || 12);
+      const planPostLimit = Math.min(totalPosts, planLimits[user.subscriptionPlan as keyof typeof planLimits] ?? 12);
       
       // Generate unstoppable content using CMO team insights
       const unstoppableContent = await adaptToAnyBrand(
@@ -9240,8 +9240,8 @@ Continue building your Value Proposition Canvas systematically.`;
           error: 'Authentication required' 
         });
       }
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 10));
       
       const result = await userFeedbackService.getUserFeedback(userId, page, limit);
       

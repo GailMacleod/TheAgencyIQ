@@ -89,7 +89,7 @@ export interface IStorage {
   // Post ledger operations for synchronization
   getPostLedgerByUser(userId: string): Promise<any | undefined>;
   createPostLedger(ledger: any): Promise<any>;
-  updatePostLedger(id: number, updates: any): Promise<any>;
+  updatePostLedger(userId: string, updates: any): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -301,7 +301,7 @@ export class DatabaseStorage implements IStorage {
     
     const connectedPlatforms: {[key: string]: boolean} = {};
     connections.forEach(conn => {
-      connectedPlatforms[conn.platform] = conn.isActive;
+      connectedPlatforms[conn.platform] = conn.isActive || false;
     });
     
     return connectedPlatforms;

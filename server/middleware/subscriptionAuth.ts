@@ -15,7 +15,7 @@ export const requireActiveSubscription = async (req: any, res: any, next: any) =
     }
 
     // Allow access if subscription is active OR user has a valid subscription plan
-    if (user.subscriptionActive || user.subscription_active || 
+    if (user.subscriptionActive === true || user.subscription_active === true || 
         (user.subscriptionPlan && user.subscriptionPlan !== 'none' && user.subscriptionPlan !== '') ||
         (user.subscription_plan && user.subscription_plan !== 'none' && user.subscription_plan !== '')) {
       return next();
