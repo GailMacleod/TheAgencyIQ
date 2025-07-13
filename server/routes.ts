@@ -4227,6 +4227,50 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // ENHANCED: Token refresh endpoint for expired platforms
+  app.post('/api/platform-connections/:platform/refresh', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const platform = req.params.platform;
+      
+      console.log(`🔄 Manual token refresh request for ${platform} (User ${userId})`);
+      
+      const connection = await storage.getPlatformConnection(userId, platform);
+      if (!connection) {
+        return res.status(404).json({ error: 'Platform connection not found' });
+      }
+      
+      // Attempt token refresh
+      const refreshResult = await OAuthRefreshService.validateAndRefreshConnection(userId.toString(), platform);
+      
+      if (refreshResult.success) {
+        // Return updated connection status
+        const updatedConnection = await storage.getPlatformConnection(userId, platform);
+        res.json({
+          success: true,
+          connection: updatedConnection,
+          message: `${platform} token refreshed successfully`
+        });
+      } else {
+        // Return error for manual reconnection
+        res.json({
+          success: false,
+          error: refreshResult.error || 'Token refresh failed',
+          requiresReconnection: true,
+          message: `${platform} requires manual reconnection`
+        });
+      }
+      
+    } catch (error) {
+      console.error(`Token refresh error for ${platform}:`, error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Token refresh failed',
+        requiresReconnection: true 
+      });
+    }
+  });
+
   // Instagram OAuth fix - POST to platform connections
   app.post("/api/platform-connections", requireActiveSubscription, async (req: any, res) => {
     try {

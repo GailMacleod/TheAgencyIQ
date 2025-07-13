@@ -270,6 +270,25 @@ export class DatabaseStorage implements IStorage {
     return platformConnection;
   }
 
+  // ENHANCED: Update platform connection token after refresh
+  async updatePlatformConnectionToken(userId: string, platform: string, accessToken: string, refreshToken: string, expiresAt?: Date): Promise<void> {
+    const userIdNum = parseInt(userId);
+    
+    await db.update(platformConnections)
+      .set({
+        accessToken,
+        refreshToken,
+        expiresAt: expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000), // Default 24 hours
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(platformConnections.userId, userIdNum),
+        eq(platformConnections.platform, platform)
+      ));
+    
+    console.log(`✅ Database updated for ${platform} (User ${userId}): New token expires at ${expiresAt?.toISOString()}`);
+  }
+
   async getPlatformConnection(userId: number, platform: string): Promise<PlatformConnection | undefined> {
     const [connection] = await db
       .select()

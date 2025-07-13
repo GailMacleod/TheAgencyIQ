@@ -91,22 +91,63 @@ export class OAuthRefreshService {
   }
 
   /**
-   * Refresh OAuth token for specific platform
+   * Refresh OAuth token for specific platform - ENHANCED with database updates
    */
   private static async refreshToken(connection: any, platform: string): Promise<RefreshResult> {
-    switch (platform) {
-      case 'facebook':
-        return await this.refreshFacebookToken(connection);
-      case 'instagram':
-        return await this.refreshInstagramToken(connection);
-      case 'linkedin':
-        return await this.refreshLinkedInToken(connection);
-      case 'x':
-        return await this.refreshXToken(connection);
-      case 'youtube':
-        return await this.refreshYouTubeToken(connection);
-      default:
-        return { success: false, error: 'Platform refresh not supported' };
+    try {
+      console.log(`🔄 Attempting token refresh for ${platform} (User ${connection.userId})`);
+      
+      // First check if refresh token is valid
+      if (!connection.refreshToken || connection.refreshToken.includes('expired')) {
+        console.log(`❌ Refresh token invalid for ${platform}`);
+        return { success: false, error: 'Refresh token expired or invalid' };
+      }
+      
+      let refreshResult: RefreshResult;
+      
+      switch (platform) {
+        case 'facebook':
+          refreshResult = await this.refreshFacebookToken(connection);
+          break;
+        case 'instagram':
+          refreshResult = await this.refreshInstagramToken(connection);
+          break;
+        case 'linkedin':
+          refreshResult = await this.refreshLinkedInToken(connection);
+          break;
+        case 'x':
+          refreshResult = await this.refreshXToken(connection);
+          break;
+        case 'youtube':
+          refreshResult = await this.refreshYouTubeToken(connection);
+          break;
+        default:
+          return { success: false, error: 'Platform refresh not supported' };
+      }
+      
+      // If refresh successful, update database
+      if (refreshResult.success && refreshResult.accessToken) {
+        try {
+          const { storage } = await import('../storage');
+          await storage.updatePlatformConnectionToken(
+            connection.userId.toString(),
+            platform,
+            refreshResult.accessToken,
+            refreshResult.refreshToken || connection.refreshToken,
+            refreshResult.expiresAt
+          );
+          console.log(`✅ Token refreshed and database updated for ${platform}`);
+        } catch (dbError) {
+          console.error(`❌ Database update failed for ${platform}:`, dbError);
+          return { success: false, error: 'Token refreshed but database update failed' };
+        }
+      }
+      
+      return refreshResult;
+      
+    } catch (error) {
+      console.error(`❌ Token refresh failed for ${platform}:`, error);
+      return { success: false, error: error.message };
     }
   }
 
