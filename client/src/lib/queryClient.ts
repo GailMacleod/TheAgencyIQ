@@ -1,4 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { sessionManager } from "@/utils/session-manager";
+import { apiClient } from "@/utils/api-client";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -12,17 +14,27 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<any> {
-  const options: RequestInit = {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-    },
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  };
-
-  const response = await fetch(url, options);
+  let response: Response;
+  
+  switch (method.toUpperCase()) {
+    case 'GET':
+      response = await apiClient.get(url);
+      break;
+    case 'POST':
+      response = await apiClient.post(url, data);
+      break;
+    case 'PUT':
+      response = await apiClient.put(url, data);
+      break;
+    case 'PATCH':
+      response = await apiClient.patch(url, data);
+      break;
+    case 'DELETE':
+      response = await apiClient.delete(url);
+      break;
+    default:
+      throw new Error(`Unsupported HTTP method: ${method}`);
+  }
   const contentType = response.headers.get('content-type');
 
   console.log(`API call to ${url} returned ${response.status}`);
@@ -73,14 +85,8 @@ export const getQueryFn: <T>(options: {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
       
-      const res = await fetch(queryKey[0] as string, {
-        credentials: "include",
+      const res = await apiClient.get(queryKey[0] as string, {
         signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        // Force no-cache to ensure fresh session validation
         cache: 'no-cache',
       });
 

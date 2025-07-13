@@ -26,11 +26,14 @@ async function startServer() {
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie');
+    const origin = req.headers.origin || 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, X-Retry-Session');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+    res.header('Vary', 'Origin, Access-Control-Request-Headers');
+    res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
     
     // Enhanced security headers with corrected Permissions-Policy
     res.header('Content-Security-Policy', 
@@ -147,13 +150,16 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: false, // Fix: Set to false for development to enable session persistence
+      secure: true, // Enable secure cookies for HTTPS
       maxAge: sessionTtl,
       httpOnly: false, // Allow frontend access for session sync
-      sameSite: 'lax',
+      sameSite: 'none', // Allow cross-site requests with cookies
       path: '/', // Ensure cookie is available for all paths
       domain: undefined // Remove domain restriction for development
-    }
+    },
+    // Force session save for all requests
+    saveUninitialized: false,
+    rolling: true
   }));
 
   // Enhanced CSP for Facebook compliance, Google services, video content, and security

@@ -11,6 +11,7 @@ import NotFound from "@/pages/not-found";
 import { initGA } from "./lib/analytics";
 import { useAnalytics } from "./hooks/use-analytics";
 import { clearBrowserCache } from "./utils/cache-utils";
+import { sessionManager } from "./utils/session-manager";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
@@ -139,42 +140,17 @@ function App() {
   useEffect(() => {
     const establishSession = async () => {
       try {
-        const response = await fetch('/api/establish-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify({
-            email: 'gailm@macleodglba.com.au',
-            phone: '+61424835189'
-          }),
-          credentials: 'include'
-        });
+        await sessionManager.establishSession();
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Session established:', data.user?.email || 'User authenticated');
-          console.log('User ID:', data.user?.id);
+        // Wait a moment to ensure session is properly saved before invalidating queries
+        setTimeout(() => {
+          // Force refresh all queries to use the new session
+          queryClient.invalidateQueries();
+          console.log('🔄 Queries invalidated after session establishment');
           
-          // Store session info for debugging
-          if (data.user) {
-            sessionStorage.setItem('currentUser', JSON.stringify({
-              id: data.user.id,
-              email: data.user.email,
-              phone: data.user.phone
-            }));
-          }
-          
-          // Wait a moment to ensure session is properly saved before invalidating queries
+          // Force a test API call to verify session is working
           setTimeout(() => {
-            // Force refresh all queries to use the new session
-            queryClient.invalidateQueries();
-            console.log('🔄 Queries invalidated after session establishment');
-            
-            // Force a test API call to verify session is working
-            setTimeout(() => {
-              fetch('/api/user', {
+            fetch('/api/user', {
                 credentials: 'include',
                 headers: {
                   'Content-Type': 'application/json',
@@ -191,12 +167,9 @@ function App() {
               }).catch(err => {
                 console.log('❌ Session verification error:', err.message);
               });
-            }, 200);
-          }, 100);
-          
-        } else {
-          console.log('❌ Session establishment failed, continuing with guest access');
-        }
+          }, 200);
+        }, 100);
+        
       } catch (error) {
         console.log('❌ Session establishment error, continuing with guest access');
       }
