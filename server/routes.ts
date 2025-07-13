@@ -1509,50 +1509,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Authenticate the known Professional subscriber
       const knownUser = await storage.getUserByEmail('gailm@macleodglba.com.au');
       if (knownUser && knownUser.subscriptionActive) {
-        // First principles fix: Explicitly set session user data and cookie
-        req.session.user = { 
-          id: knownUser.id, 
-          email: knownUser.email,
-          subscriptionPlan: knownUser.subscriptionPlan,
-          subscriptionActive: knownUser.subscriptionActive
-        };
-        req.session.userId = knownUser.id;
-        req.session.userEmail = knownUser.email;
-        req.session.subscriptionPlan = knownUser.subscriptionPlan;
-        req.session.subscriptionActive = knownUser.subscriptionActive;
-        
-        await new Promise<void>((resolve, reject) => {
-          req.session.save((err: any) => {
-            if (err) reject(err);
-            else resolve();
-          });
-        });
-        
-        // Force session cookie to be set in the response
-        res.cookie('theagencyiq.session', req.sessionID, {
-          httpOnly: false,
-          secure: false,
-          sameSite: 'lax',
-          maxAge: 24 * 60 * 60 * 1000, // 24 hours
-          path: '/'
-        });
-        
-        console.log(`Login successful for ${knownUser.email} (ID: ${knownUser.id})`);
-        console.log(`Session ID: ${req.sessionID}`);
-        
-        return res.json({
-          success: true,
-          user: {
-            id: knownUser.id,
+        // Force session regeneration to ensure proper cookie transmission
+        req.session.regenerate((err) => {
+          if (err) {
+            console.error('Session regeneration failed:', err);
+            return res.status(500).json({ success: false, message: 'Session creation failed' });
+          }
+          
+          // Set user data in the new session
+          req.session.user = { 
+            id: knownUser.id, 
             email: knownUser.email,
-            phone: knownUser.phone,
             subscriptionPlan: knownUser.subscriptionPlan,
-            subscriptionActive: knownUser.subscriptionActive,
-            remainingPosts: knownUser.remainingPosts,
-            totalPosts: knownUser.totalPosts
-          },
-          sessionId: req.sessionID,
-          message: 'Login successful'
+            subscriptionActive: knownUser.subscriptionActive
+          };
+          req.session.userId = knownUser.id;
+          req.session.userEmail = knownUser.email;
+          req.session.subscriptionPlan = knownUser.subscriptionPlan;
+          req.session.subscriptionActive = knownUser.subscriptionActive;
+          
+          // Save the session and return response
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error('Session save failed:', saveErr);
+              return res.status(500).json({ success: false, message: 'Session save failed' });
+            }
+            
+            console.log(`✅ Session created for ${knownUser.email} (ID: ${knownUser.id})`);
+            console.log(`Session ID: ${req.sessionID}`);
+            
+            return res.json({
+              success: true,
+              user: {
+                id: knownUser.id,
+                email: knownUser.email,
+                phone: knownUser.phone,
+                subscriptionPlan: knownUser.subscriptionPlan,
+                subscriptionActive: knownUser.subscriptionActive,
+                remainingPosts: knownUser.remainingPosts,
+                totalPosts: knownUser.totalPosts
+              },
+              sessionId: req.sessionID,
+              message: 'Login successful'
+            });
+          });
         });
       } else {
         return res.status(401).json({
