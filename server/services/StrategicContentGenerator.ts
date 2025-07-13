@@ -86,7 +86,8 @@ export class StrategicContentGenerator {
       contentTemplates,
       params.totalPosts,
       params.platforms,
-      marketData
+      marketData,
+      params.brandPurpose
     );
     
     return optimisedContent;
@@ -317,7 +318,8 @@ export class StrategicContentGenerator {
     templates: any[],
     totalPosts: number,
     platforms: string[],
-    marketData: QueenslandMarketInsights
+    marketData: QueenslandMarketInsights,
+    brandPurpose: any
   ): Promise<StrategicPost[]> {
     console.log('📈 Phase 7: Optimising 30-day cycle...');
     
@@ -339,7 +341,7 @@ export class StrategicContentGenerator {
         const post: StrategicPost = {
           id: strategicPosts.length + 1,
           platform,
-          content: await this.generateStrategicPostContent(platform, template, marketData, params.brandPurpose),
+          content: await this.generateStrategicPostContent(platform, template, marketData, brandPurpose),
           scheduledFor: scheduledDate.toISOString(),
           strategicTheme: template.theme,
           businessCanvasPhase: this.getBusinessCanvasPhase(j),
