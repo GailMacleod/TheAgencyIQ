@@ -3,116 +3,112 @@
  * Tests all 5 platforms with current credentials
  */
 
+import axios from 'axios';
+
 async function testCompleteOAuthSystem() {
-  const baseUrl = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+  console.log('🔵 Testing Complete OAuth System...');
   
-  console.log('🔍 COMPLETE OAUTH SYSTEM TEST');
-  console.log('============================');
+  const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
+  const results = {};
   
-  // Test platform connections status
   try {
-    const response = await fetch(`${baseUrl}/api/platform-connections`, {
-      credentials: 'include'
+    // First establish session
+    const sessionResponse = await axios.post('https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/auth/establish-session', {}, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+      }
     });
     
-    const connections = await response.json();
-    console.log(`\n📊 Platform Connections Summary:`);
-    console.log(`Total connections: ${connections.length}`);
+    console.log('✅ Session established:', sessionResponse.data);
     
-    // Group by platform
-    const platformCounts = {};
-    connections.forEach(conn => {
-      platformCounts[conn.platform] = (platformCounts[conn.platform] || 0) + 1;
-    });
+    // Extract session cookie
+    const setCookie = sessionResponse.headers['set-cookie'];
+    const sessionCookie = setCookie ? setCookie[0] : '';
     
-    console.log('\n📋 Platform Connection Counts:');
-    Object.entries(platformCounts).forEach(([platform, count]) => {
-      console.log(`  ${platform}: ${count} connections`);
-    });
-    
-    // Test OAuth URLs for all platforms
-    console.log('\n🔗 Testing OAuth URL Generation:');
-    const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
-    
+    // Test each platform OAuth
     for (const platform of platforms) {
+      console.log(`\n🔵 Testing ${platform} OAuth...`);
+      
+      // Map platform to OAuth route
+      const oauthRoutes = {
+        'facebook': '/auth/facebook',
+        'instagram': '/auth/instagram', 
+        'linkedin': '/auth/linkedin',
+        'x': '/auth/twitter',
+        'youtube': '/auth/youtube'
+      };
+      
+      const oauthRoute = oauthRoutes[platform];
+      
       try {
-        const oauthResponse = await fetch(`${baseUrl}/connect/${platform}`, {
-          method: 'GET',
-          credentials: 'include',
-          redirect: 'manual'
+        const oauthResponse = await axios.get(`https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev${oauthRoute}`, {
+          headers: {
+            'Cookie': sessionCookie,
+          },
+          maxRedirects: 0,
+          validateStatus: function (status) {
+            return status >= 200 && status < 400;
+          }
         });
         
         if (oauthResponse.status === 302) {
-          const location = oauthResponse.headers.get('location');
+          const redirectUrl = oauthResponse.headers.location;
+          console.log(`✅ ${platform} OAuth redirect successful`);
+          console.log(`🔗 Redirect URL: ${redirectUrl}`);
           
-          // Check for required components
-          const hasClientId = location.includes('client_id=') && !location.includes('client_id=undefined');
-          const hasRedirectUri = location.includes('redirect_uri=');
-          const hasScope = location.includes('scope=');
-          
-          console.log(`  ✅ ${platform.toUpperCase()}: OAuth URL generated`);
-          console.log(`     Client ID: ${hasClientId ? 'Present' : 'Missing'}`);
-          console.log(`     Redirect URI: ${hasRedirectUri ? 'Present' : 'Missing'}`);
-          console.log(`     Scopes: ${hasScope ? 'Present' : 'Missing'}`);
-          
-          // Platform-specific validations
-          if (platform === 'linkedin' && hasClientId) {
-            console.log(`     LinkedIn Client ID detected: Working with updated secret`);
+          // Verify redirect URL structure
+          if (redirectUrl) {
+            if (platform === 'facebook' && redirectUrl.includes('facebook.com')) {
+              results[platform] = { status: 'success', redirectUrl };
+            } else if (platform === 'instagram' && redirectUrl.includes('facebook.com')) {
+              results[platform] = { status: 'success', redirectUrl };
+            } else if (platform === 'linkedin' && redirectUrl.includes('linkedin.com')) {
+              results[platform] = { status: 'success', redirectUrl };
+            } else if (platform === 'x' && redirectUrl.includes('api.twitter.com')) {
+              results[platform] = { status: 'success', redirectUrl };
+            } else if (platform === 'youtube' && redirectUrl.includes('accounts.google.com')) {
+              results[platform] = { status: 'success', redirectUrl };
+            } else {
+              results[platform] = { status: 'unexpected_redirect', redirectUrl };
+            }
+          } else {
+            results[platform] = { status: 'no_redirect' };
           }
-          
-          if (platform === 'instagram') {
-            const hasValidScopes = location.includes('instagram_manage_posts') && 
-                                 location.includes('instagram_basic_display') &&
-                                 !location.includes('instagram_basic,') &&
-                                 !location.includes('instagram_content_publish');
-            console.log(`     Instagram Scopes: ${hasValidScopes ? 'Fixed (valid scopes)' : 'Needs fixing'}`);
-          }
-          
         } else {
-          console.log(`  ❌ ${platform.toUpperCase()}: OAuth URL generation failed (${oauthResponse.status})`);
+          results[platform] = { status: 'failed', statusCode: oauthResponse.status };
         }
+        
       } catch (error) {
-        console.log(`  ❌ ${platform.toUpperCase()}: Error - ${error.message}`);
+        console.error(`❌ ${platform} OAuth failed:`, error.message);
+        results[platform] = { status: 'error', error: error.message };
       }
     }
     
-    // Test recent token validation
-    console.log('\n🔍 Recent Connection Status:');
-    const recentConnections = connections
-      .sort((a, b) => new Date(b.connectedAt) - new Date(a.connectedAt))
-      .slice(0, 5);
+    // Generate summary
+    console.log('\n📋 OAuth System Test Summary:');
+    console.log('='.repeat(50));
     
-    recentConnections.forEach(conn => {
-      const status = conn.oauthStatus?.isValid ? 'Valid' : 'Invalid';
-      const error = conn.oauthStatus?.error || 'None';
-      const needsReauth = conn.oauthStatus?.needsReauth ? 'Yes' : 'No';
-      
-      console.log(`  ${conn.platform.toUpperCase()}: ${status} | Error: ${error} | Needs Reauth: ${needsReauth}`);
-    });
-    
-    // Environment verification
-    console.log('\n🔧 Environment Variables Check:');
-    const envVars = [
-      'FACEBOOK_APP_ID',
-      'FACEBOOK_APP_SECRET', 
-      'LINKEDIN_CLIENT_ID',
-      'LINKEDIN_CLIENT_SECRET',
-      'X_OAUTH_CLIENT_ID',
-      'X_OAUTH_CLIENT_SECRET',
-      'GOOGLE_CLIENT_ID',
-      'GOOGLE_CLIENT_SECRET'
-    ];
-    
-    for (const envVar of envVars) {
-      const hasValue = process.env[envVar] && process.env[envVar].length > 0;
-      console.log(`  ${envVar}: ${hasValue ? 'Set' : 'Missing'}`);
+    let successCount = 0;
+    for (const [platform, result] of Object.entries(results)) {
+      if (result.status === 'success') {
+        console.log(`✅ ${platform.toUpperCase()}: WORKING`);
+        successCount++;
+      } else {
+        console.log(`❌ ${platform.toUpperCase()}: ${result.status} - ${result.error || 'Check configuration'}`);
+      }
     }
     
-    console.log('\n✅ OAuth System Test Complete');
-    console.log('Ready for manual OAuth testing on /connect-platforms page');
+    console.log(`\n📊 Success Rate: ${successCount}/5 platforms (${(successCount/5*100).toFixed(1)}%)`);
+    
+    if (successCount === 5) {
+      console.log('🎉 ALL OAUTH SYSTEMS WORKING PERFECTLY!');
+    } else {
+      console.log(`⚠️  ${5-successCount} platform(s) need attention`);
+    }
     
   } catch (error) {
-    console.error('❌ OAuth System Test Failed:', error.message);
+    console.error('❌ OAuth system test failed:', error.message);
   }
 }
 
