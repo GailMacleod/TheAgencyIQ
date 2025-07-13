@@ -17,12 +17,12 @@ export async function apiRequest(
   let response: Response;
   
   try {
-    // Extended timeout for API requests (30 seconds)
+    // Reduced timeout for faster loading (5 seconds)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       console.warn('API request timeout for:', method, url);
-      controller.abort('API request timeout after 30 seconds');
-    }, 30000);
+      controller.abort('API request timeout after 5 seconds');
+    }, 5000);
 
     // Pass AbortController signal to all API client methods
     const requestOptions = { signal: controller.signal };
@@ -53,14 +53,17 @@ export async function apiRequest(
     // Enhanced error handling for AbortController issues
     if (error.name === 'AbortError') {
       const reason = error.message || 'Request was aborted';
-      console.error('AbortError in apiRequest:', reason, 'for', method, url);
-      throw new Error(`API request timeout: ${reason}`);
+      console.error('Request timeout for:', method, url);
+      // Return null instead of throwing to allow app to continue
+      return null;
     } else if (error.message?.includes('signal is aborted without reason')) {
-      console.error('AbortController signal issue in apiRequest:', error.message, 'for', method, url);
-      throw new Error('API request was cancelled due to timeout');
+      console.error('AbortController signal issue for:', method, url);
+      // Return null instead of throwing to allow app to continue
+      return null;
     } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-      console.error('Network error in apiRequest:', error.message, 'for', method, url);
-      throw new Error('Network connection failed');
+      console.error('Network error for:', method, url);
+      // Return null instead of throwing to allow app to continue
+      return null;
     }
     
     // Log unexpected errors for debugging
