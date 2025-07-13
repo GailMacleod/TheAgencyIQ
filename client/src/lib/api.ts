@@ -13,12 +13,12 @@ export async function apiRequest(
   console.log(`API call to ${url} starting with method ${method}`);
   
   try {
-    // Extended timeout for API requests (30 seconds)
+    // Reduced timeout for API requests (10 seconds)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       console.warn('API request timeout for:', method, url);
-      controller.abort('API request timeout after 30 seconds');
-    }, 30000);
+      controller.abort('API request timeout after 10 seconds');
+    }, 10000);
 
     // Use main app endpoints, not microservice
     const response = await fetch(url, {

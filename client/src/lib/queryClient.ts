@@ -114,12 +114,12 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     try {
-      // Extended timeout to prevent hanging requests (30 seconds)
+      // Reduced timeout to prevent hanging requests (10 seconds)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         console.warn('Request timeout for:', queryKey[0]);
-        controller.abort('Request timeout after 30 seconds');
-      }, 30000);
+        controller.abort('Request timeout after 10 seconds');
+      }, 10000);
       
       const res = await apiClient.get(queryKey[0] as string, {
         signal: controller.signal,
@@ -142,15 +142,15 @@ export const getQueryFn: <T>(options: {
     } catch (error: any) {
       // Enhanced error handling for AbortController issues
       if (error.name === 'AbortError') {
-        const reason = error.message || 'Request was aborted';
-        console.error('AbortError caught:', reason);
-        throw new Error(`Request timeout: ${reason}`);
+        // Simply return null for timeout errors instead of throwing
+        console.warn('Request timeout for:', queryKey[0], '- returning null');
+        return null;
       } else if (error.message?.includes('signal is aborted without reason')) {
-        console.error('AbortController signal issue:', error.message);
-        throw new Error('Request was cancelled due to timeout');
+        console.warn('AbortController signal issue for:', queryKey[0], '- returning null');
+        return null;
       } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        console.error('Network error:', error.message);
-        throw new Error('Network connection failed');
+        console.warn('Network error for:', queryKey[0], '- returning null');
+        return null;
       }
       
       // Log unexpected errors for debugging
