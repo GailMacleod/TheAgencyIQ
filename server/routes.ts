@@ -181,6 +181,42 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Add JSON middleware
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  
+  // Global session establishment middleware - runs on ALL requests
+  app.use(async (req: any, res: any, next: any) => {
+    // Skip session establishment for static assets
+    if (req.path.startsWith('/public/') || req.path.startsWith('/assets/')) {
+      return next();
+    }
+    
+    // Auto-establish session for User ID 2 if not present
+    if (!req.session?.userId) {
+      try {
+        const user = await storage.getUser(2);
+        if (user) {
+          req.session.userId = 2;
+          req.session.userEmail = user.email;
+          await new Promise<void>((resolve) => {
+            req.session.save((err: any) => {
+              if (err) console.error('Session save error:', err);
+              resolve();
+            });
+          });
+          console.log(`✅ Auto-established session for user ${user.email} on ${req.path}`);
+        }
+      } catch (error) {
+        console.error('Auto-session error:', error);
+      }
+    }
+    next();
+  });
+  
+  // Add subscription enforcement middleware to all routes
+  app.use(requirePaidSubscription);
+  
   // Add global error handler for debugging 500 errors
   app.use((err: any, req: any, res: any, next: any) => {
     console.error('Global error handler caught:', err);
@@ -2942,9 +2978,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get current user - simplified for consistency
   // User status endpoint for demo mode detection
-  app.get("/api/user-status", establishSession, async (req: any, res) => {
+  app.get("/api/user-status", async (req: any, res) => {
     try {
-      // Session establishment is now handled by middleware
+      // Session is established by global middleware
       const userId = req.session?.userId;
       
       if (!userId) {
@@ -3006,27 +3042,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log(`🔍 /api/user - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
       
-      // Auto-establish session for User ID 2 if not present
-      let userId = req.session?.userId;
-      if (!userId) {
-        try {
-          const user = await storage.getUser(2);
-          if (user) {
-            req.session.userId = 2;
-            req.session.userEmail = user.email;
-            await new Promise<void>((resolve) => {
-              req.session.save((err: any) => {
-                if (err) console.error('Session save error:', err);
-                resolve();
-              });
-            });
-            userId = 2;
-            console.log(`✅ Auto-established session for user ${user.email} in /api/user`);
-          }
-        } catch (error) {
-          console.error('Auto-session error in /api/user:', error);
-        }
-      }
+      // Session is established by global middleware
+      const userId = req.session?.userId;
       
       if (!userId) {
         console.log('❌ No user ID in session - authentication required');
