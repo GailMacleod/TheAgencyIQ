@@ -19,7 +19,7 @@ export default function AIWidget() {
     {
       id: '1',
       role: 'assistant',
-      content: 'hi! i\'m your strategic ai assistant with comprehensive knowledge of theagencyiq platform and deep expertise in queensland sme success.\n\ni can provide expert guidance on:\n• complete platform functionality & features\n• strategic planning & brand positioning\n• content creation & social media strategy\n• platform optimization (facebook, instagram, linkedin, x, youtube)\n• subscription management & billing\n• analytics & performance monitoring\n• technical troubleshooting & support\n• business growth & customer acquisition\n• local queensland market insights\n\ni understand how every feature works together - from brand purpose setup to multi-platform publishing. what specific question can i help you with?',
+      content: 'Hi! I\'m your strategic AI assistant with comprehensive knowledge of TheAgencyIQ platform and deep expertise in Queensland SME success.\n\nI can provide expert guidance on:\n• Complete platform functionality & features\n• Strategic planning & brand positioning\n• Content creation & social media strategy\n• Platform optimization (Facebook, Instagram, LinkedIn, X, YouTube)\n• Subscription management & billing\n• Analytics & performance monitoring\n• Technical troubleshooting & support\n• Business growth & customer acquisition\n• Local Queensland market insights\n\nI understand how every feature works together - from brand purpose setup to multi-platform publishing. What specific question can I help you with?',
       timestamp: new Date(),
     },
   ]);
@@ -39,7 +39,7 @@ export default function AIWidget() {
       const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: data.response || 'i received your message but had trouble generating a response. please try again.',
+        content: data.response || 'I received your message but had trouble generating a response. Please try again.',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, assistantMessage]);
@@ -49,7 +49,7 @@ export default function AIWidget() {
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant', 
-        content: 'sorry, i encountered an error. please try again.',
+        content: 'Sorry, I encountered an error. Please try again.',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -96,7 +96,7 @@ export default function AIWidget() {
         <div className="fixed bottom-20 right-6 z-50 w-80">
           <Card className="card-agencyiq">
             <CardHeader className="bg-accent text-white p-4 rounded-t-lg flex flex-row justify-between items-center">
-              <h4 className="font-medium lowercase">grok assistant</h4>
+              <h4 className="font-medium">Grok Assistant</h4>
               <Button
                 variant="ghost" 
                 size="sm"
@@ -142,7 +142,7 @@ export default function AIWidget() {
                 <div className="flex space-x-2">
                   <Input
                     type="text"
-                    placeholder="ask me anything..."
+                    placeholder="Ask me anything..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={handleKeyPress}

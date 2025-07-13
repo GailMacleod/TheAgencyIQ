@@ -125,19 +125,19 @@ export default function AITest() {
       
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-light text-gray-900 lowercase mb-4">
-            ai content generation workflow
+          <h1 className="text-3xl font-light text-gray-900 mb-4">
+            AI Content Generation Workflow
           </h1>
-          <p className="text-gray-600 text-sm lowercase">
-            watch ai analyze your brand purpose and create strategic social media content
+          <p className="text-gray-600 text-sm">
+            Watch AI analyze your brand purpose and create strategic social media content
           </p>
           
           <Button
             onClick={generateContentWithAIThinking}
-            className="mt-6 bg-purple-600 hover:bg-purple-700 text-white lowercase px-8 py-3"
+            className="mt-6 bg-purple-600 hover:bg-purple-700 text-white px-8 py-3"
             disabled={showAIThinking}
           >
-            {showAIThinking ? 'ai is thinking...' : 'generate content with ai'}
+            {showAIThinking ? 'AI is thinking...' : 'Generate Content with AI'}
           </Button>
         </div>
 
@@ -147,8 +147,8 @@ export default function AITest() {
             <Card className="max-w-2xl w-full bg-white">
               <CardContent className="p-8">
                 <div className="text-center">
-                  <h2 className="text-2xl font-light text-purple-700 mb-6 lowercase">
-                    ai strategic analysis
+                  <h2 className="text-2xl font-light text-purple-700 mb-6">
+                    AI Strategic Analysis
                   </h2>
                   
                   {/* Progress Steps */}
@@ -170,7 +170,7 @@ export default function AITest() {
                           {aiStep > index ? '✓' : step.step}
                         </div>
                         <div className="flex-1 text-left">
-                          <h3 className="font-medium text-gray-900 lowercase">{step.title}</h3>
+                          <h3 className="font-medium text-gray-900">{step.title}</h3>
                           <p className="text-sm text-gray-600 mt-1">{step.content}</p>
                         </div>
                         {aiStep === index + 1 && (
@@ -199,13 +199,13 @@ export default function AITest() {
                       <div className="flex items-center space-x-3">
                         {getPlatformIcon(post.platform)}
                         <div>
-                          <h3 className="font-medium text-gray-900 lowercase">{post.platform}</h3>
+                          <h3 className="font-medium text-gray-900">{post.platform}</h3>
                           <p className="text-sm text-gray-500">
                             scheduled for {format(new Date(post.scheduledFor), 'MMM d, h:mm a')}
                           </p>
                         </div>
                       </div>
-                      <Badge variant="outline" className="lowercase">
+                      <Badge variant="outline">
                         {post.status}
                       </Badge>
                     </div>
@@ -216,7 +216,7 @@ export default function AITest() {
                     
                     {post.grokRecommendation && (
                       <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
-                        <p className="text-purple-700 text-sm font-medium lowercase">grok's strategy:</p>
+                        <p className="text-purple-700 text-sm font-medium">Grok's Strategy:</p>
                         <p className="text-purple-800 text-sm">{post.grokRecommendation}</p>
                       </div>
                     )}
@@ -227,31 +227,30 @@ export default function AITest() {
                           <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
                             <Check className="w-4 h-4 text-white" />
                           </div>
-                          <span className="text-green-700 font-medium lowercase">approved & scheduled</span>
+                          <span className="text-green-700 font-medium">Approved & Scheduled</span>
                         </div>
                       ) : (
                         <Button
                           onClick={() => approvePostMutation.mutate(post.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white lowercase"
+                          className="bg-green-600 hover:bg-green-700 text-white"
                           disabled={approvePostMutation.isPending}
                         >
                           <CheckCircle className="w-4 h-4 mr-2" />
-                          {approvePostMutation.isPending ? 'approving...' : 'approve & schedule'}
+                          {approvePostMutation.isPending ? 'Approving...' : 'Approve & Schedule'}
                         </Button>
                       )}
                       <Button
                         variant="outline"
-                        className="lowercase"
                         disabled={approvedPosts.has(post.id)}
                       >
-                        edit post
+                        Edit Post
                       </Button>
                       <Button
                         variant="outline"
-                        className="text-red-600 border-red-200 hover:bg-red-50 lowercase"
+                        className="text-red-600 border-red-200 hover:bg-red-50"
                         disabled={approvedPosts.has(post.id)}
                       >
-                        reject
+                        Reject
                       </Button>
                     </div>
                   </CardContent>

@@ -210,7 +210,7 @@ export default function Analytics() {
         
         {/* Progress Indicator */}
         <div className="text-center mb-8">
-          <p className="text-sm text-gray-600 lowercase">step 4 of 4</p>
+          <p className="text-sm text-gray-600">Step 4 of 4</p>
           <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
             <div className="bg-purple-600 h-2 rounded-full w-full"></div>
           </div>
@@ -218,11 +218,11 @@ export default function Analytics() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-heading font-light text-foreground lowercase mb-4">
-            performance analytics
+          <h1 className="text-heading font-light text-foreground mb-4">
+            Performance Analytics
           </h1>
-          <p className="text-gray-600 text-sm lowercase">
-            measuring outputs versus targets from your brand purpose strategy
+          <p className="text-gray-600 text-sm">
+            Measuring outputs versus targets from your brand purpose strategy
           </p>
           <p className="text-gray-500 text-xs mt-2">
             {format(startOfMonth(currentMonth), 'MMMM yyyy')} performance overview
@@ -237,7 +237,7 @@ export default function Analytics() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     {metric.icon}
-                    <span className="text-sm font-medium text-gray-600 lowercase">{metric.title}</span>
+                    <span className="text-sm font-medium text-gray-600">{metric.title}</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     {metric.trend === "up" ? (
@@ -268,7 +268,7 @@ export default function Analytics() {
                   <div className="flex justify-between items-center">
                     <Badge 
                       variant="outline" 
-                      className={`text-xs lowercase ${getPerformanceColor(metric.current, metric.target)}`}
+                      className={`text-xs ${getPerformanceColor(metric.current, metric.target)}`}
                     >
                       {getPerformanceStatus(metric.current, metric.target)}
                     </Badge>
@@ -286,14 +286,14 @@ export default function Analytics() {
         {analytics?.goalProgress && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="text-lg font-medium lowercase">brand purpose goals progress</CardTitle>
+              <CardTitle className="text-lg font-medium">Brand Purpose Goals Progress</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {Object.entries(analytics.goalProgress).map(([key, goal]) => (
                   <div key={key} className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-700 lowercase">{key} goal</span>
+                      <span className="text-sm font-medium text-gray-700">{key} Goal</span>
                       <span className="text-xs text-gray-500">{goal.percentage}%</span>
                     </div>
                     <Progress value={goal.percentage} className="h-2" />
@@ -312,7 +312,7 @@ export default function Analytics() {
         {analytics?.platformBreakdown && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="text-lg font-medium lowercase">platform performance</CardTitle>
+              <CardTitle className="text-lg font-medium">Platform Performance</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -325,7 +325,7 @@ export default function Analytics() {
                         </span>
                       </div>
                       <div>
-                        <h3 className="font-medium text-gray-900 lowercase">{platform.platform}</h3>
+                        <h3 className="font-medium text-gray-900">{platform.platform}</h3>
                         <p className="text-sm text-gray-500">{platform.posts} posts published</p>
                       </div>
                     </div>
@@ -341,7 +341,7 @@ export default function Analytics() {
                         </div>
                         <Badge 
                           variant={platform.performance >= 90 ? "default" : platform.performance >= 70 ? "secondary" : "destructive"}
-                          className="lowercase"
+                          className=""
                         >
                           {platform.performance}% performance
                         </Badge>
@@ -363,16 +363,16 @@ export default function Analytics() {
         <div className="text-center mb-8">
           <Button
             onClick={() => window.location.href = '/yearly-analytics'}
-            className="bg-purple-600 hover:bg-purple-700 text-white lowercase"
+            className="bg-purple-600 hover:bg-purple-700 text-white"
           >
-            view year-to-date performance
+            View Year-to-Date Performance
           </Button>
         </div>
 
         {/* Action Items */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-medium lowercase">recommended actions</CardTitle>
+            <CardTitle className="text-lg font-medium">Recommended Actions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">

@@ -97,12 +97,12 @@ export default function ProfileModal({ isOpen, onClose, user }: ProfileModalProp
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="card-agencyiq max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-light text-foreground lowercase">edit profile</DialogTitle>
+          <DialogTitle className="text-xl font-light text-foreground">Edit Profile</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-sections">
           <div>
-            <Label className="text-sm font-medium text-foreground lowercase">email</Label>
+            <Label className="text-sm font-medium text-foreground">Email</Label>
             <Input
               type="email"
               value={user?.email || "demo@agencyiq.com"}
@@ -112,7 +112,7 @@ export default function ProfileModal({ isOpen, onClose, user }: ProfileModalProp
           </div>
           
           <div>
-            <Label className="text-sm font-medium text-foreground lowercase">phone</Label>
+            <Label className="text-sm font-medium text-foreground">Phone</Label>
             <Input
               type="tel"
               {...form.register('phone')}
@@ -121,7 +121,7 @@ export default function ProfileModal({ isOpen, onClose, user }: ProfileModalProp
           </div>
           
           <div>
-            <Label className="text-sm font-medium text-foreground lowercase">plan</Label>
+            <Label className="text-sm font-medium text-foreground">Plan</Label>
             <Input
               type="text"
               value={getPlanDisplay(user?.subscriptionPlan || "growth")}

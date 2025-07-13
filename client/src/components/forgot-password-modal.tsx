@@ -61,7 +61,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="card-agencyiq max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-light text-foreground lowercase">reset password</DialogTitle>
+          <DialogTitle className="text-xl font-light text-foreground">Reset Password</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-sections">
@@ -96,7 +96,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
             className="w-full btn-secondary"
             disabled={loading}
           >
-            {loading ? 'sending...' : 'send reset link'}
+            {loading ? 'Sending...' : 'Send Reset Link'}
           </Button>
         </form>
       </DialogContent>
