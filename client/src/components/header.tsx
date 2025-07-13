@@ -110,7 +110,7 @@ export default function Header({
               <MobileNavigationMenu />
               <Link href="/" className="flex items-center">
                 <img 
-                  src="attached_assets/agency_logo_1749083054761.png" 
+                  src="attached_assets/agency_logo_header.svg" 
                   alt="AiQ" 
                   className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
                 />
@@ -141,7 +141,7 @@ export default function Header({
         <div className="flex justify-between items-center h-16">
           <Link href="/schedule" className="flex items-center">
             <img 
-              src="attached_assets/agency_logo_1749083054761.png" 
+              src="attached_assets/agency_logo_header.svg" 
               alt="AiQ" 
               className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
             />

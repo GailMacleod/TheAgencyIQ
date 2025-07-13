@@ -68,7 +68,7 @@ export default function Splash() {
         >
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl">
             <img 
-              src={agencyLogoPath} 
+              src="attached_assets/agency_logo_medium.svg" 
               alt="AIQ Logo" 
               className="h-12 w-auto"
             />

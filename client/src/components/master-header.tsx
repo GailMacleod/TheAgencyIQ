@@ -28,7 +28,7 @@ export default function MasterHeader({
               <Link href="/">
                 <div className="flex items-center space-x-2 cursor-pointer">
                   <img 
-                    src={agencyLogo} 
+                    src="attached_assets/agency_logo_header.svg" 
                     alt="The AgencyIQ" 
                     className="w-8 h-8 object-contain"
                   />
