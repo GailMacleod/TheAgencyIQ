@@ -10,54 +10,55 @@
     </linearGradient>
   </defs>
   
-  <!-- Background circle -->
-  <circle cx="60" cy="60" r="58" fill="rgba(50, 80, 250, 0.1)" stroke="rgba(50, 80, 250, 0.2)" stroke-width="2"/>
+  <!-- Black background to match original -->
+  <rect width="120" height="120" fill="#000000"/>
   
-  <!-- Large arrow pointing up and right -->
-  <path d="M20 85 L45 60 L70 35 L85 20 L90 25 L75 40 L50 65 L25 90 Z" fill="url(#arrowGradient)" opacity="0.9"/>
+  <!-- Large cyan arrow pointing up and right -->
+  <path d="M15 90 L40 65 L65 40 L80 25 L85 30 L70 45 L45 70 L20 95 Z" fill="#00f0ff" opacity="0.9"/>
   
-  <!-- Arrow tip -->
-  <path d="M70 15 L85 20 L90 25 L85 30 L70 25 Z" fill="url(#arrowGradient)"/>
-  <path d="M85 20 L90 25 L95 20 L90 15 Z" fill="url(#arrowGradient)"/>
+  <!-- Arrow decorative elements -->
+  <path d="M20 85 L15 90 L25 95 Z" fill="#00f0ff"/>
+  <path d="M75 20 L80 25 L85 30 L80 35 L75 30 Z" fill="#00f0ff"/>
   
-  <!-- Person figure -->
-  <g transform="translate(65, 25)">
+  <!-- Dark diagonal bar behind person -->
+  <rect x="40" y="30" width="60" height="12" rx="6" fill="#2d3748" transform="rotate(30 70 36)"/>
+  
+  <!-- Person figure on laptop -->
+  <g transform="translate(70, 35)">
     <!-- Head -->
-    <circle cx="15" cy="15" r="8" fill="url(#personGradient)"/>
+    <circle cx="8" cy="8" r="6" fill="#ffffff"/>
+    
+    <!-- Hair -->
+    <path d="M2 5 Q8 0 14 5 Q12 8 8 8 Q4 8 2 5" fill="#1e2a4a"/>
     
     <!-- Glasses -->
-    <ellipse cx="12" cy="14" rx="3" ry="2" fill="none" stroke="#3250fa" stroke-width="1.5"/>
-    <ellipse cx="18" cy="14" rx="3" ry="2" fill="none" stroke="#3250fa" stroke-width="1.5"/>
-    <line x1="15" y1="14" x2="15" y2="14" stroke="#3250fa" stroke-width="1"/>
+    <ellipse cx="6" cy="7" rx="2" ry="1.5" fill="none" stroke="#3250fa" stroke-width="1"/>
+    <ellipse cx="10" cy="7" rx="2" ry="1.5" fill="none" stroke="#3250fa" stroke-width="1"/>
+    <line x1="8" y1="7" x2="8" y2="7" stroke="#3250fa" stroke-width="1"/>
     
     <!-- Body -->
-    <rect x="10" y="23" width="10" height="15" rx="5" fill="url(#personGradient)"/>
+    <rect x="4" y="14" width="8" height="12" rx="4" fill="#3250fa"/>
     
     <!-- Arms -->
-    <rect x="5" y="25" width="8" height="4" rx="2" fill="url(#personGradient)"/>
-    <rect x="17" y="25" width="12" height="4" rx="2" fill="url(#personGradient)"/>
+    <rect x="0" y="16" width="6" height="3" rx="1.5" fill="#ffffff"/>
+    <rect x="10" y="16" width="10" height="3" rx="1.5" fill="#ffffff"/>
     
     <!-- Laptop -->
-    <rect x="20" y="22" width="12" height="8" rx="1" fill="#2d3748"/>
-    <rect x="21" y="23" width="10" height="5" rx="0.5" fill="#4a5568"/>
-    <line x1="23" y1="25" x2="29" y2="25" stroke="#00f0ff" stroke-width="0.5"/>
-    <line x1="23" y1="26" x2="27" y2="26" stroke="#00f0ff" stroke-width="0.5"/>
+    <rect x="15" y="14" width="10" height="6" rx="1" fill="#1a202c"/>
+    <rect x="16" y="15" width="8" height="4" rx="0.5" fill="#2d3748"/>
+    <line x1="17" y1="16" x2="23" y2="16" stroke="#00f0ff" stroke-width="0.5"/>
+    <line x1="17" y1="17" x2="21" y2="17" stroke="#00f0ff" stroke-width="0.5"/>
+    <line x1="17" y1="18" x2="19" y2="18" stroke="#00f0ff" stroke-width="0.5"/>
     
     <!-- Legs -->
-    <rect x="12" y="38" width="3" height="12" rx="1.5" fill="url(#personGradient)"/>
-    <rect x="17" y="38" width="3" height="12" rx="1.5" fill="url(#personGradient)"/>
+    <rect x="5" y="26" width="3" height="8" rx="1.5" fill="#ffffff"/>
+    <rect x="8" y="26" width="3" height="8" rx="1.5" fill="#ffffff"/>
   </g>
   
-  <!-- Educational elements -->
-  <g transform="translate(15, 15)">
-    <!-- Book -->
-    <rect x="0" y="0" width="8" height="6" rx="1" fill="#ff538f" opacity="0.8"/>
-    <line x1="1" y1="2" x2="7" y2="2" stroke="white" stroke-width="0.5"/>
-    <line x1="1" y1="4" x2="5" y2="4" stroke="white" stroke-width="0.5"/>
-  </g>
+  <!-- White triangular accent at bottom -->
+  <path d="M15 100 L30 95 L15 110 Z" fill="#ffffff"/>
   
-  <!-- Growth indicators -->
-  <circle cx="25" cy="25" r="2" fill="#00f0ff" opacity="0.6"/>
-  <circle cx="35" cy="20" r="3" fill="#00f0ff" opacity="0.7"/>
-  <circle cx="45" cy="15" r="4" fill="#00f0ff" opacity="0.8"/>
+  <!-- Small decorative elements -->
+  <circle cx="25" cy="25" r="1" fill="#00f0ff" opacity="0.7"/>
+  <circle cx="35" cy="20" r="1.5" fill="#00f0ff" opacity="0.8"/>
 </svg>
