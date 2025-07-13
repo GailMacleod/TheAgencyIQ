@@ -568,15 +568,7 @@ function getContextualFallback(query: string, brandPurposeData?: any): string {
   
   // Contact and support questions - keep simple and direct
   if (lowerQuery.includes('contact') || lowerQuery.includes('support') || lowerQuery.includes('help') || lowerQuery.includes('reach')) {
-    return `You can contact TheAgencyIQ support at:
-
-📧 **Email**: support@theagencyiq.ai
-💬 **Live Chat**: Right here in this chat widget
-🌐 **Website**: theagencyiq.ai
-
-Our team typically responds within 2-4 hours during business hours (AEST).
-
-What specific question can I help you with right now?`;
+    return `I'm here to help you with your business strategy and social media management. What specific question can I help you with right now?`;
   }
   
   // Strategy and planning questions
