@@ -17,6 +17,34 @@ class SessionManager {
       return this.sessionPromise;
     }
 
+    // Check if we already have a valid session cookie
+    if (document.cookie.includes('theagencyiq.session')) {
+      console.log('🔍 Existing session cookie found, verifying...');
+      
+      // Try to verify the existing session
+      try {
+        const response = await fetch('/api/user', {
+          method: 'GET',
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('✅ Existing session verified for:', userData.email);
+          
+          this.sessionInfo = {
+            id: 'existing',
+            user: userData,
+            established: true
+          };
+          
+          return this.sessionInfo;
+        }
+      } catch (error) {
+        console.log('⚠️ Session verification failed, creating new session');
+      }
+    }
+
     this.sessionPromise = this.doEstablishSession();
     return this.sessionPromise;
   }
@@ -36,37 +64,19 @@ class SessionManager {
         credentials: 'include'
       });
 
-      // Extract session cookie from response headers
-      const setCookieHeader = response.headers.get('set-cookie');
-      console.log('🔍 Response headers:', {
-        'set-cookie': setCookieHeader,
-        'access-control-expose-headers': response.headers.get('access-control-expose-headers'),
-        'access-control-allow-credentials': response.headers.get('access-control-allow-credentials')
-      });
+      // The browser automatically handles Set-Cookie headers when credentials: 'include' is used
+      // No need to manually extract - the cookie is automatically set by the browser
+      console.log('🔍 Cookie handling: Browser automatically processes Set-Cookie headers');
       
-      if (setCookieHeader) {
-        console.log('🍪 Set-Cookie header found:', setCookieHeader);
-        
-        // Parse and manually set the session cookie
-        const cookieParts = setCookieHeader.split(';')[0];
-        if (cookieParts.includes('theagencyiq.session=')) {
-          const cookieValue = cookieParts.split('=')[1];
-          document.cookie = `theagencyiq.session=${cookieValue}; path=/; samesite=lax; max-age=86400`;
-          console.log('✅ Session cookie manually set in browser');
-        }
-      } else {
-        console.log('⚠️ No Set-Cookie header found in response');
-      }
-
-      // Force cookie refresh after session establishment
+      // Check if cookie was set by browser after a brief delay
       setTimeout(() => {
-        console.log('🍪 Post-session cookies:', document.cookie);
+        console.log('🍪 Current browser cookies:', document.cookie);
         if (document.cookie.includes('theagencyiq.session')) {
           console.log('✅ Session cookie successfully stored in browser');
         } else {
-          console.log('⚠️ Session cookie not found in browser - manual cookie extraction may be needed');
+          console.log('⚠️ Session cookie not found in browser - checking response');
         }
-      }, 500);
+      }, 100);
 
       if (response.ok) {
         const data = await response.json();
