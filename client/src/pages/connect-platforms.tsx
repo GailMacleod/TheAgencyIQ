@@ -658,7 +658,7 @@ export default function ConnectPlatforms() {
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
                               <h3 className="text-xl font-semibold text-gray-900">{config.name}</h3>
-                              {connected ? (
+                              {connectionStatus === 'connected' ? (
                                 <Badge className="bg-green-100 text-green-800 text-xs">
                                   <CheckCircle className="w-3 h-3 mr-1" />
                                   Connected
@@ -678,7 +678,7 @@ export default function ConnectPlatforms() {
                             <p className="text-sm text-gray-600 mb-2">
                               {config.description}
                             </p>
-                            {connected && connection ? (
+                            {connectionStatus === 'connected' && connection ? (
                               <div className="text-sm">
                                 <p className="font-medium text-gray-900">Account: {connection.platformUsername}</p>
                                 <p className="text-gray-500">
@@ -698,7 +698,7 @@ export default function ConnectPlatforms() {
                         
                         <div className="flex space-x-2 flex-shrink-0">
                           {/* FIXED: Independent button state logic to prevent global state reset */}
-                          {connected ? (
+                          {connectionStatus === 'connected' ? (
                             <Button
                               onClick={() => {
                                 console.log(`🔌 Disconnect button clicked for ${platform}`);
