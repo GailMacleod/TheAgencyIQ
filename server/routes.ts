@@ -266,6 +266,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configure all Passport.js strategies
   configurePassportStrategies();
 
+  // Initialize isolated OAuth service
+  const { OAuthService } = await import('./services/oauth-service.js');
+  const oauthService = new OAuthService(app, configuredPassport);
+  oauthService.initializeOAuthRoutes();
+
   // Global error and request logging middleware
   app.use((req: any, res: any, next: any) => {
     const originalSend = res.send;
@@ -3350,149 +3355,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     next();
   });
-  
-  // Facebook OAuth with Passport.js
-  app.get('/auth/facebook', configuredPassport.authenticate('facebook', {
-    scope: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts']
-  }));
-
-  app.get('/auth/facebook/callback',
-    configuredPassport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
-    (req: any, res) => {
-      console.log('🔍 Facebook OAuth Session Debug:', {
-        sessionId: req.sessionID,
-        sessionData: req.session,
-        userId: req.session?.userId,
-        userEmail: req.session?.userEmail,
-        hasUser: !!req.user,
-        userResult: req.user
-      });
-      
-      console.log('✅ Facebook OAuth callback successful - token persisted via handleOAuthCallback');
-      console.log('Facebook OAuth result:', req.user);
-      
-      // Ensure user session is properly maintained after OAuth
-      if (req.user && req.user.success) {
-        console.log('🔐 Facebook OAuth session maintained for user session');
-      }
-      
-      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
-    }
-  );
-
-  // Instagram OAuth with Passport.js (using Facebook strategy)
-  app.get('/auth/instagram', configuredPassport.authenticate('instagram', {
-    scope: ['instagram_basic', 'pages_show_list']
-  }));
-
-  app.get('/auth/instagram/callback',
-    configuredPassport.authenticate('instagram', { failureRedirect: '/connect-platforms?error=instagram' }),
-    (req: any, res) => {
-      console.log('🔍 Instagram OAuth Session Debug:', {
-        sessionId: req.sessionID,
-        sessionData: req.session,
-        userId: req.session?.userId,
-        userEmail: req.session?.userEmail,
-        hasUser: !!req.user,
-        userResult: req.user
-      });
-      
-      console.log('✅ Instagram OAuth callback successful - token persisted via handleOAuthCallback');
-      console.log('Instagram OAuth result:', req.user);
-      
-      // Ensure user session is properly maintained after OAuth
-      if (req.user && req.user.success) {
-        console.log('🔐 Instagram OAuth session maintained for user session');
-      }
-      
-      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
-    }
-  );
-
-  // LinkedIn OAuth with Passport.js
-  app.get('/auth/linkedin', configuredPassport.authenticate('linkedin', {
-    scope: ['r_liteprofile', 'w_member_social']
-  }));
-
-  app.get('/auth/linkedin/callback',
-    configuredPassport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
-    (req: any, res) => {
-      console.log('🔍 LinkedIn OAuth Session Debug:', {
-        sessionId: req.sessionID,
-        sessionData: req.session,
-        userId: req.session?.userId,
-        userEmail: req.session?.userEmail,
-        hasUser: !!req.user,
-        userResult: req.user
-      });
-      
-      console.log('✅ LinkedIn OAuth callback successful - token persisted via handleOAuthCallback');
-      console.log('LinkedIn OAuth result:', req.user);
-      
-      // Ensure user session is properly maintained after OAuth
-      if (req.user && req.user.success) {
-        console.log('🔐 LinkedIn OAuth session maintained for user session');
-      }
-      
-      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
-    }
-  );
-
-  // X (Twitter) OAuth with Passport.js
-  app.get('/auth/twitter', configuredPassport.authenticate('twitter'));
-
-  app.get('/auth/twitter/callback',
-    configuredPassport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=twitter' }),
-    (req: any, res) => {
-      console.log('🔍 X (Twitter) OAuth Session Debug:', {
-        sessionId: req.sessionID,
-        sessionData: req.session,
-        userId: req.session?.userId,
-        userEmail: req.session?.userEmail,
-        hasUser: !!req.user,
-        userResult: req.user
-      });
-      
-      console.log('✅ X (Twitter) OAuth callback successful - token persisted via handleOAuthCallback');
-      console.log('X OAuth result:', req.user);
-      
-      // Ensure user session is properly maintained after OAuth
-      if (req.user && req.user.success) {
-        console.log('🔐 X OAuth session maintained for user session');
-      }
-      
-      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
-    }
-  );
-
-  // YouTube OAuth with Passport.js
-  app.get('/auth/youtube', configuredPassport.authenticate('youtube', {
-    scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload']
-  }));
-
-  app.get('/auth/youtube/callback',
-    configuredPassport.authenticate('youtube', { failureRedirect: '/connect-platforms?error=youtube' }),
-    (req: any, res) => {
-      console.log('🔍 YouTube OAuth Session Debug:', {
-        sessionId: req.sessionID,
-        sessionData: req.session,
-        userId: req.session?.userId,
-        userEmail: req.session?.userEmail,
-        hasUser: !!req.user,
-        userResult: req.user
-      });
-      
-      console.log('✅ YouTube OAuth callback successful - token persisted via handleOAuthCallback');
-      console.log('YouTube OAuth result:', req.user);
-      
-      // Ensure user session is properly maintained after OAuth
-      if (req.user && req.user.success) {
-        console.log('🔐 YouTube OAuth session maintained for user session');
-      }
-      
-      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
-    }
-  );
 
   // Simple platform connection with username/password
   app.post("/api/connect-platform-simple", requireAuth, async (req: any, res) => {
