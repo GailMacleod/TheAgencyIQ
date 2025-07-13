@@ -317,7 +317,14 @@ passport.use('youtube', new GoogleStrategy({
 // Passport.js serialization and deserialization for session management
 passport.serializeUser((user: any, done) => {
   console.log('🔐 Serializing user:', user);
-  done(null, user);
+  // Handle OAuth callback result objects
+  if (user && user.platform && user.success !== undefined) {
+    // OAuth callback result - just serialize the essential data
+    done(null, { id: user.platform, type: 'oauth_result', success: user.success });
+  } else {
+    // Regular user object
+    done(null, user);
+  }
 });
 
 passport.deserializeUser((user: any, done) => {
