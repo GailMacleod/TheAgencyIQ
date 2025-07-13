@@ -60,49 +60,47 @@ export const AnimatedIcon: React.FC<AnimatedIconProps> = ({
     }
   };
 
+  const getIconColor = () => {
+    switch (colorScheme) {
+      case 'blue':
+        return 'text-[#3250fa]';
+      case 'cyan':
+        return 'text-[#00f0ff]';
+      case 'pink':
+        return 'text-[#ff538f]';
+      case 'purple':
+        return 'text-[#3250fa]';
+      case 'gradient':
+        return 'text-[#3250fa]';
+      default:
+        return 'text-[#3250fa]';
+    }
+  };
+
   return (
     <div className={`relative ${className}`}>
-      {/* Animated rotating background glow */}
-      <div className="absolute inset-0 rounded-full opacity-75 animate-spin-slow">
+      {/* Subtle rotating glow background */}
+      <div className="absolute inset-0 rounded-full opacity-20 animate-spin-slow">
         <div 
-          className={`w-full h-full rounded-full ${getColorClasses()} blur-sm`}
+          className={`w-full h-full rounded-full blur-md`}
           style={{
             background: `conic-gradient(from 0deg, #3250fa, #00f0ff, #ff538f, #3250fa)`
           }}
         />
       </div>
       
-      {/* Pulsing outer ring */}
-      <div className="absolute inset-0 rounded-full animate-pulse">
-        <div 
-          className={`w-full h-full rounded-full border-2 ${getColorClasses()} opacity-50`}
-          style={{
-            borderImage: `conic-gradient(from 0deg, #3250fa, #00f0ff, #ff538f, #3250fa) 1`
-          }}
-        />
-      </div>
-      
-      {/* Main icon container */}
+      {/* Icon container with no background */}
       <div 
         className={`
-          relative ${sizeClasses[size]} rounded-full 
-          ${getColorClasses()} 
-          ${getGlowClasses()}
+          relative ${sizeClasses[size]}
           flex items-center justify-center
           transition-all duration-500 ease-in-out
-          hover:scale-110 hover:rotate-12
-          border border-white/20
-          backdrop-blur-sm
+          hover:scale-110
+          ${getGlowClasses()}
         `}
       >
-        {/* Inner glow effect */}
-        <div className="absolute inset-1 rounded-full bg-gradient-to-t from-transparent to-white/20" />
-        
-        {/* Icon */}
-        <Icon className={`${iconSizes[size]} text-white relative z-10 drop-shadow-lg`} />
-        
-        {/* Subtle inner sparkle */}
-        <div className="absolute top-2 right-2 w-1 h-1 bg-white/60 rounded-full animate-ping" />
+        {/* Icon with color based on scheme */}
+        <Icon className={`${iconSizes[size]} relative z-10 transition-all duration-300 ${getIconColor()}`} />
       </div>
     </div>
   );

@@ -660,7 +660,7 @@ export default function OnboardingWizard() {
                   </Badge>
                 )}
                 <div className="w-2 h-2 bg-blue-500 rounded-full mr-1 sm:mr-2 shrink-0"></div>
-                <CardTitle className="text-sm sm:text-lg font-semibold text-gray-800 truncate">
+                <CardTitle className="text-sm sm:text-lg font-semibold text-muted-foreground truncate">
                   {currentWizardStep?.title}
                 </CardTitle>
               </div>

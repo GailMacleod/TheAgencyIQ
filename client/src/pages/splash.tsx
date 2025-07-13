@@ -238,7 +238,7 @@ export default function Splash() {
               <div className="flex justify-center mb-4">
                 <AnimatedIcon icon={Target} colorScheme="blue" size="md" />
               </div>
-              <h4 className="text-lg font-semibold mb-2 text-gray-900">Define Brand</h4>
+              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Define Brand</h4>
               <p className="text-sm text-[#3250fa] font-medium">Resonate with customers</p>
             </div>
 
@@ -246,7 +246,7 @@ export default function Splash() {
               <div className="flex justify-center mb-4">
                 <AnimatedIcon icon={Users} colorScheme="pink" size="md" />
               </div>
-              <h4 className="text-lg font-semibold mb-2 text-gray-900">Connect Accounts</h4>
+              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Connect Accounts</h4>
               <p className="text-sm text-[#ff538f] font-medium">Post everywhere automatically</p>
             </div>
 
@@ -254,7 +254,7 @@ export default function Splash() {
               <div className="flex justify-center mb-4">
                 <AnimatedIcon icon={Zap} colorScheme="cyan" size="md" />
               </div>
-              <h4 className="text-lg font-semibold mb-2 text-gray-900">Generate Content</h4>
+              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Generate Content</h4>
               <p className="text-sm text-[#00f0ff] font-medium">Create viral brand stories</p>
             </div>
 
@@ -262,7 +262,7 @@ export default function Splash() {
               <div className="flex justify-center mb-4">
                 <AnimatedIcon icon={Calendar} colorScheme="purple" size="md" />
               </div>
-              <h4 className="text-lg font-semibold mb-2 text-gray-900">Schedule Posts</h4>
+              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Schedule Posts</h4>
               <p className="text-sm text-[#3250fa] font-medium">Post when active</p>
             </div>
 
@@ -270,7 +270,7 @@ export default function Splash() {
               <div className="flex justify-center mb-4">
                 <AnimatedIcon icon={BarChart3} colorScheme="cyan" size="md" />
               </div>
-              <h4 className="text-lg font-semibold mb-2 text-gray-900">Track Analytics</h4>
+              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Track Analytics</h4>
               <p className="text-sm text-[#00f0ff] font-medium">See what works</p>
             </div>
 
@@ -278,7 +278,7 @@ export default function Splash() {
               <div className="flex justify-center mb-4">
                 <AnimatedIcon icon={Sparkles} colorScheme="gradient" size="md" />
               </div>
-              <h4 className="text-lg font-semibold mb-2 text-gray-900">Monitor Strategy</h4>
+              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Monitor Strategy</h4>
               <p className="text-sm text-[#ff538f] font-medium">Stay ahead</p>
             </div>
           </div>
