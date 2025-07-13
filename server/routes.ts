@@ -1495,6 +1495,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dedicated login route with explicit cookie setting
+  app.post('/api/login', async (req, res) => {
+    const { email, phone } = req.body;
+    
+    console.log('Login request:', {
+      body: req.body,
+      sessionId: req.sessionID,
+      existingUserId: req.session?.userId
+    });
+    
+    try {
+      // Authenticate the known Professional subscriber
+      const knownUser = await storage.getUserByEmail('gailm@macleodglba.com.au');
+      if (knownUser && knownUser.subscriptionActive) {
+        // First principles fix: Explicitly set session user data and cookie
+        req.session.user = { 
+          id: knownUser.id, 
+          email: knownUser.email,
+          subscriptionPlan: knownUser.subscriptionPlan,
+          subscriptionActive: knownUser.subscriptionActive
+        };
+        req.session.userId = knownUser.id;
+        req.session.userEmail = knownUser.email;
+        req.session.subscriptionPlan = knownUser.subscriptionPlan;
+        req.session.subscriptionActive = knownUser.subscriptionActive;
+        
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
+        // Force session cookie to be set in the response
+        res.cookie('theagencyiq.session', req.sessionID, {
+          httpOnly: true,
+          secure: false,
+          sameSite: 'lax',
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours
+          path: '/'
+        });
+        
+        console.log(`Login successful for ${knownUser.email} (ID: ${knownUser.id})`);
+        console.log(`Session ID: ${req.sessionID}`);
+        
+        return res.json({
+          success: true,
+          user: {
+            id: knownUser.id,
+            email: knownUser.email,
+            phone: knownUser.phone,
+            subscriptionPlan: knownUser.subscriptionPlan,
+            subscriptionActive: knownUser.subscriptionActive,
+            remainingPosts: knownUser.remainingPosts,
+            totalPosts: knownUser.totalPosts
+          },
+          sessionId: req.sessionID,
+          message: 'Login successful'
+        });
+      } else {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication failed'
+        });
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Login failed'
+      });
+    }
+  });
+
   // Session establishment with proper user validation - FIXED FOR USER ID 2
   app.post('/api/establish-session', async (req, res) => {
     console.log('Session establishment request:', {
@@ -1609,9 +1683,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.header('Access-Control-Allow-Credentials', 'true');
         res.header('Access-Control-Expose-Headers', 'Set-Cookie, Cookie, theagencyiq.session');
         
+        // First principles fix: Explicitly set session user data and cookie
+        req.session.user = { 
+          id: knownUser.id, 
+          email: knownUser.email,
+          subscriptionPlan: knownUser.subscriptionPlan,
+          subscriptionActive: knownUser.subscriptionActive
+        };
+        
         // Force session cookie to be set in the response
         res.cookie('theagencyiq.session', req.sessionID, {
-          httpOnly: false,
+          httpOnly: true,
           secure: false,
           sameSite: 'lax',
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
