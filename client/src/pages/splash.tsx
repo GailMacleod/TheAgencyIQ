@@ -129,7 +129,7 @@ export default function Splash() {
               <div className="space-y-4">
                 <div className="flex flex-col items-center space-y-4">
                   <img 
-                    src="/attached_assets/education_icon_optimized.svg" 
+                    src="/attached_assets/On Pencil_distance education_e-learning_online education_online learning_online courses_icon_1752446828660.png" 
                     alt="Education & Learning Icon"
                     className="w-20 h-20 object-contain hover:scale-110 transition-transform duration-300"
                   />
