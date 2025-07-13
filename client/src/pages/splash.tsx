@@ -199,7 +199,7 @@ export default function Splash() {
             </Link>
             
             {/* Subscription Options */}
-            <div className="mt-4 bg-white rounded-lg border border-gray-200 p-4 max-w-2xl mx-auto">
+            <div className="mt-4 bg-white rounded-lg border border-gray-200 p-4 max-w-2xl mx-auto text-[#6b7280]">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold mb-1 text-gray-900">Starter</h4>
