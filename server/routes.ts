@@ -30,6 +30,7 @@ import { OAuthRefreshService } from './services/OAuthRefreshService';
 import { AIContentOptimizer } from './services/AIContentOptimizer';
 import { AnalyticsEngine } from './services/AnalyticsEngine';
 import { DataCleanupService } from './services/DataCleanupService';
+import { linkedinTokenValidator } from './linkedin-token-validator';
 
 // Extended session types
 declare module 'express-session' {
@@ -597,7 +598,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // LinkedIn token validation endpoint
+  app.get('/api/linkedin/validate-token', requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const status = await linkedinTokenValidator.getLinkedInConnectionStatus(userId);
+      
+      res.json({
+        connected: status.connected,
+        tokenValid: status.tokenValid,
+        username: status.username,
+        error: status.error
+      });
+      
+    } catch (error) {
+      console.error('LinkedIn token validation error:', error);
+      res.status(500).json({ error: 'Failed to validate LinkedIn token' });
+    }
+  });
 
+  // LinkedIn token refresh endpoint  
+  app.post('/api/linkedin/refresh-token', requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const isValid = await linkedinTokenValidator.checkAndRefreshLinkedInConnection(userId);
+      
+      res.json({
+        success: isValid,
+        message: isValid ? 'LinkedIn token is valid' : 'LinkedIn token needs refresh - please reconnect'
+      });
+      
+    } catch (error) {
+      console.error('LinkedIn token refresh error:', error);
+      res.status(500).json({ error: 'Failed to refresh LinkedIn token' });
+    }
+  });
 
   app.post('/api/x/callback', async (req, res) => {
     try {
