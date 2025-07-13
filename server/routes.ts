@@ -388,7 +388,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
     console.log(`📋 Session ID: ${req.sessionID}`);
     console.log(`📋 User ID: ${req.session?.userId}`);
-    console.log(`📋 Session Cookie: ${req.headers.cookie}`);
+    console.log(`📋 Session Cookie: ${req.headers.cookie || 'MISSING - Will be set in response'}`);
+    
+    // Ensure session cookie is always set for authenticated users
+    if (req.sessionID && req.session?.userId && !req.headers.cookie?.includes('theagencyiq.session')) {
+      console.log('🔧 Setting session cookie for authenticated user');
+      res.cookie('theagencyiq.session', req.sessionID, {
+        secure: false,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        httpOnly: false,
+        sameSite: 'none',
+        path: '/'
+      });
+    }
     
     next();
   });

@@ -180,7 +180,7 @@ async function startServer() {
       secure: false, // Must be false for development
       maxAge: sessionTtl,
       httpOnly: false, // Allow frontend access
-      sameSite: 'lax', // Allow cross-site requests
+      sameSite: 'none', // Required for cross-origin requests
       path: '/',
       domain: undefined // Let express handle domain
     },
@@ -189,6 +189,27 @@ async function startServer() {
     // Enhanced session handling
     unset: 'keep'
   }));
+
+  // Cookie persistence middleware - ensure cookies are always set
+  app.use((req, res, next) => {
+    // Force cookie to be set on every response
+    const originalSend = res.send;
+    res.send = function(data) {
+      // Ensure session cookie is present in response
+      if (req.sessionID && req.session) {
+        const cookieValue = `${req.sessionID}`;
+        res.cookie('theagencyiq.session', cookieValue, {
+          secure: false,
+          maxAge: sessionTtl,
+          httpOnly: false,
+          sameSite: 'none',
+          path: '/'
+        });
+      }
+      return originalSend.call(this, data);
+    };
+    next();
+  });
 
   // Enhanced CSP for Facebook compliance, Google services, video content, and security
   app.use((req, res, next) => {
