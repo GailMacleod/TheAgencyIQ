@@ -130,7 +130,7 @@ const OAUTH_REDIRECT_BASE = process.env.NODE_ENV === 'production'
 passport.use(new FacebookStrategy({
   clientID: process.env.FACEBOOK_APP_ID!,
   clientSecret: process.env.FACEBOOK_APP_SECRET!,
-  callbackURL: `${OAUTH_REDIRECT_BASE}/callback`,
+  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`,
   scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
@@ -150,7 +150,7 @@ passport.use(new FacebookStrategy({
 passport.use('instagram', new FacebookStrategy({
   clientID: process.env.FACEBOOK_APP_ID!,
   clientSecret: process.env.FACEBOOK_APP_SECRET!,
-  callbackURL: `${OAUTH_REDIRECT_BASE}/callback`,
+  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/instagram/callback`,
   scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement', 'public_content'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
@@ -170,7 +170,7 @@ passport.use('instagram', new FacebookStrategy({
 passport.use(new LinkedInStrategy({
   clientID: process.env.LINKEDIN_CLIENT_ID!,
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
-  callbackURL: `${OAUTH_REDIRECT_BASE}/callback`,
+  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/linkedin/callback`,
   scope: ['r_liteprofile', 'w_member_social'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
@@ -192,7 +192,7 @@ try {
   passport.use(new TwitterStrategy({
     consumerKey: process.env.X_CONSUMER_KEY || process.env.X_OAUTH_CLIENT_ID || 'dummy_key',
     consumerSecret: process.env.X_CONSUMER_SECRET || process.env.X_OAUTH_CLIENT_SECRET || 'dummy_secret',
-    callbackURL: `${OAUTH_REDIRECT_BASE}/callback`,
+    callbackURL: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`,
     passReqToCallback: true
   }, async (req: any, accessToken: string, tokenSecret: string, profile: any, done: any) => {
     try {
@@ -221,7 +221,7 @@ try {
 passport.use('youtube', new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID!,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-  callbackURL: `${OAUTH_REDIRECT_BASE}/callback`,
+  callbackURL: `${OAUTH_REDIRECT_BASE}/auth/youtube/callback`,
   scope: ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly'],
   passReqToCallback: true
 }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {

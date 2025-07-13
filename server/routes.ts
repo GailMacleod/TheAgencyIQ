@@ -3180,7 +3180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/auth/facebook/callback',
     configuredPassport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
     (req, res) => {
-      console.log('✅ Facebook OAuth callback successful');
+      console.log('✅ Facebook OAuth callback successful - token persisted via handleOAuthCallback');
       res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     }
   );
