@@ -2650,6 +2650,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🍪 Cookie set in response: theagencyiq.session=${req.sessionID}`);
         
         console.log(`✅ Auto-login successful for ${user.email}`);
+        
+        // Set session cookie manually in response
+        res.setHeader('Set-Cookie', `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=86400`);
+        
         return res.json({
           success: true,
           user: {

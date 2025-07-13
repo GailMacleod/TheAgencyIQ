@@ -150,7 +150,7 @@ async function startServer() {
     }
   });
 
-  // Simplified session configuration for single client
+  // Enhanced session configuration for cookie persistence
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -163,15 +163,19 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: false,
+      secure: false, // Must be false for development
       maxAge: sessionTtl,
-      httpOnly: false, // Disable httpOnly for frontend access
-      sameSite: 'lax',
+      httpOnly: false, // Allow frontend access
+      sameSite: 'lax', // Allow cross-site requests
       path: '/',
-      domain: undefined // Let express handle domain automatically
+      domain: undefined // Let express handle domain
     },
     rolling: true,
-    proxy: true // Trust proxy for secure cookies
+    proxy: true,
+    // Force session to be saved even if not modified
+    saveUninitialized: true,
+    // Enhanced session handling
+    unset: 'keep'
   }));
 
   // Enhanced CSP for Facebook compliance, Google services, video content, and security
