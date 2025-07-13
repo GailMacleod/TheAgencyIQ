@@ -12,6 +12,7 @@ import { initGA } from "./lib/analytics";
 import { useAnalytics } from "./hooks/use-analytics";
 import { clearBrowserCache } from "./utils/cache-utils";
 import { sessionManager } from "./utils/session-manager";
+import { apiClient } from "./utils/api-client";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
@@ -150,12 +151,8 @@ function App() {
           
           // Force a test API call to verify session is working
           setTimeout(() => {
-            fetch('/api/user', {
+            apiClient.get('/api/user', {
                 credentials: 'include',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                },
                 cache: 'no-cache',
               }).then(response => {
                 console.log('🔍 Session verification test:', response.status);

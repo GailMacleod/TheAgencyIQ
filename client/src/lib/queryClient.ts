@@ -88,6 +88,7 @@ export const getQueryFn: <T>(options: {
       const res = await apiClient.get(queryKey[0] as string, {
         signal: controller.signal,
         cache: 'no-cache',
+        credentials: 'include',
       });
 
       clearTimeout(timeoutId);
