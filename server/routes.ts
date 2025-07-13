@@ -6609,15 +6609,92 @@ Continue building your Value Proposition Canvas systematically.`;
 
       console.log(`🔴 Starting comprehensive subscription cancellation for user ${userId} (${user.email})`);
       
-      // Step 1: Cancel Stripe subscription if exists
+      // Step 1: IMMEDIATE STRIPE CANCELLATION - Cancel ALL subscriptions for this customer
       let stripeSubscriptionId = null;
-      if (user.stripeSubscriptionId && stripe) {
+      const allCancelledSubscriptions = [];
+      
+      if (stripe) {
         try {
-          const subscription = await stripe.subscriptions.cancel(user.stripeSubscriptionId);
-          stripeSubscriptionId = subscription.id;
-          console.log(`✅ Stripe subscription cancelled: ${stripeSubscriptionId}`);
-        } catch (stripeError) {
-          console.error('Stripe cancellation failed:', stripeError);
+          // First, cancel the user's primary subscription if it exists
+          if (user.stripeSubscriptionId) {
+            try {
+              const subscription = await stripe.subscriptions.cancel(user.stripeSubscriptionId, {
+                prorate: false,  // No prorating - immediate cancellation
+                invoice_now: false  // Don't create final invoice
+              });
+              stripeSubscriptionId = subscription.id;
+              allCancelledSubscriptions.push(subscription.id);
+              console.log(`✅ Primary Stripe subscription cancelled immediately: ${stripeSubscriptionId}`);
+            } catch (primaryError) {
+              console.error('Primary subscription cancellation failed:', primaryError);
+            }
+          }
+          
+          // Step 2: Find and cancel ALL subscriptions for this customer
+          if (user.stripeCustomerId) {
+            try {
+              const subscriptions = await stripe.subscriptions.list({
+                customer: user.stripeCustomerId,
+                status: 'active'
+              });
+              
+              for (const sub of subscriptions.data) {
+                if (sub.id !== user.stripeSubscriptionId) { // Don't cancel the same one twice
+                  try {
+                    const cancelledSub = await stripe.subscriptions.cancel(sub.id, {
+                      prorate: false,  // No prorating - immediate cancellation
+                      invoice_now: false  // Don't create final invoice
+                    });
+                    allCancelledSubscriptions.push(cancelledSub.id);
+                    console.log(`✅ Additional Stripe subscription cancelled: ${cancelledSub.id}`);
+                  } catch (subError) {
+                    console.error(`Failed to cancel subscription ${sub.id}:`, subError);
+                  }
+                }
+              }
+            } catch (listError) {
+              console.error('Failed to list customer subscriptions:', listError);
+            }
+          }
+          
+          // Step 3: Cancel any subscriptions by customer email lookup
+          if (user.email) {
+            try {
+              const customers = await stripe.customers.list({
+                email: user.email,
+                limit: 100
+              });
+              
+              for (const customer of customers.data) {
+                if (customer.id !== user.stripeCustomerId) { // Check other customers with same email
+                  const subscriptions = await stripe.subscriptions.list({
+                    customer: customer.id,
+                    status: 'active'
+                  });
+                  
+                  for (const sub of subscriptions.data) {
+                    try {
+                      const cancelledSub = await stripe.subscriptions.cancel(sub.id, {
+                        prorate: false,  // No prorating - immediate cancellation
+                        invoice_now: false  // Don't create final invoice
+                      });
+                      allCancelledSubscriptions.push(cancelledSub.id);
+                      console.log(`✅ Email-matched subscription cancelled: ${cancelledSub.id}`);
+                    } catch (subError) {
+                      console.error(`Failed to cancel email-matched subscription ${sub.id}:`, subError);
+                    }
+                  }
+                }
+              }
+            } catch (emailError) {
+              console.error('Failed to find customers by email:', emailError);
+            }
+          }
+          
+          console.log(`🔴 TOTAL STRIPE SUBSCRIPTIONS CANCELLED: ${allCancelledSubscriptions.length}`);
+          
+        } catch (overallError) {
+          console.error('Overall Stripe cancellation failed:', overallError);
           // Continue with cleanup even if Stripe fails
         }
       }
@@ -6654,6 +6731,10 @@ Continue building your Value Proposition Canvas systematically.`;
         userId,
         userEmail: user.email,
         stripeSubscriptionId,
+        allCancelledSubscriptions,
+        totalSubscriptionsCancelled: allCancelledSubscriptions.length,
+        immediateTermination: true,
+        noBillingCycles: true,
         cleanupResults,
         timestamp: new Date().toISOString()
       };
@@ -6664,6 +6745,10 @@ Continue building your Value Proposition Canvas systematically.`;
         message: "Subscription cancelled successfully",
         summary: {
           stripeSubscriptionId,
+          allCancelledSubscriptions,
+          totalSubscriptionsCancelled: allCancelledSubscriptions.length,
+          immediateTermination: true,
+          noBillingCycles: true,
           platformConnectionsRevoked: cleanupResults.platformConnectionsRevoked,
           platforms: cleanupResults.oauthTokensRevoked?.map(c => c.platform) || [],
           postsDeleted: cleanupResults.postsDeleted,
@@ -6680,6 +6765,91 @@ Continue building your Value Proposition Canvas systematically.`;
         message: "Failed to cancel subscription completely",
         error: error.message,
         partialCleanup: true
+      });
+    }
+  });
+
+  // ADMIN: Bulk cancel all active subscriptions (emergency cleanup)
+  app.post("/api/admin/bulk-cancel-subscriptions", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      // Security check - only allow admin users
+      if (!user || user.email !== 'gailm@macleodglba.com.au') {
+        return res.status(403).json({ message: "Unauthorized - admin access required" });
+      }
+
+      console.log(`🔴 BULK CANCELLATION INITIATED by admin user ${userId}`);
+      
+      if (!stripe) {
+        return res.status(500).json({ message: "Stripe not configured" });
+      }
+
+      const allCancelledSubscriptions = [];
+      const errors = [];
+
+      try {
+        // Get all active subscriptions
+        const subscriptions = await stripe.subscriptions.list({
+          status: 'active',
+          limit: 100
+        });
+
+        console.log(`📋 Found ${subscriptions.data.length} active subscriptions to cancel`);
+
+        for (const subscription of subscriptions.data) {
+          try {
+            const cancelledSub = await stripe.subscriptions.cancel(subscription.id, {
+              prorate: false,  // No prorating - immediate cancellation
+              invoice_now: false  // Don't create final invoice
+            });
+            
+            allCancelledSubscriptions.push({
+              id: cancelledSub.id,
+              customer: cancelledSub.customer,
+              status: cancelledSub.status,
+              cancelledAt: cancelledSub.canceled_at
+            });
+            
+            console.log(`✅ Bulk cancelled subscription: ${cancelledSub.id}`);
+          } catch (subError) {
+            console.error(`❌ Failed to cancel subscription ${subscription.id}:`, subError);
+            errors.push({
+              subscriptionId: subscription.id,
+              error: subError.message
+            });
+          }
+        }
+
+        console.log(`🔴 BULK CANCELLATION COMPLETE: ${allCancelledSubscriptions.length} cancelled, ${errors.length} errors`);
+
+        res.json({
+          message: "Bulk subscription cancellation completed",
+          summary: {
+            totalFound: subscriptions.data.length,
+            successfullyCancelled: allCancelledSubscriptions.length,
+            errors: errors.length,
+            cancelledSubscriptions: allCancelledSubscriptions,
+            errorDetails: errors,
+            immediateTermination: true,
+            noBillingCycles: true
+          }
+        });
+
+      } catch (listError) {
+        console.error('Failed to list subscriptions for bulk cancellation:', listError);
+        res.status(500).json({ 
+          message: "Failed to retrieve subscriptions for bulk cancellation",
+          error: listError.message
+        });
+      }
+
+    } catch (error: any) {
+      console.error("Bulk cancellation failed:", error);
+      res.status(500).json({ 
+        message: "Bulk cancellation failed",
+        error: error.message 
       });
     }
   });
