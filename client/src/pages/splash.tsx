@@ -296,7 +296,7 @@ export default function Splash() {
               />
             </div>
             <p className="text-muted-foreground leading-relaxed">
-              Smarter social media automation for Queensland businesses. Technology and intelligence working together.
+              Smarter social media automation for Queensland businesses. Technology and marketing working together.
             </p>
           </div>
           
