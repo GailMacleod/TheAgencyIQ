@@ -222,12 +222,15 @@ passport.use(new LinkedInStrategy({
     : done(new Error(result.error));
 }));
 
-// X (Twitter) OAuth Strategy - UPDATED SCOPES (OAuth 2.0 scopes for X API v2)
-// Note: OAuth 1.0a doesn't use scopes, but documenting intended API permissions
+// X (Twitter) OAuth Strategy - FIXED CREDENTIALS (OAuth 1.0a with correct API terminology)
 try {
+  if (!process.env.X_CONSUMER_KEY || !process.env.X_CONSUMER_SECRET) {
+    throw new Error('X API Key (Consumer Key) and API Secret Key (Consumer Secret) are required for X OAuth');
+  }
+  
   passport.use(new TwitterStrategy({
-    consumerKey: process.env.X_CONSUMER_KEY || process.env.X_OAUTH_CLIENT_ID || 'dummy_key',
-    consumerSecret: process.env.X_CONSUMER_SECRET || process.env.X_OAUTH_CLIENT_SECRET || 'dummy_secret',
+    consumerKey: process.env.X_CONSUMER_KEY, // X API Key (Consumer Key)
+    consumerSecret: process.env.X_CONSUMER_SECRET, // X API Secret Key (Consumer Secret)
     callbackURL: `${OAUTH_REDIRECT_BASE}/auth/twitter/callback`,
     passReqToCallback: true
     // Note: OAuth 1.0a strategy doesn't use scopes, but API permissions are:
