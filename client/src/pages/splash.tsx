@@ -376,7 +376,7 @@ export default function Splash() {
               <span className="text-green-600 font-medium">Contact Support - support@theagencyiq.ai</span>
             </div>
             <p className="text-muted-foreground">
-              &copy; 2024 MacleodGlobal trading as The AgencyIQ. All rights reserved.
+              &copy; 2024 Macleodglba trading as The AgencyIQ. All rights reserved.
             </p>
           </div>
         </div>
