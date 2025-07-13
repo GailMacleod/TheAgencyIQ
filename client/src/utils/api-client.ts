@@ -1,6 +1,7 @@
 /**
  * API Client with proper credential handling
  */
+import { sessionManager } from "./session-manager";
 
 class ApiClient {
   private baseURL: string;
@@ -12,54 +13,8 @@ class ApiClient {
   async makeRequest(url: string, options: RequestInit = {}): Promise<Response> {
     const fullUrl = `${this.baseURL}${url}`;
     
-    // Extract session cookie manually
-    const sessionCookie = this.getSessionCookie();
-    
-    const defaultOptions: RequestInit = {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...options.headers,
-        // Force include session cookie manually if available
-        ...(sessionCookie ? { 'Cookie': sessionCookie } : {}),
-      },
-    };
-
-    const requestOptions = {
-      ...defaultOptions,
-      ...options,
-      headers: {
-        ...defaultOptions.headers,
-        ...options.headers,
-        // Ensure session cookie is included
-        ...(sessionCookie ? { 'Cookie': sessionCookie } : {}),
-      },
-    };
-
-    console.log(`🌐 API Request: ${options.method || 'GET'} ${fullUrl}`);
-    console.log(`🍪 Request credentials: ${requestOptions.credentials}`);
-    if (sessionCookie) {
-      console.log(`🍪 Manual cookie: ${sessionCookie.substring(0, 50)}...`);
-    }
-
-    const response = await fetch(fullUrl, requestOptions);
-    
-    console.log(`📡 Response: ${response.status} ${response.statusText}`);
-    
-    return response;
-  }
-
-  private getSessionCookie(): string | null {
-    // Extract session cookie from document.cookie
-    const cookies = document.cookie.split(';');
-    for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'theagencyiq.session') {
-        return `${name}=${value}`;
-      }
-    }
-    return null;
+    // Use session manager for authenticated requests
+    return await sessionManager.makeAuthenticatedRequest(fullUrl, options);
   }
 
   async get(url: string, options: RequestInit = {}): Promise<Response> {
