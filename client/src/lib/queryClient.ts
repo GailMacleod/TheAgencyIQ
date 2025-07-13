@@ -14,7 +14,10 @@ export async function apiRequest(
 ): Promise<any> {
   const options: RequestInit = {
     method,
-    headers: data ? { "Content-Type": "application/json" } : undefined,
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   };
@@ -73,6 +76,12 @@ export const getQueryFn: <T>(options: {
       const res = await fetch(queryKey[0] as string, {
         credentials: "include",
         signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        // Force no-cache to ensure fresh session validation
+        cache: 'no-cache',
       });
 
       clearTimeout(timeoutId);

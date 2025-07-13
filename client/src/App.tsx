@@ -143,6 +143,7 @@ function App() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
           body: JSON.stringify({
             email: 'gailm@macleodglba.com.au',
@@ -170,6 +171,27 @@ function App() {
             // Force refresh all queries to use the new session
             queryClient.invalidateQueries();
             console.log('🔄 Queries invalidated after session establishment');
+            
+            // Force a test API call to verify session is working
+            setTimeout(() => {
+              fetch('/api/user', {
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                },
+                cache: 'no-cache',
+              }).then(response => {
+                console.log('🔍 Session verification test:', response.status);
+                if (response.ok) {
+                  console.log('✅ Session working correctly');
+                } else {
+                  console.log('❌ Session verification failed');
+                }
+              }).catch(err => {
+                console.log('❌ Session verification error:', err.message);
+              });
+            }, 200);
           }, 100);
           
         } else {
