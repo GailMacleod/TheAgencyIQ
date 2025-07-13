@@ -178,6 +178,10 @@ export default function ConnectPlatforms() {
 
     const handleMessage = (e: MessageEvent) => {
       if (e.data === 'oauth_success') {
+        // DEBUG: Log cookies after OAuth popup success
+        console.log('🍪 AFTER OAuth success - document.cookie:', document.cookie);
+        console.log('🍪 AFTER OAuth success - All cookies:', document.cookie.split(';').map(c => c.trim()));
+        
         setConnecting({});
         setReconnecting({});
         
@@ -196,6 +200,10 @@ export default function ConnectPlatforms() {
           duration: 3000
         });
       } else if (e.data === 'oauth_failure') {
+        // DEBUG: Log cookies after OAuth popup failure
+        console.log('🍪 AFTER OAuth failure - document.cookie:', document.cookie);
+        console.log('🍪 AFTER OAuth failure - All cookies:', document.cookie.split(';').map(c => c.trim()));
+        
         setConnecting({});
         setReconnecting({});
         
@@ -235,6 +243,10 @@ export default function ConnectPlatforms() {
   const handleOAuthConnect = async (platform: string) => {
     try {
       setConnecting(prev => ({ ...prev, [platform]: true }));
+      
+      // DEBUG: Log cookies before OAuth popup
+      console.log('🍪 BEFORE OAuth popup - document.cookie:', document.cookie);
+      console.log('🍪 BEFORE OAuth popup - All cookies:', document.cookie.split(';').map(c => c.trim()));
       
       // Instagram uses same OAuth flow as Facebook
       if (platform === 'instagram') {

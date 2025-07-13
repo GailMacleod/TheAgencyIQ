@@ -3359,6 +3359,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/auth/facebook/callback',
     configuredPassport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
     (req: any, res) => {
+      console.log('🔍 Facebook OAuth Session Debug:', {
+        sessionId: req.sessionID,
+        sessionData: req.session,
+        userId: req.session?.userId,
+        userEmail: req.session?.userEmail,
+        hasUser: !!req.user,
+        userResult: req.user
+      });
+      
       console.log('✅ Facebook OAuth callback successful - token persisted via handleOAuthCallback');
       console.log('Facebook OAuth result:', req.user);
       
@@ -3379,6 +3388,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/auth/instagram/callback',
     configuredPassport.authenticate('instagram', { failureRedirect: '/connect-platforms?error=instagram' }),
     (req: any, res) => {
+      console.log('🔍 Instagram OAuth Session Debug:', {
+        sessionId: req.sessionID,
+        sessionData: req.session,
+        userId: req.session?.userId,
+        userEmail: req.session?.userEmail,
+        hasUser: !!req.user,
+        userResult: req.user
+      });
+      
       console.log('✅ Instagram OAuth callback successful - token persisted via handleOAuthCallback');
       console.log('Instagram OAuth result:', req.user);
       
@@ -3399,6 +3417,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/auth/linkedin/callback',
     configuredPassport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
     (req: any, res) => {
+      console.log('🔍 LinkedIn OAuth Session Debug:', {
+        sessionId: req.sessionID,
+        sessionData: req.session,
+        userId: req.session?.userId,
+        userEmail: req.session?.userEmail,
+        hasUser: !!req.user,
+        userResult: req.user
+      });
+      
       console.log('✅ LinkedIn OAuth callback successful - token persisted via handleOAuthCallback');
       console.log('LinkedIn OAuth result:', req.user);
       
@@ -3417,6 +3444,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/auth/twitter/callback',
     configuredPassport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=twitter' }),
     (req: any, res) => {
+      console.log('🔍 X (Twitter) OAuth Session Debug:', {
+        sessionId: req.sessionID,
+        sessionData: req.session,
+        userId: req.session?.userId,
+        userEmail: req.session?.userEmail,
+        hasUser: !!req.user,
+        userResult: req.user
+      });
+      
       console.log('✅ X (Twitter) OAuth callback successful - token persisted via handleOAuthCallback');
       console.log('X OAuth result:', req.user);
       
@@ -3437,6 +3473,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/auth/youtube/callback',
     configuredPassport.authenticate('youtube', { failureRedirect: '/connect-platforms?error=youtube' }),
     (req: any, res) => {
+      console.log('🔍 YouTube OAuth Session Debug:', {
+        sessionId: req.sessionID,
+        sessionData: req.session,
+        userId: req.session?.userId,
+        userEmail: req.session?.userEmail,
+        hasUser: !!req.user,
+        userResult: req.user
+      });
+      
       console.log('✅ YouTube OAuth callback successful - token persisted via handleOAuthCallback');
       console.log('YouTube OAuth result:', req.user);
       
