@@ -31,7 +31,7 @@ async function startServer() {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, X-Retry-Session');
     res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Expose-Headers', 'Set-Cookie, Cookie');
+    res.header('Access-Control-Expose-Headers', 'Set-Cookie, Cookie, theagencyiq.session');
     res.header('Vary', 'Origin, Access-Control-Request-Headers');
     res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
     

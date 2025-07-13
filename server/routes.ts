@@ -1605,9 +1605,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Stripe Customer ID: ${knownUser.stripeCustomerId}, Subscription ID: ${knownUser.stripeSubscriptionId}`);
         console.log(`Session ID: ${req.sessionID}`);
         
-        // Ensure proper cookie headers are set
+        // Ensure proper cookie headers are set and force cookie transmission
         res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+        res.header('Access-Control-Expose-Headers', 'Set-Cookie, Cookie, theagencyiq.session');
+        
+        // Force session cookie to be set in the response
+        res.cookie('theagencyiq.session', req.sessionID, {
+          httpOnly: false,
+          secure: false,
+          sameSite: 'lax',
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours
+          path: '/'
+        });
         
         return res.json({ 
           success: true, 

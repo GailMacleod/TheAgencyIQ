@@ -89,6 +89,10 @@ export const getQueryFn: <T>(options: {
         signal: controller.signal,
         cache: 'no-cache',
         credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
       });
 
       clearTimeout(timeoutId);
