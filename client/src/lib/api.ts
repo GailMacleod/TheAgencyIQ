@@ -12,18 +12,49 @@ export async function apiRequest(
 ): Promise<Response> {
   console.log(`API call to ${url} starting with method ${method}`);
   
-  // Use main app endpoints, not microservice
-  const response = await fetch(url, {
-    method,
-    headers: { 
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    },
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include"
-  });
+  try {
+    // Extended timeout for API requests (30 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.warn('API request timeout for:', method, url);
+      controller.abort('API request timeout after 30 seconds');
+    }, 30000);
 
-  console.log(`API call to ${url} returned ${response.status}`);
+    // Use main app endpoints, not microservice
+    const response = await fetch(url, {
+      method,
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    console.log(`API call to ${url} returned ${response.status}`);
+    
+    return response;
+    
+  } catch (error: any) {
+    // Enhanced error handling for AbortController issues
+    if (error.name === 'AbortError') {
+      const reason = error.message || 'Request was aborted';
+      console.error('AbortError in apiRequest:', reason, 'for', method, url);
+      throw new Error(`API request timeout: ${reason}`);
+    } else if (error.message?.includes('signal is aborted without reason')) {
+      console.error('AbortController signal issue in apiRequest:', error.message, 'for', method, url);
+      throw new Error('API request was cancelled due to timeout');
+    } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+      console.error('Network error in apiRequest:', error.message, 'for', method, url);
+      throw new Error('Network connection failed');
+    }
+    
+    // Log unexpected errors for debugging
+    console.error('Unexpected API request error:', error, 'for', method, url);
+    throw error;
+  }
 
   if (!response.ok) {
     const text = await response.text();

@@ -16,25 +16,58 @@ export async function apiRequest(
 ): Promise<any> {
   let response: Response;
   
-  switch (method.toUpperCase()) {
-    case 'GET':
-      response = await apiClient.get(url);
-      break;
-    case 'POST':
-      response = await apiClient.post(url, data);
-      break;
-    case 'PUT':
-      response = await apiClient.put(url, data);
-      break;
-    case 'PATCH':
-      response = await apiClient.patch(url, data);
-      break;
-    case 'DELETE':
-      response = await apiClient.delete(url);
-      break;
-    default:
-      throw new Error(`Unsupported HTTP method: ${method}`);
+  try {
+    // Extended timeout for API requests (30 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.warn('API request timeout for:', method, url);
+      controller.abort('API request timeout after 30 seconds');
+    }, 30000);
+
+    // Pass AbortController signal to all API client methods
+    const requestOptions = { signal: controller.signal };
+    
+    switch (method.toUpperCase()) {
+      case 'GET':
+        response = await apiClient.get(url, requestOptions);
+        break;
+      case 'POST':
+        response = await apiClient.post(url, data, requestOptions);
+        break;
+      case 'PUT':
+        response = await apiClient.put(url, data, requestOptions);
+        break;
+      case 'PATCH':
+        response = await apiClient.patch(url, data, requestOptions);
+        break;
+      case 'DELETE':
+        response = await apiClient.delete(url, requestOptions);
+        break;
+      default:
+        throw new Error(`Unsupported HTTP method: ${method}`);
+    }
+    
+    clearTimeout(timeoutId);
+    
+  } catch (error: any) {
+    // Enhanced error handling for AbortController issues
+    if (error.name === 'AbortError') {
+      const reason = error.message || 'Request was aborted';
+      console.error('AbortError in apiRequest:', reason, 'for', method, url);
+      throw new Error(`API request timeout: ${reason}`);
+    } else if (error.message?.includes('signal is aborted without reason')) {
+      console.error('AbortController signal issue in apiRequest:', error.message, 'for', method, url);
+      throw new Error('API request was cancelled due to timeout');
+    } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+      console.error('Network error in apiRequest:', error.message, 'for', method, url);
+      throw new Error('Network connection failed');
+    }
+    
+    // Log unexpected errors for debugging
+    console.error('Unexpected API request error:', error, 'for', method, url);
+    throw error;
   }
+  
   const contentType = response.headers.get('content-type');
 
   console.log(`API call to ${url} returned ${response.status}`);
@@ -81,9 +114,12 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     try {
-      // Add timeout to prevent hanging requests
+      // Extended timeout to prevent hanging requests (30 seconds)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => {
+        console.warn('Request timeout for:', queryKey[0]);
+        controller.abort('Request timeout after 30 seconds');
+      }, 30000);
       
       const res = await apiClient.get(queryKey[0] as string, {
         signal: controller.signal,
@@ -104,11 +140,21 @@ export const getQueryFn: <T>(options: {
       await throwIfResNotOk(res);
       return await res.json();
     } catch (error: any) {
+      // Enhanced error handling for AbortController issues
       if (error.name === 'AbortError') {
-        throw new Error('Request timeout');
+        const reason = error.message || 'Request was aborted';
+        console.error('AbortError caught:', reason);
+        throw new Error(`Request timeout: ${reason}`);
+      } else if (error.message?.includes('signal is aborted without reason')) {
+        console.error('AbortController signal issue:', error.message);
+        throw new Error('Request was cancelled due to timeout');
       } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        console.error('Network error:', error.message);
         throw new Error('Network connection failed');
       }
+      
+      // Log unexpected errors for debugging
+      console.error('Unexpected query error:', error);
       throw error;
     }
   };
