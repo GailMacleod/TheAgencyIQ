@@ -197,45 +197,62 @@ async function startServer() {
     const originalJson = res.json;
     const originalEnd = res.end;
     
-    // Enhanced cookie setting function
+    // Enhanced cookie setting function with header safety
     const ensureCookieSet = () => {
-      if (req.sessionID && req.session) {
-        // Set cookie with signed session ID for security
-        const cookieOptions = {
-          secure: false, // Development mode
-          maxAge: sessionTtl,
-          httpOnly: false, // Allow frontend access
-          sameSite: 'none' as const, // Cross-origin support
-          path: '/',
-          signed: false // Express-session handles signing
-        };
-        
-        // Set both the session cookie and a backup cookie
-        res.cookie('theagencyiq.session', req.sessionID, cookieOptions);
-        res.cookie('aiq_backup_session', req.sessionID, cookieOptions);
-        
-        // Set explicit headers for debugging
-        res.header('X-Session-ID', req.sessionID);
-        res.header('X-User-ID', req.session.userId?.toString() || 'none');
-        res.header('Access-Control-Expose-Headers', 'X-Session-ID, X-User-ID');
+      if (req.sessionID && req.session && !res.headersSent) {
+        try {
+          // Set cookie with signed session ID for security
+          const cookieOptions = {
+            secure: false, // Development mode
+            maxAge: sessionTtl,
+            httpOnly: false, // Allow frontend access
+            sameSite: 'none' as const, // Cross-origin support
+            path: '/',
+            signed: false // Express-session handles signing
+          };
+          
+          // Set both the session cookie and a backup cookie
+          res.cookie('theagencyiq.session', req.sessionID, cookieOptions);
+          res.cookie('aiq_backup_session', req.sessionID, cookieOptions);
+          
+          // Set explicit headers for debugging
+          res.header('X-Session-ID', req.sessionID);
+          res.header('X-User-ID', req.session.userId?.toString() || 'none');
+          res.header('Access-Control-Expose-Headers', 'X-Session-ID, X-User-ID');
+        } catch (error) {
+          // Silently ignore header errors to prevent crashes
+          console.warn('Cookie setting failed (headers already sent):', error.message);
+        }
       }
     };
     
-    // Override send method
+    // Override send method with safety checks
     res.send = function(data) {
-      ensureCookieSet();
+      try {
+        ensureCookieSet();
+      } catch (error) {
+        console.warn('Cookie setting failed in send:', error.message);
+      }
       return originalSend.call(this, data);
     };
     
-    // Override json method
+    // Override json method with safety checks
     res.json = function(data) {
-      ensureCookieSet();
+      try {
+        ensureCookieSet();
+      } catch (error) {
+        console.warn('Cookie setting failed in json:', error.message);
+      }
       return originalJson.call(this, data);
     };
     
-    // Override end method
+    // Override end method with safety checks
     res.end = function(data) {
-      ensureCookieSet();
+      try {
+        ensureCookieSet();
+      } catch (error) {
+        console.warn('Cookie setting failed in end:', error.message);
+      }
       return originalEnd.call(this, data);
     };
     
