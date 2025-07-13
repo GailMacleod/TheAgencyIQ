@@ -186,8 +186,6 @@ async function startServer() {
     },
     rolling: true,
     proxy: true,
-    // Force session to be saved even if not modified
-    saveUninitialized: true,
     // Enhanced session handling
     unset: 'keep'
   }));

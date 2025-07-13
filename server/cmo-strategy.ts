@@ -144,6 +144,9 @@ Focus on Queensland small business context with emphasis on rapid business growt
   return JSON.parse(response.choices[0].message.content || "{}");
 }
 
+// Export alias for backward compatibility
+export const generateJobsToBeDoneAnalysis = generateJobsToBeDoneAnalyse;
+
 export async function createBrandDominationStrategy(
   brandPurpose: string,
   salesTarget: number = 10000,
