@@ -162,6 +162,10 @@ const OAUTH_REDIRECT_BASE = process.env.NODE_ENV === 'production'
   ? 'https://app.theagencyiq.ai'
   : `https://${process.env.REPLIT_DEV_DOMAIN || '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'}`;
 
+console.log('🔗 OAuth Redirect Base URL:', OAUTH_REDIRECT_BASE);
+console.log('🔗 Facebook callback will be:', `${OAUTH_REDIRECT_BASE}/auth/facebook/callback`);
+console.log('🔗 Instagram callback will be:', `${OAUTH_REDIRECT_BASE}/auth/instagram/callback`);
+
 // Facebook OAuth Strategy - UPDATED SCOPES (Fixed invalid scopes)
 passport.use(new FacebookStrategy({
   clientID: process.env.FACEBOOK_APP_ID!,
