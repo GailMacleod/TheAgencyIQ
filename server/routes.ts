@@ -1530,7 +1530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Force session cookie to be set in the response
         res.cookie('theagencyiq.session', req.sessionID, {
-          httpOnly: true,
+          httpOnly: false,
           secure: false,
           sameSite: 'lax',
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
