@@ -193,7 +193,7 @@ passport.use(new FacebookStrategy({
 // Instagram OAuth Strategy - SEPARATE APP CREDENTIALS (Meta requirements)
 passport.use('instagram', new FacebookStrategy({
   clientID: process.env.INSTAGRAM_APP_ID!,
-  clientSecret: process.env.INSTAGRAM_CLIENT_SECRET!,
+  clientSecret: process.env.INSTAGRAM_APP_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/instagram/callback`,
   scope: ['instagram_basic', 'pages_show_list'], // Fixed: Removed invalid deprecated scopes
   passReqToCallback: true
@@ -292,8 +292,8 @@ try {
 
 // YouTube (Google) OAuth Strategy - UPDATED SCOPES (Full YouTube API access)
 passport.use('youtube', new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID!,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  clientID: process.env.YOUTUBE_CLIENT_ID!,
+  clientSecret: process.env.YOUTUBE_CLIENT_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/youtube/callback`,
   scope: ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly'], // Verified: Correct YouTube API scopes
   passReqToCallback: true
