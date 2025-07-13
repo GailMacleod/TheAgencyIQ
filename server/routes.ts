@@ -7474,25 +7474,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Brand purpose data for analytics
-  app.get("/api/brand-purpose", async (req, res) => {
-    try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      const brandPurpose = await storage.getBrandPurposeByUser(userId);
-      
-      if (!brandPurpose) {
-        return res.status(404).json({ message: "Brand purpose not found" });
-      }
-
-      res.json(brandPurpose);
-    } catch (error: any) {
-      console.error("Brand purpose error:", error);
-      res.status(500).json({ message: "Failed to load brand purpose: " + error.message });
-    }
-  });
+  // Duplicate brand purpose endpoint removed - using the one at line 2825 with requireActiveSubscription middleware
 
   // Forgot password with email and phone verification
   app.post("/api/forgot-password", async (req, res) => {
