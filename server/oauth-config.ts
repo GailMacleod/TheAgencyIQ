@@ -190,10 +190,10 @@ passport.use(new FacebookStrategy({
   }
 }));
 
-// Instagram OAuth Strategy - UPDATED SCOPES (Fixed invalid scopes)
+// Instagram OAuth Strategy - SEPARATE APP CREDENTIALS (Meta requirements)
 passport.use('instagram', new FacebookStrategy({
-  clientID: process.env.FACEBOOK_APP_ID!,
-  clientSecret: process.env.FACEBOOK_APP_SECRET!,
+  clientID: process.env.INSTAGRAM_CLIENT_ID || process.env.FACEBOOK_APP_ID!,
+  clientSecret: process.env.INSTAGRAM_CLIENT_SECRET || process.env.FACEBOOK_APP_SECRET!,
   callbackURL: `${OAUTH_REDIRECT_BASE}/auth/instagram/callback`,
   scope: ['instagram_basic', 'pages_show_list'], // Fixed: Removed invalid deprecated scopes
   passReqToCallback: true
