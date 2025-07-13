@@ -60,20 +60,7 @@ export default function Splash() {
           }`}
         />
         
-        {/* AIQ Logo in center during animation */}
-        <div 
-          className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-opacity duration-500 ${
-            revealAnimation ? 'opacity-0' : 'opacity-100'
-          }`}
-        >
-          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl">
-            <img 
-              src="attached_assets/agency_logo_medium.svg" 
-              alt="AIQ Logo" 
-              className="h-12 w-auto"
-            />
-          </div>
-        </div>
+        
       </div>
 
       {/* Navigation */}
