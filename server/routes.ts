@@ -7984,6 +7984,51 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // Admin endpoint for dynamic subscriber testing
+  app.get("/api/admin/subscribers", requireAuth, async (req: any, res) => {
+    try {
+      const requesterId = req.session.userId;
+      
+      // Only allow admin access for User ID 2 (gailm@macleodglba.com.au)
+      if (requesterId !== '2' && requesterId !== 2) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      // Get all users with subscription data
+      const users = await storage.getAllUsers();
+      
+      const subscribers = users.map(user => ({
+        email: user.email,
+        userId: user.id,
+        plan: user.subscriptionPlan || 'none',
+        phone: user.phone,
+        subscriptionActive: user.subscriptionActive || user.subscription_active || false,
+        remainingPosts: user.remainingPosts || 0,
+        totalPosts: user.totalPosts || 0,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
+        stripeCustomerId: user.stripeCustomerId,
+        stripeSubscriptionId: user.stripeSubscriptionId
+      }));
+      
+      console.log(`📊 Admin subscribers endpoint: returning ${subscribers.length} subscribers`);
+      
+      res.json({
+        success: true,
+        count: subscribers.length,
+        subscribers: subscribers
+      });
+      
+    } catch (error) {
+      console.error('❌ Admin subscribers fetch error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch subscribers',
+        error: error.message
+      });
+    }
+  });
+
   // Data deletion status page
   app.get("/data-deletion-status", (req, res) => {
     const { code } = req.query;
