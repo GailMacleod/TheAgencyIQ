@@ -24,13 +24,6 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       }`}
     >
       <div className="flex flex-col items-center space-y-8">
-        <div className="animate-pulse">
-          <img 
-            src="attached_assets/agency_logo_splash.svg" 
-            alt="The AgencyIQ" 
-            className="h-24 w-auto" 
-          />
-        </div>
         <div className="w-16 h-1 bg-white/30 rounded-full overflow-hidden">
           <div className="h-full bg-white rounded-full animate-pulse" />
         </div>
