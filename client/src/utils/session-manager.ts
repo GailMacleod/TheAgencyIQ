@@ -23,7 +23,7 @@ class SessionManager {
 
   private async doEstablishSession(): Promise<SessionInfo> {
     try {
-      const response = await fetch('/api/establish-session', {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
