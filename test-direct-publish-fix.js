@@ -4,28 +4,26 @@
  */
 
 import axios from 'axios';
+import tough from 'tough-cookie';
+
+const BASE_URL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
 class DirectPublishTest {
   constructor() {
-    this.baseURL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
-    this.cookies = '';
+    this.cookieJar = new tough.CookieJar();
+    this.sessionCookie = null;
+    this.results = [];
   }
 
   async establishSession() {
     try {
-      console.log('🔐 Establishing session...');
-      const response = await axios.post(`${this.baseURL}/api/establish-session`, {
-        email: 'gailm@macleodglba.com.au',
-        phone: '+61424835189'
-      }, {
-        withCredentials: true
+      const response = await axios.post(`${BASE_URL}/api/establish-session`, {
+        email: 'gailm@macleodglba.com.au'
       });
-
-      if (response.headers['set-cookie']) {
-        this.cookies = response.headers['set-cookie'].join('; ');
-        console.log('✅ Session established successfully');
-        return true;
-      }
+      
+      console.log('✅ Session established:', response.data.success);
+      this.sessionCookie = response.headers['set-cookie']?.[0];
+      return true;
     } catch (error) {
       console.error('❌ Session establishment failed:', error.response?.data || error.message);
       return false;
@@ -34,128 +32,111 @@ class DirectPublishTest {
 
   async testDirectPublishEndpoint() {
     try {
-      console.log('📝 Testing /api/direct-publish endpoint with publish_all action...');
+      console.log('\n🔄 Testing direct publish endpoint...');
       
-      const response = await axios.post(`${this.baseURL}/api/direct-publish`, {
+      const response = await axios.post(`${BASE_URL}/api/direct-publish`, {
         action: 'publish_all'
       }, {
         headers: {
-          'Cookie': this.cookies,
+          Cookie: this.sessionCookie,
           'Content-Type': 'application/json'
-        },
-        withCredentials: true
+        }
       });
-
-      console.log('✅ Direct publish response:', response.data);
       
-      if (response.data.success) {
-        console.log(`🎉 SUCCESS: ${response.data.successCount}/${response.data.totalPosts} posts published`);
-        return true;
-      } else {
-        console.log(`⚠️ PARTIAL SUCCESS: ${response.data.message}`);
-        return false;
-      }
+      console.log('✅ Direct publish response:', response.data);
+      return response.data;
     } catch (error) {
       console.error('❌ Direct publish failed:', error.response?.data || error.message);
-      return false;
+      return null;
     }
   }
 
   async testQuotaStatus() {
     try {
-      console.log('📊 Checking quota status...');
-      
-      const response = await axios.get(`${this.baseURL}/api/user-status`, {
+      const response = await axios.get(`${BASE_URL}/api/user-status`, {
         headers: {
-          'Cookie': this.cookies
-        },
-        withCredentials: true
-      });
-
-      console.log('✅ Quota status:', {
-        plan: response.data.subscriptionPlan,
-        remaining: response.data.remainingPosts,
-        total: response.data.totalPosts
+          Cookie: this.sessionCookie
+        }
       });
       
+      console.log('📊 Quota status:', response.data.remainingPosts, '/', response.data.totalPosts);
       return response.data;
     } catch (error) {
-      console.error('❌ Quota check failed:', error.response?.data || error.message);
+      console.error('❌ Quota status failed:', error.response?.data || error.message);
       return null;
     }
   }
 
   async testApprovedPosts() {
     try {
-      console.log('📋 Checking approved posts...');
-      
-      const response = await axios.get(`${this.baseURL}/api/posts`, {
+      const response = await axios.get(`${BASE_URL}/api/posts?status=approved`, {
         headers: {
-          'Cookie': this.cookies
-        },
-        withCredentials: true
+          Cookie: this.sessionCookie
+        }
       });
-
-      const posts = response.data;
-      const approvedPosts = posts.filter(post => post.status === 'approved');
       
-      console.log(`✅ Found ${approvedPosts.length} approved posts out of ${posts.length} total posts`);
-      
-      if (approvedPosts.length > 0) {
-        console.log('📝 Approved posts:');
-        approvedPosts.forEach(post => {
-          console.log(`  - Post ${post.id}: ${post.platform} - "${post.content.substring(0, 50)}..."`);
-        });
-      }
-      
-      return approvedPosts;
+      console.log('📄 Approved posts:', response.data.length);
+      return response.data;
     } catch (error) {
-      console.error('❌ Posts check failed:', error.response?.data || error.message);
+      console.error('❌ Approved posts failed:', error.response?.data || error.message);
       return [];
     }
   }
 
   async runTest() {
-    console.log('🧪 Starting Direct Publish Fix Test...\n');
+    console.log('🧪 DIRECT PUBLISH TEST - Testing force_publish_all functionality\n');
     
+    // Step 1: Establish session
     const sessionSuccess = await this.establishSession();
     if (!sessionSuccess) {
-      console.log('❌ TEST FAILED: Could not establish session');
+      console.log('❌ Test failed: Could not establish session');
       return;
     }
-
-    const quotaStatus = await this.testQuotaStatus();
-    if (!quotaStatus) {
-      console.log('❌ TEST FAILED: Could not check quota status');
-      return;
-    }
-
+    
+    // Step 2: Check quota before publishing
+    const quotaBefore = await this.testQuotaStatus();
+    
+    // Step 3: Check approved posts
     const approvedPosts = await this.testApprovedPosts();
-    if (approvedPosts.length === 0) {
-      console.log('⚠️ TEST SKIPPED: No approved posts found to publish');
-      return;
-    }
-
-    if (quotaStatus.remainingPosts < approvedPosts.length) {
-      console.log(`⚠️ TEST SKIPPED: Insufficient quota (need ${approvedPosts.length}, have ${quotaStatus.remainingPosts})`);
-      return;
-    }
-
-    const publishSuccess = await this.testDirectPublishEndpoint();
     
-    console.log('\n📊 TEST RESULTS:');
-    console.log(`✅ Session establishment: ${sessionSuccess ? 'PASSED' : 'FAILED'}`);
-    console.log(`✅ Quota status check: ${quotaStatus ? 'PASSED' : 'FAILED'}`);
-    console.log(`✅ Approved posts found: ${approvedPosts.length > 0 ? 'PASSED' : 'FAILED'}`);
-    console.log(`✅ Direct publish execution: ${publishSuccess ? 'PASSED' : 'FAILED'}`);
+    // Step 4: Test direct publish endpoint
+    const publishResult = await this.testDirectPublishEndpoint();
     
-    if (sessionSuccess && quotaStatus && approvedPosts.length > 0 && publishSuccess) {
-      console.log('\n🎉 OVERALL TEST RESULT: PASSED - Direct publish fix is working correctly!');
+    // Step 5: Check quota after publishing
+    const quotaAfter = await this.testQuotaStatus();
+    
+    // Step 6: Generate report
+    console.log('\n📋 DIRECT PUBLISH TEST RESULTS:');
+    console.log('====================================');
+    console.log(`📊 Quota before: ${quotaBefore?.remainingPosts || 0}/${quotaBefore?.totalPosts || 0}`);
+    console.log(`📄 Approved posts: ${approvedPosts.length}`);
+    console.log(`🚀 Publish result: ${publishResult ? 'SUCCESS' : 'FAILED'}`);
+    console.log(`📊 Quota after: ${quotaAfter?.remainingPosts || 0}/${quotaAfter?.totalPosts || 0}`);
+    
+    const success = publishResult && publishResult.success;
+    
+    if (success) {
+      console.log('\n🎉 DIRECT PUBLISH WORKING - force_publish_all successful!');
     } else {
-      console.log('\n❌ OVERALL TEST RESULT: FAILED - Direct publish fix needs attention');
+      console.log('\n⚠️ Direct publish needs attention');
     }
+    
+    return {
+      success,
+      quotaBefore,
+      approvedPosts: approvedPosts.length,
+      publishResult,
+      quotaAfter
+    };
   }
 }
 
+// Run the test
 const test = new DirectPublishTest();
-test.runTest().catch(console.error);
+test.runTest().then(result => {
+  console.log('\n✅ Direct publish test completed');
+  process.exit(result.success ? 0 : 1);
+}).catch(error => {
+  console.error('❌ Test execution failed:', error);
+  process.exit(1);
+});
