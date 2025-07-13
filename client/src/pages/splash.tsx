@@ -127,12 +127,11 @@ export default function Splash() {
           <div className="flex flex-col items-center justify-center text-center space-y-8">
             <div className="space-y-6 animate-fade-in-up max-w-4xl">
               <div className="space-y-4">
-                <div className="flex flex-col items-center space-y-2">
+                <div className="flex flex-col items-center space-y-4">
                   <img 
-                    src="/attached_assets/On Pencil_distance education_e-learning_online education_online learning_online courses_icon_1752204074861.png" 
-                    alt="Education Icon"
-                    className="w-16 h-16 object-contain"
-                    style={{ imageRendering: 'pixelated' }}
+                    src="/attached_assets/education_icon_optimized.svg" 
+                    alt="Education & Learning Icon"
+                    className="w-20 h-20 object-contain hover:scale-110 transition-transform duration-300"
                   />
                   <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium">
                     <Lightbulb className="h-4 w-4 mr-2" />

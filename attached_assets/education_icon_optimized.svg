@@ -1,0 +1,63 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00f0ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3250fa;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="personGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3250fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff538f;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="60" cy="60" r="58" fill="rgba(50, 80, 250, 0.1)" stroke="rgba(50, 80, 250, 0.2)" stroke-width="2"/>
+  
+  <!-- Large arrow pointing up and right -->
+  <path d="M20 85 L45 60 L70 35 L85 20 L90 25 L75 40 L50 65 L25 90 Z" fill="url(#arrowGradient)" opacity="0.9"/>
+  
+  <!-- Arrow tip -->
+  <path d="M70 15 L85 20 L90 25 L85 30 L70 25 Z" fill="url(#arrowGradient)"/>
+  <path d="M85 20 L90 25 L95 20 L90 15 Z" fill="url(#arrowGradient)"/>
+  
+  <!-- Person figure -->
+  <g transform="translate(65, 25)">
+    <!-- Head -->
+    <circle cx="15" cy="15" r="8" fill="url(#personGradient)"/>
+    
+    <!-- Glasses -->
+    <ellipse cx="12" cy="14" rx="3" ry="2" fill="none" stroke="#3250fa" stroke-width="1.5"/>
+    <ellipse cx="18" cy="14" rx="3" ry="2" fill="none" stroke="#3250fa" stroke-width="1.5"/>
+    <line x1="15" y1="14" x2="15" y2="14" stroke="#3250fa" stroke-width="1"/>
+    
+    <!-- Body -->
+    <rect x="10" y="23" width="10" height="15" rx="5" fill="url(#personGradient)"/>
+    
+    <!-- Arms -->
+    <rect x="5" y="25" width="8" height="4" rx="2" fill="url(#personGradient)"/>
+    <rect x="17" y="25" width="12" height="4" rx="2" fill="url(#personGradient)"/>
+    
+    <!-- Laptop -->
+    <rect x="20" y="22" width="12" height="8" rx="1" fill="#2d3748"/>
+    <rect x="21" y="23" width="10" height="5" rx="0.5" fill="#4a5568"/>
+    <line x1="23" y1="25" x2="29" y2="25" stroke="#00f0ff" stroke-width="0.5"/>
+    <line x1="23" y1="26" x2="27" y2="26" stroke="#00f0ff" stroke-width="0.5"/>
+    
+    <!-- Legs -->
+    <rect x="12" y="38" width="3" height="12" rx="1.5" fill="url(#personGradient)"/>
+    <rect x="17" y="38" width="3" height="12" rx="1.5" fill="url(#personGradient)"/>
+  </g>
+  
+  <!-- Educational elements -->
+  <g transform="translate(15, 15)">
+    <!-- Book -->
+    <rect x="0" y="0" width="8" height="6" rx="1" fill="#ff538f" opacity="0.8"/>
+    <line x1="1" y1="2" x2="7" y2="2" stroke="white" stroke-width="0.5"/>
+    <line x1="1" y1="4" x2="5" y2="4" stroke="white" stroke-width="0.5"/>
+  </g>
+  
+  <!-- Growth indicators -->
+  <circle cx="25" cy="25" r="2" fill="#00f0ff" opacity="0.6"/>
+  <circle cx="35" cy="20" r="3" fill="#00f0ff" opacity="0.7"/>
+  <circle cx="45" cy="15" r="4" fill="#00f0ff" opacity="0.8"/>
+</svg>
