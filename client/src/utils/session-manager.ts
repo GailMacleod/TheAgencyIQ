@@ -97,9 +97,7 @@ class SessionManager {
     // Ensure session is established
     await this.establishSession();
 
-    // Get the session cookie value directly from document.cookie
-    const sessionCookie = this.getSessionCookie();
-    
+    // Always include credentials and fresh session cookie
     const requestOptions: RequestInit = {
       ...options,
       credentials: 'include',
@@ -107,8 +105,6 @@ class SessionManager {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         ...options.headers,
-        // Force include session cookie manually if available
-        ...(sessionCookie ? { 'Cookie': sessionCookie } : {}),
       },
     };
 
@@ -122,19 +118,11 @@ class SessionManager {
       
       await this.establishSession();
       
-      // Get fresh session cookie after re-establishment
-      const freshSessionCookie = this.getSessionCookie();
-      
       return fetch(url, {
-        ...options,
-        credentials: 'include',
+        ...requestOptions,
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          ...requestOptions.headers,
           'X-Retry-Session': 'true',
-          ...options.headers,
-          // Force include fresh session cookie manually if available
-          ...(freshSessionCookie ? { 'Cookie': freshSessionCookie } : {}),
         },
       });
     }
