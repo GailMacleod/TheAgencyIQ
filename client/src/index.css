@@ -73,6 +73,32 @@
   }
 }
 
+/* Animated Icon Styles */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes circular-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(50, 80, 250, 0.3);
+  }
+  33% {
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
+  }
+  66% {
+    box-shadow: 0 0 25px rgba(255, 83, 143, 0.4);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+.animate-circular-glow {
+  animation: circular-glow 3s ease-in-out infinite;
+}
+
 @keyframes vignette-pulse {
   0% {
     box-shadow: 

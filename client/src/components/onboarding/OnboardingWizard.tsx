@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { AnimatedIcon } from "@/components/ui/animated-icon";
 import { CheckCircle, Circle, ArrowRight, ArrowLeft, X, Target, Users, Zap, Calendar, BarChart3, Play, CreditCard, Minimize2, Maximize2 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -287,7 +288,7 @@ export default function OnboardingWizard() {
       id: 0,
       title: "Welcome to TheAgencyIQ",
       description: "Preview your AI-powered social media automation platform",
-      icon: <Zap className="w-4 h-4" />,
+      icon: <AnimatedIcon icon={Zap} colorScheme="gradient" size="sm" />,
       actionText: "Learn More",
       tips: [
         "This is a demo preview of TheAgencyIQ features",
@@ -323,7 +324,7 @@ export default function OnboardingWizard() {
       id: 1,
       title: "Choose Your Plan",
       description: "Select the subscription that fits your business needs",
-      icon: <CreditCard className="w-4 h-4" />,
+      icon: <AnimatedIcon icon={CreditCard} colorScheme="cyan" size="sm" />,
       actionText: "View Plans",
       tips: [
         "Professional plan includes 52 posts per month",
@@ -352,7 +353,7 @@ export default function OnboardingWizard() {
       id: 2,
       title: "Brand Purpose Setup",
       description: "Define your brand identity for personalized content",
-      icon: <Target className="w-4 h-4" />,
+      icon: <AnimatedIcon icon={Target} colorScheme="blue" size="sm" />,
       actionText: "Setup Brand",
       tips: [
         "Brand purpose drives AI content generation",
@@ -373,7 +374,7 @@ export default function OnboardingWizard() {
       id: 3,
       title: "Connect Platforms",
       description: "Link your social media accounts for publishing",
-      icon: <Users className="w-4 h-4" />,
+      icon: <AnimatedIcon icon={Users} colorScheme="pink" size="sm" />,
       actionText: "Connect",
       tips: [
         "Connect Facebook, Instagram, LinkedIn, YouTube, and X",

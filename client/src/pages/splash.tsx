@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { AnimatedIcon } from "@/components/ui/animated-icon";
 import { Zap, Target, Calendar, BarChart3, Users, Sparkles, CheckCircle, ArrowRight, Cpu, Lightbulb, Film } from "lucide-react";
 import { SiFacebook, SiInstagram, SiLinkedin, SiYoutube, SiX } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
@@ -232,53 +233,53 @@ export default function Splash() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-cyan-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                <Target className="h-4 w-4 text-white" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#3250fa]/30 hover:scale-105">
+              <div className="flex justify-center mb-4">
+                <AnimatedIcon icon={Target} colorScheme="blue" size="md" />
               </div>
-              <h4 className="text-sm font-semibold mb-2 text-gray-900">Define Brand</h4>
-              <p className="text-xs text-[#3b5cff] font-medium">Resonate with customers</p>
+              <h4 className="text-lg font-semibold mb-2 text-gray-900">Define Brand</h4>
+              <p className="text-sm text-[#3250fa] font-medium">Resonate with customers</p>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-purple-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                <Users className="h-4 w-4 text-white" />
+            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#ff538f]/30 hover:scale-105">
+              <div className="flex justify-center mb-4">
+                <AnimatedIcon icon={Users} colorScheme="pink" size="md" />
               </div>
-              <h4 className="text-sm font-semibold mb-2 text-gray-900">Connect Accounts</h4>
-              <p className="text-xs text-[#3b5cff] font-medium">Post everywhere automatically</p>
+              <h4 className="text-lg font-semibold mb-2 text-gray-900">Connect Accounts</h4>
+              <p className="text-sm text-[#ff538f] font-medium">Post everywhere automatically</p>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-cyan-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                <Zap className="h-4 w-4 text-white" />
+            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#00f0ff]/30 hover:scale-105">
+              <div className="flex justify-center mb-4">
+                <AnimatedIcon icon={Zap} colorScheme="cyan" size="md" />
               </div>
-              <h4 className="text-sm font-semibold mb-2 text-gray-900">Generate Content</h4>
-              <p className="text-xs text-[#3b5cff] font-medium">Create viral brand stories</p>
+              <h4 className="text-lg font-semibold mb-2 text-gray-900">Generate Content</h4>
+              <p className="text-sm text-[#00f0ff] font-medium">Create viral brand stories</p>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-purple-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                <Calendar className="h-4 w-4 text-white" />
+            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#3250fa]/30 hover:scale-105">
+              <div className="flex justify-center mb-4">
+                <AnimatedIcon icon={Calendar} colorScheme="purple" size="md" />
               </div>
-              <h4 className="text-sm font-semibold mb-2 text-gray-900">Schedule Posts</h4>
-              <p className="text-xs text-[#3b5cff] font-medium">Post when active</p>
+              <h4 className="text-lg font-semibold mb-2 text-gray-900">Schedule Posts</h4>
+              <p className="text-sm text-[#3250fa] font-medium">Post when active</p>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-cyan-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                <BarChart3 className="h-4 w-4 text-white" />
+            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#00f0ff]/30 hover:scale-105">
+              <div className="flex justify-center mb-4">
+                <AnimatedIcon icon={BarChart3} colorScheme="cyan" size="md" />
               </div>
-              <h4 className="text-sm font-semibold mb-2 text-gray-900">Track Analytics</h4>
-              <p className="text-xs text-[#3b5cff] font-medium">See what works</p>
+              <h4 className="text-lg font-semibold mb-2 text-gray-900">Track Analytics</h4>
+              <p className="text-sm text-[#00f0ff] font-medium">See what works</p>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center transition-all duration-300 hover:shadow-md hover:border-[#3b5cff]/30">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#3b5cff] to-purple-500 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                <Sparkles className="h-4 w-4 text-white" />
+            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#ff538f]/30 hover:scale-105">
+              <div className="flex justify-center mb-4">
+                <AnimatedIcon icon={Sparkles} colorScheme="gradient" size="md" />
               </div>
-              <h4 className="text-sm font-semibold mb-2 text-gray-900">Monitor Strategy</h4>
-              <p className="text-xs text-[#3b5cff] font-medium">Stay ahead</p>
+              <h4 className="text-lg font-semibold mb-2 text-gray-900">Monitor Strategy</h4>
+              <p className="text-sm text-[#ff538f] font-medium">Stay ahead</p>
             </div>
           </div>
         </div>
