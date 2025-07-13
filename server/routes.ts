@@ -2963,6 +2963,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userId = req.session?.userId || 2; // Default to User ID 2
+      
+      if (!userId) {
+        return res.status(401).json({ 
+          authenticated: false,
+          message: "Not authenticated",
+          requiresLogin: true
+        });
+      }
 
       const user = await storage.getUser(userId);
       if (!user) {
