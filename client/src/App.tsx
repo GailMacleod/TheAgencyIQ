@@ -42,37 +42,39 @@ function Router() {
   // Track page views when routes change
   useAnalytics();
   
-  return (
-    <Switch>
-      <Route path="/" component={Splash} />
-      <Route path="/subscription" component={Subscription} />
-      <Route path="/brand-purpose" component={BrandPurpose} />
-      <Route path="/platform-connections" component={ConnectPlatforms} />
-      <Route path="/connect-platforms" component={ConnectPlatforms} />
-      <Route path="/schedule" component={IntelligentSchedule} />
-      <Route path="/intelligent-schedule" component={IntelligentSchedule} />
-      <Route path="/analytics" component={Analytics} />
-      <Route path="/ai-dashboard" component={AIDashboard} />
-      <Route path="/yearly-analytics" component={YearlyAnalytics} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/grok-test" component={GrokTest} />
-      <Route path="/login" component={Login} />
-      <Route path="/reset-password" component={ResetPassword} />
-      <Route path="/redeem-certificate" component={RedeemCertificate} />
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/video-gen" component={VideoGen} />
-      <Route path="/logout" component={() => {
-        // Handle logout as a route with complete session clearing
-        fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-          .then(response => response.json())
-          .then(data => {
-            if (data.clearCache) {
-              // Clear all local storage and session storage
-              localStorage.clear();
-              sessionStorage.clear();
-              
-              // Clear any cached data
-              if ('caches' in window) {
+  // Add error boundary for routing
+  try {
+    return (
+      <Switch>
+        <Route path="/" component={Splash} />
+        <Route path="/subscription" component={Subscription} />
+        <Route path="/brand-purpose" component={BrandPurpose} />
+        <Route path="/platform-connections" component={ConnectPlatforms} />
+        <Route path="/connect-platforms" component={ConnectPlatforms} />
+        <Route path="/schedule" component={IntelligentSchedule} />
+        <Route path="/intelligent-schedule" component={IntelligentSchedule} />
+        <Route path="/analytics" component={Analytics} />
+        <Route path="/ai-dashboard" component={AIDashboard} />
+        <Route path="/yearly-analytics" component={YearlyAnalytics} />
+        <Route path="/profile" component={Profile} />
+        <Route path="/grok-test" component={GrokTest} />
+        <Route path="/login" component={Login} />
+        <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/redeem-certificate" component={RedeemCertificate} />
+        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/video-gen" component={VideoGen} />
+        <Route path="/logout" component={() => {
+          // Handle logout as a route with complete session clearing
+          fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+            .then(response => response.json())
+            .then(data => {
+              if (data.clearCache) {
+                // Clear all local storage and session storage
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Clear any cached data
+                if ('caches' in window) {
                 caches.keys().then(names => {
                   names.forEach(name => {
                     caches.delete(name);
@@ -111,6 +113,16 @@ function Router() {
       <Route component={NotFound} />
     </Switch>
   );
+  } catch (error) {
+    console.error("❌ Router error:", error);
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h1>Navigation Error</h1>
+        <p>Router failed to load. Please refresh the page.</p>
+        <button onClick={() => window.location.reload()}>Refresh Page</button>
+      </div>
+    );
+  }
 }
 
 function App() {
