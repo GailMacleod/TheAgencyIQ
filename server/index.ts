@@ -743,6 +743,12 @@ async function startServer() {
       res.setHeader('Expires', '0');
     }
   }));
+  
+  // Serve logo.png from root path
+  app.get('/logo.png', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'public', 'logo.png'));
+  });
+  
   app.use('/attached_assets', express.static('attached_assets', {
     setHeaders: (res) => {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');

@@ -110,9 +110,19 @@ export default function Header({
               <MobileNavigationMenu />
               <Link href="/" className="flex items-center">
                 <img 
-                  src="/public/logo.png" 
+                  src="/logo.png" 
                   alt="TheAgencyIQ" 
                   className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                  onError={(e) => {
+                    console.error('Logo failed to load from /logo.png');
+                    // Fallback to text if logo fails to load
+                    const img = e.target as HTMLImageElement;
+                    img.style.display = 'none';
+                    const parent = img.parentElement;
+                    if (parent) {
+                      parent.innerHTML = '<span class="text-xl font-bold text-blue-600">TheAgencyIQ</span>';
+                    }
+                  }}
                 />
               </Link>
             </div>
@@ -141,9 +151,19 @@ export default function Header({
         <div className="flex justify-between items-center h-16">
           <Link href="/schedule" className="flex items-center">
             <img 
-              src="/public/logo.png" 
+              src="/logo.png" 
               alt="TheAgencyIQ" 
               className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+              onError={(e) => {
+                console.error('Logo failed to load from /logo.png');
+                // Fallback to text if logo fails to load
+                const img = e.target as HTMLImageElement;
+                img.style.display = 'none';
+                const parent = img.parentElement;
+                if (parent) {
+                  parent.innerHTML = '<span class="text-xl font-bold text-blue-600">TheAgencyIQ</span>';
+                }
+              }}
             />
           </Link>
           
