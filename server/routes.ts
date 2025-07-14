@@ -5806,12 +5806,28 @@ Continue building your Value Proposition Canvas systematically.`;
         platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
       });
 
-      // STEP 6: Save strategic posts to database as approved (ready for publishing)
+      // STEP 6: Check quota before saving any posts
+      const currentQuotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      if (!currentQuotaStatus || currentQuotaStatus.remainingPosts < strategicPosts.length) {
+        return res.status(400).json({ 
+          message: `Insufficient quota: ${currentQuotaStatus?.remainingPosts || 0} remaining, ${strategicPosts.length} required`,
+          quotaStatus: currentQuotaStatus
+        });
+      }
+
+      // STEP 7: Save strategic posts to database using PostQuotaService
       let savedCount = 0;
       const savedPosts = [];
       
       for (const post of strategicPosts) {
         try {
+          // Check quota before each post creation
+          const quotaCheck = await PostQuotaService.hasPostsRemaining(userId);
+          if (!quotaCheck) {
+            console.log(`❌ Quota exhausted after ${savedCount} posts for user ${userId}`);
+            break;
+          }
+          
           // Generate idempotency key to prevent duplicate creation
           const contentHash = createHash('md5').update(post.content).digest('hex');
           const idempotencyKey = `strategic_${userId}_${savedCount}_${post.platform}_${Date.now()}`;
@@ -5830,8 +5846,8 @@ Continue building your Value Proposition Canvas systematically.`;
             continue;
           }
           
-          const savedPost = await storage.createPost({
-            userId: userId,
+          // Use PostQuotaService to create post with proper quota tracking
+          const savedPost = await PostQuotaService.createPost(userId, {
             platform: post.platform,
             content: post.content,
             status: 'approved', // Start as approved for immediate publishing capability
@@ -5864,7 +5880,10 @@ Continue building your Value Proposition Canvas systematically.`;
 
       console.log(`✅ Strategic content generation complete: ${savedCount} posts created`);
 
-      // STEP 7: Create strategic analysis insights
+      // STEP 8: Clear cache to ensure fresh quota data
+      PostQuotaService.clearUserCache(userId);
+      
+      // STEP 9: Create strategic analysis insights
       const strategicAnalysis = {
         waterfallPhases: [
           'Brand Purpose Analysis',

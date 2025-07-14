@@ -277,6 +277,40 @@ export class PostQuotaService {
   }
 
   /**
+   * Create a post with proper quota tracking
+   */
+  static async createPost(userId: number, postData: any): Promise<any> {
+    return this.withUserLock(userId, async () => {
+      console.log(`🔒 CreatePost operation starting for user ${userId}`);
+      
+      try {
+        // Check if user has quota remaining
+        const hasQuota = await this.hasPostsRemaining(userId);
+        if (!hasQuota) {
+          throw new Error(`User ${userId} has no remaining posts in quota`);
+        }
+        
+        // Create the post using storage
+        const post = await storage.createPost({
+          userId: userId,
+          ...postData
+        });
+        
+        // Log the creation
+        await this.logQuotaOperation(userId, post.id, 'creation', 
+          `Post created with quota tracking. Status: ${postData.status}`);
+        
+        console.log(`✅ Post created for user ${userId} with quota tracking - Post ID: ${post.id}`);
+        return post;
+        
+      } catch (error) {
+        console.error('Error creating post with quota tracking:', error);
+        throw error;
+      }
+    });
+  }
+
+  /**
    * Approve a post (status change only) - NO QUOTA DEDUCTION
    */
   static async approvePost(userId: number, postId: number): Promise<boolean> {
