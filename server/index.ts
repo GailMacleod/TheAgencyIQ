@@ -26,7 +26,14 @@ async function startServer() {
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
+  // Filter out Replit-specific tracking in production
   app.use((req, res, next) => {
+    // Block Replit tracking requests in production
+    if (req.headers.host === 'app.theagencyiq.ai' && 
+        (req.url.includes('replit') || req.url.includes('tracking') || req.url.includes('beacon'))) {
+      return res.status(204).end(); // No content, ignore silently
+    }
+    
     const origin = req.headers.origin || 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
@@ -36,7 +43,7 @@ async function startServer() {
     res.header('Vary', 'Origin, Access-Control-Request-Headers');
     res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
     
-    // Enhanced security headers with corrected Permissions-Policy
+    // Production-ready CSP with frame-ancestors for embedding
     res.header('Content-Security-Policy', 
       "default-src 'self'; " +
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com; " +
@@ -45,10 +52,10 @@ async function startServer() {
       "img-src 'self' data: https: blob:; " +
       "connect-src 'self' https: wss: ws:; " +
       "frame-src 'self' https://www.facebook.com https://accounts.google.com; " +
-      "frame-ancestors 'self' https://www.facebook.com;"
+      "frame-ancestors 'self' https://app.theagencyiq.ai https://www.facebook.com;"
     );
     
-    // Fixed Permissions-Policy - removed unrecognized features including ambient-light-sensor
+    // Clean Permissions-Policy - only recognized features
     res.header('Permissions-Policy', 
       'camera=(), ' +
       'microphone=(), ' +
