@@ -190,10 +190,10 @@ async function startServer() {
     saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: false, // Must be false for development
+      secure: false, // Always false for development compatibility
       maxAge: sessionTtl,
       httpOnly: false, // Allow JavaScript access for client visibility
-      sameSite: 'lax',
+      sameSite: 'lax', // Always lax for development compatibility
       path: '/',
       domain: undefined
     },
@@ -202,70 +202,15 @@ async function startServer() {
     unset: 'keep'
   }));
 
-  // TEMPORARILY DISABLED: Enhanced cookie persistence middleware - bulletproof session handling
-  // app.use((req, res, next) => {
-  //   // Intercept all response methods to ensure cookie persistence
-  //   const originalSend = res.send;
-  //   const originalJson = res.json;
-  //   const originalEnd = res.end;
-  //   
-  //   // Enhanced cookie setting function with header safety
-  //   const ensureCookieSet = () => {
-  //     if (req.sessionID && req.session && !res.headersSent) {
-  //       try {
-  //         // Set cookie with signed session ID for security
-  //         const cookieOptions = {
-  //           secure: false, // Development mode
-  //           maxAge: sessionTtl,
-  //           httpOnly: false, // Allow frontend access
-  //           sameSite: 'none' as const, // Cross-origin support
-  //           path: '/',
-  //           signed: false // Express-session handles signing
-  //         };
-  //         
-  //         // Set both the session cookie and a backup cookie - with proper sameSite
-  //         const cookieOptionsFixed = {
-  //           ...cookieOptions,
-  //           sameSite: 'lax' as const // Fixed for better cookie handling
-  //         };
-  //         res.cookie('theagencyiq.session', req.sessionID, cookieOptionsFixed);
-  //         res.cookie('aiq_backup_session', req.sessionID, cookieOptionsFixed);
-  //       });
-  //     }
-  //   };
-  //   
-  //   // Override send method with safety checks
-  //   res.send = function(data) {
-  //     try {
-  //       ensureCookieSet();
-  //     } catch (error) {
-  //       console.warn('Cookie setting failed in send:', error.message);
-  //     }
-  //     return originalSend.call(this, data);
-  //   };
-  //   
-  //   // Override json method with safety checks
-  //   res.json = function(data) {
-  //     try {
-  //       ensureCookieSet();
-  //     } catch (error) {
-  //       console.warn('Cookie setting failed in json:', error.message);
-  //     }
-  //     return originalJson.call(this, data);
-  //   };
-  //   
-  //   // Override end method with safety checks
-  //   res.end = function(data) {
-  //     try {
-  //       ensureCookieSet();
-  //     } catch (error) {
-  //       console.warn('Cookie setting failed in end:', error.message);
-  //     }
-  //     return originalEnd.call(this, data);
-  //   };
-  //   
-  //   next();
-  // });
+  // Session debugging middleware - simple session logging
+  app.use((req, res, next) => {
+    // Just log session info for debugging
+    console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
+    console.log(`📋 Session ID: ${req.sessionID}`);
+    console.log(`📋 User ID: ${req.session?.userId}`);
+    console.log(`📋 Session Cookie: ${req.headers.cookie ? 'EXISTS' : 'MISSING'}`);
+    next();
+  });
 
   // Enhanced CSP for Facebook compliance, Google services, video content, and security
   app.use((req, res, next) => {

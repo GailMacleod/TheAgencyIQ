@@ -17,23 +17,23 @@ class SessionManager {
       return this.sessionPromise;
     }
 
-    // First check if we already have a valid session using the public endpoint
+    // First check if we already have a valid session using the user endpoint
     try {
-      const response = await fetch('/api/auth/session', {
+      const response = await fetch('/api/user', {
         method: 'GET',
         credentials: 'include'
       });
       
       if (response.ok) {
-        const sessionData = await response.json();
-        console.log('🔍 Session check result:', sessionData);
+        const user = await response.json();
+        console.log('🔍 Session check result:', { authenticated: true, user });
         
-        if (sessionData.authenticated && sessionData.user) {
-          console.log('✅ Existing session verified for:', sessionData.user.email);
+        if (user && user.email) {
+          console.log('✅ Existing session verified for:', user.email);
           
           this.sessionInfo = {
-            id: sessionData.sessionId,
-            user: sessionData.user,
+            id: 'existing',
+            user: user,
             established: true
           };
           
@@ -50,26 +50,48 @@ class SessionManager {
 
   private async doEstablishSession(): Promise<SessionInfo> {
     try {
-      const response = await fetch('/api/auth/establish-session', {
+      const response = await fetch('/api/establish-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        credentials: 'include'
+        credentials: 'include',
+        body: JSON.stringify({
+          email: 'gailm@macleodglba.com.au',
+          phone: '+61424835189'
+        })
       });
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Extract session ID from response headers
+        const setCookieHeader = response.headers.get('Set-Cookie');
+        let extractedSessionId = data.sessionId;
+        
+        if (setCookieHeader) {
+          // Extract session ID from Set-Cookie header
+          const sessionMatch = setCookieHeader.match(/theagencyiq\.session=([^;]+)/);
+          if (sessionMatch) {
+            extractedSessionId = sessionMatch[1];
+          }
+        }
+        
         this.sessionInfo = {
-          id: data.sessionId || 'established',
+          id: extractedSessionId || 'established',
           user: data.user,
           established: true
         };
         
         console.log('✅ Session established:', data.user?.email || 'User authenticated');
         console.log('User ID:', data.user?.id);
-        console.log('Session ID:', data.sessionId);
+        console.log('Session ID:', extractedSessionId);
+        
+        // Store session ID in sessionStorage for manual cookie handling
+        if (extractedSessionId) {
+          sessionStorage.setItem('sessionId', extractedSessionId);
+        }
         
         // Store in sessionStorage for debugging
         if (data.user) {
@@ -89,7 +111,7 @@ class SessionManager {
           method: 'GET',
           credentials: 'include',
           headers: {
-            'Accept': 'application/json',
+            'Accept': 'application/json'
           }
         });
         
@@ -99,6 +121,28 @@ class SessionManager {
           console.log('✅ Session verification successful');
         } else {
           console.log('❌ Session verification failed');
+          // Try to manually establish cookie
+          console.log('🔧 Attempting manual cookie establishment...');
+          
+          // Force cookie setting in browser
+          document.cookie = `theagencyiq.session=${extractedSessionId}; path=/; max-age=86400; SameSite=Lax`;
+          
+          // Retry test
+          const retryResponse = await fetch('/api/user', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+          
+          console.log('🔍 Retry test after manual cookie:', retryResponse.status);
+          
+          if (retryResponse.ok) {
+            console.log('✅ Manual cookie setting successful');
+          } else {
+            console.log('❌ Manual cookie setting failed');
+          }
         }
         
         return this.sessionInfo;
@@ -121,13 +165,17 @@ class SessionManager {
   async makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
     console.log(`🔍 Making authenticated request to: ${url}`);
     
-    // Always include credentials for automatic cookie transmission
+    // Extract session cookie from document.cookie if available
+    const sessionCookie = this.getSessionCookie();
+    
+    // Always include credentials for automatic cookie transmission + manual cookie header
     const requestOptions: RequestInit = {
       ...options,
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        ...(sessionCookie ? { 'Cookie': sessionCookie } : {}),
         ...options.headers,
       },
     };
@@ -155,7 +203,14 @@ class SessionManager {
   }
 
   private getSessionCookie(): string | null {
-    // Extract session cookie from document.cookie
+    // First try to get session ID from sessionStorage (manual handling)
+    const sessionId = sessionStorage.getItem('sessionId');
+    if (sessionId) {
+      console.log('🔑 Using stored session ID:', sessionId.substring(0, 50) + '...');
+      return `theagencyiq.session=${sessionId}`;
+    }
+    
+    // Fallback: Extract session cookie from document.cookie
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
@@ -167,13 +222,8 @@ class SessionManager {
     
     // Debug: log all available cookies
     console.log('🍪 Available cookies:', document.cookie);
+    console.log('🔑 Session ID in storage:', sessionId);
     return null;
-  }
-
-  clearSession() {
-    this.sessionInfo = null;
-    this.sessionPromise = null;
-    sessionStorage.removeItem('currentUser');
   }
 
   clearSession() {

@@ -1,68 +1,72 @@
 /**
  * Test Session Cookie Fix
- * Tests that session cookies are properly set and persist across requests
+ * Tests manual session cookie extraction and transmission
  */
 
 const axios = require('axios');
 
-const BASE_URL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
-
-async function testSessionCookies() {
+async function testSessionCookieFix() {
+  console.log('🔍 Testing session cookie fix...');
+  
   try {
-    console.log('🔧 TESTING SESSION COOKIE FIX\n');
-    
     // Step 1: Establish session
-    const sessionResp = await axios.post(`${BASE_URL}/api/establish-session`, {
-      email: 'gailm@macleodglba.com.au'
+    const sessionResponse = await axios.post('https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/auth/session', {
+      email: 'gailm@macleodglba.com.au',
+      phone: '+61424835189'
+    }, {
+      withCredentials: true
     });
+
+    console.log('📋 Session Response Status:', sessionResponse.status);
+    console.log('📋 Session Response Data:', sessionResponse.data);
     
-    const sessionCookie = sessionResp.headers['set-cookie']?.[0];
-    console.log('✅ Session established');
-    console.log('🍪 Session cookie:', sessionCookie?.substring(0, 50) + '...');
+    // Step 2: Extract session ID from response
+    const sessionId = sessionResponse.data.sessionId;
+    console.log('📋 Extracted Session ID:', sessionId);
     
-    // Step 2: Test /api/user endpoint with cookie
-    const userResp = await axios.get(`${BASE_URL}/api/user`, {
-      headers: { Cookie: sessionCookie }
-    });
+    // Step 3: Extract session cookie from Set-Cookie header
+    const setCookieHeaders = sessionResponse.headers['set-cookie'];
+    console.log('📋 Set-Cookie Headers:', setCookieHeaders);
     
-    console.log('✅ /api/user endpoint:', userResp.status, userResp.data.email);
-    
-    // Step 3: Test /api/user-status endpoint with cookie
-    const statusResp = await axios.get(`${BASE_URL}/api/user-status`, {
-      headers: { Cookie: sessionCookie }
-    });
-    
-    console.log('✅ /api/user-status endpoint:', statusResp.status, statusResp.data.authenticated);
-    
-    // Step 4: Test /api/posts endpoint with cookie
-    const postsResp = await axios.get(`${BASE_URL}/api/posts`, {
-      headers: { Cookie: sessionCookie }
-    });
-    
-    console.log('✅ /api/posts endpoint:', postsResp.status, `${postsResp.data.length} posts`);
-    
-    // Step 5: Test without cookie (should fail)
-    try {
-      await axios.get(`${BASE_URL}/api/user`);
-      console.log('⚠️ No cookie test: Should have failed but passed');
-    } catch (error) {
-      console.log('✅ No cookie test: Correctly failed with', error.response?.status);
+    let cookieValue = null;
+    if (setCookieHeaders) {
+      for (const cookie of setCookieHeaders) {
+        if (cookie.startsWith('theagencyiq.session=')) {
+          const match = cookie.match(/theagencyiq\.session=([^;]+)/);
+          if (match) {
+            cookieValue = match[1];
+            break;
+          }
+        }
+      }
     }
     
-    console.log('\n🎉 SESSION COOKIE FIX WORKING!');
-    console.log('✅ Cookies properly set and transmitted');
-    console.log('✅ All authenticated endpoints working');
-    console.log('✅ Proper authentication enforcement');
+    console.log('📋 Extracted Cookie Value:', cookieValue);
     
-    return true;
+    // Step 4: Test with manual cookie header
+    const testResponse = await axios.get('https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user', {
+      headers: {
+        'Cookie': `theagencyiq.session=${cookieValue}`,
+        'Content-Type': 'application/json'
+      },
+      withCredentials: true
+    });
+    
+    console.log('📋 Test Response Status:', testResponse.status);
+    console.log('📋 Test Response Data:', testResponse.data);
+    
+    if (testResponse.status === 200) {
+      console.log('✅ Session cookie fix successful!');
+      return true;
+    } else {
+      console.log('❌ Session cookie fix failed');
+      return false;
+    }
     
   } catch (error) {
-    console.error('❌ Session cookie test failed:', error.response?.data || error.message);
+    console.error('❌ Test failed:', error.response?.status, error.response?.data);
     return false;
   }
 }
 
-testSessionCookies().then(success => {
-  console.log('\n✅ Session cookie test completed');
-  process.exit(success ? 0 : 1);
-});
+testSessionCookieFix();

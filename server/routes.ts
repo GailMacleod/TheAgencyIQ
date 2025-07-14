@@ -2092,27 +2092,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`Session established for user ${user.email}`);
           
-          // Force cookie to be set in response
-          res.cookie('theagencyiq.session', req.sessionID, {
-            httpOnly: false, // Allow JavaScript access
-            secure: false, // Development mode
-            sameSite: 'lax',
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            path: '/'
-          });
-          
           // Ensure proper cookie headers are set
           res.header('Access-Control-Allow-Credentials', 'true');
-          res.header('Access-Control-Expose-Headers', 'Set-Cookie, Cookie, theagencyiq.session');
-          
-          // Force session cookie to be set in the response
-          res.cookie('theagencyiq.session', req.sessionID, {
-            httpOnly: false, // Allow JavaScript access for debugging
-            secure: false,
-            sameSite: 'lax',
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            path: '/'
-          });
+          res.header('Access-Control-Expose-Headers', 'Set-Cookie');
           
           return res.json({ 
             success: true, 
@@ -3247,6 +3229,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Signup error:', error);
       res.status(500).json({ message: "Error creating account" });
+    }
+  });
+
+  // Session establishment endpoint - handles both GET and POST
+  app.post("/api/auth/session", async (req: any, res) => {
+    try {
+      const { email, phone } = req.body;
+      console.log(`🔍 Session establishment request - Email: ${email}, Phone: ${phone}`);
+      
+      // Find user by email or phone
+      const user = await storage.getUserByEmail(email) || await storage.getUserByPhone(phone);
+      
+      if (!user) {
+        console.log('❌ User not found for session establishment');
+        return res.status(401).json({ message: 'User not found' });
+      }
+      
+      // Set user in session
+      req.session.userId = user.id;
+      req.session.userEmail = user.email;
+      
+      console.log(`✅ Session established for user ${user.id}: ${user.email}`);
+      
+      const sessionInfo = {
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          subscriptionPlan: user.subscriptionPlan,
+          subscriptionActive: user.subscriptionActive ?? true,
+          remainingPosts: user.remainingPosts,
+          totalPosts: user.totalPosts
+        },
+        sessionId: req.sessionID,
+        sessionEstablished: true,
+        message: `Test session established for ${user.email}`
+      };
+      
+      res.json(sessionInfo);
+    } catch (error) {
+      console.error('Session establishment error:', error);
+      res.status(500).json({ message: "Session establishment failed" });
     }
   });
 
