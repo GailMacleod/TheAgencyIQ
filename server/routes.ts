@@ -2096,6 +2096,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.header('Access-Control-Allow-Credentials', 'true');
           res.header('Access-Control-Expose-Headers', 'Set-Cookie');
           
+          // Explicitly set session cookie with proper options
+          const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400; Secure=false`;
+          res.setHeader('Set-Cookie', cookieValue);
+          
           return res.json({ 
             success: true, 
             user,
@@ -3381,6 +3385,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Track session activity
         sessionActivityService.trackActivity(req.sessionID, user.id, ipAddress, userAgent, '/api/auth/establish-session');
+        
+        // Explicitly set session cookie with proper options
+        const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400; Secure=false`;
+        res.setHeader('Set-Cookie', cookieValue);
         
         console.log('✅ Session auto-established for User ID 2');
         return res.json({
