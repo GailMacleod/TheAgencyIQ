@@ -16,7 +16,101 @@ export interface DirectPublishResult {
 }
 
 export class DirectPublisher {
-  
+
+  /**
+   * Enhanced publish with token refresh and connection reliability
+   */
+  static async publishWithReliability(platform: string, content: string, connection: any): Promise<DirectPublishResult> {
+    try {
+      // Step 1: Validate and refresh token if needed
+      const tokenValidation = await this.validateAndRefreshToken(connection);
+      if (!tokenValidation.valid) {
+        return { success: false, error: `Token validation failed: ${tokenValidation.error}` };
+      }
+
+      // Step 2: Use refreshed connection if available
+      const activeConnection = tokenValidation.connection || connection;
+
+      // Step 3: Attempt publication with enhanced error handling
+      let result;
+      switch (platform) {
+        case 'facebook':
+          result = await this.publishToFacebook(content, activeConnection.accessToken);
+          break;
+        case 'instagram':
+          result = await this.publishToInstagram(content, activeConnection.accessToken);
+          break;
+        case 'linkedin':
+          result = await this.publishToLinkedIn(content, activeConnection.accessToken);
+          break;
+        case 'x':
+          result = await this.publishToX(content, activeConnection.accessToken, activeConnection.tokenSecret);
+          break;
+        case 'youtube':
+          result = await this.publishToYouTube(content, activeConnection.accessToken);
+          break;
+        default:
+          return { success: false, error: `Unsupported platform: ${platform}` };
+      }
+
+      return result;
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Validate and refresh token with enhanced error handling
+   */
+  static async validateAndRefreshToken(connection: any): Promise<{valid: boolean, connection?: any, error?: string}> {
+    try {
+      // Check if token is expired
+      if (connection.expiresAt && new Date() > new Date(connection.expiresAt)) {
+        console.log(`Token expired for ${connection.platform}, attempting refresh`);
+        
+        // Try to refresh token
+        const refreshResult = await this.refreshToken(connection);
+        if (refreshResult.success) {
+          console.log(`✅ Token refreshed successfully for ${connection.platform}`);
+          return { valid: true, connection: { ...connection, ...refreshResult } };
+        } else {
+          return { valid: false, error: 'Token refresh failed' };
+        }
+      }
+
+      // Token is still valid or no expiry set
+      return { valid: true, connection };
+    } catch (error) {
+      return { valid: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Refresh token based on platform
+   */
+  static async refreshToken(connection: any): Promise<{success: boolean, accessToken?: string, refreshToken?: string, expiresAt?: Date}> {
+    try {
+      if (!connection.refreshToken) {
+        return { success: false };
+      }
+
+      switch (connection.platform) {
+        case 'facebook':
+        case 'instagram':
+          return await this.refreshFacebookToken(connection);
+        case 'linkedin':
+          return await this.refreshLinkedInToken(connection);
+        case 'youtube':
+          return await this.refreshYouTubeToken(connection);
+        default:
+          return { success: false };
+      }
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      return { success: false };
+    }
+  }
+
   /**
    * Publish directly to Facebook using direct tokens or app page token
    */
@@ -502,6 +596,85 @@ export class DirectPublisher {
         return await this.publishToYouTube(content, accessToken);
       default:
         return { success: false, error: `Platform ${platform} not supported` };
+    }
+  }
+
+  /**
+   * Token refresh methods for enhanced connection reliability
+   */
+  static async refreshFacebookToken(connection: any): Promise<{success: boolean, accessToken?: string, refreshToken?: string, expiresAt?: Date}> {
+    try {
+      const response = await axios.get(
+        `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.FACEBOOK_APP_ID}&client_secret=${process.env.FACEBOOK_APP_SECRET}&fb_exchange_token=${connection.accessToken}`
+      );
+      
+      if (response.data.access_token) {
+        return {
+          success: true,
+          accessToken: response.data.access_token,
+          expiresAt: new Date(Date.now() + (response.data.expires_in * 1000))
+        };
+      }
+      
+      return { success: false };
+    } catch (error) {
+      console.error('Facebook token refresh error:', error);
+      return { success: false };
+    }
+  }
+
+  static async refreshLinkedInToken(connection: any): Promise<{success: boolean, accessToken?: string, refreshToken?: string, expiresAt?: Date}> {
+    try {
+      const response = await axios.post(
+        'https://www.linkedin.com/oauth/v2/accessToken',
+        new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: connection.refreshToken,
+          client_id: process.env.LINKEDIN_CLIENT_ID || '',
+          client_secret: process.env.LINKEDIN_CLIENT_SECRET || ''
+        })
+      );
+      
+      if (response.data.access_token) {
+        return {
+          success: true,
+          accessToken: response.data.access_token,
+          refreshToken: response.data.refresh_token,
+          expiresAt: new Date(Date.now() + (response.data.expires_in * 1000))
+        };
+      }
+      
+      return { success: false };
+    } catch (error) {
+      console.error('LinkedIn token refresh error:', error);
+      return { success: false };
+    }
+  }
+
+  static async refreshYouTubeToken(connection: any): Promise<{success: boolean, accessToken?: string, refreshToken?: string, expiresAt?: Date}> {
+    try {
+      const response = await axios.post(
+        'https://oauth2.googleapis.com/token',
+        {
+          grant_type: 'refresh_token',
+          refresh_token: connection.refreshToken,
+          client_id: process.env.YOUTUBE_CLIENT_ID,
+          client_secret: process.env.YOUTUBE_CLIENT_SECRET
+        }
+      );
+      
+      if (response.data.access_token) {
+        return {
+          success: true,
+          accessToken: response.data.access_token,
+          expiresAt: new Date(Date.now() + (response.data.expires_in * 1000))
+        };
+      }
+      
+      return { success: false };
+    } catch (error) {
+      console.error('YouTube token refresh error:', error);
+      return { success: false };
     }
   }
 }
