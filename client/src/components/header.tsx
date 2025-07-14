@@ -109,12 +109,11 @@ export default function Header({
             <div className="flex items-center space-x-4">
               <MobileNavigationMenu />
               <Link href="/" className="flex items-center">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">AiQ</span>
-                  </div>
-                  <span className="text-xl font-bold text-gray-800">TheAgencyIQ</span>
-                </div>
+                <img 
+                  src="/logo.png" 
+                  alt="TheAgencyIQ" 
+                  className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+                />
               </Link>
             </div>
             
@@ -141,12 +140,11 @@ export default function Header({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/schedule" className="flex items-center">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">AiQ</span>
-              </div>
-              <span className="text-xl font-bold text-gray-800">TheAgencyIQ</span>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="TheAgencyIQ" 
+              className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+            />
           </Link>
           
           {showUserMenu && (
