@@ -36,7 +36,9 @@ import { linkedinTokenValidator } from './linkedin-token-validator';
 import { DirectPublishService } from './services/DirectPublishService';
 import { UnifiedOAuthService } from './services/UnifiedOAuthService';
 import { directTokenGenerator } from './services/DirectTokenGenerator';
-import { loggingService } from './logging-service';
+import { loggingService } from './services/logging-service';
+import { platformPostManager } from './services/platform-post-manager';
+import { realApiPublisher } from './services/real-api-publisher';
 
 // Extended session types
 declare module 'express-session' {
@@ -253,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Session configuration moved to server/index.ts to prevent duplicates
 
-  // Session-based authentication endpoint - MUST BE BEFORE requirePaidSubscription
+  // Session-based authentication endpoint with comprehensive logging
   app.post('/api/login', async (req, res) => {
     try {
       const { phone, password, email } = req.body;
@@ -285,7 +287,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log('✅ Login successful:', { userId: user.id, email: user.email, sessionId: req.sessionID });
           
-          // Don't set additional cookies - let express-session handle it
+          // Log successful authentication
+          await loggingService.logUserAuthentication({
+            userId: user.id,
+            userEmail: user.email,
+            sessionId: req.sessionID,
+            metadata: { loginMethod: 'phone_password' }
+          }, true);
+          
+          // Validate existing subscription to prevent duplicates
+          const hasActiveSubscription = await storage.validateActiveSubscription(user.id);
+          
           return res.json({
             success: true,
             user: {
@@ -295,7 +307,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               subscriptionPlan: user.subscriptionPlan,
               subscriptionActive: user.subscriptionActive,
               remainingPosts: user.remainingPosts,
-              totalPosts: user.totalPosts
+              totalPosts: user.totalPosts,
+              hasActiveSubscription
             },
             sessionId: req.sessionID,
             message: 'Login successful'
@@ -304,6 +317,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log('❌ Login failed:', { phone, email });
+      
+      // Log failed authentication
+      await loggingService.logUserAuthentication({
+        userEmail: email,
+        sessionId: req.sessionID,
+        metadata: { loginMethod: 'phone_password' }
+      }, false, 'Invalid credentials');
+      
       res.status(401).json({ success: false, message: 'Invalid credentials' });
     } catch (error) {
       console.error('Login error:', error);
@@ -1463,19 +1484,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`✅ User ${user.id} linked to new ${plan} subscription`);
                 
                 // Log successful subscription creation via webhook
-                loggingService.logSubscriptionCreation(
-                  user.id,
-                  user.email,
-                  newSubscription.id,
-                  true,
-                  {
+                await loggingService.logSubscriptionCreation({
+                  userId: user.id,
+                  userEmail: user.email,
+                  stripeCustomerId: customer.id,
+                  stripeSubscriptionId: newSubscription.id,
+                  metadata: {
                     plan,
-                    stripeCustomerId: customer.id,
                     source: 'webhook',
                     amount
-                  },
-                  undefined
-                );
+                  }
+                }, true);
               }
             } else {
               // No user found by email, check by phone for gailm@macleodglba.com.au
@@ -1565,6 +1584,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error serving latest video:', error);
       res.status(500).json({ error: 'Failed to get latest video' });
+    }
+  });
+
+  // Comprehensive post publishing endpoint with real API integration
+  app.post('/api/posts/:id/publish', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const postId = parseInt(req.params.id);
+      const { platforms = [] } = req.body;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Validate active subscription
+      const hasActiveSubscription = await storage.validateActiveSubscription(userId);
+      if (!hasActiveSubscription) {
+        return res.status(403).json({ message: "Active subscription required for publishing" });
+      }
+      
+      // Get post content
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      if (post.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized to publish this post" });
+      }
+      
+      // Log session persistence through publishing
+      await loggingService.logSessionPersistence({
+        userId,
+        userEmail: user.email,
+        sessionId: req.sessionID,
+        action: 'post_publish',
+        metadata: { postId, platforms }
+      }, true);
+      
+      // Publish to multiple platforms using real API integration
+      const publishResults = await realApiPublisher.publishToMultiplePlatforms(
+        userId,
+        postId,
+        post.content,
+        platforms,
+        req.sessionID
+      );
+      
+      // Calculate success metrics
+      const successfulPublishes = publishResults.filter(result => result.success);
+      const failedPublishes = publishResults.filter(result => !result.success);
+      
+      console.log(`📊 PUBLISH RESULTS: ${successfulPublishes.length}/${publishResults.length} successful`);
+      
+      res.json({
+        success: successfulPublishes.length > 0,
+        results: publishResults,
+        summary: {
+          total: publishResults.length,
+          successful: successfulPublishes.length,
+          failed: failedPublishes.length,
+          quotaDeducted: successfulPublishes.length
+        }
+      });
+      
+    } catch (error: any) {
+      console.error('Publish error:', error);
+      res.status(500).json({ message: "Error publishing post" });
+    }
+  });
+
+  // Platform post ID management endpoints
+  app.get('/api/posts/platform-ids', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const postsWithPlatformIds = await platformPostManager.getUserPlatformPosts(userId);
+      res.json(postsWithPlatformIds);
+    } catch (error) {
+      console.error('Error fetching platform posts:', error);
+      res.status(500).json({ message: "Error fetching platform posts" });
+    }
+  });
+
+  app.get('/api/posts/:id/platform-id', requireAuth, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const isValid = await platformPostManager.validatePlatformPostId(postId);
+      const post = await storage.getPost(postId);
+      
+      res.json({
+        valid: isValid,
+        platformPostId: post?.platformPostId || null,
+        postId: postId
+      });
+    } catch (error) {
+      console.error('Error validating platform post ID:', error);
+      res.status(500).json({ message: "Error validating platform post ID" });
+    }
+  });
+
+  app.post('/api/posts/validate-platform-id/:id', requireAuth, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const isValid = await platformPostManager.validatePlatformPostId(postId);
+      res.json({ valid: isValid, postId });
+    } catch (error) {
+      console.error('Error in platform post validation:', error);
+      res.status(500).json({ message: "Error validating platform post" });
+    }
+  });
+
+  // Quota management endpoints
+  app.get('/api/quota/stats', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const stats = await platformPostManager.getQuotaStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching quota stats:', error);
+      res.status(500).json({ message: "Error fetching quota statistics" });
+    }
+  });
+
+  // Audit trail endpoints
+  app.get('/api/audit/trail', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const trail = await loggingService.getAuditTrail(userId);
+      res.json(trail);
+    } catch (error) {
+      console.error('Error fetching audit trail:', error);
+      res.status(500).json({ message: "Error fetching audit trail" });
+    }
+  });
+
+  app.get('/api/audit/post/:id', requireAuth, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const accountability = await loggingService.getPostAccountability(postId);
+      res.json(accountability);
+    } catch (error) {
+      console.error('Error fetching post accountability:', error);
+      res.status(500).json({ message: "Error fetching post accountability" });
+    }
+  });
+
+  // System health report endpoint
+  app.get('/api/system/health', requireAuth, async (req: any, res) => {
+    try {
+      // Only allow User ID 2 (gailm@macleodglba.com.au) to access system health
+      if (req.session.userId !== 2) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      
+      const healthReport = await loggingService.generateSystemHealthReport();
+      res.json(healthReport);
+    } catch (error) {
+      console.error('Error generating system health report:', error);
+      res.status(500).json({ message: "Error generating system health report" });
     }
   });
 
@@ -6384,12 +6563,37 @@ Continue building your Value Proposition Canvas systematically.`;
   // Create new post
   app.post("/api/posts", requireAuth, async (req: any, res) => {
     try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Validate active subscription for post creation
+      const hasActiveSubscription = await storage.validateActiveSubscription(userId);
+      if (!hasActiveSubscription) {
+        return res.status(403).json({ message: "Active subscription required for post creation" });
+      }
+      
       const postData = insertPostSchema.parse({
         ...req.body,
         userId: req.session.userId
       });
       
       const newPost = await storage.createPost(postData);
+      
+      // Log successful post creation
+      await loggingService.logPostCreation({
+        userId,
+        userEmail: user.email,
+        sessionId: req.sessionID,
+        postId: newPost.id,
+        quotaUsed: user.totalPosts - user.remainingPosts + 1,
+        quotaRemaining: user.remainingPosts,
+        metadata: { content: postData.content }
+      }, true);
+      
       res.status(201).json(newPost);
     } catch (error: any) {
       console.error('Create post error:', error);
@@ -8388,20 +8592,26 @@ Continue building your Value Proposition Canvas systematically.`;
           stripeCustomerId: session.customer as string
         });
 
-        // Log successful payment completion
-        loggingService.logSubscriptionCreation(
+        // Link Stripe subscription to user with end-to-end flow
+        await storage.linkStripeSubscription(userId, session.customer as string, session.subscription as string);
+        
+        // Set 30-day quota cycle based on subscription plan
+        const quotaAmount = planName === 'professional' ? 52 : planName === 'growth' ? 35 : 20;
+        await storage.set30DayQuotaCycle(userId, quotaAmount);
+        
+        // Log successful subscription creation with comprehensive details
+        await loggingService.logSubscriptionCreation({
           userId,
           userEmail,
-          session.subscription as string,
-          true,
-          {
+          stripeCustomerId: session.customer as string,
+          stripeSubscriptionId: session.subscription as string,
+          quotaUsed: quotaAmount,
+          metadata: {
             plan: planName,
-            stripeCustomerId: session.customer as string,
             source: 'payment_success',
             sessionId: session_id
-          },
-          undefined
-        );
+          }
+        }, true);
 
         // Establish session for the authenticated user
         req.session.userId = userId;

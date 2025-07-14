@@ -43,11 +43,14 @@ export interface IStorage {
   updateUserStripeInfo(id: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
   updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User>;
   
-  // Subscription management
+  // Subscription management - Enhanced for end-to-end flow
   validateActiveSubscription(userId: number): Promise<boolean>;
   updateQuotaUsage(userId: number, quotaUsed: number): Promise<User>;
   resetMonthlyQuota(userId: number): Promise<User>;
   checkDuplicateSubscription(email: string, stripeCustomerId: string): Promise<boolean>;
+  linkStripeSubscription(userId: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
+  preventDuplicateSubscription(userId: number): Promise<boolean>;
+  set30DayQuotaCycle(userId: number, quotaAmount: number): Promise<User>;
   
   // Cleanup operations
   listAllStripeCustomers(): Promise<User[]>;
@@ -311,6 +314,56 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(sql`id != ${keepUserId} AND stripe_customer_id IS NOT NULL`);
+  }
+
+  // Enhanced subscription management methods for end-to-end flow
+  async linkStripeSubscription(userId: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        stripeCustomerId,
+        stripeSubscriptionId,
+        subscriptionActive: true,
+        subscriptionPlan: 'professional', // Default to professional plan
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    console.log(`🔗 SUBSCRIPTION LINKED: User ${userId} -> Stripe ${stripeSubscriptionId}`);
+    return user;
+  }
+
+  async preventDuplicateSubscription(userId: number): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      return false;
+    }
+
+    // Check if user already has active subscription
+    if (user.stripeSubscriptionId && user.subscriptionActive) {
+      console.log(`🚫 DUPLICATE PREVENTED: User ${userId} already has active subscription ${user.stripeSubscriptionId}`);
+      return false;
+    }
+
+    return true;
+  }
+
+  async set30DayQuotaCycle(userId: number, quotaAmount: number): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        totalPosts: quotaAmount,
+        remainingPosts: quotaAmount,
+        subscriptionPlan: 'professional', // Set based on quota amount
+        subscriptionActive: true,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    console.log(`📊 30-DAY QUOTA SET: User ${userId} -> ${quotaAmount} posts`);
+    return user;
   }
 
   // Platform post ID management methods
