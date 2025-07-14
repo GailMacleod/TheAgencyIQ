@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import GrokWidget from "@/components/grok-widget";
 import UserMenu from "@/components/user-menu";
-import agencyLogoPath from "@assets/agency_logo_512x512 (1)_1752200321498.png";
+import agencyLogoPath from "@assets/agency_logo_1024x1024 (2)_1752385824604.png";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
 export default function Splash() {
@@ -71,9 +71,9 @@ export default function Splash() {
             <div className="flex items-center space-x-4">
               {!isLoading && user ? (
                 <div className="flex items-center space-x-4">
-                  <Link href="/login">
+                  <Link href="/schedule">
                     <Button variant="ghost" className="text-gray-700 hover:text-primary font-medium">
-                      Sign In
+                      Dashboard
                     </Button>
                   </Link>
                   <UserMenu />
