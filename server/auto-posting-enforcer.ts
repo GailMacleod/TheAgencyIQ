@@ -284,8 +284,14 @@ export class AutoPostingEnforcer {
       }
       
       // Use existing Instagram credentials from connection for real API call
-      console.log(`✅ Instagram publish simulation: Post ${post.id} would be published with valid token`);
-      await this.logPublishingResult(post.userId, post.id, 'instagram', true, 'Published successfully with token validation');
+      const realInstagramResult = await this.realInstagramPublish(post, connection);
+      if (!realInstagramResult.success) {
+        console.error(`Instagram publish failed: ${realInstagramResult.error}`);
+        return false;
+      }
+      
+      console.log(`✅ Instagram publish SUCCESS: Post ${post.id} published to Instagram with ID: ${realInstagramResult.platformPostId}`);
+      await this.logPublishingResult(post.userId, post.id, 'instagram', true, `Post published to Instagram: ${realInstagramResult.platformPostId}`);
       
       return true;
     } catch (error) {
@@ -299,11 +305,35 @@ export class AutoPostingEnforcer {
   private static async publishToLinkedIn(post: any, connection: any): Promise<boolean> {
     try {
       console.log(`Publishing to LinkedIn: Post ${post.id}`);
-      // Use existing LinkedIn credentials from connection
-      // Simulate successful publishing for now
+      
+      // Validate and refresh token if needed
+      const tokenValidation = await this.validatePlatformToken(connection);
+      if (!tokenValidation.isValid) {
+        console.error(`LinkedIn token validation failed: ${tokenValidation.error}`);
+        await this.logPublishingResult(post.userId, post.id, 'linkedin', false, `Token validation failed: ${tokenValidation.error}`);
+        return false;
+      }
+      
+      if (tokenValidation.refreshed) {
+        console.log('✅ LinkedIn token refreshed successfully before publishing');
+        await this.logPublishingResult(post.userId, post.id, 'linkedin', true, 'Token refreshed successfully');
+      }
+      
+      // Use existing LinkedIn credentials from connection for real API call
+      const realLinkedInResult = await this.realLinkedInPublish(post, connection);
+      if (!realLinkedInResult.success) {
+        console.error(`LinkedIn publish failed: ${realLinkedInResult.error}`);
+        return false;
+      }
+      
+      console.log(`✅ LinkedIn publish SUCCESS: Post ${post.id} published to LinkedIn with ID: ${realLinkedInResult.platformPostId}`);
+      await this.logPublishingResult(post.userId, post.id, 'linkedin', true, `Post published to LinkedIn: ${realLinkedInResult.platformPostId}`);
+      
       return true;
     } catch (error) {
       console.error('LinkedIn publishing failed:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown LinkedIn error';
+      await this.logPublishingResult(post.userId, post.id, 'linkedin', false, errorMsg);
       return false;
     }
   }
@@ -311,11 +341,35 @@ export class AutoPostingEnforcer {
   private static async publishToYouTube(post: any, connection: any): Promise<boolean> {
     try {
       console.log(`Publishing to YouTube: Post ${post.id}`);
-      // Use existing YouTube credentials from connection
-      // Simulate successful publishing for now
+      
+      // Validate and refresh token if needed
+      const tokenValidation = await this.validatePlatformToken(connection);
+      if (!tokenValidation.isValid) {
+        console.error(`YouTube token validation failed: ${tokenValidation.error}`);
+        await this.logPublishingResult(post.userId, post.id, 'youtube', false, `Token validation failed: ${tokenValidation.error}`);
+        return false;
+      }
+      
+      if (tokenValidation.refreshed) {
+        console.log('✅ YouTube token refreshed successfully before publishing');
+        await this.logPublishingResult(post.userId, post.id, 'youtube', true, 'Token refreshed successfully');
+      }
+      
+      // Use existing YouTube credentials from connection for real API call
+      const realYouTubeResult = await this.realYouTubePublish(post, connection);
+      if (!realYouTubeResult.success) {
+        console.error(`YouTube publish failed: ${realYouTubeResult.error}`);
+        return false;
+      }
+      
+      console.log(`✅ YouTube publish SUCCESS: Post ${post.id} published to YouTube with ID: ${realYouTubeResult.platformPostId}`);
+      await this.logPublishingResult(post.userId, post.id, 'youtube', true, `Post published to YouTube: ${realYouTubeResult.platformPostId}`);
+      
       return true;
     } catch (error) {
       console.error('YouTube publishing failed:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown YouTube error';
+      await this.logPublishingResult(post.userId, post.id, 'youtube', false, errorMsg);
       return false;
     }
   }
@@ -323,12 +377,289 @@ export class AutoPostingEnforcer {
   private static async publishToX(post: any, connection: any): Promise<boolean> {
     try {
       console.log(`Publishing to X: Post ${post.id}`);
-      // Use existing X credentials from connection
-      // Simulate successful publishing for now
+      
+      // Validate and refresh token if needed
+      const tokenValidation = await this.validatePlatformToken(connection);
+      if (!tokenValidation.isValid) {
+        console.error(`X token validation failed: ${tokenValidation.error}`);
+        await this.logPublishingResult(post.userId, post.id, 'x', false, `Token validation failed: ${tokenValidation.error}`);
+        return false;
+      }
+      
+      if (tokenValidation.refreshed) {
+        console.log('✅ X token refreshed successfully before publishing');
+        await this.logPublishingResult(post.userId, post.id, 'x', true, 'Token refreshed successfully');
+      }
+      
+      // Use existing X credentials from connection for real API call
+      const realXResult = await this.realXPublish(post, connection);
+      if (!realXResult.success) {
+        console.error(`X publish failed: ${realXResult.error}`);
+        return false;
+      }
+      
+      console.log(`✅ X publish SUCCESS: Post ${post.id} published to X with ID: ${realXResult.platformPostId}`);
+      await this.logPublishingResult(post.userId, post.id, 'x', true, `Post published to X: ${realXResult.platformPostId}`);
+      
       return true;
     } catch (error) {
       console.error('X publishing failed:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown X error';
+      await this.logPublishingResult(post.userId, post.id, 'x', false, errorMsg);
       return false;
+    }
+  }
+
+  /**
+   * REAL Instagram Publishing using Instagram Basic Display API
+   */
+  private static async realInstagramPublish(post: any, connection: any): Promise<{success: boolean, platformPostId?: string, error?: string}> {
+    try {
+      const axios = require('axios');
+      
+      const accessToken = connection.accessToken;
+      if (!accessToken) {
+        return { success: false, error: 'Instagram access token missing' };
+      }
+      
+      // Get Instagram account ID
+      const accountResponse = await axios.get(
+        `https://graph.instagram.com/me/accounts?access_token=${accessToken}`
+      );
+      
+      if (!accountResponse.data.data || accountResponse.data.data.length === 0) {
+        return { success: false, error: 'No Instagram business account found' };
+      }
+      
+      const instagramAccountId = accountResponse.data.data[0].id;
+      
+      // Create Instagram media object
+      const mediaResponse = await axios.post(
+        `https://graph.instagram.com/v18.0/${instagramAccountId}/media`,
+        {
+          caption: post.content,
+          image_url: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=1080&h=1080&fit=crop',
+          access_token: accessToken
+        }
+      );
+      
+      if (!mediaResponse.data.id) {
+        return { success: false, error: 'Failed to create Instagram media' };
+      }
+      
+      // Publish the media
+      const publishResponse = await axios.post(
+        `https://graph.instagram.com/v18.0/${instagramAccountId}/media_publish`,
+        {
+          creation_id: mediaResponse.data.id,
+          access_token: accessToken
+        }
+      );
+      
+      if (publishResponse.data && publishResponse.data.id) {
+        console.log(`✅ REAL Instagram post published: ${publishResponse.data.id}`);
+        return { 
+          success: true, 
+          platformPostId: publishResponse.data.id 
+        };
+      } else {
+        return { success: false, error: 'Instagram publish API returned no post ID' };
+      }
+      
+    } catch (error: any) {
+      console.error('Instagram API error:', error.response?.data || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.error?.message || error.message 
+      };
+    }
+  }
+
+  /**
+   * REAL LinkedIn Publishing using LinkedIn Marketing API
+   */
+  private static async realLinkedInPublish(post: any, connection: any): Promise<{success: boolean, platformPostId?: string, error?: string}> {
+    try {
+      const axios = require('axios');
+      
+      const accessToken = connection.accessToken;
+      if (!accessToken) {
+        return { success: false, error: 'LinkedIn access token missing' };
+      }
+      
+      // Get LinkedIn person ID
+      const profileResponse = await axios.get(
+        'https://api.linkedin.com/v2/people/~',
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      const personId = profileResponse.data.id;
+      
+      // Create LinkedIn share
+      const shareResponse = await axios.post(
+        'https://api.linkedin.com/v2/shares',
+        {
+          owner: `urn:li:person:${personId}`,
+          text: {
+            text: post.content
+          },
+          distribution: {
+            linkedInDistributionTarget: {}
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      if (shareResponse.data && shareResponse.data.id) {
+        console.log(`✅ REAL LinkedIn post published: ${shareResponse.data.id}`);
+        return { 
+          success: true, 
+          platformPostId: shareResponse.data.id 
+        };
+      } else {
+        return { success: false, error: 'LinkedIn API returned no post ID' };
+      }
+      
+    } catch (error: any) {
+      console.error('LinkedIn API error:', error.response?.data || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || error.message 
+      };
+    }
+  }
+
+  /**
+   * REAL X Publishing using X API v2
+   */
+  private static async realXPublish(post: any, connection: any): Promise<{success: boolean, platformPostId?: string, error?: string}> {
+    try {
+      const axios = require('axios');
+      const OAuth = require('oauth-1.0a');
+      const crypto = require('crypto');
+      
+      const accessToken = connection.accessToken;
+      const tokenSecret = connection.tokenSecret;
+      
+      if (!accessToken || !tokenSecret) {
+        return { success: false, error: 'X OAuth tokens missing' };
+      }
+      
+      // Set up OAuth 1.0a for X API
+      const oauth = OAuth({
+        consumer: {
+          key: process.env.X_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY,
+          secret: process.env.X_CONSUMER_SECRET || process.env.TWITTER_CONSUMER_SECRET
+        },
+        signature_method: 'HMAC-SHA1',
+        hash_function(base_string, key) {
+          return crypto.createHmac('sha1', key).update(base_string).digest('base64');
+        }
+      });
+      
+      const requestData = {
+        url: 'https://api.twitter.com/2/tweets',
+        method: 'POST'
+      };
+      
+      const token = {
+        key: accessToken,
+        secret: tokenSecret
+      };
+      
+      // Create X tweet
+      const tweetResponse = await axios.post(
+        'https://api.twitter.com/2/tweets',
+        {
+          text: post.content.substring(0, 280) // X character limit
+        },
+        {
+          headers: {
+            ...oauth.toHeader(oauth.authorize(requestData, token)),
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      if (tweetResponse.data && tweetResponse.data.data && tweetResponse.data.data.id) {
+        console.log(`✅ REAL X post published: ${tweetResponse.data.data.id}`);
+        return { 
+          success: true, 
+          platformPostId: tweetResponse.data.data.id 
+        };
+      } else {
+        return { success: false, error: 'X API returned no tweet ID' };
+      }
+      
+    } catch (error: any) {
+      console.error('X API error:', error.response?.data || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || error.message 
+      };
+    }
+  }
+
+  /**
+   * REAL YouTube Publishing using YouTube Data API v3
+   */
+  private static async realYouTubePublish(post: any, connection: any): Promise<{success: boolean, platformPostId?: string, error?: string}> {
+    try {
+      const axios = require('axios');
+      
+      const accessToken = connection.accessToken;
+      if (!accessToken) {
+        return { success: false, error: 'YouTube access token missing' };
+      }
+      
+      // Create YouTube community post
+      const communityResponse = await axios.post(
+        'https://www.googleapis.com/youtube/v3/activities',
+        {
+          snippet: {
+            description: post.content
+          },
+          status: {
+            privacyStatus: 'public'
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          params: {
+            part: 'snippet,status'
+          }
+        }
+      );
+      
+      if (communityResponse.data && communityResponse.data.id) {
+        console.log(`✅ REAL YouTube post published: ${communityResponse.data.id}`);
+        return { 
+          success: true, 
+          platformPostId: communityResponse.data.id 
+        };
+      } else {
+        return { success: false, error: 'YouTube API returned no post ID' };
+      }
+      
+    } catch (error: any) {
+      console.error('YouTube API error:', error.response?.data || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.error?.message || error.message 
+      };
     }
   }
 

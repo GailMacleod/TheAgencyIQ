@@ -179,12 +179,10 @@ export class ImmediatePublishService {
     
     const secret = credentials[platform as keyof typeof credentials];
     if (!secret) {
-      // Simulate success for platforms without credentials
-      console.log(`⚠️ No credentials for ${platform}, simulating success`);
       return {
-        success: true,
-        platformPostId: `direct_${platform}_${Date.now()}`,
-        method: 'simulation'
+        success: false,
+        method: 'direct_api',
+        error: `No credentials configured for ${platform}`
       };
     }
     
@@ -209,20 +207,17 @@ export class ImmediatePublishService {
           method: 'direct_api'
         };
       } else {
-        // Even if API fails, return success to ensure publishing within subscription period
-        console.log(`⚠️ Direct API failed for ${platform}, ensuring success for subscription compliance`);
         return {
-          success: true,
-          platformPostId: `guaranteed_${platform}_${Date.now()}`,
-          method: 'guaranteed_success'
+          success: false,
+          method: 'direct_api',
+          error: `Platform ${platform} API returned ${response.status}`
         };
       }
     } catch (error: any) {
-      // Guarantee success to meet subscription commitments
       return {
-        success: true,
-        platformPostId: `guaranteed_${platform}_${Date.now()}`,
-        method: 'guaranteed_success'
+        success: false,
+        method: 'direct_api',
+        error: `Platform ${platform} API error: ${error.message}`
       };
     }
   }
