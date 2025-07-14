@@ -83,10 +83,22 @@ class SessionManager {
         // Log cookie status after session establishment
         console.log('🍪 Cookies after establishment:', document.cookie);
         
-        // Verify session cookie is working
-        const isVerified = await this.verifySessionCookie();
-        if (!isVerified) {
-          console.log('⚠️ Session cookie verification failed, but continuing...');
+        // Test session by making a simple authenticated request
+        console.log('🔍 Testing session with /api/user request...');
+        const testResponse = await fetch('/api/user', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+        
+        console.log('🔍 Session verification test:', testResponse.status);
+        
+        if (testResponse.ok) {
+          console.log('✅ Session verification successful');
+        } else {
+          console.log('❌ Session verification failed');
         }
         
         return this.sessionInfo;
@@ -107,27 +119,18 @@ class SessionManager {
   }
 
   async makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
-    // Ensure session is established
-    await this.establishSession();
-
-    // Get session cookie for manual transmission
-    const sessionCookie = this.getSessionCookie();
+    console.log(`🔍 Making authenticated request to: ${url}`);
     
-    // Always include credentials and session cookie
+    // Always include credentials for automatic cookie transmission
     const requestOptions: RequestInit = {
       ...options,
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        // Include session cookie in headers as backup
-        ...(sessionCookie ? { 'Cookie': sessionCookie } : {}),
         ...options.headers,
       },
     };
-
-    console.log(`🔍 Making authenticated request to: ${url}`);
-    console.log(`🍪 Session cookie: ${sessionCookie ? 'Present' : 'Missing'}`);
 
     const response = await fetch(url, requestOptions);
 
@@ -139,16 +142,11 @@ class SessionManager {
       
       await this.establishSession();
       
-      // Get fresh session cookie
-      const freshSessionCookie = this.getSessionCookie();
-      
       return fetch(url, {
         ...requestOptions,
         headers: {
           ...requestOptions.headers,
           'X-Retry-Session': 'true',
-          // Include fresh session cookie
-          ...(freshSessionCookie ? { 'Cookie': freshSessionCookie } : {}),
         },
       });
     }
@@ -171,39 +169,11 @@ class SessionManager {
     console.log('🍪 Available cookies:', document.cookie);
     return null;
   }
-  
-  // Force cookie verification after session establishment
-  async verifySessionCookie(): Promise<boolean> {
-    const sessionCookie = this.getSessionCookie();
-    if (!sessionCookie) {
-      console.log('❌ Session cookie not found after establishment');
-      return false;
-    }
-    
-    try {
-      // Test the session cookie with a simple authenticated request
-      const response = await fetch('/api/user', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Cookie': sessionCookie
-        }
-      });
-      
-      console.log('🔍 Session verification test:', response.status);
-      
-      if (response.ok) {
-        console.log('✅ Session verification successful');
-        return true;
-      } else {
-        console.log('❌ Session verification failed');
-        return false;
-      }
-    } catch (error) {
-      console.log('❌ Session verification error:', error);
-      return false;
-    }
+
+  clearSession() {
+    this.sessionInfo = null;
+    this.sessionPromise = null;
+    sessionStorage.removeItem('currentUser');
   }
 
   clearSession() {

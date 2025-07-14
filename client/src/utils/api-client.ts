@@ -13,8 +13,18 @@ class ApiClient {
   async makeRequest(url: string, options: RequestInit = {}): Promise<Response> {
     const fullUrl = `${this.baseURL}${url}`;
     
-    // Use session manager for authenticated requests
-    return await sessionManager.makeAuthenticatedRequest(fullUrl, options);
+    // Ensure credentials are always included for cookie transmission
+    const requestOptions: RequestInit = {
+      ...options,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...options.headers
+      }
+    };
+    
+    return await fetch(fullUrl, requestOptions);
   }
 
   async get(url: string, options: RequestInit = {}): Promise<Response> {

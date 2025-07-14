@@ -171,11 +171,9 @@ async function startServer() {
     }
   });
 
-  // CORS middleware with credentials support
+  // CORS middleware with credentials support - FIXED FOR COOKIE TRANSMISSION
   app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? ['https://app.theagencyiq.ai', 'https://theagencyiq.ai']
-      : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173', 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'],
+    origin: true, // Allow all origins for proper cookie handling
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Source', 'X-Retry-Session', 'Cookie'],
@@ -184,7 +182,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Enhanced session configuration for cookie persistence
+  // Enhanced session configuration for cookie persistence - FIXED FOR CLIENT ACCESS
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -194,11 +192,10 @@ async function startServer() {
     cookie: { 
       secure: false, // Must be false for development
       maxAge: sessionTtl,
-      httpOnly: false, // Allow frontend access
+      httpOnly: false, // Allow JavaScript access for client visibility
       sameSite: 'lax',
       path: '/',
-      domain: undefined,
-      signed: true // Enable signed cookies for security
+      domain: undefined
     },
     rolling: false,
     proxy: true,
