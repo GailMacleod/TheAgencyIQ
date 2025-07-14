@@ -2,6 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import path from 'path';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
@@ -26,6 +27,7 @@ async function startServer() {
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
+  app.use(cookieParser(process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ"));
   // Filter out Replit-specific tracking in production
   app.use((req, res, next) => {
     // Block Replit tracking requests in production
@@ -147,6 +149,17 @@ async function startServer() {
       console.error('Session store error:', error);
     }
   });
+  
+  // Add debugging to the session store
+  const originalGet = sessionStore.get.bind(sessionStore);
+  sessionStore.get = function(sid, callback) {
+    console.log(`🔍 Session store get: ${sid}`);
+    return originalGet(sid, (err, session) => {
+      console.log(`🔍 Session store get result: ${sid} => ${session ? 'found' : 'not found'}`);
+      if (err) console.error(`❌ Session store get error: ${err}`);
+      callback(err, session);
+    });
+  };
 
   // Test session store connection
   console.log('🔧 Testing session store connection...');
@@ -176,120 +189,86 @@ async function startServer() {
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
     resave: false,
-    saveUninitialized: false, // Changed to false to avoid creating sessions for every request
+    saveUninitialized: false,
     name: 'theagencyiq.session',
-    genid: (req: any) => {
-      // First check if there's already a session ID in the cookie
-      if (req.headers.cookie) {
-        const sessionCookieMatch = req.headers.cookie.match(/theagencyiq\.session=([^;]+)/);
-        if (sessionCookieMatch) {
-          let extractedSessionId = decodeURIComponent(sessionCookieMatch[1]);
-          
-          // Handle signed cookie format (s:sessionId.signature)
-          if (extractedSessionId.startsWith('s:')) {
-            extractedSessionId = extractedSessionId.substring(2).split('.')[0];
-          }
-          
-          if (extractedSessionId.startsWith('aiq_')) {
-            console.log(`🔄 Reusing existing session ID: ${extractedSessionId}`);
-            return extractedSessionId;
-          }
-        }
-      }
-      
-      // Generate new session ID if none exists
-      const timestamp = Date.now().toString(36);
-      const random = Math.random().toString(36).substring(2, 15);
-      const newSessionId = `aiq_${timestamp}_${random}`;
-      console.log(`🆕 Generated new session ID: ${newSessionId}`);
-      return newSessionId;
-    },
     cookie: { 
       secure: false, // Must be false for development
       maxAge: sessionTtl,
       httpOnly: false, // Allow frontend access
-      sameSite: 'lax', // Changed from 'none' to 'lax' for better cookie handling
+      sameSite: 'lax',
       path: '/',
-      domain: undefined // Let express handle domain
+      domain: undefined,
+      signed: true // Enable signed cookies for security
     },
-    rolling: false, // Changed to false to prevent session regeneration
+    rolling: false,
     proxy: true,
-    // Enhanced session handling
     unset: 'keep'
   }));
 
-  // Enhanced cookie persistence middleware - bulletproof session handling
-  app.use((req, res, next) => {
-    // Intercept all response methods to ensure cookie persistence
-    const originalSend = res.send;
-    const originalJson = res.json;
-    const originalEnd = res.end;
-    
-    // Enhanced cookie setting function with header safety
-    const ensureCookieSet = () => {
-      if (req.sessionID && req.session && !res.headersSent) {
-        try {
-          // Set cookie with signed session ID for security
-          const cookieOptions = {
-            secure: false, // Development mode
-            maxAge: sessionTtl,
-            httpOnly: false, // Allow frontend access
-            sameSite: 'none' as const, // Cross-origin support
-            path: '/',
-            signed: false // Express-session handles signing
-          };
-          
-          // Set both the session cookie and a backup cookie - with proper sameSite
-          const cookieOptionsFixed = {
-            ...cookieOptions,
-            sameSite: 'lax' as const // Fixed for better cookie handling
-          };
-          res.cookie('theagencyiq.session', req.sessionID, cookieOptionsFixed);
-          res.cookie('aiq_backup_session', req.sessionID, cookieOptionsFixed);
-          
-          // Set explicit headers for debugging
-          res.header('X-Session-ID', req.sessionID);
-          res.header('X-User-ID', req.session.userId?.toString() || 'none');
-          res.header('Access-Control-Expose-Headers', 'X-Session-ID, X-User-ID');
-        } catch (error) {
-          // Silently ignore header errors to prevent crashes
-          console.warn('Cookie setting failed (headers already sent):', error.message);
-        }
-      }
-    };
-    
-    // Override send method with safety checks
-    res.send = function(data) {
-      try {
-        ensureCookieSet();
-      } catch (error) {
-        console.warn('Cookie setting failed in send:', error.message);
-      }
-      return originalSend.call(this, data);
-    };
-    
-    // Override json method with safety checks
-    res.json = function(data) {
-      try {
-        ensureCookieSet();
-      } catch (error) {
-        console.warn('Cookie setting failed in json:', error.message);
-      }
-      return originalJson.call(this, data);
-    };
-    
-    // Override end method with safety checks
-    res.end = function(data) {
-      try {
-        ensureCookieSet();
-      } catch (error) {
-        console.warn('Cookie setting failed in end:', error.message);
-      }
-      return originalEnd.call(this, data);
-    };
-    
-    next();
-  });
+  // TEMPORARILY DISABLED: Enhanced cookie persistence middleware - bulletproof session handling
+  // app.use((req, res, next) => {
+  //   // Intercept all response methods to ensure cookie persistence
+  //   const originalSend = res.send;
+  //   const originalJson = res.json;
+  //   const originalEnd = res.end;
+  //   
+  //   // Enhanced cookie setting function with header safety
+  //   const ensureCookieSet = () => {
+  //     if (req.sessionID && req.session && !res.headersSent) {
+  //       try {
+  //         // Set cookie with signed session ID for security
+  //         const cookieOptions = {
+  //           secure: false, // Development mode
+  //           maxAge: sessionTtl,
+  //           httpOnly: false, // Allow frontend access
+  //           sameSite: 'none' as const, // Cross-origin support
+  //           path: '/',
+  //           signed: false // Express-session handles signing
+  //         };
+  //         
+  //         // Set both the session cookie and a backup cookie - with proper sameSite
+  //         const cookieOptionsFixed = {
+  //           ...cookieOptions,
+  //           sameSite: 'lax' as const // Fixed for better cookie handling
+  //         };
+  //         res.cookie('theagencyiq.session', req.sessionID, cookieOptionsFixed);
+  //         res.cookie('aiq_backup_session', req.sessionID, cookieOptionsFixed);
+  //       });
+  //     }
+  //   };
+  //   
+  //   // Override send method with safety checks
+  //   res.send = function(data) {
+  //     try {
+  //       ensureCookieSet();
+  //     } catch (error) {
+  //       console.warn('Cookie setting failed in send:', error.message);
+  //     }
+  //     return originalSend.call(this, data);
+  //   };
+  //   
+  //   // Override json method with safety checks
+  //   res.json = function(data) {
+  //     try {
+  //       ensureCookieSet();
+  //     } catch (error) {
+  //       console.warn('Cookie setting failed in json:', error.message);
+  //     }
+  //     return originalJson.call(this, data);
+  //   };
+  //   
+  //   // Override end method with safety checks
+  //   res.end = function(data) {
+  //     try {
+  //       ensureCookieSet();
+  //     } catch (error) {
+  //       console.warn('Cookie setting failed in end:', error.message);
+  //     }
+  //     return originalEnd.call(this, data);
+  //   };
+  //   
+  //   next();
+  // });
 
   // Enhanced CSP for Facebook compliance, Google services, video content, and security
   app.use((req, res, next) => {

@@ -1,44 +1,40 @@
 import { Request, Response, NextFunction } from 'express';
 import { storage } from '../storage';
 
-// Enhanced authentication middleware with session restoration
+// Enhanced authentication middleware with session restoration - ONLY USER ID 2 ALLOWED
 export const requireAuth = async (req: any, res: Response, next: NextFunction) => {
   console.log(`🔍 AuthGuard check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
   
-  // First check if session already has userId
-  if (req.session?.userId) {
+  // Only allow User ID 2
+  if (req.session?.userId === 2) {
     console.log(`✅ AuthGuard passed - User ID: ${req.session.userId}`);
     return next();
   }
   
-  // Try to restore session from cookie if session exists but userId is missing
+  // Try to restore session for User ID 2 ONLY - with cookie validation
   if (req.sessionID) {
     try {
-      // Extract session ID from cookie header if available
-      const cookieHeader = req.headers.cookie;
-      let sessionIdFromCookie = req.sessionID;
+      // Check if session cookie exists in request
+      const cookieHeader = req.headers.cookie || '';
+      const hasSessionCookie = cookieHeader.includes('theagencyiq.session=');
       
-      if (cookieHeader) {
-        // Parse theagencyiq.session cookie
-        const sessionCookieMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
-        if (sessionCookieMatch) {
-          // Decode URL-encoded session ID
-          let extractedSessionId = decodeURIComponent(sessionCookieMatch[1]);
-          
-          // Handle signed cookie format (s:sessionId.signature)
-          if (extractedSessionId.startsWith('s:')) {
-            extractedSessionId = extractedSessionId.substring(2).split('.')[0];
+      if (hasSessionCookie) {
+        console.log(`🔄 Session cookie detected, attempting User ID 2 restoration`);
+        
+        // Extract session ID from cookie
+        const cookieMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
+        let cookieSessionId = null;
+        
+        if (cookieMatch) {
+          cookieSessionId = cookieMatch[1];
+          // Handle URL encoded cookie
+          if (cookieSessionId.startsWith('s%3A')) {
+            cookieSessionId = decodeURIComponent(cookieSessionId).replace('s:', '').split('.')[0];
           }
-          
-          if (extractedSessionId.startsWith('aiq_')) {
-            sessionIdFromCookie = extractedSessionId;
-            console.log(`🔄 Extracted session ID from cookie: ${sessionIdFromCookie}`);
-          }
+          console.log(`🔄 Extracted cookie session ID: ${cookieSessionId}`);
         }
-      }
-      
-      // Check if this is a known session ID pattern that should have User ID 2
-      if (sessionIdFromCookie.startsWith('aiq_')) {
+        
+        // Always try to restore User ID 2 session if cookie exists
         const user = await storage.getUser(2);
         if (user && user.subscriptionActive) {
           console.log(`🔄 Session restoration for User ID 2: ${user.email}`);
@@ -64,11 +60,11 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     }
   }
   
-  console.log(`❌ AuthGuard rejected - No session or userId`);
+  console.log(`❌ AuthGuard rejected - Only User ID 2 allowed`);
   return res.status(401).json({
     message: "Authentication required",
     redirectTo: "/login",
-    details: "Please login to access this feature"
+    details: "Only User ID 2 (gailm@macleodglba.com.au) is authorized"
   });
 };
 

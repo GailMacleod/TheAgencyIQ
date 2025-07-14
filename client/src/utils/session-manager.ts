@@ -81,7 +81,10 @@ class SessionManager {
         
         return this.sessionInfo;
       } else {
-        throw new Error('Session establishment failed');
+        // If session establishment fails, throw error - NO GUEST ACCESS
+        console.error('Session establishment failed with status:', response.status);
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Session establishment failed');
       }
     } catch (error) {
       console.error('Session establishment error:', error);
