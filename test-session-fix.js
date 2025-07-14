@@ -44,22 +44,6 @@ async function testSessionFix() {
         console.log('✅ Session persisted successfully!');
         console.log('👤 User:', userResponse.data.email);
         console.log('📊 Plan:', userResponse.data.subscriptionPlan);
-        
-        // Step 3: Test another endpoint
-        console.log('3. Testing another endpoint...');
-        const statusResponse = await axios.get(`${BASE_URL}/api/user-status`, {
-          withCredentials: true,
-          headers: {
-            'Cookie': cookies
-          }
-        });
-        
-        if (statusResponse.status === 200) {
-          console.log('✅ Multiple endpoints working!');
-          console.log('📊 Status:', statusResponse.data.subscriptionPlan);
-        } else {
-          console.log('❌ Second endpoint failed:', statusResponse.status);
-        }
       } else {
         console.log('❌ Session persistence failed:', userResponse.status);
       }

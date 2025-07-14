@@ -182,7 +182,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Enhanced session configuration for cookie persistence - FIXED FOR HTTPS/SECURE COOKIES
+  // Simple session configuration
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -190,12 +190,11 @@ async function startServer() {
     saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: true, // HTTPS only - required for production
+      secure: false,
       maxAge: sessionTtl,
-      httpOnly: false, // Allow JavaScript access for debugging
-      sameSite: 'none', // Cross-origin compatibility with secure flag
-      path: '/',
-      domain: undefined
+      httpOnly: false,
+      sameSite: 'lax',
+      path: '/'
     },
     rolling: false,
     proxy: true,
@@ -210,33 +209,36 @@ async function startServer() {
     console.log(`📋 User ID: ${req.session?.userId}`);
     console.log(`📋 Session Cookie: ${req.headers.cookie ? 'EXISTS' : 'MISSING'}`);
     
-    // Force cookie persistence on every response
-    if (req.sessionID) {
+    // Force cookie persistence on every response with safety checks
+    if (req.sessionID && !res.headersSent) {
       const originalSend = res.send;
       const originalJson = res.json;
       const originalEnd = res.end;
 
       res.send = function(data) {
-        // Force Set-Cookie header with proper attributes
-        res.setHeader('Set-Cookie', [
-          `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=true; SameSite=None`
-        ]);
+        if (!res.headersSent) {
+          res.setHeader('Set-Cookie', [
+            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=false; SameSite=lax`
+          ]);
+        }
         return originalSend.call(this, data);
       };
 
       res.json = function(data) {
-        // Force Set-Cookie header with proper attributes
-        res.setHeader('Set-Cookie', [
-          `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=true; SameSite=None`
-        ]);
+        if (!res.headersSent) {
+          res.setHeader('Set-Cookie', [
+            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=false; SameSite=lax`
+          ]);
+        }
         return originalJson.call(this, data);
       };
 
       res.end = function(data) {
-        // Force Set-Cookie header with proper attributes
-        res.setHeader('Set-Cookie', [
-          `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=true; SameSite=None`
-        ]);
+        if (!res.headersSent) {
+          res.setHeader('Set-Cookie', [
+            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=false; SameSite=lax`
+          ]);
+        }
         return originalEnd.call(this, data);
       };
     }

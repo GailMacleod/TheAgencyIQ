@@ -2156,6 +2156,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (targetUser) {
           req.session.userId = targetUser.id;
+          req.session.userEmail = targetUser.email;
+          req.session.subscriptionPlan = targetUser.subscriptionPlan;
+          req.session.subscriptionActive = targetUser.subscriptionActive;
+          
+          // Use the session mapping system
+          const { setSessionMapping } = await import('../middleware/authGuard');
+          setSessionMapping(req.sessionID, targetUser.id);
+          
           await new Promise<void>((resolve, reject) => {
             req.session.save((err: any) => {
               if (err) reject(err);
@@ -2165,15 +2173,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`Session established for ${targetUser.email} (ID: ${targetUser.id})`);
           
-          // Log successful session establishment
-          loggingService.logUserLogin(
-            targetUser.id,
-            targetUser.email,
-            req.sessionID,
-            true,
-            { action: 'session_establishment', method: email ? 'email' : 'phone' },
-            undefined
-          );
+          // Log successful session establishment (skip logging if service fails)
+          try {
+            loggingService.logUserLogin(
+              targetUser.id,
+              targetUser.email,
+              req.sessionID,
+              true,
+              { action: 'session_establishment', method: email ? 'email' : 'phone' },
+              undefined
+            );
+          } catch (logError) {
+            console.log('Logging service unavailable, continuing without logging');
+          }
           
           // Ensure proper cookie headers are set and force cookie transmission
           res.header('Access-Control-Allow-Credentials', 'true');
@@ -2298,10 +2310,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             targetUser = await storage.getUser(testUserId);
             if (!targetUser) {
               const newUser = await storage.createUser({
-                userId: phone || `+61400000${testUserId.toString().padStart(3, '0')}`,
+                userId: phone || `+61400${testUserId.toString().padStart(6, '0')}`,
                 email: email,
                 password: 'test_password_hash', // Test password
-                phone: phone,
+                phone: phone || `+61400${testUserId.toString().padStart(6, '0')}`,
                 subscriptionPlan: 'basic',
                 subscriptionActive: true,
                 remainingPosts: 10,
