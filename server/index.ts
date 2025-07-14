@@ -182,7 +182,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Enhanced session configuration for cookie persistence - FIXED FOR CLIENT ACCESS
+  // Enhanced session configuration for cookie persistence - FIXED FOR HTTPS/SECURE COOKIES
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -190,10 +190,10 @@ async function startServer() {
     saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: false, // Always false for development compatibility
+      secure: true, // HTTPS only - required for production
       maxAge: sessionTtl,
-      httpOnly: false, // Allow JavaScript access for client visibility
-      sameSite: 'lax', // Always lax for development compatibility
+      httpOnly: false, // Allow JavaScript access for debugging
+      sameSite: 'none', // Cross-origin compatibility with secure flag
       path: '/',
       domain: undefined
     },
@@ -209,6 +209,38 @@ async function startServer() {
     console.log(`📋 Session ID: ${req.sessionID}`);
     console.log(`📋 User ID: ${req.session?.userId}`);
     console.log(`📋 Session Cookie: ${req.headers.cookie ? 'EXISTS' : 'MISSING'}`);
+    
+    // Force cookie persistence on every response
+    if (req.sessionID) {
+      const originalSend = res.send;
+      const originalJson = res.json;
+      const originalEnd = res.end;
+
+      res.send = function(data) {
+        // Force Set-Cookie header with proper attributes
+        res.setHeader('Set-Cookie', [
+          `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=true; SameSite=None`
+        ]);
+        return originalSend.call(this, data);
+      };
+
+      res.json = function(data) {
+        // Force Set-Cookie header with proper attributes
+        res.setHeader('Set-Cookie', [
+          `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=true; SameSite=None`
+        ]);
+        return originalJson.call(this, data);
+      };
+
+      res.end = function(data) {
+        // Force Set-Cookie header with proper attributes
+        res.setHeader('Set-Cookie', [
+          `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=true; SameSite=None`
+        ]);
+        return originalEnd.call(this, data);
+      };
+    }
+    
     next();
   });
 
