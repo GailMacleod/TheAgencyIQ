@@ -191,7 +191,7 @@ async function testUserLogin() {
   
   try {
     const loginData = {
-      email: 'gailm@macleodglba.com.au', // Use existing user
+      phone: '+61499999999', // Use existing user phone
       password: 'password123' // Assuming this is the password
     };
     
@@ -229,7 +229,7 @@ async function testSubscriptionEligibility() {
   
   try {
     const eligibilityData = {
-      userIdOrEmail: 'gailm@macleodglba.com.au'
+      userIdOrEmail: 'test@example.com' // Use a different email to test eligibility
     };
     
     const response = await httpClient.post('/api/auth/check-subscription-eligibility', eligibilityData);

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-14T22:25:39.210Z",
+  "timestamp": "2025-07-14T22:50:35.091Z",
   "testResults": {
     "sessionEstablishment": {
       "status": "passed",
@@ -10,30 +10,30 @@
       "error": null
     },
     "userSignup": {
-      "status": "failed",
-      "error": "Request failed with status code 400"
+      "status": "passed",
+      "error": null
     },
     "userLogin": {
-      "status": "pending",
+      "status": "passed",
       "error": null
     },
     "subscriptionEligibility": {
-      "status": "pending",
+      "status": "passed",
       "error": null
     },
     "sessionActivityTracking": {
-      "status": "pending",
+      "status": "passed",
       "error": null
     },
     "endToEndFlow": {
-      "status": "pending",
+      "status": "passed",
       "error": null
     }
   },
   "summary": {
     "totalTests": 7,
-    "passedTests": 2,
-    "failedTests": 1,
-    "successRate": 29
+    "passedTests": 7,
+    "failedTests": 0,
+    "successRate": 100
   }
 }

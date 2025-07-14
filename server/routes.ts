@@ -3280,14 +3280,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User login endpoint - AUTHENTICATE EXISTING USERS
   app.post("/api/auth/login", async (req: any, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, phone, password } = req.body;
       
-      if (!email || !password) {
-        return res.status(400).json({ success: false, message: 'Email and password required' });
+      if (!password) {
+        return res.status(400).json({ success: false, message: 'Password is required' });
       }
       
-      // Authenticate user
-      const authResult = await userSignupService.authenticateUser(email, password);
+      if (!email && !phone) {
+        return res.status(400).json({ success: false, message: 'Email or phone is required' });
+      }
+      
+      // Authenticate user (support both email and phone)
+      const authResult = await userSignupService.authenticateUser(email || phone, password);
       
       if (authResult.success && authResult.user) {
         // Get IP address and user agent for session tracking
