@@ -66,45 +66,6 @@ interface CustomRequest extends Request {
 
 // OAuth token revocation functionality moved to DataCleanupService
 
-// SECURITY: Guest access prevention
-const preventGuestAccess = (req: any, res: Response, next: NextFunction) => {
-  const allowedPaths = ['/api/health', '/api/session-debug', '/api/deletion-status', '/facebook-data-deletion', '/api/user', '/api/auth/session', '/api/auth/establish-session', '/api/login'];
-  
-  // Debug logging for complete-phone-verification specifically
-  if (req.path === '/api/complete-phone-verification') {
-    console.log('🔍 MIDDLEWARE DEBUG: Processing /api/complete-phone-verification');
-    console.log('Request path:', req.path);
-    console.log('Request method:', req.method);
-  }
-  
-  // Allow health checks, debugging, and essential auth endpoints
-  if (allowedPaths.some(path => req.path.startsWith(path))) {
-    return next();
-  }
-  
-  // Block any user creation attempts
-  const blockedPaths = [
-    '/api/signup', 
-    '/api/register', 
-    '/api/auth/signup',
-    '/api/verify-and-signup', 
-    '/api/send-verification-code', 
-    '/api/redeem-gift-certificate',
-    '/api/create-account',
-    '/api/complete-phone-verification'
-  ];
-  
-  if (blockedPaths.some(path => req.path.includes(path))) {
-    console.log('🚨 SECURITY ALERT: Guest account creation attempt blocked:', req.path);
-    return res.status(403).json({
-      message: "Guest access not allowed",
-      details: "Only User ID 2 (gailm@macleodglba.com.au) is authorized to access this system"
-    });
-  }
-  
-  next();
-};
-
 // Environment validation
 // Stripe validation removed to allow server startup
 
@@ -219,9 +180,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add JSON middleware
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-  
-  // SECURITY: Apply guest access prevention
-  app.use(preventGuestAccess);
   
   // Session debugging middleware (NO AUTO-ESTABLISHMENT)
   app.use(async (req: any, res: any, next: any) => {
@@ -2419,22 +2377,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // SECURITY: Send verification code endpoint blocked - Only User ID 2 allowed
+  // Send verification code
   app.post("/api/send-verification-code", async (req, res) => {
-    console.log('🚨 SECURITY ALERT: Guest verification code attempt blocked at /api/send-verification-code');
-    return res.status(403).json({
-      message: "Guest access not allowed",
-      details: "Only User ID 2 (gailm@macleodglba.com.au) is authorized to access this system"
-    });
+    try {
+      const { phone } = req.body;
+      
+      if (!phone) {
+        return res.status(400).json({ message: "Phone number is required" });
+      }
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      await storage.createVerificationCode({
+        phone,
+        code,
+        expiresAt,
+      });
+
+      // Enhanced SMS sending with fallback
+      try {
+        if (phone === '+15005550006' || phone.startsWith('+1500555')) {
+          // Test numbers - log code for development
+          console.log(`Verification code for test number ${phone}: ${code}`);
+        } else if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+          // Send SMS via Twilio
+          await twilioClient.messages.create({
+            body: `Your AgencyIQ verification code is: ${code}. Valid for 10 minutes.`,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            to: phone
+          });
+          console.log(`SMS verification code sent to ${phone}`);
+        } else {
+          // Fallback for missing Twilio config - log code for testing
+          console.log(`Twilio not configured. Verification code for ${phone}: ${code}`);
+        }
+      } catch (smsError: any) {
+        console.error('SMS sending failed:', smsError);
+        // Still allow verification to proceed - log code for manual verification
+        console.log(`SMS failed. Manual verification code for ${phone}: ${code}`);
+      }
+
+      res.json({ 
+        message: "Verification code sent", 
+        testMode: phone.startsWith('+1500555') || !process.env.TWILIO_ACCOUNT_SID 
+      });
+    } catch (error: any) {
+      console.error('SMS error:', error);
+      res.status(500).json({ message: "Error sending verification code" });
+    }
   });
 
-  // SECURITY: Complete phone verification endpoint blocked - Only User ID 2 allowed
+  // Complete phone verification and create account
   app.post("/api/complete-phone-verification", async (req, res) => {
-    console.log('🚨 SECURITY ALERT: Guest phone verification attempt blocked at /api/complete-phone-verification');
-    return res.status(403).json({
-      message: "Guest access not allowed",
-      details: "Only User ID 2 (gailm@macleodglba.com.au) is authorized to access this system"
-    });
+    try {
+      const { phone, code, password } = req.body;
+      
+      if (!phone || !code || !password) {
+        return res.status(400).json({ message: "Phone, code, and password are required" });
+      }
+
+      // Verify the SMS code
+      const storedCode = verificationCodes.get(phone);
+      if (!storedCode) {
+        return res.status(400).json({ message: "No verification code found for this phone number" });
+      }
+
+      if (storedCode.expiresAt < new Date()) {
+        verificationCodes.delete(phone);
+        return res.status(400).json({ message: "Verification code has expired" });
+      }
+
+      if (storedCode.code !== code) {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+
+      // Check for pending payment in session
+      const pendingPayment = req.session.pendingPayment;
+      if (!pendingPayment) {
+        return res.status(400).json({ message: "No pending payment found. Please complete payment first." });
+      }
+
+      // Create user account with verified phone number
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      const user = await storage.createUser({
+        userId: phone, // Phone number is the unique identifier  
+        email: pendingPayment.email,
+        password: hashedPassword,
+        phone: phone,
+        subscriptionPlan: pendingPayment.plan,
+        subscriptionStart: new Date(),
+        stripeCustomerId: pendingPayment.stripeCustomerId,
+        stripeSubscriptionId: pendingPayment.stripeSubscriptionId,
+        remainingPosts: pendingPayment.remainingPosts,
+        totalPosts: pendingPayment.totalPosts
+      });
+
+      // Initialize post count ledger for the user
+      console.log(`Initializing quota for ${phone} with ${pendingPayment.plan} plan`);
+
+      // Clean up verification code and pending payment
+      verificationCodes.delete(phone);
+      delete req.session.pendingPayment;
+
+      // CRITICAL: Log the user in with proper user ID assignment
+      req.session.userId = user.id;
+      console.log(`User ID assigned to session: ${user.id} for ${user.email}`);
+      
+      req.session.save((err: any) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: "Account created but login failed" });
+        }
+        
+        console.log(`Account created and logged in: ${user.email} with phone ${phone}`);
+        res.json({ 
+          message: "Account created successfully",
+          user: {
+            id: user.id,
+            email: user.email,
+            phone: user.phone,
+            subscriptionPlan: user.subscriptionPlan
+          }
+        });
+      });
+
+    } catch (error: any) {
+      console.error('Phone verification completion error:', error);
+      res.status(500).json({ message: "Failed to complete verification" });
+    }
   });
 
   // Verify code and create user
@@ -2968,13 +3040,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // SECURITY: Guest signup endpoint blocked - Only User ID 2 allowed
   app.post("/api/verify-and-signup", async (req, res) => {
-    console.log('🚨 SECURITY ALERT: Guest signup attempt blocked at /api/verify-and-signup');
-    return res.status(403).json({
-      message: "Guest access not allowed",
-      details: "Only User ID 2 (gailm@macleodglba.com.au) is authorized to access this system"
-    });
+    try {
+      const { email, password, phone, code } = req.body;
+      
+      if (!email || !password || !phone || !code) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      // Verify the code
+      const verificationRecord = await storage.getVerificationCode(phone, code);
+      if (!verificationRecord || verificationRecord.expiresAt < new Date()) {
+        return res.status(400).json({ message: "Invalid or expired verification code" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create user without active subscription - requires payment or certificate
+      const user = await storage.createUser({
+        userId: phone, // Phone number as UID
+        email,
+        password: hashedPassword,
+        phone,
+        subscriptionPlan: null,
+        subscriptionStart: null,
+        remainingPosts: 0,
+        totalPosts: 0,
+        subscriptionSource: 'none',
+        subscriptionActive: false
+      });
+
+      // Mark verification code as used
+      await storage.markVerificationCodeUsed(verificationRecord.id);
+
+      // Set session and save
+      req.session.userId = user.id;
+      req.session.userEmail = user.email;
+      
+      req.session.save((err: any) => {
+        if (err) {
+          console.error('Session save error during signup:', err);
+        }
+        
+        console.log(`✅ New user created: ${user.email} (ID: ${user.id})`);
+        res.json({ 
+          user: { 
+            id: user.id, 
+            email: user.email, 
+            phone: user.phone,
+            subscriptionPlan: user.subscriptionPlan,
+            remainingPosts: user.remainingPosts
+          },
+          sessionEstablished: true,
+          message: "Account created successfully"
+        });
+      });
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      res.status(500).json({ message: "Error creating account" });
+    }
   });
 
   // Public session endpoint for anonymous access - allows frontend to get initial session
