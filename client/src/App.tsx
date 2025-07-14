@@ -4,7 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import SplashScreen from "@/components/splash-screen";
+
 import GrokWidget from "@/components/grok-widget";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 import NotFound from "@/pages/not-found";
@@ -126,21 +126,8 @@ function Router() {
 }
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
-
-  // Initialize Google Analytics and clear stale cache when app loads
+  // Initialize Google Analytics when app loads
   useEffect(() => {
-    // Clear any stale browser cache on startup to prevent auth issues
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('clearCache') === 'true') {
-      clearBrowserCache();
-      console.log('Browser cache cleared on startup');
-      // Remove clearCache parameter from URL
-      urlParams.delete('clearCache');
-      const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
-      window.history.replaceState({}, '', newUrl);
-    }
-    
     // Verify required environment variable is present
     if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
       console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
@@ -307,15 +294,9 @@ function App() {
       <TooltipProvider>
         <div className="app-container">
           <Toaster />
-          {showSplash ? (
-            <SplashScreen onComplete={() => setShowSplash(false)} />
-          ) : (
-            <>
-              <Router />
-              <OnboardingWizard />
-              <GrokWidget />
-            </>
-          )}
+          <Router />
+          <OnboardingWizard />
+          <GrokWidget />
         </div>
       </TooltipProvider>
     </QueryClientProvider>
