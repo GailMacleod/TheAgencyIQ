@@ -3,6 +3,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure body and html have proper background */
+html, body {
+  background-color: white;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  background-color: white;
+}
+
 @keyframes subtle-glow {
   0%, 100% {
     box-shadow: 0 0 5px rgba(59, 92, 255, 0.3);

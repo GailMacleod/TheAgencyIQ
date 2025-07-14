@@ -35,18 +35,22 @@ export default function Splash() {
 
   // Trigger animated reveal on page load
   useEffect(() => {
-    // Start animation after a short delay
-    const timer = setTimeout(() => {
-      setRevealAnimation(true);
-    }, 300);
+    // Start animation immediately to prevent black screen
+    setRevealAnimation(true);
     
-    return () => clearTimeout(timer);
+    // If we want animation, uncomment below:
+    // const timer = setTimeout(() => {
+    //   setRevealAnimation(true);
+    // }, 300);
+    // return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Animated Reveal Overlay */}
-      <div className="fixed inset-0 z-[100] pointer-events-none">
+    <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Animated Reveal Overlay - Fixed with proper z-index and timing */}
+      <div className={`fixed inset-0 z-[100] pointer-events-none transition-opacity duration-300 ${
+        revealAnimation ? 'opacity-0' : 'opacity-100'
+      }`}>
         {/* Left Panel */}
         <div 
           className={`absolute top-0 left-0 w-1/2 h-full bg-[#3B82F6] transition-transform duration-1000 ease-out ${
@@ -59,8 +63,6 @@ export default function Splash() {
             revealAnimation ? 'transform translate-x-full' : 'transform translate-x-0'
           }`}
         />
-        
-        
       </div>
 
       {/* Navigation */}
