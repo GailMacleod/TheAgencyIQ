@@ -34,6 +34,7 @@ import { linkedinTokenValidator } from './linkedin-token-validator';
 import { DirectPublishService } from './services/DirectPublishService';
 import { UnifiedOAuthService } from './services/UnifiedOAuthService';
 import { directTokenGenerator } from './services/DirectTokenGenerator';
+import { loggingService } from './logging-service';
 
 // Extended session types
 declare module 'express-session' {
@@ -1501,6 +1502,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   stripeCustomerId: customer.id
                 });
                 console.log(`✅ User ${user.id} linked to new ${plan} subscription`);
+                
+                // Log successful subscription creation via webhook
+                loggingService.logSubscriptionCreation(
+                  user.id,
+                  user.email,
+                  newSubscription.id,
+                  true,
+                  {
+                    plan,
+                    stripeCustomerId: customer.id,
+                    source: 'webhook',
+                    amount
+                  },
+                  undefined
+                );
               }
             } else {
               // No user found by email, check by phone for gailm@macleodglba.com.au
@@ -1963,6 +1979,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           console.log(`Session established for ${targetUser.email} (ID: ${targetUser.id})`);
+          
+          // Log successful session establishment
+          loggingService.logUserLogin(
+            targetUser.id,
+            targetUser.email,
+            req.sessionID,
+            true,
+            { action: 'session_establishment', method: email ? 'email' : 'phone' },
+            undefined
+          );
+          
           return res.json({ 
             success: true, 
             user: targetUser,
@@ -1995,6 +2022,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Subscription Details: ${knownUser.subscriptionPlan} plan, ${knownUser.remainingPosts}/${knownUser.totalPosts} posts remaining`);
         console.log(`Stripe Customer ID: ${knownUser.stripeCustomerId}, Subscription ID: ${knownUser.stripeSubscriptionId}`);
         console.log(`Session ID: ${req.sessionID}`);
+        
+        // Log professional subscription session establishment
+        loggingService.logUserLogin(
+          knownUser.id,
+          knownUser.email,
+          req.sessionID,
+          true,
+          { 
+            action: 'professional_session_establishment', 
+            subscriptionPlan: knownUser.subscriptionPlan,
+            quotaRemaining: knownUser.remainingPosts,
+            quotaTotal: knownUser.totalPosts
+          },
+          undefined
+        );
         
         // Ensure proper cookie headers are set and force cookie transmission
         res.header('Access-Control-Allow-Credentials', 'true');
@@ -8438,6 +8480,22 @@ Continue building your Value Proposition Canvas systematically.`;
               user.id,
               session.customer as string,
               session.subscription as string
+            );
+            
+            // Log successful subscription creation
+            loggingService.logSubscriptionCreation(
+              user.id,
+              user.email,
+              session.subscription as string,
+              true,
+              {
+                plan: planName,
+                stripeCustomerId: session.customer as string,
+                remainingPosts,
+                totalPosts,
+                paymentStatus: session.payment_status
+              },
+              undefined
             );
             
             // Update subscription plan details
