@@ -816,9 +816,8 @@ async function startServer() {
       console.log('✅ Production static files setup complete');
     } else {
       console.log('⚡ Setting up development Vite...');
-      const { setupVite, serveStatic } = await import('./vite');
+      const { setupVite } = await import('./vite');
       await setupVite(app, httpServer);
-      serveStatic(app);
       console.log('✅ Vite setup complete');
     }
   } catch (error) {
