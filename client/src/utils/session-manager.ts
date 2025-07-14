@@ -69,6 +69,7 @@ class SessionManager {
         
         console.log('✅ Session established:', data.user?.email || 'User authenticated');
         console.log('User ID:', data.user?.id);
+        console.log('Session ID:', data.sessionId);
         
         // Store in sessionStorage for debugging
         if (data.user) {
@@ -78,6 +79,9 @@ class SessionManager {
             phone: data.user.phone
           }));
         }
+        
+        // Log cookie status after session establishment
+        console.log('🍪 Cookies after establishment:', document.cookie);
         
         return this.sessionInfo;
       } else {
@@ -100,16 +104,24 @@ class SessionManager {
     // Ensure session is established
     await this.establishSession();
 
-    // Always include credentials and fresh session cookie
+    // Get session cookie for manual transmission
+    const sessionCookie = this.getSessionCookie();
+    
+    // Always include credentials and session cookie
     const requestOptions: RequestInit = {
       ...options,
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        // Include session cookie in headers as backup
+        ...(sessionCookie ? { 'Cookie': sessionCookie } : {}),
         ...options.headers,
       },
     };
+
+    console.log(`🔍 Making authenticated request to: ${url}`);
+    console.log(`🍪 Session cookie: ${sessionCookie ? 'Present' : 'Missing'}`);
 
     const response = await fetch(url, requestOptions);
 
@@ -121,11 +133,16 @@ class SessionManager {
       
       await this.establishSession();
       
+      // Get fresh session cookie
+      const freshSessionCookie = this.getSessionCookie();
+      
       return fetch(url, {
         ...requestOptions,
         headers: {
           ...requestOptions.headers,
           'X-Retry-Session': 'true',
+          // Include fresh session cookie
+          ...(freshSessionCookie ? { 'Cookie': freshSessionCookie } : {}),
         },
       });
     }

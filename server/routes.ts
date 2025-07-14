@@ -39,6 +39,8 @@ import { directTokenGenerator } from './services/DirectTokenGenerator';
 import { loggingService } from './services/logging-service';
 import { platformPostManager } from './services/platform-post-manager';
 import { realApiPublisher } from './services/real-api-publisher';
+import { userSignupService } from './services/user-signup-service';
+import { sessionActivityService } from './services/session-activity-service';
 
 // Extended session types
 declare module 'express-session' {
@@ -3153,11 +3155,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log(`🔍 Session establishment - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
       
+      // Get IP address and user agent for session tracking
+      const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.get('User-Agent') || 'unknown';
+      
       // If already authenticated with User ID 2, return existing session
       if (req.session?.userId === 2) {
         const user = await storage.getUser(2);
         if (user) {
           console.log(`✅ Existing session found for ${user.email} (ID: ${user.id})`);
+          
+          // Track session activity
+          sessionActivityService.trackActivity(req.sessionID, req.session.userId, ipAddress, userAgent, '/api/auth/establish-session');
+          
           return res.json({
             success: true,
             user: {
@@ -3192,6 +3202,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         });
         
+        // Track session activity
+        sessionActivityService.trackActivity(req.sessionID, user.id, ipAddress, userAgent, '/api/auth/establish-session');
+        
         console.log('✅ Session auto-established for User ID 2');
         return res.json({
           success: true,
@@ -3220,6 +3233,267 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: 'Session establishment failed' });
     }
   });
+
+  // ==================== COMPREHENSIVE USER SIGNUP SYSTEM ====================
+
+  // User signup endpoint - CREATE NEW USER ACCOUNTS
+  app.post("/api/auth/signup", async (req: any, res) => {
+    try {
+      const { email, phone, password, confirmPassword, userId } = req.body;
+      
+      const signupRequest = {
+        email,
+        phone,
+        password,
+        confirmPassword,
+        userId
+      };
+      
+      // Create new user account
+      const result = await userSignupService.createUser(signupRequest);
+      
+      if (result.success) {
+        // Log successful signup
+        console.log(`✅ New user account created: ${result.user?.email} (ID: ${result.user?.id})`);
+        
+        res.json({
+          success: true,
+          message: 'Account created successfully',
+          userId: result.user?.id,
+          email: result.user?.email,
+          nextStep: 'subscription'
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error || 'Signup failed',
+          validationErrors: result.validationErrors
+        });
+      }
+      
+    } catch (error) {
+      console.error('Signup error:', error);
+      res.status(500).json({ success: false, message: 'Signup failed' });
+    }
+  });
+
+  // User login endpoint - AUTHENTICATE EXISTING USERS
+  app.post("/api/auth/login", async (req: any, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ success: false, message: 'Email and password required' });
+      }
+      
+      // Authenticate user
+      const authResult = await userSignupService.authenticateUser(email, password);
+      
+      if (authResult.success && authResult.user) {
+        // Get IP address and user agent for session tracking
+        const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+        const userAgent = req.get('User-Agent') || 'unknown';
+        
+        // Establish session
+        req.session.userId = authResult.user.id;
+        req.session.userEmail = authResult.user.email;
+        req.session.subscriptionPlan = authResult.user.subscriptionPlan;
+        req.session.subscriptionActive = authResult.user.subscriptionActive;
+        
+        // Save session
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
+        // Track session activity
+        sessionActivityService.trackActivity(req.sessionID, authResult.user.id, ipAddress, userAgent, '/api/auth/login');
+        
+        console.log(`✅ User authenticated: ${authResult.user.email} (ID: ${authResult.user.id})`);
+        
+        res.json({
+          success: true,
+          user: {
+            id: authResult.user.id,
+            email: authResult.user.email,
+            phone: authResult.user.phone,
+            subscriptionPlan: authResult.user.subscriptionPlan,
+            subscriptionActive: authResult.user.subscriptionActive,
+            remainingPosts: authResult.user.remainingPosts,
+            totalPosts: authResult.user.totalPosts
+          },
+          sessionId: req.sessionID,
+          message: 'Login successful'
+        });
+      } else {
+        res.status(401).json({
+          success: false,
+          message: authResult.error || 'Authentication failed'
+        });
+      }
+      
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ success: false, message: 'Login failed' });
+    }
+  });
+
+  // Check subscription eligibility - VALIDATE USER BEFORE PAYMENT
+  app.post("/api/auth/check-subscription-eligibility", async (req: any, res) => {
+    try {
+      const { userIdOrEmail } = req.body;
+      
+      if (!userIdOrEmail) {
+        return res.status(400).json({ 
+          eligible: false, 
+          message: 'User ID or email required' 
+        });
+      }
+      
+      // Check eligibility
+      const eligibility = await userSignupService.checkSubscriptionEligibility(userIdOrEmail);
+      
+      if (eligibility.eligible) {
+        console.log(`✅ Subscription eligibility confirmed for user: ${eligibility.email} (ID: ${eligibility.userId})`);
+        
+        res.json({
+          eligible: true,
+          userId: eligibility.userId,
+          email: eligibility.email,
+          message: 'User is eligible for subscription'
+        });
+      } else {
+        console.log(`❌ Subscription eligibility denied: ${eligibility.reason}`);
+        
+        res.status(403).json({
+          eligible: false,
+          message: eligibility.reason || 'User not eligible for subscription',
+          existingSubscription: eligibility.existingSubscription
+        });
+      }
+      
+    } catch (error) {
+      console.error('Subscription eligibility check error:', error);
+      res.status(500).json({ 
+        eligible: false, 
+        message: 'Error checking subscription eligibility' 
+      });
+    }
+  });
+
+  // Link subscription to user - AFTER SUCCESSFUL STRIPE PAYMENT
+  app.post("/api/auth/link-subscription", async (req: any, res) => {
+    try {
+      const { userId, stripeCustomerId, stripeSubscriptionId, planType } = req.body;
+      
+      if (!userId || !stripeCustomerId || !stripeSubscriptionId || !planType) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'All fields required: userId, stripeCustomerId, stripeSubscriptionId, planType' 
+        });
+      }
+      
+      // Link subscription to user
+      const result = await userSignupService.linkSubscriptionToUser(
+        userId, 
+        stripeCustomerId, 
+        stripeSubscriptionId, 
+        planType
+      );
+      
+      if (result.success) {
+        console.log(`✅ Subscription linked: User ${userId} -> ${planType} plan`);
+        
+        res.json({
+          success: true,
+          message: 'Subscription linked successfully',
+          userId,
+          planType,
+          quotaAmount: planType === 'professional' ? 52 : planType === 'growth' ? 27 : 12
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error || 'Failed to link subscription'
+        });
+      }
+      
+    } catch (error) {
+      console.error('Subscription linking error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error linking subscription' 
+      });
+    }
+  });
+
+  // Reset quota cycle - ADMIN ENDPOINT
+  app.post("/api/auth/reset-quota-cycle", async (req: any, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'User ID required' 
+        });
+      }
+      
+      // Reset quota cycle
+      const result = await userSignupService.resetQuotaCycle(userId);
+      
+      if (result.success) {
+        console.log(`✅ Quota cycle reset for user: ${userId}`);
+        
+        res.json({
+          success: true,
+          message: 'Quota cycle reset successfully',
+          userId
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error || 'Failed to reset quota cycle'
+        });
+      }
+      
+    } catch (error) {
+      console.error('Quota cycle reset error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error resetting quota cycle' 
+      });
+    }
+  });
+
+  // Session activity stats - ADMIN ENDPOINT
+  app.get("/api/auth/session-stats", async (req: any, res) => {
+    try {
+      const stats = sessionActivityService.getSessionStats();
+      
+      res.json({
+        success: true,
+        stats: {
+          totalActiveSessions: stats.totalActiveSessions,
+          uniqueUsers: stats.uniqueUsers,
+          averageSessionAge: Math.round(stats.averageSessionAge / 1000), // Convert to seconds
+          maxIdleTime: 30 * 60, // 30 minutes in seconds
+          maxSessionsPerUser: 3
+        }
+      });
+      
+    } catch (error) {
+      console.error('Session stats error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error retrieving session stats' 
+      });
+    }
+  });
+
+  // ==================== END COMPREHENSIVE USER SIGNUP SYSTEM ====================
 
   // Login with phone number
   app.post("/api/auth/login", async (req, res) => {
