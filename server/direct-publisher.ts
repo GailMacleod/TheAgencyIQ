@@ -7,6 +7,7 @@
 import crypto from 'crypto';
 import OAuth from 'oauth-1.0a';
 import axios from 'axios';
+import { PlatformPostManager } from './platform-post-manager';
 
 export interface DirectPublishResult {
   success: boolean;
@@ -55,15 +56,34 @@ export class DirectPublisher {
       
       if (response.data && response.data.id) {
         console.log(`✅ REAL Facebook post published: ${response.data.id}`);
+        
+        // Record successful publication with quota deduction
+        const result = await PlatformPostManager.recordSuccessfulPublication(
+          connection.userId,
+          'facebook',
+          content,
+          response.data.id
+        );
+        
         return { 
           success: true, 
-          platformPostId: response.data.id 
+          platformPostId: response.data.id,
+          quotaDeducted: result.quotaDeducted
         };
       } else {
         return { success: false, error: 'Facebook API returned no post ID' };
       }
       
     } catch (error: any) {
+      // Record failed publication
+      if (connection) {
+        await PlatformPostManager.recordFailedPublication(
+          connection.userId,
+          'facebook',
+          content,
+          error.message
+        );
+      }
       return { success: false, error: `Facebook error: ${error.message}` };
     }
   }
@@ -122,15 +142,34 @@ export class DirectPublisher {
       
       if (shareResponse.data && shareResponse.data.id) {
         console.log(`✅ REAL LinkedIn post published: ${shareResponse.data.id}`);
+        
+        // Record successful publication with quota deduction
+        const result = await PlatformPostManager.recordSuccessfulPublication(
+          connection.userId,
+          'linkedin',
+          content,
+          shareResponse.data.id
+        );
+        
         return { 
           success: true, 
-          platformPostId: shareResponse.data.id 
+          platformPostId: shareResponse.data.id,
+          quotaDeducted: result.quotaDeducted
         };
       } else {
         return { success: false, error: 'LinkedIn API returned no post ID' };
       }
       
     } catch (error: any) {
+      // Record failed publication
+      if (connection) {
+        await PlatformPostManager.recordFailedPublication(
+          connection.userId,
+          'linkedin',
+          content,
+          error.message
+        );
+      }
       return { success: false, error: `LinkedIn error: ${error.message}` };
     }
   }
@@ -140,8 +179,27 @@ export class DirectPublisher {
    */
   static async publishToInstagram(content: string, accessToken?: string): Promise<DirectPublishResult> {
     try {
-      // Use provided token or environment token
-      const token = accessToken || process.env.INSTAGRAM_CLIENT_SECRET;
+      // Import database connection
+      const { db } = await import('./db');
+      const { platformConnections } = await import('../shared/schema');
+      const { eq, and } = await import('drizzle-orm');
+      
+      // Get active Instagram connection from database
+      const [connection] = await db
+        .select()
+        .from(platformConnections)
+        .where(and(
+          eq(platformConnections.platform, 'instagram'),
+          eq(platformConnections.isActive, true)
+        ))
+        .limit(1);
+      
+      if (!connection) {
+        return { success: false, error: 'No active Instagram connection found' };
+      }
+      
+      // Use provided token or connection token
+      const token = accessToken || connection.accessToken;
       
       if (!token) {
         return { success: false, error: 'Instagram credentials not configured' };
@@ -190,15 +248,34 @@ export class DirectPublisher {
       
       if (publishResponse.data && publishResponse.data.id) {
         console.log(`✅ REAL Instagram post published: ${publishResponse.data.id}`);
+        
+        // Record successful publication with quota deduction
+        const result = await PlatformPostManager.recordSuccessfulPublication(
+          connection.userId,
+          'instagram', 
+          content,
+          publishResponse.data.id
+        );
+        
         return { 
           success: true, 
-          platformPostId: publishResponse.data.id 
+          platformPostId: publishResponse.data.id,
+          quotaDeducted: result.quotaDeducted
         };
       } else {
         return { success: false, error: 'Instagram publish API returned no post ID' };
       }
       
     } catch (error: any) {
+      // Record failed publication
+      if (connection) {
+        await PlatformPostManager.recordFailedPublication(
+          connection.userId,
+          'instagram',
+          content,
+          error.message
+        );
+      }
       return { success: false, error: `Instagram error: ${error.message}` };
     }
   }
@@ -278,9 +355,19 @@ export class DirectPublisher {
       
       if (tweetResponse.data && tweetResponse.data.data && tweetResponse.data.data.id) {
         console.log(`✅ REAL X post published: ${tweetResponse.data.data.id}`);
+        
+        // Record successful publication with quota deduction
+        const result = await PlatformPostManager.recordSuccessfulPublication(
+          connection.userId,
+          'x',
+          content,
+          tweetResponse.data.data.id
+        );
+        
         return { 
           success: true, 
-          platformPostId: tweetResponse.data.data.id 
+          platformPostId: tweetResponse.data.data.id,
+          quotaDeducted: result.quotaDeducted
         };
       } else {
         return { success: false, error: 'X API returned no tweet ID' };
@@ -289,6 +376,15 @@ export class DirectPublisher {
 
       
     } catch (error: any) {
+      // Record failed publication
+      if (connection) {
+        await PlatformPostManager.recordFailedPublication(
+          connection.userId,
+          'x',
+          content,
+          error.message
+        );
+      }
       return { success: false, error: `X error: ${error.message}` };
     }
   }
@@ -354,9 +450,19 @@ export class DirectPublisher {
       
       if (communityResponse.data && communityResponse.data.id) {
         console.log(`✅ REAL YouTube post published: ${communityResponse.data.id}`);
+        
+        // Record successful publication with quota deduction
+        const result = await PlatformPostManager.recordSuccessfulPublication(
+          connection.userId,
+          'youtube',
+          content,
+          communityResponse.data.id
+        );
+        
         return { 
           success: true, 
-          platformPostId: communityResponse.data.id 
+          platformPostId: communityResponse.data.id,
+          quotaDeducted: result.quotaDeducted
         };
       } else {
         return { success: false, error: 'YouTube API returned no post ID' };
@@ -365,6 +471,15 @@ export class DirectPublisher {
 
       
     } catch (error: any) {
+      // Record failed publication
+      if (connection) {
+        await PlatformPostManager.recordFailedPublication(
+          connection.userId,
+          'youtube',
+          content,
+          error.message
+        );
+      }
       return { success: false, error: `YouTube error: ${error.message}` };
     }
   }

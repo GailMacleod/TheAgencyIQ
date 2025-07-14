@@ -10196,6 +10196,86 @@ export function addNotificationEndpoints(app: any) {
 
   // DATA CLEANUP AND QUOTA MANAGEMENT ENDPOINTS
   
+  // Platform Post ID Management Endpoints
+  app.get('/api/posts/platform-ids', requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const { PlatformPostManager } = await import('./platform-post-manager');
+      
+      const postsWithPlatformIds = await PlatformPostManager.getPublishedPosts(userId);
+      const quotaStatus = await PlatformPostManager.getQuotaStatusWithValidation(userId);
+      
+      res.json({
+        success: true,
+        publishedPosts: postsWithPlatformIds,
+        quotaStatus,
+        validPublishedCount: postsWithPlatformIds.length
+      });
+    } catch (error: any) {
+      console.error('Error fetching platform post IDs:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  app.post('/api/posts/:postId/platform-id', requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const { postId } = req.params;
+      const { platformPostId, success } = req.body;
+      
+      if (!platformPostId || success === undefined) {
+        return res.status(400).json({ success: false, error: 'Platform post ID and success status required' });
+      }
+      
+      const { PlatformPostManager } = await import('./platform-post-manager');
+      
+      let result;
+      if (success) {
+        result = await PlatformPostManager.recordSuccessfulPublication(
+          userId,
+          'manual', // Platform will be determined from post data
+          'Manual platform post ID entry',
+          platformPostId,
+          parseInt(postId)
+        );
+      } else {
+        result = await PlatformPostManager.recordFailedPublication(
+          userId,
+          'manual',
+          'Manual platform post ID entry',
+          'User reported failure',
+          parseInt(postId)
+        );
+      }
+      
+      res.json({
+        success: true,
+        result
+      });
+    } catch (error: any) {
+      console.error('Error updating platform post ID:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  app.post('/api/posts/validate-platform-id/:postId', requireAuth, async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const { PlatformPostManager } = await import('./platform-post-manager');
+      
+      const isValid = await PlatformPostManager.verifyPlatformPostId(parseInt(postId));
+      
+      res.json({
+        success: true,
+        isValid,
+        postId: parseInt(postId)
+      });
+    } catch (error: any) {
+      console.error('Error validating platform post ID:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
   // Perform comprehensive data cleanup
   app.post('/api/data-cleanup', requireAuth, async (req: any, res) => {
     try {

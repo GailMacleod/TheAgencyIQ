@@ -49,6 +49,8 @@ export interface IStorage {
   updatePost(id: number, updates: Partial<InsertPost>): Promise<Post>;
   deletePost(id: number): Promise<void>;
   getPost(postId: number): Promise<Post | undefined>;
+  getPostsWithPlatformIds(userId: number): Promise<Post[]>;
+  updatePostPlatformId(postId: number, platformPostId: string, quotaDeducted: boolean): Promise<Post>;
 
   // Platform connection operations
   getPlatformConnectionsByUser(userId: number): Promise<PlatformConnection[]>;
@@ -242,6 +244,31 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(posts)
       .where(eq(posts.id, postId));
+    return post;
+  }
+
+  async getPostsWithPlatformIds(userId: number): Promise<Post[]> {
+    return await db
+      .select()
+      .from(posts)
+      .where(and(
+        eq(posts.userId, userId),
+        eq(posts.status, 'published')
+      ))
+      .orderBy(desc(posts.publishedAt));
+  }
+
+  async updatePostPlatformId(postId: number, platformPostId: string, quotaDeducted: boolean): Promise<Post> {
+    const [post] = await db
+      .update(posts)
+      .set({
+        platformPostId,
+        quotaDeducted,
+        status: 'published',
+        publishedAt: new Date()
+      })
+      .where(eq(posts.id, postId))
+      .returning();
     return post;
   }
 

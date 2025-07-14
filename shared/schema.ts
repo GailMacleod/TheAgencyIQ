@@ -73,6 +73,9 @@ export const posts = pgTable("posts", {
   errorLog: text("error_log"),
   analytics: jsonb("analytics"), // Store analytics data: { reach: number, engagement: number, impressions: number }
   scheduledFor: timestamp("scheduled_for"),
+  // Platform post ID tracking for quota management
+  platformPostId: text("platform_post_id"), // Actual post ID from platform (Facebook, Instagram, etc.)
+  quotaDeducted: boolean("quota_deducted").default(false), // Track if quota has been deducted
   // Idempotency and duplication prevention
   contentHash: text("content_hash"), // MD5 hash of content for duplicate detection
   generationId: text("generation_id"), // Unique ID for each generation batch
