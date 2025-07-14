@@ -116,8 +116,27 @@ export class DirectPublisher {
    */
   static async publishToFacebook(content: string, accessToken?: string): Promise<DirectPublishResult> {
     try {
-      // Use provided token or environment token
-      const token = accessToken || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+      // Import database connection
+      const { db } = await import('./db');
+      const { platformConnections } = await import('../shared/schema');
+      const { eq, and } = await import('drizzle-orm');
+      
+      // Get active Facebook connection from database
+      const [connection] = await db
+        .select()
+        .from(platformConnections)
+        .where(and(
+          eq(platformConnections.platform, 'facebook'),
+          eq(platformConnections.isActive, true)
+        ))
+        .limit(1);
+      
+      if (!connection) {
+        return { success: false, error: 'No active Facebook connection found' };
+      }
+      
+      // Use provided token or connection token
+      const token = accessToken || connection.accessToken;
       const appSecret = process.env.FACEBOOK_APP_SECRET;
       
       if (!token) {
@@ -149,7 +168,7 @@ export class DirectPublisher {
       );
       
       if (response.data && response.data.id) {
-        console.log(`✅ REAL Facebook post published: ${response.data.id}`);
+        console.log(`✅ REAL Facebook post published with platform post ID: ${response.data.id}`);
         
         // Record successful publication with quota deduction
         const result = await PlatformPostManager.recordSuccessfulPublication(
@@ -448,7 +467,7 @@ export class DirectPublisher {
       );
       
       if (tweetResponse.data && tweetResponse.data.data && tweetResponse.data.data.id) {
-        console.log(`✅ REAL X post published: ${tweetResponse.data.data.id}`);
+        console.log(`✅ REAL X post published with platform post ID: ${tweetResponse.data.data.id}`);
         
         // Record successful publication with quota deduction
         const result = await PlatformPostManager.recordSuccessfulPublication(

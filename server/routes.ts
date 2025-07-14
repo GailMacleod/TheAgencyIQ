@@ -10223,14 +10223,19 @@ export function addNotificationEndpoints(app: any) {
       const { postId } = req.params;
       const { platformPostId, success } = req.body;
       
-      if (!platformPostId || success === undefined) {
-        return res.status(400).json({ success: false, error: 'Platform post ID and success status required' });
+      // Fixed validation: Allow null platformPostId for failed publications
+      if (success === undefined || (success === true && !platformPostId)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Success status required. Platform post ID required only for successful publications.' 
+        });
       }
       
       const { PlatformPostManager } = await import('./platform-post-manager');
       
       let result;
-      if (success) {
+      if (success && platformPostId) {
+        // Successful publication - record with platform post ID and deduct quota
         result = await PlatformPostManager.recordSuccessfulPublication(
           userId,
           'manual', // Platform will be determined from post data
@@ -10238,19 +10243,26 @@ export function addNotificationEndpoints(app: any) {
           platformPostId,
           parseInt(postId)
         );
+        
+        console.log(`✅ Successfully recorded publication with platform post ID: ${platformPostId}`);
       } else {
+        // Failed publication - record failure without quota deduction
         result = await PlatformPostManager.recordFailedPublication(
           userId,
           'manual',
           'Manual platform post ID entry',
-          'User reported failure',
+          'Publication failed - no platform post ID generated',
           parseInt(postId)
         );
+        
+        console.log(`❌ Recorded failed publication for post ${postId} - quota not deducted`);
       }
       
       res.json({
         success: true,
-        result
+        result,
+        quotaDeducted: success ? result.quotaDeducted : false,
+        platformPostId: success ? platformPostId : null
       });
     } catch (error: any) {
       console.error('Error updating platform post ID:', error);
