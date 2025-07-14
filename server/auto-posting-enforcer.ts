@@ -201,9 +201,14 @@ export class AutoPostingEnforcer {
       }
       
       // Use existing Facebook credentials from connection for real API call
-      // For now, simulate successful publishing with enhanced logging
-      console.log(`✅ Facebook publish simulation: Post ${post.id} would be published with valid token`);
-      await this.logPublishingResult(post.userId, post.id, 'facebook', true, 'Published successfully with token validation');
+      const realPublishResult = await this.realFacebookPublish(post, connection);
+      if (!realPublishResult.success) {
+        console.error(`Facebook publish failed: ${realPublishResult.error}`);
+        return false;
+      }
+      
+      console.log(`✅ Facebook publish SUCCESS: Post ${post.id} published to Facebook with ID: ${realPublishResult.platformPostId}`);
+      await this.logPublishingResult(post.userId, post.id, 'facebook', true, `Post published to Facebook: ${realPublishResult.platformPostId}`);
       
       return true;
     } catch (error) {
@@ -211,6 +216,53 @@ export class AutoPostingEnforcer {
       const errorMsg = error instanceof Error ? error.message : 'Unknown Facebook error';
       await this.logPublishingResult(post.userId, post.id, 'facebook', false, errorMsg);
       return false;
+    }
+  }
+
+  /**
+   * REAL Facebook Publishing using Graph API
+   */
+  private static async realFacebookPublish(post: any, connection: any): Promise<{success: boolean, platformPostId?: string, error?: string}> {
+    try {
+      const axios = require('axios');
+      const crypto = require('crypto');
+      
+      const accessToken = connection.accessToken;
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+      
+      if (!accessToken || !appSecret) {
+        return { success: false, error: 'Facebook credentials missing' };
+      }
+      
+      // Generate app secret proof for enhanced security
+      const appsecretProof = crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
+      
+      // Publish to Facebook user feed using Graph API
+      const response = await axios.post(
+        `https://graph.facebook.com/v18.0/me/feed`,
+        {
+          message: post.content,
+          access_token: accessToken,
+          appsecret_proof: appsecretProof
+        }
+      );
+      
+      if (response.data && response.data.id) {
+        console.log(`✅ REAL Facebook post published: ${response.data.id}`);
+        return { 
+          success: true, 
+          platformPostId: response.data.id 
+        };
+      } else {
+        return { success: false, error: 'Facebook API returned no post ID' };
+      }
+      
+    } catch (error: any) {
+      console.error('Facebook Graph API error:', error.response?.data || error.message);
+      return { 
+        success: false, 
+        error: error.response?.data?.error?.message || error.message 
+      };
     }
   }
 

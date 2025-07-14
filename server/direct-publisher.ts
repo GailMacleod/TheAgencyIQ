@@ -37,20 +37,35 @@ export class DirectPublisher {
         };
       }
 
-      // For production demo, simulate successful posting
-      const mockPostId = `fb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      console.log(`✅ Facebook publish simulated: ${mockPostId}`);
+      // REAL Facebook Graph API publishing
+      const axios = require('axios');
       
-      return { 
-        success: true, 
-        platformPostId: mockPostId,
-        message: 'Posted to Facebook successfully',
-        analytics: {
-          reach: Math.floor(Math.random() * 1000) + 500,
-          engagement: Math.floor(Math.random() * 50) + 25,
-          impressions: Math.floor(Math.random() * 2000) + 1000
+      if (!appSecret) {
+        return { success: false, error: 'Facebook app secret missing' };
+      }
+      
+      // Generate app secret proof for enhanced security
+      const appsecretProof = crypto.createHmac('sha256', appSecret).update(token).digest('hex');
+      
+      // Publish to Facebook user feed using Graph API
+      const response = await axios.post(
+        `https://graph.facebook.com/v18.0/me/feed`,
+        {
+          message: content,
+          access_token: token,
+          appsecret_proof: appsecretProof
         }
-      };
+      );
+      
+      if (response.data && response.data.id) {
+        console.log(`✅ REAL Facebook post published: ${response.data.id}`);
+        return { 
+          success: true, 
+          platformPostId: response.data.id 
+        };
+      } else {
+        return { success: false, error: 'Facebook API returned no post ID' };
+      }
       
     } catch (error: any) {
       return { success: false, error: `Facebook error: ${error.message}` };
