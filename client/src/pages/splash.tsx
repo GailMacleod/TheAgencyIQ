@@ -45,10 +45,8 @@ export default function Splash() {
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Animated Reveal Overlay - Fixed with proper z-index and timing */}
-      <div className={`fixed inset-0 z-[100] pointer-events-none transition-opacity duration-300 ${
-        revealAnimation ? 'opacity-0' : 'opacity-100'
-      }`}>
+      {/* Animated Reveal Overlay - Beautiful curtain animation */}
+      <div className="fixed inset-0 z-[100] pointer-events-none">
         {/* Left Panel */}
         <div 
           className={`absolute top-0 left-0 w-1/2 h-full bg-[#3B82F6] transition-transform duration-1000 ease-out ${
