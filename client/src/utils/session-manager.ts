@@ -83,6 +83,12 @@ class SessionManager {
         // Log cookie status after session establishment
         console.log('🍪 Cookies after establishment:', document.cookie);
         
+        // Verify session cookie is working
+        const isVerified = await this.verifySessionCookie();
+        if (!isVerified) {
+          console.log('⚠️ Session cookie verification failed, but continuing...');
+        }
+        
         return this.sessionInfo;
       } else {
         // If session establishment fails, throw error - NO GUEST ACCESS
@@ -164,6 +170,40 @@ class SessionManager {
     // Debug: log all available cookies
     console.log('🍪 Available cookies:', document.cookie);
     return null;
+  }
+  
+  // Force cookie verification after session establishment
+  async verifySessionCookie(): Promise<boolean> {
+    const sessionCookie = this.getSessionCookie();
+    if (!sessionCookie) {
+      console.log('❌ Session cookie not found after establishment');
+      return false;
+    }
+    
+    try {
+      // Test the session cookie with a simple authenticated request
+      const response = await fetch('/api/user', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Cookie': sessionCookie
+        }
+      });
+      
+      console.log('🔍 Session verification test:', response.status);
+      
+      if (response.ok) {
+        console.log('✅ Session verification successful');
+        return true;
+      } else {
+        console.log('❌ Session verification failed');
+        return false;
+      }
+    } catch (error) {
+      console.log('❌ Session verification error:', error);
+      return false;
+    }
   }
 
   clearSession() {

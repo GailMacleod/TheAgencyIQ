@@ -1,17 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { storage } from '../storage';
 
-// Enhanced authentication middleware with session restoration - ONLY USER ID 2 ALLOWED
+// Enhanced authentication middleware with session restoration - MULTI-USER SUPPORT
 export const requireAuth = async (req: any, res: Response, next: NextFunction) => {
   console.log(`🔍 AuthGuard check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
   
-  // Only allow User ID 2
-  if (req.session?.userId === 2) {
+  // Allow any authenticated user
+  if (req.session?.userId) {
     console.log(`✅ AuthGuard passed - User ID: ${req.session.userId}`);
     return next();
   }
   
-  // Try to restore session for User ID 2 ONLY - with cookie validation
+  // Try to restore session from cookie
   if (req.sessionID) {
     try {
       // Check if session cookie exists in request
@@ -19,7 +19,7 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
       const hasSessionCookie = cookieHeader.includes('theagencyiq.session=');
       
       if (hasSessionCookie) {
-        console.log(`🔄 Session cookie detected, attempting User ID 2 restoration`);
+        console.log(`🔄 Session cookie detected, attempting session restoration`);
         
         // Extract session ID from cookie
         const cookieMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
@@ -34,25 +34,27 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
           console.log(`🔄 Extracted cookie session ID: ${cookieSessionId}`);
         }
         
-        // Always try to restore User ID 2 session if cookie exists
-        const user = await storage.getUser(2);
-        if (user && user.subscriptionActive) {
-          console.log(`🔄 Session restoration for User ID 2: ${user.email}`);
-          req.session.userId = 2;
-          req.session.userEmail = user.email;
-          req.session.subscriptionPlan = user.subscriptionPlan;
-          req.session.subscriptionActive = user.subscriptionActive;
-          
-          // Save session
-          await new Promise<void>((resolve, reject) => {
-            req.session.save((err: any) => {
-              if (err) reject(err);
-              else resolve();
+        // For development, auto-restore User ID 2 session if no other session exists
+        if (!req.session?.userId) {
+          const user = await storage.getUser(2);
+          if (user) {
+            console.log(`🔄 Auto-establishing session for User ID 2: ${user.email}`);
+            req.session.userId = 2;
+            req.session.userEmail = user.email;
+            req.session.subscriptionPlan = user.subscriptionPlan;
+            req.session.subscriptionActive = user.subscriptionActive;
+            
+            // Save session
+            await new Promise<void>((resolve, reject) => {
+              req.session.save((err: any) => {
+                if (err) reject(err);
+                else resolve();
+              });
             });
-          });
-          
-          console.log(`✅ Session restored for User ID 2: ${user.email}`);
-          return next();
+            
+            console.log(`✅ Session auto-established for User ID 2: ${user.email}`);
+            return next();
+          }
         }
       }
     } catch (error) {
@@ -60,11 +62,10 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     }
   }
   
-  console.log(`❌ AuthGuard rejected - Only User ID 2 allowed`);
+  console.log(`❌ AuthGuard rejected - No authenticated session found`);
   return res.status(401).json({
-    message: "Authentication required",
-    redirectTo: "/login",
-    details: "Only User ID 2 (gailm@macleodglba.com.au) is authorized"
+    message: "Not authenticated",
+    redirectTo: "/login"
   });
 };
 

@@ -2091,9 +2091,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           console.log(`Session established for user ${user.email}`);
+          // Ensure proper cookie headers are set and force cookie transmission
+          res.header('Access-Control-Allow-Credentials', 'true');
+          res.header('Access-Control-Expose-Headers', 'Set-Cookie, Cookie, theagencyiq.session');
+          
+          // Force session cookie to be set in the response
+          res.cookie('theagencyiq.session', req.sessionID, {
+            httpOnly: false, // Allow JavaScript access for debugging
+            secure: false,
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            path: '/'
+          });
+          
           return res.json({ 
             success: true, 
             user,
+            sessionId: req.sessionID,
             sessionEstablished: true,
             message: `Session established for ${user.email}`
           });
@@ -2135,9 +2149,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             undefined
           );
           
+          // Ensure proper cookie headers are set and force cookie transmission
+          res.header('Access-Control-Allow-Credentials', 'true');
+          res.header('Access-Control-Expose-Headers', 'Set-Cookie, Cookie, theagencyiq.session');
+          
+          // Force session cookie to be set in the response
+          res.cookie('theagencyiq.session', req.sessionID, {
+            httpOnly: false, // Allow JavaScript access for debugging
+            secure: false,
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            path: '/'
+          });
+          
           return res.json({ 
             success: true, 
             user: targetUser,
+            sessionId: req.sessionID,
             sessionEstablished: true,
             message: `Session established for ${targetUser.email}`
           });
@@ -2201,7 +2229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Force session cookie to be set in the response
         res.cookie('theagencyiq.session', req.sessionID, {
-          httpOnly: true,
+          httpOnly: false, // Allow JavaScript access for debugging
           secure: false,
           sameSite: 'lax',
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
