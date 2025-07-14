@@ -176,7 +176,7 @@ async function startServer() {
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false, // Changed to false to avoid creating sessions for every request
     name: 'theagencyiq.session',
     genid: () => {
       const timestamp = Date.now().toString(36);
@@ -187,11 +187,11 @@ async function startServer() {
       secure: false, // Must be false for development
       maxAge: sessionTtl,
       httpOnly: false, // Allow frontend access
-      sameSite: 'none', // Required for cross-origin requests
+      sameSite: 'lax', // Changed from 'none' to 'lax' for better cookie handling
       path: '/',
       domain: undefined // Let express handle domain
     },
-    rolling: true,
+    rolling: false, // Changed to false to prevent session regeneration
     proxy: true,
     // Enhanced session handling
     unset: 'keep'
@@ -218,9 +218,13 @@ async function startServer() {
             signed: false // Express-session handles signing
           };
           
-          // Set both the session cookie and a backup cookie
-          res.cookie('theagencyiq.session', req.sessionID, cookieOptions);
-          res.cookie('aiq_backup_session', req.sessionID, cookieOptions);
+          // Set both the session cookie and a backup cookie - with proper sameSite
+          const cookieOptionsFixed = {
+            ...cookieOptions,
+            sameSite: 'lax' as const // Fixed for better cookie handling
+          };
+          res.cookie('theagencyiq.session', req.sessionID, cookieOptionsFixed);
+          res.cookie('aiq_backup_session', req.sessionID, cookieOptionsFixed);
           
           // Set explicit headers for debugging
           res.header('X-Session-ID', req.sessionID);
@@ -337,11 +341,10 @@ async function startServer() {
     }
   });
 
-  // Public bypass route
+  // Public bypass route - DISABLED FOR SECURITY
   app.get('/public', (req, res) => {
-    req.session.userId = 2;
-    console.log(`React fix bypass activated at ${new Date().toISOString()}`);
-    res.redirect('/platform-connections');
+    console.log(`Public bypass route disabled for security at ${new Date().toISOString()}`);
+    res.status(401).json({ message: 'Authentication required. Please login to access platform connections.' });
   });
 
   // OAuth connection routes

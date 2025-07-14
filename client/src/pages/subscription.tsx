@@ -109,8 +109,8 @@ export default function Subscription() {
         phone: data.phone
       });
       
-      // First create the user account
-      await apiRequest("POST", "/api/auth/signup", data);
+      // STEP 1: Create user account
+      const signupResponse = await apiRequest("POST", "/api/auth/signup", data);
       
       // Track successful registration
       const plan = plans.find(p => p.id === planId);
@@ -121,7 +121,17 @@ export default function Subscription() {
         MetaPixelTracker.trackLead('subscription_signup', plan.name === 'Professional' ? 197 : plan.name === 'Growth' ? 97 : 47);
       }
       
-      // Then create checkout session with the new user
+      // STEP 2: Log in the user to establish authenticated session
+      const loginResponse = await apiRequest("POST", "/api/auth/login", {
+        email: data.email,
+        password: data.password
+      });
+      
+      if (!loginResponse.ok) {
+        throw new Error("Failed to authenticate user after signup");
+      }
+      
+      // STEP 3: Create checkout session with authenticated user
       const response = await apiRequest("POST", "/api/create-checkout-session", {
         priceId,
       });

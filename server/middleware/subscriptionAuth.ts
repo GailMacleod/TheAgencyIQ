@@ -1,60 +1,33 @@
 import { storage } from '../storage';
 
-// Unified session establishment for all endpoints
+// Manual session establishment endpoint - only creates sessions when explicitly called
 export const establishSession = async (req: any, res: any, next: any) => {
-  try {
-    if (!req.session?.userId) {
-      // Auto-establish session for User ID 2 (gailm@macleodglba.com.au)
-      req.session.userId = 2;
-      req.session.userEmail = 'gailm@macleodglba.com.au';
-      
-      // Save session immediately with promise
-      await new Promise((resolve, reject) => {
-        req.session.save((err: any) => {
-          if (err) {
-            console.error('Session save error:', err);
-            reject(err);
-          } else {
-            console.log(`✅ Session established for User ID 2 on ${req.path}`);
-            resolve(true);
-          }
-        });
-      });
-    }
-    next();
-  } catch (error) {
-    console.error('Session establishment error:', error);
-    // Still establish session in memory even if save fails
-    if (!req.session?.userId) {
-      req.session.userId = 2;
-      req.session.userEmail = 'gailm@macleodglba.com.au';
-    }
-    next();
-  }
+  // This should only be called from /api/establish-session endpoint
+  // Never auto-establishes sessions
+  console.log('Session establishment middleware called - this should only happen for manual login');
+  next();
 };
 
 // Enhanced authentication middleware that checks both login and subscription status
 export const requireActiveSubscription = async (req: any, res: any, next: any) => {
   try {
-    // 1. Auto-establish session if not present
+    // 1. Require valid user session - NO AUTO-ESTABLISHMENT
     if (!req.session?.userId) {
-      // Auto-establish session for User ID 2 (gailm@macleodglba.com.au)
-      req.session.userId = 2;
-      req.session.userEmail = 'gailm@macleodglba.com.au';
-      
-      // Save session immediately
-      await new Promise((resolve, reject) => {
-        req.session.save((err: any) => {
-          if (err) reject(err);
-          else resolve(true);
-        });
+      return res.status(401).json({ 
+        message: "Authentication required", 
+        redirectTo: "/login",
+        details: "Please login to access this feature"
       });
     }
 
     // 2. Check subscription status
     const user = await storage.getUser(req.session.userId);
     if (!user) {
-      return res.status(401).json({ message: "User not found" });
+      // Clear invalid session
+      req.session.destroy((err: any) => {
+        if (err) console.error('Session destroy error:', err);
+      });
+      return res.status(401).json({ message: "Invalid session. Please login again." });
     }
 
     // Allow access if subscription is active OR user has a valid subscription plan
@@ -77,25 +50,28 @@ export const requireActiveSubscription = async (req: any, res: any, next: any) =
   }
 };
 
-// Legacy auth middleware for backwards compatibility
+// Strict authentication middleware - NEVER auto-establishes sessions
 export const requireAuth = async (req: any, res: any, next: any) => {
+  if (!req.session?.userId) {
+    return res.status(401).json({ message: "Authentication required. Please login first." });
+  }
+  
   try {
-    if (!req.session?.userId) {
-      // Auto-establish session for User ID 2 (gailm@macleodglba.com.au)
-      req.session.userId = 2;
-      req.session.userEmail = 'gailm@macleodglba.com.au';
-      
-      // Save session immediately
-      await new Promise((resolve, reject) => {
-        req.session.save((err: any) => {
-          if (err) reject(err);
-          else resolve(true);
-        });
+    // Verify user exists in database
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      // Clear invalid session
+      req.session.destroy((err: any) => {
+        if (err) console.error('Session destroy error:', err);
       });
+      return res.status(401).json({ message: "Invalid user session. Please login again." });
     }
+    
+    // Refresh session
+    req.session.touch();
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    return res.status(500).json({ message: "Authentication failed" });
+    console.error('Authentication error:', error);
+    return res.status(500).json({ message: "Authentication error" });
   }
 };

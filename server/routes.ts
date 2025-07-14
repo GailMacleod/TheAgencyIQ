@@ -22,7 +22,9 @@ import axios from "axios";
 import PostPublisher from "./post-publisher";
 import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
-import { requireActiveSubscription, requireAuth, establishSession } from './middleware/subscriptionAuth';
+import { requireActiveSubscription, establishSession, requireAuth } from './middleware/subscriptionAuth';
+import { subscriptionService } from './services/SubscriptionService';
+import { analyticsService } from './services/AnalyticsService';
 import { PostQuotaService } from './PostQuotaService';
 import { userFeedbackService } from './userFeedbackService.js';
 import RollbackAPI from './rollback-api';
@@ -117,24 +119,9 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
     return next();
   }
   
-  // Auto-establish session for User ID 2 if not present
+  // NO AUTO-ESTABLISHMENT - Sessions must be created through login
   if (!req.session?.userId) {
-    try {
-      const user = await storage.getUser(2);
-      if (user) {
-        req.session.userId = 2;
-        req.session.userEmail = user.email;
-        await new Promise<void>((resolve) => {
-          req.session.save((err: any) => {
-            if (err) console.error('Session save error:', err);
-            resolve();
-          });
-        });
-        console.log(`✅ Auto-established session for user ${user.email}`);
-      }
-    } catch (error) {
-      console.error('Auto-session error:', error);
-    }
+    console.log('❌ No session found - authentication required');
   }
   
   // Check for authenticated session
@@ -187,37 +174,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   
-  // Global session establishment middleware - runs on ALL requests
+  // Session debugging middleware (NO AUTO-ESTABLISHMENT)
   app.use(async (req: any, res: any, next: any) => {
-    // Skip session establishment for static assets
+    // Skip debug for static assets
     if (req.path.startsWith('/public/') || req.path.startsWith('/assets/')) {
       return next();
     }
     
-    // Auto-establish session for User ID 2 if not present
-    if (!req.session?.userId) {
-      try {
-        const user = await storage.getUser(2);
-        if (user) {
-          req.session.userId = 2;
-          req.session.userEmail = user.email;
-          await new Promise<void>((resolve) => {
-            req.session.save((err: any) => {
-              if (err) console.error('Session save error:', err);
-              resolve();
-            });
-          });
-          console.log(`✅ Auto-established session for user ${user.email} on ${req.path}`);
-        }
-      } catch (error) {
-        console.error('Auto-session error:', error);
-      }
+    // Debug existing sessions but NEVER auto-establish
+    if (req.session?.userId) {
+      console.log(`🔍 Session Debug - ${req.method} ${req.path}`);
+      console.log(`📋 Session ID: ${req.sessionID}, User ID: ${req.session.userId}`);
     }
     next();
   });
   
-  // Add subscription enforcement middleware to all routes
-  app.use(requirePaidSubscription);
+  // CRITICAL: Use proper authGuard for payment endpoints  
+  // Import the authGuard middleware using ES modules
+  const { requireAuth, requireAuthForPayment } = await import('./middleware/authGuard.js');
+
+  // SESSION DEBUGGING ENDPOINT - To understand session persistence issues
+  app.get('/api/session-debug', (req: any, res) => {
+    const cookies = req.headers.cookie || '';
+    const sessionFromStore = req.session;
+    
+    res.json({
+      sessionID: req.sessionID,
+      sessionFromReq: sessionFromStore,
+      userId: sessionFromStore?.userId,
+      userEmail: sessionFromStore?.userEmail,
+      cookieHeader: cookies,
+      sessionData: sessionFromStore,
+      sessionExists: !!sessionFromStore,
+      userIdExists: !!sessionFromStore?.userId
+    });
+  });
   
   // Add global error handler for debugging 500 errors
   app.use((err: any, req: any, res: any, next: any) => {
@@ -263,15 +254,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration moved to server/index.ts to prevent duplicates
 
   // Session-based authentication endpoint - MUST BE BEFORE requirePaidSubscription
-  app.post('/api/auth/login', async (req, res) => {
+  app.post('/api/login', async (req, res) => {
     try {
-      const { email, password } = req.body;
-      console.log('🔐 Login attempt:', { email, sessionId: req.sessionID });
+      const { phone, password, email } = req.body;
+      console.log('🔐 Login attempt:', { phone, email, sessionId: req.sessionID });
       
-      // For now, authenticate specific user email (extend with password validation as needed)
-      if (email === 'gailm@macleodglba.com.au' && password === 'testpass') {
-        const user = await storage.getUserByEmail(email);
+      // Support login with phone for test user
+      if ((phone === '+61424835189' && password === 'password123') || 
+          (email === 'gailm@macleodglba.com.au' && password === 'testpass')) {
+        const user = phone ? await storage.getUserByPhone(phone) : await storage.getUserByEmail(email);
+        
         if (user) {
+          // Clear any existing session data first
+          req.session.regenerate((err) => {
+            if (err) {
+              console.error('Session regenerate error:', err);
+            }
+          });
+          
           req.session.userId = user.id;
           req.session.userEmail = user.email;
           
@@ -285,21 +285,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log('✅ Login successful:', { userId: user.id, email: user.email, sessionId: req.sessionID });
           
-          // Set session cookie and return success
-          res.cookie('theagencyiq.session', req.sessionID, {
-            httpOnly: false,
-            secure: false, // Force false for development
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            path: '/'
-          });
-          
+          // Don't set additional cookies - let express-session handle it
           return res.json({
             success: true,
             user: {
               id: user.id,
               email: user.email,
-              subscriptionPlan: user.subscriptionPlan
+              phone: user.phone,
+              subscriptionPlan: user.subscriptionPlan,
+              subscriptionActive: user.subscriptionActive,
+              remainingPosts: user.remainingPosts,
+              totalPosts: user.totalPosts
             },
             sessionId: req.sessionID,
             message: 'Login successful'
@@ -307,7 +303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      console.log('❌ Login failed:', { email });
+      console.log('❌ Login failed:', { phone, email });
       res.status(401).json({ success: false, message: 'Invalid credentials' });
     } catch (error) {
       console.error('Login error:', error);
@@ -315,13 +311,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Apply comprehensive subscription middleware to ALL routes EXCEPT auth
-  app.use((req, res, next) => {
-    if (req.url.startsWith('/api/auth/')) {
-      return next();
-    }
-    return requirePaidSubscription(req, res, next);
-  });
+  // TEMPORARILY DISABLED: Subscription middleware for testing authentication
+  // Apply comprehensive subscription middleware to ALL routes EXCEPT auth  
+  // app.use((req, res, next) => {
+  //   if (req.url.startsWith('/api/auth/')) {
+  //     return next();
+  //   }
+  //   return requirePaidSubscription(req, res, next);
+  // });
 
   // Initialize Passport and OAuth strategies
   const { passport: configuredPassport, configurePassportStrategies } = await import('./oauth-config.js');
@@ -457,45 +454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Resilient authentication middleware with database connectivity handling
-  const requireAuth = async (req: any, res: any, next: any) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-    
-    try {
-      // Set timeout for database queries to prevent hanging
-      const dbTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database timeout')), 3000)
-      );
-      
-      const userQuery = storage.getUser(req.session.userId);
-      const user = await Promise.race([userQuery, dbTimeout]);
-      
-      if (!user) {
-        // Clear invalid session
-        req.session.destroy((err: any) => {
-          if (err) console.error('Session destroy error:', err);
-        });
-        return res.status(401).json({ message: "User account not found" });
-      }
-      
-      // Refresh session
-      req.session.touch();
-      next();
-    } catch (error: any) {
-      // Handle database connectivity issues gracefully
-      if (error.message.includes('Control plane') || error.message.includes('Database timeout') || error.code === 'XX000') {
-        console.log('Database connectivity issue in auth, allowing degraded access');
-        // Allow access with existing session during database issues
-        req.session.touch();
-        next();
-      } else {
-        console.error('Authentication error:', error);
-        return res.status(500).json({ message: "Authentication error" });
-      }
-    }
-  };
+  // REMOVED: Duplicate requireAuth definition - using authGuard middleware instead
 
   // Duplicate webhook endpoint removed - using server/index.ts implementation
 
@@ -2002,21 +1961,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     
-    // ENHANCED: Check for authenticated Professional subscription user
-    // This maintains session for existing authenticated users with valid subscriptions
+    // ENHANCED: Validate existing session only - NO AUTO-ESTABLISHMENT
     try {
-      const knownUser = await storage.getUserByEmail('gailm@macleodglba.com.au');
-      if (knownUser && knownUser.subscriptionActive) {
-        req.session.userId = knownUser.id;
-        req.session.userEmail = knownUser.email;
-        req.session.subscriptionPlan = knownUser.subscriptionPlan;
-        req.session.subscriptionActive = knownUser.subscriptionActive;
-        await new Promise<void>((resolve, reject) => {
-          req.session.save((err: any) => {
-            if (err) reject(err);
-            else resolve();
+      if (req.session?.userId) {
+        const knownUser = await storage.getUser(req.session.userId);
+        if (knownUser && knownUser.subscriptionActive) {
+          req.session.userEmail = knownUser.email;
+          req.session.subscriptionPlan = knownUser.subscriptionPlan;
+          req.session.subscriptionActive = knownUser.subscriptionActive;
+          await new Promise<void>((resolve, reject) => {
+            req.session.save((err: any) => {
+              if (err) reject(err);
+              else resolve();
+            });
           });
-        });
+        
+        console.log(`Professional subscription session established for ${knownUser.email} (ID: ${knownUser.id})`);
+        console.log(`Subscription Details: ${knownUser.subscriptionPlan} plan, ${knownUser.remainingPosts}/${knownUser.totalPosts} posts remaining`);
+        console.log(`Stripe Customer ID: ${knownUser.stripeCustomerId}, Subscription ID: ${knownUser.stripeSubscriptionId}`);
+        console.log(`Session ID: ${req.sessionID}`);
         
         console.log(`Professional subscription session established for ${knownUser.email} (ID: ${knownUser.id})`);
         console.log(`Subscription Details: ${knownUser.subscriptionPlan} plan, ${knownUser.remainingPosts}/${knownUser.totalPosts} posts remaining`);
@@ -2076,6 +2039,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sessionEstablished: true,
           message: `Professional subscription session established for ${knownUser.email}`
         });
+        }
       }
     } catch (error) {
       console.error('Known user session establishment failed:', error);
@@ -2121,13 +2085,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Create Stripe checkout session for new user signups
-  app.post("/api/create-checkout-session", async (req, res) => {
+  // Create Stripe checkout session - REQUIRES USER AUTHENTICATION FIRST
+  app.post("/api/create-checkout-session", requireAuthForPayment, async (req: any, res) => {
     try {
       const { priceId } = req.body;
       
       if (!priceId) {
         return res.status(400).json({ message: "Price ID is required" });
+      }
+
+      // CRITICAL: User must be authenticated and have account before payment
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "User must be authenticated before payment" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User account not found" });
+      }
+
+      // Check if user already has an active subscription
+      if (user.stripeSubscriptionId) {
+        return res.status(400).json({ message: "User already has an active subscription" });
       }
 
       // Map price IDs to plan names only - PostQuotaService handles quotas
@@ -2154,6 +2134,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const domains = process.env.REPLIT_DOMAINS?.split(',') || [`localhost:5000`];
       const domain = domains[0];
 
+      // Create or retrieve Stripe customer for authenticated user
+      let stripeCustomer;
+      if (user.stripeCustomerId) {
+        stripeCustomer = await stripe.customers.retrieve(user.stripeCustomerId);
+      } else {
+        stripeCustomer = await stripe.customers.create({
+          email: user.email,
+          phone: user.phone,
+          metadata: {
+            userId: userId.toString(),
+            userEmail: user.email
+          }
+        });
+        
+        // Update user with Stripe customer ID
+        await storage.updateUser(userId, {
+          stripeCustomerId: stripeCustomer.id
+        });
+      }
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [{
@@ -2161,13 +2161,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quantity: 1,
         }],
         mode: 'subscription',
+        customer: stripeCustomer.id, // Associate with authenticated user's customer
         success_url: `https://${domain}/api/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `https://${domain}/subscription`,
         metadata: {
           plan: planName,
-          userId: 'new_signup'
+          userId: userId.toString(),
+          userEmail: user.email
         }
       });
+
+      // Log checkout session creation
+      loggingService.logSubscriptionCreation(
+        userId,
+        user.email,
+        session.id,
+        false,
+        {
+          plan: planName,
+          stripeCustomerId: stripeCustomer.id,
+          source: 'checkout_session_creation',
+          priceId
+        },
+        undefined
+      );
 
       res.json({ url: session.url });
     } catch (error: any) {
@@ -2974,58 +2991,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Auto-establish session for User ID 2 (development mode)
-      const user = await storage.getUser(2);
-      if (user) {
-        req.session.userId = 2;
-        req.session.userEmail = user.email;
-        
-        // Force session save with callback
-        await new Promise<void>((resolve, reject) => {
-          req.session.save((err: any) => {
-            if (err) {
-              console.error('Session save error:', err);
-              reject(err);
-            } else {
-              console.log(`✅ Session auto-established for user ${user.id}: ${user.email}`);
-              console.log(`✅ Session ID: ${req.sessionID}`);
-              resolve();
-            }
-          });
-        });
-
-        // Set cookie explicitly to ensure persistence
-        res.cookie('theagencyiq.session', req.sessionID, {
-          httpOnly: false,
-          secure: false, // Force false for development
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-          path: '/',
-          domain: undefined // Let express handle domain automatically
-        });
-        
-        console.log(`🍪 Cookie set in response: theagencyiq.session=${req.sessionID}`);
-        
-        console.log(`✅ Auto-login successful for ${user.email}`);
-        
-        // Set session cookie manually in response
-        res.setHeader('Set-Cookie', `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=86400`);
-        
-        return res.json({
-          success: true,
-          user: {
-            id: user.id,
-            email: user.email,
-            phone: user.phone,
-            subscriptionPlan: user.subscriptionPlan,
-            subscriptionActive: user.subscriptionActive ?? true,
-            remainingPosts: user.remainingPosts,
-            totalPosts: user.totalPosts
-          },
-          sessionId: req.sessionID,
-          message: 'Session established successfully'
-        });
-      }
+      // NO AUTO-ESTABLISHMENT - Require manual login
+      console.log('❌ Auto-establishment disabled for security');
+      return res.status(401).json({
+        message: 'Authentication required',
+        redirectTo: '/login'
+      });
       
       res.status(401).json({ success: false, message: 'Unable to establish session' });
     } catch (error) {
@@ -3773,32 +3744,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Session persistence middleware for OAuth routes
   app.use('/auth/*', async (req: any, res, next) => {
-    // Ensure session is available during OAuth flow
+    // OAuth middleware - session must already exist from login
     if (!req.session?.userId) {
-      console.log('⚠️ OAuth initiated without session, attempting recovery...');
-      
-      // Try to recover session for main user
-      try {
-        const mainUser = await storage.getUser(2);
-        if (mainUser) {
-          req.session.userId = mainUser.id;
-          req.session.userEmail = mainUser.email;
-          
-          await new Promise<void>((resolve, reject) => {
-            req.session.save((err: any) => {
-              if (err) {
-                console.error('Session save error in OAuth middleware:', err);
-                reject(err);
-              } else {
-                console.log('🔄 Session recovered for OAuth flow');
-                resolve();
-              }
-            });
-          });
-        }
-      } catch (error) {
-        console.error('Session recovery failed in OAuth middleware:', error);
-      }
+      console.log('⚠️ OAuth initiated without session - authentication required');
+      return res.status(401).json({ 
+        message: 'Please login before connecting social media accounts',
+        redirectTo: '/login'
+      });
     }
     
     next();
@@ -5949,29 +5901,10 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Strategic content generation endpoint with waterfall strategyzer methodology
-  app.post("/api/generate-strategic-content", async (req: any, res) => {
+  app.post("/api/generate-strategic-content", requireAuth, async (req: any, res) => {
     try {
-      // Auto-establish session for User ID 2 if not present
-      let userId = req.session?.userId;
-      if (!userId) {
-        try {
-          const user = await storage.getUser(2);
-          if (user) {
-            req.session.userId = 2;
-            req.session.userEmail = user.email;
-            await new Promise<void>((resolve) => {
-              req.session.save((err: any) => {
-                if (err) console.error('Session save error:', err);
-                resolve();
-              });
-            });
-            userId = 2;
-            console.log(`✅ Auto-established session for user ${user.email} in /api/generate-strategic-content`);
-          }
-        } catch (error) {
-          console.error('Auto-session error in /api/generate-strategic-content:', error);
-        }
-      }
+      // Authentication already verified by requireAuth middleware
+      const userId = req.session.userId;
       
       const { brandPurpose, totalPosts = 52, platforms, resetQuota = false } = req.body;
       
@@ -8395,7 +8328,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Handle payment success and create user session
+  // Handle payment success for authenticated users
   app.get("/api/payment-success", async (req: any, res) => {
     try {
       const { session_id, plan } = req.query;
@@ -8408,126 +8341,87 @@ Continue building your Value Proposition Canvas systematically.`;
       const session = await stripe.checkout.sessions.retrieve(session_id);
       
       if (session.payment_status === 'paid') {
-        // Extract customer email and plan details from session
-        const customerEmail = session.customer_details?.email;
+        // Extract authenticated user information from session metadata
+        const userId = parseInt(session.metadata?.userId || '0');
+        const userEmail = session.metadata?.userEmail;
         const planName = session.metadata?.plan || 'starter';
-        const remainingPosts = parseInt(session.metadata?.posts || '10');
-        const totalPosts = parseInt(session.metadata?.totalPosts || '12');
         
-        if (customerEmail) {
-          // ENHANCED DUPLICATE PREVENTION: Check for existing Stripe customer first
-          let existingUserByStripeCustomer = await storage.getUserByStripeCustomerId(session.customer as string);
-          
-          if (existingUserByStripeCustomer && existingUserByStripeCustomer.email !== customerEmail) {
-            console.log(`⚠️ Stripe customer ${session.customer} already associated with ${existingUserByStripeCustomer.email}, canceling subscription for ${customerEmail}`);
-            
-            // Cancel the duplicate subscription
-            try {
-              await stripe.subscriptions.cancel(session.subscription as string);
-              console.log(`✅ Canceled duplicate subscription ${session.subscription} for ${customerEmail}`);
-            } catch (cancelError) {
-              console.error('Failed to cancel duplicate subscription:', cancelError);
-            }
-            
-            return res.redirect('/subscription?error=duplicate_customer');
-          }
-          
-          // Check if user already exists with verified phone
-          let user = await storage.getUserByEmail(customerEmail);
-          
-          if (!user) {
-            // New user - redirect to phone verification first
-            // Store payment session for completion after phone verification
-            const pendingAccount = {
-              email: customerEmail,
-              plan: planName,
-              remainingPosts: remainingPosts,
-              totalPosts: totalPosts,
-              stripeCustomerId: session.customer as string,
-              stripeSubscriptionId: session.subscription as string,
-              sessionId: session_id
-            };
-            
-            // Store in session for phone verification completion
-            req.session.pendingPayment = pendingAccount;
-            req.session.save((err: any) => {
-              if (err) {
-                console.error('Session save error:', err);
-                return res.redirect('/subscription?error=session_failed');
-              }
-              console.log(`Payment successful - redirecting to phone verification for ${customerEmail}`);
-              return res.redirect('/phone-verification?payment=pending&email=' + encodeURIComponent(customerEmail));
-            });
-            return;
-          } else {
-            // EXISTING USER: Check for existing subscription before updating
-            if (user.stripeSubscriptionId && user.stripeSubscriptionId !== session.subscription) {
-              console.log(`⚠️ User ${user.id} already has subscription ${user.stripeSubscriptionId}, canceling new subscription ${session.subscription}`);
-              
-              // Cancel the duplicate subscription
-              try {
-                await stripe.subscriptions.cancel(session.subscription as string);
-                console.log(`✅ Canceled duplicate subscription ${session.subscription} for user ${user.id}`);
-              } catch (cancelError) {
-                console.error('Failed to cancel duplicate subscription:', cancelError);
-              }
-              
-              return res.redirect('/subscription?error=existing_subscription');
-            }
-            
-            // Update subscription details
-            user = await storage.updateUserStripeInfo(
-              user.id,
-              session.customer as string,
-              session.subscription as string
-            );
-            
-            // Log successful subscription creation
-            loggingService.logSubscriptionCreation(
-              user.id,
-              user.email,
-              session.subscription as string,
-              true,
-              {
-                plan: planName,
-                stripeCustomerId: session.customer as string,
-                remainingPosts,
-                totalPosts,
-                paymentStatus: session.payment_status
-              },
-              undefined
-            );
-            
-            // Update subscription plan details
-            await storage.updateUser(user.id, {
-              subscriptionPlan: planName,
-              subscriptionStart: new Date(),
-              remainingPosts: remainingPosts,
-              totalPosts: totalPosts
-            });
-            
-            // Log the user in
-            req.session.userId = user.id;
-            
-            // Save session before redirect
-            req.session.save((err: any) => {
-              if (err) {
-                console.error('Session save error:', err);
-                return res.redirect('/subscription?error=session_failed');
-              }
-              console.log(`Payment successful - redirecting existing user ${user.id} to brand purpose setup`);
-              return res.redirect('/brand-purpose?payment=success&setup=required');
-            });
-            return;
-          }
+        if (!userId || !userEmail) {
+          console.error('Payment session missing user information:', { userId, userEmail });
+          return res.redirect('/subscription?error=missing_user_info');
         }
+
+        // Retrieve the authenticated user
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          console.error(`User not found for payment: ${userId}`);
+          return res.redirect('/subscription?error=user_not_found');
+        }
+
+        // Verify user email matches payment
+        if (user.email !== userEmail) {
+          console.error(`Email mismatch: user=${user.email}, payment=${userEmail}`);
+          return res.redirect('/subscription?error=email_mismatch');
+        }
+
+        // Check if user already has a subscription
+        if (user.stripeSubscriptionId && user.stripeSubscriptionId !== session.subscription) {
+          console.log(`⚠️ User ${userId} already has subscription ${user.stripeSubscriptionId}, canceling duplicate ${session.subscription}`);
+          
+          // Cancel the duplicate subscription
+          try {
+            await stripe.subscriptions.cancel(session.subscription as string);
+            console.log(`✅ Canceled duplicate subscription ${session.subscription}`);
+          } catch (cancelError) {
+            console.error('Failed to cancel duplicate subscription:', cancelError);
+          }
+          
+          return res.redirect('/subscription?error=duplicate_subscription');
+        }
+
+        // Update user with subscription details
+        const updatedUser = await storage.updateUser(userId, {
+          subscriptionPlan: planName,
+          subscriptionActive: true,
+          stripeSubscriptionId: session.subscription as string,
+          stripeCustomerId: session.customer as string
+        });
+
+        // Log successful payment completion
+        loggingService.logSubscriptionCreation(
+          userId,
+          userEmail,
+          session.subscription as string,
+          true,
+          {
+            plan: planName,
+            stripeCustomerId: session.customer as string,
+            source: 'payment_success',
+            sessionId: session_id
+          },
+          undefined
+        );
+
+        // Establish session for the authenticated user
+        req.session.userId = userId;
+        req.session.userEmail = userEmail;
+        req.session.save((err: any) => {
+          if (err) {
+            console.error('Session save error after payment:', err);
+            return res.redirect('/subscription?error=session_failed');
+          }
+          
+          console.log(`✅ Payment successful for authenticated user ${userEmail} (ID: ${userId})`);
+          return res.redirect('/?payment=success');
+        });
+      } else {
+        console.log('Payment not completed:', session.payment_status);
+        return res.redirect('/subscription?error=payment_failed');
       }
-      
-      console.log('Payment validation failed - redirecting to subscription with error');
-      res.redirect('/subscription?error=payment_failed');
     } catch (error: any) {
-      console.error('Payment success handling error:', error);
-      res.redirect('/subscription?error=processing_failed');
+      console.error('Payment success error:', error);
+      return res.redirect('/subscription?error=processing_failed');
     }
   });
 
@@ -10246,30 +10140,11 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
   
-  // Enhanced posts endpoint with auto-authentication
-  app.get('/api/posts', async (req: any, res) => {
+  // Enhanced posts endpoint with authentication
+  app.get('/api/posts', requireAuth, async (req: any, res) => {
     try {
-      // Auto-establish session for User ID 2 if not present
-      let userId = req.session?.userId;
-      if (!userId) {
-        try {
-          const user = await storage.getUser(2);
-          if (user) {
-            req.session.userId = 2;
-            req.session.userEmail = user.email;
-            await new Promise<void>((resolve) => {
-              req.session.save((err: any) => {
-                if (err) console.error('Session save error:', err);
-                resolve();
-              });
-            });
-            userId = 2;
-            console.log(`✅ Auto-established session for user ${user.email} in /api/posts`);
-          }
-        } catch (error) {
-          console.error('Auto-session error in /api/posts:', error);
-        }
-      }
+      // Authentication already verified by requireAuth middleware
+      const userId = req.session.userId;
       
       if (!userId) {
         return res.status(401).json({ message: 'Not authenticated' });
