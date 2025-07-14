@@ -3063,6 +3063,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User data cache for faster response times
+  const userDataCache = new Map();
+  const CACHE_DURATION = 30000; // 30 seconds cache
+
   app.get("/api/user", async (req: any, res) => {
     try {
       console.log(`🔍 /api/user - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
@@ -3075,6 +3079,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      // Check cache first for faster response
+      const cacheKey = `user_${userId}`;
+      const cachedData = userDataCache.get(cacheKey);
+      
+      if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
+        console.log(`🚀 Fast cache hit for user ${userId} - ${cachedData.data.email}`);
+        return res.json(cachedData.data);
+      }
+
       const user = await storage.getUser(userId);
       if (!user) {
         console.log(`❌ User ${userId} not found in database`);
@@ -3083,7 +3096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`✅ User data retrieved for ${user.email} (ID: ${user.id})`);
       
-      res.json({ 
+      const userData = { 
         id: user.id, 
         email: user.email, 
         phone: user.phone,
@@ -3091,7 +3104,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionActive: user.subscriptionActive ?? true, // Ensure boolean value for tests
         remainingPosts: user.remainingPosts,
         totalPosts: user.totalPosts
+      };
+
+      // Cache the response for faster subsequent requests
+      userDataCache.set(cacheKey, {
+        data: userData,
+        timestamp: Date.now()
       });
+
+      res.json(userData);
     } catch (error: any) {
       console.error('Get user error:', error);
       res.status(500).json({ message: "Error fetching user" });

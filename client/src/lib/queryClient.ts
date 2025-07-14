@@ -17,12 +17,12 @@ export async function apiRequest(
   let response: Response;
   
   try {
-    // Reduced timeout for faster loading (5 seconds)
+    // Extended timeout for production stability (60 seconds)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       console.warn('API request timeout for:', method, url);
-      controller.abort('API request timeout after 5 seconds');
-    }, 5000);
+      controller.abort('API request timeout after 60 seconds');
+    }, 60000);
 
     // Pass AbortController signal to all API client methods
     const requestOptions = { signal: controller.signal };
