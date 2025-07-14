@@ -6,6 +6,7 @@
 
 import crypto from 'crypto';
 import OAuth from 'oauth-1.0a';
+import axios from 'axios';
 
 export interface DirectPublishResult {
   success: boolean;
@@ -34,7 +35,6 @@ export class DirectPublisher {
       }
 
       // REAL Facebook Graph API publishing
-      const axios = require('axios');
       
       if (!appSecret) {
         return { success: false, error: 'Facebook app secret missing' };
@@ -86,7 +86,6 @@ export class DirectPublisher {
       }
 
       // REAL LinkedIn Publishing using LinkedIn Marketing API
-      const axios = require('axios');
       
       // Get LinkedIn person ID first
       const profileResponse = await axios.get(
@@ -154,7 +153,6 @@ export class DirectPublisher {
       }
 
       // REAL Instagram Publishing using Instagram Graph API
-      const axios = require('axios');
       
       // Get Instagram account ID
       const accountResponse = await axios.get(
@@ -241,11 +239,9 @@ export class DirectPublisher {
       }
 
       // REAL X Publishing using X API v2 with OAuth 1.0a
-      const OAuth = require('oauth-1.0a');
-      const crypto = require('crypto');
       
       // Set up OAuth 1.0a for X API
-      const oauth = OAuth({
+      const oauth = new OAuth({
         consumer: {
           key: process.env.X_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY,
           secret: process.env.X_CONSUMER_SECRET || process.env.TWITTER_CONSUMER_SECRET
@@ -267,7 +263,6 @@ export class DirectPublisher {
       };
       
       // Create X tweet
-      const axios = require('axios');
       const tweetResponse = await axios.post(
         'https://api.twitter.com/2/tweets',
         {
@@ -334,7 +329,6 @@ export class DirectPublisher {
       }
 
       // REAL YouTube Publishing using YouTube Data API v3
-      const axios = require('axios');
       
       // Create YouTube community post
       const communityResponse = await axios.post(

@@ -4,7 +4,7 @@
  * Verifies real post IDs are returned from platform APIs
  */
 
-const axios = require('axios');
+import axios from 'axios';
 
 class RealPublishingTester {
   constructor() {
@@ -196,8 +196,8 @@ class RealPublishingTester {
 
   async testXPublishing(content, connection) {
     try {
-      const OAuth = require('oauth-1.0a');
-      const crypto = require('crypto');
+      const OAuth = (await import('oauth-1.0a')).default;
+      const crypto = await import('crypto');
       
       // Set up OAuth 1.0a
       const oauth = OAuth({
@@ -303,7 +303,7 @@ class RealPublishingTester {
     console.log('=====================================');
     
     // Save results to file
-    const fs = require('fs');
+    const fs = await import('fs');
     const timestamp = new Date().toISOString();
     const reportData = {
       timestamp,

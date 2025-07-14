@@ -9187,6 +9187,59 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
+      if (action === 'publish_single') {
+        // REAL API PUBLISHING - Single platform test using ONLY stored OAuth connections
+        const { platform, content } = req.body;
+        
+        if (!platform || !content) {
+          return res.status(400).json({ message: 'Platform and content are required for single publishing' });
+        }
+
+        try {
+          // Get platform connection for token
+          const connections = await storage.getPlatformConnectionsByUser(userId);
+          const connection = connections.find(c => c.platform === platform && c.isActive);
+          
+          if (!connection) {
+            return res.json({
+              success: false,
+              error: `No active connection found for ${platform}`,
+              platform
+            });
+          }
+
+          // Import DirectPublisher for real API publishing
+          const { DirectPublisher } = await import('./direct-publisher');
+
+          // Publish using DirectPublisher with real platform APIs
+          const result = await DirectPublisher.publishToPlatform(platform, content, connection.accessToken);
+
+          if (result.success && result.platformPostId) {
+            console.log(`✅ Real API publish successful: ${platform} - Post ID: ${result.platformPostId}`);
+            return res.json({
+              success: true,
+              platformPostId: result.platformPostId,
+              platform,
+              message: `Successfully published to ${platform}`
+            });
+          } else {
+            console.log(`❌ Real API publish failed: ${platform} - Error: ${result.error}`);
+            return res.json({
+              success: false,
+              error: result.error || 'Unknown publishing error',
+              platform
+            });
+          }
+        } catch (error: any) {
+          console.error(`Real API publish error for ${platform}:`, error);
+          return res.json({
+            success: false,
+            error: error.message,
+            platform
+          });
+        }
+      }
+
       if (action === 'publish_all') {
         // QUOTA ENFORCEMENT: Check quota status before publishing
         const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
