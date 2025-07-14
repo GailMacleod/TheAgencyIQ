@@ -33,14 +33,10 @@ export default function Splash() {
     }
   }, [location]);
 
-  // Trigger animated reveal on page load
+  // Trigger animated reveal on page load - optimized for faster loading
   useEffect(() => {
-    // Start animation after a short delay
-    const timer = setTimeout(() => {
-      setRevealAnimation(true);
-    }, 300);
-    
-    return () => clearTimeout(timer);
+    // Start animation immediately for returning customers
+    setRevealAnimation(true);
   }, []);
 
   return (
