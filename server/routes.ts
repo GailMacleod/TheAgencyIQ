@@ -1342,7 +1342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
         console.error('❌ Stripe webhook configuration missing');
-        // CRITICAL FIX: Return 200 even when not configured to prevent webhook deactivation
+        // CRITICAL FIX: Return 200-299 status to prevent webhook deactivation
         return res.status(200).json({ received: true, error: 'Webhook not configured but acknowledged' });
       }
 
@@ -1350,7 +1350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`✅ Webhook signature verified for event: ${event.type}`);
     } catch (err: any) {
       console.error('❌ Stripe webhook signature verification failed:', err.message);
-      // CRITICAL FIX: Return 200 even on signature verification failure to prevent webhook deactivation
+      // CRITICAL FIX: Return 200-299 status to prevent webhook deactivation
       return res.status(200).json({ received: true, error: 'Signature verification failed but acknowledged' });
     }
 
@@ -8595,9 +8595,16 @@ Continue building your Value Proposition Canvas systematically.`;
         // Link Stripe subscription to user with end-to-end flow
         await storage.linkStripeSubscription(userId, session.customer as string, session.subscription as string);
         
-        // Set 30-day quota cycle based on subscription plan
+        // Set 30-day quota cycle based on subscription plan with auto-publish
         const quotaAmount = planName === 'professional' ? 52 : planName === 'growth' ? 35 : 20;
         await storage.set30DayQuotaCycle(userId, quotaAmount);
+        
+        // Reset quota to full amount for new subscription
+        await storage.updateUser(userId, {
+          totalPosts: quotaAmount,
+          remainingPosts: quotaAmount,
+          lastQuotaReset: new Date()
+        });
         
         // Log successful subscription creation with comprehensive details
         await loggingService.logSubscriptionCreation({

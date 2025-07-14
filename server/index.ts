@@ -178,10 +178,31 @@ async function startServer() {
     resave: false,
     saveUninitialized: false, // Changed to false to avoid creating sessions for every request
     name: 'theagencyiq.session',
-    genid: () => {
+    genid: (req: any) => {
+      // First check if there's already a session ID in the cookie
+      if (req.headers.cookie) {
+        const sessionCookieMatch = req.headers.cookie.match(/theagencyiq\.session=([^;]+)/);
+        if (sessionCookieMatch) {
+          let extractedSessionId = decodeURIComponent(sessionCookieMatch[1]);
+          
+          // Handle signed cookie format (s:sessionId.signature)
+          if (extractedSessionId.startsWith('s:')) {
+            extractedSessionId = extractedSessionId.substring(2).split('.')[0];
+          }
+          
+          if (extractedSessionId.startsWith('aiq_')) {
+            console.log(`🔄 Reusing existing session ID: ${extractedSessionId}`);
+            return extractedSessionId;
+          }
+        }
+      }
+      
+      // Generate new session ID if none exists
       const timestamp = Date.now().toString(36);
       const random = Math.random().toString(36).substring(2, 15);
-      return `aiq_${timestamp}_${random}`;
+      const newSessionId = `aiq_${timestamp}_${random}`;
+      console.log(`🆕 Generated new session ID: ${newSessionId}`);
+      return newSessionId;
     },
     cookie: { 
       secure: false, // Must be false for development

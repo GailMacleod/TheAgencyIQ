@@ -8,6 +8,7 @@ import axios from 'axios';
 import { storage } from '../storage';
 import { loggingService } from './logging-service';
 import { platformPostManager } from './platform-post-manager';
+import { analyticsService } from './analytics-service';
 
 export interface PublishRequest {
   userId: number;
@@ -31,8 +32,9 @@ class RealApiPublisher {
    * Publish to Facebook using Graph API
    */
   async publishToFacebook(request: PublishRequest): Promise<PublishResult> {
+    const startTime = Date.now();
     try {
-      // Simulate real Facebook API call (replace with actual API in production)
+      // Real Facebook Graph API integration
       const response = await axios.post(
         `https://graph.facebook.com/me/feed`,
         {
