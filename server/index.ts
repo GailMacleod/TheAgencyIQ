@@ -182,7 +182,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Simple session configuration
+  // Simple session configuration with frontend access
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -192,7 +192,7 @@ async function startServer() {
     cookie: { 
       secure: false,
       maxAge: sessionTtl,
-      httpOnly: false,
+      httpOnly: false,  // Allow frontend access
       sameSite: 'lax',
       path: '/'
     },
@@ -218,7 +218,7 @@ async function startServer() {
       res.send = function(data) {
         if (!res.headersSent) {
           res.setHeader('Set-Cookie', [
-            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=false; SameSite=lax`
+            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax`
           ]);
         }
         return originalSend.call(this, data);
@@ -227,7 +227,7 @@ async function startServer() {
       res.json = function(data) {
         if (!res.headersSent) {
           res.setHeader('Set-Cookie', [
-            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=false; SameSite=lax`
+            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax`
           ]);
         }
         return originalJson.call(this, data);
@@ -236,7 +236,7 @@ async function startServer() {
       res.end = function(data) {
         if (!res.headersSent) {
           res.setHeader('Set-Cookie', [
-            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; HttpOnly=false; Secure=false; SameSite=lax`
+            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax`
           ]);
         }
         return originalEnd.call(this, data);
