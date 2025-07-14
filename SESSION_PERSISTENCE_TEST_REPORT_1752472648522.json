@@ -1,0 +1,88 @@
+{
+  "summary": {
+    "totalTests": 4,
+    "passedTests": 3,
+    "successRate": 75
+  },
+  "tests": [
+    {
+      "test": "session_establishment",
+      "result": {
+        "status": 200,
+        "userId": 2,
+        "email": "gailm@macleodglba.com.au",
+        "cookiesSet": true,
+        "success": true
+      },
+      "timestamp": "2025-07-14T05:57:26.330Z"
+    },
+    {
+      "test": "multiple_logins",
+      "result": {
+        "attempts": 5,
+        "userIds": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "consistentUserId": true,
+        "allCorrect": true,
+        "success": true
+      },
+      "timestamp": "2025-07-14T05:57:27.515Z"
+    },
+    {
+      "test": "cookie_reliability",
+      "result": {
+        "cookiesProvided": true,
+        "requestResults": {
+          "user_data": {
+            "status": 200,
+            "userId": 2,
+            "success": true
+          },
+          "user_status": {
+            "status": 200,
+            "userId": 2,
+            "success": true
+          },
+          "session_check": {
+            "status": 200,
+            "userId": 2,
+            "success": true
+          }
+        },
+        "allSuccessful": true,
+        "consistentUserIds": true,
+        "success": true
+      },
+      "timestamp": "2025-07-14T05:57:28.000Z"
+    },
+    {
+      "test": "session_consistency",
+      "result": {
+        "concurrentRequests": 3,
+        "userIds": [
+          2,
+          2,
+          2
+        ],
+        "sessionIds": [
+          null,
+          null,
+          null
+        ],
+        "consistentUserIds": true,
+        "uniqueSessionIds": false,
+        "success": false
+      },
+      "timestamp": "2025-07-14T05:57:28.521Z"
+    }
+  ],
+  "targetUser": {
+    "id": 2,
+    "email": "gailm@macleodglba.com.au"
+  }
+}
