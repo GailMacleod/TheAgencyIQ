@@ -35,14 +35,12 @@ export default function Splash() {
 
   // Trigger animated reveal on page load
   useEffect(() => {
-    // Start animation immediately to prevent black screen
-    setRevealAnimation(true);
+    // Start animation after a short delay
+    const timer = setTimeout(() => {
+      setRevealAnimation(true);
+    }, 300);
     
-    // If we want animation, uncomment below:
-    // const timer = setTimeout(() => {
-    //   setRevealAnimation(true);
-    // }, 300);
-    // return () => clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
