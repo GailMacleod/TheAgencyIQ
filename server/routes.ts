@@ -8373,6 +8373,23 @@ Continue building your Value Proposition Canvas systematically.`;
         const totalPosts = parseInt(session.metadata?.totalPosts || '12');
         
         if (customerEmail) {
+          // ENHANCED DUPLICATE PREVENTION: Check for existing Stripe customer first
+          let existingUserByStripeCustomer = await storage.getUserByStripeCustomerId(session.customer as string);
+          
+          if (existingUserByStripeCustomer && existingUserByStripeCustomer.email !== customerEmail) {
+            console.log(`⚠️ Stripe customer ${session.customer} already associated with ${existingUserByStripeCustomer.email}, canceling subscription for ${customerEmail}`);
+            
+            // Cancel the duplicate subscription
+            try {
+              await stripe.subscriptions.cancel(session.subscription as string);
+              console.log(`✅ Canceled duplicate subscription ${session.subscription} for ${customerEmail}`);
+            } catch (cancelError) {
+              console.error('Failed to cancel duplicate subscription:', cancelError);
+            }
+            
+            return res.redirect('/subscription?error=duplicate_customer');
+          }
+          
           // Check if user already exists with verified phone
           let user = await storage.getUserByEmail(customerEmail);
           
@@ -8401,7 +8418,22 @@ Continue building your Value Proposition Canvas systematically.`;
             });
             return;
           } else {
-            // Existing user - update subscription details
+            // EXISTING USER: Check for existing subscription before updating
+            if (user.stripeSubscriptionId && user.stripeSubscriptionId !== session.subscription) {
+              console.log(`⚠️ User ${user.id} already has subscription ${user.stripeSubscriptionId}, canceling new subscription ${session.subscription}`);
+              
+              // Cancel the duplicate subscription
+              try {
+                await stripe.subscriptions.cancel(session.subscription as string);
+                console.log(`✅ Canceled duplicate subscription ${session.subscription} for user ${user.id}`);
+              } catch (cancelError) {
+                console.error('Failed to cancel duplicate subscription:', cancelError);
+              }
+              
+              return res.redirect('/subscription?error=existing_subscription');
+            }
+            
+            // Update subscription details
             user = await storage.updateUserStripeInfo(
               user.id,
               session.customer as string,
@@ -8547,6 +8579,78 @@ Continue building your Value Proposition Canvas systematically.`;
         message: 'Failed to fetch subscribers',
         error: error.message
       });
+    }
+  });
+
+  // Admin endpoint to test subscription recreation prevention
+  app.post("/api/admin/test-subscription-recreation", requireAuth, async (req: any, res) => {
+    try {
+      const requesterId = req.session.userId;
+      
+      // Only allow admin access for User ID 2 (gailm@macleodglba.com.au)
+      if (requesterId !== '2' && requesterId !== 2) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { email, testType } = req.body;
+      
+      console.log(`🧪 Testing subscription recreation for ${email} (${testType})`);
+      
+      const results = {
+        testType,
+        email,
+        existingUser: null,
+        existingStripeCustomer: null,
+        duplicateCheckPassed: false,
+        message: ''
+      };
+      
+      // Check if user exists in database
+      const user = await storage.getUserByEmail(email);
+      results.existingUser = user ? {
+        id: user.id,
+        email: user.email,
+        stripeCustomerId: user.stripeCustomerId,
+        stripeSubscriptionId: user.stripeSubscriptionId,
+        subscriptionPlan: user.subscriptionPlan
+      } : null;
+      
+      // Check if Stripe customer exists
+      if (user && user.stripeCustomerId) {
+        try {
+          const customer = await stripe.customers.retrieve(user.stripeCustomerId);
+          results.existingStripeCustomer = {
+            id: customer.id,
+            email: customer.email,
+            name: customer.name
+          };
+        } catch (error) {
+          console.log(`No Stripe customer found for ${user.stripeCustomerId}`);
+        }
+      }
+      
+      // Test duplicate prevention logic
+      if (testType === 'duplicate_customer') {
+        if (user && user.stripeCustomerId) {
+          results.duplicateCheckPassed = true;
+          results.message = 'Duplicate customer check would prevent new subscription creation';
+        } else {
+          results.message = 'No existing Stripe customer found - would allow new subscription';
+        }
+      } else if (testType === 'duplicate_subscription') {
+        if (user && user.stripeSubscriptionId) {
+          results.duplicateCheckPassed = true;
+          results.message = 'Duplicate subscription check would prevent new subscription creation';
+        } else {
+          results.message = 'No existing subscription found - would allow new subscription';
+        }
+      }
+      
+      console.log(`✅ Test complete: ${results.message}`);
+      res.json(results);
+    } catch (error: any) {
+      console.error('Admin test error:', error);
+      res.status(500).json({ message: "Error testing subscription recreation: " + error.message });
     }
   });
 

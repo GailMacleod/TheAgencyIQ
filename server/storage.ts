@@ -27,7 +27,7 @@ import {
   type InsertSubscriptionAnalytics,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations - phone UID architecture
@@ -94,6 +94,8 @@ export interface IStorage {
   updatePostLedger(userId: string, updates: any): Promise<any>;
   
   // Stripe subscription management
+  getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
+  listAllStripeCustomers(): Promise<User[]>;
   getUsersWithStripeCustomers(): Promise<User[]>;
   clearDuplicateStripeCustomers(keepUserId: number): Promise<void>;
 }
@@ -574,11 +576,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Stripe subscription management
+  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
+    return user;
+  }
+
+  async listAllStripeCustomers(): Promise<User[]> {
+    const usersWithStripe = await db
+      .select()
+      .from(users)
+      .where(sql`${users.stripeCustomerId} IS NOT NULL`);
+    return usersWithStripe;
+  }
+
   async getUsersWithStripeCustomers(): Promise<User[]> {
     const usersWithStripe = await db
       .select()
       .from(users)
-      .where(eq(users.stripeCustomerId, users.stripeCustomerId)); // Users with non-null stripe customer ID
+      .where(sql`${users.stripeCustomerId} IS NOT NULL`);
     return usersWithStripe;
   }
 
@@ -592,7 +607,7 @@ export class DatabaseStorage implements IStorage {
       })
       .where(and(
         eq(users.id, keepUserId),
-        eq(users.stripeCustomerId, users.stripeCustomerId)
+        sql`${users.stripeCustomerId} IS NOT NULL`
       ));
   }
 }
