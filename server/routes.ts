@@ -157,17 +157,26 @@ function addSystemHealthEndpoints(app: Express) {
       // Force session to be marked as modified
       req.session.touch();
       
-      // Force cookie to be set in response headers with proper format
-      if (!res.headersSent) {
-        const cookieValue = `theagencyiq.session=${req.sessionID}`;
-        res.setHeader('Set-Cookie', `${cookieValue}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`);
-        console.log(`🔧 Manual cookie set: ${cookieValue}`);
-        
-        // Also set a backup cookie for browser compatibility
-        const backupCookie = `aiq_backup_session=${req.sessionID}`;
-        res.setHeader('Set-Cookie', [`${cookieValue}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`, `${backupCookie}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`]);
-        console.log(`🔧 Backup cookie set: ${backupCookie}`);
-      }
+      // Set session cookie using res.cookie() method for proper transmission
+      res.cookie('theagencyiq.session', req.sessionID, {
+        path: '/',
+        secure: false,
+        sameSite: 'lax',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+      });
+      
+      // Also set a backup cookie for browser compatibility
+      res.cookie('aiq_backup_session', req.sessionID, {
+        path: '/',
+        secure: false,
+        sameSite: 'lax',
+        httpOnly: false, // Keep false for browser access
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+      });
+      
+      console.log(`🔧 Session cookie set: theagencyiq.session=${req.sessionID}`);
+      console.log(`🔧 Backup cookie set: aiq_backup_session=${req.sessionID}`);
       
       // Check if session was saved properly
       console.log('📋 Session data after save:', {
@@ -2480,6 +2489,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             path: '/'
           });
+          
+          // Also set backup cookie for browser compatibility
+          res.cookie('aiq_backup_session', req.sessionID, {
+            httpOnly: false,
+            secure: false,
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            path: '/'
+          });
+          
+          console.log(`🔧 Session cookie set: theagencyiq.session=${req.sessionID}`);
+          console.log(`🔧 Backup cookie set: aiq_backup_session=${req.sessionID}`);
           
           return res.json({ 
             success: true, 
