@@ -28,9 +28,6 @@ async function startServer() {
   // CRITICAL: Disable trust proxy for development to prevent automatic secure cookie enforcement
   app.set('trust proxy', 0);
   
-  // Cookie parser middleware with signed cookies - MUST be before session middleware
-  app.use(cookieParser('agencyiq-session-secret-key'));
-
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
@@ -145,40 +142,43 @@ async function startServer() {
   // CRITICAL: Disable trust proxy for development to prevent automatic secure cookie enforcement
   app.set('trust proxy', 0);
 
+  // Cookie parser middleware - MUST be before session middleware
+  app.use(cookieParser());
+
   // Device-agnostic session configuration for mobile-to-desktop continuity
   // Configure PostgreSQL session store
   const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: true, // Fix: Allow session table creation
+    createTableIfMissing: true,
     ttl: sessionTtl,
     tableName: "sessions",
+    schemaName: "public",
+    pruneSessionInterval: 60 * 15, // 15 minutes
     errorLog: (error) => {
       console.error('Session store error:', error);
     }
   });
   
-  // Add debugging to the session store
+  // Add debugging to session store to see if it's being called
   const originalGet = sessionStore.get.bind(sessionStore);
   sessionStore.get = function(sid, callback) {
-    console.log(`🔍 Session store get: ${sid}`);
+    console.log(`🔍 Session store get called for: ${sid}`);
     return originalGet(sid, (err, session) => {
-      console.log(`🔍 Session store get result: ${sid} => ${session ? 'found' : 'not found'}`);
-      if (err) console.error(`❌ Session store get error: ${err}`);
+      if (err) {
+        console.error(`❌ Session store get error: ${err}`);
+      } else {
+        console.log(`✅ Session store get result: ${session ? 'found' : 'not found'}`);
+        if (session) {
+          console.log(`📋 Retrieved session data: ${JSON.stringify(session)}`);
+        }
+      }
       callback(err, session);
     });
   };
-
-  // Test session store connection
-  console.log('🔧 Testing session store connection...');
-  sessionStore.get('test-connection', (err, session) => {
-    if (err) {
-      console.error('❌ Session store connection failed:', err);
-    } else {
-      console.log('✅ Session store connection successful');
-    }
-  });
+  
+  console.log('✅ Session store initialized successfully');
 
   // CORS middleware with proper credentials support
   app.use(cors({
@@ -195,93 +195,27 @@ async function startServer() {
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
-    resave: false,
-    saveUninitialized: false,  // CRITICAL: Set to false to prevent new sessions on each request
+    resave: false,    // CRITICAL: Set to false to prevent unnecessary session saves
+    saveUninitialized: false,  // CRITICAL: Set to false to prevent creating sessions for every request
     name: 'theagencyiq.session',
     cookie: { 
       secure: false,  // CRITICAL: Set to false for development
       maxAge: sessionTtl,
       httpOnly: false,      // Allow frontend access
-      sameSite: 'none',  // CRITICAL: Set to 'none' for cross-origin requests
+      sameSite: 'lax',  // CRITICAL: Changed from 'none' to 'lax' for same-site requests
       path: '/',
       domain: undefined,    // Let browser set domain automatically
-      signed: false        // Set to false for development - simplify cookie handling
+      signed: true         // Set to true for proper cookie signing
     },
     rolling: true,    // Extend session on activity
-    proxy: false,  // Disable proxy mode to prevent automatic secure cookie enforcement
-    genid: (req) => {
-      // CRITICAL: Only generate new session ID if no existing cookie
-      const existingCookie = req.headers.cookie;
-      if (existingCookie) {
-        const sessionCookie = existingCookie.split(';').find(c => c.trim().startsWith('theagencyiq.session='));
-        if (sessionCookie) {
-          let existingSessionId = sessionCookie.split('=')[1];
-          
-          // Handle signed cookie format (s%3A...)
-          if (existingSessionId.startsWith('s%3A')) {
-            // Extract the actual session ID from signed cookie
-            try {
-              const decoded = decodeURIComponent(existingSessionId);
-              const sessionIdPart = decoded.split('.')[0].replace('s:', '');
-              console.log('🔍 Using existing signed session ID:', sessionIdPart);
-              return sessionIdPart;
-            } catch (error) {
-              console.error('Error decoding signed session ID:', error);
-            }
-          } else {
-            console.log('🔍 Using existing unsigned session ID:', existingSessionId);
-            return existingSessionId;
-          }
-        }
-      }
-      // Generate new session ID only if no existing cookie
-      const newSessionId = crypto.randomBytes(16).toString('hex');
-      console.log('🔍 Generated new session ID:', newSessionId);
-      return newSessionId;
-    }
+    proxy: false  // Disable proxy mode to prevent automatic secure cookie enforcement
   }));
 
-  // Session debugging middleware
+  // Simple session debug middleware - reduced logging
   app.use((req, res, next) => {
-    console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
-    console.log(`📋 Session ID: ${req.sessionID}`);
-    console.log(`📋 User ID: ${req.session?.userId}`);
-    console.log(`📋 Cookie Header: ${req.headers.cookie || 'MISSING'}`);
-    
-    // Force cookie setting on all responses
-    const originalSend = res.send;
-    const originalJson = res.json;
-    
-    res.send = function(data) {
-      // Set session cookie explicitly if session exists
-      if (req.sessionID && req.session && req.session.userId) {
-        res.cookie('theagencyiq.session', req.sessionID, {
-          httpOnly: false,
-          secure: false,
-          sameSite: 'none',
-          maxAge: 24 * 60 * 60 * 1000,
-          path: '/',
-          signed: false   // Development mode - simplified cookie handling
-        });
-      }
-      return originalSend.call(this, data);
-    };
-    
-    res.json = function(data) {
-      // Set session cookie explicitly if session exists
-      if (req.sessionID && req.session && req.session.userId) {
-        res.cookie('theagencyiq.session', req.sessionID, {
-          httpOnly: false,
-          secure: false,
-          sameSite: 'none',
-          maxAge: 24 * 60 * 60 * 1000,
-          path: '/',
-          signed: false   // Development mode - simplified cookie handling
-        });
-      }
-      return originalJson.call(this, data);
-    };
-    
+    if (req.url === '/api/user' || req.url === '/api/establish-session') {
+      console.log(`🔍 ${req.method} ${req.url} - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
+    }
     next();
   });
 

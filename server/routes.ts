@@ -105,36 +105,37 @@ function addSystemHealthEndpoints(app: Express) {
       // Set session data in Express session
       req.session.userId = 2;
       req.session.userEmail = 'gailm@macleodglba.com.au';
+      req.session.subscriptionPlan = 'Professional';
+      req.session.subscriptionActive = true;
       
-      // Store session in direct mapping AND share with app
-      sessionUserMap.set(req.sessionID, {
-        userId: 2,
-        userEmail: 'gailm@macleodglba.com.au',
-        createdAt: new Date()
-      });
-      
-      // CRITICAL: Share session map with app locals for middleware access
-      req.app.locals.sessionUserMap = sessionUserMap;
+      // Store session in direct mapping for authGuard access
+      sessionUserMap.set(req.sessionID, 2);
       
       console.log('Test session established for gailm@macleodglba.com.au (ID: 2)');
       
-      // Force session save to ensure cookie is set - CRITICAL: Use synchronous save
-      await new Promise((resolve) => {
+      // Force session save to ensure data is persisted
+      await new Promise<void>((resolve, reject) => {
         req.session.save((err) => {
           if (err) {
             console.error('Session save error:', err);
+            reject(err);
           } else {
-            console.log('Session saved successfully');
+            console.log('✅ Session saved successfully with userId:', req.session.userId);
+            resolve();
           }
-          resolve();
         });
       });
       
-      // FORCE SET COOKIE HEADER DIRECTLY - BYPASS EXPRESS COOKIE MIDDLEWARE
-      const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax; HttpOnly=false`;
-      res.setHeader('Set-Cookie', cookieValue);
+      // Force session to be marked as modified
+      req.session.touch();
       
-      console.log(`🔧 FORCED cookie set: ${cookieValue}`);
+      // Check if session was saved properly
+      console.log('📋 Session data after save:', {
+        sessionId: req.sessionID,
+        userId: req.session.userId,
+        userEmail: req.session.userEmail,
+        subscriptionPlan: req.session.subscriptionPlan
+      });
       
       res.json({ 
         sessionEstablished: true,
@@ -423,6 +424,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cookies = req.headers.cookie || '';
       const sessionFromStore = req.session;
       
+      console.log('🔍 Session debug endpoint called');
+      console.log('📋 Session ID:', req.sessionID);
+      console.log('📋 Session object:', JSON.stringify(sessionFromStore, null, 2));
+      console.log('📋 Cookie header:', cookies);
+      
       res.json({
         sessionID: req.sessionID,
         userId: sessionFromStore?.userId,
@@ -430,7 +436,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cookieHeader: cookies,
         sessionExists: !!sessionFromStore,
         userIdExists: !!sessionFromStore?.userId,
-        hasSessionData: !!sessionFromStore
+        hasSessionData: !!sessionFromStore,
+        sessionData: sessionFromStore
       });
     } catch (error) {
       console.error('Session debug error:', error);
