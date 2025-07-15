@@ -7,6 +7,7 @@ import { createServer } from 'http';
 import path from 'path';
 import crypto from 'crypto';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
+import { memoryManager } from './utils/memory-manager';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -20,8 +21,9 @@ function log(message: string, source = "express") {
 }
 
 async function startServer() {
-  // Initialize monitoring
+  // Initialize monitoring and memory management
   initializeMonitoring();
+  memoryManager; // Initialize memory manager
   
   const app = express();
 

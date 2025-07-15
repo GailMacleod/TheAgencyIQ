@@ -30,6 +30,15 @@ export interface QuotaTransaction {
 
 class PlatformPostManager {
   private quotaTransactions: Map<string, QuotaTransaction> = new Map();
+  private readonly MAX_TRANSACTIONS = 1000;
+  
+  private cleanupOldTransactions(): void {
+    if (this.quotaTransactions.size > this.MAX_TRANSACTIONS) {
+      const entries = Array.from(this.quotaTransactions.entries());
+      const toDelete = entries.slice(0, entries.length - this.MAX_TRANSACTIONS);
+      toDelete.forEach(([key]) => this.quotaTransactions.delete(key));
+    }
+  }
 
   /**
    * Record platform post ID and handle quota deduction

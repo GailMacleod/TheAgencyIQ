@@ -44,8 +44,13 @@ import { userSignupService } from './services/user-signup-service';
 import { sessionActivityService } from './services/session-activity-service';
 import { LRUCache, MemoryMonitor, StreamProcessor } from './utils/memory-optimized-cache';
 
-// Session mapping for direct session management
-const sessionUserMap = new Map();
+// Session mapping for direct session management - LRU cache for memory optimization
+const sessionUserMap = new LRUCache({
+  max: 500, // Maximum 500 sessions
+  ttl: 24 * 60 * 60 * 1000, // 24 hours TTL
+  updateAgeOnGet: true,
+  updateAgeOnHas: true
+});
 
 // Extended session types
 declare module 'express-session' {

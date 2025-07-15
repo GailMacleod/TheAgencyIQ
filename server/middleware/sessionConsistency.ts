@@ -3,6 +3,15 @@ import { Request, Response, NextFunction } from 'express';
 // Custom session consistency middleware to completely bypass express-session ID issues
 export class SessionConsistencyManager {
   private static sessionMap = new Map<string, any>();
+  private static readonly MAX_SESSIONS = 1000;
+  
+  private static cleanupOldSessions(): void {
+    if (this.sessionMap.size > this.MAX_SESSIONS) {
+      const entries = Array.from(this.sessionMap.entries());
+      const toDelete = entries.slice(0, entries.length - this.MAX_SESSIONS);
+      toDelete.forEach(([key]) => this.sessionMap.delete(key));
+    }
+  }
   
   static middleware() {
     return (req: any, res: Response, next: NextFunction) => {
@@ -41,6 +50,7 @@ export class SessionConsistencyManager {
         // Override session.save to store in our map
         const originalSave = req.session.save;
         req.session.save = (callback?: (err?: any) => void) => {
+          this.cleanupOldSessions();
           this.sessionMap.set(cookieSessionId, {
             userId: req.session.userId,
             userEmail: req.session.userEmail,
