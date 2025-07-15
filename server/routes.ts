@@ -102,11 +102,12 @@ function addSystemHealthEndpoints(app: Express) {
         existingUserId: req.session?.userId
       });
       
-      // Generate unique session ID
-      const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Set session data in Express session
+      req.session.userId = 2;
+      req.session.userEmail = 'gailm@macleodglba.com.au';
       
       // Store session in direct mapping
-      sessionUserMap.set(sessionId, {
+      sessionUserMap.set(req.sessionID, {
         userId: 2,
         userEmail: 'gailm@macleodglba.com.au',
         createdAt: new Date()
@@ -114,11 +115,33 @@ function addSystemHealthEndpoints(app: Express) {
       
       console.log('Test session established for gailm@macleodglba.com.au (ID: 2)');
       
+      // Force session save to ensure cookie is set
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+        } else {
+          console.log('Session saved successfully');
+        }
+      });
+      
+      // Set signed session cookie in response
+      res.cookie('theagencyiq.session', req.sessionID, {
+        httpOnly: false,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/',
+        signed: true
+      });
+      
       res.json({ 
         sessionEstablished: true,
-        userId: 2,
-        userEmail: 'gailm@macleodglba.com.au',
-        sessionId: sessionId
+        user: {
+          id: 2,
+          email: 'gailm@macleodglba.com.au',
+          phone: '+61424835189'
+        },
+        sessionId: req.sessionID
       });
     } catch (error) {
       console.error('Session establishment error:', error);

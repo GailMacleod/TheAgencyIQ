@@ -44,6 +44,7 @@ async function startServer() {
     // Extract session ID from cookie
     const cookieHeader = req.headers.cookie;
     if (cookieHeader && sessionUserMap) {
+      // Look for signed session cookie (express-session format)
       const sessionCookie = cookieHeader.split(';').find(c => c.trim().startsWith('theagencyiq.session='));
       if (sessionCookie) {
         const sessionId = sessionCookie.split('=')[1];
@@ -171,6 +172,9 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
+  // Trust proxy for proper session handling in Replit
+  app.set('trust proxy', 1);
+
   // Device-agnostic session configuration for mobile-to-desktop continuity
   // Configure PostgreSQL session store
   const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
@@ -242,6 +246,40 @@ async function startServer() {
     console.log(`📋 Session ID: ${req.sessionID}`);
     console.log(`📋 User ID: ${req.session?.userId}`);
     console.log(`📋 Cookie Header: ${req.headers.cookie || 'MISSING'}`);
+    
+    // Force cookie setting on all responses
+    const originalSend = res.send;
+    const originalJson = res.json;
+    
+    res.send = function(data) {
+      // Set session cookie explicitly if session exists
+      if (req.sessionID && req.session && req.session.userId) {
+        res.cookie('theagencyiq.session', req.sessionID, {
+          httpOnly: false,
+          secure: false,
+          sameSite: 'lax',
+          maxAge: 24 * 60 * 60 * 1000,
+          path: '/',
+          signed: true
+        });
+      }
+      return originalSend.call(this, data);
+    };
+    
+    res.json = function(data) {
+      // Set session cookie explicitly if session exists
+      if (req.sessionID && req.session && req.session.userId) {
+        res.cookie('theagencyiq.session', req.sessionID, {
+          httpOnly: false,
+          secure: false,
+          sameSite: 'lax',
+          maxAge: 24 * 60 * 60 * 1000,
+          path: '/',
+          signed: true
+        });
+      }
+      return originalJson.call(this, data);
+    };
     
     next();
   });
