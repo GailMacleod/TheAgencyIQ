@@ -38,7 +38,22 @@ async function startServer() {
   
   // CORS configuration - MUST be before routes
   app.use(cors({
-    origin: true,
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Allow all Replit domains and production domain
+      const allowed = [
+        'https://app.theagencyiq.ai',
+        'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'
+      ];
+      
+      if (allowed.includes(origin) || origin.includes('replit.dev')) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Allow all origins for development
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie'],
@@ -54,32 +69,6 @@ async function startServer() {
     }
     
     res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
-    
-    // Production-ready CSP with frame-ancestors for embedding and Replit beacon support
-    res.header('Content-Security-Policy', 
-      "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com https://replit.com; " +
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-      "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; " +
-      "img-src 'self' data: https: blob:; " +
-      "connect-src 'self' https: wss: ws:; " +
-      "frame-src 'self' https://www.facebook.com https://accounts.google.com; " +
-      "frame-ancestors 'self' https://app.theagencyiq.ai https://www.facebook.com;"
-    );
-    
-    // Clean Permissions-Policy - only recognized features with payment request support
-    res.header('Permissions-Policy', 
-      'camera=(), ' +
-      'microphone=(), ' +
-      'geolocation=(), ' +
-      'payment=self, ' +
-      'usb=(), ' +
-      'accelerometer=(), ' +
-      'gyroscope=(), ' +
-      'magnetometer=(), ' +
-      'fullscreen=self'
-    );
-    
     res.header('X-Frame-Options', 'SAMEORIGIN');
     res.header('X-Content-Type-Options', 'nosniff');
     res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -251,38 +240,72 @@ async function startServer() {
     next();
   });
 
+  // Add manifest.json and static file handling to prevent 403 errors
+  app.get('/manifest.json', (req, res) => {
+    res.status(200).json({
+      name: "TheAgencyIQ",
+      short_name: "AgencyIQ",
+      description: "AI-powered social media automation platform",
+      start_url: "/",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#3250fa",
+      icons: [
+        {
+          src: "/icon-192x192.png",
+          sizes: "192x192",
+          type: "image/png"
+        },
+        {
+          src: "/icon-512x512.png",
+          sizes: "512x512",
+          type: "image/png"
+        }
+      ]
+    });
+  });
+
+  // Handle favicon requests
+  app.get('/favicon.ico', (req, res) => {
+    res.status(204).send();
+  });
+
+  // Handle other static assets
+  app.get('/icon-*', (req, res) => {
+    res.status(204).send();
+  });
 
 
 
 
-  // Enhanced CSP for Facebook compliance, Google services, video content, and security
+
+  // Enhanced CSP for Facebook compliance, Google services, video content, and security  
   app.use((req, res, next) => {
-    res.setHeader('Content-Security-Policy', [
-      "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com",
-      "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://api.replicate.com https://replicate.delivery",
-      "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
-      "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net https://www.google-analytics.com https://www.google.com",
-      "media-src 'self' https://commondatastorage.googleapis.com https://*.googleapis.com https://*.google.com https://replicate.delivery https://*.replicate.delivery https://seedance.delivery https://*.seedance.delivery data: blob:",
-      "frame-src 'self' https://connect.facebook.net https://*.facebook.com https://www.google.com",
-      "frame-ancestors 'self' https://www.google.com"
-    ].join('; '));
+    // Only set CSP if not already set to avoid conflicts
+    if (!res.getHeader('Content-Security-Policy')) {
+      res.setHeader('Content-Security-Policy', [
+        "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com",
+        "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://api.replicate.com https://replicate.delivery",
+        "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
+        "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net https://www.google-analytics.com https://www.google.com",
+        "media-src 'self' https://commondatastorage.googleapis.com https://*.googleapis.com https://*.google.com https://replicate.delivery https://*.replicate.delivery https://seedance.delivery https://*.seedance.delivery data: blob:",
+        "frame-src 'self' https://connect.facebook.net https://*.facebook.com https://www.google.com",
+        "frame-ancestors 'self' https://www.google.com"
+      ].join('; '));
+    }
     
-    // Fixed Permissions Policy - removed unsupported features, fixed sandbox flags
-    res.setHeader('Permissions-Policy', [
-      'camera=()',
-      'fullscreen=self',
-      'geolocation=()',
-      'gyroscope=()',
-      'magnetometer=()',
-      'microphone=()',
-      'payment=()',
-      'picture-in-picture=()',
-      'usb=()',
-      'screen-wake-lock=()',
-      'web-share=()'
-    ].join(', '));
+    // Fixed Permissions Policy - only standard features
+    if (!res.getHeader('Permissions-Policy')) {
+      res.setHeader('Permissions-Policy', [
+        'camera=()',
+        'fullscreen=self',
+        'geolocation=()',
+        'microphone=()',
+        'payment=self'
+      ].join(', '));
+    }
     
     next();
   });

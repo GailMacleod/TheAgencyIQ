@@ -142,14 +142,18 @@ function addSystemHealthEndpoints(app: Express) {
         
         console.log(`✅ Session established: ${user.email} -> Session ID: ${req.sessionID}`);
         
-        // Force proper cookie transmission by setting explicit headers
-        const cookieString = `theagencyiq.session=s%3A${req.sessionID}.${Buffer.from(req.sessionID).toString('base64').substring(0, 16)}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400`;
-        res.setHeader('Set-Cookie', cookieString);
-        
-        console.log(`🍪 Cookie set: ${cookieString}`);
-        
-        // Also try alternative cookie setting method
+        // Set proper cookie headers for cross-origin requests
         res.cookie('theagencyiq.session', req.sessionID, {
+          signed: true,
+          secure: false,
+          sameSite: 'lax',
+          path: '/',
+          httpOnly: false,
+          maxAge: 86400000
+        });
+        
+        // Also set backup session cookie
+        res.cookie('aiq_backup_session', req.sessionID, {
           signed: true,
           secure: false,
           sameSite: 'lax',
