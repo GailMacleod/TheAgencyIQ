@@ -13,20 +13,22 @@ class ApiClient {
   async makeRequest(url: string, options: RequestInit = {}): Promise<Response> {
     const fullUrl = `${this.baseURL}${url}`;
     
-    // Get manual cookie if available
-    const manualCookie = this.getManualCookie();
+    // Get session ID from sessionStorage (bypasses broken cookie system)
+    const sessionId = sessionStorage.getItem('sessionId');
     
-    // CRITICAL: Ensure credentials are always included for cookie transmission
+    // CRITICAL: Use Authorization header instead of broken cookies
     const requestOptions: RequestInit = {
       ...options,
-      credentials: 'include',  // CRITICAL: Include credentials for cookie transmission
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        ...(manualCookie ? { 'Cookie': manualCookie } : {}),
+        ...(sessionId ? { 'Authorization': `Bearer session:${sessionId}` } : {}),
         ...options.headers
       }
     };
+    
+    console.log(`🔧 API Request to ${url} with session: ${sessionId ? sessionId.substring(0, 10) + '...' : 'NONE'}`);
     
     return await fetch(fullUrl, requestOptions);
   }

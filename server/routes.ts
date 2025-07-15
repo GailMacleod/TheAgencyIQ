@@ -106,12 +106,15 @@ function addSystemHealthEndpoints(app: Express) {
       req.session.userId = 2;
       req.session.userEmail = 'gailm@macleodglba.com.au';
       
-      // Store session in direct mapping
+      // Store session in direct mapping AND share with app
       sessionUserMap.set(req.sessionID, {
         userId: 2,
         userEmail: 'gailm@macleodglba.com.au',
         createdAt: new Date()
       });
+      
+      // CRITICAL: Share session map with app locals for middleware access
+      req.app.locals.sessionUserMap = sessionUserMap;
       
       console.log('Test session established for gailm@macleodglba.com.au (ID: 2)');
       
@@ -127,25 +130,11 @@ function addSystemHealthEndpoints(app: Express) {
         });
       });
       
-      // CRITICAL: Set explicit session cookie for browser compatibility
-      res.cookie('theagencyiq.session', req.sessionID, {
-        httpOnly: false,
-        secure: false,  // CRITICAL: Set to false for development
-        sameSite: 'lax',  // CRITICAL: Use lax for same-origin requests
-        maxAge: 24 * 60 * 60 * 1000,
-        path: '/',
-        signed: false    // CRITICAL: Unsigned for development compatibility
-      });
+      // FORCE SET COOKIE HEADER DIRECTLY - BYPASS EXPRESS COOKIE MIDDLEWARE
+      const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax; HttpOnly=false`;
+      res.setHeader('Set-Cookie', cookieValue);
       
-      // Also set unsigned cookie for browser compatibility
-      res.cookie('theagencyiq.session.unsigned', req.sessionID, {
-        httpOnly: false,
-        secure: false,  // CRITICAL: Set to false for development
-        sameSite: 'lax',  // CRITICAL: Use lax for same-origin requests
-        maxAge: 24 * 60 * 60 * 1000,
-        path: '/',
-        signed: false
-      });
+      console.log(`🔧 FORCED cookie set: ${cookieValue}`);
       
       res.json({ 
         sessionEstablished: true,
@@ -2322,25 +2311,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.header('Access-Control-Allow-Credentials', 'true');
           res.header('Access-Control-Expose-Headers', 'Set-Cookie');
           
-          // Set unsigned session cookie for browser compatibility in development
-          res.cookie('theagencyiq.session', req.sessionID, {
-            httpOnly: false,
-            secure: false,  // Set to false for development
-            sameSite: 'lax',  // Use lax for development
-            maxAge: 24 * 60 * 60 * 1000,
-            path: '/',
-            signed: false  // Changed to false for development
-          });
+          // FORCE SET COOKIE HEADER DIRECTLY - BYPASS EXPRESS COOKIE MIDDLEWARE
+          const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax; HttpOnly=false`;
+          res.setHeader('Set-Cookie', cookieValue);
           
-          // Also set unsigned cookie for browser compatibility
-          res.cookie('theagencyiq.session.unsigned', req.sessionID, {
-            httpOnly: false,
-            secure: false,  // Set to false for development
-            sameSite: 'lax',  // Use lax for development
-            maxAge: 24 * 60 * 60 * 1000,
-            path: '/',
-            signed: false
-          });
+          console.log(`🔧 FORCED cookie set: ${cookieValue}`);
           
           // Also add to session mapping for direct access
           const { sessionUserMap } = await import('./middleware/authGuard.js');

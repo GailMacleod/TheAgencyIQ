@@ -1,0 +1,1182 @@
+rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+🌍 Server Environment: {
+  NODE_ENV: 'development',
+  baseUrl: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+  port: undefined,
+  hasDatabase: true
+}
+🔧 Testing session store connection...
+🔍 Session store get: test-connection
+📡 Loading routes...
+🔍 Session store get result: test-connection => not found
+✅ Session store connection successful
+✅ SEO configuration loaded successfully
+🔗 OAuth Redirect Base URL: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev
+🔗 Facebook callback will be: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/auth/facebook/callback
+🔗 Instagram callback will be: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/auth/instagram/callback
+✅ X OAuth strategy configured successfully
+🔧 Passport.js strategies configured:
+  ✅ Facebook OAuth - Full authentication flow
+  ✅ Instagram OAuth - Via Facebook Graph API
+  ✅ LinkedIn OAuth - Professional networking
+  ✅ X (Twitter) OAuth - Social media posting
+  ✅ YouTube OAuth - Video content management
+🔐 Session serialization/deserialization configured
+Facebook OAuth routes disabled in server/routes.ts - using custom implementation
+✅ Routes registered successfully
+⚡ Setting up development Vite...
+✅ Vite setup complete
+TheAgencyIQ Server running on port 5000
+Deploy time: 15/07/2025, 12:07:05 pm AEST
+React app with OAuth bypass ready
+Visit /public to bypass auth and access platform connections
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /
+📋 Session ID: 0815ee40bd999deb8dc7e10d661c56a5
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /
+📋 Session ID: 0815ee40bd999deb8dc7e10d661c56a5
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /@vite/client
+📋 Session ID: 65861db482e5b0f1b26ebb379f2eb0de
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /@vite/client
+📋 Session ID: 65861db482e5b0f1b26ebb379f2eb0de
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/main.tsx?v=JQUvGjOnquGE4qH-89v7s
+📋 Session ID: 8dc5ddc2d009d230b693e5a13d5f7c5d
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/main.tsx?v=JQUvGjOnquGE4qH-89v7s
+📋 Session ID: 8dc5ddc2d009d230b693e5a13d5f7c5d
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /@fs/home/runner/workspace/node_modules/vite/dist/client/env.mjs
+📋 Session ID: b38aec2957d95577039a85511e99138e
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /@fs/home/runner/workspace/node_modules/vite/dist/client/env.mjs
+📋 Session ID: b38aec2957d95577039a85511e99138e
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /@react-refresh
+📋 Session ID: 825770ef74b6bc6fc9f65e86ee41f996
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /@react-refresh
+📋 Session ID: 825770ef74b6bc6fc9f65e86ee41f996
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/App.tsx?v=JQUvGjOnquGE4qH-89v7s
+📋 Session ID: ae5878d8bb3378868ca19d33e542e9bc
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/App.tsx?v=JQUvGjOnquGE4qH-89v7s
+📋 Session ID: ae5878d8bb3378868ca19d33e542e9bc
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/index.css?v=JQUvGjOnquGE4qH-89v7s
+📋 Session ID: 804c87257e379c094f1f38506592915d
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/index.css?v=JQUvGjOnquGE4qH-89v7s
+📋 Session ID: 804c87257e379c094f1f38506592915d
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/utils/session-manager.ts
+📋 Session ID: c1cb75e66116fba85cfde206f30248cf
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/utils/session-manager.ts
+📋 Session ID: c1cb75e66116fba85cfde206f30248cf
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/tooltip.tsx
+📋 Session ID: 0d1c0b03f539a8eb9e5659bc3acbe97f
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/tooltip.tsx
+📋 Session ID: 0d1c0b03f539a8eb9e5659bc3acbe97f
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/toaster.tsx
+📋 Session ID: bd457aec0cb74baf98d75b9a787dbdd8
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/toaster.tsx
+📋 Session ID: bd457aec0cb74baf98d75b9a787dbdd8
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/lib/queryClient.ts
+📋 Session ID: ef5ebd5903bb879a4eb661764129d16d
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/lib/queryClient.ts
+📋 Session ID: ef5ebd5903bb879a4eb661764129d16d
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/grok-widget.tsx
+📋 Session ID: e1f9067fc00c55c1453ee117ed40f444
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/grok-widget.tsx
+📋 Session ID: e1f9067fc00c55c1453ee117ed40f444
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/onboarding/OnboardingWizard.tsx
+📋 Session ID: ab8864c5b80894dc3ef6fac3d7f0fae6
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/onboarding/OnboardingWizard.tsx
+📋 Session ID: ab8864c5b80894dc3ef6fac3d7f0fae6
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/not-found.tsx
+📋 Session ID: 381496232b0d20652a1006a385eec6a5
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/not-found.tsx
+📋 Session ID: 381496232b0d20652a1006a385eec6a5
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/hooks/use-analytics.tsx
+📋 Session ID: 18c4dcd19482fe98dae463f36e03484a
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/hooks/use-analytics.tsx
+📋 Session ID: 18c4dcd19482fe98dae463f36e03484a
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/lib/analytics.ts
+📋 Session ID: 867a698cd2eaf47c59d1c68f3a199e7c
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/lib/analytics.ts
+📋 Session ID: 867a698cd2eaf47c59d1c68f3a199e7c
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/splash.tsx
+📋 Session ID: 832523f680844b2f30f4879a59025326
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/splash.tsx
+📋 Session ID: 832523f680844b2f30f4879a59025326
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/subscription.tsx
+📋 Session ID: 8e637a83b43dfdbc745bd1d0d56663a1
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/subscription.tsx
+📋 Session ID: 8e637a83b43dfdbc745bd1d0d56663a1
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/brand-purpose.tsx
+📋 Session ID: 7e5213079e0d84d74820a1f5281e9cda
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/brand-purpose.tsx
+📋 Session ID: 7e5213079e0d84d74820a1f5281e9cda
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/connect-platforms.tsx
+📋 Session ID: 2c68742dd5d3c5b1c1671df4d9489ae9
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/connect-platforms.tsx
+📋 Session ID: 2c68742dd5d3c5b1c1671df4d9489ae9
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/intelligent-schedule.tsx
+📋 Session ID: 7163c0fc488d1f8d3ad482d6deb29a24
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/intelligent-schedule.tsx
+📋 Session ID: 7163c0fc488d1f8d3ad482d6deb29a24
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/login.tsx
+📋 Session ID: 24d0d014d38684455c8ba3364cc9d288
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/login.tsx
+📋 Session ID: 24d0d014d38684455c8ba3364cc9d288
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/grok-test.tsx
+📋 Session ID: 871bfd17280339ddfd132dceb9178dbd
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/grok-test.tsx
+📋 Session ID: 871bfd17280339ddfd132dceb9178dbd
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/analytics.tsx
+📋 Session ID: 5795cd09b6596fa44e1e208b891684a3
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/analytics.tsx
+📋 Session ID: 5795cd09b6596fa44e1e208b891684a3
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/ai-dashboard.tsx
+📋 Session ID: e577453e6b9568952c2802b7a79f610f
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/ai-dashboard.tsx
+📋 Session ID: e577453e6b9568952c2802b7a79f610f
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/yearly-analytics.tsx
+📋 Session ID: 1930e81c1741a140296220c905ac1b78
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/yearly-analytics.tsx
+📋 Session ID: 1930e81c1741a140296220c905ac1b78
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/profile.tsx
+📋 Session ID: d0ac9eff4bbae2f716e66a9ea560528d
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/profile.tsx
+📋 Session ID: d0ac9eff4bbae2f716e66a9ea560528d
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/reset-password.tsx
+📋 Session ID: 23ac502fe22671ca34bcabe76a837a02
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/reset-password.tsx
+📋 Session ID: 23ac502fe22671ca34bcabe76a837a02
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/redeem-certificate.tsx
+📋 Session ID: e1ccce07dd351ea88b6be1c5a0022c69
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/redeem-certificate.tsx
+📋 Session ID: e1ccce07dd351ea88b6be1c5a0022c69
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/AdminDashboard.tsx
+📋 Session ID: be5de52b1b701ecdd6776d2f884f0127
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/AdminDashboard.tsx
+📋 Session ID: be5de52b1b701ecdd6776d2f884f0127
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/oauth-reconnect.tsx
+📋 Session ID: 60fbe1114804040db593a7bd179e4896
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/oauth-reconnect.tsx
+📋 Session ID: 60fbe1114804040db593a7bd179e4896
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/connection-repair.tsx
+📋 Session ID: e6c71504aff041d2ec02f5292988e685
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/connection-repair.tsx
+📋 Session ID: e6c71504aff041d2ec02f5292988e685
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/oauth-diagnostic.tsx
+📋 Session ID: 6ff85402e9ac2f89f2d00e11ea700a2d
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/oauth-diagnostic.tsx
+📋 Session ID: 6ff85402e9ac2f89f2d00e11ea700a2d
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/token-status.tsx
+📋 Session ID: 1131f4205f3ac9386427000a8ce74c94
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/token-status.tsx
+📋 Session ID: 1131f4205f3ac9386427000a8ce74c94
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/instagram-fix.tsx
+📋 Session ID: 003ed7a66709456b1de13b4287a78ffb
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/instagram-fix.tsx
+📋 Session ID: 003ed7a66709456b1de13b4287a78ffb
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/data-deletion-status.tsx
+📋 Session ID: 7471aa8aa701bd014fc12b9cb2e26a7e
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/data-deletion-status.tsx
+📋 Session ID: 7471aa8aa701bd014fc12b9cb2e26a7e
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/meta-pixel-test.tsx
+📋 Session ID: c51149c985a666a511550d6d2aee8264
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/meta-pixel-test.tsx
+📋 Session ID: c51149c985a666a511550d6d2aee8264
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/lib/utils.ts
+📋 Session ID: 2418758ffad7c2b5125e93b293e6d211
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/lib/utils.ts
+📋 Session ID: 2418758ffad7c2b5125e93b293e6d211
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/pages/video-gen.tsx
+📋 Session ID: 0958fed987c98b2aa87ba1ddd096dd4d
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/pages/video-gen.tsx
+📋 Session ID: 0958fed987c98b2aa87ba1ddd096dd4d
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/hooks/use-toast.ts
+📋 Session ID: 663362835d402aafcd81c806bb49c069
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/hooks/use-toast.ts
+📋 Session ID: 663362835d402aafcd81c806bb49c069
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/toast.tsx
+📋 Session ID: 519e7f54298cfda26d12f4d746b85b12
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/toast.tsx
+📋 Session ID: 519e7f54298cfda26d12f4d746b85b12
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/utils/api-client.ts
+📋 Session ID: 964604f304b4d5aaacbf6fbaf40e37a7
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/utils/api-client.ts
+📋 Session ID: 964604f304b4d5aaacbf6fbaf40e37a7
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/button.tsx
+📋 Session ID: 33d251fd01b7066f740b17ca7188820e
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/button.tsx
+📋 Session ID: 33d251fd01b7066f740b17ca7188820e
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/input.tsx
+📋 Session ID: 2bb7b094b66331263625e07fc7d53b85
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/input.tsx
+📋 Session ID: 2bb7b094b66331263625e07fc7d53b85
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/card.tsx
+📋 Session ID: 4d503b9473ccf0b8c48f2b80217a30e7
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/card.tsx
+📋 Session ID: 4d503b9473ccf0b8c48f2b80217a30e7
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/lib/api.ts
+📋 Session ID: 3195ca96f7f2602b468538cda9899929
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/lib/api.ts
+📋 Session ID: 3195ca96f7f2602b468538cda9899929
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/progress.tsx
+📋 Session ID: e28b9b833abb2c56df440edf0949e50b
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/progress.tsx
+📋 Session ID: e28b9b833abb2c56df440edf0949e50b
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/badge.tsx
+📋 Session ID: e854a2f038b917ec6c3e934c007af315
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/badge.tsx
+📋 Session ID: e854a2f038b917ec6c3e934c007af315
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/animated-icon.tsx
+📋 Session ID: 21ea8fe9ca9199dec53e650479e6c7e6
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/animated-icon.tsx
+📋 Session ID: 21ea8fe9ca9199dec53e650479e6c7e6
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /@fs/home/runner/workspace/attached_assets/agency_logo_1024x1024%20(2)_1752385824604.png?import
+📋 Session ID: afce27cfd69f79f43a0c25a4003b0b09
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /@fs/home/runner/workspace/attached_assets/agency_logo_1024x1024%20(2)_1752385824604.png?import
+📋 Session ID: afce27cfd69f79f43a0c25a4003b0b09
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/user-menu.tsx
+📋 Session ID: e86108693136407e28fd456c819f2933
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/user-menu.tsx
+📋 Session ID: e86108693136407e28fd456c819f2933
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/label.tsx
+📋 Session ID: ce430d364e2889b4f9ebd51c2093d278
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/label.tsx
+📋 Session ID: ce430d364e2889b4f9ebd51c2093d278
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/lib/meta-pixel.ts
+📋 Session ID: 854a8dd4829594bdea719f1f3d74c57a
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/lib/meta-pixel.ts
+📋 Session ID: 854a8dd4829594bdea719f1f3d74c57a
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/textarea.tsx
+📋 Session ID: 3d21b142c572ae4ed62004fc88c661cd
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/textarea.tsx
+📋 Session ID: 3d21b142c572ae4ed62004fc88c661cd
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/checkbox.tsx
+📋 Session ID: 79c0e542087ca331708b444450bd4232
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/checkbox.tsx
+📋 Session ID: 79c0e542087ca331708b444450bd4232
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/master-header.tsx
+📋 Session ID: 7d637da7103386953217c16e46812d9b
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/master-header.tsx
+📋 Session ID: 7d637da7103386953217c16e46812d9b
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/master-footer.tsx
+📋 Session ID: 805dd387507c753d8bf6be06339abddf
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/master-footer.tsx
+📋 Session ID: 805dd387507c753d8bf6be06339abddf
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/back-button.tsx
+📋 Session ID: 1acd4d6ba16d790e86a1fe92a5d04009
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/back-button.tsx
+📋 Session ID: 1acd4d6ba16d790e86a1fe92a5d04009
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/calendar-card.tsx
+📋 Session ID: 0fb94a9ee7a5624e72ba2924994b8891
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/calendar-card.tsx
+📋 Session ID: 0fb94a9ee7a5624e72ba2924994b8891
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/auto-posting-enforcer.tsx
+📋 Session ID: 9c605a0b006ad942c56e0fbc2731ae5a
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/auto-posting-enforcer.tsx
+📋 Session ID: 9c605a0b006ad942c56e0fbc2731ae5a
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/VideoPostCard.tsx
+📋 Session ID: d9af01365ac0781dbb1edcafa8a271cc
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/VideoPostCard.tsx
+📋 Session ID: d9af01365ac0781dbb1edcafa8a271cc
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/TokenStatusBanner.tsx
+📋 Session ID: 7a82c9899e724e561cfa203cf827cd4f
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/TokenStatusBanner.tsx
+📋 Session ID: 7a82c9899e724e561cfa203cf827cd4f
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/header.tsx
+📋 Session ID: 188cb7c1ed943acaac63a052022e91cc
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/header.tsx
+📋 Session ID: 188cb7c1ed943acaac63a052022e91cc
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/footer.tsx
+📋 Session ID: 90cca0d5591d70a7a9d7444dfb432d47
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/footer.tsx
+📋 Session ID: 90cca0d5591d70a7a9d7444dfb432d47
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/forgot-password-modal.tsx
+📋 Session ID: 98471cbdb5529b28ced38af467ff253a
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/forgot-password-modal.tsx
+📋 Session ID: 98471cbdb5529b28ced38af467ff253a
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/meta-pixel-status.tsx
+📋 Session ID: ed4c6f1360532ce7cacf88f4789b49d7
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/meta-pixel-status.tsx
+📋 Session ID: ed4c6f1360532ce7cacf88f4789b49d7
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/tabs.tsx
+📋 Session ID: c3d17a83f8e9e135d38db2917e9ae167
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/tabs.tsx
+📋 Session ID: c3d17a83f8e9e135d38db2917e9ae167
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/dialog.tsx
+📋 Session ID: ea208ac83753de92ec0a27ec94d36eab
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/dialog.tsx
+📋 Session ID: ea208ac83753de92ec0a27ec94d36eab
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/GiftCertificateTracker.tsx
+📋 Session ID: 8c8e61778dc1ac9e97fc12608ca3ef40
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/GiftCertificateTracker.tsx
+📋 Session ID: 8c8e61778dc1ac9e97fc12608ca3ef40
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/form.tsx
+📋 Session ID: 05d9c84e11ae61c15e0e8ae9adee7c76
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/form.tsx
+📋 Session ID: 05d9c84e11ae61c15e0e8ae9adee7c76
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/alert.tsx
+📋 Session ID: 0b9aa0b7c8ba2879eac6f716a30d7e05
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/alert.tsx
+📋 Session ID: 0b9aa0b7c8ba2879eac6f716a30d7e05
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/select.tsx
+📋 Session ID: 88c3a1fc855eaa2770ad313782c84427
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/select.tsx
+📋 Session ID: 88c3a1fc855eaa2770ad313782c84427
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/dropdown-menu.tsx
+📋 Session ID: 81f27a1eeea6d36bcb3fd2720238b80d
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/dropdown-menu.tsx
+📋 Session ID: 81f27a1eeea6d36bcb3fd2720238b80d
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/hooks/useTokenValidation.ts
+📋 Session ID: afe7fd3f373558bef385cf1cf44bc994
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/hooks/useTokenValidation.ts
+📋 Session ID: afe7fd3f373558bef385cf1cf44bc994
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/navigation/MobileNavigationMenu.tsx
+📋 Session ID: 336783db0b350eb9d83cb5ec36787465
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/navigation/MobileNavigationMenu.tsx
+📋 Session ID: 336783db0b350eb9d83cb5ec36787465
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/lib/facebook-sdk.ts
+📋 Session ID: afa80df1547de7e8536f24af927c835a
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/lib/facebook-sdk.ts
+📋 Session ID: afa80df1547de7e8536f24af927c835a
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /src/components/ui/sheet.tsx
+📋 Session ID: 6919b2cbd5b1cbae232b77d00c536350
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /src/components/ui/sheet.tsx
+📋 Session ID: 6919b2cbd5b1cbae232b77d00c536350
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /api/user-status
+📋 Session ID: cb90b1fec63b82e22bf58d6dc2b2f577
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /api/user-status
+📋 Session ID: cb90b1fec63b82e22bf58d6dc2b2f577
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 AuthGuard check - Session ID: cb90b1fec63b82e22bf58d6dc2b2f577, User ID: undefined
+❌ AuthGuard rejected - No authenticated session found
+4xx JSON Error Details: {
+  method: 'GET',
+  url: '/api/user-status',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.8.252',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: 'cb90b1fec63b82e22bf58d6dc2b2f577',
+  userId: undefined,
+  response: { message: 'Not authenticated', redirectTo: '/login' }
+}
+4xx Error Details: {
+  method: 'GET',
+  url: '/api/user-status',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.8.252',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: 'cb90b1fec63b82e22bf58d6dc2b2f577',
+  userId: undefined,
+  response: '{"message":"Not authenticated","redirectTo":"/login"}'
+}
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /api/user
+📋 Session ID: c970f17586ca6fbdb37137876daa357e
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /api/user
+📋 Session ID: c970f17586ca6fbdb37137876daa357e
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 AuthGuard check - Session ID: c970f17586ca6fbdb37137876daa357e, User ID: undefined
+❌ AuthGuard rejected - No authenticated session found
+4xx JSON Error Details: {
+  method: 'GET',
+  url: '/api/user',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: 'application/json',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    'cache-control': 'max-age=0',
+    'content-type': 'application/json',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.12.23',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: 'c970f17586ca6fbdb37137876daa357e',
+  userId: undefined,
+  response: { message: 'Not authenticated', redirectTo: '/login' }
+}
+4xx Error Details: {
+  method: 'GET',
+  url: '/api/user',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: 'application/json',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    'cache-control': 'max-age=0',
+    'content-type': 'application/json',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.12.23',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: 'c970f17586ca6fbdb37137876daa357e',
+  userId: undefined,
+  response: '{"message":"Not authenticated","redirectTo":"/login"}'
+}
+🔍 Cookie header received: undefined
+🔍 Session Debug - POST /api/establish-session
+📋 Session ID: 2d0e87c74e09da899a3ac25e29a91726
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+Session establishment request: {
+  body: {},
+  sessionId: '2d0e87c74e09da899a3ac25e29a91726',
+  existingUserId: undefined
+}
+Test session established for gailm@macleodglba.com.au (ID: 2)
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /@fs/home/runner/workspace/attached_assets/agency_logo_1024x1024%20(2)_1752385824604.png
+📋 Session ID: acfd8a9c557906bbe7c18746bcebda60
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /@fs/home/runner/workspace/attached_assets/agency_logo_1024x1024%20(2)_1752385824604.png
+📋 Session ID: acfd8a9c557906bbe7c18746bcebda60
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+Session saved successfully
+🔧 FORCED cookie set: theagencyiq.session=2d0e87c74e09da899a3ac25e29a91726; Path=/; Max-Age=86400; SameSite=lax; HttpOnly=false
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /api/user-status
+📋 Session ID: 71a795dec794e324d67b7b95e82732e9
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /api/user-status
+📋 Session ID: 71a795dec794e324d67b7b95e82732e9
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 AuthGuard check - Session ID: 71a795dec794e324d67b7b95e82732e9, User ID: undefined
+❌ AuthGuard rejected - No authenticated session found
+4xx JSON Error Details: {
+  method: 'GET',
+  url: '/api/user-status',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.7.66',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: '71a795dec794e324d67b7b95e82732e9',
+  userId: undefined,
+  response: { message: 'Not authenticated', redirectTo: '/login' }
+}
+4xx Error Details: {
+  method: 'GET',
+  url: '/api/user-status',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.7.66',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: '71a795dec794e324d67b7b95e82732e9',
+  userId: undefined,
+  response: '{"message":"Not authenticated","redirectTo":"/login"}'
+}
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /attached_assets/On%20Pencil_distance%20education_e-learning_online%20education_online%20learning_online%20courses_icon.png
+📋 Session ID: 37661dc4ece1be0ada465dc6436cb57e
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /api/user
+📋 Session ID: c01b4c5f44254e3c54f7ed50cc248943
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /api/user
+📋 Session ID: c01b4c5f44254e3c54f7ed50cc248943
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 AuthGuard check - Session ID: c01b4c5f44254e3c54f7ed50cc248943, User ID: undefined
+❌ AuthGuard rejected - No authenticated session found
+4xx JSON Error Details: {
+  method: 'GET',
+  url: '/api/user',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    'content-type': 'application/json',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.5.176',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: 'c01b4c5f44254e3c54f7ed50cc248943',
+  userId: undefined,
+  response: { message: 'Not authenticated', redirectTo: '/login' }
+}
+4xx Error Details: {
+  method: 'GET',
+  url: '/api/user',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    'content-type': 'application/json',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.5.176',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: 'c01b4c5f44254e3c54f7ed50cc248943',
+  userId: undefined,
+  response: '{"message":"Not authenticated","redirectTo":"/login"}'
+}
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /api/user
+📋 Session ID: cffb2f1685854c4e5eab883f43eb6454
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /api/user
+📋 Session ID: cffb2f1685854c4e5eab883f43eb6454
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 AuthGuard check - Session ID: cffb2f1685854c4e5eab883f43eb6454, User ID: undefined
+❌ AuthGuard rejected - No authenticated session found
+4xx JSON Error Details: {
+  method: 'GET',
+  url: '/api/user',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.7.66',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: 'cffb2f1685854c4e5eab883f43eb6454',
+  userId: undefined,
+  response: { message: 'Not authenticated', redirectTo: '/login' }
+}
+4xx Error Details: {
+  method: 'GET',
+  url: '/api/user',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.7.66',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: 'cffb2f1685854c4e5eab883f43eb6454',
+  userId: undefined,
+  response: '{"message":"Not authenticated","redirectTo":"/login"}'
+}
+🔍 Cookie header received: undefined
+🔍 Session Debug - POST /api/establish-session
+📋 Session ID: f3b3abadcb47c27e99e2c9fe8f50a85b
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+Session establishment request: {
+  body: { email: 'gailm@macleodglba.com.au', phone: '+61424835189' },
+  sessionId: 'f3b3abadcb47c27e99e2c9fe8f50a85b',
+  existingUserId: undefined
+}
+Test session established for gailm@macleodglba.com.au (ID: 2)
+Session saved successfully
+🔧 FORCED cookie set: theagencyiq.session=f3b3abadcb47c27e99e2c9fe8f50a85b; Path=/; Max-Age=86400; SameSite=lax; HttpOnly=false
+🔍 Cookie header received: undefined
+🔍 Session Debug - GET /api/user
+📋 Session ID: 58faa78cfa8d735de78b918e792e6665
+📋 User ID: undefined
+📋 Cookie Header: MISSING
+🔍 Session Debug - GET /api/user
+📋 Session ID: 58faa78cfa8d735de78b918e792e6665
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 AuthGuard check - Session ID: 58faa78cfa8d735de78b918e792e6665, User ID: undefined
+❌ AuthGuard rejected - No authenticated session found
+4xx JSON Error Details: {
+  method: 'GET',
+  url: '/api/user',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',

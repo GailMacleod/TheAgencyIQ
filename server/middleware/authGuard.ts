@@ -7,18 +7,30 @@ export const sessionUserMap = new Map<string, number>();
 export const requireAuth = async (req: any, res: Response, next: NextFunction) => {
   console.log(`🔍 AuthGuard check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
   
-  // SECURITY: Block all unauthorized headers and fake tokens
+  // CRITICAL: Check for Authorization header first (bypasses broken cookie system)
   const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer session:')) {
+    const sessionId = authHeader.replace('Bearer session:', '');
+    console.log(`🔧 Using Authorization header with session: ${sessionId}`);
+    
+    // Check if this session has a mapping
+    const mappedUserId = sessionUserMap.get(sessionId);
+    if (mappedUserId) {
+      console.log(`✅ Authorization header authentication successful for User ID: ${mappedUserId}`);
+      req.session.userId = mappedUserId;
+      const user = await storage.getUser(mappedUserId);
+      if (user) {
+        req.session.userEmail = user.email;
+        req.session.subscriptionPlan = user.subscriptionPlan;
+        req.session.subscriptionActive = user.subscriptionActive;
+        return next();
+      }
+    }
+  }
+  
+  // SECURITY: Block all other unauthorized headers and fake tokens
   const userIdHeader = req.headers['x-user-id'];
   const authTokenHeader = req.headers['x-auth-token'];
-  
-  if (authHeader && !authHeader.startsWith('Bearer session:')) {
-    console.log(`🚨 SECURITY ALERT: Unauthorized bearer token blocked: ${authHeader}`);
-    return res.status(401).json({
-      message: "Not authenticated",
-      redirectTo: "/login"
-    });
-  }
   
   if (userIdHeader) {
     console.log(`🚨 SECURITY ALERT: Direct user ID header blocked: ${userIdHeader}`);

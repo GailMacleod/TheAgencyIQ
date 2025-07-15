@@ -1,0 +1,3812 @@
+❌ Session establishment error, continuing with guest access
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 Meta Pixel test fired - initialization complete
+eruda.js:2 🚀 Starting React app mount...
+eruda.js:2 ✅ React app mounted successfully
+2eruda.js:2 Onboarding progress restored
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:80
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+makeRequest @ api-client.ts:31
+get @ api-client.ts:79
+(anonymous) @ queryClient.ts:127
+fetchFn @ @tanstack_react-query.js?v=044abfc6:881
+run @ @tanstack_react-query.js?v=044abfc6:513
+start @ @tanstack_react-query.js?v=044abfc6:555
+fetch @ @tanstack_react-query.js?v=044abfc6:969
+executeFetch_fn @ @tanstack_react-query.js?v=044abfc6:2279
+onSubscribe @ @tanstack_react-query.js?v=044abfc6:1983
+subscribe @ @tanstack_react-query.js?v=044abfc6:24
+(anonymous) @ @tanstack_react-query.js?v=044abfc6:3146
+subscribeToStore @ chunk-SXRIVT2P.js?v=044abfc6:12032
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:80
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+establishSession @ session-manager.ts:11
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:110
+await in checkUserStatus
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2 Session establishment error: ReferenceError: extractedSessionId is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:62:15)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+doEstablishSession @ session-manager.ts:135
+await in doEstablishSession
+establishSession @ session-manager.ts:34
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:110
+await in checkUserStatus
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2 Meta Pixel initialized successfully
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+establishSession @ session-manager.ts?t=1752544389550:11
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 Session establishment error: TypeError: this.generateSignature is not a function
+    at SessionManager.doEstablishSession (session-manager.ts:57:62)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+doEstablishSession @ session-manager.ts?t=1752544389550:136
+await in doEstablishSession
+establishSession @ session-manager.ts?t=1752544389550:34
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+establishSession @ session-manager.ts?t=1752544438937:11
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 Session establishment error: ReferenceError: extractedSessionId is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:63:15)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+doEstablishSession @ session-manager.ts?t=1752544438937:136
+await in doEstablishSession
+establishSession @ session-manager.ts?t=1752544438937:34
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+establishSession @ session-manager.ts:22
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 Session establishment error: ReferenceError: extractedSessionId is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:63:15)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+doEstablishSession @ session-manager.ts:190
+await in doEstablishSession
+establishSession @ session-manager.ts:50
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2 Meta Pixel test fired - initialization complete
+eruda.js:2 🚀 Starting React app mount...
+eruda.js:2 ✅ React app mounted successfully
+2eruda.js:2 Onboarding progress restored
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:80
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+makeRequest @ api-client.ts:31
+get @ api-client.ts:79
+(anonymous) @ queryClient.ts:127
+fetchFn @ @tanstack_react-query.js?v=044abfc6:881
+run @ @tanstack_react-query.js?v=044abfc6:513
+start @ @tanstack_react-query.js?v=044abfc6:555
+fetch @ @tanstack_react-query.js?v=044abfc6:969
+executeFetch_fn @ @tanstack_react-query.js?v=044abfc6:2279
+onSubscribe @ @tanstack_react-query.js?v=044abfc6:1983
+subscribe @ @tanstack_react-query.js?v=044abfc6:24
+(anonymous) @ @tanstack_react-query.js?v=044abfc6:3146
+subscribeToStore @ chunk-SXRIVT2P.js?v=044abfc6:12032
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:80
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+establishSession @ session-manager.ts:11
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:110
+await in checkUserStatus
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2 Session establishment error: ReferenceError: extractedSessionId is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:63:15)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+doEstablishSession @ session-manager.ts:136
+await in doEstablishSession
+establishSession @ session-manager.ts:34
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:110
+await in checkUserStatus
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+eruda.js:2 Meta Pixel initialized successfully
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+establishSession @ session-manager.ts?t=1752544521281:11
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: 00465cb0360d04aa30380ad834f7536a
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+doEstablishSession @ session-manager.ts?t=1752544521281:82
+await in doEstablishSession
+establishSession @ session-manager.ts?t=1752544521281:34
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:96:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+doEstablishSession @ session-manager.ts?t=1752544521281:133
+await in doEstablishSession
+establishSession @ session-manager.ts?t=1752544521281:34
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+establishSession @ session-manager.ts?t=1752544538493:11
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 🔍 Establishing session...
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: '0405cecf08b9e1498e7958ace25b22a5'}
+eruda.js:2 📋 Session ID received: 0405cecf08b9e1498e7958ace25b22a5
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: 0405cecf08b9e1498e7958ace25b22a5
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+doEstablishSession @ session-manager.ts?t=1752544538493:86
+await in doEstablishSession
+establishSession @ session-manager.ts?t=1752544538493:34
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:100:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+doEstablishSession @ session-manager.ts?t=1752544538493:137
+await in doEstablishSession
+establishSession @ session-manager.ts?t=1752544538493:34
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+establishSession @ session-manager.ts:22
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 🔍 Establishing session...
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: 'b7c424880749be827846bc45847ee07c'}
+eruda.js:2 📋 Session ID received: b7c424880749be827846bc45847ee07c
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: b7c424880749be827846bc45847ee07c
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+doEstablishSession @ session-manager.ts:136
+await in doEstablishSession
+establishSession @ session-manager.ts:50
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+doEstablishSession @ session-manager.ts:205
+await in doEstablishSession
+establishSession @ session-manager.ts:50
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:306
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2 Meta Pixel test fired - initialization complete
+eruda.js:2 🚀 Starting React app mount...
+eruda.js:2 ✅ React app mounted successfully
+2eruda.js:2 Onboarding progress restored
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM11 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM76 OnboardingWizard.tsx:70
+(anonymous) @ VM76 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19485
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM43 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18768
+workLoop @ VM43 chunk-SXRIVT2P.js:197
+flushWork @ VM43 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM43 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM11 eruda.js:2
+window.fetch @ (index):315
+makeRequest @ VM58 api-client.ts:19
+get @ VM58 api-client.ts:53
+(anonymous) @ VM62 queryClient.ts:88
+fetchFn @ VM56 @tanstack_react-query.js:881
+run @ VM56 @tanstack_react-query.js:513
+start @ VM56 @tanstack_react-query.js:555
+fetch @ VM56 @tanstack_react-query.js:969
+executeFetch_fn @ VM56 @tanstack_react-query.js:2279
+onSubscribe @ VM56 @tanstack_react-query.js:1983
+subscribe @ VM56 @tanstack_react-query.js:24
+(anonymous) @ VM56 @tanstack_react-query.js:3146
+subscribeToStore @ VM43 chunk-SXRIVT2P.js:12032
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19485
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM43 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18768
+workLoop @ VM43 chunk-SXRIVT2P.js:197
+flushWork @ VM43 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM43 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM11 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM76 OnboardingWizard.tsx:70
+(anonymous) @ VM76 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19485
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM43 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18768
+workLoop @ VM43 chunk-SXRIVT2P.js:197
+flushWork @ VM43 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM43 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM11 eruda.js:2
+window.fetch @ (index):315
+establishSession @ VM80 session-manager.ts:11
+establishSession @ VM53 App.tsx:264
+(anonymous) @ VM53 App.tsx:288
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19485
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM43 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18768
+workLoop @ VM43 chunk-SXRIVT2P.js:197
+flushWork @ VM43 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM43 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Establishing session...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM11 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM76 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM76 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19485
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM43 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18768
+workLoop @ VM43 chunk-SXRIVT2P.js:197
+flushWork @ VM43 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM43 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: 'da076c76501e2a1961a21a0975d82fb9'}
+eruda.js:2 📋 Session ID received: da076c76501e2a1961a21a0975d82fb9
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: da076c76501e2a1961a21a0975d82fb9
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM11 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM76 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM76 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19485
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM43 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18768
+workLoop @ VM43 chunk-SXRIVT2P.js:197
+flushWork @ VM43 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM43 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel initialized successfully
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM11 eruda.js:2
+window.fetch @ (index):315
+doEstablishSession @ VM80 session-manager.ts:93
+await in doEstablishSession
+establishSession @ VM80 session-manager.ts:34
+await in establishSession
+establishSession @ VM53 App.tsx:264
+(anonymous) @ VM53 App.tsx:288
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19485
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM43 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18768
+workLoop @ VM43 chunk-SXRIVT2P.js:197
+flushWork @ VM43 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM43 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM11 eruda.js:2
+console.error @ (index):194
+doEstablishSession @ VM80 session-manager.ts:144
+await in doEstablishSession
+establishSession @ VM80 session-manager.ts:34
+await in establishSession
+establishSession @ VM53 App.tsx:264
+(anonymous) @ VM53 App.tsx:288
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19485
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM43 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18768
+workLoop @ VM43 chunk-SXRIVT2P.js:197
+flushWork @ VM43 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM43 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM11 eruda.js:2
+window.fetch @ (index):315
+establishSession @ VM170 session-manager.ts:11
+establishSession @ VM168 App.tsx:264
+(anonymous) @ VM168 App.tsx:288
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19469
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18948
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+flushSync @ VM43 chunk-SXRIVT2P.js:19012
+scheduleRefresh @ VM43 chunk-SXRIVT2P.js:20057
+(anonymous) @ VM50 @react-refresh:228
+performReactRefresh @ VM50 @react-refresh:217
+(anonymous) @ VM50 @react-refresh:586
+setTimeout
+(anonymous) @ VM50 @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ VM50 @react-refresh:625
+(anonymous) @ VM53 App.tsx:434
+(anonymous) @ VM12 client:34
+(anonymous) @ VM12 client:213
+(anonymous) @ VM12 client:186
+queueUpdate @ VM12 client:186
+await in queueUpdate
+(anonymous) @ VM12 client:930
+handleMessage @ VM12 client:928
+await in handleMessage
+(anonymous) @ VM12 client:490
+dequeue @ VM12 client:516
+(anonymous) @ VM12 client:504
+enqueue @ VM12 client:498
+(anonymous) @ VM12 client:490
+onMessage @ VM12 client:309
+(anonymous) @ VM12 client:439Understand this error
+eruda.js:2 🔍 Establishing session...
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: '57c586c744a731ce65bd7e90057343a2'}
+eruda.js:2 📋 Session ID received: 57c586c744a731ce65bd7e90057343a2
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: 57c586c744a731ce65bd7e90057343a2
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM11 eruda.js:2
+window.fetch @ (index):315
+doEstablishSession @ VM170 session-manager.ts:93
+await in doEstablishSession
+establishSession @ VM170 session-manager.ts:34
+await in establishSession
+establishSession @ VM168 App.tsx:264
+(anonymous) @ VM168 App.tsx:288
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19469
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18948
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+flushSync @ VM43 chunk-SXRIVT2P.js:19012
+scheduleRefresh @ VM43 chunk-SXRIVT2P.js:20057
+(anonymous) @ VM50 @react-refresh:228
+performReactRefresh @ VM50 @react-refresh:217
+(anonymous) @ VM50 @react-refresh:586
+setTimeout
+(anonymous) @ VM50 @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ VM50 @react-refresh:625
+(anonymous) @ VM53 App.tsx:434
+(anonymous) @ VM12 client:34
+(anonymous) @ VM12 client:213
+(anonymous) @ VM12 client:186
+queueUpdate @ VM12 client:186
+await in queueUpdate
+(anonymous) @ VM12 client:930
+handleMessage @ VM12 client:928
+await in handleMessage
+(anonymous) @ VM12 client:490
+dequeue @ VM12 client:516
+(anonymous) @ VM12 client:504
+enqueue @ VM12 client:498
+(anonymous) @ VM12 client:490
+onMessage @ VM12 client:309
+(anonymous) @ VM12 client:439Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM11 eruda.js:2
+console.error @ (index):194
+doEstablishSession @ VM170 session-manager.ts:144
+await in doEstablishSession
+establishSession @ VM170 session-manager.ts:34
+await in establishSession
+establishSession @ VM168 App.tsx:264
+(anonymous) @ VM168 App.tsx:288
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19469
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18948
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+flushSync @ VM43 chunk-SXRIVT2P.js:19012
+scheduleRefresh @ VM43 chunk-SXRIVT2P.js:20057
+(anonymous) @ VM50 @react-refresh:228
+performReactRefresh @ VM50 @react-refresh:217
+(anonymous) @ VM50 @react-refresh:586
+setTimeout
+(anonymous) @ VM50 @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ VM50 @react-refresh:625
+(anonymous) @ VM53 App.tsx:434
+(anonymous) @ VM12 client:34
+(anonymous) @ VM12 client:213
+(anonymous) @ VM12 client:186
+queueUpdate @ VM12 client:186
+await in queueUpdate
+(anonymous) @ VM12 client:930
+handleMessage @ VM12 client:928
+await in handleMessage
+(anonymous) @ VM12 client:490
+dequeue @ VM12 client:516
+(anonymous) @ VM12 client:504
+enqueue @ VM12 client:498
+(anonymous) @ VM12 client:490
+onMessage @ VM12 client:309
+(anonymous) @ VM12 client:439Understand this error
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2 ❌ Session establishment error, continuing with guest access
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM11 eruda.js:2
+console.error @ (index):194
+establishSession @ VM175 App.tsx:285
+await in establishSession
+(anonymous) @ VM175 App.tsx:289
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19469
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18948
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+flushSync @ VM43 chunk-SXRIVT2P.js:19012
+scheduleRefresh @ VM43 chunk-SXRIVT2P.js:20057
+(anonymous) @ VM50 @react-refresh:228
+performReactRefresh @ VM50 @react-refresh:217
+(anonymous) @ VM50 @react-refresh:586
+setTimeout
+(anonymous) @ VM50 @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ VM50 @react-refresh:625
+(anonymous) @ VM174 App.tsx:432
+(anonymous) @ VM12 client:34
+(anonymous) @ VM12 client:213
+(anonymous) @ VM12 client:186
+queueUpdate @ VM12 client:186
+await in queueUpdate
+(anonymous) @ VM12 client:930
+handleMessage @ VM12 client:928
+await in handleMessage
+(anonymous) @ VM12 client:490
+dequeue @ VM12 client:516
+(anonymous) @ VM12 client:504
+enqueue @ VM12 client:498
+(anonymous) @ VM12 client:490
+onMessage @ VM12 client:309
+(anonymous) @ VM12 client:439Understand this error
+App.tsx:286 Uncaught (in promise) ReferenceError: setError is not defined
+    at establishSession (App.tsx:286:9)
+establishSession @ VM175 App.tsx:286
+await in establishSession
+(anonymous) @ VM175 App.tsx:289
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19469
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18948
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+flushSync @ VM43 chunk-SXRIVT2P.js:19012
+scheduleRefresh @ VM43 chunk-SXRIVT2P.js:20057
+(anonymous) @ VM50 @react-refresh:228
+performReactRefresh @ VM50 @react-refresh:217
+(anonymous) @ VM50 @react-refresh:586
+setTimeout
+(anonymous) @ VM50 @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ VM50 @react-refresh:625
+(anonymous) @ VM174 App.tsx:432
+(anonymous) @ VM12 client:34
+(anonymous) @ VM12 client:213
+(anonymous) @ VM12 client:186
+queueUpdate @ VM12 client:186
+await in queueUpdate
+(anonymous) @ VM12 client:930
+handleMessage @ VM12 client:928
+await in handleMessage
+(anonymous) @ VM12 client:490
+dequeue @ VM12 client:516
+(anonymous) @ VM12 client:504
+enqueue @ VM12 client:498
+(anonymous) @ VM12 client:490
+onMessage @ VM12 client:309
+(anonymous) @ VM12 client:439Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM11 eruda.js:2
+console.error @ (index):194
+establishSession @ VM178 App.tsx:285
+await in establishSession
+(anonymous) @ VM178 App.tsx:291
+commitHookEffectListMount @ VM43 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM43 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM43 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM43 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM43 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM43 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM43 chunk-SXRIVT2P.js:19500
+commitRootImpl @ VM43 chunk-SXRIVT2P.js:19469
+commitRoot @ VM43 chunk-SXRIVT2P.js:19330
+performSyncWorkOnRoot @ VM43 chunk-SXRIVT2P.js:18948
+flushSyncCallbacks @ VM43 chunk-SXRIVT2P.js:9166
+flushSync @ VM43 chunk-SXRIVT2P.js:19012
+scheduleRefresh @ VM43 chunk-SXRIVT2P.js:20057
+(anonymous) @ VM50 @react-refresh:228
+performReactRefresh @ VM50 @react-refresh:217
+(anonymous) @ VM50 @react-refresh:586
+setTimeout
+(anonymous) @ VM50 @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ VM50 @react-refresh:625
+(anonymous) @ VM175 App.tsx:433
+(anonymous) @ VM12 client:34
+(anonymous) @ VM12 client:213
+(anonymous) @ VM12 client:186
+queueUpdate @ VM12 client:186
+await in queueUpdate
+(anonymous) @ VM12 client:930
+handleMessage @ VM12 client:928
+await in handleMessage
+(anonymous) @ VM12 client:490
+dequeue @ VM12 client:516
+(anonymous) @ VM12 client:504
+enqueue @ VM12 client:498
+(anonymous) @ VM12 client:490
+onMessage @ VM12 client:309
+(anonymous) @ VM12 client:439Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 Meta Pixel test fired - initialization complete
+eruda.js:2 🚀 Starting React app mount...
+eruda.js:2 ✅ React app mounted successfully
+2eruda.js:2 Onboarding progress restored
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM179 eruda.js:2
+window.fetch @ (index):315
+makeRequest @ VM277 api-client.ts:19
+get @ VM277 api-client.ts:53
+(anonymous) @ VM227 queryClient.ts:88
+fetchFn @ VM225 @tanstack_react-query.js:881
+run @ VM225 @tanstack_react-query.js:513
+start @ VM225 @tanstack_react-query.js:555
+fetch @ VM225 @tanstack_react-query.js:969
+executeFetch_fn @ VM225 @tanstack_react-query.js:2279
+onSubscribe @ VM225 @tanstack_react-query.js:1983
+subscribe @ VM225 @tanstack_react-query.js:24
+(anonymous) @ VM225 @tanstack_react-query.js:3146
+subscribeToStore @ VM213 chunk-SXRIVT2P.js:12032
+commitHookEffectListMount @ VM213 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM213 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM213 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM213 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM213 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM213 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM213 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM213 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM213 chunk-SXRIVT2P.js:19485
+commitRoot @ VM213 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM213 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18768
+workLoop @ VM213 chunk-SXRIVT2P.js:197
+flushWork @ VM213 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM213 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM179 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM243 OnboardingWizard.tsx:70
+(anonymous) @ VM243 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM213 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM213 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM213 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM213 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM213 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM213 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM213 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM213 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM213 chunk-SXRIVT2P.js:19485
+commitRoot @ VM213 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM213 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18768
+workLoop @ VM213 chunk-SXRIVT2P.js:197
+flushWork @ VM213 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM213 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM179 eruda.js:2
+window.fetch @ (index):315
+establishSession @ VM276 session-manager.ts:11
+establishSession @ VM222 App.tsx:264
+(anonymous) @ VM222 App.tsx:291
+commitHookEffectListMount @ VM213 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM213 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM213 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM213 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM213 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM213 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM213 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM213 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM213 chunk-SXRIVT2P.js:19485
+commitRoot @ VM213 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM213 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18768
+workLoop @ VM213 chunk-SXRIVT2P.js:197
+flushWork @ VM213 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM213 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Establishing session...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM179 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM243 OnboardingWizard.tsx:70
+(anonymous) @ VM243 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM213 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM213 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM213 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM213 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM213 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM213 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM213 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM213 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM213 chunk-SXRIVT2P.js:19485
+commitRoot @ VM213 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM213 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18768
+workLoop @ VM213 chunk-SXRIVT2P.js:197
+flushWork @ VM213 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM213 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM179 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM243 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM243 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM213 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM213 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM213 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM213 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM213 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM213 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM213 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM213 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM213 chunk-SXRIVT2P.js:19485
+commitRoot @ VM213 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM213 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18768
+workLoop @ VM213 chunk-SXRIVT2P.js:197
+flushWork @ VM213 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM213 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: 'b7dfd0c6880b18924c59e126f40310a6'}
+eruda.js:2 📋 Session ID received: b7dfd0c6880b18924c59e126f40310a6
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: b7dfd0c6880b18924c59e126f40310a6
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM179 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM243 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM243 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM213 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM213 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM213 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM213 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM213 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM213 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM213 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM213 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM213 chunk-SXRIVT2P.js:19485
+commitRoot @ VM213 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM213 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18768
+workLoop @ VM213 chunk-SXRIVT2P.js:197
+flushWork @ VM213 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM213 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel initialized successfully
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM179 eruda.js:2
+window.fetch @ (index):315
+doEstablishSession @ VM276 session-manager.ts:93
+await in doEstablishSession
+establishSession @ VM276 session-manager.ts:34
+await in establishSession
+establishSession @ VM222 App.tsx:264
+(anonymous) @ VM222 App.tsx:291
+commitHookEffectListMount @ VM213 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM213 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM213 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM213 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM213 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM213 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM213 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM213 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM213 chunk-SXRIVT2P.js:19485
+commitRoot @ VM213 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM213 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18768
+workLoop @ VM213 chunk-SXRIVT2P.js:197
+flushWork @ VM213 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM213 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM179 eruda.js:2
+console.error @ (index):194
+doEstablishSession @ VM276 session-manager.ts:144
+await in doEstablishSession
+establishSession @ VM276 session-manager.ts:34
+await in establishSession
+establishSession @ VM222 App.tsx:264
+(anonymous) @ VM222 App.tsx:291
+commitHookEffectListMount @ VM213 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM213 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM213 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM213 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM213 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM213 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM213 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM213 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM213 chunk-SXRIVT2P.js:19485
+commitRoot @ VM213 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM213 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18768
+workLoop @ VM213 chunk-SXRIVT2P.js:197
+flushWork @ VM213 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM213 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM179 eruda.js:2
+console.error @ (index):194
+establishSession @ VM222 App.tsx:285
+await in establishSession
+(anonymous) @ VM222 App.tsx:291
+commitHookEffectListMount @ VM213 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM213 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM213 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM213 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM213 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM213 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM213 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM213 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM213 chunk-SXRIVT2P.js:19485
+commitRoot @ VM213 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM213 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM213 chunk-SXRIVT2P.js:18768
+workLoop @ VM213 chunk-SXRIVT2P.js:197
+flushWork @ VM213 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM213 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel test fired - initialization complete
+eruda.js:2 🚀 Starting React app mount...
+eruda.js:2 ✅ React app mounted successfully
+2eruda.js:2 Onboarding progress restored
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM337 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM402 OnboardingWizard.tsx:70
+(anonymous) @ VM402 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM376 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM376 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM376 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM376 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM376 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM376 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM376 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM376 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM376 chunk-SXRIVT2P.js:19485
+commitRoot @ VM376 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM376 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18768
+workLoop @ VM376 chunk-SXRIVT2P.js:197
+flushWork @ VM376 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM376 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM337 eruda.js:2
+window.fetch @ (index):315
+makeRequest @ VM401 api-client.ts:19
+get @ VM401 api-client.ts:53
+(anonymous) @ VM387 queryClient.ts:88
+fetchFn @ VM383 @tanstack_react-query.js:881
+run @ VM383 @tanstack_react-query.js:513
+start @ VM383 @tanstack_react-query.js:555
+fetch @ VM383 @tanstack_react-query.js:969
+executeFetch_fn @ VM383 @tanstack_react-query.js:2279
+onSubscribe @ VM383 @tanstack_react-query.js:1983
+subscribe @ VM383 @tanstack_react-query.js:24
+(anonymous) @ VM383 @tanstack_react-query.js:3146
+subscribeToStore @ VM376 chunk-SXRIVT2P.js:12032
+commitHookEffectListMount @ VM376 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM376 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM376 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM376 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM376 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM376 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM376 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM376 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM376 chunk-SXRIVT2P.js:19485
+commitRoot @ VM376 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM376 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18768
+workLoop @ VM376 chunk-SXRIVT2P.js:197
+flushWork @ VM376 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM376 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM337 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM402 OnboardingWizard.tsx:70
+(anonymous) @ VM402 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM376 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM376 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM376 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM376 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM376 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM376 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM376 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM376 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM376 chunk-SXRIVT2P.js:19485
+commitRoot @ VM376 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM376 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18768
+workLoop @ VM376 chunk-SXRIVT2P.js:197
+flushWork @ VM376 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM376 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM337 eruda.js:2
+window.fetch @ (index):315
+establishSession @ VM386 session-manager.ts:11
+establishSession @ VM380 App.tsx:264
+(anonymous) @ VM380 App.tsx:291
+commitHookEffectListMount @ VM376 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM376 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM376 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM376 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM376 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM376 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM376 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM376 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM376 chunk-SXRIVT2P.js:19485
+commitRoot @ VM376 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM376 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18768
+workLoop @ VM376 chunk-SXRIVT2P.js:197
+flushWork @ VM376 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM376 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Establishing session...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM337 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM402 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM402 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM376 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM376 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM376 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM376 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM376 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM376 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM376 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM376 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM376 chunk-SXRIVT2P.js:19485
+commitRoot @ VM376 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM376 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18768
+workLoop @ VM376 chunk-SXRIVT2P.js:197
+flushWork @ VM376 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM376 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: 'f79882621fa5a2738c2da438d40229ca'}
+eruda.js:2 📋 Session ID received: f79882621fa5a2738c2da438d40229ca
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: f79882621fa5a2738c2da438d40229ca
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM337 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM402 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM402 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM376 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM376 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM376 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM376 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM376 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM376 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM376 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM376 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM376 chunk-SXRIVT2P.js:19485
+commitRoot @ VM376 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM376 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18768
+workLoop @ VM376 chunk-SXRIVT2P.js:197
+flushWork @ VM376 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM376 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel initialized successfully
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM337 eruda.js:2
+window.fetch @ (index):315
+doEstablishSession @ VM386 session-manager.ts:93
+await in doEstablishSession
+establishSession @ VM386 session-manager.ts:34
+await in establishSession
+establishSession @ VM380 App.tsx:264
+(anonymous) @ VM380 App.tsx:291
+commitHookEffectListMount @ VM376 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM376 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM376 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM376 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM376 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM376 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM376 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM376 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM376 chunk-SXRIVT2P.js:19485
+commitRoot @ VM376 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM376 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18768
+workLoop @ VM376 chunk-SXRIVT2P.js:197
+flushWork @ VM376 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM376 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM337 eruda.js:2
+console.error @ (index):194
+doEstablishSession @ VM386 session-manager.ts:144
+await in doEstablishSession
+establishSession @ VM386 session-manager.ts:34
+await in establishSession
+establishSession @ VM380 App.tsx:264
+(anonymous) @ VM380 App.tsx:291
+commitHookEffectListMount @ VM376 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM376 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM376 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM376 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM376 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM376 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM376 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM376 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM376 chunk-SXRIVT2P.js:19485
+commitRoot @ VM376 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM376 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18768
+workLoop @ VM376 chunk-SXRIVT2P.js:197
+flushWork @ VM376 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM376 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM337 eruda.js:2
+console.error @ (index):194
+establishSession @ VM380 App.tsx:285
+await in establishSession
+(anonymous) @ VM380 App.tsx:291
+commitHookEffectListMount @ VM376 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM376 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM376 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM376 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM376 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM376 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM376 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM376 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM376 chunk-SXRIVT2P.js:19485
+commitRoot @ VM376 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM376 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM376 chunk-SXRIVT2P.js:18768
+workLoop @ VM376 chunk-SXRIVT2P.js:197
+flushWork @ VM376 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM376 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel test fired - initialization complete
+eruda.js:2 🚀 Starting React app mount...
+eruda.js:2 ✅ React app mounted successfully
+2eruda.js:2 Onboarding progress restored
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM495 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM559 OnboardingWizard.tsx:70
+(anonymous) @ VM559 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM534 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM534 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM534 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM534 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM534 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM534 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM534 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM534 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM534 chunk-SXRIVT2P.js:19485
+commitRoot @ VM534 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM534 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18768
+workLoop @ VM534 chunk-SXRIVT2P.js:197
+flushWork @ VM534 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM534 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM495 eruda.js:2
+window.fetch @ (index):315
+makeRequest @ VM593 api-client.ts:19
+get @ VM593 api-client.ts:53
+(anonymous) @ VM544 queryClient.ts:88
+fetchFn @ VM541 @tanstack_react-query.js:881
+run @ VM541 @tanstack_react-query.js:513
+start @ VM541 @tanstack_react-query.js:555
+fetch @ VM541 @tanstack_react-query.js:969
+executeFetch_fn @ VM541 @tanstack_react-query.js:2279
+onSubscribe @ VM541 @tanstack_react-query.js:1983
+subscribe @ VM541 @tanstack_react-query.js:24
+(anonymous) @ VM541 @tanstack_react-query.js:3146
+subscribeToStore @ VM534 chunk-SXRIVT2P.js:12032
+commitHookEffectListMount @ VM534 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM534 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM534 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM534 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM534 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM534 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM534 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM534 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM534 chunk-SXRIVT2P.js:19485
+commitRoot @ VM534 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM534 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18768
+workLoop @ VM534 chunk-SXRIVT2P.js:197
+flushWork @ VM534 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM534 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM495 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM559 OnboardingWizard.tsx:70
+(anonymous) @ VM559 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM534 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM534 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM534 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM534 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM534 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM534 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM534 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM534 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM534 chunk-SXRIVT2P.js:19485
+commitRoot @ VM534 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM534 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18768
+workLoop @ VM534 chunk-SXRIVT2P.js:197
+flushWork @ VM534 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM534 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM495 eruda.js:2
+window.fetch @ (index):315
+establishSession @ VM592 session-manager.ts:11
+establishSession @ VM538 App.tsx:264
+(anonymous) @ VM538 App.tsx:291
+commitHookEffectListMount @ VM534 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM534 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM534 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM534 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM534 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM534 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM534 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM534 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM534 chunk-SXRIVT2P.js:19485
+commitRoot @ VM534 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM534 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18768
+workLoop @ VM534 chunk-SXRIVT2P.js:197
+flushWork @ VM534 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM534 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Establishing session...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM495 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM559 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM559 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM534 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM534 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM534 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM534 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM534 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM534 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM534 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM534 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM534 chunk-SXRIVT2P.js:19485
+commitRoot @ VM534 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM534 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18768
+workLoop @ VM534 chunk-SXRIVT2P.js:197
+flushWork @ VM534 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM534 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: '686a5e6bf71a45546ed5057ac08719d2'}
+eruda.js:2 📋 Session ID received: 686a5e6bf71a45546ed5057ac08719d2
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: 686a5e6bf71a45546ed5057ac08719d2
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM495 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM559 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM559 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM534 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM534 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM534 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM534 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM534 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM534 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM534 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM534 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM534 chunk-SXRIVT2P.js:19485
+commitRoot @ VM534 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM534 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18768
+workLoop @ VM534 chunk-SXRIVT2P.js:197
+flushWork @ VM534 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM534 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel initialized successfully
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM495 eruda.js:2
+window.fetch @ (index):315
+doEstablishSession @ VM592 session-manager.ts:93
+await in doEstablishSession
+establishSession @ VM592 session-manager.ts:34
+await in establishSession
+establishSession @ VM538 App.tsx:264
+(anonymous) @ VM538 App.tsx:291
+commitHookEffectListMount @ VM534 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM534 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM534 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM534 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM534 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM534 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM534 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM534 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM534 chunk-SXRIVT2P.js:19485
+commitRoot @ VM534 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM534 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18768
+workLoop @ VM534 chunk-SXRIVT2P.js:197
+flushWork @ VM534 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM534 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM495 eruda.js:2
+console.error @ (index):194
+doEstablishSession @ VM592 session-manager.ts:144
+await in doEstablishSession
+establishSession @ VM592 session-manager.ts:34
+await in establishSession
+establishSession @ VM538 App.tsx:264
+(anonymous) @ VM538 App.tsx:291
+commitHookEffectListMount @ VM534 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM534 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM534 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM534 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM534 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM534 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM534 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM534 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM534 chunk-SXRIVT2P.js:19485
+commitRoot @ VM534 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM534 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18768
+workLoop @ VM534 chunk-SXRIVT2P.js:197
+flushWork @ VM534 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM534 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM495 eruda.js:2
+console.error @ (index):194
+establishSession @ VM538 App.tsx:285
+await in establishSession
+(anonymous) @ VM538 App.tsx:291
+commitHookEffectListMount @ VM534 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM534 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM534 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM534 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM534 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM534 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM534 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM534 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM534 chunk-SXRIVT2P.js:19485
+commitRoot @ VM534 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM534 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM534 chunk-SXRIVT2P.js:18768
+workLoop @ VM534 chunk-SXRIVT2P.js:197
+flushWork @ VM534 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM534 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel test fired - initialization complete
+eruda.js:2 🚀 Starting React app mount...
+eruda.js:2 ✅ React app mounted successfully
+2eruda.js:2 Onboarding progress restored
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM653 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM720 OnboardingWizard.tsx:70
+(anonymous) @ VM720 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM692 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM692 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM692 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM692 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM692 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM692 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM692 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM692 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM692 chunk-SXRIVT2P.js:19485
+commitRoot @ VM692 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM692 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18768
+workLoop @ VM692 chunk-SXRIVT2P.js:197
+flushWork @ VM692 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM692 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM653 eruda.js:2
+window.fetch @ (index):315
+makeRequest @ VM703 api-client.ts:19
+get @ VM703 api-client.ts:53
+(anonymous) @ VM702 queryClient.ts:88
+fetchFn @ VM699 @tanstack_react-query.js:881
+run @ VM699 @tanstack_react-query.js:513
+start @ VM699 @tanstack_react-query.js:555
+fetch @ VM699 @tanstack_react-query.js:969
+executeFetch_fn @ VM699 @tanstack_react-query.js:2279
+onSubscribe @ VM699 @tanstack_react-query.js:1983
+subscribe @ VM699 @tanstack_react-query.js:24
+(anonymous) @ VM699 @tanstack_react-query.js:3146
+subscribeToStore @ VM692 chunk-SXRIVT2P.js:12032
+commitHookEffectListMount @ VM692 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM692 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM692 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM692 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM692 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM692 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM692 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM692 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM692 chunk-SXRIVT2P.js:19485
+commitRoot @ VM692 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM692 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18768
+workLoop @ VM692 chunk-SXRIVT2P.js:197
+flushWork @ VM692 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM692 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM653 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM720 OnboardingWizard.tsx:70
+(anonymous) @ VM720 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM692 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM692 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM692 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM692 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM692 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM692 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM692 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM692 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM692 chunk-SXRIVT2P.js:19485
+commitRoot @ VM692 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM692 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18768
+workLoop @ VM692 chunk-SXRIVT2P.js:197
+flushWork @ VM692 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM692 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM653 eruda.js:2
+window.fetch @ (index):315
+establishSession @ VM701 session-manager.ts:11
+establishSession @ VM693 App.tsx:264
+(anonymous) @ VM693 App.tsx:291
+commitHookEffectListMount @ VM692 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM692 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM692 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM692 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM692 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM692 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM692 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM692 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM692 chunk-SXRIVT2P.js:19485
+commitRoot @ VM692 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM692 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18768
+workLoop @ VM692 chunk-SXRIVT2P.js:197
+flushWork @ VM692 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM692 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Establishing session...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM653 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM720 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM720 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM692 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM692 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM692 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM692 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM692 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM692 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM692 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM692 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM692 chunk-SXRIVT2P.js:19485
+commitRoot @ VM692 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM692 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18768
+workLoop @ VM692 chunk-SXRIVT2P.js:197
+flushWork @ VM692 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM692 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: '02e566fc871fa7349125a19ffc20a3f9'}
+eruda.js:2 📋 Session ID received: 02e566fc871fa7349125a19ffc20a3f9
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: 02e566fc871fa7349125a19ffc20a3f9
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2 Meta Pixel initialized successfully
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM653 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM720 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM720 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM692 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM692 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM692 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM692 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM692 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM692 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM692 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM692 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM692 chunk-SXRIVT2P.js:19485
+commitRoot @ VM692 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM692 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18768
+workLoop @ VM692 chunk-SXRIVT2P.js:197
+flushWork @ VM692 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM692 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM653 eruda.js:2
+window.fetch @ (index):315
+doEstablishSession @ VM701 session-manager.ts:93
+await in doEstablishSession
+establishSession @ VM701 session-manager.ts:34
+await in establishSession
+establishSession @ VM693 App.tsx:264
+(anonymous) @ VM693 App.tsx:291
+commitHookEffectListMount @ VM692 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM692 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM692 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM692 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM692 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM692 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM692 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM692 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM692 chunk-SXRIVT2P.js:19485
+commitRoot @ VM692 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM692 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18768
+workLoop @ VM692 chunk-SXRIVT2P.js:197
+flushWork @ VM692 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM692 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM653 eruda.js:2
+console.error @ (index):194
+doEstablishSession @ VM701 session-manager.ts:144
+await in doEstablishSession
+establishSession @ VM701 session-manager.ts:34
+await in establishSession
+establishSession @ VM693 App.tsx:264
+(anonymous) @ VM693 App.tsx:291
+commitHookEffectListMount @ VM692 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM692 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM692 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM692 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM692 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM692 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM692 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM692 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM692 chunk-SXRIVT2P.js:19485
+commitRoot @ VM692 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM692 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18768
+workLoop @ VM692 chunk-SXRIVT2P.js:197
+flushWork @ VM692 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM692 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM653 eruda.js:2
+console.error @ (index):194
+establishSession @ VM693 App.tsx:285
+await in establishSession
+(anonymous) @ VM693 App.tsx:291
+commitHookEffectListMount @ VM692 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM692 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM692 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM692 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM692 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM692 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM692 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM692 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM692 chunk-SXRIVT2P.js:19485
+commitRoot @ VM692 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM692 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM692 chunk-SXRIVT2P.js:18768
+workLoop @ VM692 chunk-SXRIVT2P.js:197
+flushWork @ VM692 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM692 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel test fired - initialization complete
+eruda.js:2 🚀 Starting React app mount...
+eruda.js:2 ✅ React app mounted successfully
+2eruda.js:2 Onboarding progress restored
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM812 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM875 OnboardingWizard.tsx:70
+(anonymous) @ VM875 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM850 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM850 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM850 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM850 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM850 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM850 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM850 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM850 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM850 chunk-SXRIVT2P.js:19485
+commitRoot @ VM850 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM850 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18768
+workLoop @ VM850 chunk-SXRIVT2P.js:197
+flushWork @ VM850 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM850 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM812 eruda.js:2
+window.fetch @ (index):315
+makeRequest @ VM909 api-client.ts:19
+get @ VM909 api-client.ts:53
+(anonymous) @ VM859 queryClient.ts:88
+fetchFn @ VM857 @tanstack_react-query.js:881
+run @ VM857 @tanstack_react-query.js:513
+start @ VM857 @tanstack_react-query.js:555
+fetch @ VM857 @tanstack_react-query.js:969
+executeFetch_fn @ VM857 @tanstack_react-query.js:2279
+onSubscribe @ VM857 @tanstack_react-query.js:1983
+subscribe @ VM857 @tanstack_react-query.js:24
+(anonymous) @ VM857 @tanstack_react-query.js:3146
+subscribeToStore @ VM850 chunk-SXRIVT2P.js:12032
+commitHookEffectListMount @ VM850 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM850 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM850 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM850 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM850 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM850 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM850 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM850 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM850 chunk-SXRIVT2P.js:19485
+commitRoot @ VM850 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM850 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18768
+workLoop @ VM850 chunk-SXRIVT2P.js:197
+flushWork @ VM850 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM850 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM812 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM875 OnboardingWizard.tsx:70
+(anonymous) @ VM875 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM850 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM850 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM850 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM850 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM850 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM850 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM850 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM850 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM850 chunk-SXRIVT2P.js:19485
+commitRoot @ VM850 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM850 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18768
+workLoop @ VM850 chunk-SXRIVT2P.js:197
+flushWork @ VM850 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM850 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM812 eruda.js:2
+window.fetch @ (index):315
+establishSession @ VM908 session-manager.ts:11
+establishSession @ VM853 App.tsx:264
+(anonymous) @ VM853 App.tsx:291
+commitHookEffectListMount @ VM850 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM850 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM850 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM850 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM850 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM850 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM850 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM850 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM850 chunk-SXRIVT2P.js:19485
+commitRoot @ VM850 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM850 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18768
+workLoop @ VM850 chunk-SXRIVT2P.js:197
+flushWork @ VM850 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM850 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Establishing session...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM812 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM875 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM875 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM850 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM850 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM850 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM850 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM850 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM850 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM850 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM850 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM850 chunk-SXRIVT2P.js:19485
+commitRoot @ VM850 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM850 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18768
+workLoop @ VM850 chunk-SXRIVT2P.js:197
+flushWork @ VM850 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM850 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: 'd5475beea281555ea7197dc4336d5ca8'}
+eruda.js:2 📋 Session ID received: d5475beea281555ea7197dc4336d5ca8
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: d5475beea281555ea7197dc4336d5ca8
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM812 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM875 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM875 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM850 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM850 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM850 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM850 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM850 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM850 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM850 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM850 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM850 chunk-SXRIVT2P.js:19485
+commitRoot @ VM850 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM850 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18768
+workLoop @ VM850 chunk-SXRIVT2P.js:197
+flushWork @ VM850 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM850 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel initialized successfully
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM812 eruda.js:2
+window.fetch @ (index):315
+doEstablishSession @ VM908 session-manager.ts:93
+await in doEstablishSession
+establishSession @ VM908 session-manager.ts:34
+await in establishSession
+establishSession @ VM853 App.tsx:264
+(anonymous) @ VM853 App.tsx:291
+commitHookEffectListMount @ VM850 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM850 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM850 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM850 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM850 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM850 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM850 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM850 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM850 chunk-SXRIVT2P.js:19485
+commitRoot @ VM850 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM850 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18768
+workLoop @ VM850 chunk-SXRIVT2P.js:197
+flushWork @ VM850 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM850 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM812 eruda.js:2
+console.error @ (index):194
+doEstablishSession @ VM908 session-manager.ts:144
+await in doEstablishSession
+establishSession @ VM908 session-manager.ts:34
+await in establishSession
+establishSession @ VM853 App.tsx:264
+(anonymous) @ VM853 App.tsx:291
+commitHookEffectListMount @ VM850 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM850 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM850 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM850 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM850 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM850 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM850 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM850 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM850 chunk-SXRIVT2P.js:19485
+commitRoot @ VM850 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM850 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18768
+workLoop @ VM850 chunk-SXRIVT2P.js:197
+flushWork @ VM850 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM850 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM812 eruda.js:2
+console.error @ (index):194
+establishSession @ VM853 App.tsx:285
+await in establishSession
+(anonymous) @ VM853 App.tsx:291
+commitHookEffectListMount @ VM850 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM850 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM850 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM850 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM850 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM850 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM850 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM850 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM850 chunk-SXRIVT2P.js:19485
+commitRoot @ VM850 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM850 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM850 chunk-SXRIVT2P.js:18768
+workLoop @ VM850 chunk-SXRIVT2P.js:197
+flushWork @ VM850 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM850 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel test fired - initialization complete
+eruda.js:2 🚀 Starting React app mount...
+eruda.js:2 ✅ React app mounted successfully
+2eruda.js:2 Onboarding progress restored
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM969 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM1037 OnboardingWizard.tsx:70
+(anonymous) @ VM1037 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM1008 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1008 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1008 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1008 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1008 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1008 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1008 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1008 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1008 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1008 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1008 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18768
+workLoop @ VM1008 chunk-SXRIVT2P.js:197
+flushWork @ VM1008 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1008 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM969 eruda.js:2
+window.fetch @ (index):315
+makeRequest @ VM1018 api-client.ts:19
+get @ VM1018 api-client.ts:53
+(anonymous) @ VM1017 queryClient.ts:88
+fetchFn @ VM1015 @tanstack_react-query.js:881
+run @ VM1015 @tanstack_react-query.js:513
+start @ VM1015 @tanstack_react-query.js:555
+fetch @ VM1015 @tanstack_react-query.js:969
+executeFetch_fn @ VM1015 @tanstack_react-query.js:2279
+onSubscribe @ VM1015 @tanstack_react-query.js:1983
+subscribe @ VM1015 @tanstack_react-query.js:24
+(anonymous) @ VM1015 @tanstack_react-query.js:3146
+subscribeToStore @ VM1008 chunk-SXRIVT2P.js:12032
+commitHookEffectListMount @ VM1008 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1008 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1008 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1008 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1008 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1008 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1008 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1008 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1008 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1008 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1008 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18768
+workLoop @ VM1008 chunk-SXRIVT2P.js:197
+flushWork @ VM1008 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1008 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM969 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM1037 OnboardingWizard.tsx:70
+(anonymous) @ VM1037 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM1008 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1008 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1008 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1008 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1008 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1008 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1008 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1008 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1008 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1008 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1008 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18768
+workLoop @ VM1008 chunk-SXRIVT2P.js:197
+flushWork @ VM1008 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1008 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM969 eruda.js:2
+window.fetch @ (index):315
+establishSession @ VM1019 session-manager.ts:11
+establishSession @ VM1009 App.tsx:264
+(anonymous) @ VM1009 App.tsx:291
+commitHookEffectListMount @ VM1008 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1008 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1008 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1008 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1008 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1008 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1008 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1008 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1008 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1008 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1008 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18768
+workLoop @ VM1008 chunk-SXRIVT2P.js:197
+flushWork @ VM1008 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1008 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Establishing session...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM969 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM1037 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM1037 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM1008 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1008 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1008 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1008 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1008 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1008 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1008 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1008 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1008 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1008 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1008 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18768
+workLoop @ VM1008 chunk-SXRIVT2P.js:197
+flushWork @ VM1008 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1008 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: 'da0d37779c8ff03df4a4266931533ddb'}
+eruda.js:2 📋 Session ID received: da0d37779c8ff03df4a4266931533ddb
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: da0d37779c8ff03df4a4266931533ddb
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM969 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM1037 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM1037 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM1008 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1008 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1008 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1008 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1008 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1008 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1008 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1008 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1008 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1008 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1008 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18768
+workLoop @ VM1008 chunk-SXRIVT2P.js:197
+flushWork @ VM1008 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1008 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel initialized successfully
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM969 eruda.js:2
+window.fetch @ (index):315
+doEstablishSession @ VM1019 session-manager.ts:93
+await in doEstablishSession
+establishSession @ VM1019 session-manager.ts:34
+await in establishSession
+establishSession @ VM1009 App.tsx:264
+(anonymous) @ VM1009 App.tsx:291
+commitHookEffectListMount @ VM1008 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1008 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1008 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1008 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1008 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1008 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1008 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1008 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1008 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1008 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1008 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18768
+workLoop @ VM1008 chunk-SXRIVT2P.js:197
+flushWork @ VM1008 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1008 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM969 eruda.js:2
+console.error @ (index):194
+doEstablishSession @ VM1019 session-manager.ts:144
+await in doEstablishSession
+establishSession @ VM1019 session-manager.ts:34
+await in establishSession
+establishSession @ VM1009 App.tsx:264
+(anonymous) @ VM1009 App.tsx:291
+commitHookEffectListMount @ VM1008 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1008 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1008 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1008 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1008 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1008 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1008 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1008 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1008 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1008 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1008 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18768
+workLoop @ VM1008 chunk-SXRIVT2P.js:197
+flushWork @ VM1008 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1008 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM969 eruda.js:2
+console.error @ (index):194
+establishSession @ VM1009 App.tsx:285
+await in establishSession
+(anonymous) @ VM1009 App.tsx:291
+commitHookEffectListMount @ VM1008 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1008 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1008 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1008 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1008 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1008 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1008 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1008 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1008 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1008 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1008 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1008 chunk-SXRIVT2P.js:18768
+workLoop @ VM1008 chunk-SXRIVT2P.js:197
+flushWork @ VM1008 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1008 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel test fired - initialization complete
+eruda.js:2 🚀 Starting React app mount...
+eruda.js:2 ✅ React app mounted successfully
+2eruda.js:2 Onboarding progress restored
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM1127 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM1176 OnboardingWizard.tsx:70
+(anonymous) @ VM1176 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM1166 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1166 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1166 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1166 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1166 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1166 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1166 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1166 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1166 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1166 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1166 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18768
+workLoop @ VM1166 chunk-SXRIVT2P.js:197
+flushWork @ VM1166 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1166 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM1127 eruda.js:2
+window.fetch @ (index):315
+makeRequest @ VM1225 api-client.ts:19
+get @ VM1225 api-client.ts:53
+(anonymous) @ VM1175 queryClient.ts:88
+fetchFn @ VM1173 @tanstack_react-query.js:881
+run @ VM1173 @tanstack_react-query.js:513
+start @ VM1173 @tanstack_react-query.js:555
+fetch @ VM1173 @tanstack_react-query.js:969
+executeFetch_fn @ VM1173 @tanstack_react-query.js:2279
+onSubscribe @ VM1173 @tanstack_react-query.js:1983
+subscribe @ VM1173 @tanstack_react-query.js:24
+(anonymous) @ VM1173 @tanstack_react-query.js:3146
+subscribeToStore @ VM1166 chunk-SXRIVT2P.js:12032
+commitHookEffectListMount @ VM1166 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1166 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1166 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1166 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1166 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1166 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1166 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1166 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1166 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1166 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1166 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18768
+workLoop @ VM1166 chunk-SXRIVT2P.js:197
+flushWork @ VM1166 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1166 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM1127 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM1176 OnboardingWizard.tsx:70
+(anonymous) @ VM1176 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM1166 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1166 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1166 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1166 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1166 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1166 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1166 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1166 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1166 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1166 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1166 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18768
+workLoop @ VM1166 chunk-SXRIVT2P.js:197
+flushWork @ VM1166 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1166 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM1127 eruda.js:2
+window.fetch @ (index):315
+establishSession @ VM1224 session-manager.ts:11
+establishSession @ VM1170 App.tsx:264
+(anonymous) @ VM1170 App.tsx:291
+commitHookEffectListMount @ VM1166 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1166 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1166 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1166 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1166 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1166 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1166 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1166 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1166 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1166 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1166 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18768
+workLoop @ VM1166 chunk-SXRIVT2P.js:197
+flushWork @ VM1166 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1166 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Establishing session...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM1127 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM1176 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM1176 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM1166 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1166 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1166 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1166 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1166 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1166 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1166 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1166 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1166 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1166 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1166 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18768
+workLoop @ VM1166 chunk-SXRIVT2P.js:197
+flushWork @ VM1166 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1166 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: 'a5f3da2a46657ba0d4b98c4ebe1a50d6'}
+eruda.js:2 📋 Session ID received: a5f3da2a46657ba0d4b98c4ebe1a50d6
+eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+eruda.js:2 User ID: 2
+eruda.js:2 Session ID: a5f3da2a46657ba0d4b98c4ebe1a50d6
+eruda.js:2 🍪 Cookies after establishment: 
+eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+eruda.js:2 🔍 Testing session with /api/user request...
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM1127 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM1176 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM1176 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM1166 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1166 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1166 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1166 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1166 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1166 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1166 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1166 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1166 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1166 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1166 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18768
+workLoop @ VM1166 chunk-SXRIVT2P.js:197
+flushWork @ VM1166 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1166 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Meta Pixel initialized successfully
+eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM1127 eruda.js:2
+window.fetch @ (index):315
+doEstablishSession @ VM1224 session-manager.ts:93
+await in doEstablishSession
+establishSession @ VM1224 session-manager.ts:34
+await in establishSession
+establishSession @ VM1170 App.tsx:264
+(anonymous) @ VM1170 App.tsx:291
+commitHookEffectListMount @ VM1166 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1166 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1166 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1166 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1166 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1166 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1166 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1166 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1166 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1166 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1166 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18768
+workLoop @ VM1166 chunk-SXRIVT2P.js:197
+flushWork @ VM1166 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1166 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 🔍 Session verification test: 401
+eruda.js:2 ❌ Session verification failed
+eruda.js:2 🔧 Attempting manual cookie establishment...
+eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM1127 eruda.js:2
+console.error @ (index):194
+doEstablishSession @ VM1224 session-manager.ts:144
+await in doEstablishSession
+establishSession @ VM1224 session-manager.ts:34
+await in establishSession
+establishSession @ VM1170 App.tsx:264
+(anonymous) @ VM1170 App.tsx:291
+commitHookEffectListMount @ VM1166 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1166 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1166 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1166 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1166 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1166 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1166 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1166 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1166 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1166 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1166 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18768
+workLoop @ VM1166 chunk-SXRIVT2P.js:197
+flushWork @ VM1166 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1166 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM1127 eruda.js:2
+console.error @ (index):194
+establishSession @ VM1170 App.tsx:285
+await in establishSession
+(anonymous) @ VM1170 App.tsx:291
+commitHookEffectListMount @ VM1166 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1166 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1166 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1166 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1166 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1166 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1166 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM1166 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM1166 chunk-SXRIVT2P.js:19485
+commitRoot @ VM1166 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM1166 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18768
+workLoop @ VM1166 chunk-SXRIVT2P.js:197
+flushWork @ VM1166 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM1166 chunk-SXRIVT2P.js:384Understand this error
+eruda.js:2 Analytics disabled in development mode
+eruda.js:2 Mobile layout applied
+eruda.js:2 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:107:11)
+    at async establishSession (App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM1127 eruda.js:2
+console.error @ (index):194
+establishSession @ VM1286 App.tsx:285
+await in establishSession
+(anonymous) @ VM1286 App.tsx:291
+commitHookEffectListMount @ VM1166 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1166 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1166 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1166 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1166 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1166 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1166 chunk-SXRIVT2P.js:19500
+commitRootImpl @ VM1166 chunk-SXRIVT2P.js:19469
+commitRoot @ VM1166 chunk-SXRIVT2P.js:19330
+performSyncWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18948
+flushSyncCallbacks @ VM1166 chunk-SXRIVT2P.js:9166
+flushSync @ VM1166 chunk-SXRIVT2P.js:19012
+scheduleRefresh @ VM1166 chunk-SXRIVT2P.js:20057
+(anonymous) @ VM1167 @react-refresh:228
+performReactRefresh @ VM1167 @react-refresh:217
+(anonymous) @ VM1167 @react-refresh:586
+setTimeout
+(anonymous) @ VM1167 @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ VM1167 @react-refresh:625
+(anonymous) @ VM1170 App.tsx:435
+(anonymous) @ VM1129 client:34
+(anonymous) @ VM1129 client:213
+(anonymous) @ VM1129 client:186
+queueUpdate @ VM1129 client:186
+await in queueUpdate
+(anonymous) @ VM1129 client:930
+handleMessage @ VM1129 client:928
+await in handleMessage
+(anonymous) @ VM1129 client:490
+dequeue @ VM1129 client:516
+(anonymous) @ VM1129 client:504
+enqueue @ VM1129 client:498
+(anonymous) @ VM1129 client:490
+onMessage @ VM1129 client:309
+(anonymous) @ VM1129 client:439Understand this error
+App.tsx:286 Uncaught (in promise) ReferenceError: setError is not defined
+    at establishSession (App.tsx:286:9)
+establishSession @ VM1286 App.tsx:286
+await in establishSession
+(anonymous) @ VM1286 App.tsx:291
+commitHookEffectListMount @ VM1166 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM1166 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM1166 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM1166 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM1166 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM1166 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM1166 chunk-SXRIVT2P.js:19500
+commitRootImpl @ VM1166 chunk-SXRIVT2P.js:19469
+commitRoot @ VM1166 chunk-SXRIVT2P.js:19330
+performSyncWorkOnRoot @ VM1166 chunk-SXRIVT2P.js:18948
+flushSyncCallbacks @ VM1166 chunk-SXRIVT2P.js:9166
+flushSync @ VM1166 chunk-SXRIVT2P.js:19012
+scheduleRefresh @ VM1166 chunk-SXRIVT2P.js:20057
+(anonymous) @ VM1167 @react-refresh:228
+performReactRefresh @ VM1167 @react-refresh:217
+(anonymous) @ VM1167 @react-refresh:586
+setTimeout
+(anonymous) @ VM1167 @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ VM1167 @react-refresh:625
+(anonymous) @ VM1170 App.tsx:435
+(anonymous) @ VM1129 client:34
+(anonymous) @ VM1129 client:213
+(anonymous) @ VM1129 client:186
+queueUpdate @ VM1129 client:186
+await in queueUpdate
+(anonymous) @ VM1129 client:930
+handleMessage @ VM1129 client:928
+await in handleMessage
+(anonymous) @ VM1129 client:490
+dequeue @ VM1129 client:516
+(anonymous) @ VM1129 client:504
+enqueue @ VM1129 client:498
+(anonymous) @ VM1129 client:490
+onMessage @ VM1129 client:309
+(anonymous) @ VM1129 client:439Understand this error
+eruda.js:2 Session established: gailm@macleodglba.com.au
+eruda.js:2 Meta Pixel test fired - initialization complete
+login.tsx:24  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/src/components/footer.tsx net::ERR_ABORTED 502 (Bad Gateway)Understand this error
+4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/src/pages/login.tsx:25  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/src/components/forgot-password-modal.tsx net::ERR_ABORTED 502 (Bad Gateway)Understand this error
+VM10 eruda.js:2 Meta Pixel test fired - initialization complete
+VM10 eruda.js:2 🚀 Starting React app mount...
+VM10 eruda.js:2 ✅ React app mounted successfully
+2VM10 eruda.js:2 Onboarding progress restored
+VM10 eruda.js:2 Analytics disabled in development mode
+VM10 eruda.js:2 Mobile layout applied
+VM10 eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM10 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM63 OnboardingWizard.tsx:70
+(anonymous) @ VM63 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM47 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM47 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM47 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM47 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM47 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM47 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM47 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM47 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM47 chunk-SXRIVT2P.js:19485
+commitRoot @ VM47 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM47 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18768
+workLoop @ VM47 chunk-SXRIVT2P.js:197
+flushWork @ VM47 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM47 chunk-SXRIVT2P.js:384Understand this error
+VM10 eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM10 eruda.js:2
+window.fetch @ (index):315
+makeRequest @ VM108 api-client.ts:19
+get @ VM108 api-client.ts:53
+(anonymous) @ VM58 queryClient.ts:88
+fetchFn @ VM54 @tanstack_react-query.js:881
+run @ VM54 @tanstack_react-query.js:513
+start @ VM54 @tanstack_react-query.js:555
+fetch @ VM54 @tanstack_react-query.js:969
+executeFetch_fn @ VM54 @tanstack_react-query.js:2279
+onSubscribe @ VM54 @tanstack_react-query.js:1983
+subscribe @ VM54 @tanstack_react-query.js:24
+(anonymous) @ VM54 @tanstack_react-query.js:3146
+subscribeToStore @ VM47 chunk-SXRIVT2P.js:12032
+commitHookEffectListMount @ VM47 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM47 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM47 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM47 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM47 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM47 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM47 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM47 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM47 chunk-SXRIVT2P.js:19485
+commitRoot @ VM47 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM47 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18768
+workLoop @ VM47 chunk-SXRIVT2P.js:197
+flushWork @ VM47 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM47 chunk-SXRIVT2P.js:384Understand this error
+VM10 eruda.js:2 Session established: gailm@macleodglba.com.au
+VM10 eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ VM10 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM63 OnboardingWizard.tsx:70
+(anonymous) @ VM63 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM47 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM47 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM47 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM47 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM47 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM47 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM47 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM47 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM47 chunk-SXRIVT2P.js:19485
+commitRoot @ VM47 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM47 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18768
+workLoop @ VM47 chunk-SXRIVT2P.js:197
+flushWork @ VM47 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM47 chunk-SXRIVT2P.js:384Understand this error
+VM10 eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM10 eruda.js:2
+window.fetch @ (index):315
+establishSession @ VM107 session-manager.ts:11
+establishSession @ VM51 App.tsx:264
+(anonymous) @ VM51 App.tsx:291
+commitHookEffectListMount @ VM47 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM47 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM47 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM47 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM47 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM47 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM47 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM47 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM47 chunk-SXRIVT2P.js:19485
+commitRoot @ VM47 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM47 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18768
+workLoop @ VM47 chunk-SXRIVT2P.js:197
+flushWork @ VM47 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM47 chunk-SXRIVT2P.js:384Understand this error
+VM10 eruda.js:2 🔍 Establishing session...
+VM10 eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM10 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM63 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM63 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM47 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM47 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM47 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM47 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM47 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM47 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM47 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM47 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM47 chunk-SXRIVT2P.js:19485
+commitRoot @ VM47 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM47 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18768
+workLoop @ VM47 chunk-SXRIVT2P.js:197
+flushWork @ VM47 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM47 chunk-SXRIVT2P.js:384Understand this error
+VM10 eruda.js:2 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: '21451033d44920804a5c2978498bf5ae'}
+VM10 eruda.js:2 📋 Session ID received: 21451033d44920804a5c2978498bf5ae
+VM10 eruda.js:2 ✅ Session established: gailm@macleodglba.com.au
+VM10 eruda.js:2 User ID: 2
+VM10 eruda.js:2 Session ID: 21451033d44920804a5c2978498bf5ae
+VM10 eruda.js:2 🍪 Cookies after establishment: 
+VM10 eruda.js:2 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+VM10 eruda.js:2 🔍 Testing session with /api/user request...
+VM10 eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM10 eruda.js:2
+window.fetch @ (index):315
+checkUserStatus @ VM63 OnboardingWizard.tsx:92
+await in checkUserStatus
+(anonymous) @ VM63 OnboardingWizard.tsx:139
+commitHookEffectListMount @ VM47 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM47 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM47 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM47 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM47 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM47 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM47 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM47 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM47 chunk-SXRIVT2P.js:19485
+commitRoot @ VM47 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM47 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18768
+workLoop @ VM47 chunk-SXRIVT2P.js:197
+flushWork @ VM47 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM47 chunk-SXRIVT2P.js:384Understand this error
+VM10 eruda.js:2 Meta Pixel initialized successfully
+VM10 eruda.js:2  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ VM10 eruda.js:2
+window.fetch @ (index):315
+doEstablishSession @ VM107 session-manager.ts:93
+await in doEstablishSession
+establishSession @ VM107 session-manager.ts:34
+await in establishSession
+establishSession @ VM51 App.tsx:264
+(anonymous) @ VM51 App.tsx:291
+commitHookEffectListMount @ VM47 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM47 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM47 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM47 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM47 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM47 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM47 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM47 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM47 chunk-SXRIVT2P.js:19485
+commitRoot @ VM47 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM47 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18768
+workLoop @ VM47 chunk-SXRIVT2P.js:197
+flushWork @ VM47 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM47 chunk-SXRIVT2P.js:384Understand this error
+VM10 eruda.js:2 🔍 Session verification test: 401
+VM10 eruda.js:2 ❌ Session verification failed
+VM10 eruda.js:2 🔧 Attempting manual cookie establishment...
+VM10 eruda.js:2 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (VM107 session-manager.ts:107:11)
+    at async establishSession (VM51 App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM10 eruda.js:2
+console.error @ (index):194
+doEstablishSession @ VM107 session-manager.ts:144
+await in doEstablishSession
+establishSession @ VM107 session-manager.ts:34
+await in establishSession
+establishSession @ VM51 App.tsx:264
+(anonymous) @ VM51 App.tsx:291
+commitHookEffectListMount @ VM47 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM47 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM47 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM47 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM47 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM47 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM47 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM47 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM47 chunk-SXRIVT2P.js:19485
+commitRoot @ VM47 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM47 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18768
+workLoop @ VM47 chunk-SXRIVT2P.js:197
+flushWork @ VM47 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM47 chunk-SXRIVT2P.js:384Understand this error
+VM10 eruda.js:2 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (VM107 session-manager.ts:107:11)
+    at async establishSession (VM51 App.tsx:264:9)
+Mt.forEach.n.<computed> @ VM10 eruda.js:2
+console.error @ (index):194
+establishSession @ VM51 App.tsx:285
+await in establishSession
+(anonymous) @ VM51 App.tsx:291
+commitHookEffectListMount @ VM47 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM47 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM47 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM47 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM47 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM47 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM47 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM47 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM47 chunk-SXRIVT2P.js:19485
+commitRoot @ VM47 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM47 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18768
+workLoop @ VM47 chunk-SXRIVT2P.js:197
+flushWork @ VM47 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM47 chunk-SXRIVT2P.js:384Understand this error
+VM51 App.tsx:286 Uncaught (in promise) ReferenceError: setError is not defined
+    at establishSession (VM51 App.tsx:286:9)
+establishSession @ VM51 App.tsx:286
+await in establishSession
+(anonymous) @ VM51 App.tsx:291
+commitHookEffectListMount @ VM47 chunk-SXRIVT2P.js:16963
+commitPassiveMountOnFiber @ VM47 chunk-SXRIVT2P.js:18206
+commitPassiveMountEffects_complete @ VM47 chunk-SXRIVT2P.js:18179
+commitPassiveMountEffects_begin @ VM47 chunk-SXRIVT2P.js:18169
+commitPassiveMountEffects @ VM47 chunk-SXRIVT2P.js:18159
+flushPassiveEffectsImpl @ VM47 chunk-SXRIVT2P.js:19543
+flushPassiveEffects @ VM47 chunk-SXRIVT2P.js:19500
+performSyncWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18921
+flushSyncCallbacks @ VM47 chunk-SXRIVT2P.js:9166
+commitRootImpl @ VM47 chunk-SXRIVT2P.js:19485
+commitRoot @ VM47 chunk-SXRIVT2P.js:19330
+finishConcurrentRender @ VM47 chunk-SXRIVT2P.js:18858
+performConcurrentWorkOnRoot @ VM47 chunk-SXRIVT2P.js:18768
+workLoop @ VM47 chunk-SXRIVT2P.js:197
+flushWork @ VM47 chunk-SXRIVT2P.js:176
+performWorkUntilDeadline @ VM47 chunk-SXRIVT2P.js:384Understand this error
+Console.js:61 Meta Pixel test fired - initialization complete
+Console.js:61 🚀 Starting React app mount...
+Console.js:61 ✅ React app mounted successfully
+2Console.js:61 Onboarding progress restored
+Console.js:61 Analytics disabled in development mode
+Console.js:61 Mobile layout applied
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:80
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+makeRequest @ api-client.ts:31
+get @ api-client.ts:79
+(anonymous) @ queryClient.ts:127
+fetchFn @ @tanstack_react-query.js?v=044abfc6:881
+run @ @tanstack_react-query.js?v=044abfc6:513
+start @ @tanstack_react-query.js?v=044abfc6:555
+fetch @ @tanstack_react-query.js?v=044abfc6:969
+executeFetch_fn @ @tanstack_react-query.js?v=044abfc6:2279
+onSubscribe @ @tanstack_react-query.js?v=044abfc6:1983
+subscribe @ @tanstack_react-query.js?v=044abfc6:24
+(anonymous) @ @tanstack_react-query.js?v=044abfc6:3146
+subscribeToStore @ chunk-SXRIVT2P.js?v=044abfc6:12032
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:80
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+establishSession @ session-manager.ts:22
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:178
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+Console.js:61 🔍 Establishing session...
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:110
+await in checkUserStatus
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:110
+await in checkUserStatus
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+Console.js:61 Meta Pixel initialized successfully
+Console.js:61 Session established: gailm@macleodglba.com.au
+Console.js:61 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: '6fdede2c502592861d8c4d8880ea23e8'}
+Console.js:61 📋 Session ID received: 6fdede2c502592861d8c4d8880ea23e8
+Console.js:61 🔧 FORCED manual cookie setting: theagencyiq.session=6fdede2c502592861d8c4d8880ea23e8
+Console.js:61 ✅ Session established: gailm@macleodglba.com.au
+Console.js:61 User ID: 2
+Console.js:61 Session ID: 6fdede2c502592861d8c4d8880ea23e8
+Console.js:61 🍪 Cookies after establishment: 
+Console.js:61 🔍 Cookie status: {hasSignedCookie: false, hasUnsignedCookie: false}
+Console.js:61 🔍 Testing session with /api/user request...
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+doEstablishSession @ session-manager.ts:121
+await in doEstablishSession
+establishSession @ session-manager.ts:50
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:178
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+Console.js:61 🔍 Session verification test: 401
+Console.js:61 ❌ Session verification failed
+Console.js:61 🔧 Attempting manual cookie establishment...
+Console.js:61 Session establishment error: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:140:11)
+    at async establishSession (App.tsx:143:9)
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+doEstablishSession @ session-manager.ts:190
+await in doEstablishSession
+establishSession @ session-manager.ts:50
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:178
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+Console.js:61 ❌ Session establishment failed: ReferenceError: setCookieHeader is not defined
+    at SessionManager.doEstablishSession (session-manager.ts:140:11)
+    at async establishSession (App.tsx:143:9)
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+establishSession @ App.tsx:170
+await in establishSession
+(anonymous) @ App.tsx:178
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+App.tsx:172 Uncaught (in promise) ReferenceError: setError is not defined
+    at establishSession (App.tsx:172:9)
+establishSession @ App.tsx:172
+await in establishSession
+(anonymous) @ App.tsx:178
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error

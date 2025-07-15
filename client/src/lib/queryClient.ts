@@ -124,14 +124,23 @@ export const getQueryFn: <T>(options: {
         controller.abort('Request timeout after 10 seconds');
       }, 10000);
       
+      // Force manual cookie transmission
+      const sessionCookie = sessionStorage.getItem('sessionCookie');
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+      
+      if (sessionCookie) {
+        headers['Cookie'] = sessionCookie;
+        console.log('🔧 FORCING cookie transmission:', sessionCookie.substring(0, 50) + '...');
+      }
+      
       const res = await apiClient.get(queryKey[0] as string, {
         signal: controller.signal,
         cache: 'no-cache',
         credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       clearTimeout(timeoutId);

@@ -1,0 +1,113 @@
+Session established: gailm@macleodglba.com.au
+Console.js:61 ✅ Session establishment response: {sessionEstablished: true, user: {…}, sessionId: '70ffca056fd35edd484c76ea46c66f0c'}
+Console.js:61 📋 Session ID received: 70ffca056fd35edd484c76ea46c66f0c
+Console.js:61 🔧 Session stored for manual transmission: 70ffca056fd35edd484c76ea46c66f0c
+Console.js:61 ✅ Session established: gailm@macleodglba.com.au
+Console.js:61 User ID: 2
+Console.js:61 Session ID: 70ffca056fd35edd484c76ea46c66f0c
+Console.js:61 🔄 Queries invalidated after session establishment
+Console.js:61 🔧 Using manual cookie for test: theagencyiq.session=70ffca056fd35edd484c76ea46c66f0c
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+makeRequest @ api-client.ts:31
+get @ api-client.ts:79
+(anonymous) @ queryClient.ts:127
+fetchFn @ @tanstack_react-query.js?v=044abfc6:881
+run @ @tanstack_react-query.js?v=044abfc6:513
+start @ @tanstack_react-query.js?v=044abfc6:555
+fetch @ @tanstack_react-query.js?v=044abfc6:969
+(anonymous) @ @tanstack_react-query.js?v=044abfc6:1811
+(anonymous) @ @tanstack_react-query.js?v=044abfc6:1810
+batch @ @tanstack_react-query.js?v=044abfc6:603
+refetchQueries @ @tanstack_react-query.js?v=044abfc6:1809
+(anonymous) @ @tanstack_react-query.js?v=044abfc6:1795
+batch @ @tanstack_react-query.js?v=044abfc6:603
+invalidateQueries @ @tanstack_react-query.js?v=044abfc6:1788
+(anonymous) @ App.tsx:148
+setTimeout
+establishSession @ App.tsx:146
+await in establishSession
+(anonymous) @ App.tsx:186
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:319
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+(anonymous) @ App.tsx:157
+setTimeout
+(anonymous) @ App.tsx:152
+setTimeout
+establishSession @ App.tsx:146
+await in establishSession
+(anonymous) @ App.tsx:186
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19469
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18948
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+flushSync @ chunk-SXRIVT2P.js?v=044abfc6:19012
+scheduleRefresh @ chunk-SXRIVT2P.js?v=044abfc6:20057
+(anonymous) @ @react-refresh:228
+performReactRefresh @ @react-refresh:217
+(anonymous) @ @react-refresh:586
+setTimeout
+(anonymous) @ @react-refresh:576
+validateRefreshBoundaryAndEnqueueUpdate @ @react-refresh:625
+(anonymous) @ App.tsx:319
+(anonymous) @ client:34
+(anonymous) @ client:213
+(anonymous) @ client:186
+queueUpdate @ client:186
+await in queueUpdate
+(anonymous) @ client:930
+handleMessage @ client:928
+await in handleMessage
+(anonymous) @ client:490
+dequeue @ client:516
+(anonymous) @ client:504
+enqueue @ client:498
+(anonymous) @ client:490
+onMessage @ client:309
+(anonymous) @ client:439Understand this error
+Console.js:61 🔍 Session verification test: 401
+Console.js:61 ❌ Session verification failed

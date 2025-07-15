@@ -150,24 +150,36 @@ function App() {
           
           // Force a test API call to verify session is working
           setTimeout(() => {
-            apiClient.get('/api/user', {
-                credentials: 'include',
-                cache: 'no-cache',
-              }).then(response => {
-                console.log('🔍 Session verification test:', response.status);
-                if (response.ok) {
-                  console.log('✅ Session working correctly');
-                } else {
-                  console.log('❌ Session verification failed');
-                }
-              }).catch(err => {
-                console.log('❌ Session verification error:', err.message);
-              });
+            // FORCE MANUAL COOKIE HEADER IN REQUEST
+            const sessionCookie = sessionStorage.getItem('sessionCookie');
+            console.log('🔧 Using manual cookie for test:', sessionCookie);
+            
+            fetch('/api/user', {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                'Cookie': sessionCookie || ''
+              }
+            }).then(response => {
+              console.log('🔍 Session verification test:', response.status);
+              if (response.ok) {
+                console.log('✅ Session working correctly');
+              } else {
+                console.log('❌ Session verification failed');
+              }
+            }).catch(err => {
+              console.log('❌ Session verification error:', err.message);
+            });
           }, 200);
         }, 100);
         
       } catch (error) {
-        console.log('❌ Session establishment error, continuing with guest access');
+        console.error('❌ Session establishment failed:', error);
+        // NO GUEST ACCESS - Stop the loop and show error
+        setError('Authentication required. Please contact support.');
+        setLoading(false);
+        return;
       }
     };
 
@@ -256,16 +268,17 @@ function App() {
           const data = await response.json();
           console.log('Session established:', data.user?.email);
         } else {
-          console.log('Session establishment failed, continuing without auth');
+          console.error('Session establishment failed with no session data');
+          setError('Authentication required. Please contact support.');
+          setLoading(false);
+          return;
         }
       } catch (error: any) {
-        if (error.name === 'AbortError') {
-          console.log('Session establishment timeout, continuing without auth');
-        } else if (error.message?.includes('Failed to fetch')) {
-          console.log('Network error during session establishment, continuing without auth');
-        } else {
-          console.log('Session establishment error, continuing without auth');
-        }
+        console.error('Session establishment failed:', error);
+        // NO GUEST ACCESS - Stop and show error
+        setError('Authentication required. Please contact support.');
+        setLoading(false);
+        return;
       }
     };
     

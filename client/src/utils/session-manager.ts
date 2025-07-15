@@ -61,7 +61,7 @@ class SessionManager {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        credentials: 'include',  // CRITICAL: Include credentials for cookie transmission
+        credentials: 'include',
         body: JSON.stringify({
           email: 'gailm@macleodglba.com.au',
           phone: '+61424835189'
@@ -77,31 +77,11 @@ class SessionManager {
         if (sessionId) {
           console.log('📋 Session ID received:', sessionId);
           
-          // Store the session ID for manual cookie transmission
+          // Store the session ID for manual header transmission
           sessionStorage.setItem('sessionId', sessionId);
-          
-          // CRITICAL FIX: Force browser to use the session cookies
-          // The server sets cookies via Set-Cookie headers, but browser needs manual intervention
-          const cookieHeader = response.headers.get('set-cookie');
-          if (cookieHeader) {
-            console.log('🍪 Set-Cookie header found:', cookieHeader);
-            
-            // Extract session cookie from Set-Cookie header
-            const sessionCookieMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
-            if (sessionCookieMatch) {
-              const sessionCookieValue = sessionCookieMatch[1];
-              console.log('📋 Extracted session cookie:', sessionCookieValue);
-              
-              // Force browser to set the cookie manually
-              document.cookie = `theagencyiq.session=${sessionCookieValue}; path=/; max-age=86400; SameSite=Lax`;
-              
-              // Store for manual transmission
-              sessionStorage.setItem('sessionCookie', `theagencyiq.session=${sessionCookieValue}`);
-            }
-          }
-          
-          // Fallback: Store basic session cookie format
           sessionStorage.setItem('sessionCookie', `theagencyiq.session=${sessionId}`);
+          
+          console.log('🔧 Session stored for manual transmission:', sessionId);
         }
         
         this.sessionInfo = {
@@ -114,7 +94,7 @@ class SessionManager {
         console.log('User ID:', data.user?.id);
         console.log('Session ID:', sessionId);
         
-        // Store in sessionStorage for debugging
+        // Store user info
         if (data.user) {
           sessionStorage.setItem('currentUser', JSON.stringify({
             id: data.user.id,
@@ -123,80 +103,8 @@ class SessionManager {
           }));
         }
         
-        // Log cookie status after session establishment
-        console.log('🍪 Cookies after establishment:', document.cookie);
-    
-    // Check if we have either signed or unsigned cookie
-    const hasSignedCookie = document.cookie.includes('theagencyiq.session=');
-    const hasUnsignedCookie = document.cookie.includes('theagencyiq.session.unsigned=');
-    console.log('🔍 Cookie status:', { hasSignedCookie, hasUnsignedCookie });
-        
-        // Test session by making a simple authenticated request
-        console.log('🔍 Testing session with /api/user request...');
-        const testResponse = await fetch('/api/user', {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log('🔍 Session verification test:', testResponse.status);
-        
-        if (testResponse.ok) {
-          console.log('✅ Session verification successful');
-        } else {
-          console.log('❌ Session verification failed');
-          // Try to manually establish cookie with signed cookie format
-          console.log('🔧 Attempting manual cookie establishment...');
-          
-          // Force cookie setting in browser using both signed and unsigned formats
-          if (setCookieHeader) {
-            // Extract the signed session cookie from Set-Cookie header
-            const cookieMatch = setCookieHeader.match(/theagencyiq\.session=([^;]+)/);
-            const unsignedMatch = setCookieHeader.match(/theagencyiq\.session\.unsigned=([^;]+)/);
-            
-            if (cookieMatch) {
-              const sessionId = cookieMatch[1];
-              console.log('🔧 Setting signed session cookie:', sessionId);
-              document.cookie = `theagencyiq.session=${sessionId}; path=/; max-age=86400; SameSite=Lax`;
-              
-              // Store the session cookie value for manual transmission
-              localStorage.setItem('aiq_session_cookie', `theagencyiq.session=${sessionId}`);
-            }
-            
-            if (unsignedMatch) {
-              const unsignedSessionId = unsignedMatch[1];
-              console.log('🔧 Setting unsigned session cookie:', unsignedSessionId);
-              document.cookie = `theagencyiq.session.unsigned=${unsignedSessionId}; path=/; max-age=86400; SameSite=Lax`;
-              
-              // Store the unsigned session cookie value for manual transmission
-              localStorage.setItem('aiq_session_cookie_unsigned', `theagencyiq.session.unsigned=${unsignedSessionId}`);
-            }
-          }
-          
-          // Retry test
-          const retryResponse = await fetch('/api/user', {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-              'Accept': 'application/json'
-            }
-          });
-          
-          console.log('🔍 Retry test after manual cookie:', retryResponse.status);
-          
-          if (retryResponse.ok) {
-            console.log('✅ Manual cookie setting successful');
-          } else {
-            console.log('❌ Manual cookie setting failed');
-          }
-        }
-        
         return this.sessionInfo;
       } else {
-        // If session establishment fails, throw error - NO GUEST ACCESS
         console.error('Session establishment failed with status:', response.status);
         const errorData = await response.json();
         throw new Error(errorData.message || 'Session establishment failed');
@@ -271,7 +179,7 @@ class SessionManager {
     
     // Debug: log all available cookies
     console.log('🍪 Available cookies:', document.cookie);
-    console.log('🔑 Session ID in storage:', sessionId);
+    console.log('🔑 Session ID in storage:', sessionStorage.getItem('sessionId'));
     return null;
   }
 

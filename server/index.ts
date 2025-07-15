@@ -43,18 +43,28 @@ async function startServer() {
     
     // Extract session ID from cookie
     const cookieHeader = req.headers.cookie;
+    console.log('🔍 Cookie header received:', cookieHeader);
+    
     if (cookieHeader && sessionUserMap) {
-      // Look for signed session cookie (express-session format)
+      // Look for session cookie (both signed and unsigned formats)
       const sessionCookie = cookieHeader.split(';').find(c => c.trim().startsWith('theagencyiq.session='));
       if (sessionCookie) {
         const sessionId = sessionCookie.split('=')[1];
+        console.log('🔍 Extracted session ID from cookie:', sessionId);
+        
         const mappedUser = sessionUserMap.get(sessionId);
         if (mappedUser) {
+          console.log('🔍 Found mapped user:', mappedUser);
           req.session = req.session || {};
           req.session.userId = mappedUser.userId;
           req.session.userEmail = mappedUser.userEmail;
           req.session.id = sessionId;
           req.sessionID = sessionId;
+          
+          // CRITICAL: Force session save to ensure persistence
+          req.session.save((err) => {
+            if (err) console.error('Session restore save error:', err);
+          });
         }
       }
     }
