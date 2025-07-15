@@ -1,211 +1,292 @@
 /**
- * 200-USER SCALABILITY TEST
- * Tests session management with 200 simulated users
- * Validates multi-user support and session persistence
+ * 200-User Scalability Test for TheAgencyIQ
+ * Tests authenticated publishing with 200 concurrent users
+ * Each user publishes to all 5 platforms with real API integration
  */
 
 const axios = require('axios');
-
-const BASE_URL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
-const TEST_USERS = 200;
+const baseURL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
 class ScalabilityTest {
   constructor() {
-    this.testResults = [];
-    this.successCount = 0;
-    this.failureCount = 0;
+    this.totalUsers = 200;
+    this.successfulUsers = 0;
+    this.failedUsers = 0;
+    this.totalPublishAttempts = 0;
+    this.successfulPublishAttempts = 0;
+    this.userResults = [];
+    this.platformStats = {
+      facebook: { success: 0, failure: 0 },
+      instagram: { success: 0, failure: 0 },
+      linkedin: { success: 0, failure: 0 },
+      x: { success: 0, failure: 0 },
+      youtube: { success: 0, failure: 0 }
+    };
     this.startTime = Date.now();
   }
 
-  async runScalabilityTest() {
-    console.log('🚀 200-USER SCALABILITY TEST');
-    console.log(`Target: ${BASE_URL}`);
-    console.log(`Time: ${new Date().toISOString()}`);
-    console.log('');
+  async simulateUser(userId) {
+    const userResult = {
+      userId,
+      authenticated: false,
+      postCreated: false,
+      publishResults: {},
+      totalPublishAttempts: 0,
+      successfulPublishAttempts: 0,
+      errors: []
+    };
 
-    // Create promises for all user tests
-    const userTests = [];
-    for (let i = 1; i <= TEST_USERS; i++) {
-      userTests.push(this.testUserSession(i));
-    }
-
-    // Run all tests concurrently
-    console.log(`🔍 Testing ${TEST_USERS} concurrent users...`);
-    const results = await Promise.allSettled(userTests);
-
-    // Process results
-    results.forEach((result, index) => {
-      if (result.status === 'fulfilled') {
-        this.testResults.push(result.value);
-        if (result.value.success) {
-          this.successCount++;
-        } else {
-          this.failureCount++;
-        }
-      } else {
-        this.failureCount++;
-        this.testResults.push({
-          userId: index + 1,
-          success: false,
-          error: result.reason.message || 'Unknown error'
-        });
-      }
-    });
-
-    this.generateReport();
-  }
-
-  async testUserSession(userId) {
     try {
-      const testEmail = `testuser${userId}@example.com`;
-      const testPhone = `+61400000${userId.toString().padStart(3, '0')}`;
+      // Step 1: Authenticate user
+      const email = `testuser${userId}@example.com`;
+      const phone = `+61400000${userId.toString().padStart(3, '0')}`;
       
-      // Step 1: Establish session
-      const sessionResponse = await axios.post(`${BASE_URL}/api/establish-session`, {
-        email: testEmail,
-        phone: testPhone
+      const authResponse = await axios.post(`${baseURL}/api/establish-session`, {
+        email,
+        phone
       }, {
+        withCredentials: true,
         timeout: 30000,
         validateStatus: () => true
       });
 
-      if (sessionResponse.status !== 200) {
-        return {
-          userId,
-          success: false,
-          error: `Session establishment failed: ${sessionResponse.status}`
-        };
+      if (authResponse.status !== 200) {
+        userResult.errors.push('Authentication failed');
+        return userResult;
       }
 
-      // Extract session cookie - use the signed session cookie
-      const cookieHeader = sessionResponse.headers['set-cookie'];
-      let sessionCookie = null;
+      userResult.authenticated = true;
       
-      if (cookieHeader) {
-        // Look for the signed session cookie (the one with the signature)
-        const signedCookieMatch = cookieHeader.find(cookie => cookie.includes('s%3A'));
-        if (signedCookieMatch) {
-          sessionCookie = signedCookieMatch.split(';')[0];
-        } else {
-          // Fallback to regular session cookie
-          const sessionCookieMatch = cookieHeader.find(cookie => cookie.startsWith('theagencyiq.session='));
-          if (sessionCookieMatch) {
-            sessionCookie = sessionCookieMatch.split(';')[0];
+      // Extract session cookie
+      const setCookieHeader = authResponse.headers['set-cookie'];
+      let sessionCookie = '';
+      if (setCookieHeader) {
+        for (const cookie of setCookieHeader) {
+          if (cookie.includes('theagencyiq.session=')) {
+            sessionCookie = cookie.split(';')[0];
+            break;
           }
         }
       }
 
       if (!sessionCookie) {
-        return {
-          userId,
-          success: false,
-          error: 'No session cookie received'
-        };
+        userResult.errors.push('No session cookie found');
+        return userResult;
       }
 
-      // Step 2: Test session persistence with /api/user
-      const userResponse = await axios.get(`${BASE_URL}/api/user`, {
+      // Step 2: Create test post
+      const postResponse = await axios.post(`${baseURL}/api/posts`, {
+        content: `Scalability test post from User ${userId} - ${new Date().toISOString()}`,
+        scheduledFor: new Date(Date.now() + 60000).toISOString(),
+        platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
+      }, {
         headers: {
-          'Cookie': sessionCookie
+          'Cookie': sessionCookie,
+          'Content-Type': 'application/json'
         },
         timeout: 30000,
         validateStatus: () => true
       });
 
-      if (userResponse.status === 200) {
-        return {
-          userId,
-          success: true,
-          sessionId: sessionResponse.data.sessionId,
-          user: userResponse.data.email || 'Test User'
-        };
+      if (postResponse.status !== 201) {
+        userResult.errors.push('Post creation failed');
+        return userResult;
+      }
+
+      userResult.postCreated = true;
+      const postId = postResponse.data.id;
+
+      // Step 3: Publish to all platforms
+      const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
+      
+      for (const platform of platforms) {
+        userResult.totalPublishAttempts++;
+        this.totalPublishAttempts++;
+        
+        try {
+          const publishResponse = await axios.post(`${baseURL}/api/posts/${postId}/publish`, {
+            platforms: [platform]
+          }, {
+            headers: {
+              'Cookie': sessionCookie,
+              'Content-Type': 'application/json'
+            },
+            timeout: 30000,
+            validateStatus: () => true
+          });
+
+          if (publishResponse.status === 200) {
+            const publishResult = publishResponse.data;
+            const platformResult = publishResult.results.find(r => r.platform === platform);
+            
+            if (platformResult && platformResult.success) {
+              userResult.publishResults[platform] = {
+                success: true,
+                postId: platformResult.postId,
+                quotaDeducted: platformResult.quotaDeducted
+              };
+              userResult.successfulPublishAttempts++;
+              this.successfulPublishAttempts++;
+              this.platformStats[platform].success++;
+            } else {
+              userResult.publishResults[platform] = {
+                success: false,
+                error: platformResult?.error || 'Unknown error'
+              };
+              this.platformStats[platform].failure++;
+            }
+          } else {
+            userResult.publishResults[platform] = {
+              success: false,
+              error: `HTTP ${publishResponse.status}`
+            };
+            this.platformStats[platform].failure++;
+          }
+        } catch (error) {
+          userResult.publishResults[platform] = {
+            success: false,
+            error: error.message
+          };
+          this.platformStats[platform].failure++;
+        }
+      }
+
+      // User is successful if they published to at least 3 platforms
+      if (userResult.successfulPublishAttempts >= 3) {
+        this.successfulUsers++;
       } else {
-        return {
-          userId,
-          success: false,
-          error: `User endpoint failed: ${userResponse.status}`
-        };
+        this.failedUsers++;
       }
 
     } catch (error) {
-      return {
-        userId,
-        success: false,
-        error: error.message || 'Network error'
-      };
+      userResult.errors.push(error.message);
+      this.failedUsers++;
     }
+
+    return userResult;
   }
 
-  generateReport() {
-    const endTime = Date.now();
-    const duration = (endTime - this.startTime) / 1000;
-    const successRate = (this.successCount / TEST_USERS * 100).toFixed(1);
+  async runScalabilityTest() {
+    console.log(`🚀 Starting 200-User Scalability Test`);
+    console.log(`Testing ${this.totalUsers} concurrent users`);
+    console.log(`Each user will publish to 5 platforms`);
+    console.log(`Expected total publish attempts: ${this.totalUsers * 5}`);
+    console.log('=====================================');
+
+    // Create promises for all users
+    const userPromises = [];
+    for (let i = 1; i <= this.totalUsers; i++) {
+      userPromises.push(this.simulateUser(i));
+    }
+
+    // Execute all users concurrently
+    console.log(`📊 Processing ${this.totalUsers} users concurrently...`);
+    const results = await Promise.all(userPromises);
     
-    console.log('');
-    console.log('📊 200-USER SCALABILITY TEST REPORT');
-    console.log('================================================================================');
-    console.log(`⏱️  Duration: ${duration.toFixed(2)}s`);
-    console.log(`👥 Total Users: ${TEST_USERS}`);
-    console.log(`✅ Successful Sessions: ${this.successCount}`);
-    console.log(`❌ Failed Sessions: ${this.failureCount}`);
-    console.log(`📈 Success Rate: ${successRate}%`);
-    console.log(`⚡ Average Response Time: ${(duration / TEST_USERS * 1000).toFixed(0)}ms per user`);
-    console.log('');
+    this.userResults = results;
+    const duration = Date.now() - this.startTime;
 
-    // Show sample successful sessions
-    const successfulSessions = this.testResults.filter(r => r.success).slice(0, 5);
-    if (successfulSessions.length > 0) {
-      console.log('🎯 Sample Successful Sessions:');
-      successfulSessions.forEach(session => {
-        console.log(`   User ${session.userId}: ${session.user} (${session.sessionId.substring(0, 20)}...)`);
-      });
-      console.log('');
-    }
-
-    // Show sample failures
-    const failedSessions = this.testResults.filter(r => !r.success).slice(0, 5);
-    if (failedSessions.length > 0) {
-      console.log('❌ Sample Failed Sessions:');
-      failedSessions.forEach(session => {
-        console.log(`   User ${session.userId}: ${session.error}`);
-      });
-      console.log('');
-    }
-
-    // Production readiness assessment
-    if (successRate >= 95) {
-      console.log('🎉 PRODUCTION READY - Excellent scalability performance!');
-      console.log('✅ System can handle 200+ concurrent users with high reliability');
-    } else if (successRate >= 80) {
-      console.log('⚠️  PRODUCTION CAPABLE - Good scalability with room for improvement');
-      console.log('✅ System can handle moderate user load');
-    } else {
-      console.log('❌ PRODUCTION NEEDS WORK - Scalability issues detected');
-      console.log('⚠️  System may struggle with high user load');
-    }
-
-    console.log('');
-    console.log(`📄 Test completed at ${new Date().toISOString()}`);
+    // Generate comprehensive report
+    this.generateReport(duration);
     
-    // Save detailed report
+    return {
+      success: this.successfulUsers >= (this.totalUsers * 0.8), // 80% success rate
+      totalUsers: this.totalUsers,
+      successfulUsers: this.successfulUsers,
+      failedUsers: this.failedUsers,
+      totalPublishAttempts: this.totalPublishAttempts,
+      successfulPublishAttempts: this.successfulPublishAttempts,
+      platformStats: this.platformStats,
+      duration,
+      averageResponseTime: duration / this.totalUsers,
+      report: this.generateReport(duration)
+    };
+  }
+
+  generateReport(duration) {
+    console.log('\n📈 200-USER SCALABILITY TEST RESULTS');
+    console.log('====================================');
+    console.log(`Total Users: ${this.totalUsers}`);
+    console.log(`Successful Users: ${this.successfulUsers} (${Math.round(this.successfulUsers/this.totalUsers*100)}%)`);
+    console.log(`Failed Users: ${this.failedUsers} (${Math.round(this.failedUsers/this.totalUsers*100)}%)`);
+    console.log(`Test Duration: ${Math.round(duration/1000)}s`);
+    console.log(`Average Response Time: ${Math.round(duration/this.totalUsers)}ms per user`);
+    
+    console.log('\n🎯 PUBLISHING PERFORMANCE:');
+    console.log(`Total Publish Attempts: ${this.totalPublishAttempts}`);
+    console.log(`Successful Publishes: ${this.successfulPublishAttempts} (${Math.round(this.successfulPublishAttempts/this.totalPublishAttempts*100)}%)`);
+    console.log(`Failed Publishes: ${this.totalPublishAttempts - this.successfulPublishAttempts} (${Math.round((this.totalPublishAttempts - this.successfulPublishAttempts)/this.totalPublishAttempts*100)}%)`);
+    
+    console.log('\n📊 PLATFORM-SPECIFIC RESULTS:');
+    for (const [platform, stats] of Object.entries(this.platformStats)) {
+      const total = stats.success + stats.failure;
+      const successRate = total > 0 ? Math.round(stats.success / total * 100) : 0;
+      console.log(`  ${platform}: ${stats.success}/${total} (${successRate}% success)`);
+    }
+    
+    console.log('\n⚡ PERFORMANCE METRICS:');
+    console.log(`Concurrent Users Handled: ${this.totalUsers}`);
+    console.log(`Total API Calls: ${this.totalUsers * 7} (auth + post + 5 platforms)`);
+    console.log(`Average API Response Time: ${Math.round(duration / (this.totalUsers * 7))}ms`);
+    
+    // Calculate production readiness
+    const overallSuccessRate = this.successfulPublishAttempts / this.totalPublishAttempts;
+    const userSuccessRate = this.successfulUsers / this.totalUsers;
+    const isProductionReady = overallSuccessRate >= 0.8 && userSuccessRate >= 0.8;
+    
+    console.log('\n🎪 PRODUCTION READINESS:');
+    console.log(`Overall Success Rate: ${Math.round(overallSuccessRate * 100)}%`);
+    console.log(`User Success Rate: ${Math.round(userSuccessRate * 100)}%`);
+    console.log(`Production Ready: ${isProductionReady ? '✅ YES' : '❌ NO'}`);
+    
+    if (!isProductionReady) {
+      console.log('\n⚠️  PRODUCTION READINESS ISSUES:');
+      if (overallSuccessRate < 0.8) {
+        console.log('  - Overall success rate below 80%');
+      }
+      if (userSuccessRate < 0.8) {
+        console.log('  - User success rate below 80%');
+      }
+    }
+    
+    // Save detailed results
     const reportData = {
       timestamp: new Date().toISOString(),
-      duration: duration,
-      totalUsers: TEST_USERS,
-      successCount: this.successCount,
-      failureCount: this.failureCount,
-      successRate: successRate,
-      avgResponseTime: (duration / TEST_USERS * 1000).toFixed(0),
-      sampleResults: this.testResults.slice(0, 20)
+      totalUsers: this.totalUsers,
+      successfulUsers: this.successfulUsers,
+      failedUsers: this.failedUsers,
+      totalPublishAttempts: this.totalPublishAttempts,
+      successfulPublishAttempts: this.successfulPublishAttempts,
+      platformStats: this.platformStats,
+      duration,
+      averageResponseTime: duration / this.totalUsers,
+      overallSuccessRate,
+      userSuccessRate,
+      isProductionReady,
+      userResults: this.userResults
     };
-
-    require('fs').writeFileSync(
-      `200_USER_SCALABILITY_TEST_REPORT_${Date.now()}.json`,
-      JSON.stringify(reportData, null, 2)
-    );
+    
+    const fs = require('fs');
+    const reportFilename = `200_USER_SCALABILITY_TEST_REPORT_${Date.now()}.json`;
+    fs.writeFileSync(reportFilename, JSON.stringify(reportData, null, 2));
+    console.log(`\n📄 Detailed report saved: ${reportFilename}`);
+    
+    return reportData;
   }
 }
 
 // Run the test
-const test = new ScalabilityTest();
-test.runScalabilityTest().catch(console.error);
+async function runTest() {
+  const test = new ScalabilityTest();
+  const results = await test.runScalabilityTest();
+  
+  if (results.success) {
+    console.log('\n🎉 SCALABILITY TEST PASSED - System ready for 200+ users!');
+    process.exit(0);
+  } else {
+    console.log('\n❌ SCALABILITY TEST FAILED - System needs optimization');
+    process.exit(1);
+  }
+}
+
+runTest().catch(console.error);

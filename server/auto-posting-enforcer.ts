@@ -7,6 +7,7 @@
 import { storage } from './storage';
 import { PostQuotaService } from './PostQuotaService';
 import { OAuthRefreshService } from './oauth-refresh';
+import { realApiPublisher } from './real-api-publisher';
 
 interface AutoPostingResult {
   success: boolean;

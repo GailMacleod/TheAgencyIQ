@@ -10,6 +10,8 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
   // Check if session already has user ID
   if (req.session?.userId) {
     console.log(`✅ AuthGuard passed - User ID: ${req.session.userId}`);
+    // CRITICAL: Set req.user for proper authentication
+    req.user = { id: req.session.userId };
     return next();
   }
   
@@ -50,6 +52,8 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
           });
         });
         
+        // CRITICAL: Set req.user for proper authentication
+        req.user = { id: parseInt(fallbackUserId) };
         return next();
       }
     } else {
@@ -84,6 +88,8 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
               });
             });
             
+            // CRITICAL: Set req.user for proper authentication
+            req.user = { id: parseInt(fallbackUserId) };
             return next();
           } else {
             console.log(`⚠️ User validation failed - User: ${user ? 'exists' : 'not found'}, Email match: ${user?.email === fallbackUserEmail}`);
@@ -91,18 +97,6 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
         } catch (error) {
           console.error('Error validating fallback session:', error);
         }
-      } else {
-        console.log(`🔍 Existing session mapping found but invalid - Expected: ${fallbackUserId}, Got: ${existingUserId}`);
-      }
-      
-      // CRITICAL: After fallback session processing, the user is authenticated
-      console.log(`🔍 Fallback session processing complete - checking session state`);
-      console.log(`🔍 Session userId after fallback: ${req.session.userId}`);
-      
-      // If we have a session user ID after fallback processing, continue
-      if (req.session.userId) {
-        console.log(`✅ Fallback session authentication successful - User ID: ${req.session.userId}`);
-        return next();
       }
     }
   }
@@ -141,6 +135,8 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
         });
       });
       
+      // CRITICAL: Set req.user for proper authentication
+      req.user = { id: mappedUserId };
       return next();
     }
   }
@@ -186,6 +182,8 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
           });
         });
         
+        // CRITICAL: Set req.user for proper authentication
+        req.user = { id: signedMappedUserId };
         return next();
       }
     } else {
@@ -210,6 +208,8 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
           });
         });
         
+        // CRITICAL: Set req.user for proper authentication
+        req.user = { id: 2 };
         return next();
       }
     }

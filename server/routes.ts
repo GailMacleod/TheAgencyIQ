@@ -3684,7 +3684,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionActivityService.trackActivity(req.sessionID, user.id, ipAddress, userAgent, '/api/auth/establish-session');
         
         // Explicitly set session cookie with consistent session ID
-        const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; SameSite=lax; Max-Age=86400`;
+        const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400`;
         res.setHeader('Set-Cookie', cookieValue);
         
         // Also add to session mapping for direct access
@@ -3696,6 +3696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('✅ Session auto-established for User ID 2');
         return res.json({
           success: true,
+          sessionEstablished: true,
           user: {
             id: user.id,
             email: user.email,

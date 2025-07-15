@@ -180,12 +180,12 @@ async function startServer() {
   
   console.log('✅ Session store initialized successfully');
 
-  // CORS middleware with wildcard origin and credentials support
+  // CORS middleware with specific origin and credentials support
   app.use(cors({
-    origin: '*',
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Source', 'X-Retry-Session', 'Cookie'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Source', 'X-Retry-Session', 'Cookie', 'X-Session-ID', 'X-User-ID', 'X-User-Email'],
     exposedHeaders: ['Set-Cookie'],
     preflightContinue: false,
     optionsSuccessStatus: 204
@@ -202,10 +202,10 @@ async function startServer() {
       secure: false,       // CRITICAL: Set to false for Replit development environment
       maxAge: sessionTtl,
       httpOnly: false,     // Allow frontend access for debugging
-      sameSite: 'lax',     // CRITICAL: Set to 'lax' for same-site requests on Replit
+      sameSite: 'lax',     // CRITICAL: Set to 'lax' for same-site requests
       path: '/',
-      domain: null,        // Set to null as specified
-      signed: true         // Enable signed cookies with proper secret
+      domain: undefined,   // Let browser determine domain
+      signed: false        // Disable signed cookies for simpler debugging
     },
     rolling: true,    // Extend session on activity
     proxy: false  // Disable proxy mode to prevent automatic secure cookie enforcement
@@ -233,9 +233,9 @@ async function startServer() {
         
         const setCookieHeader = () => {
           if (!res.headersSent) {
-            const signedCookie = `theagencyiq.session=s%3A${req.sessionID}.${Buffer.from(req.sessionID).toString('base64')}`;
-            res.setHeader('Set-Cookie', `${signedCookie}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`);
-            console.log(`🔧 Forced cookie setting: ${signedCookie}`);
+            const cookieValue = `theagencyiq.session=${req.sessionID}`;
+            res.setHeader('Set-Cookie', `${cookieValue}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`);
+            console.log(`🔧 Forced cookie setting: ${cookieValue}`);
           }
         };
         
