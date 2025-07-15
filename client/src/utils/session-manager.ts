@@ -158,6 +158,8 @@ class SessionManager {
       requestUrl = urlObj.toString();
       console.log('🔑 Adding fallback auth via query params:', { storedSessionId, storedUserId, storedUserEmail });
       console.log('🔑 Final request URL:', requestUrl);
+    } else {
+      console.log('⚠️ No fallback auth data available:', { storedSessionId, storedUserId, storedUserEmail });
     }
     
     // Use browser's built-in cookie mechanism with fallback query params
@@ -169,10 +171,9 @@ class SessionManager {
 
     const response = await fetch(requestUrl, requestOptions);
 
-    // If we get a 401, redirect to login instead of infinite loop
+    // If we get a 401, log but don't redirect to prevent loop
     if (response.status === 401) {
-      console.log('Authentication failed - redirecting to login');
-      window.location.href = '/login';
+      console.log('Authentication failed - session not persisting');
       return response;
     }
 

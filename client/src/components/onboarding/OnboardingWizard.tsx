@@ -164,17 +164,17 @@ export default function OnboardingWizard() {
             setCurrentStep(urlStep);
             
           } else {
-            // NO GUEST ACCESS - Redirect to login page
-            console.log('Authentication failed - redirecting to login');
-            window.location.href = '/login';
+            // NO GUEST ACCESS - LOOP PREVENTION - NOT REDIRECTING
+            console.log('Authentication failed - LOOP PREVENTION - NOT REDIRECTING');
+            // DISABLED TO PREVENT INFINITE LOOP: window.location.href = '/login';
             return;
           }
         }
       } catch (error) {
         console.log('Error checking user status:', error);
-        // NO GUEST ACCESS - Redirect to login page on error
-        console.log('Error during authentication check - redirecting to login');
-        window.location.href = '/login';
+        // NO GUEST ACCESS - LOOP PREVENTION - NOT REDIRECTING
+        console.log('Error during authentication check - LOOP PREVENTION - NOT REDIRECTING');
+        // DISABLED TO PREVENT INFINITE LOOP: window.location.href = '/login';
         return;
       }
     };

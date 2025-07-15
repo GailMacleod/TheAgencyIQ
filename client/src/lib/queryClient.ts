@@ -136,7 +136,7 @@ export const getQueryFn: <T>(options: {
         console.log('🔧 FORCING cookie transmission:', sessionCookie.substring(0, 50) + '...');
       }
       
-      const res = await apiClient.get(queryKey[0] as string, {
+      const res = await sessionManager.makeAuthenticatedRequest(queryKey[0] as string, {
         signal: controller.signal,
         cache: 'no-cache',
         credentials: 'include',

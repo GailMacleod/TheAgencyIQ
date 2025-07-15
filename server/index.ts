@@ -38,7 +38,10 @@ async function startServer() {
   // CORS configuration - MUST be before routes
   app.use(cors({
     origin: true,
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
   }));
   
   // Filter out Replit-specific tracking in production
@@ -199,15 +202,7 @@ async function startServer() {
     }
   }));
 
-  app.use(cors({
-    credentials: true,
-    origin: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie'],
-    exposedHeaders: ['Set-Cookie'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-  }));
+
 
 
 

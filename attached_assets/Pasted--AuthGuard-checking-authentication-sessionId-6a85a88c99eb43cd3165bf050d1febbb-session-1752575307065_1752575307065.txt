@@ -1,0 +1,228 @@
+🔍 AuthGuard - checking authentication: {
+  sessionId: '6a85a88c99eb43cd3165bf050d1febbb',
+  sessionUserId: undefined,
+  mappedSessions: [],
+  fallbackParams: {
+    sessionId: '5392ed1c7269179aa9acb167e65f83dd',
+    userId: '2',
+    email: 'gailm@macleodglba.com.au'
+  }
+}
+✅ Direct fallback auth successful - User ID: 2
+4xx JSON Error Details: {
+  method: 'GET',
+  url: '/api/user?fallback_session_id=5392ed1c7269179aa9acb167e65f83dd&fallback_user_id=2&fallback_user_email=gailm%40macleodglba.com.au',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: 'application/json',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    'cache-control': 'max-age=0',
+    'content-type': 'application/json',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/login',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.7.66',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: '6a85a88c99eb43cd3165bf050d1febbb',
+  userId: undefined,
+  response: { message: 'Not authenticated' }
+}
+4xx Error Details: {
+  method: 'GET',
+  url: '/api/user?fallback_session_id=5392ed1c7269179aa9acb167e65f83dd&fallback_user_id=2&fallback_user_email=gailm%40macleodglba.com.au',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: 'application/json',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    'cache-control': 'max-age=0',
+    'content-type': 'application/json',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/login',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.7.66',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: '6a85a88c99eb43cd3165bf050d1febbb',
+  userId: undefined,
+  response: '{"message":"Not authenticated"}'
+}
+🔍 AuthGuard - checking authentication: {
+  sessionId: '174bd69af1f39b403fea4bc1c9562047',
+  sessionUserId: undefined,
+  mappedSessions: [],
+  fallbackParams: { sessionId: undefined, userId: undefined, email: undefined }
+}
+❌ Authentication failed - no valid session found
+4xx JSON Error Details: {
+  method: 'GET',
+  url: '/api/user-status',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/login',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.12.23',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: '174bd69af1f39b403fea4bc1c9562047',
+  userId: undefined,
+  response: { message: 'Not authenticated', redirectTo: '/login' }
+}
+4xx Error Details: {
+  method: 'GET',
+  url: '/api/user-status',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/login',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.12.23',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: '174bd69af1f39b403fea4bc1c9562047',
+  userId: undefined,
+  response: '{"message":"Not authenticated","redirectTo":"/login"}'
+}
+🔍 AuthGuard - checking authentication: {
+  sessionId: '366011bdeb735ff30331c9c5fd09f21c',
+  sessionUserId: undefined,
+  mappedSessions: [],
+  fallbackParams: { sessionId: undefined, userId: undefined, email: undefined }
+}
+❌ Authentication failed - no valid session found
+4xx JSON Error Details: {
+  method: 'GET',
+  url: '/api/user',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/login',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.12.23',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: '366011bdeb735ff30331c9c5fd09f21c',
+  userId: undefined,
+  response: { message: 'Not authenticated', redirectTo: '/login' }
+}
+4xx Error Details: {
+  method: 'GET',
+  url: '/api/user',
+  statusCode: 401,
+  body: {},
+  headers: {
+    host: '4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+    accept: '*/*',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    referer: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/login',
+    'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-storage-access': 'none',
+    'x-forwarded-for': '110.151.56.112, 10.83.12.23',
+    'x-forwarded-proto': 'https',
+    'x-replit-user-bio': '',
+    'x-replit-user-id': '',
+    'x-replit-user-name': '',
+    'x-replit-user-profile-image': '',
+    'x-replit-user-roles': '',
+    'x-replit-user-teams': '',
+    'x-replit-user-url': ''
+  },
+  sessionId: '366011bdeb735ff30331c9c5fd09f21c',
+  userId: undefined,
+  response: '{"message":"Not authenticated","redirectTo":"/login"}'
+}
+🔍 AuthGua
