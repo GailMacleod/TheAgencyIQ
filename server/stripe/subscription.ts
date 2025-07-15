@@ -65,21 +65,27 @@ export async function createSubscription(userId: number, planId: string, email: 
     await storage.updateStripeCustomerId(userId, customer.id);
   }
 
-  // Create subscription with payment intent
+  // Create product first
+  const product = await stripe.products.create({
+    name: `TheAgencyIQ ${plan.name} Plan`,
+    description: plan.features.join(', ')
+  });
+
+  // Create price for the product
+  const price = await stripe.prices.create({
+    currency: 'usd',
+    product: product.id,
+    unit_amount: plan.price * 100,
+    recurring: {
+      interval: 'month'
+    }
+  });
+
+  // Create subscription with the price
   const subscription = await stripe.subscriptions.create({
     customer: customer.id,
     items: [{
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: `TheAgencyIQ ${plan.name} Plan`,
-          description: plan.features.join(', ')
-        },
-        unit_amount: plan.price * 100,
-        recurring: {
-          interval: 'month'
-        }
-      }
+      price: price.id
     }],
     payment_behavior: 'default_incomplete',
     payment_settings: {
