@@ -25,12 +25,15 @@ async function startServer() {
   
   const app = express();
 
-  // CRITICAL: Disable trust proxy for development to prevent automatic secure cookie enforcement
-  app.set('trust proxy', 0);
+  // CRITICAL: Enable trust proxy for HTTPS environment to support secure cookies
+  app.set('trust proxy', 1);
   
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
+  
+  // Add cookie parser with secret key before session
+  app.use(cookieParser('your-secret-key'));
   // Filter out Replit-specific tracking in production
   app.use((req, res, next) => {
     // Block Replit tracking requests in production
@@ -139,11 +142,11 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // CRITICAL: Disable trust proxy for development to prevent automatic secure cookie enforcement
-  app.set('trust proxy', 0);
+  // CRITICAL: Enable trust proxy for HTTPS environment to support secure cookies
+  app.set('trust proxy', 1);
 
   // Cookie parser middleware with secret - MUST be before session middleware
-  app.use(cookieParser('your-secret'));
+  app.use(cookieParser('your-secret-key'));
 
   // Device-agnostic session configuration for mobile-to-desktop continuity
   // Configure PostgreSQL session store
@@ -191,24 +194,24 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Session configuration - FIXED FOR DEVELOPMENT WITH PROPER COOKIE PERSISTENCE
+  // Session configuration - OPTIMIZED FOR BROWSER COOKIE ACCEPTANCE
   app.use(session({
-    secret: 'your-secret',
+    secret: 'your-secret-key',
     store: sessionStore,
     resave: true,    // CRITICAL: Set to true to force save
     saveUninitialized: true,  // CRITICAL: Set to true to save new sessions
     name: 'theagencyiq.session',
     cookie: { 
-      secure: false,       // CRITICAL: Set to false for Replit development environment
+      secure: false,       // CRITICAL: Set to false for development to allow cookie acceptance
       maxAge: sessionTtl,
       httpOnly: false,     // Allow frontend access for debugging
-      sameSite: 'none',    // CRITICAL: Set to 'none' for cross-origin requests
+      sameSite: 'lax',     // CRITICAL: Changed from 'none' to 'lax' for better browser compatibility
       path: '/',
       domain: undefined,   // Let browser determine domain
       signed: false        // Disable signed cookies for simpler debugging
     },
     rolling: true,    // Extend session on activity
-    proxy: false,  // Disable proxy mode to prevent automatic secure cookie enforcement
+    proxy: true,   // Enable proxy mode for HTTPS
     genid: () => {
       return crypto.randomBytes(16).toString('hex');
     }

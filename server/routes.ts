@@ -39,7 +39,7 @@ import { UnifiedOAuthService } from './services/UnifiedOAuthService';
 import { directTokenGenerator } from './services/DirectTokenGenerator';
 import { loggingService } from './services/logging-service';
 import { platformPostManager } from './services/platform-post-manager';
-import { realApiPublisher } from './services/real-api-publisher';
+import { RealApiPublisher } from './services/real-api-publisher';
 import { userSignupService } from './services/user-signup-service';
 import { sessionActivityService } from './services/session-activity-service';
 import { LRUCache, MemoryMonitor, StreamProcessor } from './utils/memory-optimized-cache';
@@ -164,21 +164,19 @@ function addSystemHealthEndpoints(app: Express) {
         sameSite: 'lax',
         httpOnly: false, // Allow JavaScript access for debugging
         maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-        signed: true // Enable signed cookies with proper secret
+        signed: false // Disable signed cookies for compatibility
       });
       
-      // Also set a backup cookie for browser compatibility
-      res.cookie('aiq_backup_session', req.sessionID, {
-        path: '/',
-        secure: false,
-        sameSite: 'lax',
-        httpOnly: false, // Keep false for browser access
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-        signed: true // Enable signed cookies with proper secret
+      // Force session save after setting cookie
+      req.session.save((err) => {
+        if (err) {
+          console.error('Final session save error:', err);
+        } else {
+          console.log('✅ Final session save successful');
+        }
       });
       
-      console.log(`🔧 Session cookie set: theagencyiq.session=${req.sessionID} (signed)`);
-      console.log(`🔧 Backup cookie set: aiq_backup_session=${req.sessionID} (unsigned)`);
+      console.log(`🔧 Session cookie set: theagencyiq.session=${req.sessionID} (unsigned)`);
       
       // Check if session was saved properly
       console.log('📋 Session data after save:', {
@@ -3672,6 +3670,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.subscriptionPlan = user.subscriptionPlan;
         req.session.subscriptionActive = user.subscriptionActive;
         
+        // Set cookie explicitly
+        res.cookie('theagencyiq.session', req.sessionID, { 
+          secure: false, 
+          sameSite: 'lax', 
+          httpOnly: true, 
+          path: '/' 
+        });
+        
         // Save session
         await new Promise<void>((resolve, reject) => {
           req.session.save((err: any) => {
@@ -3683,19 +3689,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Track session activity
         sessionActivityService.trackActivity(req.sessionID, user.id, ipAddress, userAgent, '/api/auth/establish-session');
         
-        // Explicitly set multiple cookie formats to ensure browser compatibility
-        const cookieValues = [
-          `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=none; Secure=false; Max-Age=86400`,
-          `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400`,
-          `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400`
-        ];
-        res.setHeader('Set-Cookie', cookieValues);
-        
         // Also add to session mapping for direct access
         const { setSessionMapping } = await import('./middleware/authGuard.js');
         setSessionMapping(req.sessionID, 2);
         
-        console.log(`🔧 Session established - ID: ${req.sessionID}, Cookie: ${cookieValue}`);
+        console.log(`🔧 Session established - ID: ${req.sessionID}`);
         
         console.log('✅ Session auto-established for User ID 2');
         return res.json({
@@ -11231,6 +11229,143 @@ Continue building your Value Proposition Canvas systematically.`;
   // app.use('/api', apiRouter);
 
   const httpServer = createServer(app);
+  // Real API publishing endpoint for platform post ID management test
+  app.post('/api/publish-post', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const { postId, platform, useRealApi, trackQuota } = req.body;
+      
+      if (!postId) {
+        return res.status(400).json({ error: 'Post ID required' });
+      }
+      
+      // Get the post
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+      
+      // Check if user owns the post
+      if (post.userId !== userId) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      // Use real API publishing with specific platform
+      if (useRealApi && platform) {
+        const result = await RealApiPublisher.publishToAllPlatforms(
+          userId,
+          postId,
+          post.content,
+          [platform]
+        );
+        
+        return res.json({
+          success: result.success,
+          platformPostId: result.results[0]?.platformPostId,
+          error: result.errors[0],
+          quotaDeducted: result.totalQuotaDeducted > 0,
+          apiResponse: result.results[0]?.apiResponse
+        });
+      }
+      
+      // Default to standard publishing
+      const result = await PostPublisher.publishPost(post, true);
+      
+      res.json(result);
+      
+    } catch (error) {
+      console.error('Real API publish error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // API endpoints for platform post ID management
+  app.get('/api/posts/platform-ids', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const posts = await storage.getUserPosts(userId);
+      const postsWithPlatformIds = posts.filter(post => post.platformPostId);
+      
+      res.json({ posts: postsWithPlatformIds });
+      
+    } catch (error) {
+      console.error('Get platform IDs error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/posts/:postId/platform-id', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const postId = parseInt(req.params.postId);
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+      
+      if (post.userId !== userId) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      res.json({ 
+        postId: post.id,
+        platformPostId: post.platformPostId,
+        platform: post.platform
+      });
+      
+    } catch (error) {
+      console.error('Get post platform ID error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/posts/validate-platform-id/:postId', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const postId = parseInt(req.params.postId);
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+      
+      if (post.userId !== userId) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+      
+      // Validate platform post ID format
+      const isValid = post.platformPostId ? true : false;
+      
+      res.json({ 
+        postId: post.id,
+        platformPostId: post.platformPostId,
+        platform: post.platform,
+        isValid: isValid
+      });
+      
+    } catch (error) {
+      console.error('Validate platform ID error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   return httpServer;
 }
 

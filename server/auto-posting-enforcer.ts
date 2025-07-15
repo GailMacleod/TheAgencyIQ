@@ -103,6 +103,19 @@ export class AutoPostingEnforcer {
           // Find platform connection with enhanced reliability
           let connection = connections.find(conn => conn.platform === post.platform);
           if (!connection || !connection.isConnected) {
+            // ENHANCED CONNECTION REPAIR - Try to repair the connection
+            const repairResult = await this.enhancedConnectionRepair(userId, post.platform);
+            if (repairResult.success) {
+              connection = repairResult.connection;
+              result.connectionRepairs.push(`${post.platform}: ${repairResult.method}`);
+              console.log(`✅ Connection repaired for ${post.platform} using ${repairResult.method}`);
+            } else {
+              result.errors.push(`Connection repair failed for ${post.platform}: ${repairResult.error}`);
+              console.log(`❌ Connection repair failed for ${post.platform}: ${repairResult.error}`);
+              result.postsFailed++;
+              continue;
+            }
+          }
             // Enhanced connection repair with token refresh and alternate auth
             const repair = await AutoPostingEnforcer.enhancedConnectionRepair(userId, post.platform);
             if (repair.success) {

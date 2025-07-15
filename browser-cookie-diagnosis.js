@@ -3,52 +3,96 @@
  * Check if the real browser is accepting cookies
  */
 
-import axios from 'axios';
-
-const BASE_URL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
-
 async function diagnoseBrowserCookies() {
+  console.log('🔍 BROWSER COOKIE DIAGNOSIS');
+  console.log('============================');
+  
+  const BASE_URL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+  
   try {
-    console.log('🔍 BROWSER COOKIE DIAGNOSIS - SECURE FLAG TEST');
+    // Clear any existing cookies first
+    document.cookie = 'theagencyiq.session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+    console.log('🧹 Cleared existing cookies');
     
-    // Test 1: Check current cookie configuration
-    console.log('\n🔍 Step 1: Check current cookie configuration...');
-    const sessionResponse = await axios.post(`${BASE_URL}/api/establish-session`, {
-      email: 'gailm@macleodglba.com.au'
-    }, {
-      withCredentials: true
+    // Check current cookies before session establishment
+    console.log('🔍 Cookies before session:', document.cookie);
+    
+    // 1. Establish session
+    console.log('\n1. 🔐 Establishing session...');
+    const sessionResponse = await fetch(`${BASE_URL}/api/establish-session`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        email: 'gailm@macleodglba.com.au',
+        phone: '+61424835189'
+      })
     });
-    
-    console.log('✅ Session established:', sessionResponse.data);
-    
-    // Extract Set-Cookie headers
-    const cookies = sessionResponse.headers['set-cookie'];
-    if (cookies) {
-      console.log('🍪 Set-Cookie headers analysis:');
-      cookies.forEach((cookie, index) => {
-        console.log(`  ${index + 1}. ${cookie}`);
-        const hasSecure = cookie.includes('Secure');
-        const sameSite = cookie.match(/SameSite=([^;]+)/)?.[1];
-        const isHttps = BASE_URL.startsWith('https://');
-        
-        console.log(`     - Secure: ${hasSecure ? 'YES' : 'NO'}`);
-        console.log(`     - SameSite: ${sameSite || 'NOT SET'}`);
-        console.log(`     - HTTPS Context: ${isHttps ? 'YES' : 'NO'}`);
-        console.log(`     - Cookie viable: ${hasSecure && !isHttps ? 'NO - Secure on HTTP' : 'YES'}`);
+
+    if (sessionResponse.ok) {
+      const sessionData = await sessionResponse.json();
+      console.log('✅ Session established:', sessionData.sessionId);
+      
+      // Check cookies immediately after session establishment
+      console.log('🔍 Cookies IMMEDIATELY after session:', document.cookie);
+      
+      // Wait 2 seconds to see if cookies appear
+      console.log('\n2. ⏱️ Waiting 2 seconds for cookies to settle...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log('🔍 Cookies after 2 seconds:', document.cookie);
+      
+      // 3. Try to make authenticated request
+      console.log('\n3. 🔍 Testing authenticated request...');
+      const userResponse = await fetch(`${BASE_URL}/api/user`, {
+        method: 'GET',
+        credentials: 'include'
       });
+      
+      console.log('📋 User endpoint status:', userResponse.status);
+      
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        console.log('✅ SUCCESS: Authenticated successfully!');
+        console.log('👤 User:', userData.email);
+        console.log('🔍 Final cookies:', document.cookie);
+      } else {
+        console.log('❌ FAILED: Authentication failed');
+        const errorData = await userResponse.json();
+        console.log('🔍 Error:', errorData);
+        console.log('🔍 Final cookies:', document.cookie);
+        
+        // 4. Let's check if setting cookies manually works
+        console.log('\n4. 🔧 Testing manual cookie setting...');
+        document.cookie = `theagencyiq.session=s%3A${sessionData.sessionId}.test; path=/; secure; samesite=lax`;
+        console.log('🔧 Manually set cookie:', document.cookie);
+        
+        // Try request again
+        const retryResponse = await fetch(`${BASE_URL}/api/user`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        
+        console.log('📋 Retry request status:', retryResponse.status);
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json();
+          console.log('✅ SUCCESS after manual cookie setting!');
+          console.log('👤 User:', retryData.email);
+        } else {
+          console.log('❌ Still failed after manual cookie setting');
+        }
+      }
+      
+    } else {
+      console.log('❌ Session establishment failed:', sessionResponse.status);
     }
     
-    // Test 2: Check if cookies are being sent in subsequent requests
-    console.log('\n🔍 Step 2: Testing automatic cookie transmission...');
-    const testResponse = await axios.get(`${BASE_URL}/api/user`, {
-      withCredentials: true
-    });
-    
-    console.log('✅ API call result:', testResponse.status);
-    
   } catch (error) {
-    console.error('❌ Test error:', error.response?.status, error.response?.data);
+    console.error('❌ Test failed:', error);
   }
 }
 
+// Run the test
 diagnoseBrowserCookies();

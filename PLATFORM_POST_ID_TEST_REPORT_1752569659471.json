@@ -1,0 +1,23 @@
+{
+  "timestamp": "2025-07-15T08:54:19.353Z",
+  "testType": "PLATFORM_POST_ID_MANAGEMENT",
+  "platforms": [
+    "facebook",
+    "instagram",
+    "linkedin",
+    "x",
+    "youtube"
+  ],
+  "results": [],
+  "summary": {
+    "totalPosts": 0,
+    "successfulPosts": 0,
+    "failedPosts": 0,
+    "quotaDeducted": 0,
+    "rollbacksPerformed": 0
+  },
+  "error": "Session establishment failed: Request failed with status code 502",
+  "testCompleted": "2025-07-15T08:54:19.471Z",
+  "successRate": null,
+  "quotaAccuracy": null
+}

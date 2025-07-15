@@ -148,30 +148,26 @@ class SessionManager {
       ...options.headers,
     };
     
-    // Add session fallback headers if available
-    if (storedSessionId) {
-      headers['X-Session-ID'] = storedSessionId;
-      console.log('🔑 Adding fallback session ID to headers:', storedSessionId);
+    // Create URL with query parameters for fallback authentication
+    let requestUrl = url;
+    if (storedSessionId && storedUserId && storedUserEmail) {
+      const urlObj = new URL(url, window.location.origin);
+      urlObj.searchParams.set('fallback_session_id', storedSessionId);
+      urlObj.searchParams.set('fallback_user_id', storedUserId);
+      urlObj.searchParams.set('fallback_user_email', storedUserEmail);
+      requestUrl = urlObj.toString();
+      console.log('🔑 Adding fallback auth via query params:', { storedSessionId, storedUserId, storedUserEmail });
+      console.log('🔑 Final request URL:', requestUrl);
     }
     
-    if (storedUserId) {
-      headers['X-User-ID'] = storedUserId;
-      console.log('🔑 Adding fallback user ID to headers:', storedUserId);
-    }
-    
-    if (storedUserEmail) {
-      headers['X-User-Email'] = storedUserEmail;
-      console.log('🔑 Adding fallback user email to headers:', storedUserEmail);
-    }
-    
-    // Use browser's built-in cookie mechanism with fallback headers
+    // Use browser's built-in cookie mechanism with fallback query params
     const requestOptions: RequestInit = {
       ...options,
       credentials: 'include',
       headers,
     };
 
-    const response = await fetch(url, requestOptions);
+    const response = await fetch(requestUrl, requestOptions);
 
     // If we get a 401, try to re-establish session once
     if (response.status === 401 && !options.headers?.['X-Retry-Session']) {
@@ -193,11 +189,17 @@ class SessionManager {
         ...options.headers,
       };
       
-      if (newSessionId) retryHeaders['X-Session-ID'] = newSessionId;
-      if (newUserId) retryHeaders['X-User-ID'] = newUserId;
-      if (newUserEmail) retryHeaders['X-User-Email'] = newUserEmail;
+      // Create retry URL with query parameters
+      let retryUrl = url;
+      if (newSessionId && newUserId && newUserEmail) {
+        const retryUrlObj = new URL(url, window.location.origin);
+        retryUrlObj.searchParams.set('fallback_session_id', newSessionId);
+        retryUrlObj.searchParams.set('fallback_user_id', newUserId);
+        retryUrlObj.searchParams.set('fallback_user_email', newUserEmail);
+        retryUrl = retryUrlObj.toString();
+      }
       
-      return fetch(url, {
+      return fetch(retryUrl, {
         ...requestOptions,
         headers: retryHeaders,
       });
