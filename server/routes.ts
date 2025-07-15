@@ -41,6 +41,7 @@ import { platformPostManager } from './services/platform-post-manager';
 import { realApiPublisher } from './services/real-api-publisher';
 import { userSignupService } from './services/user-signup-service';
 import { sessionActivityService } from './services/session-activity-service';
+import { LRUCache, MemoryMonitor, StreamProcessor } from './utils/memory-optimized-cache';
 
 // Extended session types
 declare module 'express-session' {
@@ -3892,19 +3893,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get current user - simplified for consistency
 
-  // User data cache for faster response times
-  const userDataCache = new Map();
-  const CACHE_DURATION = 30000; // 30 seconds cache
+  // Memory-optimized LRU cache for user data
+  const userDataCache = new LRUCache<any>(100, 30000); // 100 entries, 30s TTL
 
   app.get("/api/user", async (req: any, res) => {
     try {
-      console.log(`🔍 /api/user - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
+      // Reduced logging for production memory optimization
       
       // Session is established by global middleware
       const userId = req.session?.userId;
       
       if (!userId) {
-        console.log('❌ No user ID in session - authentication required');
+        // Authentication required
         return res.status(401).json({ message: "Not authenticated" });
       }
 
@@ -3912,18 +3912,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cacheKey = `user_${userId}`;
       const cachedData = userDataCache.get(cacheKey);
       
-      if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
-        console.log(`🚀 Fast cache hit for user ${userId} - ${cachedData.data.email}`);
-        return res.json(cachedData.data);
+      if (cachedData) {
+        // Fast cache hit
+        return res.json(cachedData);
       }
 
       const user = await storage.getUser(userId);
       if (!user) {
-        console.log(`❌ User ${userId} not found in database`);
+        // User not found in database
         return res.status(404).json({ message: "User not found" });
       }
 
-      console.log(`✅ User data retrieved for ${user.email} (ID: ${user.id})`);
+      // User data retrieved
       
       const userData = { 
         id: user.id, 
@@ -3935,11 +3935,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalPosts: user.totalPosts
       };
 
-      // Cache the response for faster subsequent requests
-      userDataCache.set(cacheKey, {
-        data: userData,
-        timestamp: Date.now()
-      });
+      // Cache user data for faster subsequent requests
+      userDataCache.set(cacheKey, userData);
 
       res.json(userData);
     } catch (error: any) {
@@ -9678,7 +9675,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Phone verification code storage (in-memory for development)
-  const verificationCodes = new Map<string, { code: string; expiresAt: Date }>();
+  const verificationCodes = new LRUCache<{ code: string; expiresAt: Date }>(1000, 300000); // 1000 entries, 5min TTL
 
   // Send SMS verification code endpoint
   app.post('/api/send-code', async (req, res) => {

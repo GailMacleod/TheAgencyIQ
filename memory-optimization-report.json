@@ -1,0 +1,239 @@
+{
+  "timestamp": "2025-07-15T00:36:24.684Z",
+  "summary": {
+    "totalIssues": 8,
+    "highSeverity": 0,
+    "mediumSeverity": 2,
+    "lowSeverity": 6
+  },
+  "issues": [
+    {
+      "file": "server/index.ts",
+      "issue": "Console logging - remove in production",
+      "severity": "low",
+      "count": 51,
+      "lines": [
+        19,
+        95,
+        108,
+        162,
+        164
+      ]
+    },
+    {
+      "file": "server/routes.ts",
+      "issue": "Potential memory leak: setTimeout without clearTimeout",
+      "severity": "medium",
+      "count": 2,
+      "lines": [
+        4711,
+        5106
+      ]
+    },
+    {
+      "file": "server/routes.ts",
+      "issue": "Array growth - consider size limits",
+      "severity": "low",
+      "count": 31,
+      "lines": [
+        2682,
+        4318,
+        4585,
+        4593,
+        4634
+      ]
+    },
+    {
+      "file": "server/routes.ts",
+      "issue": "Console logging - remove in production",
+      "severity": "low",
+      "count": 323,
+      "lines": [
+        123,
+        127,
+        133,
+        138,
+        195
+      ]
+    },
+    {
+      "file": "server/routes.ts",
+      "issue": "Map usage - consider size limits",
+      "severity": "medium",
+      "count": 1,
+      "lines": [
+        3896
+      ]
+    },
+    {
+      "file": "server/storage.ts",
+      "issue": "Console logging - remove in production",
+      "severity": "low",
+      "count": 6,
+      "lines": [
+        158,
+        206,
+        347,
+        359,
+        379
+      ]
+    },
+    {
+      "file": "server/middleware/authGuard.ts",
+      "issue": "Console logging - remove in production",
+      "severity": "low",
+      "count": 13,
+      "lines": [
+        8,
+        12,
+        19,
+        33,
+        56
+      ]
+    },
+    {
+      "file": "client/src/utils/session-manager.ts",
+      "issue": "Console logging - remove in production",
+      "severity": "low",
+      "count": 22,
+      "lines": [
+        32,
+        35,
+        47,
+        90,
+        92
+      ]
+    }
+  ],
+  "optimizations": [
+    {
+      "priority": "MEDIUM",
+      "title": "Memory Management",
+      "issues": [
+        {
+          "file": "server/routes.ts",
+          "issue": "Potential memory leak: setTimeout without clearTimeout",
+          "severity": "medium",
+          "count": 2,
+          "lines": [
+            4711,
+            5106
+          ]
+        },
+        {
+          "file": "server/routes.ts",
+          "issue": "Map usage - consider size limits",
+          "severity": "medium",
+          "count": 1,
+          "lines": [
+            3896
+          ]
+        }
+      ],
+      "fixes": [
+        "Implement LRU cache with size limits",
+        "Add cleanup for event listeners",
+        "Use weak references where appropriate"
+      ]
+    },
+    {
+      "priority": "LOW",
+      "title": "General Optimizations",
+      "issues": [
+        {
+          "file": "server/index.ts",
+          "issue": "Console logging - remove in production",
+          "severity": "low",
+          "count": 51,
+          "lines": [
+            19,
+            95,
+            108,
+            162,
+            164
+          ]
+        },
+        {
+          "file": "server/routes.ts",
+          "issue": "Array growth - consider size limits",
+          "severity": "low",
+          "count": 31,
+          "lines": [
+            2682,
+            4318,
+            4585,
+            4593,
+            4634
+          ]
+        },
+        {
+          "file": "server/routes.ts",
+          "issue": "Console logging - remove in production",
+          "severity": "low",
+          "count": 323,
+          "lines": [
+            123,
+            127,
+            133,
+            138,
+            195
+          ]
+        },
+        {
+          "file": "server/storage.ts",
+          "issue": "Console logging - remove in production",
+          "severity": "low",
+          "count": 6,
+          "lines": [
+            158,
+            206,
+            347,
+            359,
+            379
+          ]
+        },
+        {
+          "file": "server/middleware/authGuard.ts",
+          "issue": "Console logging - remove in production",
+          "severity": "low",
+          "count": 13,
+          "lines": [
+            8,
+            12,
+            19,
+            33,
+            56
+          ]
+        },
+        {
+          "file": "client/src/utils/session-manager.ts",
+          "issue": "Console logging - remove in production",
+          "severity": "low",
+          "count": 22,
+          "lines": [
+            32,
+            35,
+            47,
+            90,
+            92
+          ]
+        }
+      ],
+      "fixes": [
+        "Remove debug console.log statements",
+        "Convert to ES modules",
+        "Implement object pooling"
+      ]
+    }
+  ],
+  "recommendations": [
+    "Implement session store cleanup (TTL)",
+    "Add memory monitoring middleware",
+    "Use streaming for large responses",
+    "Implement connection pooling",
+    "Add garbage collection hints",
+    "Use worker threads for CPU-intensive tasks",
+    "Implement request rate limiting",
+    "Add memory-efficient logging"
+  ]
+}
