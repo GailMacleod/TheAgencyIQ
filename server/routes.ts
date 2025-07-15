@@ -2260,31 +2260,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const user = await storage.getUser(userId);
         if (user) {
-          req.session.userId = userId;
-          await new Promise<void>((resolve, reject) => {
-            req.session.save((err: any) => {
-              if (err) reject(err);
-              else resolve();
-            });
-          });
+          req.session.userId = user.id;
+          req.session.save();
+          res.cookie('theagencyiq.session', req.sessionID, {secure: false, sameSite: 'lax'});
           
           console.log(`Session established for user ${user.email}`);
-          
-          // Ensure proper cookie headers are set
-          res.header('Access-Control-Allow-Credentials', 'true');
-          res.header('Access-Control-Expose-Headers', 'Set-Cookie');
-          
-          // FORCE SET COOKIE HEADER DIRECTLY - BYPASS EXPRESS COOKIE MIDDLEWARE
-          const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax; HttpOnly=false`;
-          res.setHeader('Set-Cookie', cookieValue);
-          
-          console.log(`🔧 FORCED cookie set: ${cookieValue}`);
-          
-          // Also add to session mapping for direct access
-          const { sessionUserMap } = await import('./middleware/authGuard.js');
-          sessionUserMap.set(req.sessionID, userId);
-          
-          console.log(`🔧 Session established - ID: ${req.sessionID}, Cookie: ${cookieValue}`);
           
           return res.json({ 
             success: true, 

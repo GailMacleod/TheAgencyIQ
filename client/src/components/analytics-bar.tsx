@@ -54,7 +54,7 @@ export default function AnalyticsBar({ className }: AnalyticsBarProps) {
         MetaPixelTracker.trackFeatureUsage('analytics_bar_view');
         
         return;
-        const response = await fetch('/api/analytics/monthly');
+        const response = await fetch('/api/analytics/monthly', { credentials: 'include' });
         if (response.ok) {
           const data = await response.json();
           setAnalytics(data);

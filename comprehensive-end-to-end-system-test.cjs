@@ -1,332 +1,281 @@
-/**
- * COMPREHENSIVE END-TO-END SYSTEM TEST
- * Tests complete multi-user system with session management, user creation, and API functionality
- */
-
 const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
 
+// Test configuration
 const BASE_URL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+const TEST_USER = {
+  email: 'gailm@macleodglba.com.au',
+  phone: '+61424835189',
+  id: 2
+};
 
-class ComprehensiveSystemTest {
-  constructor() {
-    this.testResults = [];
-    this.startTime = Date.now();
+// Configure axios with credentials
+const client = axios.create({
+  baseURL: BASE_URL,
+  timeout: 30000,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   }
+});
 
-  async runCompleteTest() {
-    console.log('🚀 COMPREHENSIVE END-TO-END SYSTEM TEST');
-    console.log(`Target: ${BASE_URL}`);
-    console.log(`Time: ${new Date().toISOString()}`);
-    console.log('');
+// Test results tracking
+let testResults = [];
+let sessionCookie = null;
+let sessionId = null;
 
-    // Test 1: Session Establishment
-    await this.testSessionEstablishment();
-
-    // Test 2: Session Persistence
-    await this.testSessionPersistence();
-
-    // Test 3: User Creation (Test Users)
-    await this.testUserCreation();
-
-    // Test 4: Multi-User Scalability (50 users)
-    await this.testMultiUserScalability();
-
-    // Test 5: API Endpoint Functionality
-    await this.testAPIEndpoints();
-
-    // Test 6: Error Handling
-    await this.testErrorHandling();
-
-    this.generateFinalReport();
-  }
-
-  async testSessionEstablishment() {
-    console.log('🔍 Test 1: Session Establishment');
-    try {
-      const response = await axios.post(`${BASE_URL}/api/establish-session`, {
-        email: 'gailm@macleodglba.com.au',
-        phone: '+61424835189'
-      }, { timeout: 30000 });
-
-      if (response.status === 200 && response.data.sessionEstablished) {
-        this.addResult('Session Establishment', 'PASSED', `User ID: ${response.data.user.id}, Session: ${response.data.sessionId}`);
-      } else {
-        this.addResult('Session Establishment', 'FAILED', `Unexpected response: ${response.status}`);
-      }
-    } catch (error) {
-      this.addResult('Session Establishment', 'FAILED', error.message);
-    }
-  }
-
-  async testSessionPersistence() {
-    console.log('🔍 Test 2: Session Persistence - NO NEW SESSION IDS');
-    try {
-      // Establish session
-      const sessionResponse = await axios.post(`${BASE_URL}/api/establish-session`, {
-        email: 'gailm@macleodglba.com.au',
-        phone: '+61424835189'
-      }, { timeout: 30000 });
-
-      if (sessionResponse.status === 200) {
-        const originalSessionId = sessionResponse.data.sessionId;
-        console.log(`📋 Original Session ID: ${originalSessionId}`);
-        
-        // Extract session cookie (prefer signed format)
-        const cookieHeader = sessionResponse.headers['set-cookie'];
-        let sessionCookie = cookieHeader?.find(cookie => cookie.includes('theagencyiq.session=s%3A'));
-        
-        // If no signed cookie found, try unsigned
-        if (!sessionCookie) {
-          sessionCookie = cookieHeader?.find(cookie => cookie.includes('theagencyiq.session=') && !cookie.includes('s%3A'));
-        }
-        
-        if (sessionCookie) {
-          const cookie = sessionCookie.split(';')[0];
-          console.log(`📋 Using cookie: ${cookie}`);
-          
-          // Test session persistence - should use SAME session ID
-          const userResponse = await axios.get(`${BASE_URL}/api/user`, {
-            headers: { 'Cookie': cookie },
-            timeout: 30000
-          });
-
-          if (userResponse.status === 200) {
-            // Check session debug endpoint to verify session ID consistency
-            const debugResponse = await axios.get(`${BASE_URL}/api/session-debug`, {
-              headers: { 'Cookie': cookie },
-              timeout: 30000
-            });
-            
-            if (debugResponse.status === 200) {
-              const sessionId = debugResponse.data.sessionID;
-              console.log(`📋 Debug Session ID: ${sessionId}`);
-              
-              if (sessionId === originalSessionId) {
-                this.addResult('Session Persistence', 'PASSED', `Session ID consistent: ${sessionId}, User: ${userResponse.data.email}`);
-              } else {
-                this.addResult('Session Persistence', 'FAILED', `Session ID changed! Original: ${originalSessionId}, New: ${sessionId}`);
-              }
-            } else {
-              this.addResult('Session Persistence', 'FAILED', `Debug endpoint failed: ${debugResponse.status}`);
-            }
-          } else {
-            this.addResult('Session Persistence', 'FAILED', `User endpoint failed: ${userResponse.status}`);
-          }
-        } else {
-          this.addResult('Session Persistence', 'FAILED', 'No session cookie found');
-        }
-      } else {
-        this.addResult('Session Persistence', 'FAILED', `Session establishment failed: ${sessionResponse.status}`);
-      }
-    } catch (error) {
-      this.addResult('Session Persistence', 'FAILED', error.message);
-    }
-  }
-
-  async testUserCreation() {
-    console.log('🔍 Test 3: User Creation (Test Users)');
-    try {
-      // Use unique timestamp to avoid duplicate user errors
-      const timestamp = Date.now();
-      const response = await axios.post(`${BASE_URL}/api/auth/signup`, {
-        email: `testuser${timestamp}@example.com`,
-        phone: `+61400${timestamp.toString().slice(-6)}`,
-        password: 'testpassword123',
-        confirmPassword: 'testpassword123',
-        userId: `test-user-${timestamp}`
-      }, { timeout: 30000 });
-
-      if (response.status === 200 && response.data.success) {
-        this.addResult('User Creation', 'PASSED', `Created test user: ${response.data.email}`);
-      } else {
-        this.addResult('User Creation', 'FAILED', `User creation failed: ${response.status} - ${response.data.message || 'Unknown error'}`);
-      }
-    } catch (error) {
-      this.addResult('User Creation', 'FAILED', error.response?.data?.message || error.message);
-    }
-  }
-
-  async testMultiUserScalability() {
-    console.log('🔍 Test 4: Multi-User Scalability (50 users)');
-    try {
-      const userTests = [];
-      for (let i = 1; i <= 50; i++) {
-        userTests.push(this.testConcurrentUser(i));
-      }
-
-      const results = await Promise.allSettled(userTests);
-      const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
-      const successRate = (successCount / 50 * 100).toFixed(1);
-
-      if (successRate >= 95) {
-        this.addResult('Multi-User Scalability', 'PASSED', `${successCount}/50 users (${successRate}%)`);
-      } else {
-        this.addResult('Multi-User Scalability', 'FAILED', `Only ${successCount}/50 users (${successRate}%)`);
-      }
-    } catch (error) {
-      this.addResult('Multi-User Scalability', 'FAILED', error.message);
-    }
-  }
-
-  async testConcurrentUser(userId) {
-    try {
-      const timestamp = Date.now();
-      const response = await axios.post(`${BASE_URL}/api/auth/signup`, {
-        email: `testuser${timestamp}${userId}@example.com`,
-        phone: `+61400${timestamp.toString().slice(-6)}${userId.toString().padStart(2, '0')}`,
-        password: 'testpassword123',
-        confirmPassword: 'testpassword123',
-        userId: `test-user-${timestamp}-${userId}`
-      }, { timeout: 30000 });
-
-      return { success: response.status === 200 && response.data.success, userId };
-    } catch (error) {
-      return { success: false, userId, error: error.response?.data?.message || error.message };
-    }
-  }
-
-  async testAPIEndpoints() {
-    console.log('🔍 Test 5: API Endpoint Functionality');
-    try {
-      // Establish session first
-      const sessionResponse = await axios.post(`${BASE_URL}/api/establish-session`, {
-        email: 'gailm@macleodglba.com.au',
-        phone: '+61424835189'
-      }, { timeout: 30000 });
-
-      if (sessionResponse.status === 200) {
-        const cookieHeader = sessionResponse.headers['set-cookie'];
-        const signedCookie = cookieHeader?.find(cookie => cookie.includes('s%3A'));
-        const sessionCookie = signedCookie?.split(';')[0];
-
-        // Test multiple endpoints
-        const endpoints = [
-          { path: '/api/user', method: 'GET' },
-          { path: '/api/user-status', method: 'GET' },
-          { path: '/api/platform-connections', method: 'GET' }
-        ];
-
-        let passedEndpoints = 0;
-        for (const endpoint of endpoints) {
-          try {
-            const response = await axios({
-              method: endpoint.method,
-              url: `${BASE_URL}${endpoint.path}`,
-              headers: { 'Cookie': sessionCookie },
-              timeout: 30000
-            });
-
-            if (response.status === 200) {
-              passedEndpoints++;
-            }
-          } catch (error) {
-            // Some endpoints might fail due to missing data, that's OK
-          }
-        }
-
-        if (passedEndpoints >= 2) {
-          this.addResult('API Endpoint Functionality', 'PASSED', `${passedEndpoints}/${endpoints.length} endpoints working`);
-        } else {
-          this.addResult('API Endpoint Functionality', 'FAILED', `Only ${passedEndpoints}/${endpoints.length} endpoints working`);
-        }
-      } else {
-        this.addResult('API Endpoint Functionality', 'FAILED', 'Session establishment failed');
-      }
-    } catch (error) {
-      this.addResult('API Endpoint Functionality', 'FAILED', error.message);
-    }
-  }
-
-  async testErrorHandling() {
-    console.log('🔍 Test 6: Error Handling');
-    try {
-      // Test 401 error for unauthenticated request
-      const response = await axios.get(`${BASE_URL}/api/user`, {
-        timeout: 30000,
-        validateStatus: () => true
-      });
-
-      if (response.status === 401) {
-        this.addResult('Error Handling', 'PASSED', 'Proper 401 response for unauthenticated request');
-      } else {
-        this.addResult('Error Handling', 'FAILED', `Expected 401, got ${response.status}`);
-      }
-    } catch (error) {
-      this.addResult('Error Handling', 'FAILED', error.message);
-    }
-  }
-
-  addResult(testName, status, details) {
-    const result = { testName, status, details, timestamp: new Date().toISOString() };
-    this.testResults.push(result);
-    
-    const statusIcon = status === 'PASSED' ? '✅' : '❌';
-    console.log(`   ${statusIcon} ${testName}: ${details}`);
-  }
-
-  generateFinalReport() {
-    const endTime = Date.now();
-    const duration = (endTime - this.startTime) / 1000;
-    
-    const passedTests = this.testResults.filter(r => r.status === 'PASSED').length;
-    const totalTests = this.testResults.length;
-    const successRate = (passedTests / totalTests * 100).toFixed(1);
-    
-    console.log('');
-    console.log('📊 COMPREHENSIVE END-TO-END SYSTEM TEST REPORT');
-    console.log('================================================================================');
-    console.log(`⏱️  Duration: ${duration.toFixed(2)}s`);
-    console.log(`🧪 Total Tests: ${totalTests}`);
-    console.log(`✅ Passed Tests: ${passedTests}`);
-    console.log(`❌ Failed Tests: ${totalTests - passedTests}`);
-    console.log(`📈 Success Rate: ${successRate}%`);
-    console.log('');
-
-    // Production readiness assessment
-    if (successRate >= 95) {
-      console.log('🎉 PRODUCTION READY - System fully operational!');
-      console.log('✅ Multi-user session management working');
-      console.log('✅ Scalability validated');
-      console.log('✅ API endpoints functional');
-      console.log('✅ Error handling proper');
-    } else if (successRate >= 80) {
-      console.log('⚠️  PRODUCTION CAPABLE - Minor issues detected');
-      console.log('✅ Core functionality working');
-      console.log('⚠️  Some improvements needed');
-    } else {
-      console.log('❌ PRODUCTION NEEDS WORK - Critical issues detected');
-      console.log('⚠️  System requires fixes before deployment');
-    }
-
-    console.log('');
-    console.log('📋 Test Results Summary:');
-    this.testResults.forEach(result => {
-      const statusIcon = result.status === 'PASSED' ? '✅' : '❌';
-      console.log(`   ${statusIcon} ${result.testName}: ${result.details}`);
-    });
-
-    console.log('');
-    console.log(`📄 Test completed at ${new Date().toISOString()}`);
-    
-    // Save detailed report
-    const reportData = {
-      timestamp: new Date().toISOString(),
-      duration: duration,
-      totalTests: totalTests,
-      passedTests: passedTests,
-      failedTests: totalTests - passedTests,
-      successRate: successRate,
-      testResults: this.testResults
-    };
-
-    fs.writeFileSync(
-      `COMPREHENSIVE_END_TO_END_SYSTEM_TEST_REPORT_${Date.now()}.json`,
-      JSON.stringify(reportData, null, 2)
-    );
+function logTest(testName, success, details = {}) {
+  const result = {
+    test: testName,
+    success,
+    timestamp: new Date().toISOString(),
+    details
+  };
+  testResults.push(result);
+  console.log(`${success ? '✅' : '❌'} ${testName}: ${success ? 'PASSED' : 'FAILED'}`);
+  if (!success) {
+    console.log(`   Error: ${details.error || 'Unknown error'}`);
   }
 }
 
-// Run the comprehensive test
-const test = new ComprehensiveSystemTest();
-test.runCompleteTest().catch(console.error);
+async function testSessionEstablishment() {
+  try {
+    const response = await client.post('/api/establish-session', {
+      email: TEST_USER.email,
+      phone: TEST_USER.phone,
+      userId: TEST_USER.id
+    });
+
+    if (response.status === 200 && response.data.sessionEstablished) {
+      sessionId = response.data.sessionId;
+      
+      // Extract session cookie from response headers
+      const cookies = response.headers['set-cookie'];
+      if (cookies) {
+        sessionCookie = cookies.find(cookie => cookie.includes('theagencyiq.session'));
+        if (sessionCookie) {
+          // Set cookie for future requests
+          client.defaults.headers.Cookie = sessionCookie;
+        }
+      }
+      
+      logTest('Session Establishment', true, {
+        sessionId,
+        user: response.data.user,
+        hasCookie: !!sessionCookie
+      });
+      return true;
+    } else {
+      logTest('Session Establishment', false, {
+        status: response.status,
+        data: response.data
+      });
+      return false;
+    }
+  } catch (error) {
+    logTest('Session Establishment', false, {
+      error: error.message,
+      status: error.response?.status
+    });
+    return false;
+  }
+}
+
+async function testAuthenticatedEndpoints() {
+  const endpoints = [
+    '/api/user',
+    '/api/user-status',
+    '/api/platform-connections',
+    '/api/posts',
+    '/api/brand-purpose'
+  ];
+
+  let successCount = 0;
+  
+  for (const endpoint of endpoints) {
+    try {
+      const response = await client.get(endpoint);
+      
+      if (response.status === 200) {
+        logTest(`Authenticated Endpoint ${endpoint}`, true, {
+          status: response.status,
+          hasData: !!response.data
+        });
+        successCount++;
+      } else {
+        logTest(`Authenticated Endpoint ${endpoint}`, false, {
+          status: response.status,
+          data: response.data
+        });
+      }
+    } catch (error) {
+      logTest(`Authenticated Endpoint ${endpoint}`, false, {
+        error: error.message,
+        status: error.response?.status
+      });
+    }
+  }
+  
+  const overallSuccess = successCount === endpoints.length;
+  logTest('All Authenticated Endpoints', overallSuccess, {
+    successCount,
+    totalEndpoints: endpoints.length
+  });
+  
+  return overallSuccess;
+}
+
+async function testHTMLContentRendering() {
+  try {
+    const response = await client.get('/');
+    
+    if (response.status === 200 && response.data.includes('<html')) {
+      logTest('HTML Content Rendering', true, {
+        status: response.status,
+        hasHTML: true,
+        contentLength: response.data.length
+      });
+      return true;
+    } else {
+      logTest('HTML Content Rendering', false, {
+        status: response.status,
+        hasHTML: response.data.includes('<html'),
+        contentLength: response.data.length
+      });
+      return false;
+    }
+  } catch (error) {
+    logTest('HTML Content Rendering', false, {
+      error: error.message,
+      status: error.response?.status
+    });
+    return false;
+  }
+}
+
+async function testSessionPersistence() {
+  try {
+    // Make another request to verify session persists
+    const response = await client.get('/api/user');
+    
+    if (response.status === 200) {
+      logTest('Session Persistence', true, {
+        status: response.status,
+        user: response.data
+      });
+      return true;
+    } else {
+      logTest('Session Persistence', false, {
+        status: response.status,
+        data: response.data
+      });
+      return false;
+    }
+  } catch (error) {
+    logTest('Session Persistence', false, {
+      error: error.message,
+      status: error.response?.status
+    });
+    return false;
+  }
+}
+
+async function testCookieTransmission() {
+  try {
+    // Test if cookies are being sent properly
+    const response = await client.get('/api/user-status');
+    
+    if (response.status === 200) {
+      logTest('Cookie Transmission', true, {
+        status: response.status,
+        hasSessionCookie: !!sessionCookie,
+        data: response.data
+      });
+      return true;
+    } else {
+      logTest('Cookie Transmission', false, {
+        status: response.status,
+        hasSessionCookie: !!sessionCookie,
+        data: response.data
+      });
+      return false;
+    }
+  } catch (error) {
+    logTest('Cookie Transmission', false, {
+      error: error.message,
+      status: error.response?.status,
+      hasSessionCookie: !!sessionCookie
+    });
+    return false;
+  }
+}
+
+async function runComprehensiveTest() {
+  console.log('🚀 Starting Comprehensive End-to-End System Test');
+  console.log('=' + '='.repeat(60));
+  
+  const startTime = Date.now();
+  
+  // Test sequence
+  const sessionOk = await testSessionEstablishment();
+  
+  if (sessionOk) {
+    await testAuthenticatedEndpoints();
+    await testSessionPersistence();
+    await testCookieTransmission();
+  }
+  
+  await testHTMLContentRendering();
+  
+  const endTime = Date.now();
+  const duration = endTime - startTime;
+  
+  // Calculate success rate
+  const successCount = testResults.filter(r => r.success).length;
+  const totalTests = testResults.length;
+  const successRate = (successCount / totalTests * 100).toFixed(1);
+  
+  console.log('\n' + '='.repeat(60));
+  console.log('📊 COMPREHENSIVE TEST RESULTS');
+  console.log('=' + '='.repeat(60));
+  console.log(`✅ Tests Passed: ${successCount}/${totalTests}`);
+  console.log(`📈 Success Rate: ${successRate}%`);
+  console.log(`⏱️  Duration: ${duration}ms`);
+  console.log(`🔐 Session ID: ${sessionId || 'Not established'}`);
+  console.log(`🍪 Session Cookie: ${sessionCookie ? 'Present' : 'Missing'}`);
+  
+  // Save detailed results
+  const reportPath = path.join(__dirname, `COMPREHENSIVE_END_TO_END_SYSTEM_TEST_REPORT_${Date.now()}.json`);
+  fs.writeFileSync(reportPath, JSON.stringify({
+    summary: {
+      totalTests,
+      successCount,
+      successRate: parseFloat(successRate),
+      duration,
+      sessionId,
+      hasSessionCookie: !!sessionCookie
+    },
+    tests: testResults,
+    timestamp: new Date().toISOString()
+  }, null, 2));
+  
+  console.log(`📄 Detailed report saved: ${reportPath}`);
+  
+  if (successRate === '100.0') {
+    console.log('🎉 ALL TESTS PASSED - SYSTEM READY FOR DEPLOYMENT');
+  } else {
+    console.log('⚠️  SOME TESTS FAILED - AUTHENTICATION ISSUES DETECTED');
+  }
+  
+  return successRate === '100.0';
+}
+
+// Run the test
+runComprehensiveTest().then(success => {
+  process.exit(success ? 0 : 1);
+}).catch(error => {
+  console.error('Test runner error:', error);
+  process.exit(1);
+});

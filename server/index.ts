@@ -200,6 +200,53 @@ async function startServer() {
     }
   }));
 
+  // Add session consistency middleware to fix session ID mismatch
+  app.use((req, res, next) => {
+    // Extract session ID from cookie
+    const cookieHeader = req.headers.cookie || '';
+    const sessionMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
+    
+    if (sessionMatch) {
+      let cookieSessionId = sessionMatch[1];
+      
+      // Handle signed cookies
+      if (cookieSessionId.startsWith('s%3A')) {
+        const decoded = decodeURIComponent(cookieSessionId);
+        cookieSessionId = decoded.substring(4).split('.')[0];
+      }
+      
+      console.log(`🔧 SessionConsistency: Cookie ID ${cookieSessionId}, Express ID ${req.sessionID}`);
+      
+      // Force session ID consistency by overriding express-session ID
+      if (cookieSessionId !== req.sessionID) {
+        Object.defineProperty(req, 'sessionID', {
+          value: cookieSessionId,
+          writable: false,
+          enumerable: true,
+          configurable: true
+        });
+        
+        // Force session middleware to reload from store with correct ID
+        sessionStore.get(cookieSessionId, (err, sessionData) => {
+          if (!err && sessionData) {
+            // Manually restore session data to current session
+            req.session.userId = sessionData.userId;
+            req.session.userEmail = sessionData.userEmail;
+            req.session.subscriptionPlan = sessionData.subscriptionPlan;
+            req.session.subscriptionActive = sessionData.subscriptionActive;
+            console.log(`✅ Session restored: ${cookieSessionId} -> User ${sessionData.userId}`);
+          } else {
+            console.log(`🆕 New session initialized: ${cookieSessionId}`);
+          }
+          next();
+        });
+        return; // Wait for async callback
+      }
+    }
+    
+    next();
+  });
+
 
 
 
