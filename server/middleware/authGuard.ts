@@ -7,6 +7,35 @@ export const sessionUserMap = new Map<string, number>();
 export const requireAuth = async (req: any, res: Response, next: NextFunction) => {
   console.log(`🔍 AuthGuard check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
   
+  // SECURITY: Block all unauthorized headers and fake tokens
+  const authHeader = req.headers.authorization;
+  const userIdHeader = req.headers['x-user-id'];
+  const authTokenHeader = req.headers['x-auth-token'];
+  
+  if (authHeader && !authHeader.startsWith('Bearer session:')) {
+    console.log(`🚨 SECURITY ALERT: Unauthorized bearer token blocked: ${authHeader}`);
+    return res.status(401).json({
+      message: "Not authenticated",
+      redirectTo: "/login"
+    });
+  }
+  
+  if (userIdHeader) {
+    console.log(`🚨 SECURITY ALERT: Direct user ID header blocked: ${userIdHeader}`);
+    return res.status(401).json({
+      message: "Not authenticated",
+      redirectTo: "/login"
+    });
+  }
+  
+  if (authTokenHeader) {
+    console.log(`🚨 SECURITY ALERT: Unauthorized auth token blocked: ${authTokenHeader}`);
+    return res.status(401).json({
+      message: "Not authenticated",
+      redirectTo: "/login"
+    });
+  }
+  
   // Check if session already has user ID
   if (req.session?.userId) {
     console.log(`✅ AuthGuard passed - User ID: ${req.session.userId}`);
@@ -81,32 +110,8 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     }
   }
   
-  // Default establishment for User ID 2 (gailm@macleodglba.com.au)
-  const user = await storage.getUser(2);
-  if (user) {
-    console.log(`🔄 Establishing default session for User ID 2: ${user.email}`);
-    req.session.userId = 2;
-    req.session.userEmail = user.email;
-    req.session.subscriptionPlan = user.subscriptionPlan;
-    req.session.subscriptionActive = user.subscriptionActive;
-    
-    // Add to session mapping
-    sessionUserMap.set(req.sessionID, 2);
-    
-    // Save session
-    await new Promise<void>((resolve) => {
-      req.session.save((err: any) => {
-        if (err) {
-          console.error('Session save error:', err);
-        } else {
-          console.log(`✅ Session established for User ID 2: ${user.email}`);
-        }
-        resolve();
-      });
-    });
-    
-    return next();
-  }
+  // SECURITY: Only allow authenticated sessions - no automatic establishment
+  // Remove default session establishment to enforce strict authentication
   
   console.log(`❌ AuthGuard rejected - No authenticated session found`);
   return res.status(401).json({

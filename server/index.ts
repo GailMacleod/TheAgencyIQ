@@ -28,8 +28,27 @@ async function startServer() {
   // CRITICAL: Set up trust proxy for session cookie persistence
   app.set('trust proxy', 1);
   
-  // Cookie parser middleware - MUST be before session middleware
-  app.use(cookieParser());
+  // Cookie parser middleware with signed cookies - MUST be before session middleware
+  app.use(cookieParser('agencyiq-session-secret-key'));
+  
+  // SECURITY: Force signed cookies for all sessions
+  app.use((req, res, next) => {
+    const originalSend = res.send;
+    res.send = function(data) {
+      // Force signed cookies on all responses
+      if (req.sessionID && req.session) {
+        res.cookie('theagencyiq.session', req.sessionID, {
+          signed: true,
+          httpOnly: false,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'none',
+          maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+        });
+      }
+      return originalSend.call(this, data);
+    };
+    next();
+  });
 
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));

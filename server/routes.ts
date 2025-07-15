@@ -23,6 +23,7 @@ import PostPublisher from "./post-publisher";
 import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
 import { requireActiveSubscription, establishSession, requireAuth } from './middleware/subscriptionAuth';
+import { requireAuth as authGuard, requireAuthForPayment } from './middleware/authGuard';
 import { subscriptionService } from './services/SubscriptionService';
 import { analyticsService } from './services/AnalyticsService';
 import { PostQuotaService } from './PostQuotaService';
@@ -2993,19 +2994,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User status endpoint - properly validate sessions
-  app.get("/api/user-status", async (req, res) => {
+  app.get("/api/user-status", authGuard, async (req, res) => {
     try {
       console.log(`🔍 User status check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
       
       const userId = req.session?.userId;
-      if (!userId) {
-        console.log('❌ No user ID in session - authentication required');
-        return res.status(401).json({ 
-          authenticated: false, 
-          message: "Not authenticated",
-          requiresLogin: true
-        });
-      }
       
       // Validate user exists in database
       const user = await storage.getUser(userId);
@@ -3896,7 +3889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Memory-optimized LRU cache for user data
   const userDataCache = new LRUCache<any>(100, 30000); // 100 entries, 30s TTL
 
-  app.get("/api/user", async (req: any, res) => {
+  app.get("/api/user", authGuard, async (req: any, res) => {
     try {
       // Reduced logging for production memory optimization
       
@@ -5342,7 +5335,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // WORLD-CLASS PLATFORM CONNECTIONS ENDPOINT - Optimized for small business success
-  app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
+  app.get("/api/platform-connections", authGuard, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       const allConnections = await storage.getPlatformConnectionsByUser(userId);
@@ -7070,7 +7063,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Create new post
-  app.post("/api/posts", requireAuth, async (req: any, res) => {
+  app.post("/api/posts", authGuard, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
@@ -7107,6 +7100,39 @@ Continue building your Value Proposition Canvas systematically.`;
     } catch (error: any) {
       console.error('Create post error:', error);
       res.status(400).json({ message: "Error creating post" });
+    }
+  });
+
+  // Create new post (alias for backward compatibility)
+  app.all("/api/posts/create", authGuard, async (req: any, res) => {
+    if (req.method !== 'POST') {
+      return res.status(405).json({ message: "Method not allowed" });
+    }
+    // Redirect to the main posts endpoint
+    return res.redirect(307, '/api/posts');
+  });
+
+  // Subscription status endpoint
+  app.get("/api/subscription-status", authGuard, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      const hasActiveSubscription = user.subscriptionPlan && user.subscriptionPlan !== 'free' && user.subscriptionPlan !== 'none';
+      
+      res.json({
+        subscriptionPlan: user.subscriptionPlan,
+        hasActiveSubscription,
+        remainingPosts: user.remainingPosts,
+        totalPosts: user.totalPosts
+      });
+    } catch (error: any) {
+      console.error('Subscription status error:', error);
+      res.status(500).json({ message: "Error fetching subscription status" });
     }
   });
 
