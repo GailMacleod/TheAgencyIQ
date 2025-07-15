@@ -66,13 +66,27 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     }
   }
   
-  // CRITICAL: Also check for session mapping by cookie session ID
+  // CRITICAL: Check for session mapping by cookie session ID (both signed and unsigned)
   const cookieHeader = req.headers.cookie || '';
-  const sessionCookieMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
+  
+  // First try signed cookies (s%3A format)
+  let sessionCookieMatch = cookieHeader.match(/theagencyiq\.session=s%3A([^;.]+)/);
+  let cookieSessionId = null;
+  
   if (sessionCookieMatch) {
-    const cookieSessionId = sessionCookieMatch[1];
-    console.log(`🔍 Found session cookie: ${cookieSessionId}`);
-    
+    cookieSessionId = sessionCookieMatch[1];
+    console.log(`🔍 Found SIGNED session cookie: ${cookieSessionId}`);
+  } else {
+    // Try unsigned cookies
+    sessionCookieMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
+    if (sessionCookieMatch) {
+      cookieSessionId = sessionCookieMatch[1];
+      console.log(`🔍 Found UNSIGNED session cookie: ${cookieSessionId}`);
+    }
+  }
+  
+  if (cookieSessionId) {
+    // Check if this session ID has a mapping
     const cookieMappedUserId = sessionUserMap.get(cookieSessionId);
     if (cookieMappedUserId) {
       console.log(`🔄 Using cookie session mapping for User ID: ${cookieMappedUserId}`);
@@ -98,6 +112,36 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
           });
         });
         
+        return next();
+      }
+    }
+    
+    // CRITICAL: If no mapping found, check if this session ID already exists in session store
+    // This handles cases where the session exists but mapping was lost
+    if (cookieSessionId === req.sessionID) {
+      // Session IDs match, check if session store has user data
+      console.log(`🔍 Session ID matches, checking session store for User ID`);
+      
+      // Try to get session data from store
+      const sessionStore = req.sessionStore;
+      await new Promise<void>((resolve) => {
+        sessionStore.get(cookieSessionId, (err: any, sessionData: any) => {
+          if (!err && sessionData && sessionData.userId) {
+            console.log(`🔄 Found session data in store for User ID: ${sessionData.userId}`);
+            req.session.userId = sessionData.userId;
+            req.session.userEmail = sessionData.userEmail;
+            req.session.subscriptionPlan = sessionData.subscriptionPlan;
+            req.session.subscriptionActive = sessionData.subscriptionActive;
+            
+            // Update mapping
+            sessionUserMap.set(cookieSessionId, sessionData.userId);
+            console.log(`✅ Session mapping restored for User ID: ${sessionData.userId}`);
+          }
+          resolve();
+        });
+      });
+      
+      if (req.session.userId) {
         return next();
       }
     }

@@ -1,0 +1,47 @@
+n Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/components/ui/badge.tsx
+📋 Session ID: S3u8jA__20nUZ4ofZ_2IcomsZaBK0tJ-
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/components/calendar-card.tsx
+📋 Session ID: PTfeAQOzKNCDMx85wHbv4elrdt403AxH
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/components/auto-posting-enforcer.tsx
+📋 Session ID: PxXIqEyevZzjTjxZ7WfyGy6vBhZ6u5AD
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/components/VideoPostCard.tsx
+📋 Session ID: 4U_CXmDAer2KBt5TA-brbrVcruBSsmz2
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/components/TokenStatusBanner.tsx
+📋 Session ID: pFgMaJrQoBQzkY6PJv82oNiO56nJ_IKi
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /@fs/home/runner/workspace/node_modules/.vite/deps/date-fns.js?v=044abfc6
+📋 Session ID: -pDClt3_6Al0a9vd-qDh9LsyHobxieOj
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/components/header.tsx
+📋 Session ID: l3EKHjVoU_kagaQlREFVgocAil143Weu
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/components/footer.tsx
+📋 Session ID: cwfFA7H90ABuP8H_2YMdHLiEaQ0z1xWd
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/components/forgot-password-modal.tsx
+📋 Session ID: RQ60v-JKB-DuvLJK67chDjLbhC3wxV_j
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/components/meta-pixel-status.tsx
+📋 Session ID: gJJzXC9xtd9_IdjbZPbmpsqh_yyATn74
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/components/ui/tabs.tsx
+📋 Session ID: NkoaJykb_ft4tUeu4xc18CY5v2JDXkGY
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/components/ui/alert.tsx
+📋 Session ID: R1o9a5vvyN1qMrw9Dk-D3tELeEK1_eKf

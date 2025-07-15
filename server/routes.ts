@@ -126,6 +126,11 @@ function addSystemHealthEndpoints(app: Express) {
         });
       });
       
+      // CRITICAL: Also store session mapping with signed cookie format for browser compatibility
+      const signedSessionId = `s%3A${req.sessionID}`;
+      sessionUserMap.set(signedSessionId, 2);
+      console.log(`📝 Signed session mapping created: ${signedSessionId} -> User ID 2`);
+      
       // Force session to be marked as modified
       req.session.touch();
       

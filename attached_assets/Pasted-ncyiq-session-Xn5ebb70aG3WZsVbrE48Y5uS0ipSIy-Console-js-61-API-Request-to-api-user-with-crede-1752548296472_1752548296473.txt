@@ -1,0 +1,93 @@
+ncyiq.session=Xn5ebb70aG3WZsVbrE48Y5uS0ipSIy...
+Console.js:61 🔧 API Request to /api/user with credentials: include
+Console.js:61 🔄 Queries invalidated after session establishment
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:110
+await in checkUserStatus
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+Console.js:61 Meta Pixel initialized successfully
+Console.js:61 🔧 Using manual cookie for test: theagencyiq.session=Xn5ebb70aG3WZsVbrE48Y5uS0ipSIyeG
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+makeRequest @ api-client.ts:29
+get @ api-client.ts:77
+(anonymous) @ queryClient.ts:139
+fetchFn @ @tanstack_react-query.js?v=044abfc6:881
+run @ @tanstack_react-query.js?v=044abfc6:513
+start @ @tanstack_react-query.js?v=044abfc6:555
+fetch @ @tanstack_react-query.js?v=044abfc6:969
+(anonymous) @ @tanstack_react-query.js?v=044abfc6:1811
+(anonymous) @ @tanstack_react-query.js?v=044abfc6:1810
+batch @ @tanstack_react-query.js?v=044abfc6:603
+refetchQueries @ @tanstack_react-query.js?v=044abfc6:1809
+(anonymous) @ @tanstack_react-query.js?v=044abfc6:1795
+batch @ @tanstack_react-query.js?v=044abfc6:603
+invalidateQueries @ @tanstack_react-query.js?v=044abfc6:1788
+(anonymous) @ App.tsx:148
+setTimeout
+establishSession @ App.tsx:146
+await in establishSession
+(anonymous) @ App.tsx:186
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+(anonymous) @ App.tsx:157
+setTimeout
+(anonymous) @ App.tsx:152
+setTimeout
+establishSession @ App.tsx:146
+await in establishSession
+(anonymous) @ App.tsx:186
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+Console.js:61 🔍 Session verification test: 401
+Console.js:61 ❌ Session verification failed

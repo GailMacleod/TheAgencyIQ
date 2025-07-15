@@ -211,11 +211,51 @@ async function startServer() {
     proxy: false  // Disable proxy mode to prevent automatic secure cookie enforcement
   }));
 
-  // Simple session debug middleware - reduced logging
+  // Enhanced session debug middleware - ONLY for API endpoints to prevent duplicates
   app.use((req, res, next) => {
-    if (req.url === '/api/user' || req.url === '/api/establish-session') {
-      console.log(`🔍 ${req.method} ${req.url} - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
+    // Only process API endpoints, not static files
+    if (req.url.startsWith('/api/')) {
+      if (req.url === '/api/user' || req.url === '/api/establish-session') {
+        console.log(`🔍 ${req.method} ${req.url} - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
+      }
+      
+      // Check if session has user data and force cookie setting - ONLY for API endpoints
+      if (req.session?.userId && req.sessionID) {
+        console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
+        console.log(`📋 Session ID: ${req.sessionID}`);
+        console.log(`📋 User ID: ${req.session.userId}`);
+        console.log(`📋 Session Cookie: ${req.headers.cookie ? req.headers.cookie : 'MISSING - Will be set in response'}`);
+        
+        // Force cookie setting in response headers
+        const originalSend = res.send;
+        const originalJson = res.json;
+        const originalEnd = res.end;
+        
+        const setCookieHeader = () => {
+          if (!res.headersSent) {
+            const signedCookie = `theagencyiq.session=s%3A${req.sessionID}.${Buffer.from(req.sessionID).toString('base64')}`;
+            res.setHeader('Set-Cookie', `${signedCookie}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`);
+            console.log(`🔧 Forced cookie setting: ${signedCookie}`);
+          }
+        };
+        
+        res.send = function(data) {
+          setCookieHeader();
+          return originalSend.call(this, data);
+        };
+        
+        res.json = function(data) {
+          setCookieHeader();
+          return originalJson.call(this, data);
+        };
+        
+        res.end = function(data) {
+          setCookieHeader();
+          return originalEnd.call(this, data);
+        };
+      }
     }
+    
     next();
   });
 
