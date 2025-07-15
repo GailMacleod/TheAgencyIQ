@@ -13,6 +13,9 @@ class ApiClient {
   async makeRequest(url: string, options: RequestInit = {}): Promise<Response> {
     const fullUrl = `${this.baseURL}${url}`;
     
+    // Get manual cookie if available
+    const manualCookie = this.getManualCookie();
+    
     // Ensure credentials are always included for cookie transmission
     const requestOptions: RequestInit = {
       ...options,
@@ -20,11 +23,40 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        ...(manualCookie ? { 'Cookie': manualCookie } : {}),
         ...options.headers
       }
     };
     
     return await fetch(fullUrl, requestOptions);
+  }
+  
+  private getManualCookie(): string | null {
+    // First try to get the signed session cookie from localStorage
+    const storedCookie = localStorage.getItem('aiq_session_cookie');
+    if (storedCookie) {
+      return storedCookie;
+    }
+    
+    // Fallback to extracting from document.cookie
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const trimmed = cookie.trim();
+      // Prefer signed cookies (s%3A format)
+      if (trimmed.startsWith('theagencyiq.session=s%3A')) {
+        return trimmed;
+      }
+    }
+    
+    // If no signed cookie, try any session cookie
+    for (const cookie of cookies) {
+      const trimmed = cookie.trim();
+      if (trimmed.startsWith('theagencyiq.session=')) {
+        return trimmed;
+      }
+    }
+    
+    return null;
   }
 
   async get(url: string, options: RequestInit = {}): Promise<Response> {

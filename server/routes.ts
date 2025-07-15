@@ -200,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // CRITICAL: Use proper authGuard for payment endpoints  
   // Import the authGuard middleware using ES modules
-  const { requireAuth, requireAuthForPayment } = await import('./middleware/authGuard.js');
+  const { requireAuth, requireAuthForPayment } = await import('./middleware/authGuard');
 
   // SESSION DEBUGGING ENDPOINT - To understand session persistence issues
   app.get('/api/session-debug', (req: any, res) => {
@@ -427,14 +427,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           secure: false,
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
           httpOnly: false,
-          sameSite: 'none',
+          sameSite: 'lax',
           path: '/'
         });
         res.cookie('aiq_backup_session', req.sessionID, {
           secure: false,
           maxAge: 24 * 60 * 60 * 1000,
           httpOnly: false,
-          sameSite: 'none',
+          sameSite: 'lax',
           path: '/'
         });
       }

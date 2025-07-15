@@ -125,11 +125,22 @@ class SessionManager {
           console.log('✅ Session verification successful');
         } else {
           console.log('❌ Session verification failed');
-          // Try to manually establish cookie
+          // Try to manually establish cookie with signed cookie format
           console.log('🔧 Attempting manual cookie establishment...');
           
-          // Force cookie setting in browser
-          document.cookie = `theagencyiq.session=${extractedSessionId}; path=/; max-age=86400; SameSite=Lax`;
+          // Force cookie setting in browser using signed cookie format
+          if (setCookieHeader) {
+            // Extract the signed session cookie from Set-Cookie header
+            const signedCookieMatch = setCookieHeader.match(/theagencyiq\.session=s%3A[^;]+/);
+            if (signedCookieMatch) {
+              const signedCookie = signedCookieMatch[0];
+              console.log('🔧 Setting signed session cookie:', signedCookie);
+              document.cookie = `${signedCookie}; path=/; max-age=86400; SameSite=Lax`;
+              
+              // Store the signed session cookie value for manual transmission
+              localStorage.setItem('aiq_session_cookie', signedCookie);
+            }
+          }
           
           // Retry test
           const retryResponse = await fetch('/api/user', {
