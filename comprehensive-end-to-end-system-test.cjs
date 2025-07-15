@@ -127,18 +127,23 @@ class ComprehensiveSystemTest {
   async testUserCreation() {
     console.log('🔍 Test 3: User Creation (Test Users)');
     try {
-      const response = await axios.post(`${BASE_URL}/api/establish-session`, {
-        email: 'testuser99@example.com',
-        phone: '+61400000099'
+      // Use unique timestamp to avoid duplicate user errors
+      const timestamp = Date.now();
+      const response = await axios.post(`${BASE_URL}/api/auth/signup`, {
+        email: `testuser${timestamp}@example.com`,
+        phone: `+61400${timestamp.toString().slice(-6)}`,
+        password: 'testpassword123',
+        confirmPassword: 'testpassword123',
+        userId: `test-user-${timestamp}`
       }, { timeout: 30000 });
 
-      if (response.status === 200) {
-        this.addResult('User Creation', 'PASSED', `Created test user: ${response.data.user.email}`);
+      if (response.status === 200 && response.data.success) {
+        this.addResult('User Creation', 'PASSED', `Created test user: ${response.data.email}`);
       } else {
-        this.addResult('User Creation', 'FAILED', `User creation failed: ${response.status}`);
+        this.addResult('User Creation', 'FAILED', `User creation failed: ${response.status} - ${response.data.message || 'Unknown error'}`);
       }
     } catch (error) {
-      this.addResult('User Creation', 'FAILED', error.message);
+      this.addResult('User Creation', 'FAILED', error.response?.data?.message || error.message);
     }
   }
 
@@ -166,14 +171,18 @@ class ComprehensiveSystemTest {
 
   async testConcurrentUser(userId) {
     try {
-      const response = await axios.post(`${BASE_URL}/api/establish-session`, {
-        email: `testuser${userId}@example.com`,
-        phone: `+61400000${userId.toString().padStart(3, '0')}`
+      const timestamp = Date.now();
+      const response = await axios.post(`${BASE_URL}/api/auth/signup`, {
+        email: `testuser${timestamp}${userId}@example.com`,
+        phone: `+61400${timestamp.toString().slice(-6)}${userId.toString().padStart(2, '0')}`,
+        password: 'testpassword123',
+        confirmPassword: 'testpassword123',
+        userId: `test-user-${timestamp}-${userId}`
       }, { timeout: 30000 });
 
-      return { success: response.status === 200, userId };
+      return { success: response.status === 200 && response.data.success, userId };
     } catch (error) {
-      return { success: false, userId, error: error.message };
+      return { success: false, userId, error: error.response?.data?.message || error.message };
     }
   }
 

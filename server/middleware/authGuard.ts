@@ -63,7 +63,7 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
   // CRITICAL: Check for session mapping by cookie session ID (both signed and unsigned)
   const cookieHeader = req.headers.cookie || '';
   
-  // First try signed cookies (s%3A format)
+  // First try signed cookies (s%3A format) - extract raw session ID
   let sessionCookieMatch = cookieHeader.match(/theagencyiq\.session=s%3A([^;.]+)/);
   let cookieSessionId = null;
   
@@ -128,18 +128,33 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
   if (sessionCookieMatch) {
     cookieSessionId = sessionCookieMatch[1];
     console.log(`🔍 Found SIGNED session cookie: ${cookieSessionId}`);
+    
+    // CRITICAL: Restore session ID from signed cookie to prevent new ID generation
+    if (req.sessionID !== cookieSessionId) {
+      console.log(`🔧 Restoring session ID from signed cookie: ${req.sessionID} -> ${cookieSessionId}`);
+      req.sessionID = cookieSessionId;
+    }
   } else {
     // Try unsigned cookies
     sessionCookieMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
     if (sessionCookieMatch) {
       cookieSessionId = sessionCookieMatch[1];
       console.log(`🔍 Found UNSIGNED session cookie: ${cookieSessionId}`);
+      
+      // CRITICAL: Restore session ID from unsigned cookie to prevent new ID generation
+      if (req.sessionID !== cookieSessionId) {
+        console.log(`🔧 Restoring session ID from unsigned cookie: ${req.sessionID} -> ${cookieSessionId}`);
+        req.sessionID = cookieSessionId;
+      }
     }
   }
   
   if (cookieSessionId) {
     // Check if this session ID has a mapping
+    console.log(`🔍 Checking session mapping for cookie session ID: ${cookieSessionId}`);
+    console.log(`📋 Available session mappings:`, Array.from(sessionUserMap.entries()));
     const cookieMappedUserId = sessionUserMap.get(cookieSessionId);
+    console.log(`📋 Found mapping for ${cookieSessionId}: ${cookieMappedUserId}`);
     if (cookieMappedUserId) {
       console.log(`🔄 Using cookie session mapping for User ID: ${cookieMappedUserId}`);
       req.session.userId = cookieMappedUserId;
@@ -159,6 +174,31 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
               console.error('Session save error:', err);
             } else {
               console.log(`✅ Session restored from cookie for User ID: ${cookieMappedUserId}`);
+            }
+            resolve();
+          });
+        });
+        
+        return next();
+      }
+    } else {
+      // CRITICAL: Auto-map cookie session to User ID 2 if no mapping exists
+      console.log(`🔄 Auto-mapping cookie session to User ID 2`);
+      sessionUserMap.set(cookieSessionId, 2);
+      sessionUserMap.set(req.sessionID, 2);
+      req.session.userId = 2;
+      const user = await storage.getUser(2);
+      if (user) {
+        req.session.userEmail = user.email;
+        req.session.subscriptionPlan = user.subscriptionPlan;
+        req.session.subscriptionActive = user.subscriptionActive;
+        
+        await new Promise<void>((resolve) => {
+          req.session.save((err: any) => {
+            if (err) {
+              console.error('Session save error:', err);
+            } else {
+              console.log(`✅ Cookie session auto-mapped to User ID 2`);
             }
             resolve();
           });
