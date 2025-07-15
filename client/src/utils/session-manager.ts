@@ -76,12 +76,7 @@ class SessionManager {
         const sessionId = data.sessionId;
         if (sessionId) {
           console.log('📋 Session ID received:', sessionId);
-          
-          // Store the session ID for manual header transmission
-          sessionStorage.setItem('sessionId', sessionId);
-          sessionStorage.setItem('sessionCookie', `theagencyiq.session=${sessionId}`);
-          
-          console.log('🔧 Session stored for manual transmission:', sessionId);
+          console.log('🔧 Session will be handled automatically by browser cookies');
         }
         
         this.sessionInfo = {
@@ -103,6 +98,9 @@ class SessionManager {
           }));
         }
         
+        // Add a delay to ensure cookie is set by the browser before returning
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         return this.sessionInfo;
       } else {
         console.error('Session establishment failed with status:', response.status);
@@ -122,17 +120,13 @@ class SessionManager {
   async makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
     console.log(`🔍 Making authenticated request to: ${url}`);
     
-    // Extract session cookie from document.cookie if available
-    const sessionCookie = this.getSessionCookie();
-    
-    // Always include credentials for automatic cookie transmission + manual cookie header
+    // Use browser's built-in cookie mechanism - no manual cookie headers needed
     const requestOptions: RequestInit = {
       ...options,
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        ...(sessionCookie ? { 'Cookie': sessionCookie } : {}),
         ...options.headers,
       },
     };

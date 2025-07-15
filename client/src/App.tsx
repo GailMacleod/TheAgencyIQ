@@ -151,30 +151,7 @@ function App() {
           queryClient.invalidateQueries();
           console.log('🔄 Queries invalidated after session establishment');
           
-          // Force a test API call to verify session is working
-          setTimeout(() => {
-            // FORCE MANUAL COOKIE HEADER IN REQUEST
-            const sessionCookie = sessionStorage.getItem('sessionCookie');
-            console.log('🔧 Using manual cookie for test:', sessionCookie);
-            
-            fetch('/api/user', {
-              method: 'GET',
-              credentials: 'include',
-              headers: {
-                'Content-Type': 'application/json',
-                'Cookie': sessionCookie || ''
-              }
-            }).then(response => {
-              console.log('🔍 Session verification test:', response.status);
-              if (response.ok) {
-                console.log('✅ Session working correctly');
-              } else {
-                console.log('❌ Session verification failed');
-              }
-            }).catch(err => {
-              console.log('❌ Session verification error:', err.message);
-            });
-          }, 200);
+          // Session will be handled automatically by browser cookies
         }, 100);
         
       } catch (error) {

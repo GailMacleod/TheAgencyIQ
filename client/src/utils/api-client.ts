@@ -39,7 +39,7 @@ class ApiClient {
     // Get session ID from sessionStorage (set by session manager)
     const sessionId = sessionStorage.getItem('sessionId');
     if (sessionId) {
-      return `theagencyiq.session=${sessionId}`;
+      return `theagencyiq.session=s%3A${sessionId}.${btoa(sessionId)}`;
     }
     
     // Fallback to extracting from document.cookie

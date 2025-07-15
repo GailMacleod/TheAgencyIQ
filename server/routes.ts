@@ -159,8 +159,14 @@ function addSystemHealthEndpoints(app: Express) {
       
       // Force cookie to be set in response headers with proper format
       if (!res.headersSent) {
-        res.setHeader('Set-Cookie', `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`);
-        console.log(`🔧 Manual cookie set: theagencyiq.session=${req.sessionID}`);
+        const cookieValue = `theagencyiq.session=${req.sessionID}`;
+        res.setHeader('Set-Cookie', `${cookieValue}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`);
+        console.log(`🔧 Manual cookie set: ${cookieValue}`);
+        
+        // Also set a backup cookie for browser compatibility
+        const backupCookie = `aiq_backup_session=${req.sessionID}`;
+        res.setHeader('Set-Cookie', [`${cookieValue}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`, `${backupCookie}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`]);
+        console.log(`🔧 Backup cookie set: ${backupCookie}`);
       }
       
       // Check if session was saved properly

@@ -195,8 +195,8 @@ async function startServer() {
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
-    resave: false,    // CRITICAL: Set to false to prevent unnecessary session saves
-    saveUninitialized: false,  // CRITICAL: Set to false to prevent creating sessions for every request
+    resave: false,    // CRITICAL: Set to false to prevent race conditions
+    saveUninitialized: false,  // CRITICAL: Set to false to prevent unnecessary sessions
     name: 'theagencyiq.session',
     cookie: { 
       secure: false,       // CRITICAL: Set to false for development
