@@ -21,7 +21,10 @@ class SessionManager {
     try {
       const response = await fetch('/api/user', {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       if (response.ok) {
@@ -112,7 +115,7 @@ class SessionManager {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
-            'Cookie': document.cookie
+            'Content-Type': 'application/json'
           }
         });
         

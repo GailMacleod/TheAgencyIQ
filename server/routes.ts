@@ -2096,13 +2096,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.header('Access-Control-Allow-Credentials', 'true');
           res.header('Access-Control-Expose-Headers', 'Set-Cookie');
           
-          // Explicitly set session cookie with proper options for frontend access
+          // Explicitly set session cookie with consistent session ID
           const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; SameSite=lax; Max-Age=86400`;
           res.setHeader('Set-Cookie', cookieValue);
           
           // Also add to session mapping for direct access
           const { sessionUserMap } = await import('./middleware/authGuard.js');
           sessionUserMap.set(req.sessionID, userId);
+          
+          console.log(`🔧 Session established - ID: ${req.sessionID}, Cookie: ${cookieValue}`);
           
           return res.json({ 
             success: true, 
@@ -3390,13 +3392,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Track session activity
         sessionActivityService.trackActivity(req.sessionID, user.id, ipAddress, userAgent, '/api/auth/establish-session');
         
-        // Explicitly set session cookie with proper options for frontend access
+        // Explicitly set session cookie with consistent session ID
         const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; SameSite=lax; Max-Age=86400`;
         res.setHeader('Set-Cookie', cookieValue);
         
         // Also add to session mapping for direct access
         const { sessionUserMap } = await import('./middleware/authGuard.js');
         sessionUserMap.set(req.sessionID, 2);
+        
+        console.log(`🔧 Session established - ID: ${req.sessionID}, Cookie: ${cookieValue}`);
         
         console.log('✅ Session auto-established for User ID 2');
         return res.json({

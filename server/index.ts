@@ -5,6 +5,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import path from 'path';
+import crypto from 'crypto';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
 
 // Production-compatible logger
@@ -182,7 +183,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Simple session configuration with frontend access - NO SIGNING
+  // Fixed session configuration with consistent ID generation
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -190,55 +191,74 @@ async function startServer() {
     saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: false,
+      secure: false,        // Dev environment
       maxAge: sessionTtl,
-      httpOnly: false,  // Allow frontend access
-      sameSite: 'lax',
+      httpOnly: false,      // Allow frontend access
+      sameSite: 'lax',      // Cross-site compatibility
       path: '/',
-      signed: false     // CRITICAL: Don't sign cookies for frontend access
+      signed: false         // No signing for frontend access
     },
     rolling: false,
     proxy: true,
-    unset: 'keep'
+    unset: 'keep',
+    // CRITICAL: Prevent session ID regeneration if cookie exists
+    genid: function(req) {
+      // If cookie exists, extract and reuse the session ID
+      if (req.headers.cookie) {
+        const match = req.headers.cookie.match(/theagencyiq\.session=([^;]+)/);
+        if (match && match[1]) {
+          console.log(`🔄 Reusing existing session ID: ${match[1]}`);
+          return match[1];
+        }
+      }
+      // Generate new ID only if no cookie exists
+      const newId = crypto.randomBytes(16).toString('hex');
+      console.log(`🆕 Generated new session ID: ${newId}`);
+      return newId;
+    }
   }));
 
-  // Session debugging middleware - simple session logging
+  // Session debugging middleware with consistent ID handling
   app.use((req, res, next) => {
-    // Just log session info for debugging
     console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
     console.log(`📋 Session ID: ${req.sessionID}`);
     console.log(`📋 User ID: ${req.session?.userId}`);
-    console.log(`📋 Session Cookie: ${req.headers.cookie ? 'EXISTS' : 'MISSING'}`);
+    console.log(`📋 Cookie Header: ${req.headers.cookie || 'MISSING'}`);
     
-    // Force cookie persistence on every response with safety checks
+    // Extract session ID from cookie for comparison
+    if (req.headers.cookie) {
+      const match = req.headers.cookie.match(/theagencyiq\.session=([^;]+)/);
+      if (match && match[1]) {
+        console.log(`📋 Cookie Session ID: ${match[1]}`);
+        console.log(`📋 ID Match: ${req.sessionID === match[1] ? '✅' : '❌'}`);
+      }
+    }
+    
+    // Ensure consistent session ID in cookie
     if (req.sessionID && !res.headersSent) {
       const originalSend = res.send;
       const originalJson = res.json;
       const originalEnd = res.end;
 
+      const setCookie = `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax`;
+
       res.send = function(data) {
         if (!res.headersSent) {
-          res.setHeader('Set-Cookie', [
-            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax`
-          ]);
+          res.setHeader('Set-Cookie', setCookie);
         }
         return originalSend.call(this, data);
       };
 
       res.json = function(data) {
         if (!res.headersSent) {
-          res.setHeader('Set-Cookie', [
-            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax`
-          ]);
+          res.setHeader('Set-Cookie', setCookie);
         }
         return originalJson.call(this, data);
       };
 
       res.end = function(data) {
         if (!res.headersSent) {
-          res.setHeader('Set-Cookie', [
-            `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax`
-          ]);
+          res.setHeader('Set-Cookie', setCookie);
         }
         return originalEnd.call(this, data);
       };
