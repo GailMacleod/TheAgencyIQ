@@ -6,7 +6,7 @@
 
 import { storage } from './storage';
 import { PostQuotaService } from './PostQuotaService';
-import { OAuthRefreshService } from './oauth-refresh';
+import { OAuthTokenRefreshService } from './services/oauth-token-refresh';
 import { RealApiPublisher } from './real-api-publisher';
 import axios from 'axios';
 
@@ -119,9 +119,20 @@ export class AutoPostingEnforcer {
           }
           
           // Verify token validity and refresh if needed
-          const tokenValidation = await AutoPostingEnforcer.validateAndRefreshToken(connection);
+          const tokenValidation = await OAuthTokenRefreshService.validateToken(userId, post.platform);
           if (!tokenValidation.valid) {
-            throw new Error(`Token validation failed for ${post.platform}: ${tokenValidation.error}`);
+            console.log(`🔄 Token invalid for ${post.platform}, attempting refresh...`);
+            const refreshResult = await OAuthTokenRefreshService.refreshPlatformToken(userId, post.platform);
+            if (!refreshResult.success) {
+              // Try fallback authentication
+              const fallbackAuth = await OAuthTokenRefreshService.getFallbackAuthentication(post.platform);
+              if (!fallbackAuth.success) {
+                throw new Error(`Token validation and refresh failed for ${post.platform}: ${tokenValidation.error}`);
+              }
+              console.log(`✅ Using fallback authentication for ${post.platform}: ${fallbackAuth.method}`);
+            } else {
+              console.log(`✅ Token refreshed for ${post.platform}: ${refreshResult.method}`);
+            }
           }
           
           if (tokenValidation.refreshed) {

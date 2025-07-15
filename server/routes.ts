@@ -931,6 +931,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OAuth token validation endpoint
+  app.post('/api/oauth/validate-token', async (req, res) => {
+    try {
+      const { userId, platform } = req.body;
+      const { OAuthTokenRefreshService } = await import('./services/oauth-token-refresh');
+      
+      const result = await OAuthTokenRefreshService.validateToken(userId, platform);
+      res.json(result);
+    } catch (error) {
+      console.error('Token validation error:', error);
+      res.status(500).json({ valid: false, error: error.message });
+    }
+  });
+
+  // OAuth token refresh endpoint
+  app.post('/api/oauth/refresh-token', async (req, res) => {
+    try {
+      const { userId, platform } = req.body;
+      const { OAuthTokenRefreshService } = await import('./services/oauth-token-refresh');
+      
+      const result = await OAuthTokenRefreshService.refreshPlatformToken(userId, platform);
+      res.json(result);
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Real API publishing with token refresh
+  app.post('/api/publish-with-token-refresh', async (req, res) => {
+    try {
+      const { userId, platform, content } = req.body;
+      const { OAuthTokenRefreshService } = await import('./services/oauth-token-refresh');
+      const { DirectPublisher } = await import('./direct-publisher');
+      
+      // Validate and refresh token first
+      const validation = await OAuthTokenRefreshService.validateToken(userId, platform);
+      if (!validation.valid) {
+        const refreshResult = await OAuthTokenRefreshService.refreshPlatformToken(userId, platform);
+        if (!refreshResult.success) {
+          const fallbackAuth = await OAuthTokenRefreshService.getFallbackAuthentication(platform);
+          if (!fallbackAuth.success) {
+            return res.json({ success: false, error: 'Token validation and refresh failed' });
+          }
+        }
+      }
+      
+      // Get updated connection
+      const connection = await storage.getPlatformConnection(userId, platform);
+      if (!connection) {
+        return res.json({ success: false, error: 'No platform connection found' });
+      }
+      
+      // Publish with refreshed token
+      const publishResult = await DirectPublisher.publishWithReliability(platform, content, connection);
+      res.json(publishResult);
+    } catch (error) {
+      console.error('Publishing with token refresh error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Quota status endpoint
+  app.get('/api/quota-status/:userId', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { PostQuotaService } = await import('./PostQuotaService');
+      
+      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
+      res.json(quotaStatus);
+    } catch (error) {
+      console.error('Quota status error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post('/api/x/callback', async (req, res) => {
     try {
       const { code } = req.body;

@@ -88,31 +88,51 @@ export class ImmediatePublishService {
     accessToken?: string;
     error?: string;
   }> {
-    const { EnhancedConnectionReliabilityService } = await import('./services/enhanced-connection-reliability');
+    const { OAuthTokenRefreshService } = await import('./services/oauth-token-refresh');
     
     try {
-      const connectionStatus = await EnhancedConnectionReliabilityService.validateAndRefreshConnection(userId, platform);
-      
-      if (connectionStatus.isConnected && connectionStatus.tokenValid) {
-        // Get the updated connection with valid token
+      // First validate current token
+      const validation = await OAuthTokenRefreshService.validateToken(userId, platform);
+      if (validation.valid) {
         const { storage } = await import('./storage');
         const connection = await storage.getPlatformConnection(userId, platform);
-        
         return {
           success: true,
           accessToken: connection?.accessToken
         };
       }
       
+      // Token invalid, try refresh
+      console.log(`🔄 Token invalid for ${platform}, attempting refresh...`);
+      const refreshResult = await OAuthTokenRefreshService.refreshPlatformToken(userId, platform);
+      
+      if (refreshResult.success) {
+        console.log(`✅ Token refreshed for ${platform}: ${refreshResult.method}`);
+        return {
+          success: true,
+          accessToken: refreshResult.accessToken
+        };
+      }
+      
+      // Try fallback authentication
+      const fallbackAuth = await OAuthTokenRefreshService.getFallbackAuthentication(platform);
+      if (fallbackAuth.success) {
+        console.log(`✅ Using fallback authentication for ${platform}: ${fallbackAuth.method}`);
+        return {
+          success: true,
+          accessToken: fallbackAuth.accessToken
+        };
+      }
+      
       return {
         success: false,
-        error: connectionStatus.error || 'Connection validation failed'
+        error: `Token refresh and fallback failed: ${refreshResult.error}`
       };
       
     } catch (error) {
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Connection validation error'
       };
     }
   }
@@ -123,6 +143,7 @@ export class ImmediatePublishService {
   private static async alternateAuthentication(userId: number, platform: string): Promise<{
     success: boolean;
     accessToken?: string;
+    method?: string;
     method: string;
     error?: string;
   }> {
