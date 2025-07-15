@@ -31,7 +31,7 @@ async function startServer() {
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
-  app.use(cookieParser(process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ"));
+  app.use(cookieParser());
   // Filter out Replit-specific tracking in production
   app.use((req, res, next) => {
     // Block Replit tracking requests in production
@@ -175,9 +175,9 @@ async function startServer() {
     }
   });
 
-  // CORS middleware with credentials support - FIXED FOR COOKIE TRANSMISSION
+  // CORS middleware with exact client URL and credentials support
   app.use(cors({
-    origin: true, // Allow all origins for proper cookie handling
+    origin: 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Source', 'X-Retry-Session', 'Cookie'],
@@ -186,7 +186,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Session configuration - SIMPLIFIED FOR PERSISTENCE
+  // Session configuration - OPTIMIZED FOR COOKIE TRANSMISSION
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -197,7 +197,7 @@ async function startServer() {
       secure: false,  // CRITICAL: Set to false for development
       maxAge: sessionTtl,
       httpOnly: false,      // Allow frontend access
-      sameSite: 'lax',  // CRITICAL: Set to 'lax' for development
+      sameSite: 'none',  // CRITICAL: Set to 'none' for cross-origin requests
       path: '/'
     },
     rolling: false,

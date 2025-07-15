@@ -69,11 +69,14 @@ class ComprehensiveSessionValidationTest {
       console.log(`   Response: ${JSON.stringify(response.data, null, 2)}`);
       
       if (response.headers['set-cookie']) {
-        this.cookies = response.headers['set-cookie'].join('; ');
+        // Use only the signed cookie for session persistence
+        const setCookies = response.headers['set-cookie'];
+        const signedCookie = setCookies.find(cookie => cookie.includes('s%3A'));
+        this.cookies = signedCookie || setCookies.join('; ');
         console.log(`   Cookies: ${this.cookies}`);
         
-        // Extract session ID from cookie
-        const match = this.cookies.match(/theagencyiq\.session=([^;]+)/);
+        // Extract session ID from signed cookie
+        const match = this.cookies.match(/theagencyiq\.session=s%3A([^.]+)/);
         if (match) {
           this.sessionId = match[1];
           console.log(`   Session ID: ${this.sessionId}`);
