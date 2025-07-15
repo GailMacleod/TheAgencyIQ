@@ -192,9 +192,7 @@ async function startServer() {
       sameSite: 'lax',
       path: '/',
       httpOnly: false,
-      maxAge: sessionTtl,
-      httpOnly: false,
-      path: '/'
+      maxAge: sessionTtl
     },
     rolling: true,
     genid: () => {
