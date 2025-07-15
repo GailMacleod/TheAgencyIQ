@@ -1,6 +1,6 @@
 import express from 'express';
 import session from 'express-session';
-import connectPg from 'connect-pg-simple';
+import connectSqlite3 from 'connect-sqlite3';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
@@ -28,13 +28,13 @@ async function startServer() {
   
   const app = express();
 
-  app.set('trust proxy', false);
+  app.set('trust proxy', 1); // Trust Replit proxy
   
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   
-  app.use(cookieParser('secret'));
+  app.use(cookieParser('theagencyiq-secure-session-secret-2025'));
   
   // CORS configuration - MUST be before routes
   app.use(cors({
@@ -56,8 +56,8 @@ async function startServer() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie'],
-    exposedHeaders: ['Set-Cookie']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie', 'Set-Cookie'],
+    exposedHeaders: ['Set-Cookie', 'Access-Control-Allow-Credentials']
   }));
   
   // Filter out Replit-specific tracking in production
@@ -136,19 +136,15 @@ async function startServer() {
   });
 
   // Device-agnostic session configuration for mobile-to-desktop continuity
-  // Configure PostgreSQL session store
+  // Configure SQLite3 session store for persistent sessions
   const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
+  const SQLiteStore = connectSqlite3(session);
+  const sessionStore = new SQLiteStore({
+    db: 'sessions.db',
+    table: 'sessions',
+    dir: './data',
     ttl: sessionTtl,
-    tableName: "sessions",
-    schemaName: "public",
-    pruneSessionInterval: 60 * 15, // 15 minutes
-    errorLog: (error) => {
-      console.error('Session store error:', error);
-    }
+    concurrentDB: true
   });
   
   // Add debugging to session store to see if it's being called
@@ -171,19 +167,20 @@ async function startServer() {
   console.log('✅ Session store initialized successfully');
 
   app.use(session({
-    secret: 'secret',
+    secret: 'theagencyiq-secure-session-secret-2025',
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: false,
-      sameSite: 'lax',
+      secure: true,  // Secure cookies for HTTPS
+      sameSite: 'none',  // Required for cross-origin requests
       path: '/',
-      httpOnly: false,
+      httpOnly: false,  // Allow frontend access for cookie transmission
       maxAge: sessionTtl
     },
     rolling: true,
+    proxy: true,  // Trust the proxy for secure cookies
     genid: () => {
       return crypto.randomBytes(16).toString('hex');
     }
