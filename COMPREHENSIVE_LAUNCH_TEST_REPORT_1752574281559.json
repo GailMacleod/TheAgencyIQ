@@ -1,0 +1,39 @@
+{
+  "timestamp": "2025-07-15T10:11:21.559Z",
+  "duration": "181ms",
+  "totalTests": 2,
+  "passedTests": 1,
+  "failedTests": 1,
+  "successRate": "50.00%",
+  "status": "NEEDS FIXES",
+  "testResults": [
+    {
+      "testName": "Session Establishment",
+      "status": "PASS",
+      "error": null,
+      "details": {
+        "status": 200,
+        "sessionEstablished": true,
+        "userId": 2,
+        "userEmail": "gailm@macleodglba.com.au",
+        "sessionId": "a29cbe441b82045ceb32e320bcf7e16b",
+        "hasCookies": true
+      },
+      "timestamp": "2025-07-15T10:11:21.548Z"
+    },
+    {
+      "testName": "Session Persistence",
+      "status": "FAIL",
+      "error": "Request failed with status code 401",
+      "details": {
+        "status": 401,
+        "error": {
+          "message": "Not authenticated",
+          "redirectTo": "/login"
+        },
+        "sessionWorking": false
+      },
+      "timestamp": "2025-07-15T10:11:21.558Z"
+    }
+  ]
+}

@@ -25,15 +25,15 @@ async function startServer() {
   
   const app = express();
 
-  // CRITICAL: Enable trust proxy for HTTPS environment to support secure cookies
-  app.set('trust proxy', 1);
+  // CRITICAL: Set trust proxy to 0 for session fixes
+  app.set('trust proxy', 0);
   
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   
   // Add cookie parser with secret key before session
-  app.use(cookieParser('your-secret-key'));
+  app.use(cookieParser('secret'));
   
   // CORS configuration - MUST be before routes
   app.use(cors({
@@ -142,10 +142,7 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // CRITICAL FIX: Set trust proxy to 0 for session handling
   app.set('trust proxy', 0);
-
-  // CRITICAL FIX: Cookie parser middleware with 'secret' 
   app.use(cookieParser('secret'));
 
   // Device-agnostic session configuration for mobile-to-desktop continuity
@@ -183,7 +180,25 @@ async function startServer() {
   
   console.log('✅ Session store initialized successfully');
 
-  // CRITICAL FIX: CORS configuration with credentials and origin support
+  app.use(session({
+    secret: 'secret',
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    name: 'theagencyiq.session',
+    cookie: { 
+      secure: false,
+      sameSite: 'lax',
+      maxAge: sessionTtl,
+      httpOnly: false,
+      path: '/'
+    },
+    rolling: true,
+    genid: () => {
+      return crypto.randomBytes(16).toString('hex');
+    }
+  }));
+
   app.use(cors({
     credentials: true,
     origin: true,
@@ -194,73 +209,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // CRITICAL FIX: Session configuration with proper settings
-  app.use(session({
-    secret: 'secret',
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    name: 'theagencyiq.session',
-    cookie: { 
-      secure: false,
-      maxAge: sessionTtl,
-      httpOnly: false,
-      sameSite: 'lax',
-      path: '/'
-    },
-    rolling: true,
-    genid: () => {
-      return crypto.randomBytes(16).toString('hex');
-    }
-  }));
 
-  // Enhanced session debug middleware - ONLY for API endpoints to prevent duplicates
-  app.use((req, res, next) => {
-    // Only process API endpoints, not static files
-    if (req.url.startsWith('/api/')) {
-      if (req.url === '/api/user' || req.url === '/api/establish-session') {
-        console.log(`🔍 ${req.method} ${req.url} - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
-      }
-      
-      // Check if session has user data and force cookie setting - ONLY for API endpoints
-      if (req.session?.userId && req.sessionID) {
-        console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
-        console.log(`📋 Session ID: ${req.sessionID}`);
-        console.log(`📋 User ID: ${req.session.userId}`);
-        console.log(`📋 Session Cookie: ${req.headers.cookie ? req.headers.cookie : 'MISSING - Will be set in response'}`);
-        
-        // Force cookie setting in response headers
-        const originalSend = res.send;
-        const originalJson = res.json;
-        const originalEnd = res.end;
-        
-        const setCookieHeader = () => {
-          if (!res.headersSent) {
-            const cookieValue = `theagencyiq.session=${req.sessionID}`;
-            res.setHeader('Set-Cookie', `${cookieValue}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`);
-            console.log(`🔧 Forced cookie setting: ${cookieValue}`);
-          }
-        };
-        
-        res.send = function(data) {
-          setCookieHeader();
-          return originalSend.call(this, data);
-        };
-        
-        res.json = function(data) {
-          setCookieHeader();
-          return originalJson.call(this, data);
-        };
-        
-        res.end = function(data) {
-          setCookieHeader();
-          return originalEnd.call(this, data);
-        };
-      }
-    }
-    
-    next();
-  });
 
   // Enhanced CSP for Facebook compliance, Google services, video content, and security
   app.use((req, res, next) => {

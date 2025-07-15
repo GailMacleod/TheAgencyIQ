@@ -134,63 +134,37 @@ function addSystemHealthEndpoints(app: Express) {
       
       console.log(`🔐 Session established for ${user.email} (ID: ${user.id})`);
       
-      // CRITICAL: Save session to ensure data is persisted
-      await new Promise<void>((resolve, reject) => {
-        req.session.save((err) => {
-          if (err) {
-            console.error('Session save error:', err);
-            reject(err);
-          } else {
-            console.log('✅ Session saved successfully with userId:', req.session.userId);
-            resolve();
-          }
-        });
+      // Set session cookie before saving
+      res.cookie('theagencyiq.session', req.sessionID, { 
+        secure: false, 
+        sameSite: 'lax', 
+        path: '/', 
+        httpOnly: false 
       });
       
-      // CRITICAL: Store session mapping for browser compatibility
+      // Store session mapping for browser compatibility
       sessionUserMap.set(req.sessionID, user.id);
       console.log(`📝 Session mapping created: ${req.sessionID} -> User ID ${user.id}`);
-      
-      // Force session to be marked as modified
-      req.session.touch();
-      
-      // Set session cookie using res.cookie() method for proper transmission
-      res.cookie('theagencyiq.session', req.sessionID, {
-        path: '/',
-        secure: false,
-        sameSite: 'lax',
-        httpOnly: false, // Allow JavaScript access for debugging
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-        signed: false // Disable signed cookies for compatibility
-      });
-      
-      // Force session save after setting cookie
-      req.session.save((err) => {
-        if (err) {
-          console.error('Final session save error:', err);
-        } else {
-          console.log('✅ Final session save successful');
-        }
-      });
-      
       console.log(`🔧 Session cookie set: theagencyiq.session=${req.sessionID} (unsigned)`);
       
-      // Check if session was saved properly
-      console.log('📋 Session data after save:', {
-        sessionId: req.sessionID,
-        userId: req.session.userId,
-        userEmail: req.session.userEmail,
-        subscriptionPlan: req.session.subscriptionPlan
-      });
-      
-      res.json({ 
-        sessionEstablished: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          phone: user.phone || user.email
-        },
-        sessionId: req.sessionID
+      // CRITICAL FIX: Save session after setting userId, then send response
+      req.session.save(() => {
+        res.cookie('theagencyiq.session', req.sessionID, { 
+          secure: false, 
+          sameSite: 'lax', 
+          path: '/', 
+          httpOnly: false 
+        });
+        
+        res.json({ 
+          sessionEstablished: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            phone: user.phone || user.email
+          },
+          sessionId: req.sessionID
+        });
       });
     } catch (error) {
       console.error('Session establishment error:', error);
@@ -677,48 +651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Session debugging middleware - log session details
-  app.use(async (req: any, res: any, next: any) => {
-    // Skip session debugging for certain endpoints
-    const skipPaths = ['/api/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/api/facebook/data-deletion', '/api/deletion-status'];
-    if (skipPaths.some(path => req.url.startsWith(path))) {
-      return next();
-    }
 
-    // Log session information for debugging
-    console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
-    console.log(`📋 Session ID: ${req.sessionID}`);
-    console.log(`📋 User ID: ${req.session?.userId}`);
-    console.log(`📋 Session Cookie: ${req.headers.cookie || 'MISSING - Will be set in response'}`);
-    
-    // Enhanced session cookie validation and recovery
-    if (req.sessionID && req.session?.userId) {
-      const hasMainCookie = req.headers.cookie?.includes('theagencyiq.session');
-      const hasBackupCookie = req.headers.cookie?.includes('aiq_backup_session');
-      
-      if (!hasMainCookie && !hasBackupCookie) {
-        console.log('🔧 Setting session cookies for authenticated user');
-        res.cookie('theagencyiq.session', req.sessionID, {
-          secure: false,
-          maxAge: 24 * 60 * 60 * 1000, // 24 hours
-          httpOnly: false,
-          sameSite: 'lax',
-          path: '/',
-          signed: false // Ensure no signed cookies
-        });
-        res.cookie('aiq_backup_session', req.sessionID, {
-          secure: false,
-          maxAge: 24 * 60 * 60 * 1000,
-          httpOnly: false,
-          sameSite: 'lax',
-          path: '/',
-          signed: false // Ensure no signed cookies
-        });
-      }
-    }
-    
-    next();
-  });
 
   configuredPassport.serializeUser((user: any, done) => {
     done(null, user);
