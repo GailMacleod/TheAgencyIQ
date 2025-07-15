@@ -96,58 +96,29 @@ function addSystemHealthEndpoints(app: Express) {
   // Establish session endpoint for authenticated users
   app.post('/api/establish-session', async (req: any, res) => {
     try {
-      console.log('🔍 Session establishment request:', {
-        body: req.body,
-        sessionId: req.sessionID,
-        existingUserId: req.session?.userId
-      });
-      
-      // Get user credentials from request body or default to User ID 2 for production
       const { email, userId } = req.body;
       
-      // For production, authenticate the specific user
+      // Default to User ID 2 for gailm@macleodglba.com.au
       let user;
       if (userId) {
         user = await storage.getUser(userId);
       } else if (email) {
         user = await storage.getUserByEmail(email);
       } else {
-        // Default to User ID 2 for testing (gailm@macleodglba.com.au)
         user = await storage.getUser(2);
       }
       
       if (!user) {
-        console.log('❌ User not found during session establishment');
         return res.status(401).json({ 
           error: 'User not found',
           message: 'Authentication required' 
         });
       }
       
-      console.log(`✅ Authenticating user: ${user.email} (ID: ${user.id})`);
-      
-      // CRITICAL FIX: Set session userId and save session
+      // Set session userId
       req.session.userId = user.id;
-      req.session.userEmail = user.email;
-      req.session.subscriptionPlan = user.subscriptionPlan;
-      req.session.subscriptionActive = user.subscriptionActive;
       
-      console.log(`🔐 Session established for ${user.email} (ID: ${user.id})`);
-      
-      // Set session cookie before saving
-      res.cookie('theagencyiq.session', req.sessionID, { 
-        secure: false, 
-        sameSite: 'lax', 
-        path: '/', 
-        httpOnly: false 
-      });
-      
-      // Store session mapping for browser compatibility
-      sessionUserMap.set(req.sessionID, user.id);
-      console.log(`📝 Session mapping created: ${req.sessionID} -> User ID ${user.id}`);
-      console.log(`🔧 Session cookie set: theagencyiq.session=${req.sessionID} (unsigned)`);
-      
-      // CRITICAL FIX: Save session after setting userId, then send response
+      // Save session, then set cookie and send response
       req.session.save(() => {
         res.cookie('theagencyiq.session', req.sessionID, { 
           secure: false, 

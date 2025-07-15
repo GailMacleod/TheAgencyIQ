@@ -5,17 +5,31 @@ import { storage } from '../storage';
 export const sessionUserMap = new Map<string, number>();
 
 export const requireAuth = async (req: any, res: Response, next: NextFunction) => {
+  console.log('🔍 AuthGuard - checking authentication:', {
+    sessionId: req.sessionID,
+    sessionUserId: req.session.userId,
+    mappedSessions: Array.from(sessionUserMap.entries()),
+    fallbackParams: {
+      sessionId: req.query.fallback_session_id,
+      userId: req.query.fallback_user_id,
+      email: req.query.fallback_user_email
+    }
+  });
+
+  // Check if session already has user ID
   if (req.session.userId) {
     req.user = { id: req.session.userId };
+    console.log('✅ Session auth successful - User ID:', req.session.userId);
     return next();
   }
   
-  // Check session mapping
+  // Check session mapping with current session ID
   const sessionId = req.sessionID;
   const mappedUserId = sessionUserMap.get(sessionId);
   
   if (mappedUserId) {
     req.user = { id: mappedUserId };
+    console.log('✅ Session mapping auth successful - User ID:', mappedUserId);
     return next();
   }
   
@@ -30,6 +44,7 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     
     if (fallbackMappedUserId) {
       req.user = { id: fallbackMappedUserId };
+      console.log('✅ Fallback session mapping auth successful - User ID:', fallbackMappedUserId);
       return next();
     }
     
@@ -37,10 +52,12 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     const userId = parseInt(fallbackUserId);
     if (userId === 2 && fallbackUserEmail === 'gailm@macleodglba.com.au') {
       req.user = { id: userId };
+      console.log('✅ Direct fallback auth successful - User ID:', userId);
       return next();
     }
   }
   
+  console.log('❌ Authentication failed - no valid session found');
   return res.status(401).json({ message: 'Not authenticated', redirectTo: '/login' });
 };
 

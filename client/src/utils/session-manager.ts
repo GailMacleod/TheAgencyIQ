@@ -169,40 +169,11 @@ class SessionManager {
 
     const response = await fetch(requestUrl, requestOptions);
 
-    // If we get a 401, try to re-establish session once
-    if (response.status === 401 && !options.headers?.['X-Retry-Session']) {
-      console.log('🔄 Session expired, re-establishing...');
-      this.sessionInfo = null;
-      this.sessionPromise = null;
-      
-      await this.establishSession();
-      
-      // Refresh the stored session information
-      const newSessionId = localStorage.getItem('aiq_session_id');
-      const newUserId = localStorage.getItem('aiq_user_id');
-      const newUserEmail = localStorage.getItem('aiq_user_email');
-      
-      const retryHeaders: HeadersInit = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-Retry-Session': 'true',
-        ...options.headers,
-      };
-      
-      // Create retry URL with query parameters
-      let retryUrl = url;
-      if (newSessionId && newUserId && newUserEmail) {
-        const retryUrlObj = new URL(url, window.location.origin);
-        retryUrlObj.searchParams.set('fallback_session_id', newSessionId);
-        retryUrlObj.searchParams.set('fallback_user_id', newUserId);
-        retryUrlObj.searchParams.set('fallback_user_email', newUserEmail);
-        retryUrl = retryUrlObj.toString();
-      }
-      
-      return fetch(retryUrl, {
-        ...requestOptions,
-        headers: retryHeaders,
-      });
+    // If we get a 401, redirect to login instead of infinite loop
+    if (response.status === 401) {
+      console.log('Authentication failed - redirecting to login');
+      window.location.href = '/login';
+      return response;
     }
 
     return response;
