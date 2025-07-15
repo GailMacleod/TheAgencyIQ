@@ -60,7 +60,7 @@ class ComprehensiveSystemTest {
   }
 
   async testSessionPersistence() {
-    console.log('🔍 Test 2: Session Persistence');
+    console.log('🔍 Test 2: Session Persistence - NO NEW SESSION IDS');
     try {
       // Establish session
       const sessionResponse = await axios.post(`${BASE_URL}/api/establish-session`, {
@@ -69,26 +69,52 @@ class ComprehensiveSystemTest {
       }, { timeout: 30000 });
 
       if (sessionResponse.status === 200) {
-        // Extract signed session cookie
-        const cookieHeader = sessionResponse.headers['set-cookie'];
-        const signedCookie = cookieHeader?.find(cookie => cookie.includes('s%3A'));
+        const originalSessionId = sessionResponse.data.sessionId;
+        console.log(`📋 Original Session ID: ${originalSessionId}`);
         
-        if (signedCookie) {
-          const sessionCookie = signedCookie.split(';')[0];
+        // Extract session cookie (prefer signed format)
+        const cookieHeader = sessionResponse.headers['set-cookie'];
+        let sessionCookie = cookieHeader?.find(cookie => cookie.includes('theagencyiq.session=s%3A'));
+        
+        // If no signed cookie found, try unsigned
+        if (!sessionCookie) {
+          sessionCookie = cookieHeader?.find(cookie => cookie.includes('theagencyiq.session=') && !cookie.includes('s%3A'));
+        }
+        
+        if (sessionCookie) {
+          const cookie = sessionCookie.split(';')[0];
+          console.log(`📋 Using cookie: ${cookie}`);
           
-          // Test session persistence
+          // Test session persistence - should use SAME session ID
           const userResponse = await axios.get(`${BASE_URL}/api/user`, {
-            headers: { 'Cookie': sessionCookie },
+            headers: { 'Cookie': cookie },
             timeout: 30000
           });
 
           if (userResponse.status === 200) {
-            this.addResult('Session Persistence', 'PASSED', `User: ${userResponse.data.email}`);
+            // Check session debug endpoint to verify session ID consistency
+            const debugResponse = await axios.get(`${BASE_URL}/api/session-debug`, {
+              headers: { 'Cookie': cookie },
+              timeout: 30000
+            });
+            
+            if (debugResponse.status === 200) {
+              const sessionId = debugResponse.data.sessionID;
+              console.log(`📋 Debug Session ID: ${sessionId}`);
+              
+              if (sessionId === originalSessionId) {
+                this.addResult('Session Persistence', 'PASSED', `Session ID consistent: ${sessionId}, User: ${userResponse.data.email}`);
+              } else {
+                this.addResult('Session Persistence', 'FAILED', `Session ID changed! Original: ${originalSessionId}, New: ${sessionId}`);
+              }
+            } else {
+              this.addResult('Session Persistence', 'FAILED', `Debug endpoint failed: ${debugResponse.status}`);
+            }
           } else {
             this.addResult('Session Persistence', 'FAILED', `User endpoint failed: ${userResponse.status}`);
           }
         } else {
-          this.addResult('Session Persistence', 'FAILED', 'No signed cookie found');
+          this.addResult('Session Persistence', 'FAILED', 'No session cookie found');
         }
       } else {
         this.addResult('Session Persistence', 'FAILED', `Session establishment failed: ${sessionResponse.status}`);

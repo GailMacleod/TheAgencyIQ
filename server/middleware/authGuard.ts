@@ -7,25 +7,10 @@ export const sessionUserMap = new Map<string, number>();
 export const requireAuth = async (req: any, res: Response, next: NextFunction) => {
   console.log(`🔍 AuthGuard check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
   
-  // CRITICAL: Check for Authorization header first (bypasses broken cookie system)
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer session:')) {
-    const sessionId = authHeader.replace('Bearer session:', '');
-    console.log(`🔧 Using Authorization header with session: ${sessionId}`);
-    
-    // Check if this session has a mapping
-    const mappedUserId = sessionUserMap.get(sessionId);
-    if (mappedUserId) {
-      console.log(`✅ Authorization header authentication successful for User ID: ${mappedUserId}`);
-      req.session.userId = mappedUserId;
-      const user = await storage.getUser(mappedUserId);
-      if (user) {
-        req.session.userEmail = user.email;
-        req.session.subscriptionPlan = user.subscriptionPlan;
-        req.session.subscriptionActive = user.subscriptionActive;
-        return next();
-      }
-    }
+  // Check if session already has user ID
+  if (req.session?.userId) {
+    console.log(`✅ AuthGuard passed - User ID: ${req.session.userId}`);
+    return next();
   }
   
   // SECURITY: Block all other unauthorized headers and fake tokens
@@ -81,26 +66,13 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     }
   }
   
-  // Extract session ID from cookie if available (check both signed and unsigned formats)
+  // CRITICAL: Also check for session mapping by cookie session ID
   const cookieHeader = req.headers.cookie || '';
-  let sessionMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
-  
-  // If no signed cookie found, check for unsigned cookie
-  if (!sessionMatch) {
-    const unsignedMatch = cookieHeader.match(/theagencyiq\.session\.unsigned=([^;]+)/);
-    if (unsignedMatch) {
-      sessionMatch = unsignedMatch;
-    }
-  }
-  
-  if (sessionMatch) {
-    let cookieSessionId = sessionMatch[1];
-    // Handle URL encoded signed cookie
-    if (cookieSessionId.startsWith('s%3A')) {
-      cookieSessionId = decodeURIComponent(cookieSessionId).replace('s:', '').split('.')[0];
-    }
+  const sessionCookieMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
+  if (sessionCookieMatch) {
+    const cookieSessionId = sessionCookieMatch[1];
+    console.log(`🔍 Found session cookie: ${cookieSessionId}`);
     
-    // Check if this cookie session ID has a mapping
     const cookieMappedUserId = sessionUserMap.get(cookieSessionId);
     if (cookieMappedUserId) {
       console.log(`🔄 Using cookie session mapping for User ID: ${cookieMappedUserId}`);
@@ -130,6 +102,8 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
       }
     }
   }
+  
+  // This section is already handled above in the cookie parsing section
   
   // SECURITY: Only allow authenticated sessions - no automatic establishment
   // Remove default session establishment to enforce strict authentication

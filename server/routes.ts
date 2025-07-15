@@ -419,19 +419,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // SESSION DEBUGGING ENDPOINT - To understand session persistence issues
   app.get('/api/session-debug', (req: any, res) => {
-    const cookies = req.headers.cookie || '';
-    const sessionFromStore = req.session;
-    
-    res.json({
-      sessionID: req.sessionID,
-      sessionFromReq: sessionFromStore,
-      userId: sessionFromStore?.userId,
-      userEmail: sessionFromStore?.userEmail,
-      cookieHeader: cookies,
-      sessionData: sessionFromStore,
-      sessionExists: !!sessionFromStore,
-      userIdExists: !!sessionFromStore?.userId
-    });
+    try {
+      const cookies = req.headers.cookie || '';
+      const sessionFromStore = req.session;
+      
+      res.json({
+        sessionID: req.sessionID,
+        userId: sessionFromStore?.userId,
+        userEmail: sessionFromStore?.userEmail,
+        cookieHeader: cookies,
+        sessionExists: !!sessionFromStore,
+        userIdExists: !!sessionFromStore?.userId,
+        hasSessionData: !!sessionFromStore
+      });
+    } catch (error) {
+      console.error('Session debug error:', error);
+      res.status(500).json({
+        error: 'Session debug failed',
+        message: error.message
+      });
+    }
   });
   
   // Add global error handler for debugging 500 errors

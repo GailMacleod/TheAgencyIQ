@@ -30,46 +30,6 @@ async function startServer() {
   
   // Cookie parser middleware with signed cookies - MUST be before session middleware
   app.use(cookieParser('agencyiq-session-secret-key'));
-  
-  // Import session mapping from routes  
-  let sessionUserMap: Map<string, any> | null = null;
-  
-  // Session restoration middleware
-  app.use((req: any, res, next) => {
-    // Get session map from app locals (set by routes)
-    if (!sessionUserMap && app.locals.sessionUserMap) {
-      sessionUserMap = app.locals.sessionUserMap;
-    }
-    
-    // Extract session ID from cookie
-    const cookieHeader = req.headers.cookie;
-    console.log('🔍 Cookie header received:', cookieHeader);
-    
-    if (cookieHeader && sessionUserMap) {
-      // Look for session cookie (both signed and unsigned formats)
-      const sessionCookie = cookieHeader.split(';').find(c => c.trim().startsWith('theagencyiq.session='));
-      if (sessionCookie) {
-        const sessionId = sessionCookie.split('=')[1];
-        console.log('🔍 Extracted session ID from cookie:', sessionId);
-        
-        const mappedUser = sessionUserMap.get(sessionId);
-        if (mappedUser) {
-          console.log('🔍 Found mapped user:', mappedUser);
-          req.session = req.session || {};
-          req.session.userId = mappedUser.userId;
-          req.session.userEmail = mappedUser.userEmail;
-          req.session.id = sessionId;
-          req.sessionID = sessionId;
-          
-          // CRITICAL: Force session save to ensure persistence
-          req.session.save((err) => {
-            if (err) console.error('Session restore save error:', err);
-          });
-        }
-      }
-    }
-    next();
-  });
 
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
@@ -242,16 +202,42 @@ async function startServer() {
       secure: false,  // CRITICAL: Set to false for development
       maxAge: sessionTtl,
       httpOnly: false,      // Allow frontend access
-      sameSite: 'lax',  // CRITICAL: Set to 'lax' for same-origin requests
+      sameSite: 'none',  // CRITICAL: Set to 'none' for cross-origin requests
       path: '/',
       domain: undefined,    // Let browser set domain automatically
       signed: false        // Set to false for development - simplify cookie handling
     },
     rolling: true,    // Extend session on activity
     proxy: false,  // Disable proxy mode to prevent automatic secure cookie enforcement
-    genid: () => {
-      // Generate custom session IDs that work with our direct mapping
-      return crypto.randomBytes(16).toString('hex');
+    genid: (req) => {
+      // CRITICAL: Only generate new session ID if no existing cookie
+      const existingCookie = req.headers.cookie;
+      if (existingCookie) {
+        const sessionCookie = existingCookie.split(';').find(c => c.trim().startsWith('theagencyiq.session='));
+        if (sessionCookie) {
+          let existingSessionId = sessionCookie.split('=')[1];
+          
+          // Handle signed cookie format (s%3A...)
+          if (existingSessionId.startsWith('s%3A')) {
+            // Extract the actual session ID from signed cookie
+            try {
+              const decoded = decodeURIComponent(existingSessionId);
+              const sessionIdPart = decoded.split('.')[0].replace('s:', '');
+              console.log('🔍 Using existing signed session ID:', sessionIdPart);
+              return sessionIdPart;
+            } catch (error) {
+              console.error('Error decoding signed session ID:', error);
+            }
+          } else {
+            console.log('🔍 Using existing unsigned session ID:', existingSessionId);
+            return existingSessionId;
+          }
+        }
+      }
+      // Generate new session ID only if no existing cookie
+      const newSessionId = crypto.randomBytes(16).toString('hex');
+      console.log('🔍 Generated new session ID:', newSessionId);
+      return newSessionId;
     }
   }));
 
@@ -272,7 +258,7 @@ async function startServer() {
         res.cookie('theagencyiq.session', req.sessionID, {
           httpOnly: false,
           secure: false,
-          sameSite: 'lax',
+          sameSite: 'none',
           maxAge: 24 * 60 * 60 * 1000,
           path: '/',
           signed: false   // Development mode - simplified cookie handling
@@ -287,7 +273,7 @@ async function startServer() {
         res.cookie('theagencyiq.session', req.sessionID, {
           httpOnly: false,
           secure: false,
-          sameSite: 'lax',
+          sameSite: 'none',
           maxAge: 24 * 60 * 60 * 1000,
           path: '/',
           signed: false   // Development mode - simplified cookie handling
