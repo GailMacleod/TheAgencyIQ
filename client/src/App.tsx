@@ -128,6 +128,7 @@ function Router() {
 function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
 
   // Initialize Google Analytics when app loads
   useEffect(() => {
@@ -151,7 +152,9 @@ function App() {
           queryClient.invalidateQueries();
           console.log('🔄 Queries invalidated after session establishment');
           
-          // Session will be handled automatically by browser cookies
+          // Mark session as ready
+          setSessionReady(true);
+          
         }, 100);
         
       } catch (error) {
@@ -285,6 +288,18 @@ function App() {
       });
     }
   }, []);
+
+  // Don't render app until session is ready to prevent 401 errors
+  if (!sessionReady) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Establishing session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

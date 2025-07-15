@@ -180,9 +180,25 @@ async function startServer() {
   
   console.log('✅ Session store initialized successfully');
 
-  // CORS middleware with proper credentials support
+  // CORS middleware with exact client URL and credentials support
   app.use(cors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or Postman)
+      if (!origin) return callback(null, true);
+      
+      // Allow same-origin requests
+      if (origin === 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev') {
+        return callback(null, true);
+      }
+      
+      // Allow localhost for development
+      if (origin.startsWith('http://localhost')) {
+        return callback(null, true);
+      }
+      
+      // Deny all other origins
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Source', 'X-Retry-Session', 'Cookie'],
@@ -199,12 +215,12 @@ async function startServer() {
     saveUninitialized: false,  // CRITICAL: Set to false to prevent unnecessary sessions
     name: 'theagencyiq.session',
     cookie: { 
-      secure: false,       // CRITICAL: Set to false for development
+      secure: false,       // CRITICAL: Set to false for Replit development environment
       maxAge: sessionTtl,
       httpOnly: false,     // Allow frontend access
-      sameSite: 'lax',     // CRITICAL: Set to 'lax' for same-site requests
+      sameSite: 'lax',     // CRITICAL: Set to 'lax' for same-site requests on Replit
       path: '/',
-      domain: undefined,   // Let browser set domain automatically
+      domain: null,        // Set to null as specified
       signed: false        // Disable signed cookies to avoid cookieParser secret requirement
     },
     rolling: true,    // Extend session on activity
@@ -293,7 +309,6 @@ async function startServer() {
 
   // Beacon.js endpoint - OVERRIDE 403 ERROR - MUST BE FIRST
   app.get('/public/js/beacon.js', (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'application/javascript');
     res.send('console.log("Beacon loaded");');
   });

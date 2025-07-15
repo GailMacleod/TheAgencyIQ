@@ -2626,7 +2626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Force cookie to be set in response
         res.cookie('theagencyiq.session', req.sessionID, {
           httpOnly: false, // Allow JavaScript access
-          secure: false, // Development mode
+          secure: false, // Replit development environment
           sameSite: 'lax',
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
           path: '/'
@@ -2659,7 +2659,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Manifest.json route with public access
   app.get('/manifest.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.json({
       name: "The AgencyIQ",
@@ -11780,7 +11779,6 @@ export function addNotificationEndpoints(app: any) {
 
       // Set CORS headers
       res.set({
-        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Content-Type': 'video/mp4'

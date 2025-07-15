@@ -13,20 +13,8 @@ class ApiClient {
   async makeRequest(url: string, options: RequestInit = {}): Promise<Response> {
     const fullUrl = `${this.baseURL}${url}`;
     
-    // CRITICAL: Use proper credentials for cookie transmission
-    const requestOptions: RequestInit = {
-      ...options,
-      credentials: 'include',  // CRITICAL: Include credentials for cookie transmission
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...options.headers
-      }
-    };
-    
-    console.log(`🔧 API Request to ${url} with credentials: include`);
-    
-    return await fetch(fullUrl, requestOptions);
+    // Use session manager's authenticated request method which includes fallback headers
+    return await sessionManager.makeAuthenticatedRequest(fullUrl, options);
   }
   
   private getManualCookie(): string | null {

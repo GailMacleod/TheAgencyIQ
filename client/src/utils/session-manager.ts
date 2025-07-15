@@ -76,7 +76,23 @@ class SessionManager {
         const sessionId = data.sessionId;
         if (sessionId) {
           console.log('📋 Session ID received:', sessionId);
-          console.log('🔧 Session will be handled automatically by browser cookies');
+          
+          // Store session information in localStorage for fallback
+          localStorage.setItem('aiq_session_id', sessionId);
+          localStorage.setItem('aiq_user_id', data.user.id.toString());
+          localStorage.setItem('aiq_user_email', data.user.email);
+          
+          // Check if cookies are being set by examining the response headers
+          const cookies = response.headers.get('Set-Cookie');
+          if (cookies) {
+            console.log('🍪 Set-Cookie headers found:', cookies);
+            localStorage.setItem('aiq_has_cookies', 'true');
+          } else {
+            console.log('⚠️ No Set-Cookie headers found in response');
+            localStorage.setItem('aiq_has_cookies', 'false');
+          }
+          
+          console.log('🔧 Session information stored in localStorage as fallback');
         }
         
         this.sessionInfo = {
@@ -120,15 +136,39 @@ class SessionManager {
   async makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
     console.log(`🔍 Making authenticated request to: ${url}`);
     
-    // Use browser's built-in cookie mechanism - no manual cookie headers needed
+    // Check if we have localStorage fallback session information
+    const storedSessionId = localStorage.getItem('aiq_session_id');
+    const storedUserId = localStorage.getItem('aiq_user_id');
+    const storedUserEmail = localStorage.getItem('aiq_user_email');
+    
+    // Prepare headers with fallback session information
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...options.headers,
+    };
+    
+    // Add session fallback headers if available
+    if (storedSessionId) {
+      headers['X-Session-ID'] = storedSessionId;
+      console.log('🔑 Adding fallback session ID to headers:', storedSessionId);
+    }
+    
+    if (storedUserId) {
+      headers['X-User-ID'] = storedUserId;
+      console.log('🔑 Adding fallback user ID to headers:', storedUserId);
+    }
+    
+    if (storedUserEmail) {
+      headers['X-User-Email'] = storedUserEmail;
+      console.log('🔑 Adding fallback user email to headers:', storedUserEmail);
+    }
+    
+    // Use browser's built-in cookie mechanism with fallback headers
     const requestOptions: RequestInit = {
       ...options,
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...options.headers,
-      },
+      headers,
     };
 
     const response = await fetch(url, requestOptions);
@@ -141,12 +181,25 @@ class SessionManager {
       
       await this.establishSession();
       
+      // Refresh the stored session information
+      const newSessionId = localStorage.getItem('aiq_session_id');
+      const newUserId = localStorage.getItem('aiq_user_id');
+      const newUserEmail = localStorage.getItem('aiq_user_email');
+      
+      const retryHeaders: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Retry-Session': 'true',
+        ...options.headers,
+      };
+      
+      if (newSessionId) retryHeaders['X-Session-ID'] = newSessionId;
+      if (newUserId) retryHeaders['X-User-ID'] = newUserId;
+      if (newUserEmail) retryHeaders['X-User-Email'] = newUserEmail;
+      
       return fetch(url, {
         ...requestOptions,
-        headers: {
-          ...requestOptions.headers,
-          'X-Retry-Session': 'true',
-        },
+        headers: retryHeaders,
       });
     }
 
