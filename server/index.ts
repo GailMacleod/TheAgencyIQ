@@ -182,7 +182,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Simple session configuration with frontend access
+  // Simple session configuration with frontend access - NO SIGNING
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -194,7 +194,8 @@ async function startServer() {
       maxAge: sessionTtl,
       httpOnly: false,  // Allow frontend access
       sameSite: 'lax',
-      path: '/'
+      path: '/',
+      signed: false     // CRITICAL: Don't sign cookies for frontend access
     },
     rolling: false,
     proxy: true,

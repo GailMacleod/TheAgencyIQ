@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { storage } from '../storage';
 
 // Direct session mapping system - bypasses complex middleware issues
-const sessionUserMap = new Map<string, number>();
+export const sessionUserMap = new Map<string, number>();
 
 export const requireAuth = async (req: any, res: Response, next: NextFunction) => {
   console.log(`🔍 AuthGuard check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
