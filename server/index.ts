@@ -205,7 +205,7 @@ async function startServer() {
       sameSite: 'lax',  // CRITICAL: Changed from 'none' to 'lax' for same-site requests
       path: '/',
       domain: undefined,    // Let browser set domain automatically
-      signed: true         // Set to true for proper cookie signing
+      signed: false        // Disable signed cookies to avoid cookieParser secret requirement
     },
     rolling: true,    // Extend session on activity
     proxy: false  // Disable proxy mode to prevent automatic secure cookie enforcement

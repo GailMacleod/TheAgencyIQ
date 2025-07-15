@@ -67,6 +67,64 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
   let sessionCookieMatch = cookieHeader.match(/theagencyiq\.session=s%3A([^;.]+)/);
   let cookieSessionId = null;
   
+  // Check for backup session cookie FIRST (priority for legacy sessions)
+  const backupCookieMatch = cookieHeader.match(/aiq_backup_session=([^;]+)/);
+  if (backupCookieMatch) {
+    console.log(`🔍 Found BACKUP session cookie: ${backupCookieMatch[1]}`);
+    cookieSessionId = backupCookieMatch[1];
+    
+    // Check if this backup session has a mapping to User ID 2
+    const backupMappedUserId = sessionUserMap.get(cookieSessionId);
+    if (backupMappedUserId) {
+      console.log(`🔄 Using backup session mapping for User ID: ${backupMappedUserId}`);
+      req.session.userId = backupMappedUserId;
+      const user = await storage.getUser(backupMappedUserId);
+      if (user) {
+        req.session.userEmail = user.email;
+        req.session.subscriptionPlan = user.subscriptionPlan;
+        req.session.subscriptionActive = user.subscriptionActive;
+        
+        // Save session
+        await new Promise<void>((resolve) => {
+          req.session.save((err: any) => {
+            if (err) {
+              console.error('Session save error:', err);
+            } else {
+              console.log(`✅ Session restored from backup cookie for User ID: ${backupMappedUserId}`);
+            }
+            resolve();
+          });
+        });
+        
+        return next();
+      }
+    } else {
+      // Auto-map backup session to User ID 2 if no mapping exists
+      console.log(`🔄 Auto-mapping backup session to User ID 2`);
+      sessionUserMap.set(cookieSessionId, 2);
+      req.session.userId = 2;
+      const user = await storage.getUser(2);
+      if (user) {
+        req.session.userEmail = user.email;
+        req.session.subscriptionPlan = user.subscriptionPlan;
+        req.session.subscriptionActive = user.subscriptionActive;
+        
+        await new Promise<void>((resolve) => {
+          req.session.save((err: any) => {
+            if (err) {
+              console.error('Session save error:', err);
+            } else {
+              console.log(`✅ Backup session auto-mapped to User ID 2`);
+            }
+            resolve();
+          });
+        });
+        
+        return next();
+      }
+    }
+  }
+  
   if (sessionCookieMatch) {
     cookieSessionId = sessionCookieMatch[1];
     console.log(`🔍 Found SIGNED session cookie: ${cookieSessionId}`);

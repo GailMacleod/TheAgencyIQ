@@ -126,6 +126,9 @@ function Router() {
 }
 
 function App() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   // Initialize Google Analytics when app loads
   useEffect(() => {
     // Verify required environment variable is present
@@ -259,6 +262,10 @@ function App() {
           headers: {
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            email: 'gailm@macleodglba.com.au',
+            phone: '+61424835189'
+          }),
           signal: controller.signal,
         });
         

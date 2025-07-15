@@ -150,13 +150,18 @@ function addSystemHealthEndpoints(app: Express) {
         });
       });
       
-      // CRITICAL: Also store session mapping with signed cookie format for browser compatibility
-      const signedSessionId = `s%3A${req.sessionID}`;
-      sessionUserMap.set(signedSessionId, user.id);
-      console.log(`📝 Signed session mapping created: ${signedSessionId} -> User ID ${user.id}`);
+      // CRITICAL: Store session mapping for browser compatibility
+      sessionUserMap.set(req.sessionID, user.id);
+      console.log(`📝 Session mapping created: ${req.sessionID} -> User ID ${user.id}`);
       
       // Force session to be marked as modified
       req.session.touch();
+      
+      // Force cookie to be set in response headers with proper format
+      if (!res.headersSent) {
+        res.setHeader('Set-Cookie', `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=${24 * 60 * 60}`);
+        console.log(`🔧 Manual cookie set: theagencyiq.session=${req.sessionID}`);
+      }
       
       // Check if session was saved properly
       console.log('📋 Session data after save:', {
