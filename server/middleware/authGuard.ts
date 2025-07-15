@@ -22,33 +22,12 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     fallbackParams
   });
   
-  // Method 1: Check req.session.userId
-  if (sessionUserId) {
-    req.user = { id: sessionUserId };
-    console.log('✅ Session auth successful - User ID:', sessionUserId);
+  if (req.session.userId) {
+    req.user = { id: req.session.userId };
     return next();
+  } else {
+    return res.status(401).json({ message: 'Not authenticated', redirectTo: '/login' });
   }
-  
-  // Method 2: Check session mapping
-  if (sessionId && sessionUserMap.has(sessionId)) {
-    const userId = sessionUserMap.get(sessionId);
-    req.user = { id: userId };
-    console.log('✅ Session mapping auth successful - User ID:', userId);
-    return next();
-  }
-  
-  // Method 3: Check fallback authentication parameters
-  if (fallbackParams.sessionId && fallbackParams.userId && fallbackParams.email) {
-    const userId = parseInt(fallbackParams.userId);
-    if (!isNaN(userId)) {
-      req.user = { id: userId };
-      console.log('✅ Direct fallback auth successful - User ID:', userId);
-      return next();
-    }
-  }
-  
-  console.log('❌ Authentication failed - no valid session found');
-  return res.status(401).json({ message: 'Not authenticated' });
 };
 
 export const setSessionMapping = (sessionId: string, userId: number) => {

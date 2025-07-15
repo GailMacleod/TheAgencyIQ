@@ -136,47 +136,18 @@ class SessionManager {
   async makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
     console.log(`🔍 Making authenticated request to: ${url}`);
     
-    // Check if we have localStorage fallback session information
-    const storedSessionId = localStorage.getItem('aiq_session_id');
-    const storedUserId = localStorage.getItem('aiq_user_id');
-    const storedUserEmail = localStorage.getItem('aiq_user_email');
-    
-    // Prepare headers with fallback session information
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...options.headers,
-    };
-    
-    // Create URL with query parameters for fallback authentication
-    let requestUrl = url;
-    if (storedSessionId && storedUserId && storedUserEmail) {
-      const urlObj = new URL(url, window.location.origin);
-      urlObj.searchParams.set('fallback_session_id', storedSessionId);
-      urlObj.searchParams.set('fallback_user_id', storedUserId);
-      urlObj.searchParams.set('fallback_user_email', storedUserEmail);
-      requestUrl = urlObj.toString();
-      console.log('🔑 Adding fallback auth via query params:', { storedSessionId, storedUserId, storedUserEmail });
-      console.log('🔑 Final request URL:', requestUrl);
-    } else {
-      console.log('⚠️ No fallback auth data available:', { storedSessionId, storedUserId, storedUserEmail });
-    }
-    
-    // Use browser's built-in cookie mechanism with fallback query params
+    // Use browser's built-in cookie mechanism
     const requestOptions: RequestInit = {
       ...options,
       credentials: 'include',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...options.headers,
+      },
     };
 
-    const response = await fetch(requestUrl, requestOptions);
-
-    // If we get a 401, log but don't redirect to prevent loop
-    if (response.status === 401) {
-      console.log('Authentication failed - session not persisting');
-      return response;
-    }
-
+    const response = await fetch(url, requestOptions);
     return response;
   }
 

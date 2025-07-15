@@ -25,14 +25,12 @@ async function startServer() {
   
   const app = express();
 
-  // CRITICAL: Set trust proxy to 0 for session fixes
   app.set('trust proxy', 0);
   
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   
-  // Add cookie parser with secret key before session
   app.use(cookieParser('secret'));
   
   // CORS configuration - MUST be before routes

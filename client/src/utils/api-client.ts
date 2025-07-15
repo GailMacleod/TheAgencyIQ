@@ -62,7 +62,7 @@ class ApiClient {
   }
 
   async get(url: string, options: RequestInit = {}): Promise<Response> {
-    return this.makeRequest(url, { ...options, method: 'GET' });
+    return this.makeRequest(url, { ...options, method: 'GET', credentials: 'include' });
   }
 
   async post(url: string, data?: any, options: RequestInit = {}): Promise<Response> {
@@ -70,6 +70,7 @@ class ApiClient {
       ...options,
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
+      credentials: 'include',
     });
   }
 
@@ -78,6 +79,7 @@ class ApiClient {
       ...options,
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
+      credentials: 'include',
     });
   }
 
@@ -86,11 +88,12 @@ class ApiClient {
       ...options,
       method: 'PATCH',
       body: data ? JSON.stringify(data) : undefined,
+      credentials: 'include',
     });
   }
 
   async delete(url: string, options: RequestInit = {}): Promise<Response> {
-    return this.makeRequest(url, { ...options, method: 'DELETE' });
+    return this.makeRequest(url, { ...options, method: 'DELETE', credentials: 'include' });
   }
 }
 

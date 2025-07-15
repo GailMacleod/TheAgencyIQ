@@ -118,12 +118,7 @@ function addSystemHealthEndpoints(app: Express) {
       // Set session userId
       req.session.userId = user.id;
       
-      // Save session, then set cookie and send response
       req.session.save(() => {
-        // Force Set-Cookie header to ensure browser receives it
-        res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Expose-Headers', 'Set-Cookie');
-        res.header('Set-Cookie', `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax; HttpOnly=false`);
         res.cookie('theagencyiq.session', req.sessionID, { 
           secure: false, 
           sameSite: 'lax', 
@@ -134,9 +129,7 @@ function addSystemHealthEndpoints(app: Express) {
         res.json({ 
           sessionEstablished: true,
           user: {
-            id: user.id,
-            email: user.email,
-            phone: user.phone || user.email
+            id: user.id
           },
           sessionId: req.sessionID
         });
