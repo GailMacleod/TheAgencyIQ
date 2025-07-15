@@ -17,7 +17,7 @@ async function testSessionEstablishment() {
     console.log('Status:', response.status);
     console.log('Data:', response.data);
     
-    if (response.status === 200 && response.data.success) {
+    if (response.status === 200 && response.data.sessionEstablished) {
       console.log('✅ Session establishment successful');
       console.log('User:', response.data.user.email);
       console.log('Session ID:', response.data.sessionId);

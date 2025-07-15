@@ -1,0 +1,71 @@
+{
+  "timestamp": "2025-07-15T07:29:53.756Z",
+  "duration": 3.613554332,
+  "totalTests": 10,
+  "successCount": 7,
+  "successRate": 70,
+  "results": [
+    {
+      "test": "Session Management",
+      "status": "PASSED",
+      "message": "Session establishment and persistence working",
+      "timestamp": "2025-07-15T07:29:50.752Z"
+    },
+    {
+      "test": "User Creation & Signup",
+      "status": "FAILED",
+      "message": "Signup failed: User not found",
+      "timestamp": "2025-07-15T07:29:50.879Z"
+    },
+    {
+      "test": "User Authentication",
+      "status": "PASSED",
+      "message": "User login system operational",
+      "timestamp": "2025-07-15T07:29:50.962Z"
+    },
+    {
+      "test": "Subscription System",
+      "status": "PASSED",
+      "message": "Subscription system operational",
+      "timestamp": "2025-07-15T07:29:51.082Z"
+    },
+    {
+      "test": "Platform Connections",
+      "status": "PASSED",
+      "message": "5 platforms operational",
+      "timestamp": "2025-07-15T07:29:51.481Z"
+    },
+    {
+      "test": "Post Publishing",
+      "status": "FAILED",
+      "message": "Post creation failed: 400",
+      "timestamp": "2025-07-15T07:29:51.642Z"
+    },
+    {
+      "test": "Quota Management",
+      "status": "PASSED",
+      "message": "Quota tracking system operational",
+      "timestamp": "2025-07-15T07:29:51.764Z"
+    },
+    {
+      "test": "Multi-User Scalability",
+      "status": "FAILED",
+      "message": "Low success rate: 0.0%",
+      "timestamp": "2025-07-15T07:29:53.087Z"
+    },
+    {
+      "test": "Error Handling",
+      "status": "PASSED",
+      "message": "Security controls working properly",
+      "timestamp": "2025-07-15T07:29:53.094Z"
+    },
+    {
+      "test": "Memory & Performance",
+      "status": "PASSED",
+      "message": "7ms average response time",
+      "timestamp": "2025-07-15T07:29:53.754Z"
+    }
+  ],
+  "errors": [],
+  "status": "NEEDS_WORK"
+}

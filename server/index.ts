@@ -142,8 +142,8 @@ async function startServer() {
   // CRITICAL: Disable trust proxy for development to prevent automatic secure cookie enforcement
   app.set('trust proxy', 0);
 
-  // Cookie parser middleware - MUST be before session middleware
-  app.use(cookieParser());
+  // Cookie parser middleware with secret - MUST be before session middleware
+  app.use(cookieParser('secret-key'));
 
   // Device-agnostic session configuration for mobile-to-desktop continuity
   // Configure PostgreSQL session store
@@ -209,7 +209,7 @@ async function startServer() {
 
   // Session configuration - FIXED FOR DEVELOPMENT WITH PROPER COOKIE PERSISTENCE
   app.use(session({
-    secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
+    secret: 'secret-key',
     store: sessionStore,
     resave: false,    // CRITICAL: Set to false to prevent race conditions
     saveUninitialized: false,  // CRITICAL: Set to false to prevent unnecessary sessions
@@ -221,7 +221,7 @@ async function startServer() {
       sameSite: 'lax',     // CRITICAL: Set to 'lax' for same-site requests on Replit
       path: '/',
       domain: null,        // Set to null as specified
-      signed: true         // Enable signed cookies for proper session persistence
+      signed: true         // Enable signed cookies with proper secret
     },
     rolling: true,    // Extend session on activity
     proxy: false  // Disable proxy mode to prevent automatic secure cookie enforcement

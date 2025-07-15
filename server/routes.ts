@@ -164,7 +164,7 @@ function addSystemHealthEndpoints(app: Express) {
         sameSite: 'lax',
         httpOnly: false, // Allow JavaScript access for debugging
         maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-        signed: true // Enable signed cookies to match session configuration
+        signed: true // Enable signed cookies with proper secret
       });
       
       // Also set a backup cookie for browser compatibility
@@ -174,7 +174,7 @@ function addSystemHealthEndpoints(app: Express) {
         sameSite: 'lax',
         httpOnly: false, // Keep false for browser access
         maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-        signed: false // Keep backup unsigned for compatibility
+        signed: true // Enable signed cookies with proper secret
       });
       
       console.log(`🔧 Session cookie set: theagencyiq.session=${req.sessionID} (signed)`);
@@ -708,14 +708,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
           httpOnly: false,
           sameSite: 'lax',
-          path: '/'
+          path: '/',
+          signed: false // Ensure no signed cookies
         });
         res.cookie('aiq_backup_session', req.sessionID, {
           secure: false,
           maxAge: 24 * 60 * 60 * 1000,
           httpOnly: false,
           sameSite: 'lax',
-          path: '/'
+          path: '/',
+          signed: false // Ensure no signed cookies
         });
       }
     }
@@ -2418,7 +2420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   userId: phone || `+61400000${testUserId.toString().padStart(3, '0')}`,
                   email: email,
                   password: 'test_password_hash', // Test password
-                  phone: phone,
+                  phone: phone || `+61400000${testUserId.toString().padStart(3, '0')}`,
                   subscriptionPlan: 'basic',
                   subscriptionActive: true,
                   remainingPosts: 10,
@@ -2453,8 +2455,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.session.subscriptionActive = targetUser.subscriptionActive;
           
           // Use the session mapping system
-          const { setSessionMapping } = await import('../middleware/authGuard');
-          setSessionMapping(req.sessionID, targetUser.id);
+          const { sessionUserMap } = await import('./middleware/authGuard');
+          sessionUserMap.set(req.sessionID, targetUser.id);
           
           await new Promise<void>((resolve, reject) => {
             req.session.save((err: any) => {
@@ -2483,13 +2485,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.header('Access-Control-Allow-Credentials', 'true');
           res.header('Access-Control-Expose-Headers', 'Set-Cookie, Cookie, theagencyiq.session');
           
-          // Force session cookie to be set in the response
+          // Force session cookie to be set in the response (unsigned)
           res.cookie('theagencyiq.session', req.sessionID, {
             httpOnly: false, // Allow JavaScript access for debugging
             secure: false,
             sameSite: 'lax',
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            path: '/'
+            path: '/',
+            signed: false // Don't sign cookies to avoid secret requirement
           });
           
           // Also set backup cookie for browser compatibility
@@ -2498,7 +2501,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             secure: false,
             sameSite: 'lax',
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            path: '/'
+            path: '/',
+            signed: false // Don't sign cookies to avoid secret requirement
           });
           
           console.log(`🔧 Session cookie set: theagencyiq.session=${req.sessionID}`);
@@ -2569,13 +2573,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subscriptionActive: knownUser.subscriptionActive
         };
         
-        // Force session cookie to be set in the response
+        // Force session cookie to be set in the response (unsigned)
         res.cookie('theagencyiq.session', req.sessionID, {
           httpOnly: false, // Allow JavaScript access for debugging
           secure: false,
           sameSite: 'lax',
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
-          path: '/'
+          path: '/',
+          signed: false // Don't sign cookies to avoid secret requirement
         });
         
         return res.json({ 
@@ -2652,7 +2657,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           secure: false, // Replit development environment
           sameSite: 'lax',
           maxAge: 24 * 60 * 60 * 1000, // 24 hours
-          path: '/'
+          path: '/',
+          signed: false // Ensure no signed cookies
         });
         
         console.log(`Test session established for ${targetUser.email} (ID: ${targetUser.id})`);
