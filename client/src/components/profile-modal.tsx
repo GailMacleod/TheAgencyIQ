@@ -114,9 +114,12 @@ export default function ProfileModal({ isOpen, onClose, user }: ProfileModalProp
           <div>
             <Label className="text-sm font-medium text-foreground">Phone</Label>
             <Input
+              id="phone"
+              name="phone"
               type="tel"
               {...form.register('phone')}
               className="mt-2"
+              aria-label="Phone number"
             />
           </div>
           
@@ -133,10 +136,13 @@ export default function ProfileModal({ isOpen, onClose, user }: ProfileModalProp
           <div>
             <Label className="text-sm font-medium text-foreground lowercase">new password</Label>
             <Input
+              id="password"
+              name="password"
               type="password"
               placeholder="leave blank to keep current password"
               {...form.register('password')}
               className="mt-2"
+              aria-label="New password"
             />
           </div>
           

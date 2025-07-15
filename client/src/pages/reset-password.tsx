@@ -174,10 +174,13 @@ export default function ResetPassword() {
               <div>
                 <Label className="text-sm font-medium text-foreground lowercase">new password</Label>
                 <Input
+                  id="password"
+                  name="password"
                   type="password"
                   {...form.register('password')}
                   className="mt-2"
                   placeholder="Enter new password"
+                  aria-label="New password"
                 />
                 {form.formState.errors.password && (
                   <p className="text-sm text-destructive mt-1">{form.formState.errors.password.message}</p>
@@ -187,10 +190,13 @@ export default function ResetPassword() {
               <div>
                 <Label className="text-sm font-medium text-foreground lowercase">confirm password</Label>
                 <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
                   type="password"
                   {...form.register('confirmPassword')}
                   className="mt-2"
                   placeholder="Confirm new password"
+                  aria-label="Confirm new password"
                 />
                 {form.formState.errors.confirmPassword && (
                   <p className="text-sm text-destructive mt-1">{form.formState.errors.confirmPassword.message}</p>

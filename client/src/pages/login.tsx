@@ -95,10 +95,13 @@ export default function Login() {
               <div>
                 <Label className="text-sm font-medium text-foreground lowercase">phone number</Label>
                 <Input
+                  id="phone"
+                  name="phone"
                   type="tel"
                   placeholder="+61412345678"
                   {...form.register('phone')}
                   className="mt-2"
+                  aria-label="Phone number"
                 />
                 {form.formState.errors.phone && (
                   <p className="text-sm text-destructive mt-1">{form.formState.errors.phone.message}</p>
@@ -108,9 +111,12 @@ export default function Login() {
               <div>
                 <Label className="text-sm font-medium text-foreground lowercase">password</Label>
                 <Input
+                  id="password"
+                  name="password"
                   type="password"
                   {...form.register('password')}
                   className="mt-2"
+                  aria-label="Password"
                 />
                 {form.formState.errors.password && (
                   <p className="text-sm text-destructive mt-1">{form.formState.errors.password.message}</p>

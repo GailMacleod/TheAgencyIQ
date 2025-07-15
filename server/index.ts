@@ -34,6 +34,13 @@ async function startServer() {
   
   // Add cookie parser with secret key before session
   app.use(cookieParser('your-secret-key'));
+  
+  // CORS configuration - MUST be before routes
+  app.use(cors({
+    origin: true,
+    credentials: true
+  }));
+  
   // Filter out Replit-specific tracking in production
   app.use((req, res, next) => {
     // Block Replit tracking requests in production
@@ -42,13 +49,6 @@ async function startServer() {
       return res.status(204).end(); // No content, ignore silently
     }
     
-    const origin = req.headers.origin || '*';
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, X-Retry-Session');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Expose-Headers', 'Set-Cookie');
-    res.header('Vary', 'Origin, Access-Control-Request-Headers');
     res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
     
     // Production-ready CSP with frame-ancestors for embedding and Replit beacon support
