@@ -33,12 +33,6 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     });
   }
   
-  // Check if session already has user ID
-  if (req.session?.userId) {
-    console.log(`✅ AuthGuard passed - User ID: ${req.session.userId}`);
-    return next();
-  }
-  
   // Check session mapping
   const mappedUserId = sessionUserMap.get(req.sessionID);
   if (mappedUserId) {

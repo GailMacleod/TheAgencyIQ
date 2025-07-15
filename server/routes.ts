@@ -93,25 +93,49 @@ function addSystemHealthEndpoints(app: Express) {
     }
   });
 
-  // Establish session endpoint for testing
+  // Establish session endpoint for authenticated users
   app.post('/api/establish-session', async (req: any, res) => {
     try {
-      console.log('Session establishment request:', {
+      console.log('🔍 Session establishment request:', {
         body: req.body,
         sessionId: req.sessionID,
         existingUserId: req.session?.userId
       });
       
-      // Set session data in Express session
-      req.session.userId = 2;
-      req.session.userEmail = 'gailm@macleodglba.com.au';
-      req.session.subscriptionPlan = 'Professional';
-      req.session.subscriptionActive = true;
+      // Get user credentials from request body or default to User ID 2 for production
+      const { email, userId } = req.body;
+      
+      // For production, authenticate the specific user
+      let user;
+      if (userId) {
+        user = await storage.getUser(userId);
+      } else if (email) {
+        user = await storage.getUserByEmail(email);
+      } else {
+        // Default to User ID 2 for testing (gailm@macleodglba.com.au)
+        user = await storage.getUser(2);
+      }
+      
+      if (!user) {
+        console.log('❌ User not found during session establishment');
+        return res.status(401).json({ 
+          error: 'User not found',
+          message: 'Authentication required' 
+        });
+      }
+      
+      console.log(`✅ Authenticating user: ${user.email} (ID: ${user.id})`);
+      
+      // Set session data in Express session with actual user data
+      req.session.userId = user.id;
+      req.session.userEmail = user.email;
+      req.session.subscriptionPlan = user.subscriptionPlan;
+      req.session.subscriptionActive = user.subscriptionActive;
       
       // Store session in direct mapping for authGuard access
-      sessionUserMap.set(req.sessionID, 2);
+      sessionUserMap.set(req.sessionID, user.id);
       
-      console.log('Test session established for gailm@macleodglba.com.au (ID: 2)');
+      console.log(`🔐 Session established for ${user.email} (ID: ${user.id})`);
       
       // Force session save to ensure data is persisted
       await new Promise<void>((resolve, reject) => {
@@ -128,8 +152,8 @@ function addSystemHealthEndpoints(app: Express) {
       
       // CRITICAL: Also store session mapping with signed cookie format for browser compatibility
       const signedSessionId = `s%3A${req.sessionID}`;
-      sessionUserMap.set(signedSessionId, 2);
-      console.log(`📝 Signed session mapping created: ${signedSessionId} -> User ID 2`);
+      sessionUserMap.set(signedSessionId, user.id);
+      console.log(`📝 Signed session mapping created: ${signedSessionId} -> User ID ${user.id}`);
       
       // Force session to be marked as modified
       req.session.touch();
@@ -145,9 +169,9 @@ function addSystemHealthEndpoints(app: Express) {
       res.json({ 
         sessionEstablished: true,
         user: {
-          id: 2,
-          email: 'gailm@macleodglba.com.au',
-          phone: '+61424835189'
+          id: user.id,
+          email: user.email,
+          phone: user.phone || user.email
         },
         sessionId: req.sessionID
       });
