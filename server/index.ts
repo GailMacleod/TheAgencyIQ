@@ -27,7 +27,7 @@ async function startServer() {
   
   const app = express();
 
-  app.set('trust proxy', 0);
+  app.set('trust proxy', false);
   
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
@@ -145,9 +145,6 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  app.set('trust proxy', 0);
-  app.use(cookieParser('secret'));
-
   // Device-agnostic session configuration for mobile-to-desktop continuity
   // Configure PostgreSQL session store
   const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
@@ -192,6 +189,8 @@ async function startServer() {
     cookie: { 
       secure: false,
       sameSite: 'lax',
+      path: '/',
+      httpOnly: false,
       maxAge: sessionTtl,
       httpOnly: false,
       path: '/'

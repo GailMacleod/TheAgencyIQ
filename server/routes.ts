@@ -123,31 +123,50 @@ function addSystemHealthEndpoints(app: Express) {
           requiresLogin: true
         });
       }
-      
-      // Set session userId
+
+      // Set session data
       req.session.userId = user.id;
-      
-      req.session.save(() => {
-        res.cookie('theagencyiq.session', req.sessionID, { 
-          secure: false, 
-          sameSite: 'lax', 
-          path: '/', 
-          httpOnly: false 
-        });
+      req.session.userEmail = user.email;
+      req.session.subscriptionPlan = user.subscriptionPlan || user.subscription_plan || 'professional';
+      req.session.subscriptionActive = user.subscriptionActive || user.subscription_active || true;
+
+      // Set session cookie properly with correct attributes
+      res.cookie('theagencyiq.session', req.sessionID, {
+        secure: false,
+        sameSite: 'lax',
+        path: '/',
+        httpOnly: false,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+
+      // Save session and return response
+      req.session.save((err: any) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ error: 'Session save failed' });
+        }
+
+        // Store in session mapping for backup
+        sessionUserMap.set(req.sessionID, user.id);
         
-        res.json({ 
+        console.log(`✅ Session established: ${user.email} -> Session ID: ${req.sessionID}`);
+        
+        res.json({
           sessionEstablished: true,
           user: {
             id: user.id,
             email: user.email,
-            subscriptionPlan: user.subscriptionPlan
+            subscriptionPlan: user.subscriptionPlan || user.subscription_plan || 'professional'
           },
           sessionId: req.sessionID
         });
       });
     } catch (error) {
       console.error('Session establishment error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ 
+        error: 'Session establishment failed',
+        details: error.message
+      });
     }
   });
 

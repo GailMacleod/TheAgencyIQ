@@ -97,13 +97,20 @@ class SessionManager {
         console.log('User ID:', data.user?.id);
         console.log('Session ID:', sessionId);
         
-        // Store user info
+        // Store user info and session ID for localStorage fallback
         if (data.user) {
           sessionStorage.setItem('currentUser', JSON.stringify({
             id: data.user.id,
             email: data.user.email,
             phone: data.user.phone
           }));
+        }
+        
+        // Store session ID for localStorage fallback
+        if (sessionId) {
+          sessionStorage.setItem('sessionId', sessionId);
+          localStorage.setItem('sessionId', sessionId);
+          console.log('💾 Session ID stored in localStorage for fallback');
         }
         
         // Add a delay to ensure cookie is set by the browser before returning
