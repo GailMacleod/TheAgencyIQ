@@ -24,6 +24,8 @@ import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
 import { requireActiveSubscription, establishSession, requireAuth } from './middleware/subscriptionAuth';
 import { requireAuth as authGuard, requireAuthForPayment } from './middleware/authGuard';
+import authRoutes from './auth/routes';
+import stripeRoutes from './stripe/routes';
 import { subscriptionService } from './services/SubscriptionService';
 import { analyticsService } from './services/AnalyticsService';
 import { PostQuotaService } from './PostQuotaService';
@@ -103,20 +105,22 @@ function addSystemHealthEndpoints(app: Express) {
     try {
       const { email, userId } = req.body;
       
-      // Default to User ID 2 for gailm@macleodglba.com.au
+      // Support existing admin user (gailm@macleodglba.com.au) while allowing multi-user
       let user;
       if (userId) {
         user = await storage.getUser(userId);
       } else if (email) {
         user = await storage.getUserByEmail(email);
       } else {
-        user = await storage.getUser(2);
+        // For backward compatibility, maintain existing admin user
+        user = await storage.getUserByEmail('gailm@macleodglba.com.au');
       }
       
       if (!user) {
         return res.status(401).json({ 
           error: 'User not found',
-          message: 'Authentication required' 
+          message: 'Please login or signup to continue',
+          requiresLogin: true
         });
       }
       
@@ -134,7 +138,9 @@ function addSystemHealthEndpoints(app: Express) {
         res.json({ 
           sessionEstablished: true,
           user: {
-            id: user.id
+            id: user.id,
+            email: user.email,
+            subscriptionPlan: user.subscriptionPlan
           },
           sessionId: req.sessionID
         });
@@ -391,6 +397,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add JSON middleware
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+  // Authentication routes
+  app.use('/api/auth', authRoutes);
+  
+  // Stripe subscription routes
+  app.use('/api/stripe', stripeRoutes);
   
   // Session debugging middleware (NO AUTO-ESTABLISHMENT)
   app.use(async (req: any, res: any, next: any) => {
