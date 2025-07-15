@@ -2361,7 +2361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.header('Access-Control-Allow-Credentials', 'true');
           res.header('Access-Control-Expose-Headers', 'Set-Cookie, Cookie, theagencyiq.session');
           
-          // Force session cookie to be set in the response (unsigned)
+          // Force session cookie to be set in the response (unsigned) - BEFORE res.json
           res.cookie('theagencyiq.session', req.sessionID, {
             httpOnly: false, // Allow JavaScript access for debugging
             secure: false,
@@ -2384,13 +2384,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`🔧 Session cookie set: theagencyiq.session=${req.sessionID}`);
           console.log(`🔧 Backup cookie set: aiq_backup_session=${req.sessionID}`);
           
-          return res.json({ 
+          // Ensure cookie is set before sending response
+          res.json({ 
             success: true, 
             user: targetUser,
             sessionId: req.sessionID,
             sessionEstablished: true,
             message: `Session established for ${targetUser.email}`
           });
+          return;
         }
       } catch (error) {
         console.error('User identification failed:', error);

@@ -44,7 +44,8 @@ class SessionManager {
         }
       }
     } catch (error) {
-      console.log('⚠️ Session verification failed, creating new session');
+      console.log('⚠️ Session verification failed - NO FALLBACK LOGIC');
+      throw error; // Prevent re-establishment on failure
     }
 
     this.sessionPromise = this.doEstablishSession();
@@ -148,6 +149,13 @@ class SessionManager {
     };
 
     const response = await fetch(url, requestOptions);
+    
+    // NO FALLBACK LOGIC - prevent authentication loops
+    if (!response.ok && response.status === 401) {
+      console.log('Authentication failed - LOOP PREVENTION - NOT REDIRECTING');
+      return response;
+    }
+    
     return response;
   }
 

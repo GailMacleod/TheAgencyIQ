@@ -1,0 +1,128 @@
+{
+  "summary": {
+    "totalTests": 10,
+    "successCount": 10,
+    "successRate": 100,
+    "duration": 1465,
+    "sessionId": "82b67e888b6ed5ac477d46d512cedfc7",
+    "hasSessionCookie": true
+  },
+  "tests": [
+    {
+      "test": "Session Establishment",
+      "success": true,
+      "timestamp": "2025-07-15T11:13:14.470Z",
+      "details": {
+        "sessionId": "82b67e888b6ed5ac477d46d512cedfc7",
+        "user": {
+          "id": 2
+        },
+        "hasCookie": true
+      }
+    },
+    {
+      "test": "Authenticated Endpoint /api/user",
+      "success": true,
+      "timestamp": "2025-07-15T11:13:14.589Z",
+      "details": {
+        "status": 200,
+        "hasData": true
+      }
+    },
+    {
+      "test": "Authenticated Endpoint /api/user-status",
+      "success": true,
+      "timestamp": "2025-07-15T11:13:14.705Z",
+      "details": {
+        "status": 200,
+        "hasData": true
+      }
+    },
+    {
+      "test": "Authenticated Endpoint /api/platform-connections",
+      "success": true,
+      "timestamp": "2025-07-15T11:13:15.111Z",
+      "details": {
+        "status": 200,
+        "hasData": true
+      }
+    },
+    {
+      "test": "Authenticated Endpoint /api/posts",
+      "success": true,
+      "timestamp": "2025-07-15T11:13:15.294Z",
+      "details": {
+        "status": 200,
+        "hasData": true
+      }
+    },
+    {
+      "test": "Authenticated Endpoint /api/brand-purpose",
+      "success": true,
+      "timestamp": "2025-07-15T11:13:15.479Z",
+      "details": {
+        "status": 200,
+        "hasData": true
+      }
+    },
+    {
+      "test": "All Authenticated Endpoints",
+      "success": true,
+      "timestamp": "2025-07-15T11:13:15.479Z",
+      "details": {
+        "successCount": 5,
+        "totalEndpoints": 5
+      }
+    },
+    {
+      "test": "Session Persistence",
+      "success": true,
+      "timestamp": "2025-07-15T11:13:15.559Z",
+      "details": {
+        "status": 200,
+        "user": {
+          "id": 2,
+          "email": "gailm@macleodglba.com.au",
+          "phone": "gailm@macleodglba.com.au",
+          "subscriptionPlan": "professional",
+          "subscriptionActive": true,
+          "remainingPosts": 48,
+          "totalPosts": 52
+        }
+      }
+    },
+    {
+      "test": "Cookie Transmission",
+      "success": true,
+      "timestamp": "2025-07-15T11:13:15.690Z",
+      "details": {
+        "status": 200,
+        "hasSessionCookie": true,
+        "data": {
+          "authenticated": true,
+          "hasActiveSubscription": true,
+          "user": {
+            "id": 2,
+            "email": "gailm@macleodglba.com.au",
+            "phone": "gailm@macleodglba.com.au",
+            "subscriptionPlan": "professional",
+            "remainingPosts": 48,
+            "totalPosts": 52
+          },
+          "sessionActive": true
+        }
+      }
+    },
+    {
+      "test": "HTML Content Rendering",
+      "success": true,
+      "timestamp": "2025-07-15T11:13:15.778Z",
+      "details": {
+        "status": 200,
+        "hasHTML": true,
+        "contentLength": 50123
+      }
+    }
+  ],
+  "timestamp": "2025-07-15T11:13:15.781Z"
+}
