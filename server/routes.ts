@@ -120,6 +120,10 @@ function addSystemHealthEndpoints(app: Express) {
       
       // Save session, then set cookie and send response
       req.session.save(() => {
+        // Force Set-Cookie header to ensure browser receives it
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+        res.header('Set-Cookie', `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax; HttpOnly=false`);
         res.cookie('theagencyiq.session', req.sessionID, { 
           secure: false, 
           sameSite: 'lax', 
@@ -3571,11 +3575,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.subscriptionPlan = user.subscriptionPlan;
         req.session.subscriptionActive = user.subscriptionActive;
         
-        // Set cookie explicitly
+        // Set cookie explicitly - httpOnly: false to allow browser access
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Expose-Headers', 'Set-Cookie');
         res.cookie('theagencyiq.session', req.sessionID, { 
           secure: false, 
           sameSite: 'lax', 
-          httpOnly: true, 
+          httpOnly: false, 
           path: '/' 
         });
         
