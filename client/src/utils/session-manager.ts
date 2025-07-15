@@ -128,7 +128,7 @@ class SessionManager {
   async makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
     console.log(`🔍 Making authenticated request to: ${url}`);
     
-    // Use browser's built-in cookie mechanism
+    // Use browser's built-in cookie mechanism - credentials: 'include' handles cookies automatically
     const requestOptions: RequestInit = {
       ...options,
       credentials: 'include',
