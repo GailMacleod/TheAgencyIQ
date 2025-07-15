@@ -25,8 +25,8 @@ async function startServer() {
   
   const app = express();
 
-  // CRITICAL: Set up trust proxy for session cookie persistence
-  app.set('trust proxy', 1);
+  // CRITICAL: Disable trust proxy for development to prevent automatic secure cookie enforcement
+  app.set('trust proxy', 0);
   
   // Cookie parser middleware with signed cookies - MUST be before session middleware
   app.use(cookieParser('agencyiq-session-secret-key'));
@@ -221,12 +221,12 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Session configuration - FIXED FOR BROWSER COOKIE TRANSMISSION WITH SIGNED COOKIES
+  // Session configuration - FIXED FOR DEVELOPMENT WITH TRUST PROXY = 0
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,  // CRITICAL: Enable to create sessions for browser requests
     name: 'theagencyiq.session',
     cookie: { 
       secure: false,  // CRITICAL: Set to false for development
@@ -234,10 +234,10 @@ async function startServer() {
       httpOnly: false,      // Allow frontend access
       sameSite: 'lax',  // CRITICAL: Set to 'lax' for same-origin requests
       path: '/',
-      signed: true        // Enable signed cookies for security
+      signed: false        // Set to false for development - simplify cookie handling
     },
-    rolling: false,
-    proxy: true
+    rolling: true,    // Extend session on activity
+    proxy: false  // Disable proxy mode to prevent automatic secure cookie enforcement
   }));
 
   // Session debugging middleware
@@ -260,7 +260,7 @@ async function startServer() {
           sameSite: 'lax',
           maxAge: 24 * 60 * 60 * 1000,
           path: '/',
-          signed: true
+          signed: false   // Development mode - simplified cookie handling
         });
       }
       return originalSend.call(this, data);
@@ -275,7 +275,7 @@ async function startServer() {
           sameSite: 'lax',
           maxAge: 24 * 60 * 60 * 1000,
           path: '/',
-          signed: true
+          signed: false   // Development mode - simplified cookie handling
         });
       }
       return originalJson.call(this, data);

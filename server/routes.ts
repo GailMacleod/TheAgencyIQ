@@ -124,14 +124,24 @@ function addSystemHealthEndpoints(app: Express) {
         }
       });
       
-      // Set signed session cookie in response
+      // Set both signed and unsigned session cookies for cross-platform compatibility
       res.cookie('theagencyiq.session', req.sessionID, {
         httpOnly: false,
-        secure: false,
-        sameSite: 'lax',
+        secure: false,  // Set to false for development
+        sameSite: 'lax',  // Use lax for development
         maxAge: 24 * 60 * 60 * 1000,
         path: '/',
         signed: true
+      });
+      
+      // Also set unsigned cookie for browser compatibility
+      res.cookie('theagencyiq.session.unsigned', req.sessionID, {
+        httpOnly: false,
+        secure: false,  // Set to false for development
+        sameSite: 'lax',  // Use lax for development
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/',
+        signed: false
       });
       
       res.json({ 
@@ -2309,9 +2319,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.header('Access-Control-Allow-Credentials', 'true');
           res.header('Access-Control-Expose-Headers', 'Set-Cookie');
           
-          // Explicitly set session cookie with consistent session ID
-          const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; SameSite=lax; Max-Age=86400`;
-          res.setHeader('Set-Cookie', cookieValue);
+          // Set unsigned session cookie for browser compatibility in development
+          res.cookie('theagencyiq.session', req.sessionID, {
+            httpOnly: false,
+            secure: false,  // Set to false for development
+            sameSite: 'lax',  // Use lax for development
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/',
+            signed: false  // Changed to false for development
+          });
+          
+          // Also set unsigned cookie for browser compatibility
+          res.cookie('theagencyiq.session.unsigned', req.sessionID, {
+            httpOnly: false,
+            secure: false,  // Set to false for development
+            sameSite: 'lax',  // Use lax for development
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/',
+            signed: false
+          });
           
           // Also add to session mapping for direct access
           const { sessionUserMap } = await import('./middleware/authGuard.js');

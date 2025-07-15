@@ -74,10 +74,20 @@ class SessionManager {
         let extractedSessionId = data.sessionId;
         
         if (setCookieHeader) {
-          // Extract session ID from Set-Cookie header
+          // Extract session ID from Set-Cookie header (both signed and unsigned)
           const sessionMatch = setCookieHeader.match(/theagencyiq\.session=([^;]+)/);
+          const unsignedMatch = setCookieHeader.match(/theagencyiq\.session\.unsigned=([^;]+)/);
+          
           if (sessionMatch) {
             extractedSessionId = sessionMatch[1];
+            // Store the session cookie for browser use in signed format
+            document.cookie = `theagencyiq.session=${extractedSessionId}; path=/; max-age=86400; SameSite=Lax`;
+          }
+          
+          if (unsignedMatch) {
+            const unsignedSessionId = unsignedMatch[1];
+            // Store the unsigned session cookie for browser use
+            document.cookie = `theagencyiq.session.unsigned=${unsignedSessionId}; path=/; max-age=86400; SameSite=Lax`;
           }
         }
         
@@ -107,6 +117,11 @@ class SessionManager {
         
         // Log cookie status after session establishment
         console.log('🍪 Cookies after establishment:', document.cookie);
+    
+    // Check if we have either signed or unsigned cookie
+    const hasSignedCookie = document.cookie.includes('theagencyiq.session=');
+    const hasUnsignedCookie = document.cookie.includes('theagencyiq.session.unsigned=');
+    console.log('🔍 Cookie status:', { hasSignedCookie, hasUnsignedCookie });
         
         // Test session by making a simple authenticated request
         console.log('🔍 Testing session with /api/user request...');
@@ -128,17 +143,28 @@ class SessionManager {
           // Try to manually establish cookie with signed cookie format
           console.log('🔧 Attempting manual cookie establishment...');
           
-          // Force cookie setting in browser using signed cookie format
+          // Force cookie setting in browser using both signed and unsigned formats
           if (setCookieHeader) {
             // Extract the signed session cookie from Set-Cookie header
-            const signedCookieMatch = setCookieHeader.match(/theagencyiq\.session=s%3A[^;]+/);
-            if (signedCookieMatch) {
-              const signedCookie = signedCookieMatch[0];
-              console.log('🔧 Setting signed session cookie:', signedCookie);
-              document.cookie = `${signedCookie}; path=/; max-age=86400; SameSite=Lax`;
+            const cookieMatch = setCookieHeader.match(/theagencyiq\.session=([^;]+)/);
+            const unsignedMatch = setCookieHeader.match(/theagencyiq\.session\.unsigned=([^;]+)/);
+            
+            if (cookieMatch) {
+              const sessionId = cookieMatch[1];
+              console.log('🔧 Setting signed session cookie:', sessionId);
+              document.cookie = `theagencyiq.session=${sessionId}; path=/; max-age=86400; SameSite=Lax`;
               
-              // Store the signed session cookie value for manual transmission
-              localStorage.setItem('aiq_session_cookie', signedCookie);
+              // Store the session cookie value for manual transmission
+              localStorage.setItem('aiq_session_cookie', `theagencyiq.session=${sessionId}`);
+            }
+            
+            if (unsignedMatch) {
+              const unsignedSessionId = unsignedMatch[1];
+              console.log('🔧 Setting unsigned session cookie:', unsignedSessionId);
+              document.cookie = `theagencyiq.session.unsigned=${unsignedSessionId}; path=/; max-age=86400; SameSite=Lax`;
+              
+              // Store the unsigned session cookie value for manual transmission
+              localStorage.setItem('aiq_session_cookie_unsigned', `theagencyiq.session.unsigned=${unsignedSessionId}`);
             }
           }
           

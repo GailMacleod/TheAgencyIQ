@@ -69,9 +69,18 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     }
   }
   
-  // Extract session ID from cookie if available
+  // Extract session ID from cookie if available (check both signed and unsigned formats)
   const cookieHeader = req.headers.cookie || '';
-  const sessionMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
+  let sessionMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
+  
+  // If no signed cookie found, check for unsigned cookie
+  if (!sessionMatch) {
+    const unsignedMatch = cookieHeader.match(/theagencyiq\.session\.unsigned=([^;]+)/);
+    if (unsignedMatch) {
+      sessionMatch = unsignedMatch;
+    }
+  }
+  
   if (sessionMatch) {
     let cookieSessionId = sessionMatch[1];
     // Handle URL encoded signed cookie

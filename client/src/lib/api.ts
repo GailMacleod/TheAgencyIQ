@@ -89,6 +89,7 @@ export async function microserviceRequest(
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
+    credentials: "include",
   });
 
   console.log(`Microservice call to ${endpoint} returned ${response.status}`);

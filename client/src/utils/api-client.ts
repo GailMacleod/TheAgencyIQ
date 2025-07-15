@@ -48,7 +48,17 @@ class ApiClient {
       }
     }
     
-    // If no signed cookie, try any session cookie
+    // Try the unsigned cookie for browser compatibility
+    for (const cookie of cookies) {
+      const trimmed = cookie.trim();
+      if (trimmed.startsWith('theagencyiq.session.unsigned=')) {
+        // Convert unsigned cookie to signed format for consistent transmission
+        const sessionId = trimmed.split('=')[1];
+        return `theagencyiq.session=${sessionId}`;
+      }
+    }
+    
+    // If no unsigned cookie either, try any session cookie
     for (const cookie of cookies) {
       const trimmed = cookie.trim();
       if (trimmed.startsWith('theagencyiq.session=')) {
