@@ -252,14 +252,23 @@ apiRouter.post('/posts', requireAuth, async (req, res) => {
   try {
     const postData = insertPostSchema.parse({
       ...req.body,
-      userId: req.session.userId
+      userId: req.session.userId,
+      status: req.body.status || 'draft',
+      scheduledFor: req.body.scheduledFor || null,
+      contentHash: require('crypto').createHash('md5').update(req.body.content || '').digest('hex'),
+      generationId: `gen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      idempotencyKey: `post_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      subscriptionCycle: new Date().toISOString().slice(0, 7) // YYYY-MM format
     });
     
     const post = await storage.createPost(postData);
     res.status(201).json(post);
   } catch (error: any) {
     console.error('Create post error:', error);
-    res.status(500).json({ message: "Error creating post" });
+    if (error.issues) {
+      console.error('Schema validation errors:', error.issues);
+    }
+    res.status(400).json({ message: "Error creating post", error: error.message });
   }
 });
 
