@@ -653,26 +653,7 @@ export class DirectPublisher {
     }
   }
 
-  /**
-   * Publish to any platform using direct credentials
-   */
-  static async publishToPlatform(platform: string, content: string, accessToken?: string): Promise<DirectPublishResult> {
-    switch (platform.toLowerCase()) {
-      case 'facebook':
-        return await this.publishToFacebook(content, accessToken);
-      case 'linkedin':
-        return await this.publishToLinkedIn(content, accessToken);
-      case 'instagram':
-        return await this.publishToInstagram(content, accessToken);
-      case 'twitter':
-      case 'x':
-        return await this.publishToTwitter(content, accessToken);
-      case 'youtube':
-        return await this.publishToYouTube(content, accessToken);
-      default:
-        return { success: false, error: `Platform ${platform} not supported` };
-    }
-  }
+
 
   /**
    * Token refresh methods for enhanced connection reliability

@@ -240,11 +240,6 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
-    return user;
-  }
-
   // Subscription management methods
   async validateActiveSubscription(userId: number): Promise<boolean> {
     const user = await this.getUser(userId);
@@ -387,23 +382,8 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Platform post ID management methods
-  async updatePostPlatformId(postId: number, platformPostId: string, published: boolean): Promise<void> {
-    await db
-      .update(posts)
-      .set({
-        platformPostId,
-        status: published ? 'published' : 'draft',
-        publishedAt: published ? new Date() : null,
-        updatedAt: new Date()
-      })
-      .where(eq(posts.id, postId));
-  }
 
-  async getPost(postId: number): Promise<any> {
-    const [post] = await db.select().from(posts).where(eq(posts.id, postId));
-    return post;
-  }
+
 
   // Post operations
   async getPostsByUser(userId: number): Promise<Post[]> {
@@ -776,18 +756,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Stripe subscription management
-  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
-    return user;
-  }
-
-  async listAllStripeCustomers(): Promise<User[]> {
-    const usersWithStripe = await db
-      .select()
-      .from(users)
-      .where(sql`${users.stripeCustomerId} IS NOT NULL`);
-    return usersWithStripe;
-  }
 
   async getAllStripeCustomers(): Promise<User[]> {
     return this.listAllStripeCustomers();
@@ -817,19 +785,7 @@ export class DatabaseStorage implements IStorage {
     return usersWithStripe;
   }
 
-  async clearDuplicateStripeCustomers(keepUserId: number): Promise<void> {
-    await db
-      .update(users)
-      .set({ 
-        stripeCustomerId: null,
-        stripeSubscriptionId: null,
-        subscriptionPlan: 'free'
-      })
-      .where(and(
-        eq(users.id, keepUserId),
-        sql`${users.stripeCustomerId} IS NOT NULL`
-      ));
-  }
+
 }
 
 export const storage = new DatabaseStorage();
