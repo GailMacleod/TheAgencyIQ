@@ -25,6 +25,9 @@ async function startServer() {
   
   const app = express();
 
+  // CRITICAL: Set up trust proxy for session cookie persistence
+  app.set('trust proxy', 1);
+
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
@@ -183,7 +186,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Session configuration - FIXED FOR COOKIE TRANSMISSION
+  // Session configuration - SIMPLIFIED FOR PERSISTENCE
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -191,61 +194,22 @@ async function startServer() {
     saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,  // CRITICAL: Set to false for development
       maxAge: sessionTtl,
       httpOnly: false,      // Allow frontend access
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      sameSite: 'lax',  // CRITICAL: Set to 'lax' for development
       path: '/'
     },
     rolling: false,
     proxy: true
   }));
 
-  // Session debugging middleware with consistent ID handling
+  // Session debugging middleware
   app.use((req, res, next) => {
     console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
     console.log(`📋 Session ID: ${req.sessionID}`);
     console.log(`📋 User ID: ${req.session?.userId}`);
     console.log(`📋 Cookie Header: ${req.headers.cookie || 'MISSING'}`);
-    
-    // Extract session ID from cookie for comparison
-    if (req.headers.cookie) {
-      const match = req.headers.cookie.match(/theagencyiq\.session=([^;]+)/);
-      if (match && match[1]) {
-        console.log(`📋 Cookie Session ID: ${match[1]}`);
-        console.log(`📋 ID Match: ${req.sessionID === match[1] ? '✅' : '❌'}`);
-      }
-    }
-    
-    // Ensure consistent session ID in cookie
-    if (req.sessionID && !res.headersSent) {
-      const originalSend = res.send;
-      const originalJson = res.json;
-      const originalEnd = res.end;
-
-      const setCookie = `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400; SameSite=lax`;
-
-      res.send = function(data) {
-        if (!res.headersSent) {
-          res.setHeader('Set-Cookie', setCookie);
-        }
-        return originalSend.call(this, data);
-      };
-
-      res.json = function(data) {
-        if (!res.headersSent) {
-          res.setHeader('Set-Cookie', setCookie);
-        }
-        return originalJson.call(this, data);
-      };
-
-      res.end = function(data) {
-        if (!res.headersSent) {
-          res.setHeader('Set-Cookie', setCookie);
-        }
-        return originalEnd.call(this, data);
-      };
-    }
     
     next();
   });

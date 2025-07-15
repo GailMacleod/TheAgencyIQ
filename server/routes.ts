@@ -3397,8 +3397,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Set-Cookie', cookieValue);
         
         // Also add to session mapping for direct access
-        const { sessionUserMap } = await import('./middleware/authGuard.js');
-        sessionUserMap.set(req.sessionID, 2);
+        const { setSessionMapping } = await import('./middleware/authGuard.js');
+        setSessionMapping(req.sessionID, 2);
         
         console.log(`🔧 Session established - ID: ${req.sessionID}, Cookie: ${cookieValue}`);
         
