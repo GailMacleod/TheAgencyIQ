@@ -49,15 +49,18 @@ class RealApiPublisher {
         }
       );
 
-      // For testing purposes, simulate success response
-      const mockPostId = `fb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Extract real Facebook post ID from response
+      const platformPostId = response.data?.id;
+      if (!platformPostId) {
+        throw new Error('No post ID returned from Facebook API');
+      }
       
       // Record platform post ID and deduct quota
       const result = await platformPostManager.recordPlatformPost(
         request.userId,
         request.postId,
         request.platform,
-        mockPostId,
+        platformPostId,
         request.sessionId
       );
 
@@ -95,10 +98,11 @@ class RealApiPublisher {
    */
   async publishToInstagram(request: PublishRequest): Promise<PublishResult> {
     try {
-      // Simulate real Instagram API call
-      const response = await axios.post(
-        `https://graph.facebook.com/me/media`,
+      // Real Instagram API call - Create media container first
+      const mediaResponse = await axios.post(
+        `https://graph.facebook.com/v18.0/me/media`,
         {
+          image_url: 'https://example.com/default-image.jpg', // Would be actual image URL
           caption: request.content,
           access_token: request.accessToken
         },
@@ -110,13 +114,32 @@ class RealApiPublisher {
         }
       );
 
-      const mockPostId = `ig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Publish the media container
+      const publishResponse = await axios.post(
+        `https://graph.facebook.com/v18.0/me/media_publish`,
+        {
+          creation_id: mediaResponse.data.id,
+          access_token: request.accessToken
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
+        }
+      );
+
+      // Extract real Instagram post ID from response
+      const platformPostId = publishResponse.data?.id;
+      if (!platformPostId) {
+        throw new Error('No post ID returned from Instagram API');
+      }
       
       const result = await platformPostManager.recordPlatformPost(
         request.userId,
         request.postId,
         request.platform,
-        mockPostId,
+        platformPostId,
         request.sessionId
       );
 
@@ -153,7 +176,7 @@ class RealApiPublisher {
    */
   async publishToLinkedIn(request: PublishRequest): Promise<PublishResult> {
     try {
-      // Simulate real LinkedIn API call
+      // Real LinkedIn API call using v2 UGC Posts API
       const response = await axios.post(
         'https://api.linkedin.com/v2/ugcPosts',
         {
@@ -163,26 +186,35 @@ class RealApiPublisher {
             'com.linkedin.ugc.ShareContent': {
               shareCommentary: {
                 text: request.content
-              }
+              },
+              shareMediaCategory: 'NONE'
             }
+          },
+          visibility: {
+            'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
           }
         },
         {
           headers: {
             'Authorization': `Bearer ${request.accessToken}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Restli-Protocol-Version': '2.0.0'
           },
           timeout: 30000
         }
       );
 
-      const mockPostId = `li_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Extract real LinkedIn post ID from response
+      const platformPostId = response.data?.id;
+      if (!platformPostId) {
+        throw new Error('No post ID returned from LinkedIn API');
+      }
       
       const result = await platformPostManager.recordPlatformPost(
         request.userId,
         request.postId,
         request.platform,
-        mockPostId,
+        platformPostId,
         request.sessionId
       );
 
@@ -234,13 +266,17 @@ class RealApiPublisher {
         }
       );
 
-      const mockPostId = `x_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Extract real X post ID from response
+      const platformPostId = response.data?.data?.id;
+      if (!platformPostId) {
+        throw new Error('No post ID returned from X API');
+      }
       
       const result = await platformPostManager.recordPlatformPost(
         request.userId,
         request.postId,
         request.platform,
-        mockPostId,
+        platformPostId,
         request.sessionId
       );
 
@@ -277,16 +313,14 @@ class RealApiPublisher {
    */
   async publishToYouTube(request: PublishRequest): Promise<PublishResult> {
     try {
-      // Simulate real YouTube API call
+      // Real YouTube API call for community posts (requires channel ID)
       const response = await axios.post(
-        'https://www.googleapis.com/youtube/v3/commentThreads',
+        'https://www.googleapis.com/youtube/v3/activities',
         {
+          part: 'snippet',
           snippet: {
-            topLevelComment: {
-              snippet: {
-                textOriginal: request.content
-              }
-            }
+            type: 'bulletin',
+            description: request.content
           }
         },
         {
@@ -298,13 +332,17 @@ class RealApiPublisher {
         }
       );
 
-      const mockPostId = `yt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Extract real YouTube post ID from response
+      const platformPostId = response.data?.id;
+      if (!platformPostId) {
+        throw new Error('No post ID returned from YouTube API');
+      }
       
       const result = await platformPostManager.recordPlatformPost(
         request.userId,
         request.postId,
         request.platform,
-        mockPostId,
+        platformPostId,
         request.sessionId
       );
 

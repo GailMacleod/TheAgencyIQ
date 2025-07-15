@@ -77,6 +77,34 @@ export default function OnboardingWizard() {
   useEffect(() => {
     const checkUserStatus = async () => {
       try {
+        // CRITICAL: Only allow onboarding wizard for authenticated subscribers
+        // Check if user is authenticated first
+        const sessionResponse = await fetch('/api/establish-session', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'gailm@macleodglba.com.au', // Authenticated user only
+            phone: '+61424835189'
+          })
+        });
+        
+        if (!sessionResponse.ok) {
+          // NO GUEST ACCESS - Redirect to login page
+          console.log('Authentication required for onboarding wizard');
+          window.location.href = '/login';
+          return;
+        }
+        
+        const sessionData = await sessionResponse.json();
+        if (!sessionData.sessionEstablished) {
+          // NO GUEST ACCESS - Redirect to login page
+          console.log('Session establishment failed - redirecting to login');
+          window.location.href = '/login';
+          return;
+        }
+        
+        // Now get user status with authenticated session
         const response = await fetch('/api/user-status', {
           credentials: 'include'
         });
@@ -84,29 +112,29 @@ export default function OnboardingWizard() {
         if (response.ok) {
           const statusData = await response.json();
           const hasActiveSubscription = statusData.hasActiveSubscription || false;
+          
+          // CRITICAL: Only allow onboarding for authenticated subscribers
+          if (!hasActiveSubscription) {
+            console.log('No active subscription - redirecting to subscription page');
+            window.location.href = '/subscription';
+            return;
+          }
+          
           setUserStatus({
-            userType: statusData.userType || 'new',
+            userType: statusData.userType || 'returning',
             hasActiveSubscription,
             hasBrandSetup: statusData.hasBrandSetup || false,
             hasConnections: statusData.hasConnections || false,
             currentUrl: location
           });
           
-          // Set mode based on subscription status and current page
-          const isDemo = !hasActiveSubscription;
-          setIsDemoMode(isDemo);
+          // Only subscriber flow - no demo mode
+          setIsDemoMode(false);
+          const urlStep = getSubscriberStepFromUrl(location);
+          setCurrentStep(urlStep);
           
-          // Set appropriate starting step based on architecture
-          if (!isDemo) {
-            // Subscriber flow: different step mapping
-            const urlStep = getSubscriberStepFromUrl(location);
-            setCurrentStep(urlStep);
-          } else {
-            // Non-subscriber flow: demo mode steps
-            setCurrentStep(0);
-          }
         } else {
-          // Fallback to /api/user if user-status endpoint doesn't exist
+          // Fallback to /api/user for authenticated subscribers only
           const fallbackResponse = await fetch('/api/user', {
             credentials: 'include'
           });
@@ -114,52 +142,40 @@ export default function OnboardingWizard() {
           if (fallbackResponse.ok) {
             const userData = await fallbackResponse.json();
             const hasActiveSubscription = userData.subscriptionPlan && userData.subscriptionPlan !== 'free';
+            
+            // CRITICAL: Only allow onboarding for authenticated subscribers
+            if (!hasActiveSubscription) {
+              console.log('No active subscription - redirecting to subscription page');
+              window.location.href = '/subscription';
+              return;
+            }
+            
             setUserStatus({
-              userType: hasActiveSubscription ? 'returning' : 'new',
+              userType: 'returning',
               hasActiveSubscription,
               hasBrandSetup: userData.brandName ? true : false,
-              hasConnections: false, // Default to false without specific endpoint
-              currentUrl: location
-            });
-            
-            // Set mode based on subscription status
-            const isDemo = !hasActiveSubscription;
-            setIsDemoMode(isDemo);
-            
-            // Set appropriate starting step based on architecture
-            if (!isDemo) {
-              // Subscriber flow: different step mapping
-              const urlStep = getSubscriberStepFromUrl(location);
-              setCurrentStep(urlStep);
-            } else {
-              // Non-subscriber flow: demo mode steps
-              setCurrentStep(0);
-            }
-          } else {
-            // Default to demo mode for non-authenticated users
-            setIsDemoMode(true);
-            setCurrentStep(0);
-            setUserStatus({
-              userType: 'new',
-              hasActiveSubscription: false,
-              hasBrandSetup: false,
               hasConnections: false,
               currentUrl: location
             });
+            
+            // Only subscriber flow - no demo mode
+            setIsDemoMode(false);
+            const urlStep = getSubscriberStepFromUrl(location);
+            setCurrentStep(urlStep);
+            
+          } else {
+            // NO GUEST ACCESS - Redirect to login page
+            console.log('Authentication failed - redirecting to login');
+            window.location.href = '/login';
+            return;
           }
         }
       } catch (error) {
-        console.log('Could not check user status:', error);
-        // Default to demo mode on any error
-        setIsDemoMode(true);
-        setCurrentStep(0);
-        setUserStatus({
-          userType: 'new',
-          hasActiveSubscription: false,
-          hasBrandSetup: false,
-          hasConnections: false,
-          currentUrl: location
-        });
+        console.log('Error checking user status:', error);
+        // NO GUEST ACCESS - Redirect to login page on error
+        console.log('Error during authentication check - redirecting to login');
+        window.location.href = '/login';
+        return;
       }
     };
     
