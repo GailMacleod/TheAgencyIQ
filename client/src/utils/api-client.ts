@@ -32,10 +32,16 @@ class ApiClient {
   }
   
   private getManualCookie(): string | null {
-    // First try to get the signed session cookie from localStorage
-    const storedCookie = localStorage.getItem('aiq_session_cookie');
+    // First try to get the stored session cookie from sessionStorage
+    const storedCookie = sessionStorage.getItem('sessionCookie');
     if (storedCookie) {
       return storedCookie;
+    }
+    
+    // Get session ID from sessionStorage (set by session manager)
+    const sessionId = sessionStorage.getItem('sessionId');
+    if (sessionId) {
+      return `theagencyiq.session=${sessionId}`;
     }
     
     // Fallback to extracting from document.cookie

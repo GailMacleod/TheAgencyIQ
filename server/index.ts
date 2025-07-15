@@ -212,7 +212,7 @@ async function startServer() {
 
   // CORS middleware with proper credentials support
   app.use(cors({
-    origin: true,
+    origin: ['https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev', 'http://localhost:3000', 'http://localhost:5173'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Source', 'X-Retry-Session', 'Cookie'],
@@ -226,7 +226,7 @@ async function startServer() {
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
     resave: false,
-    saveUninitialized: true,  // CRITICAL: Enable to create sessions for browser requests
+    saveUninitialized: false,  // CRITICAL: Set to false to prevent new sessions on each request
     name: 'theagencyiq.session',
     cookie: { 
       secure: false,  // CRITICAL: Set to false for development
@@ -234,6 +234,7 @@ async function startServer() {
       httpOnly: false,      // Allow frontend access
       sameSite: 'lax',  // CRITICAL: Set to 'lax' for same-origin requests
       path: '/',
+      domain: undefined,    // Let browser set domain automatically
       signed: false        // Set to false for development - simplify cookie handling
     },
     rolling: true,    // Extend session on activity

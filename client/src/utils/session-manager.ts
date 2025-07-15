@@ -53,6 +53,8 @@ class SessionManager {
 
   private async doEstablishSession(): Promise<SessionInfo> {
     try {
+      console.log('🔍 Establishing session...');
+      
       const response = await fetch('/api/establish-session', {
         method: 'POST',
         headers: {
@@ -68,43 +70,49 @@ class SessionManager {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Session establishment response:', data);
         
-        // Extract session ID from response headers
-        const setCookieHeader = response.headers.get('Set-Cookie');
-        let extractedSessionId = data.sessionId;
-        
-        if (setCookieHeader) {
-          // Extract session ID from Set-Cookie header (both signed and unsigned)
-          const sessionMatch = setCookieHeader.match(/theagencyiq\.session=([^;]+)/);
-          const unsignedMatch = setCookieHeader.match(/theagencyiq\.session\.unsigned=([^;]+)/);
+        // Extract session ID from response
+        const sessionId = data.sessionId;
+        if (sessionId) {
+          console.log('📋 Session ID received:', sessionId);
           
-          if (sessionMatch) {
-            extractedSessionId = sessionMatch[1];
-            // Store the session cookie for browser use in signed format
-            document.cookie = `theagencyiq.session=${extractedSessionId}; path=/; max-age=86400; SameSite=Lax`;
+          // Store the session ID for manual cookie transmission
+          sessionStorage.setItem('sessionId', sessionId);
+          
+          // CRITICAL FIX: Force browser to use the session cookies
+          // The server sets cookies via Set-Cookie headers, but browser needs manual intervention
+          const cookieHeader = response.headers.get('set-cookie');
+          if (cookieHeader) {
+            console.log('🍪 Set-Cookie header found:', cookieHeader);
+            
+            // Extract session cookie from Set-Cookie header
+            const sessionCookieMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
+            if (sessionCookieMatch) {
+              const sessionCookieValue = sessionCookieMatch[1];
+              console.log('📋 Extracted session cookie:', sessionCookieValue);
+              
+              // Force browser to set the cookie manually
+              document.cookie = `theagencyiq.session=${sessionCookieValue}; path=/; max-age=86400; SameSite=Lax`;
+              
+              // Store for manual transmission
+              sessionStorage.setItem('sessionCookie', `theagencyiq.session=${sessionCookieValue}`);
+            }
           }
           
-          if (unsignedMatch) {
-            const unsignedSessionId = unsignedMatch[1];
-            // Store the unsigned session cookie for browser use
-            document.cookie = `theagencyiq.session.unsigned=${unsignedSessionId}; path=/; max-age=86400; SameSite=Lax`;
-          }
+          // Fallback: Store basic session cookie format
+          sessionStorage.setItem('sessionCookie', `theagencyiq.session=${sessionId}`);
         }
         
         this.sessionInfo = {
-          id: extractedSessionId || 'established',
+          id: sessionId || 'established',
           user: data.user,
           established: true
         };
         
         console.log('✅ Session established:', data.user?.email || 'User authenticated');
         console.log('User ID:', data.user?.id);
-        console.log('Session ID:', extractedSessionId);
-        
-        // Store session ID in sessionStorage for manual cookie handling
-        if (extractedSessionId) {
-          sessionStorage.setItem('sessionId', extractedSessionId);
-        }
+        console.log('Session ID:', sessionId);
         
         // Store in sessionStorage for debugging
         if (data.user) {
@@ -244,11 +252,11 @@ class SessionManager {
   }
 
   private getSessionCookie(): string | null {
-    // First try to get session ID from sessionStorage (manual handling)
-    const sessionId = sessionStorage.getItem('sessionId');
-    if (sessionId) {
-      console.log('🔑 Using stored session ID:', sessionId.substring(0, 50) + '...');
-      return `theagencyiq.session=${sessionId}`;
+    // First try to get session cookie from sessionStorage (manual handling)
+    const sessionCookie = sessionStorage.getItem('sessionCookie');
+    if (sessionCookie) {
+      console.log('🔑 Using stored session cookie:', sessionCookie.substring(0, 50) + '...');
+      return sessionCookie;
     }
     
     // Fallback: Extract session cookie from document.cookie
@@ -270,7 +278,31 @@ class SessionManager {
   clearSession() {
     this.sessionInfo = null;
     this.sessionPromise = null;
+    sessionStorage.removeItem('sessionId');
+    sessionStorage.removeItem('sessionCookie');
     sessionStorage.removeItem('currentUser');
+    
+    // Clear all session-related cookies
+    document.cookie = 'theagencyiq.session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'theagencyiq.session.unsigned=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    
+    // Clear localStorage session data
+    localStorage.removeItem('aiq_session_cookie');
+    localStorage.removeItem('aiq_session_cookie_unsigned');
+  }
+  
+  /**
+   * Generate a mock signature for session cookies (development only)
+   */
+  private generateSignature(sessionId: string): string {
+    // Simple hash for development - matches server-side signing
+    let hash = 0;
+    for (let i = 0; i < sessionId.length; i++) {
+      const char = sessionId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
   }
 }
 
