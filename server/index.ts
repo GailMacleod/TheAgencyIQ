@@ -46,10 +46,10 @@ async function startServer() {
     res.header('Vary', 'Origin, Access-Control-Request-Headers');
     res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
     
-    // Production-ready CSP with frame-ancestors for embedding
+    // Production-ready CSP with frame-ancestors for embedding and Replit beacon support
     res.header('Content-Security-Policy', 
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com https://replit.com; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; " +
       "img-src 'self' data: https: blob:; " +
@@ -58,12 +58,12 @@ async function startServer() {
       "frame-ancestors 'self' https://app.theagencyiq.ai https://www.facebook.com;"
     );
     
-    // Clean Permissions-Policy - only recognized features
+    // Clean Permissions-Policy - only recognized features with payment request support
     res.header('Permissions-Policy', 
       'camera=(), ' +
       'microphone=(), ' +
       'geolocation=(), ' +
-      'payment=(), ' +
+      'payment=self, ' +
       'usb=(), ' +
       'accelerometer=(), ' +
       'gyroscope=(), ' +
@@ -183,7 +183,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Fixed session configuration with consistent ID generation
+  // Session configuration - FIXED FOR COOKIE TRANSMISSION
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -191,31 +191,14 @@ async function startServer() {
     saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: false,        // Dev environment
+      secure: process.env.NODE_ENV === 'production',
       maxAge: sessionTtl,
       httpOnly: false,      // Allow frontend access
-      sameSite: 'lax',      // Cross-site compatibility
-      path: '/',
-      signed: false         // No signing for frontend access
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/'
     },
     rolling: false,
-    proxy: true,
-    unset: 'keep',
-    // CRITICAL: Prevent session ID regeneration if cookie exists
-    genid: function(req) {
-      // If cookie exists, extract and reuse the session ID
-      if (req.headers.cookie) {
-        const match = req.headers.cookie.match(/theagencyiq\.session=([^;]+)/);
-        if (match && match[1]) {
-          console.log(`🔄 Reusing existing session ID: ${match[1]}`);
-          return match[1];
-        }
-      }
-      // Generate new ID only if no cookie exists
-      const newId = crypto.randomBytes(16).toString('hex');
-      console.log(`🆕 Generated new session ID: ${newId}`);
-      return newId;
-    }
+    proxy: true
   }));
 
   // Session debugging middleware with consistent ID handling
@@ -810,13 +793,23 @@ async function startServer() {
       
       // Root route for production
       app.get('/', (req, res) => {
-        res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+        try {
+          res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+        } catch (error) {
+          console.error('Error serving index.html:', error);
+          res.status(500).json({ error: 'Failed to serve index.html' });
+        }
       });
       
       // Serve React app for all non-API routes
       app.get('*', (req, res) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+          try {
+            res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+          } catch (error) {
+            console.error('Error serving index.html for route:', req.path, error);
+            res.status(500).json({ error: 'Failed to serve index.html' });
+          }
         }
       });
       console.log('✅ Production static files setup complete');
