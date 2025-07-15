@@ -143,7 +143,7 @@ async function startServer() {
   app.set('trust proxy', 0);
 
   // Cookie parser middleware with secret - MUST be before session middleware
-  app.use(cookieParser('secret-key'));
+  app.use(cookieParser('your-secret'));
 
   // Device-agnostic session configuration for mobile-to-desktop continuity
   // Configure PostgreSQL session store
@@ -180,25 +180,9 @@ async function startServer() {
   
   console.log('✅ Session store initialized successfully');
 
-  // CORS middleware with exact client URL and credentials support
+  // CORS middleware with wildcard origin and credentials support
   app.use(cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or Postman)
-      if (!origin) return callback(null, true);
-      
-      // Allow same-origin requests
-      if (origin === 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev') {
-        return callback(null, true);
-      }
-      
-      // Allow localhost for development
-      if (origin.startsWith('http://localhost')) {
-        return callback(null, true);
-      }
-      
-      // Deny all other origins
-      return callback(new Error('Not allowed by CORS'));
-    },
+    origin: '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Source', 'X-Retry-Session', 'Cookie'],
@@ -209,7 +193,7 @@ async function startServer() {
 
   // Session configuration - FIXED FOR DEVELOPMENT WITH PROPER COOKIE PERSISTENCE
   app.use(session({
-    secret: 'secret-key',
+    secret: 'your-secret',
     store: sessionStore,
     resave: false,    // CRITICAL: Set to false to prevent race conditions
     saveUninitialized: false,  // CRITICAL: Set to false to prevent unnecessary sessions
