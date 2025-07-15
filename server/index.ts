@@ -172,8 +172,8 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // Trust proxy for proper session handling in Replit
-  app.set('trust proxy', 1);
+  // CRITICAL: Disable trust proxy for development to prevent automatic secure cookie enforcement
+  app.set('trust proxy', 0);
 
   // Device-agnostic session configuration for mobile-to-desktop continuity
   // Configure PostgreSQL session store
@@ -237,7 +237,11 @@ async function startServer() {
       signed: false        // Set to false for development - simplify cookie handling
     },
     rolling: true,    // Extend session on activity
-    proxy: false  // Disable proxy mode to prevent automatic secure cookie enforcement
+    proxy: false,  // Disable proxy mode to prevent automatic secure cookie enforcement
+    genid: () => {
+      // Generate custom session IDs that work with our direct mapping
+      return crypto.randomBytes(16).toString('hex');
+    }
   }));
 
   // Session debugging middleware

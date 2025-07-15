@@ -115,30 +115,33 @@ function addSystemHealthEndpoints(app: Express) {
       
       console.log('Test session established for gailm@macleodglba.com.au (ID: 2)');
       
-      // Force session save to ensure cookie is set
-      req.session.save((err) => {
-        if (err) {
-          console.error('Session save error:', err);
-        } else {
-          console.log('Session saved successfully');
-        }
+      // Force session save to ensure cookie is set - CRITICAL: Use synchronous save
+      await new Promise((resolve) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+          } else {
+            console.log('Session saved successfully');
+          }
+          resolve();
+        });
       });
       
-      // Set both signed and unsigned session cookies for cross-platform compatibility
+      // CRITICAL: Set explicit session cookie for browser compatibility
       res.cookie('theagencyiq.session', req.sessionID, {
         httpOnly: false,
-        secure: false,  // Set to false for development
-        sameSite: 'lax',  // Use lax for development
+        secure: false,  // CRITICAL: Set to false for development
+        sameSite: 'lax',  // CRITICAL: Use lax for same-origin requests
         maxAge: 24 * 60 * 60 * 1000,
         path: '/',
-        signed: true
+        signed: false    // CRITICAL: Unsigned for development compatibility
       });
       
       // Also set unsigned cookie for browser compatibility
       res.cookie('theagencyiq.session.unsigned', req.sessionID, {
         httpOnly: false,
-        secure: false,  // Set to false for development
-        sameSite: 'lax',  // Use lax for development
+        secure: false,  // CRITICAL: Set to false for development
+        sameSite: 'lax',  // CRITICAL: Use lax for same-origin requests
         maxAge: 24 * 60 * 60 * 1000,
         path: '/',
         signed: false

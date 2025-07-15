@@ -59,7 +59,7 @@ class SessionManager {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        credentials: 'include',
+        credentials: 'include',  // CRITICAL: Include credentials for cookie transmission
         body: JSON.stringify({
           email: 'gailm@macleodglba.com.au',
           phone: '+61424835189'

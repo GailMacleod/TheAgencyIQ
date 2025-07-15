@@ -16,10 +16,10 @@ class ApiClient {
     // Get manual cookie if available
     const manualCookie = this.getManualCookie();
     
-    // Ensure credentials are always included for cookie transmission
+    // CRITICAL: Ensure credentials are always included for cookie transmission
     const requestOptions: RequestInit = {
       ...options,
-      credentials: 'include',
+      credentials: 'include',  // CRITICAL: Include credentials for cookie transmission
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
