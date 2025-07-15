@@ -31,7 +31,7 @@ export default function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isVisible, setIsVisible] = useState(true);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true); // Start minimized by default
   const [skippedSteps, setSkippedSteps] = useState<number[]>([]);
   const [isSkipped, setIsSkipped] = useState(false);
   const [userStatus, setUserStatus] = useState<UserStatus>({
@@ -661,14 +661,18 @@ export default function OnboardingWizard() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-2 right-2 sm:bottom-4 sm:right-4 z-50 w-[calc(100vw-1rem)] sm:w-80 max-w-[calc(100vw-1rem)]">
-      <Card className="bg-white border-gray-200 shadow-lg">
+    <div className={`fixed bottom-2 right-2 sm:bottom-4 sm:right-4 z-50 transition-all duration-300 ${
+      isMinimized ? 'w-16 h-16' : 'w-[calc(100vw-1rem)] sm:w-80'
+    } max-w-[calc(100vw-1rem)]`}>
+      <Card className={`bg-white border-gray-200 shadow-lg transition-all duration-300 ${
+        isMinimized ? 'border-2 border-purple-200 hover:border-purple-300' : ''
+      }`}>
         <CardHeader 
-          className={`pb-2 sm:pb-3 ${isMinimized ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+          className={`${isMinimized ? 'p-2 cursor-pointer hover:bg-gray-50' : 'pb-2 sm:pb-3'}`}
           onClick={isMinimized ? handleMinimize : undefined}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
+            <div className={`flex items-center space-x-1 sm:space-x-2 min-w-0 ${isMinimized ? 'hidden' : ''}`}>
               <div className="flex items-center min-w-0">
                 {isDemoMode && (
                   <Badge variant="secondary" className="mr-1 sm:mr-2 text-xs shrink-0">
@@ -734,7 +738,7 @@ export default function OnboardingWizard() {
                   <span className="sm:hidden">Prev</span>
                 </Button>
                 
-                <div className="flex space-x-2">
+                <div className="flex space-x-1 sm:space-x-2">
                   {currentStep === wizardSteps.length - 1 ? (
                     <Button
                       onClick={handleActionClick}
