@@ -195,20 +195,23 @@ async function startServer() {
   app.use(session({
     secret: 'your-secret',
     store: sessionStore,
-    resave: false,    // CRITICAL: Set to false to prevent race conditions
-    saveUninitialized: false,  // CRITICAL: Set to false to prevent unnecessary sessions
+    resave: true,    // CRITICAL: Set to true to force save
+    saveUninitialized: true,  // CRITICAL: Set to true to save new sessions
     name: 'theagencyiq.session',
     cookie: { 
       secure: false,       // CRITICAL: Set to false for Replit development environment
       maxAge: sessionTtl,
       httpOnly: false,     // Allow frontend access for debugging
-      sameSite: 'lax',     // CRITICAL: Set to 'lax' for same-site requests
+      sameSite: 'none',    // CRITICAL: Set to 'none' for cross-origin requests
       path: '/',
       domain: undefined,   // Let browser determine domain
       signed: false        // Disable signed cookies for simpler debugging
     },
     rolling: true,    // Extend session on activity
-    proxy: false  // Disable proxy mode to prevent automatic secure cookie enforcement
+    proxy: false,  // Disable proxy mode to prevent automatic secure cookie enforcement
+    genid: () => {
+      return crypto.randomBytes(16).toString('hex');
+    }
   }));
 
   // Enhanced session debug middleware - ONLY for API endpoints to prevent duplicates

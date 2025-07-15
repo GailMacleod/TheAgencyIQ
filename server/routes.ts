@@ -3683,9 +3683,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Track session activity
         sessionActivityService.trackActivity(req.sessionID, user.id, ipAddress, userAgent, '/api/auth/establish-session');
         
-        // Explicitly set session cookie with consistent session ID
-        const cookieValue = `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400`;
-        res.setHeader('Set-Cookie', cookieValue);
+        // Explicitly set multiple cookie formats to ensure browser compatibility
+        const cookieValues = [
+          `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=none; Secure=false; Max-Age=86400`,
+          `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400`,
+          `theagencyiq.session=${req.sessionID}; Path=/; Max-Age=86400`
+        ];
+        res.setHeader('Set-Cookie', cookieValues);
         
         // Also add to session mapping for direct access
         const { setSessionMapping } = await import('./middleware/authGuard.js');

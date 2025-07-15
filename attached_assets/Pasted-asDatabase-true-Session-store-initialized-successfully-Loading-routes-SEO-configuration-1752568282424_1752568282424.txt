@@ -1,0 +1,46 @@
+asDatabase: true
+}
+✅ Session store initialized successfully
+📡 Loading routes...
+✅ SEO configuration loaded successfully
+🔗 OAuth Redirect Base URL: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev
+🔗 Facebook callback will be: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/auth/facebook/callback
+🔗 Instagram callback will be: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/auth/instagram/callback
+✅ X OAuth strategy configured successfully
+🔧 Passport.js strategies configured:
+  ✅ Facebook OAuth - Full authentication flow
+  ✅ Instagram OAuth - Via Facebook Graph API
+  ✅ LinkedIn OAuth - Professional networking
+  ✅ X (Twitter) OAuth - Social media posting
+  ✅ YouTube OAuth - Video content management
+🔐 Session serialization/deserialization configured
+Facebook OAuth routes disabled in server/routes.ts - using custom implementation
+✅ Routes registered successfully
+⚡ Setting up development Vite...
+✅ Vite setup complete
+TheAgencyIQ Server running on port 5000
+Deploy time: 15/07/2025, 6:31:06 pm AEST
+React app with OAuth bypass ready
+Visit /public to bypass auth and access platform connections
+🔍 Session Debug - GET /
+📋 Session ID: g_ZYs2NS_ywxeKVdiWD6M_72xOb3d9gW
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /@vite/client
+📋 Session ID: TGzv2nSPxDhBWQOCoX9UayBJwDSX2P_2
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/main.tsx?v=OcqoINgTPC3J6wwcTXKd_
+📋 Session ID: uCfC9LVVV1HHnC2HJ-cJy13WWeaFfG6C
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /@react-refresh
+📋 Session ID: 0vDy-xFKtG4ZoJzARz0qVjhqJP3a5qs7
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /@fs/home/runner/workspace/node_modules/vite/dist/client/env.mjs
+📋 Session ID: YMovSVjry0LU_EmKCPgdOC9l5-FpqUzM
+📋 User ID: undefined
+📋 Session Cookie: MISSING - Will be set in response
+🔍 Session Debug - GET /src/App.tsx?v=OcqoINgTPC3J6wwcTXKd_
+📋 Session ID: o-u1lQySFoYZ39kPYno4YGS8QAPEq3OE
