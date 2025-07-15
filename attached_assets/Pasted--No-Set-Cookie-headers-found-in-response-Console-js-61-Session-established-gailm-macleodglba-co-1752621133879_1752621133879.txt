@@ -1,0 +1,33 @@
+⚠️ No Set-Cookie headers found in response
+Console.js:61 ✅ Session established: gailm@macleodglba.com.au
+Console.js:61 User ID: 2
+Console.js:61 Session ID: 6fab43fdd903d5b241b201376cee90a9
+Console.js:61 💾 Session ID stored in localStorage for fallback
+Console.js:61 🔄 Queries invalidated after session establishment
+Console.js:61 Onboarding progress restored
+Console.js:61 🔧 FORCING cookie transmission: theagencyiq.session=s%3AV23Y3BcufaYFYBAZiMUanAuc2_...
+Console.js:61 🔍 Making authenticated request to: /api/user
+Console.js:61 Onboarding progress restored
+4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)Understand this error
+Console.js:61 Authentication failed - LOOP PREVENTION - NOT REDIRECTING
+4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)Understand this error
+4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)Understand this error
+4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)Understand this error
+Console.js:61 Authentication failed - LOOP PREVENTION - NOT REDIRECTING
+4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)Understand this error
+Console.js:61 Authentication failed - LOOP PREVENTION - NOT REDIRECTING
+framework-455ab0b017232a0c.js:1 Unable to preventDefault inside passive event listener invocation.
+preventDefault @ framework-455ab0b017232a0c.js:1Understand this error
+framework-455ab0b017232a0c.js:1 Unable to preventDefault inside passive event listener invocation.
+preventDefault @ framework-455ab0b017232a0c.js:1Understand this error
+framework-455ab0b017232a0c.js:1 Unable to preventDefault inside passive event listener invocation.
+preventDefault @ framework-455ab0b017232a0c.js:1Understand this error
+framework-455ab0b017232a0c.js:1 Unable to preventDefault inside passive event listener invocation.
+preventDefault @ framework-455ab0b017232a0c.js:1Understand this error
+framework-455ab0b017232a0c.js:1 Unable to preventDefault inside passive event listener invocation.
+preventDefault @ framework-455ab0b017232a0c.js:1Understand this error
+framework-455ab0b017232a0c.js:1 Unable to preventDefault inside passive event listener invocation.
+preventDefault @ framework-455ab0b017232a0c.js:1Understand this error
+framework-455ab0b017232a0c.js:1 Unable to preventDefault inside passive event listener invocation.
+preventDefault @ framework-455ab0b017232a0c.js:1Understand this error
+manifest.json:1  Failed to load resource: the server responded with a status of 403 ()Understand this error

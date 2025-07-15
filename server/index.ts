@@ -8,6 +8,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
 import { memoryManager } from './utils/memory-manager';
+import { sessionUserMap } from './middleware/authGuard';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -235,6 +236,10 @@ async function startServer() {
             req.session.userEmail = sessionData.userEmail;
             req.session.subscriptionPlan = sessionData.subscriptionPlan;
             req.session.subscriptionActive = sessionData.subscriptionActive;
+            
+            // Also set session mapping for backup
+            sessionUserMap.set(cookieSessionId, sessionData.userId);
+            
             console.log(`✅ Session restored: ${cookieSessionId} -> User ${sessionData.userId}`);
           } else {
             console.log(`🆕 New session initialized: ${cookieSessionId}`);

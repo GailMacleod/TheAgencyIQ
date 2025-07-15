@@ -13,20 +13,10 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     return;
   }
 
-  // Fallback to session mapping if session is corrupted but cookie exists
-  const sessionId = req.sessionID;
-  if (sessionId && sessionUserMap.has(sessionId)) {
-    const userId = sessionUserMap.get(sessionId);
-    req.user = { id: userId };
-    req.session.userId = userId; // Restore session data
-    console.log(`✅ AuthGuard: User ${userId} authenticated via session mapping fallback`);
-    next();
-    return;
-  }
-
-  // Check localStorage fallback session ID
+  // Extract session ID from cookie for fallback authentication
   const cookieHeader = req.headers.cookie || '';
   const sessionMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
+  
   if (sessionMatch) {
     let cookieSessionId = sessionMatch[1];
     
@@ -36,14 +26,38 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
       cookieSessionId = decoded.substring(4).split('.')[0];
     }
     
+    console.log(`🔍 AuthGuard: Checking session ID ${cookieSessionId} from cookie`);
+    
+    // Check session mapping first
     if (sessionUserMap.has(cookieSessionId)) {
       const userId = sessionUserMap.get(cookieSessionId);
       req.user = { id: userId };
       req.session.userId = userId;
-      console.log(`✅ AuthGuard: User ${userId} authenticated via cookie fallback`);
+      console.log(`✅ AuthGuard: User ${userId} authenticated via session mapping`);
       next();
       return;
     }
+    
+    // Check if session ID matches current session
+    if (cookieSessionId === req.sessionID && sessionUserMap.has(req.sessionID)) {
+      const userId = sessionUserMap.get(req.sessionID);
+      req.user = { id: userId };
+      req.session.userId = userId;
+      console.log(`✅ AuthGuard: User ${userId} authenticated via session ID match`);
+      next();
+      return;
+    }
+  }
+
+  // Fallback to session mapping if session is corrupted but cookie exists
+  const sessionId = req.sessionID;
+  if (sessionId && sessionUserMap.has(sessionId)) {
+    const userId = sessionUserMap.get(sessionId);
+    req.user = { id: userId };
+    req.session.userId = userId; // Restore session data
+    console.log(`✅ AuthGuard: User ${userId} authenticated via session mapping fallback`);
+    next();
+    return;
   }
 
   console.log(`❌ AuthGuard: Authentication failed - no valid session found`);

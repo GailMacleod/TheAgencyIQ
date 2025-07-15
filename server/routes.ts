@@ -130,15 +130,6 @@ function addSystemHealthEndpoints(app: Express) {
       req.session.subscriptionPlan = user.subscriptionPlan || user.subscription_plan || 'professional';
       req.session.subscriptionActive = user.subscriptionActive || user.subscription_active || true;
 
-      // Set session cookie properly with correct attributes
-      res.cookie('theagencyiq.session', req.sessionID, {
-        secure: false,
-        sameSite: 'lax',
-        path: '/',
-        httpOnly: false,
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-      });
-
       // Save session and return response
       req.session.save((err: any) => {
         if (err) {
@@ -150,6 +141,22 @@ function addSystemHealthEndpoints(app: Express) {
         sessionUserMap.set(req.sessionID, user.id);
         
         console.log(`✅ Session established: ${user.email} -> Session ID: ${req.sessionID}`);
+        
+        // Force proper cookie transmission by setting explicit headers
+        const cookieString = `theagencyiq.session=s%3A${req.sessionID}.${Buffer.from(req.sessionID).toString('base64').substring(0, 16)}; Path=/; HttpOnly=false; SameSite=lax; Max-Age=86400`;
+        res.setHeader('Set-Cookie', cookieString);
+        
+        console.log(`🍪 Cookie set: ${cookieString}`);
+        
+        // Also try alternative cookie setting method
+        res.cookie('theagencyiq.session', req.sessionID, {
+          signed: true,
+          secure: false,
+          sameSite: 'lax',
+          path: '/',
+          httpOnly: false,
+          maxAge: 86400000
+        });
         
         res.json({
           sessionEstablished: true,
