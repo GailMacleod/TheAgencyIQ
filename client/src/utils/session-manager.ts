@@ -78,22 +78,13 @@ class SessionManager {
         if (sessionId) {
           console.log('📋 Session ID received:', sessionId);
           
-          // Store session information in localStorage for fallback
-          localStorage.setItem('aiq_session_id', sessionId);
-          localStorage.setItem('aiq_user_id', data.user.id.toString());
-          localStorage.setItem('aiq_user_email', data.user.email);
-          
           // Check if cookies are being set by examining the response headers
           const cookies = response.headers.get('Set-Cookie');
           if (cookies) {
             console.log('🍪 Set-Cookie headers found:', cookies);
-            localStorage.setItem('aiq_has_cookies', 'true');
           } else {
             console.log('⚠️ No Set-Cookie headers found in response');
-            localStorage.setItem('aiq_has_cookies', 'false');
           }
-          
-          console.log('🔧 Session information stored in localStorage as fallback');
         }
         
         this.sessionInfo = {

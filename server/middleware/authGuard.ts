@@ -5,7 +5,8 @@ import { storage } from '../storage';
 export const sessionUserMap = new Map<string, number>();
 
 export const requireAuth = async (req: any, res: Response, next: NextFunction) => {
-  if (req.session?.userId) {
+  if (req.session.userId) {
+    req.user = { id: req.session.userId };
     next();
   } else {
     res.status(401).json({ message: 'Unauthorized' });
