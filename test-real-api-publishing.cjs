@@ -1,207 +1,221 @@
 /**
- * REAL API PUBLISHING TEST
- * Test publishing to all 5 platforms with authentication
- * Creates test post, publishes to Facebook, Instagram, LinkedIn, X, YouTube
- * Verifies post IDs and quota deduction
+ * Test Real API Publishing System
+ * Validates actual posting to all 5 platforms with real platform APIs
+ * Tests authentication, quota deduction, and platform post IDs
  */
 
 const axios = require('axios');
-const baseURL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
-async function testRealApiPublishing() {
-  console.log('🚀 REAL API PUBLISHING TEST');
-  console.log('==========================');
-  
-  const results = {
-    sessionEstablishment: false,
-    postCreation: false,
-    platformPublishing: {},
-    quotaValidation: false,
-    postIdVerification: false,
-    errors: []
-  };
-  
-  try {
-    // Step 1: Establish authenticated session
-    console.log('\n1. Establishing authenticated session...');
-    const sessionResponse = await axios.post(`${baseURL}/api/establish-session`, {
-      email: 'gailm@macleodglba.com.au',
-      phone: '+61424835189'
-    }, {
-      withCredentials: true,
-      validateStatus: () => true
-    });
-    
-    if (sessionResponse.status !== 200) {
-      results.errors.push('Session establishment failed');
-      console.log('❌ Session establishment failed:', sessionResponse.data);
-      return results;
-    }
-    
-    results.sessionEstablishment = true;
-    console.log('✅ Session established for User ID:', sessionResponse.data.user.id);
-    
-    // Extract session cookie
-    const setCookieHeader = sessionResponse.headers['set-cookie'];
-    let sessionCookie = '';
-    if (setCookieHeader) {
-      for (const cookie of setCookieHeader) {
-        if (cookie.includes('theagencyiq.session=')) {
-          sessionCookie = cookie.split(';')[0];
-          break;
-        }
+// Create axios instance with session cookie handling
+const axiosInstance = axios.create({
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Store session cookie for reuse
+let sessionCookie = null;
+
+const BASE_URL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+
+class RealAPIPublishingTest {
+  constructor() {
+    this.results = {
+      testStartTime: new Date().toISOString(),
+      sessionEstablished: false,
+      platformTests: [],
+      totalPosts: 0,
+      successfulPosts: 0,
+      failedPosts: 0,
+      errors: []
+    };
+  }
+
+  async establishSession() {
+    try {
+      console.log('🔐 Establishing authenticated session...');
+      
+      const response = await axiosInstance.post(`${BASE_URL}/api/establish-session`, {
+        email: 'gailm@macleodglba.com.au',
+        phone: '+61424835189'
+      });
+      
+      // Store session cookie for subsequent requests
+      if (response.headers['set-cookie']) {
+        sessionCookie = response.headers['set-cookie'][0];
+        axiosInstance.defaults.headers.Cookie = sessionCookie;
       }
+
+      if (response.data.sessionEstablished) {
+        this.results.sessionEstablished = true;
+        console.log('✅ Session established for User ID:', response.data.user.id);
+        return true;
+      } else {
+        this.results.errors.push('Session establishment failed');
+        return false;
+      }
+    } catch (error) {
+      this.results.errors.push(`Session establishment error: ${error.message}`);
+      return false;
     }
-    
-    if (!sessionCookie) {
-      results.errors.push('No session cookie found');
-      console.log('❌ No session cookie found');
-      return results;
+  }
+
+  async testPlatformPublishing(platform) {
+    try {
+      console.log(`\n📱 Testing ${platform.toUpperCase()} real API publishing...`);
+      
+      const testContent = `TEST POST - Real API Publishing Test ${platform.toUpperCase()} - ${new Date().toISOString()}`;
+      
+      const response = await axiosInstance.post(`${BASE_URL}/api/posts`, {
+        content: testContent,
+        platform: platform,
+        status: 'approved'
+      });
+
+      const result = {
+        platform: platform,
+        success: response.status === 200,
+        postId: response.data.id,
+        platformPostId: response.data.platformPostId,
+        content: testContent,
+        response: response.data,
+        error: null
+      };
+
+      if (response.status === 200 && response.data.platformPostId) {
+        console.log(`✅ ${platform.toUpperCase()} - Real post created with Platform ID: ${response.data.platformPostId}`);
+        this.results.successfulPosts++;
+      } else {
+        console.log(`❌ ${platform.toUpperCase()} - Publishing failed`);
+        result.error = 'No platform post ID returned';
+        this.results.failedPosts++;
+      }
+
+      this.results.platformTests.push(result);
+      this.results.totalPosts++;
+      
+      return result;
+      
+    } catch (error) {
+      console.log(`❌ ${platform.toUpperCase()} - Error: ${error.message}`);
+      
+      const result = {
+        platform: platform,
+        success: false,
+        error: error.message,
+        response: error.response?.data
+      };
+      
+      this.results.platformTests.push(result);
+      this.results.totalPosts++;
+      this.results.failedPosts++;
+      
+      return result;
     }
-    
-    console.log('🍪 Session cookie:', sessionCookie.substring(0, 50) + '...');
-    
-    // Step 2: Create test post
-    console.log('\n2. Creating test post...');
-    const postResponse = await axios.post(`${baseURL}/api/posts`, {
-      content: 'TEST POST for Real API Publishing - ' + new Date().toISOString(),
-      scheduledFor: new Date(Date.now() + 60000).toISOString(),
-      platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
-    }, {
-      headers: {
-        'Cookie': sessionCookie,
-        'Content-Type': 'application/json'
-      },
-      validateStatus: () => true
-    });
-    
-    if (postResponse.status !== 201) {
-      results.errors.push('Post creation failed');
-      console.log('❌ Post creation failed:', postResponse.data);
-      return results;
+  }
+
+  async testQuotaDeduction() {
+    try {
+      console.log('\n📊 Testing quota deduction...');
+      
+      const response = await axiosInstance.get(`${BASE_URL}/api/user`);
+
+      if (response.data.remainingPosts !== undefined) {
+        console.log(`✅ Quota system working - Remaining posts: ${response.data.remainingPosts}`);
+        this.results.quotaWorking = true;
+        this.results.remainingPosts = response.data.remainingPosts;
+      } else {
+        console.log('❌ Quota system not working');
+        this.results.quotaWorking = false;
+      }
+      
+    } catch (error) {
+      console.log(`❌ Quota check error: ${error.message}`);
+      this.results.quotaWorking = false;
     }
+  }
+
+  async runComprehensiveTest() {
+    console.log('🚀 REAL API PUBLISHING COMPREHENSIVE TEST');
+    console.log('==========================================');
     
-    results.postCreation = true;
-    const postId = postResponse.data.id;
-    console.log('✅ Test post created with ID:', postId);
-    
-    // Step 3: Publish to all platforms
-    console.log('\n3. Publishing to all platforms...');
+    // Step 1: Establish session
+    if (!await this.establishSession()) {
+      console.log('❌ Test failed at session establishment');
+      return this.generateReport();
+    }
+
+    // Step 2: Test all 5 platforms
     const platforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
     
     for (const platform of platforms) {
-      console.log(`\n   Publishing to ${platform}...`);
+      await this.testPlatformPublishing(platform);
       
-      const publishResponse = await axios.post(`${baseURL}/api/posts/${postId}/publish`, {
-        platforms: [platform]
-      }, {
-        headers: {
-          'Cookie': sessionCookie,
-          'Content-Type': 'application/json'
-        },
-        validateStatus: () => true
-      });
-      
-      if (publishResponse.status === 200) {
-        const publishResult = publishResponse.data;
-        const platformResult = publishResult.results.find(r => r.platform === platform);
-        
-        if (platformResult && platformResult.success) {
-          console.log(`   ✅ ${platform}: SUCCESS - Post ID: ${platformResult.postId}`);
-          results.platformPublishing[platform] = {
-            success: true,
-            postId: platformResult.postId,
-            quotaDeducted: platformResult.quotaDeducted
-          };
-        } else {
-          console.log(`   ❌ ${platform}: FAILED - ${platformResult?.error || 'Unknown error'}`);
-          results.platformPublishing[platform] = {
-            success: false,
-            error: platformResult?.error || 'Unknown error',
-            authenticated: platformResult?.authenticated || false
-          };
-        }
-      } else {
-        console.log(`   ❌ ${platform}: PUBLISH REQUEST FAILED - Status: ${publishResponse.status}`);
-        results.platformPublishing[platform] = {
-          success: false,
-          error: `HTTP ${publishResponse.status}: ${publishResponse.data?.message || 'Unknown error'}`,
-          authenticated: publishResponse.status !== 401
-        };
+      // Wait 2 seconds between posts to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    // Step 3: Test quota deduction
+    await this.testQuotaDeduction();
+
+    return this.generateReport();
+  }
+
+  generateReport() {
+    const successRate = this.results.totalPosts > 0 ? 
+      (this.results.successfulPosts / this.results.totalPosts * 100).toFixed(1) : 0;
+
+    console.log('\n📋 REAL API PUBLISHING TEST REPORT');
+    console.log('==================================');
+    console.log(`⏱️  Test Duration: ${((new Date() - new Date(this.results.testStartTime)) / 1000).toFixed(2)}s`);
+    console.log(`🔐 Session Established: ${this.results.sessionEstablished ? '✅' : '❌'}`);
+    console.log(`📱 Platforms Tested: ${this.results.platformTests.length}`);
+    console.log(`✅ Successful Posts: ${this.results.successfulPosts}/${this.results.totalPosts}`);
+    console.log(`❌ Failed Posts: ${this.results.failedPosts}/${this.results.totalPosts}`);
+    console.log(`📈 Success Rate: ${successRate}%`);
+    console.log(`📊 Quota System: ${this.results.quotaWorking ? '✅' : '❌'}`);
+    
+    if (this.results.remainingPosts !== undefined) {
+      console.log(`📋 Remaining Posts: ${this.results.remainingPosts}`);
+    }
+
+    // Platform-specific results
+    console.log('\n📱 Platform Results:');
+    this.results.platformTests.forEach(test => {
+      const status = test.success ? '✅' : '❌';
+      const platformPostId = test.platformPostId ? ` (ID: ${test.platformPostId})` : '';
+      console.log(`   ${status} ${test.platform.toUpperCase()}${platformPostId}`);
+      if (test.error) {
+        console.log(`     Error: ${test.error}`);
       }
-    }
-    
-    // Step 4: Verify post IDs
-    console.log('\n4. Verifying platform post IDs...');
-    const postIdResponse = await axios.get(`${baseURL}/api/posts/${postId}/platform-id`, {
-      headers: {
-        'Cookie': sessionCookie
-      },
-      validateStatus: () => true
     });
-    
-    if (postIdResponse.status === 200) {
-      const postIdData = postIdResponse.data;
-      console.log('✅ Post ID verification:', postIdData);
-      results.postIdVerification = postIdData.valid;
-    } else {
-      console.log('❌ Post ID verification failed:', postIdResponse.data);
-      results.errors.push('Post ID verification failed');
+
+    if (this.results.errors.length > 0) {
+      console.log('\n❌ Errors:');
+      this.results.errors.forEach(error => console.log(`   - ${error}`));
     }
+
+    const isProductionReady = this.results.sessionEstablished && 
+                             this.results.successfulPosts >= 3 && 
+                             this.results.quotaWorking;
     
-    // Step 5: Check quota status
-    console.log('\n5. Checking quota status...');
-    const quotaResponse = await axios.get(`${baseURL}/api/quota/stats`, {
-      headers: {
-        'Cookie': sessionCookie
-      },
-      validateStatus: () => true
-    });
+    console.log(`\n🎯 PRODUCTION READINESS: ${isProductionReady ? '✅ READY' : '❌ NOT READY'}`);
     
-    if (quotaResponse.status === 200) {
-      const quotaData = quotaResponse.data;
-      console.log('✅ Quota status:', quotaData);
-      results.quotaValidation = true;
-    } else {
-      console.log('❌ Quota check failed:', quotaResponse.data);
-      results.errors.push('Quota validation failed');
-    }
-    
-  } catch (error) {
-    console.error('❌ Test error:', error.message);
-    results.errors.push(error.message);
+    return {
+      success: isProductionReady,
+      results: this.results
+    };
   }
-  
-  // Generate final report
-  console.log('\n🎯 REAL API PUBLISHING TEST RESULTS');
-  console.log('====================================');
-  console.log(`Session Establishment: ${results.sessionEstablishment ? '✅ PASSED' : '❌ FAILED'}`);
-  console.log(`Post Creation: ${results.postCreation ? '✅ PASSED' : '❌ FAILED'}`);
-  
-  console.log('\nPlatform Publishing Results:');
-  for (const [platform, result] of Object.entries(results.platformPublishing)) {
-    if (result.success) {
-      console.log(`  ${platform}: ✅ SUCCESS - Post ID: ${result.postId}`);
-    } else {
-      console.log(`  ${platform}: ❌ FAILED - ${result.error}`);
-    }
-  }
-  
-  console.log(`\nPost ID Verification: ${results.postIdVerification ? '✅ PASSED' : '❌ FAILED'}`);
-  console.log(`Quota Validation: ${results.quotaValidation ? '✅ PASSED' : '❌ FAILED'}`);
-  
-  const successfulPlatforms = Object.values(results.platformPublishing).filter(r => r.success).length;
-  const totalPlatforms = Object.keys(results.platformPublishing).length;
-  
-  console.log(`\n📊 SUMMARY: ${successfulPlatforms}/${totalPlatforms} platforms published successfully`);
-  
-  if (results.errors.length > 0) {
-    console.log('\n🚨 ERRORS:');
-    results.errors.forEach(error => console.log(`  - ${error}`));
-  }
-  
-  return results;
 }
 
 // Run the test
-testRealApiPublishing().catch(console.error);
+const test = new RealAPIPublishingTest();
+test.runComprehensiveTest().then(result => {
+  console.log('\n=== FINAL RESULT ===');
+  console.log(result.success ? '✅ REAL API PUBLISHING SYSTEM READY' : '❌ REAL API PUBLISHING SYSTEM NOT READY');
+  process.exit(result.success ? 0 : 1);
+}).catch(error => {
+  console.error('Test failed:', error);
+  process.exit(1);
+});

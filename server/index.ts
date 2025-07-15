@@ -142,11 +142,11 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // CRITICAL: Enable trust proxy for HTTPS environment to support secure cookies
-  app.set('trust proxy', 1);
+  // CRITICAL FIX: Set trust proxy to 0 for session handling
+  app.set('trust proxy', 0);
 
-  // Cookie parser middleware with secret - MUST be before session middleware
-  app.use(cookieParser('your-secret-key'));
+  // CRITICAL FIX: Cookie parser middleware with 'secret' 
+  app.use(cookieParser('secret'));
 
   // Device-agnostic session configuration for mobile-to-desktop continuity
   // Configure PostgreSQL session store
@@ -183,35 +183,32 @@ async function startServer() {
   
   console.log('✅ Session store initialized successfully');
 
-  // CORS middleware with specific origin and credentials support
+  // CRITICAL FIX: CORS configuration with credentials and origin support
   app.use(cors({
-    origin: true,
     credentials: true,
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Source', 'X-Retry-Session', 'Cookie', 'X-Session-ID', 'X-User-ID', 'X-User-Email'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie'],
     exposedHeaders: ['Set-Cookie'],
     preflightContinue: false,
     optionsSuccessStatus: 204
   }));
 
-  // Session configuration - OPTIMIZED FOR BROWSER COOKIE ACCEPTANCE
+  // CRITICAL FIX: Session configuration with proper settings
   app.use(session({
-    secret: 'your-secret-key',
+    secret: 'secret',
     store: sessionStore,
-    resave: true,    // CRITICAL: Set to true to force save
-    saveUninitialized: true,  // CRITICAL: Set to true to save new sessions
+    resave: false,
+    saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: false,       // CRITICAL: Set to false for development to allow cookie acceptance
+      secure: false,
       maxAge: sessionTtl,
-      httpOnly: false,     // Allow frontend access for debugging
-      sameSite: 'lax',     // CRITICAL: Changed from 'none' to 'lax' for better browser compatibility
-      path: '/',
-      domain: undefined,   // Let browser determine domain
-      signed: false        // Disable signed cookies for simpler debugging
+      httpOnly: false,
+      sameSite: 'lax',
+      path: '/'
     },
-    rolling: true,    // Extend session on activity
-    proxy: true,   // Enable proxy mode for HTTPS
+    rolling: true,
     genid: () => {
       return crypto.randomBytes(16).toString('hex');
     }

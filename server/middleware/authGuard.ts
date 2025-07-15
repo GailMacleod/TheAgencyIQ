@@ -7,13 +7,16 @@ export const sessionUserMap = new Map<string, number>();
 export const requireAuth = async (req: any, res: Response, next: NextFunction) => {
   console.log(`🔍 AuthGuard check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
   
-  // Check if session already has user ID
+  // CRITICAL FIX: Check if session has userId and set req.user
   if (req.session?.userId) {
     console.log(`✅ AuthGuard passed - User ID: ${req.session.userId}`);
-    // CRITICAL: Set req.user for proper authentication
     req.user = { id: req.session.userId };
     return next();
   }
+  
+  // If no session userId, return 401 unauthorized
+  console.log(`❌ AuthGuard rejected - No session userId found`);
+  return res.status(401).json({ message: 'Not authenticated', redirectTo: '/login' });
   
   // IMMEDIATE FIX: Check for valid headers OR query parameters for User ID 2 (gailm@macleodglba.com.au)
   // HTTP headers are case-insensitive and often converted to lowercase

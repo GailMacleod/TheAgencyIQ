@@ -126,18 +126,15 @@ function addSystemHealthEndpoints(app: Express) {
       
       console.log(`✅ Authenticating user: ${user.email} (ID: ${user.id})`);
       
-      // Set session data in Express session with actual user data
+      // CRITICAL FIX: Set session userId and save session
       req.session.userId = user.id;
       req.session.userEmail = user.email;
       req.session.subscriptionPlan = user.subscriptionPlan;
       req.session.subscriptionActive = user.subscriptionActive;
       
-      // Store session in direct mapping for authGuard access
-      sessionUserMap.set(req.sessionID, user.id);
-      
       console.log(`🔐 Session established for ${user.email} (ID: ${user.id})`);
       
-      // Force session save to ensure data is persisted
+      // CRITICAL: Save session to ensure data is persisted
       await new Promise<void>((resolve, reject) => {
         req.session.save((err) => {
           if (err) {
