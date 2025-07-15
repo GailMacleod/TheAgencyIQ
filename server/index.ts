@@ -207,7 +207,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Session configuration - FIXED FOR BROWSER COOKIE TRANSMISSION
+  // Session configuration - FIXED FOR BROWSER COOKIE TRANSMISSION WITH SIGNED COOKIES
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -219,7 +219,8 @@ async function startServer() {
       maxAge: sessionTtl,
       httpOnly: false,      // Allow frontend access
       sameSite: 'lax',  // CRITICAL: Set to 'lax' for same-origin requests
-      path: '/'
+      path: '/',
+      signed: true        // Enable signed cookies for security
     },
     rolling: false,
     proxy: true
