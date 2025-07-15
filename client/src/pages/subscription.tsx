@@ -189,8 +189,8 @@ export default function Subscription() {
               <Link href="/" className="flex items-center">
                 <ArrowLeft className="h-5 w-5 text-muted-foreground mr-3" />
                 <img 
-                  src="/attached_assets/agency_logo_medium.svg" 
-                  alt="AiQ" 
+                  src="attached_assets/agency_logo_verified_1752580869784.png" 
+                  alt="AIQ" 
                   className="h-12 w-auto"
                 />
               </Link>
