@@ -1,0 +1,46 @@
+{
+  "summary": {
+    "totalTests": 2,
+    "passed": 1,
+    "failed": 1,
+    "successRate": "50.0%",
+    "duration": "110ms",
+    "launchReady": false
+  },
+  "testResults": [
+    {
+      "name": "Health Endpoints",
+      "status": "PASSED",
+      "duration": "11ms",
+      "result": {
+        "status": "healthy",
+        "server": "operational",
+        "database": "connected",
+        "memoryMB": 264
+      }
+    },
+    {
+      "name": "Session Management",
+      "status": "FAILED",
+      "duration": "7ms",
+      "error": "Request failed with status code 500"
+    }
+  ],
+  "memoryUsage": [
+    {
+      "timestamp": "2025-07-15T01:13:43.800Z",
+      "rss": 277106688,
+      "heapTotal": 132976640,
+      "heapUsed": 128530512,
+      "external": 29677121
+    }
+  ],
+  "errors": [
+    {
+      "test": "Session Management",
+      "error": "Request failed with status code 500",
+      "stack": "AxiosError: Request failed with status code 500\n    at settle (/home/runner/workspace/node_modules/axios/dist/node/axios.cjs:2053:12)\n    at IncomingMessage.handleStreamEnd (/home/runner/workspace/node_modules/axios/dist/node/axios.cjs:3170:11)\n    at IncomingMessage.emit (node:events:530:35)\n    at endReadableNT (node:internal/streams/readable:1698:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)\n    at Axios.request (/home/runner/workspace/node_modules/axios/dist/node/axios.cjs:4280:41)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async /home/runner/workspace/launch-readiness-test.cjs:105:31\n    at async LaunchReadinessTest.runTest (/home/runner/workspace/launch-readiness-test.cjs:31:22)\n    at async LaunchReadinessTest.testSessionManagement (/home/runner/workspace/launch-readiness-test.cjs:103:12)\n    at async LaunchReadinessTest.runAllTests (/home/runner/workspace/launch-readiness-test.cjs:461:7)"
+    }
+  ],
+  "timestamp": "2025-07-15T01:13:43.826Z"
+}

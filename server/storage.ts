@@ -54,7 +54,14 @@ export interface IStorage {
   
   // Cleanup operations
   listAllStripeCustomers(): Promise<User[]>;
+  getAllStripeCustomers(): Promise<User[]>;
   clearDuplicateStripeCustomers(keepUserId: number): Promise<void>;
+  
+  // Scheduling operations
+  createScheduledPost(postData: any): Promise<any>;
+  
+  // Platform connection creation
+  createPlatformConnection(connectionData: any): Promise<PlatformConnection>;
 
   // Post operations
   getPostsByUser(userId: number): Promise<Post[]>;
@@ -780,6 +787,26 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(sql`${users.stripeCustomerId} IS NOT NULL`);
     return usersWithStripe;
+  }
+
+  async getAllStripeCustomers(): Promise<User[]> {
+    return this.listAllStripeCustomers();
+  }
+
+  async createScheduledPost(postData: any): Promise<any> {
+    const [scheduledPost] = await db
+      .insert(postSchedule)
+      .values({
+        postId: `post_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        userId: postData.userId.toString(),
+        content: postData.content,
+        platform: postData.platforms?.[0] || 'facebook',
+        status: postData.status || 'scheduled',
+        scheduledAt: postData.scheduleDate ? new Date(postData.scheduleDate) : null,
+        createdAt: new Date()
+      })
+      .returning();
+    return scheduledPost;
   }
 
   async getUsersWithStripeCustomers(): Promise<User[]> {

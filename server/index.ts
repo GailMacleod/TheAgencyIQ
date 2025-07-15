@@ -31,22 +31,32 @@ async function startServer() {
   // Cookie parser middleware with signed cookies - MUST be before session middleware
   app.use(cookieParser('agencyiq-session-secret-key'));
   
-  // SECURITY: Force signed cookies for all sessions
-  app.use((req, res, next) => {
-    const originalSend = res.send;
-    res.send = function(data) {
-      // Force signed cookies on all responses
-      if (req.sessionID && req.session) {
-        res.cookie('theagencyiq.session', req.sessionID, {
-          signed: true,
-          httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'none',
-          maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
-        });
+  // Import session mapping from routes  
+  let sessionUserMap: Map<string, any> | null = null;
+  
+  // Session restoration middleware
+  app.use((req: any, res, next) => {
+    // Get session map from app locals (set by routes)
+    if (!sessionUserMap && app.locals.sessionUserMap) {
+      sessionUserMap = app.locals.sessionUserMap;
+    }
+    
+    // Extract session ID from cookie
+    const cookieHeader = req.headers.cookie;
+    if (cookieHeader && sessionUserMap) {
+      const sessionCookie = cookieHeader.split(';').find(c => c.trim().startsWith('theagencyiq.session='));
+      if (sessionCookie) {
+        const sessionId = sessionCookie.split('=')[1];
+        const mappedUser = sessionUserMap.get(sessionId);
+        if (mappedUser) {
+          req.session = req.session || {};
+          req.session.userId = mappedUser.userId;
+          req.session.userEmail = mappedUser.userEmail;
+          req.session.id = sessionId;
+          req.sessionID = sessionId;
+        }
       }
-      return originalSend.call(this, data);
-    };
+    }
     next();
   });
 

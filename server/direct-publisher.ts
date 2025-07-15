@@ -60,6 +60,62 @@ export class DirectPublisher {
   }
 
   /**
+   * Enhanced posts endpoint with real API integration and quota management
+   */
+  static async publishPostWithQuotaManagement(userId: number, content: string, platforms: string[]): Promise<{
+    success: boolean;
+    platformPostIds?: { [key: string]: string };
+    quotaDeducted?: number;
+    error?: string;
+  }> {
+    try {
+      const publishedPlatforms: { [key: string]: string } = {};
+      let quotaDeducted = 0;
+
+      for (const platform of platforms) {
+        const result = await this.publishToPlatform(platform, content);
+        
+        if (result.success && result.platformPostId) {
+          publishedPlatforms[platform] = result.platformPostId;
+          quotaDeducted++;
+        }
+      }
+
+      if (Object.keys(publishedPlatforms).length > 0) {
+        return {
+          success: true,
+          platformPostIds: publishedPlatforms,
+          quotaDeducted
+        };
+      } else {
+        return { success: false, error: 'Failed to publish to any platform' };
+      }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Publish to specific platform with real API
+   */
+  static async publishToPlatform(platform: string, content: string): Promise<DirectPublishResult> {
+    switch (platform) {
+      case 'facebook':
+        return await this.publishToFacebook(content, process.env.FACEBOOK_ACCESS_TOKEN || 'test_token');
+      case 'instagram':
+        return await this.publishToInstagram(content, process.env.INSTAGRAM_ACCESS_TOKEN || 'test_token');
+      case 'linkedin':
+        return await this.publishToLinkedIn(content, process.env.LINKEDIN_ACCESS_TOKEN || 'test_token');
+      case 'x':
+        return await this.publishToX(content, process.env.X_ACCESS_TOKEN || 'test_token', process.env.X_TOKEN_SECRET || 'test_secret');
+      case 'youtube':
+        return await this.publishToYouTube(content, process.env.YOUTUBE_ACCESS_TOKEN || 'test_token');
+      default:
+        return { success: false, error: `Unsupported platform: ${platform}` };
+    }
+  }
+
+  /**
    * Validate and refresh token with enhanced error handling
    */
   static async validateAndRefreshToken(connection: any): Promise<{valid: boolean, connection?: any, error?: string}> {

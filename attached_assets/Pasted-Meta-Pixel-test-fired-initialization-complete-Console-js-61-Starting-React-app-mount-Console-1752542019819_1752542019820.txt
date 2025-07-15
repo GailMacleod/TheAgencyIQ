@@ -1,0 +1,245 @@
+Meta Pixel test fired - initialization complete
+Console.js:61 🚀 Starting React app mount...
+Console.js:61 ✅ React app mounted successfully
+2Console.js:61 Onboarding progress restored
+Console.js:61 Analytics disabled in development mode
+Console.js:61 Mobile layout applied
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:80
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+makeRequest @ api-client.ts:31
+get @ api-client.ts:63
+(anonymous) @ queryClient.ts:127
+fetchFn @ @tanstack_react-query.js?v=044abfc6:881
+run @ @tanstack_react-query.js?v=044abfc6:513
+start @ @tanstack_react-query.js?v=044abfc6:555
+fetch @ @tanstack_react-query.js?v=044abfc6:969
+executeFetch_fn @ @tanstack_react-query.js?v=044abfc6:2279
+onSubscribe @ @tanstack_react-query.js?v=044abfc6:1983
+subscribe @ @tanstack_react-query.js?v=044abfc6:24
+(anonymous) @ @tanstack_react-query.js?v=044abfc6:3146
+subscribeToStore @ chunk-SXRIVT2P.js?v=044abfc6:12032
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+(index):315  POST https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/establish-session 500 (Internal Server Error)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+establishSession @ App.tsx:244
+(anonymous) @ App.tsx:273
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+Console.js:61 Session establishment failed, continuing without auth
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user-status 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:80
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+establishSession @ session-manager.ts:22
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+(index):315  POST https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/establish-session 500 (Internal Server Error)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+doEstablishSession @ session-manager.ts:56
+establishSession @ session-manager.ts:50
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+Console.js:61 Session establishment failed with status: 500
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+doEstablishSession @ session-manager.ts:166
+await in doEstablishSession
+establishSession @ session-manager.ts:50
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:110
+await in checkUserStatus
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+Console.js:61 Session establishment error: Error: Session establishment failed
+    at SessionManager.doEstablishSession (session-manager.ts:168:15)
+    at async establishSession (App.tsx:143:9)
+Mt.forEach.n.<computed> @ Console.js:61
+console.error @ (index):194
+doEstablishSession @ session-manager.ts:171
+await in doEstablishSession
+establishSession @ session-manager.ts:50
+await in establishSession
+establishSession @ App.tsx:143
+(anonymous) @ App.tsx:174
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+Console.js:61 ❌ Session establishment error, continuing with guest access
+(index):315  GET https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/api/user 401 (Unauthorized)
+window.fetch @ Network.js:219
+window.fetch @ (index):315
+checkUserStatus @ OnboardingWizard.tsx:110
+await in checkUserStatus
+(anonymous) @ OnboardingWizard.tsx:166
+commitHookEffectListMount @ chunk-SXRIVT2P.js?v=044abfc6:16963
+commitPassiveMountOnFiber @ chunk-SXRIVT2P.js?v=044abfc6:18206
+commitPassiveMountEffects_complete @ chunk-SXRIVT2P.js?v=044abfc6:18179
+commitPassiveMountEffects_begin @ chunk-SXRIVT2P.js?v=044abfc6:18169
+commitPassiveMountEffects @ chunk-SXRIVT2P.js?v=044abfc6:18159
+flushPassiveEffectsImpl @ chunk-SXRIVT2P.js?v=044abfc6:19543
+flushPassiveEffects @ chunk-SXRIVT2P.js?v=044abfc6:19500
+performSyncWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18921
+flushSyncCallbacks @ chunk-SXRIVT2P.js?v=044abfc6:9166
+commitRootImpl @ chunk-SXRIVT2P.js?v=044abfc6:19485
+commitRoot @ chunk-SXRIVT2P.js?v=044abfc6:19330
+finishConcurrentRender @ chunk-SXRIVT2P.js?v=044abfc6:18858
+performConcurrentWorkOnRoot @ chunk-SXRIVT2P.js?v=044abfc6:18768
+workLoop @ chunk-SXRIVT2P.js?v=044abfc6:197
+flushWork @ chunk-SXRIVT2P.js?v=044abfc6:176
+performWorkUntilDeadline @ chunk-SXRIVT2P.js?v=044abfc6:384Understand this error
+Console.js:61 Meta Pixel initialized successfully
