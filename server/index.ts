@@ -207,7 +207,7 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Session configuration - FIXED FOR DEVELOPMENT WITH TRUST PROXY = 0
+  // Session configuration - FIXED FOR DEVELOPMENT WITH PROPER COOKIE PERSISTENCE
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -217,11 +217,11 @@ async function startServer() {
     cookie: { 
       secure: false,       // CRITICAL: Set to false for Replit development environment
       maxAge: sessionTtl,
-      httpOnly: false,     // Allow frontend access
+      httpOnly: false,     // Allow frontend access for debugging
       sameSite: 'lax',     // CRITICAL: Set to 'lax' for same-site requests on Replit
       path: '/',
       domain: null,        // Set to null as specified
-      signed: false        // Disable signed cookies to avoid cookieParser secret requirement
+      signed: true         // Enable signed cookies for proper session persistence
     },
     rolling: true,    // Extend session on activity
     proxy: false  // Disable proxy mode to prevent automatic secure cookie enforcement

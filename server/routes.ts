@@ -162,8 +162,9 @@ function addSystemHealthEndpoints(app: Express) {
         path: '/',
         secure: false,
         sameSite: 'lax',
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+        httpOnly: false, // Allow JavaScript access for debugging
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+        signed: true // Enable signed cookies to match session configuration
       });
       
       // Also set a backup cookie for browser compatibility
@@ -172,11 +173,12 @@ function addSystemHealthEndpoints(app: Express) {
         secure: false,
         sameSite: 'lax',
         httpOnly: false, // Keep false for browser access
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+        signed: false // Keep backup unsigned for compatibility
       });
       
-      console.log(`🔧 Session cookie set: theagencyiq.session=${req.sessionID}`);
-      console.log(`🔧 Backup cookie set: aiq_backup_session=${req.sessionID}`);
+      console.log(`🔧 Session cookie set: theagencyiq.session=${req.sessionID} (signed)`);
+      console.log(`🔧 Backup cookie set: aiq_backup_session=${req.sessionID} (unsigned)`);
       
       // Check if session was saved properly
       console.log('📋 Session data after save:', {

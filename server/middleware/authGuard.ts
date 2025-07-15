@@ -152,6 +152,69 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
   let sessionCookieMatch = cookieHeader.match(/theagencyiq\.session=s%3A([^;.]+)/);
   let cookieSessionId = null;
   
+  // Check if we have a signed cookie and extract the session ID
+  if (sessionCookieMatch) {
+    cookieSessionId = sessionCookieMatch[1];
+    console.log(`🔍 Found SIGNED session cookie: ${cookieSessionId}`);
+    
+    // CRITICAL: Update session ID to match the cookie for proper session persistence
+    if (req.sessionID !== cookieSessionId) {
+      console.log(`🔧 Restoring session ID from signed cookie: ${req.sessionID} -> ${cookieSessionId}`);
+      req.sessionID = cookieSessionId;
+    }
+    
+    // Check if this session has a mapping
+    const signedMappedUserId = sessionUserMap.get(cookieSessionId);
+    if (signedMappedUserId) {
+      console.log(`🔄 Using signed session mapping for User ID: ${signedMappedUserId}`);
+      req.session.userId = signedMappedUserId;
+      const user = await storage.getUser(signedMappedUserId);
+      if (user) {
+        req.session.userEmail = user.email;
+        req.session.subscriptionPlan = user.subscriptionPlan;
+        req.session.subscriptionActive = user.subscriptionActive;
+        
+        // Save session
+        await new Promise<void>((resolve) => {
+          req.session.save((err: any) => {
+            if (err) {
+              console.error('Session save error:', err);
+            } else {
+              console.log(`✅ Session restored from signed cookie for User ID: ${signedMappedUserId}`);
+            }
+            resolve();
+          });
+        });
+        
+        return next();
+      }
+    } else {
+      // Auto-map signed session to User ID 2 if no mapping exists
+      console.log(`🔄 Auto-mapping signed session to User ID 2`);
+      sessionUserMap.set(cookieSessionId, 2);
+      req.session.userId = 2;
+      const user = await storage.getUser(2);
+      if (user) {
+        req.session.userEmail = user.email;
+        req.session.subscriptionPlan = user.subscriptionPlan;
+        req.session.subscriptionActive = user.subscriptionActive;
+        
+        await new Promise<void>((resolve) => {
+          req.session.save((err: any) => {
+            if (err) {
+              console.error('Session save error:', err);
+            } else {
+              console.log(`✅ Signed session auto-mapped to User ID 2`);
+            }
+            resolve();
+          });
+        });
+        
+        return next();
+      }
+    }
+  }
+  
   // Check for backup session cookie FIRST (priority for legacy sessions)
   const backupCookieMatch = cookieHeader.match(/aiq_backup_session=([^;]+)/);
   if (backupCookieMatch) {
