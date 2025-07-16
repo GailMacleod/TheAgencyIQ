@@ -2364,10 +2364,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const existingUser = await storage.getUser(req.session.userId);
         if (existingUser) {
           console.log(`Session already established for user ${existingUser.email}`);
+          
+          // Import and update session mapping for consistency
+          const { setSessionMapping } = await import('./middleware/authGuard.js');
+          setSessionMapping(req.sessionID, existingUser.id);
+          
           return res.json({ 
             success: true, 
             user: existingUser,
             sessionEstablished: true,
+            sessionId: req.sessionID,
             message: `Session active for ${existingUser.email}`
           });
         }
@@ -2390,6 +2396,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Store session mapping for direct authentication
           sessionUserMap.set(req.sessionID, user.id);
+          
+          // Import and update session mapping for consistency
+          const { setSessionMapping } = await import('./middleware/authGuard.js');
+          setSessionMapping(req.sessionID, user.id);
           
           // Enhanced session save with callback to ensure persistence
           req.session.save((err: any) => {

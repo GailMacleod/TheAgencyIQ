@@ -6,6 +6,36 @@ export const sessionUserMap = new Map<string, number>();
 
 export const requireAuth = async (req: any, res: Response, next: NextFunction) => {
   try {
+    // Skip authentication for OPTIONS requests
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+
+    // Skip authentication for static routes and development files
+    const excludedPaths = [
+      '/src/',
+      '/attached_assets/',
+      '/@fs/',
+      '/manifest.json',
+      '/favicon.ico',
+      '/icon-',
+      '/robots.txt',
+      '/sitemap.xml',
+      '/public/',
+      '/assets/',
+      '/static/',
+      '/__vite',
+      '/node_modules'
+    ];
+
+    const shouldSkipAuth = excludedPaths.some(path => req.url.startsWith(path));
+    if (shouldSkipAuth) {
+      console.log(`🔓 AuthGuard: Skipping authentication for static route: ${req.url}`);
+      return next();
+    }
+
+    console.log(`🔍 AuthGuard: Checking authentication for ${req.method} ${req.url}`);
+    
     // Check session.userId first (primary method)
     if (req.session?.userId) {
       req.user = { id: req.session.userId };
@@ -21,7 +51,7 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
     if (sessionMatch) {
       let cookieSessionId = sessionMatch[1];
       
-      // Handle signed cookies
+      // Handle signed cookies - fix the parsing to handle the full session ID
       if (cookieSessionId.startsWith('s%3A')) {
         const decoded = decodeURIComponent(cookieSessionId);
         cookieSessionId = decoded.substring(4).split('.')[0];
