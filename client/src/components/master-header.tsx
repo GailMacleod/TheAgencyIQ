@@ -28,8 +28,8 @@ export default function MasterHeader({
               <Link href="/">
                 <div className="flex items-center space-x-1 sm:space-x-2 cursor-pointer">
                   <img 
-                    src="attached_assets/agency_logo_verified_1752580869784.png" 
-                    alt="AIQ" 
+                    src="attached_assets/agency_logo_512x512 (1).png" 
+                    alt="The AgencyIQ" 
                     className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
                   />
                   <div>

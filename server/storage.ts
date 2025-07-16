@@ -215,11 +215,6 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
-    return user;
-  }
-
   async updateUserStripeInfo(id: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
     const [user] = await db
       .update(users)
@@ -262,7 +257,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error(`User ${userId} not found`);
     }
 
-    const newRemainingPosts = Math.max(0, (user.totalPosts || 0) - quotaUsed);
+    const newRemainingPosts = Math.max(0, user.totalPosts - quotaUsed);
     
     const [updatedUser] = await db
       .update(users)
@@ -497,6 +492,7 @@ export class DatabaseStorage implements IStorage {
         accessToken,
         refreshToken,
         expiresAt: expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000), // Default 24 hours
+        updatedAt: new Date()
       })
       .where(and(
         eq(platformConnections.userId, userIdNum),
