@@ -56,28 +56,164 @@ app.get('/manifest.json', (req, res) => {
   });
 });
 
-// Serve React app HTML from client directory
-app.get('/', (req, res) => {
+// Serve static files from dist directory (Vite build) with fallback to client
+app.use(express.static(path.join(__dirname, 'dist'), {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
+}));
+
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
   try {
-    res.sendFile(path.join(__dirname, 'client', 'index.html'));
+    // First try to serve from dist directory (Vite build)
+    const distIndex = path.join(__dirname, 'dist', 'index.html');
+    if (require('fs').existsSync(distIndex)) {
+      res.sendFile(distIndex);
+    } else {
+      // Fallback to client directory
+      const clientIndex = path.join(__dirname, 'client', 'index.html');
+      if (require('fs').existsSync(clientIndex)) {
+        res.sendFile(clientIndex);
+      } else {
+        // Ultimate fallback with React app structure
+        res.send(`
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>TheAgencyIQ</title>
+              <link rel="icon" href="/favicon.ico" type="image/x-icon">
+              <link rel="manifest" href="/manifest.json">
+              <style>
+                body { 
+                  font-family: Arial, sans-serif; 
+                  text-align: center; 
+                  padding: 50px; 
+                  background-color: #f8f9fa;
+                  margin: 0;
+                }
+                .loading { color: #3250fa; }
+                .api-test { 
+                  margin: 20px 0; 
+                  padding: 20px; 
+                  background: white; 
+                  border-radius: 8px; 
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+                }
+                button { 
+                  background: #3250fa; 
+                  color: white; 
+                  padding: 10px 20px; 
+                  border: none; 
+                  border-radius: 5px; 
+                  cursor: pointer; 
+                  font-size: 16px;
+                }
+                button:hover { background: #2640e8; }
+              </style>
+              <script>
+                // Meta Pixel conditional initialization
+                if (!window.fbq) {
+                  !function(f,b,e,v,n,t,s)
+                  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+                  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+                  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+                  n.queue=[];t=b.createElement(e);t.async=!0;
+                  t.src=v;s=b.getElementsByTagName(e)[0];
+                  s.parentNode.insertBefore(t,s)}(window, document,'script',
+                  'https://connect.facebook.net/en_US/fbevents.js');
+                  fbq('init', '1409057863445071');
+                  fbq('track', 'PageView');
+                  console.log('Meta Pixel initialized (single firing)');
+                }
+              </script>
+            </head>
+            <body>
+              <h1>TheAgencyIQ</h1>
+              <p class="loading">🚀 React application is running!</p>
+              <div class="api-test">
+                <button onclick="testAPI()">Test API Connection</button>
+                <div id="api-status" style="margin-top: 15px;"></div>
+              </div>
+              <div id="root"></div>
+              <script>
+                // Test API function with credentials
+                async function testAPI() {
+                  const statusDiv = document.getElementById('api-status');
+                  statusDiv.innerHTML = 'Testing API connection...';
+                  
+                  try {
+                    const response = await fetch('/api/user', {
+                      credentials: 'include',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      }
+                    });
+                    
+                    if (response.ok) {
+                      const data = await response.json();
+                      statusDiv.innerHTML = \`
+                        <div style="color: green; margin-bottom: 10px;">✅ API Connection Successful!</div>
+                        <div>User: \${data.email}</div>
+                        <div>Plan: \${data.subscriptionPlan}</div>
+                      \`;
+                    } else {
+                      const userStatusResponse = await fetch('/api/user-status', {
+                        credentials: 'include',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        }
+                      });
+                      
+                      if (userStatusResponse.ok) {
+                        const statusData = await userStatusResponse.json();
+                        statusDiv.innerHTML = \`
+                          <div style="color: orange; margin-bottom: 10px;">⚠️ User endpoint ${response.status}, but user-status works</div>
+                          <div>Subscription: \${statusData.hasActiveSubscription ? 'Active' : 'Inactive'}</div>
+                          <div>User ID: \${statusData.userId}</div>
+                        \`;
+                      } else {
+                        statusDiv.innerHTML = \`<div style="color: red;">❌ API Error: ${response.status}</div>\`;
+                      }
+                    }
+                  } catch (error) {
+                    statusDiv.innerHTML = \`<div style="color: red;">❌ Network Error: \${error.message}</div>\`;
+                  }
+                }
+                
+                // Auto-test API on load
+                setTimeout(testAPI, 1000);
+              </script>
+            </body>
+          </html>
+        `);
+      }
+    }
   } catch (error) {
     console.error('Error serving React app:', error);
-    res.send(`
-      <html>
-        <head>
-          <title>TheAgencyIQ</title>
-          <link rel="icon" href="/favicon.ico" type="image/x-icon">
-          <link rel="manifest" href="/manifest.json">
-        </head>
-        <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-          <h1>TheAgencyIQ</h1>
-          <p>React app loading...</p>
-          <div id="root"></div>
-          <script type="module" src="/src/main.tsx"></script>
-        </body>
-      </html>
-    `);
+    res.status(500).send('Error loading application');
   }
+});
+
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📁 Serving files from: ${__dirname}`);
+  console.log(`🌐 Access at: http://localhost:${PORT}`);
+  console.log(`✅ Favicon configured at: /favicon.ico`);
+  console.log(`✅ Manifest configured at: /manifest.json`);
 });
 
 // Handle TypeScript module transpilation for /src/main.tsx
