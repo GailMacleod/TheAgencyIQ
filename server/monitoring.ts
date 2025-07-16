@@ -1,6 +1,10 @@
+// Sentry monitoring disabled for optimization
+// import * as Sentry from '@sentry/node';
+// import { nodeProfilingIntegration } from '@sentry/profiling-node';
+
 export function initializeMonitoring() {
-  // Monitoring simplified for development - can be enhanced later
-  console.log('✅ Monitoring initialized');
+  // Sentry monitoring disabled for optimization
+  console.log('Monitoring system disabled for optimization');
 }
 
 export function logError(error: Error, context?: any) {

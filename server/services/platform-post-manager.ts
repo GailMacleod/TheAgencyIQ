@@ -270,24 +270,6 @@ class PlatformPostManager {
       };
     }
   }
-
-  /**
-   * Clean up old quota transactions
-   */
-  async cleanupOldTransactions() {
-    const now = Date.now();
-    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-
-    for (const [key, transaction] of this.quotaTransactions.entries()) {
-      // Simple cleanup - remove transactions older than 24 hours
-      // In production, you might want to add timestamp to transactions
-      if (this.quotaTransactions.size > 1000) {
-        this.quotaTransactions.delete(key);
-      }
-    }
-
-    console.log(`🧹 QUOTA TRANSACTIONS CLEANED: ${this.quotaTransactions.size} remaining`);
-  }
 }
 
 export const platformPostManager = new PlatformPostManager();

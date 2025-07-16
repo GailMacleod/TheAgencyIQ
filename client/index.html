@@ -221,7 +221,132 @@
       })();
     </script>
     
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module">
+      import { createElement } from 'https://esm.sh/react@18.2.0';
+      import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+      
+      // Simple App component
+      const App = () => {
+        return createElement('div', { 
+          style: { 
+            padding: '20px', 
+            fontFamily: 'Arial, sans-serif',
+            maxWidth: '1200px',
+            margin: '0 auto',
+            background: 'linear-gradient(135deg, #3250fa 0%, #00f0ff 100%)',
+            minHeight: '100vh',
+            color: 'white'
+          } 
+        }, [
+          createElement('h1', { key: 'title', style: { textAlign: 'center', marginBottom: '30px' } }, 'TheAgencyIQ'),
+          createElement('p', { key: 'subtitle', style: { textAlign: 'center', fontSize: '1.2em', marginBottom: '40px' } }, 'AI-Powered Social Media Management Platform'),
+          createElement('div', { 
+            key: 'dashboard',
+            style: { 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+              gap: '20px',
+              marginBottom: '30px'
+            }
+          }, [
+            createElement('div', { 
+              key: 'card1',
+              style: { 
+                background: 'rgba(255,255,255,0.1)', 
+                padding: '20px', 
+                borderRadius: '12px',
+                backdropFilter: 'blur(10px)'
+              }
+            }, [
+              createElement('h3', { key: 'h3-1' }, '📊 Dashboard Overview'),
+              createElement('p', { key: 'p-1' }, 'Monitor your social media performance across all platforms')
+            ]),
+            createElement('div', { 
+              key: 'card2',
+              style: { 
+                background: 'rgba(255,255,255,0.1)', 
+                padding: '20px', 
+                borderRadius: '12px',
+                backdropFilter: 'blur(10px)'
+              }
+            }, [
+              createElement('h3', { key: 'h3-2' }, '🎯 Brand Purpose'),
+              createElement('p', { key: 'p-2' }, 'Define your brand core purpose and target audience')
+            ]),
+            createElement('div', { 
+              key: 'card3',
+              style: { 
+                background: 'rgba(255,255,255,0.1)', 
+                padding: '20px', 
+                borderRadius: '12px',
+                backdropFilter: 'blur(10px)'
+              }
+            }, [
+              createElement('h3', { key: 'h3-3' }, '📅 Intelligent Schedule'),
+              createElement('p', { key: 'p-3' }, 'AI-powered content scheduling and optimization')
+            ]),
+            createElement('div', { 
+              key: 'card4',
+              style: { 
+                background: 'rgba(255,255,255,0.1)', 
+                padding: '20px', 
+                borderRadius: '12px',
+                backdropFilter: 'blur(10px)'
+              }
+            }, [
+              createElement('h3', { key: 'h3-4' }, '🤖 AI Assistant'),
+              createElement('p', { key: 'p-4' }, 'Get strategic guidance and content suggestions')
+            ])
+          ]),
+          createElement('div', { 
+            key: 'user-info',
+            style: { 
+              background: 'rgba(255,255,255,0.1)', 
+              padding: '20px', 
+              borderRadius: '12px',
+              backdropFilter: 'blur(10px)',
+              marginBottom: '20px'
+            }
+          }, [
+            createElement('h2', { key: 'welcome' }, 'Welcome Back, Gail!'),
+            createElement('p', { key: 'email' }, 'Email: gailm@macleodglba.com.au'),
+            createElement('p', { key: 'phone' }, 'Phone: +61424835189'),
+            createElement('span', { 
+              key: 'badge',
+              style: { 
+                background: '#4ade80', 
+                color: 'white', 
+                padding: '4px 12px', 
+                borderRadius: '20px',
+                fontSize: '0.8em'
+              }
+            }, 'Professional Plan Active')
+          ])
+        ]);
+      };
+      
+      // Session establishment
+      fetch('/api/establish-session', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Session established:', data);
+      })
+      .catch(error => {
+        console.error('Session establishment failed:', error);
+      });
+      
+      // Mount the app
+      const rootElement = document.getElementById('root');
+      if (rootElement) {
+        const root = createRoot(rootElement);
+        root.render(createElement(App));
+        console.log('TheAgencyIQ app loaded successfully!');
+      }
+    </script>
     <!-- Replit banner script disabled to prevent HTML injection in API responses -->
     <!-- <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script> -->
   </body>

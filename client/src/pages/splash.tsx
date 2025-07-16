@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import GrokWidget from "@/components/grok-widget";
 import UserMenu from "@/components/user-menu";
-import agencyLogoPath from "@assets/agency_logo_1024x1024 (2)_1752385824604.png";
+import agencyLogoPath from "@assets/logo.png";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
 export default function Splash() {

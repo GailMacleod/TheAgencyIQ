@@ -161,19 +161,6 @@ export class DirectPublisher {
       }
       
       return { valid: true, connection };
-        
-        // Try to refresh token
-        const refreshResult = await this.refreshToken(connection);
-        if (refreshResult.success) {
-          console.log(`✅ Token refreshed successfully for ${connection.platform}`);
-          return { valid: true, connection: { ...connection, ...refreshResult } };
-        } else {
-          return { valid: false, error: 'Token refresh failed' };
-        }
-      }
-
-      // Token is still valid or no expiry set
-      return { valid: true, connection };
     } catch (error) {
       return { valid: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
