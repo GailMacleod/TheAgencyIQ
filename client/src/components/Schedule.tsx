@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 interface BrandPost {
@@ -45,7 +45,7 @@ const Schedule = () => {
     gcTime: 10 * 60 * 1000 // 10 minutes garbage collection
   });
 
-  // Optimized sync with caching and detailed logging
+  // Optimized sync with caching and detailed logging - memoized for performance
   const syncBrandPosts = useCallback((postsData: BrandPost[], userEmail: string, expectedCount?: number) => {
     const currentDate = new Date().toISOString().split('T')[0];
     
@@ -54,31 +54,28 @@ const Schedule = () => {
     lastSyncRef.current = null;
     
     try {
-      console.log(`Schedule refreshed for ${userEmail}: ${postsData.length} posts`);
-      
       // Verify postsRef matches the logged count
       if (expectedCount && postsData.length !== expectedCount) {
         console.warn(`Post count mismatch for ${userEmail}: expected ${expectedCount}, got ${postsData.length}`);
-      } else if (expectedCount) {
-        console.log(`Schedule verified for ${userEmail}: ${postsData.length} posts`);
       }
       
       setBrandPosts(postsData);
       setSyncStatus('success');
-      
-      console.log(`Schedule synced with Brand Purpose for ${currentDate} - ${postsData.length} posts loaded`);
     } catch (error: any) {
       setSyncStatus('error');
       console.error(`Schedule sync failed for ${currentDate}:`, error);
-      console.error('Error details:', {
-        message: error?.message || 'Unknown error',
-        stack: error?.stack,
-        postsData
-      });
-      
       setBrandPosts([]);
     }
   }, []);
+
+  // Memoized brand posts processing for better performance
+  const processedBrandPosts = useMemo(() => {
+    return brandPosts.map(post => ({
+      ...post,
+      scheduledDate: new Date(post.scheduledFor).toLocaleDateString(),
+      isToday: new Date(post.scheduledFor).toDateString() === new Date().toDateString()
+    }));
+  }, [brandPosts]);
 
   // Sync brand posts with schedule
   useEffect(() => {

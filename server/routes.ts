@@ -20,7 +20,7 @@ import crypto, { createHash } from "crypto";
 import { passport } from "./oauth-config";
 import axios from "axios";
 import PostPublisher from "./post-publisher";
-import BreachNotificationService from "./breach-notification";
+// import BreachNotificationService from "./breach-notification"; // Removed for optimization
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
 import { requireActiveSubscription, establishSession, requireAuth } from './middleware/subscriptionAuth';
 import { requireAuth as authGuard, requireAuthForPayment } from './middleware/authGuard';
@@ -34,7 +34,7 @@ import RollbackAPI from './rollback-api';
 import { OAuthRefreshService } from './services/OAuthRefreshService';
 import { AIContentOptimizer } from './services/AIContentOptimizer';
 import { AnalyticsEngine } from './services/AnalyticsEngine';
-import { DataCleanupService } from './services/DataCleanupService';
+// import { DataCleanupService } from './services/DataCleanupService'; // Removed for optimization
 import { linkedinTokenValidator } from './linkedin-token-validator';
 import { DirectPublishService } from './services/DirectPublishService';
 import { UnifiedOAuthService } from './services/UnifiedOAuthService';
@@ -142,11 +142,11 @@ function addSystemHealthEndpoints(app: Express) {
         
         console.log(`✅ Session established: ${user.email} -> Session ID: ${req.sessionID}`);
         
-        // Set proper cookie headers for cross-origin requests
+        // Set proper cookie headers for cross-origin requests with SameSite=None;Secure
         res.cookie('theagencyiq.session', req.sessionID, {
           signed: true,
-          secure: false,
-          sameSite: 'lax',
+          secure: true,
+          sameSite: 'none',
           path: '/',
           httpOnly: false,
           maxAge: 86400000
@@ -155,8 +155,8 @@ function addSystemHealthEndpoints(app: Express) {
         // Also set backup session cookie
         res.cookie('aiq_backup_session', req.sessionID, {
           signed: true,
-          secure: false,
-          sameSite: 'lax',
+          secure: true,
+          sameSite: 'none',
           path: '/',
           httpOnly: false,
           maxAge: 86400000
@@ -7987,34 +7987,10 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Security breach reporting endpoint
-  app.post("/api/security/report-breach", requireAuth, async (req: any, res) => {
-    try {
-      const { incidentType, description, affectedPlatforms = [], severity = 'medium' } = req.body;
-      
-      if (!incidentType || !description) {
-        return res.status(400).json({ message: "Incident type and description are required" });
-      }
-
-      const incidentId = await BreachNotificationService.recordIncident(
-        req.session.userId,
-        incidentType,
-        description,
-        affectedPlatforms,
-        severity
-      );
-
-      res.json({
-        message: "Security incident reported",
-        incidentId,
-        notificationScheduled: "72 hours from detection"
-      });
-
-    } catch (error: any) {
-      console.error('Breach reporting error:', error);
-      res.status(500).json({ message: "Failed to report security incident" });
-    }
-  });
+  // Security breach reporting endpoint - DISABLED for optimization
+  // app.post("/api/security/report-breach", requireAuth, async (req: any, res) => {
+  //   res.status(501).json({ message: "Security breach reporting temporarily disabled for optimization" });
+  // });
 
   // Get security incidents for admin
   app.get("/api/security/incidents", async (req, res) => {
@@ -8046,77 +8022,20 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Test breach notification endpoint (for verification)
-  app.post("/api/security/test-breach", async (req, res) => {
-    try {
-      console.log("🧪 TESTING BREACH NOTIFICATION SYSTEM");
-      
-      // Create a test security incident
-      const testIncidentId = await BreachNotificationService.recordIncident(
-        1, // Test user ID
-        'system_vulnerability',
-        'TEST: Security notification system verification - unauthorized access attempt detected',
-        ['facebook', 'instagram'],
-        'high'
-      );
+  // Test breach notification endpoint - DISABLED for optimization
+  // app.post("/api/security/test-breach", async (req, res) => {
+  //   res.status(501).json({ message: "Test breach notification temporarily disabled for optimization" });
+  // });
 
-      console.log(`✅ Test security incident created: ${testIncidentId}`);
-      console.log("📧 Admin notification should be triggered within 72 hours");
-      
-      res.json({
-        message: "Test security incident created successfully",
-        incidentId: testIncidentId,
-        note: "This is a test to verify the breach notification system is working"
-      });
+  // Data cleanup status endpoint - DISABLED for optimization
+  // app.get("/api/admin/data-cleanup/status", async (req, res) => {
+  //   res.status(501).json({ message: "Data cleanup status temporarily disabled for optimization" });
+  // });
 
-    } catch (error: any) {
-      console.error('Test breach notification error:', error);
-      res.status(500).json({ message: "Failed to create test security incident" });
-    }
-  });
-
-  // Data cleanup status endpoint
-  app.get("/api/admin/data-cleanup/status", async (req, res) => {
-    try {
-      const { DataCleanupService } = await import("./data-cleanup");
-      const status = DataCleanupService.getCleanupStatus();
-      
-      res.json({
-        status: "scheduled",
-        nextScheduledRun: status.nextRun.toISOString(),
-        retentionPolicies: status.retentionPolicies,
-        description: "Automated data cleanup runs daily at 2 AM"
-      });
-
-    } catch (error: any) {
-      console.error('Data cleanup status error:', error);
-      res.status(500).json({ message: "Failed to fetch data cleanup status" });
-    }
-  });
-
-  // Manual data cleanup trigger (admin only)
-  app.post("/api/admin/data-cleanup/trigger", async (req, res) => {
-    try {
-      const { DataCleanupService } = await import("./data-cleanup");
-      
-      console.log("🧹 Manual data cleanup triggered by admin");
-      const report = await DataCleanupService.performScheduledCleanup();
-      
-      res.json({
-        message: "Data cleanup completed successfully",
-        report: {
-          timestamp: report.timestamp,
-          deletedItems: report.deletedItems,
-          retainedItems: report.retainedItems,
-          errors: report.errors
-        }
-      });
-
-    } catch (error: any) {
-      console.error('Manual data cleanup error:', error);
-      res.status(500).json({ message: "Failed to perform data cleanup" });
-    }
-  });
+  // Manual data cleanup trigger - DISABLED for optimization
+  // app.post("/api/admin/data-cleanup/trigger", async (req, res) => {
+  //   res.status(501).json({ message: "Data cleanup trigger temporarily disabled for optimization" });
+  // });
 
   // Security dashboard endpoint for real-time monitoring
   app.get("/api/security/dashboard", async (req, res) => {

@@ -36,7 +36,7 @@ async function startServer() {
   
   app.use(cookieParser('theagencyiq-secure-session-secret-2025'));
   
-  // CORS configuration - MUST be before routes
+  // CORS configuration - MUST be before routes - Enhanced for SameSite=None;Secure
   app.use(cors({
     origin: function(origin, callback) {
       // Allow requests with no origin (like mobile apps or curl requests)
@@ -57,7 +57,9 @@ async function startServer() {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie', 'Set-Cookie'],
-    exposedHeaders: ['Set-Cookie', 'Access-Control-Allow-Credentials']
+    exposedHeaders: ['Set-Cookie', 'Access-Control-Allow-Credentials'],
+    optionsSuccessStatus: 200, // Some legacy browsers choke on 204
+    preflightContinue: false
   }));
   
   // Filter out Replit-specific tracking in production
