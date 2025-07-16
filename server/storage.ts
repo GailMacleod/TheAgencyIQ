@@ -57,6 +57,10 @@ export interface IStorage {
   getAllStripeCustomers(): Promise<User[]>;
   clearDuplicateStripeCustomers(keepUserId: number): Promise<void>;
   
+  // Quota management for webhook integration
+  updateUserQuota(userId: number, quotaData: { remainingPosts: number, totalPosts: number, quotaResetDate: string }): Promise<User>;
+  updateUserSubscription(userId: number, subscriptionData: { subscriptionActive: boolean, subscriptionPlan: string, stripeSubscriptionId?: string }): Promise<User>;
+  
   // Scheduling operations
   createScheduledPost(postData: any): Promise<any>;
   
@@ -145,6 +149,11 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId));
+    return user;
+  }
+
+  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
     return user;
   }
 
@@ -257,7 +266,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error(`User ${userId} not found`);
     }
 
-    const newRemainingPosts = Math.max(0, user.totalPosts - quotaUsed);
+    const newRemainingPosts = Math.max(0, (user.totalPosts ?? 0) - quotaUsed);
     
     const [updatedUser] = await db
       .update(users)
@@ -491,8 +500,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         accessToken,
         refreshToken,
-        expiresAt: expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000), // Default 24 hours
-        updatedAt: new Date()
+        expiresAt: expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000) // Default 24 hours
       })
       .where(and(
         eq(platformConnections.userId, userIdNum),
@@ -785,6 +793,47 @@ export class DatabaseStorage implements IStorage {
     return usersWithStripe;
   }
 
+  // Quota management for webhook integration
+  async updateUserQuota(userId: number, quotaData: { remainingPosts: number, totalPosts: number, quotaResetDate: string }): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({
+        remainingPosts: quotaData.remainingPosts,
+        totalPosts: quotaData.totalPosts,
+        // quotaResetDate field not in schema
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!updated) {
+      throw new Error(`User not found: ${userId}`);
+    }
+
+    return updated;
+  }
+
+  async updateUserSubscription(userId: number, subscriptionData: { subscriptionActive: boolean, subscriptionPlan: string, stripeSubscriptionId?: string }): Promise<User> {
+    const updateData: any = {
+      subscriptionActive: subscriptionData.subscriptionActive,
+      subscriptionPlan: subscriptionData.subscriptionPlan
+    };
+
+    if (subscriptionData.stripeSubscriptionId) {
+      updateData.stripeSubscriptionId = subscriptionData.stripeSubscriptionId;
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!updated) {
+      throw new Error(`User not found: ${userId}`);
+    }
+
+    return updated;
+  }
 
 }
 

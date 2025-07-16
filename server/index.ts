@@ -1,13 +1,12 @@
 import express from 'express';
 import session from 'express-session';
-import connectPg from 'connect-pg-simple';
+import { SessionManager } from './services/session-manager';
+import crypto from 'crypto';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import path from 'path';
-import crypto from 'crypto';
-import { initializeMonitoring, logInfo, logError } from './monitoring';
-import { memoryManager } from './utils/memory-manager';
+// Removed monitoring and memory manager imports to simplify startup
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -21,10 +20,6 @@ function log(message: string, source = "express") {
 }
 
 async function startServer() {
-  // Initialize monitoring and memory management
-  initializeMonitoring();
-  memoryManager; // Initialize memory manager
-  
   const app = express();
 
   app.set('trust proxy', 0);
@@ -35,14 +30,73 @@ async function startServer() {
   
   app.use(cookieParser('secret'));
   
-  // CORS configuration - MUST be before routes
-  app.use(cors({
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie'],
-    exposedHeaders: ['Set-Cookie']
-  }));
+  // Enhanced CORS configuration with proper headers for all API routes
+  app.use((req, res, next) => {
+    // Development: Allow all origins
+    // Production: Restrict to specific domains
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const allowedOrigins = isDevelopment 
+      ? ['*'] 
+      : ['https://app.theagencyiq.ai', 'https://theagencyiq.ai'];
+    
+    const origin = req.headers.origin;
+    if (isDevelopment) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    } else if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cookie');
+    res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+    
+    next();
+  });
+  
+  // Simple rate limiting: 100 requests per minute
+  const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+  app.use((req, res, next) => {
+    const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
+    
+    // Skip rate limiting in development
+    if (process.env.NODE_ENV === 'development') {
+      return next();
+    }
+    
+    const now = Date.now();
+    const windowMs = 60 * 1000; // 1 minute window
+    const maxRequests = 100; // 100 requests per minute
+    
+    const current = rateLimitMap.get(clientIp) || { count: 0, resetTime: now + windowMs };
+    
+    // Reset window if time passed
+    if (now > current.resetTime) {
+      current.count = 0;
+      current.resetTime = now + windowMs;
+    }
+    
+    // Check if over limit
+    if (current.count >= maxRequests) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        message: 'Too many requests. Please try again later.',
+        retryAfter: current.resetTime - now
+      });
+    }
+    
+    // Increment counter
+    current.count++;
+    rateLimitMap.set(clientIp, current);
+    
+    next();
+  });
   
   // Filter out Replit-specific tracking in production
   app.use((req, res, next) => {
@@ -140,7 +194,7 @@ async function startServer() {
   });
 
   // Data deletion status
-  app.get('/deletion-status/:userId?', (req, res) => {
+  app.get('/deletion-status/:userId', (req, res) => {
     const userId = req.params.userId || 'anonymous';
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
@@ -148,102 +202,29 @@ async function startServer() {
   app.set('trust proxy', 0);
   app.use(cookieParser('secret'));
 
-  // Device-agnostic session configuration for mobile-to-desktop continuity
-  // Configure PostgreSQL session store
-  const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
-    ttl: sessionTtl,
-    tableName: "sessions",
-    schemaName: "public",
-    pruneSessionInterval: 60 * 15, // 15 minutes
-    errorLog: (error) => {
-      console.error('Session store error:', error);
-    }
-  });
-  
-  // Add debugging to session store to see if it's being called
-  const originalGet = sessionStore.get.bind(sessionStore);
-  sessionStore.get = function(sid, callback) {
-    console.log(`🔍 Session store get called for: ${sid}`);
-    return originalGet(sid, (err, session) => {
-      if (err) {
-        console.error(`❌ Session store get error: ${err}`);
-      } else {
-        console.log(`✅ Session store get result: ${session ? 'found' : 'not found'}`);
-        if (session) {
-          console.log(`📋 Retrieved session data: ${JSON.stringify(session)}`);
-        }
-      }
-      callback(err, session);
-    });
-  };
-  
-  console.log('✅ Session store initialized successfully');
+  // Session configuration with database persistence and secure settings
+  console.log('✅ Initializing session management with SessionManager');
+  app.use(session(SessionManager.getSessionConfig()));
 
-  app.use(session({
-    secret: 'secret',
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    name: 'theagencyiq.session',
-    cookie: { 
-      secure: false,
-      sameSite: 'lax',
-      maxAge: sessionTtl,
-      httpOnly: false,
-      path: '/'
-    },
-    rolling: true,
-    genid: () => {
-      return crypto.randomBytes(16).toString('hex');
+  // Session timeout middleware - handled by SessionManager rolling configuration
+  app.use((req: any, res, next) => {
+    if (!req.session) {
+      return next();
     }
-  }));
-
-  // Add session consistency middleware to fix session ID mismatch
-  app.use((req, res, next) => {
-    // Extract session ID from cookie
-    const cookieHeader = req.headers.cookie || '';
-    const sessionMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
     
-    if (sessionMatch) {
-      let cookieSessionId = sessionMatch[1];
-      
-      // Handle signed cookies
-      if (cookieSessionId.startsWith('s%3A')) {
-        const decoded = decodeURIComponent(cookieSessionId);
-        cookieSessionId = decoded.substring(4).split('.')[0];
-      }
-      
-      console.log(`🔧 SessionConsistency: Cookie ID ${cookieSessionId}, Express ID ${req.sessionID}`);
-      
-      // Force session ID consistency by overriding express-session ID
-      if (cookieSessionId !== req.sessionID) {
-        Object.defineProperty(req, 'sessionID', {
-          value: cookieSessionId,
-          writable: false,
-          enumerable: true,
-          configurable: true
-        });
-        
-        // Force session middleware to reload from store with correct ID
-        sessionStore.get(cookieSessionId, (err, sessionData) => {
-          if (!err && sessionData) {
-            // Manually restore session data to current session
-            req.session.userId = sessionData.userId;
-            req.session.userEmail = sessionData.userEmail;
-            req.session.subscriptionPlan = sessionData.subscriptionPlan;
-            req.session.subscriptionActive = sessionData.subscriptionActive;
-            console.log(`✅ Session restored: ${cookieSessionId} -> User ${sessionData.userId}`);
-          } else {
-            console.log(`🆕 New session initialized: ${cookieSessionId}`);
-          }
-          next();
-        });
-        return; // Wait for async callback
-      }
+    // SessionManager handles rolling sessions automatically
+    // Just update last activity for tracking
+    req.session.lastActivity = Date.now();
+    
+    next();
+  });
+
+  // Session consistency handled by SessionManager with database persistence
+  app.use((req, res, next) => {
+    // SessionManager handles session consistency automatically
+    // Just ensure session is available for routes
+    if (req.session) {
+      console.log(`🔧 Session active: ${req.sessionID} -> User ${req.session.userId || 'not logged in'}`);
     }
     
     next();

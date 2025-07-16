@@ -1,0 +1,55 @@
+{
+  "timestamp": "2025-07-16T10:17:01.044Z",
+  "tests": {
+    "Session Establishment": {
+      "status": "FAILED",
+      "error": "Session establishment failed: 502",
+      "timestamp": "2025-07-16T10:17:01.176Z"
+    },
+    "OAuth Initiation": {
+      "status": "FAILED",
+      "error": "this.sessionCookies.join is not a function",
+      "timestamp": "2025-07-16T10:17:01.177Z"
+    },
+    "Session Persistence": {
+      "status": "FAILED",
+      "error": "this.sessionCookies.join is not a function",
+      "timestamp": "2025-07-16T10:17:01.177Z"
+    },
+    "Token Refresh Service": {
+      "status": "FAILED",
+      "error": "this.sessionCookies.join is not a function",
+      "timestamp": "2025-07-16T10:17:01.178Z"
+    },
+    "Quota Tracking": {
+      "status": "FAILED",
+      "error": "this.sessionCookies.join is not a function",
+      "timestamp": "2025-07-16T10:17:01.178Z"
+    },
+    "Auto-Posting Capability": {
+      "status": "FAILED",
+      "error": "this.sessionCookies.join is not a function",
+      "timestamp": "2025-07-16T10:17:01.179Z"
+    },
+    "Stripe Integration": {
+      "status": "FAILED",
+      "error": "this.sessionCookies.join is not a function",
+      "timestamp": "2025-07-16T10:17:01.179Z"
+    },
+    "Health Endpoints": {
+      "status": "FAILED",
+      "error": "Health endpoint /api/health failed: 502",
+      "timestamp": "2025-07-16T10:17:01.193Z"
+    },
+    "Production Build": {
+      "status": "PASSED",
+      "duration": "6317ms",
+      "timestamp": "2025-07-16T10:17:07.510Z"
+    }
+  },
+  "summary": {
+    "passed": 1,
+    "failed": 8,
+    "total": 9
+  }
+}
