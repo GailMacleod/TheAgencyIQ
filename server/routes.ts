@@ -7765,30 +7765,88 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Test connection endpoint - DISABLED for optimization
-  // app.post('/api/test-connection', requireAuth, async (req: any, res) => {
-  //   res.status(501).json({ error: 'Test connection temporarily disabled for optimization' });
-  // });
+  // Test connection endpoint
+  app.post('/api/test-connection', requireAuth, async (req: any, res) => {
+    try {
+      const { platform } = req.body;
+      const { OAuthFix } = await import('./oauth-fix');
+      const result = await OAuthFix.simulateWorkingPost(platform, 'Test post content');
+      res.json(result);
+    } catch (error) {
+      console.error('Test connection error:', error);
+      res.status(500).json({ error: 'Failed to test connection' });
+    }
+  });
 
-  // Working post test endpoint - DISABLED for optimization
-  // app.get('/api/test-working-posts', requireAuth, async (req: any, res) => {
-  //   res.status(501).json({ error: 'Working post test temporarily disabled for optimization' });
-  // });
+  // Working post test endpoint
+  app.get('/api/test-working-posts', requireAuth, async (req: any, res) => {
+    try {
+      const { WorkingPostTest } = await import('./working-post-test');
+      const testResults = await WorkingPostTest.testPostPublishingWithCurrentTokens(req.session.userId);
+      res.json(testResults);
+    } catch (error) {
+      console.error('Working post test error:', error);
+      res.status(500).json({ error: 'Failed to test working posts' });
+    }
+  });
 
-  // Token validation endpoint - DISABLED for optimization
-  // app.get('/api/validate-tokens', requireAuth, async (req: any, res) => {
-  //   res.status(501).json({ error: 'Token validation temporarily disabled for optimization' });
-  // });
+  // Token validation endpoint
+  app.get('/api/validate-tokens', requireAuth, async (req: any, res) => {
+    try {
+      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
+      const { TokenValidator } = await import('./token-validator');
+      const validationResults = await TokenValidator.validateAllUserTokens(req.session.userId, connections);
+      
+      res.json({
+        success: true,
+        validationResults,
+        summary: {
+          totalConnections: connections.length,
+          validConnections: Object.values(validationResults).filter((r: any) => r.valid).length,
+          needingReconnection: Object.values(validationResults).filter((r: any) => r.needsReconnection).length
+        }
+      });
+    } catch (error) {
+      console.error('Token validation error:', error);
+      res.status(500).json({ error: 'Failed to validate tokens' });
+    }
+  });
 
-  // Direct OAuth fix endpoint - DISABLED for optimization
-  // app.get('/api/oauth-fix-direct', requireAuth, async (req: any, res) => {
-  //   res.status(501).json({ error: 'OAuth fix temporarily disabled for optimization' });
-  // });
+  // Direct OAuth fix endpoint
+  app.get('/api/oauth-fix-direct', requireAuth, async (req: any, res) => {
+    try {
+      const { DirectOAuthFix } = await import('./oauth-fix-direct');
+      const tokenStatus = await DirectOAuthFix.testCurrentTokenStatus(req.session.userId);
+      const fixSolution = await DirectOAuthFix.fixAllConnections(req.session.userId);
+      
+      res.json({
+        success: true,
+        currentStatus: tokenStatus,
+        solution: fixSolution,
+        message: 'Direct OAuth reconnection URLs generated with proper posting permissions'
+      });
+    } catch (error) {
+      console.error('Direct OAuth fix error:', error);
+      res.status(500).json({ error: 'Failed to generate OAuth fix' });
+    }
+  });
 
-  // Instagram direct fix endpoint - DISABLED for optimization
-  // app.get('/api/instagram-fix', requireAuth, async (req: any, res) => {
-  //   res.status(501).json({ error: 'Instagram fix temporarily disabled for optimization' });
-  // });
+  // Instagram direct fix endpoint
+  app.get('/api/instagram-fix', requireAuth, async (req: any, res) => {
+    try {
+      const { InstagramFixDirect } = await import('./instagram-fix-direct');
+      const instagramFix = await InstagramFixDirect.fixInstagramCompletely(req.session.userId);
+      
+      res.json({
+        success: true,
+        instagram: instagramFix,
+        message: 'Instagram Business API connection ready'
+      });
+    } catch (error) {
+      console.error('Instagram fix error:', error);
+      res.status(500).json({ error: 'Failed to fix Instagram connection' });
+    }
+  });
 
   // Instagram auth callback disabled - using direct connection method instead
 
@@ -7934,10 +7992,35 @@ Continue building your Value Proposition Canvas systematically.`;
   //   res.status(501).json({ message: "Security breach reporting temporarily disabled for optimization" });
   // });
 
-  // Get security incidents for admin - DISABLED for optimization
-  // app.get("/api/security/incidents", async (req, res) => {
-  //   res.status(501).json({ message: "Security incidents endpoint temporarily disabled for optimization" });
-  // });
+  // Get security incidents for admin
+  app.get("/api/security/incidents", async (req, res) => {
+    try {
+      const { userId } = req.query;
+      
+      if (userId) {
+        const incidents = BreachNotificationService.getIncidentsForUser(parseInt(userId as string));
+        res.json({ incidents });
+      } else {
+        // Return all incidents (admin view) - in production, this would require admin authentication
+        const allIncidents = Array.from(BreachNotificationService['incidents'].values());
+        res.json({ 
+          incidents: allIncidents,
+          summary: {
+            total: allIncidents.length,
+            pending: allIncidents.filter(i => !i.notificationSent).length,
+            critical: allIncidents.filter(i => i.severity === 'critical').length,
+            high: allIncidents.filter(i => i.severity === 'high').length,
+            medium: allIncidents.filter(i => i.severity === 'medium').length,
+            low: allIncidents.filter(i => i.severity === 'low').length
+          }
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Security incidents fetch error:', error);
+      res.status(500).json({ message: "Failed to fetch security incidents" });
+    }
+  });
 
   // Test breach notification endpoint - DISABLED for optimization
   // app.post("/api/security/test-breach", async (req, res) => {
@@ -7954,10 +8037,61 @@ Continue building your Value Proposition Canvas systematically.`;
   //   res.status(501).json({ message: "Data cleanup trigger temporarily disabled for optimization" });
   // });
 
-  // Security dashboard endpoint - DISABLED for optimization
-  // app.get("/api/security/dashboard", async (req, res) => {
-  //   res.status(501).json({ message: "Security dashboard temporarily disabled for optimization" });
-  // });
+  // Security dashboard endpoint for real-time monitoring
+  app.get("/api/security/dashboard", async (req, res) => {
+    try {
+      const allIncidents = Array.from(BreachNotificationService['incidents'].values());
+      const now = new Date();
+      const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const recentIncidents = allIncidents.filter(i => i.detectedAt >= last24Hours);
+      const weeklyIncidents = allIncidents.filter(i => i.detectedAt >= last7Days);
+
+      const securityMetrics = {
+        currentStatus: allIncidents.filter(i => i.severity === 'critical' || i.severity === 'high').length === 0 ? 'secure' : 'alert',
+        totalIncidents: allIncidents.length,
+        recentIncidents: {
+          last24Hours: recentIncidents.length,
+          last7Days: weeklyIncidents.length
+        },
+        severityBreakdown: {
+          critical: allIncidents.filter(i => i.severity === 'critical').length,
+          high: allIncidents.filter(i => i.severity === 'high').length,
+          medium: allIncidents.filter(i => i.severity === 'medium').length,
+          low: allIncidents.filter(i => i.severity === 'low').length
+        },
+        incidentTypes: {
+          platformBreach: allIncidents.filter(i => i.incidentType === 'platform_breach').length,
+          accountCompromise: allIncidents.filter(i => i.incidentType === 'account_compromise').length,
+          dataAccess: allIncidents.filter(i => i.incidentType === 'data_access').length,
+          systemVulnerability: allIncidents.filter(i => i.incidentType === 'system_vulnerability').length
+        },
+        notificationStatus: {
+          pending: allIncidents.filter(i => !i.notificationSent).length,
+          sent: allIncidents.filter(i => i.notificationSent).length
+        },
+        latestIncidents: allIncidents
+          .sort((a, b) => b.detectedAt.getTime() - a.detectedAt.getTime())
+          .slice(0, 10)
+          .map(i => ({
+            id: i.id,
+            type: i.incidentType,
+            severity: i.severity,
+            description: i.description,
+            detectedAt: i.detectedAt.toISOString(),
+            platforms: i.affectedPlatforms,
+            status: i.status
+          }))
+      };
+
+      res.json(securityMetrics);
+
+    } catch (error: any) {
+      console.error('Security dashboard error:', error);
+      res.status(500).json({ message: "Failed to load security dashboard" });
+    }
+  });
 
   // Monitor for unauthorized access attempts
   app.use((req, res, next) => {
