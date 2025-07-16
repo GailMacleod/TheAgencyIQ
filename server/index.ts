@@ -175,15 +175,15 @@ async function startServer() {
     saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: true,  // Always secure for production deployment
-      sameSite: 'none',  // None for cross-origin requests
+      secure: process.env.NODE_ENV === 'production',  // Secure in production
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',  // None for production cross-origin
       path: '/',
       httpOnly: true,  // Enhanced security with httpOnly
       maxAge: sessionTtl,
       domain: undefined // Let browser determine domain
     },
     rolling: true,
-    proxy: true,  // Enable proxy for Replit environment
+    proxy: process.env.NODE_ENV === 'production',  // Enable proxy for production
     genid: () => {
       return crypto.randomBytes(16).toString('hex');
     }
@@ -302,16 +302,9 @@ async function startServer() {
     });
   });
 
-  // Handle favicon requests with proper MIME type
+  // Handle favicon requests
   app.get('/favicon.ico', (req, res) => {
-    try {
-      res.setHeader('Content-Type', 'image/x-icon');
-      res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
-      res.sendFile(path.join(process.cwd(), 'public', 'favicon.ico'));
-    } catch (error) {
-      console.error('Favicon error:', error);
-      res.status(404).send('Favicon not found');
-    }
+    res.status(204).send();
   });
 
   // Handle other static assets
@@ -852,75 +845,44 @@ async function startServer() {
     next();
   });
 
-  // Favicon with proper MIME type
-  app.get('/favicon.ico', (req, res) => {
-    try {
-      res.setHeader('Content-Type', 'image/x-icon');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
-      res.sendFile(path.join(process.cwd(), 'public', 'favicon.ico'));
-    } catch (error) {
-      console.error('Favicon error:', error);
-      res.status(404).send('Favicon not found');
-    }
-  });
-
   // Setup static file serving after API routes
   try {
-    // Always serve from built dist directory for performance
-    console.log('⚡ Setting up static file serving...');
-    
-    // Serve built frontend assets with proper MIME types
-    app.use(express.static(path.join(process.cwd(), 'dist'), {
-      setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.js')) {
-          res.setHeader('Content-Type', 'application/javascript');
-        }
-        if (filePath.endsWith('.tsx')) {
-          res.setHeader('Content-Type', 'application/javascript');
-        }
-        if (filePath.endsWith('.css')) {
-          res.setHeader('Content-Type', 'text/css');
-        }
-        if (filePath.endsWith('.png')) {
-          res.setHeader('Content-Type', 'image/png');
-        }
-        if (filePath.endsWith('.ico')) {
-          res.setHeader('Content-Type', 'image/x-icon');
-        }
-      }
-    }));
-
-    // Serve attached assets
-    app.use('/attached_assets', express.static('attached_assets'));
-    
-    // Serve public directory assets
-    app.use('/public', express.static('public'));
-    
-    // Root route
-    app.get('/', (req, res) => {
-      try {
-        res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
-      } catch (error) {
-        console.error('Error serving index.html:', error);
-        res.status(500).json({ error: 'Failed to serve index.html' });
-      }
-    });
-    
-    // SPA routing - serve React app for all non-API routes
-    app.get('*', (req, res) => {
-      if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && 
-          !req.path.startsWith('/callback') && !req.path.startsWith('/health') &&
-          !req.path.startsWith('/facebook') && !req.path.startsWith('/deletion-status')) {
+    // Production static file serving
+    if (process.env.NODE_ENV === 'production') {
+      console.log('⚡ Setting up production static files...');
+      // Serve built frontend assets
+      app.use(express.static(path.join(process.cwd(), 'dist/public')));
+      // Serve attached assets in production
+      app.use('/attached_assets', express.static('attached_assets'));
+      
+      // Root route for production
+      app.get('/', (req, res) => {
         try {
-          res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
+          res.sendFile(path.join(process.cwd(), 'dist/index.html'));
         } catch (error) {
-          console.error('Error serving SPA route:', req.path, error);
-          res.status(500).json({ error: 'Failed to serve SPA route' });
+          console.error('Error serving index.html:', error);
+          res.status(500).json({ error: 'Failed to serve index.html' });
         }
-      }
-    });
-    
-    console.log('✅ Static file serving setup complete');
+      });
+      
+      // Serve React app for all non-API routes
+      app.get('*', (req, res) => {
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+          try {
+            res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+          } catch (error) {
+            console.error('Error serving index.html for route:', req.path, error);
+            res.status(500).json({ error: 'Failed to serve index.html' });
+          }
+        }
+      });
+      console.log('✅ Production static files setup complete');
+    } else {
+      console.log('⚡ Setting up development Vite...');
+      const { setupVite } = await import('./vite');
+      await setupVite(app, httpServer);
+      console.log('✅ Vite setup complete');
+    }
   } catch (error) {
     console.error('❌ Server setup error:', error);
     throw error;
