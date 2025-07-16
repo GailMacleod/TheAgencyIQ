@@ -1,0 +1,54 @@
+{
+  "testName": "Session Fix Validation Test",
+  "timestamp": "2025-07-16T00:36:33.689Z",
+  "baseUrl": "https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev",
+  "tests": [
+    {
+      "test": "Session establishment with User ID assignment",
+      "passed": false,
+      "details": {
+        "status": 502,
+        "sessionCookie": "missing"
+      },
+      "timestamp": "2025-07-16T00:36:33.791Z"
+    },
+    {
+      "test": "Authenticated API call with User ID persistence",
+      "passed": false,
+      "details": {
+        "error": "Invalid value \"undefined\" for header \"Cookie\""
+      },
+      "timestamp": "2025-07-16T00:36:33.792Z"
+    },
+    {
+      "test": "Multiple API calls session persistence",
+      "passed": false,
+      "details": {
+        "error": "Invalid value \"undefined\" for header \"Cookie\""
+      },
+      "timestamp": "2025-07-16T00:36:33.792Z"
+    },
+    {
+      "test": "Session recovery after interruption",
+      "passed": false,
+      "details": {
+        "error": "Invalid value \"undefined\" for header \"Cookie\""
+      },
+      "timestamp": "2025-07-16T00:36:34.794Z"
+    },
+    {
+      "test": "Cross-origin cookie handling",
+      "passed": false,
+      "details": {
+        "error": "Invalid value \"undefined\" for header \"Cookie\""
+      },
+      "timestamp": "2025-07-16T00:36:34.794Z"
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "passed": 0,
+    "failed": 5,
+    "successRate": "0.0"
+  }
+}

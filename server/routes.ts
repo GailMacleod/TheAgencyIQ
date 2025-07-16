@@ -142,11 +142,11 @@ function addSystemHealthEndpoints(app: Express) {
         
         console.log(`✅ Session established: ${user.email} -> Session ID: ${req.sessionID}`);
         
-        // Set proper cookie headers for cross-origin requests with SameSite=None;Secure
+        // Set proper cookie headers for development
         res.cookie('theagencyiq.session', req.sessionID, {
-          signed: true,
-          secure: true,
-          sameSite: 'none',
+          signed: false,
+          secure: false,
+          sameSite: 'lax',
           path: '/',
           httpOnly: false,
           maxAge: 86400000
@@ -154,9 +154,9 @@ function addSystemHealthEndpoints(app: Express) {
         
         // Also set backup session cookie
         res.cookie('aiq_backup_session', req.sessionID, {
-          signed: true,
-          secure: true,
-          sameSite: 'none',
+          signed: false,
+          secure: false,
+          sameSite: 'lax',
           path: '/',
           httpOnly: false,
           maxAge: 86400000
@@ -8139,6 +8139,135 @@ Continue building your Value Proposition Canvas systematically.`;
     }
 
     next();
+  });
+
+  // Token refresh endpoint for enhanced security
+  app.post('/api/refresh-token', async (req: any, res) => {
+    try {
+      const { refreshToken } = req.body;
+      
+      // Validate refresh token format
+      if (!refreshToken || typeof refreshToken !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid refresh token format'
+        });
+      }
+      
+      // Get current session data
+      const currentSession = req.session;
+      
+      // Check if session exists and is valid
+      if (!currentSession || !currentSession.userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'No valid session found'
+        });
+      }
+      
+      // Get user data to validate session
+      const user = await storage.getUser(currentSession.userId);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: 'User not found'
+        });
+      }
+      
+      // Generate new session ID
+      const crypto = await import('crypto');
+      const newSessionId = crypto.randomBytes(16).toString('hex');
+      
+      // Update session with new ID
+      currentSession.sessionId = newSessionId;
+      currentSession.refreshedAt = new Date();
+      
+      // Calculate new expiry time (24 hours from now)
+      const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+      
+      // Save session
+      await new Promise<void>((resolve, reject) => {
+        currentSession.save((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      
+      // Set new cookie with enhanced security
+      res.cookie('theagencyiq.session', `s:${newSessionId}`, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 24 * 60 * 60 * 1000,
+        path: '/',
+        signed: true
+      });
+      
+      console.log(`✅ Session token refreshed for user ${user.email} (ID: ${user.id})`);
+      
+      res.json({
+        success: true,
+        sessionId: newSessionId,
+        expiresAt,
+        user: {
+          id: user.id,
+          email: user.email,
+          subscriptionPlan: user.subscriptionPlan || 'free'
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ Token refresh error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error during token refresh'
+      });
+    }
+  });
+
+  // Token status endpoint
+  app.get('/api/token-status', requireAuth, async (req: any, res) => {
+    try {
+      const session = req.session;
+      const userId = session?.userId;
+      
+      if (!session || !userId) {
+        return res.status(401).json({
+          valid: false,
+          error: 'No valid session found'
+        });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({
+          valid: false,
+          error: 'User not found'
+        });
+      }
+      
+      // Calculate time until expiry
+      const expiryTime = session.cookie.expires?.getTime() || 0;
+      const currentTime = Date.now();
+      const timeUntilExpiry = expiryTime - currentTime;
+      
+      res.json({
+        valid: true,
+        sessionId: session.id,
+        userId: user.id,
+        expiresAt: expiryTime,
+        timeUntilExpiry,
+        refreshedAt: session.refreshedAt || null,
+        needsRefresh: timeUntilExpiry < (5 * 60 * 1000) // Less than 5 minutes
+      });
+      
+    } catch (error) {
+      console.error('❌ Token status error:', error);
+      res.status(500).json({
+        valid: false,
+        error: 'Internal server error'
+      });
+    }
   });
 
   // Get AI recommendation with real-time brand purpose analysis

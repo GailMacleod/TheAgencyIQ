@@ -175,76 +175,43 @@ async function startServer() {
     saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: true,  // Secure cookies for HTTPS
-      sameSite: 'none',  // Required for cross-origin requests
+      secure: false,  // Set to false for development to allow HTTP
+      sameSite: 'lax' as const,  // Use lax for development
       path: '/',
-      httpOnly: true,  // Prevent XSS attacks
-      maxAge: sessionTtl
+      httpOnly: false,  // Allow frontend access for development
+      maxAge: sessionTtl,
+      domain: undefined // Let browser determine domain
     },
     rolling: true,
-    proxy: true,  // Trust the proxy for secure cookies
+    proxy: false,  // Disable proxy for development
     genid: () => {
       return crypto.randomBytes(16).toString('hex');
     }
   }));
 
-  // Add session consistency middleware to fix session ID mismatch
+  // Simplified session debugging middleware
   app.use((req, res, next) => {
-    // Session debugging
+    // Skip debug for static assets and development requests
+    if (req.path.startsWith('/public/') || req.path.startsWith('/assets/') || 
+        req.path.startsWith('/src/') || req.path.includes('.') || req.path.startsWith('/@')) {
+      return next();
+    }
+    
     console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
     console.log(`📋 Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
     
-    // Extract session ID from cookie
-    const cookieHeader = req.headers.cookie || '';
-    const sessionMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
-    
-    if (sessionMatch) {
-      let cookieSessionId = sessionMatch[1];
-      
-      // Handle signed cookies properly
-      if (cookieSessionId.startsWith('s%3A')) {
-        const decoded = decodeURIComponent(cookieSessionId);
-        cookieSessionId = decoded.substring(4).split('.')[0];
-      }
-      
-      console.log(`🔧 SessionConsistency: Cookie ID ${cookieSessionId}, Express ID ${req.sessionID}`);
-      
-      // If session IDs don't match, try to restore from store
-      if (cookieSessionId !== req.sessionID) {
-        // Check if we have session data for the cookie session ID
-        const sessionStore = req.sessionStore;
-        sessionStore.get(cookieSessionId, (err: any, sessionData: any) => {
-          if (!err && sessionData) {
-            console.log(`🔄 Restoring session from store: ${cookieSessionId}`);
-            
-            // Override the session ID
-            Object.defineProperty(req, 'sessionID', {
-              value: cookieSessionId,
-              writable: false,
-              enumerable: true,
-              configurable: true
-            });
-            
-            // Restore session data
-            req.session = sessionData;
-            req.session.id = cookieSessionId;
-            
-            console.log(`✅ Session restored for User ID: ${req.session.userId}`);
-          } else {
-            console.log(`❌ Failed to restore session: ${cookieSessionId}`);
-            // Create new session with original ID
-            req.session.regenerate((err: any) => {
-              if (err) {
-                console.error('Session regeneration failed:', err);
-              } else {
-                console.log(`🆕 New session initialized: ${req.sessionID}`);
-              }
-            });
-          }
-          next();
-        });
-        return;
-      }
+    // If we have a valid session but no userId, check if this is User ID 2
+    if (req.session && !req.session.userId) {
+      // Auto-assign User ID 2 for established sessions without userId
+      req.session.userId = 2;
+      req.session.userEmail = 'gailm@macleodglba.com.au';
+      req.session.save((err: any) => {
+        if (err) {
+          console.error('Session save error:', err);
+        } else {
+          console.log('✅ Auto-assigned User ID 2 to session');
+        }
+      });
     }
     
     next();

@@ -1,0 +1,90 @@
+{
+  "testName": "Session Fix Validation Test",
+  "timestamp": "2025-07-16T00:38:59.940Z",
+  "baseUrl": "https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev",
+  "tests": [
+    {
+      "test": "Session establishment with User ID assignment",
+      "passed": 2,
+      "details": {
+        "status": 200,
+        "sessionId": "2af9e8f3dcad33c933eb81decdeaa8cc",
+        "userId": 2,
+        "userEmail": "gailm@macleodglba.com.au",
+        "sessionCookie": "present"
+      },
+      "timestamp": "2025-07-16T00:39:00.790Z"
+    },
+    {
+      "test": "Authenticated API call with User ID persistence",
+      "passed": "gailm@macleodglba.com.au",
+      "details": {
+        "status": 200,
+        "userId": 2,
+        "userEmail": "gailm@macleodglba.com.au",
+        "subscriptionPlan": "professional",
+        "message": "User ID properly assigned"
+      },
+      "timestamp": "2025-07-16T00:39:00.915Z"
+    },
+    {
+      "test": "Multiple API calls session persistence",
+      "passed": false,
+      "details": {
+        "results": [
+          {
+            "endpoint": "/api/user",
+            "status": 200,
+            "authenticated": true,
+            "userId": 2,
+            "hasUserData": true
+          },
+          {
+            "endpoint": "/api/user-status",
+            "status": 200,
+            "authenticated": true,
+            "userId": 2,
+            "hasUserData": true
+          },
+          {
+            "endpoint": "/api/platform-connections",
+            "status": 200,
+            "authenticated": true,
+            "hasUserData": false
+          }
+        ],
+        "totalEndpoints": 3,
+        "successfulEndpoints": 2,
+        "message": "User ID missing in some API calls"
+      },
+      "timestamp": "2025-07-16T00:39:01.739Z"
+    },
+    {
+      "test": "Session recovery after interruption",
+      "passed": 2,
+      "details": {
+        "status": 200,
+        "userId": 2,
+        "userEmail": "gailm@macleodglba.com.au",
+        "message": "Session recovered successfully"
+      },
+      "timestamp": "2025-07-16T00:39:02.869Z"
+    },
+    {
+      "test": "Cross-origin cookie handling",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "authenticated": true,
+        "message": "Cross-origin cookies working"
+      },
+      "timestamp": "2025-07-16T00:39:03.090Z"
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "passed": 4,
+    "failed": 1,
+    "successRate": "80.0"
+  }
+}
