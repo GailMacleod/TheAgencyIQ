@@ -176,7 +176,7 @@ async function startServer() {
       secure: true,  // Secure cookies for HTTPS
       sameSite: 'none',  // Required for cross-origin requests
       path: '/',
-      httpOnly: false,  // Allow frontend access for cookie transmission
+      httpOnly: true,  // Prevent XSS attacks
       maxAge: sessionTtl
     },
     rolling: true,
@@ -188,6 +188,10 @@ async function startServer() {
 
   // Add session consistency middleware to fix session ID mismatch
   app.use((req, res, next) => {
+    // Session debugging
+    console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
+    console.log(`📋 Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
+    
     // Extract session ID from cookie
     const cookieHeader = req.headers.cookie || '';
     const sessionMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
@@ -195,7 +199,7 @@ async function startServer() {
     if (sessionMatch) {
       let cookieSessionId = sessionMatch[1];
       
-      // Handle signed cookies
+      // Handle signed cookies properly
       if (cookieSessionId.startsWith('s%3A')) {
         const decoded = decodeURIComponent(cookieSessionId);
         cookieSessionId = decoded.substring(4).split('.')[0];
@@ -203,34 +207,101 @@ async function startServer() {
       
       console.log(`🔧 SessionConsistency: Cookie ID ${cookieSessionId}, Express ID ${req.sessionID}`);
       
-      // Force session ID consistency by overriding express-session ID
+      // If session IDs don't match, try to restore from store
       if (cookieSessionId !== req.sessionID) {
-        Object.defineProperty(req, 'sessionID', {
-          value: cookieSessionId,
-          writable: false,
-          enumerable: true,
-          configurable: true
-        });
-        
-        // Force session middleware to reload from store with correct ID
-        sessionStore.get(cookieSessionId, (err, sessionData) => {
+        // Check if we have session data for the cookie session ID
+        const sessionStore = req.sessionStore;
+        sessionStore.get(cookieSessionId, (err: any, sessionData: any) => {
           if (!err && sessionData) {
-            // Manually restore session data to current session
-            req.session.userId = sessionData.userId;
-            req.session.userEmail = sessionData.userEmail;
-            req.session.subscriptionPlan = sessionData.subscriptionPlan;
-            req.session.subscriptionActive = sessionData.subscriptionActive;
+            console.log(`🔄 Restoring session from store: ${cookieSessionId}`);
             
-            // Also set session mapping for backup
-            sessionUserMap.set(cookieSessionId, sessionData.userId);
+            // Override the session ID
+            Object.defineProperty(req, 'sessionID', {
+              value: cookieSessionId,
+              writable: false,
+              enumerable: true,
+              configurable: true
+            });
             
-            console.log(`✅ Session restored: ${cookieSessionId} -> User ${sessionData.userId}`);
+            // Restore session data
+            req.session = sessionData;
+            req.session.id = cookieSessionId;
+            
+            console.log(`✅ Session restored for User ID: ${req.session.userId}`);
           } else {
-            console.log(`🆕 New session initialized: ${cookieSessionId}`);
+            console.log(`❌ Failed to restore session: ${cookieSessionId}`);
+            // Create new session with original ID
+            req.session.regenerate((err: any) => {
+              if (err) {
+                console.error('Session regeneration failed:', err);
+              } else {
+                console.log(`🆕 New session initialized: ${req.sessionID}`);
+              }
+            });
           }
           next();
         });
-        return; // Wait for async callback
+        return;
+      }
+    }
+    
+    next();
+  });
+
+  // Add session debugging middleware
+  app.use((req, res, next) => {
+    // Force session save on every request to ensure persistence
+    const originalSend = res.send;
+    const originalJson = res.json;
+    const originalEnd = res.end;
+    
+    res.send = function(data) {
+      if (req.session) {
+        req.session.save((err: any) => {
+          if (err) {
+            console.error('Session save error:', err);
+          }
+        });
+      }
+      return originalSend.call(this, data);
+    };
+    
+    res.json = function(data) {
+      if (req.session) {
+        req.session.save((err: any) => {
+          if (err) {
+            console.error('Session save error:', err);
+          }
+        });
+      }
+      return originalJson.call(this, data);
+    };
+    
+    res.end = function(data?) {
+      if (req.session) {
+        req.session.save((err: any) => {
+          if (err) {
+            console.error('Session save error:', err);
+          }
+        });
+      }
+      return originalEnd.call(this, data);
+    };
+    
+    next();
+  });
+
+  // Import sessionUserMap from authGuard
+  const { sessionUserMap } = await import('./middleware/authGuard.js');
+  
+  // Add session recovery middleware
+  app.use((req, res, next) => {
+    if (!req.session?.userId && req.sessionID) {
+      // Check if we have a mapping for this session ID
+      if (sessionUserMap.has(req.sessionID)) {
+        const userId = sessionUserMap.get(req.sessionID);
+        req.session.userId = userId;
+        console.log(`🔄 Session recovery: User ${userId} for session ${req.sessionID}`);
       }
     }
     

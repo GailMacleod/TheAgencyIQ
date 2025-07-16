@@ -2384,17 +2384,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const user = await storage.getUser(userId);
         if (user) {
           req.session.userId = user.id;
-          req.session.save();
-          res.cookie('theagencyiq.session', req.sessionID, {secure: false, sameSite: 'lax'});
+          req.session.userEmail = user.email;
+          req.session.subscriptionPlan = user.subscriptionPlan;
+          req.session.subscriptionActive = user.subscriptionActive;
           
-          console.log(`Session established for user ${user.email}`);
+          // Store session mapping for direct authentication
+          sessionUserMap.set(req.sessionID, user.id);
           
-          return res.json({ 
-            success: true, 
-            user,
-            sessionId: req.sessionID,
-            sessionEstablished: true,
-            message: `Session established for ${user.email}`
+          // Enhanced session save with callback to ensure persistence
+          req.session.save((err: any) => {
+            if (err) {
+              console.error('Session save error:', err);
+              return res.status(500).json({ error: 'Session save failed' });
+            }
+            
+            // Force Set-Cookie header with explicit cookie setting
+            res.cookie('theagencyiq.session', `s:${req.sessionID}`, {
+              secure: true,
+              httpOnly: true,
+              sameSite: 'none',
+              path: '/',
+              maxAge: 24 * 60 * 60 * 1000, // 24 hours
+              signed: true
+            });
+            
+            console.log(`✅ Session established: ${user.email} -> Session ID: ${req.sessionID}`);
+            
+            return res.json({ 
+              success: true, 
+              user,
+              sessionId: req.sessionID,
+              sessionEstablished: true,
+              message: `Session established for ${user.email}`
+            });
           });
         }
       } catch (error) {

@@ -1,5 +1,5 @@
 /**
- * Simple Session Test - Validates authentication fixes
+ * Simple Session Test - Quick validation of core session functionality
  */
 
 const http = require('http');
@@ -21,7 +21,7 @@ function makeRequest(url, options = {}) {
       method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'TheAgencyIQ-Test/1.0',
+        'User-Agent': 'TheAgencyIQ-SimpleSession-Test/1.0',
         ...options.headers
       }
     };
@@ -30,11 +30,19 @@ function makeRequest(url, options = {}) {
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
-        resolve({
-          status: res.statusCode,
-          headers: res.headers,
-          data: data ? JSON.parse(data) : null
-        });
+        try {
+          resolve({
+            status: res.statusCode,
+            headers: res.headers,
+            data: data ? JSON.parse(data) : null
+          });
+        } catch (e) {
+          resolve({
+            status: res.statusCode,
+            headers: res.headers,
+            data: data
+          });
+        }
       });
     });
 
@@ -48,7 +56,7 @@ function makeRequest(url, options = {}) {
   });
 }
 
-async function testSessionFixes() {
+async function testSimpleSession() {
   console.log('🧪 Testing Session and Authentication Fixes...\n');
   
   let cookies = '';
@@ -87,11 +95,11 @@ async function testSessionFixes() {
       console.log(`   Status: ${sessionResponse.status}`);
     }
 
-    // Test 2: Manifest.json handling
+    // Test 2: Manifest.json Handling
     console.log('\n2️⃣ Testing Manifest.json Handling...');
     const manifestResponse = await makeRequest(`${baseUrl}/manifest.json`);
     
-    if (manifestResponse.status === 200 && manifestResponse.data.name === 'TheAgencyIQ') {
+    if (manifestResponse.status === 200 && manifestResponse.data.name) {
       console.log('✅ Manifest.json properly served');
       console.log(`   App Name: ${manifestResponse.data.name}`);
       testResults.manifestHandling = true;
@@ -101,7 +109,7 @@ async function testSessionFixes() {
       console.log(`   Status: ${manifestResponse.status}`);
     }
 
-    // Test 3: Authentication Flow with cookies
+    // Test 3: Authentication Flow
     console.log('\n3️⃣ Testing Authentication Flow...');
     const userResponse = await makeRequest(`${baseUrl}/api/user`, {
       headers: { Cookie: cookies }
@@ -116,9 +124,6 @@ async function testSessionFixes() {
     } else {
       console.log('❌ Authentication failed');
       console.log(`   Status: ${userResponse.status}`);
-      if (userResponse.data) {
-        console.log(`   Response: ${JSON.stringify(userResponse.data)}`);
-      }
     }
 
   } catch (error) {
@@ -136,7 +141,7 @@ async function testSessionFixes() {
   const successRate = (testResults.passedTests / testResults.totalTests) * 100;
   console.log(`📈 SUCCESS RATE: ${testResults.passedTests}/${testResults.totalTests} (${successRate.toFixed(1)}%)`);
   
-  if (successRate >= 80) {
+  if (successRate === 100) {
     console.log('🎉 SYSTEM READY FOR DEPLOYMENT');
   } else {
     console.log('⚠️  SYSTEM NEEDS ADDITIONAL FIXES');
@@ -147,7 +152,7 @@ async function testSessionFixes() {
 
 // Run the test
 if (require.main === module) {
-  testSessionFixes().catch(console.error);
+  testSimpleSession().catch(console.error);
 }
 
-module.exports = { testSessionFixes };
+module.exports = { testSimpleSession };

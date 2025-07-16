@@ -23,7 +23,8 @@ class SessionManager {
         method: 'GET',
         credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
       });
       
@@ -42,10 +43,11 @@ class SessionManager {
           
           return this.sessionInfo;
         }
+      } else {
+        console.log('❌ Session check failed with status:', response.status);
       }
     } catch (error) {
-      console.log('⚠️ Session verification failed - NO FALLBACK LOGIC');
-      throw error; // Prevent re-establishment on failure
+      console.log('❌ Session verification error:', error);
     }
 
     this.sessionPromise = this.doEstablishSession();
