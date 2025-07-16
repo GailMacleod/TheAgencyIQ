@@ -1,1 +1,0 @@
-{"name": "theagencyiq", "version": "1.0.0", "scripts": {"dev": "node server-tsx-bypass.cjs", "start": "node server-production.cjs"}}
