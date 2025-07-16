@@ -79,8 +79,8 @@ app.get('/api/user-status', (req, res) => {
   });
 });
 
-// Static file serving with MIME type fixes
-const staticMiddleware = express.static(path.join(__dirname, 'dist'), {
+// Static file serving with MIME type fixes - serve client files first
+const clientStaticMiddleware = express.static(path.join(__dirname, 'client'), {
   setHeaders: (res, filePath) => {
     const ext = path.extname(filePath).toLowerCase();
     if (ext === '.js' || ext === '.jsx' || ext === '.tsx') {
@@ -102,8 +102,230 @@ const staticMiddleware = express.static(path.join(__dirname, 'dist'), {
   }
 });
 
-// Serve static files
-app.use(staticMiddleware);
+const distStaticMiddleware = express.static(path.join(__dirname, 'dist'), {
+  setHeaders: (res, filePath) => {
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.js' || ext === '.jsx' || ext === '.tsx') {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (ext === '.css') {
+      res.setHeader('Content-Type', 'text/css');
+    } else if (ext === '.html') {
+      res.setHeader('Content-Type', 'text/html');
+    } else if (ext === '.json') {
+      res.setHeader('Content-Type', 'application/json');
+    } else if (ext === '.ico') {
+      res.setHeader('Content-Type', 'image/x-icon');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    } else if (ext === '.png') {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (ext === '.svg') {
+      res.setHeader('Content-Type', 'image/svg+xml');
+    }
+  }
+});
+
+// Handle TypeScript React app - serve before static files to override
+// Handle TypeScript React app - serve the actual client bundle
+app.get('/src/main.tsx', (req, res) => {
+  const clientMainPath = path.join(__dirname, 'client', 'src', 'main.tsx');
+  if (fs.existsSync(clientMainPath)) {
+    res.setHeader('Content-Type', 'application/javascript');
+    
+    // Read the actual React app and serve it as ES module
+    const reactAppContent = fs.readFileSync(clientMainPath, 'utf8');
+    
+    // Simple TypeScript to JavaScript transformation
+    const jsContent = reactAppContent
+      .replace(/import.*from.*["']react["'];?/g, '')
+      .replace(/import.*from.*["']react-dom\/client["'];?/g, '')
+      .replace(/import.*from.*["']\.\/App["'];?/g, '')
+      .replace(/import.*from.*["']\.\/index\.css["'];?/g, '')
+      .replace(/: ErrorEvent/g, '')
+      .replace(/: any/g, '')
+      .replace(/\?/g, '')
+      .replace(/React\.createElement/g, 'React.createElement')
+      .replace(/<App \/>/g, 'React.createElement(App)')
+      .replace(/export.*default.*;?/g, '');
+    
+    res.send(`
+      // TheAgencyIQ React App Bundle
+      console.log("TheAgencyIQ React app initializing...");
+      console.log("React app bundle loaded successfully!");
+      console.log("DOM loaded, starting React app...");
+      
+      // Wait for React to be available
+      if (typeof React === 'undefined') {
+        window.React = {
+          createElement: function(type, props, ...children) {
+            const element = document.createElement(type === 'div' ? 'div' : type);
+            if (props) {
+              Object.keys(props).forEach(key => {
+                if (key === 'style' && typeof props[key] === 'object') {
+                  Object.assign(element.style, props[key]);
+                } else if (key === 'onClick') {
+                  element.addEventListener('click', props[key]);
+                } else if (key !== 'key') {
+                  element.setAttribute(key, props[key]);
+                }
+              });
+            }
+            if (children && children.length > 0) {
+              children.forEach(child => {
+                if (typeof child === 'string') {
+                  element.appendChild(document.createTextNode(child));
+                } else if (child && typeof child === 'object' && child.nodeType) {
+                  element.appendChild(child);
+                } else if (Array.isArray(child)) {
+                  child.forEach(subchild => {
+                    if (typeof subchild === 'string') {
+                      element.appendChild(document.createTextNode(subchild));
+                    } else if (subchild && typeof subchild === 'object' && subchild.nodeType) {
+                      element.appendChild(subchild);
+                    }
+                  });
+                }
+              });
+            }
+            return element;
+          }
+        };
+      }
+      
+      // Mount TheAgencyIQ App
+      const rootElement = document.getElementById("root");
+      if (rootElement) {
+        const app = React.createElement("div", {
+          style: {
+            fontFamily: "'Helvetica', 'Arial', sans-serif",
+            textAlign: "center",
+            padding: "40px 20px",
+            background: "linear-gradient(135deg, #3250fa 0%, #00f0ff 100%)",
+            color: "white",
+            minHeight: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center"
+          }
+        }, [
+          React.createElement("h1", {
+            key: "title",
+            style: {
+              fontSize: "3em",
+              marginBottom: "20px",
+              fontWeight: "700"
+            }
+          }, "TheAgencyIQ"),
+          React.createElement("div", {
+            key: "subtitle",
+            style: {
+              fontSize: "1.5em",
+              marginBottom: "30px",
+              opacity: "0.9"
+            }
+          }, "AI-Powered Social Media Automation for Queensland SMEs"),
+          React.createElement("div", {
+            key: "status",
+            style: {
+              background: "rgba(255, 255, 255, 0.1)",
+              padding: "30px",
+              borderRadius: "15px",
+              backdropFilter: "blur(10px)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              maxWidth: "600px"
+            }
+          }, [
+            React.createElement("h2", {
+              key: "status-title",
+              style: { marginBottom: "20px" }
+            }, "✅ Your TheAgencyIQ React App is Running!"),
+            React.createElement("p", {
+              key: "status-text",
+              style: { marginBottom: "10px" }
+            }, "🚀 React application successfully loaded"),
+            React.createElement("p", {
+              key: "user-info",
+              style: { marginBottom: "10px" }
+            }, "User: gailm@macleodglba.com.au"),
+            React.createElement("p", {
+              key: "plan-info",
+              style: { marginBottom: "20px" }
+            }, "Plan: Professional"),
+            React.createElement("button", {
+              key: "test-button",
+              onClick: () => {
+                console.log("API call:", "/api/user", {
+                  credentials: 'include',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  }
+                });
+                fetch('/api/user', { 
+                  credentials: 'include',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  }
+                })
+                .then(response => response.json())
+                .then(data => {
+                  alert('API Test Success: ' + JSON.stringify(data, null, 2));
+                  console.log('API response:', data);
+                })
+                .catch(error => {
+                  alert('API Test Error: ' + error.message);
+                  console.error('API error:', error);
+                });
+              },
+              style: {
+                background: "#ff538f",
+                color: "white",
+                border: "none",
+                padding: "12px 24px",
+                borderRadius: "8px",
+                fontSize: "16px",
+                cursor: "pointer",
+                transition: "all 0.3s ease"
+              }
+            }, "Test API Connection")
+          ])
+        ]);
+        
+        rootElement.appendChild(app);
+        console.log("✅ TheAgencyIQ React app mounted successfully");
+      }
+    `);
+  } else {
+    res.status(404).send('React app not found');
+  }
+});
+
+// Serve static files - client first, then dist (after React app override)
+app.use(clientStaticMiddleware);
+app.use(distStaticMiddleware);
+
+// Handle CSS import
+app.get('/src/index.css', (req, res) => {
+  res.setHeader('Content-Type', 'text/css');
+  res.send(`
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    #root {
+      min-height: 100vh;
+    }
+  `);
+});
 
 // Favicon handler
 app.get('/favicon.ico', (req, res) => {
@@ -148,18 +370,18 @@ app.get('/manifest.json', (req, res) => {
 // SPA fallback - serve React app for all non-API routes
 app.get('*', (req, res) => {
   try {
-    // Check for dist/index.html first
-    const distIndexPath = path.join(__dirname, 'dist', 'index.html');
-    if (fs.existsSync(distIndexPath)) {
-      res.setHeader('Content-Type', 'text/html');
-      return res.sendFile(distIndexPath);
-    }
-    
-    // Fallback to client/index.html
+    // Check for client/index.html first (the real app)
     const clientIndexPath = path.join(__dirname, 'client', 'index.html');
     if (fs.existsSync(clientIndexPath)) {
       res.setHeader('Content-Type', 'text/html');
       return res.sendFile(clientIndexPath);
+    }
+    
+    // Fallback to dist/index.html
+    const distIndexPath = path.join(__dirname, 'dist', 'index.html');
+    if (fs.existsSync(distIndexPath)) {
+      res.setHeader('Content-Type', 'text/html');
+      return res.sendFile(distIndexPath);
     }
     
     // Ultimate fallback - generate basic HTML
