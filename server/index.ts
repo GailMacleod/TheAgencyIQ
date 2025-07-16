@@ -175,15 +175,15 @@ async function startServer() {
     saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: false,  // Set to false for development to allow HTTP
-      sameSite: 'lax' as const,  // Use lax for development
+      secure: process.env.NODE_ENV === 'production',  // Secure in production
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',  // None for production cross-origin
       path: '/',
-      httpOnly: false,  // Allow frontend access for development
+      httpOnly: true,  // Enhanced security with httpOnly
       maxAge: sessionTtl,
       domain: undefined // Let browser determine domain
     },
     rolling: true,
-    proxy: false,  // Disable proxy for development
+    proxy: process.env.NODE_ENV === 'production',  // Enable proxy for production
     genid: () => {
       return crypto.randomBytes(16).toString('hex');
     }

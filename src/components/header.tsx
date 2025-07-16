@@ -110,11 +110,11 @@ export default function Header({
               <MobileNavigationMenu />
               <Link href="/" className="flex items-center">
                 <img 
-                  src="/logo.png" 
+                  src="/agency_logo.png" 
                   alt="TheAgencyIQ" 
                   className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
                   onError={(e) => {
-                    console.error('Logo failed to load from /logo.png');
+                    console.error('Logo failed to load from /agency_logo.png');
                     // Fallback to text if logo fails to load
                     const img = e.target as HTMLImageElement;
                     img.style.display = 'none';
@@ -151,11 +151,11 @@ export default function Header({
         <div className="flex justify-between items-center h-16">
           <Link href="/schedule" className="flex items-center">
             <img 
-              src="/logo.png" 
+              src="/agency_logo.png" 
               alt="TheAgencyIQ" 
               className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity"
               onError={(e) => {
-                console.error('Logo failed to load from /logo.png');
+                console.error('Logo failed to load from /agency_logo.png');
                 // Fallback to text if logo fails to load
                 const img = e.target as HTMLImageElement;
                 img.style.display = 'none';

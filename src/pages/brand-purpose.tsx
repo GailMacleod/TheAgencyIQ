@@ -75,9 +75,9 @@ export default function BrandPurpose() {
   useEffect(() => {
     const checkLogo = async () => {
       try {
-        const response = await fetch('/uploads/logo.png');
+        const response = await fetch('/agency_logo.png');
         if (response.ok) {
-          setLogoPreview('/uploads/logo.png');
+          setLogoPreview('/agency_logo.png');
           console.log('Existing logo loaded from server');
         }
       } catch (error) {
