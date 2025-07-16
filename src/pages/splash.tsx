@@ -8,9 +8,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import GrokWidget from "../components/grok-widget";
 import UserMenu from "../components/user-menu";
-// Logo import temporarily disabled due to MIME type issue
-// import agencyLogoPath from "../../attached_assets/logo.png";
 import OnboardingWizard from "../components/onboarding/OnboardingWizard";
+
+// Use logo from public directory
+const agencyLogoPath = "/agency_logo.png";
 
 export default function Splash() {
   const [location] = useLocation();
@@ -63,7 +64,11 @@ export default function Splash() {
         <div className="container-atomiq">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-[#3B82F6]">TheAgencyIQ</h1>
+              <img 
+                src={agencyLogoPath} 
+                alt="TheAgencyIQ" 
+                className="h-8 w-auto"
+              />
             </div>
             <div className="flex items-center space-x-4">
               {!isLoading && user ? (
@@ -266,7 +271,11 @@ export default function Splash() {
         <div className="container-atomiq py-16">
           <div className="max-w-md mx-auto text-center space-y-6">
             <div className="flex justify-center">
-              <h1 className="text-2xl font-bold text-[#3B82F6]">TheAgencyIQ</h1>
+              <img 
+                src={agencyLogoPath} 
+                alt="TheAgencyIQ" 
+                className="h-10 w-auto"
+              />
             </div>
             <p className="text-muted-foreground leading-relaxed">
               Smarter social media automation for Queensland businesses. Technology and marketing working together.
