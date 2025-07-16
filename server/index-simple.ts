@@ -4,6 +4,8 @@ import connectSqlite3 from 'connect-sqlite3';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
+import path from 'path';
+// import { storage } from './storage'; // Disabled for now
 
 async function startServer() {
   const app = express();
@@ -38,22 +40,23 @@ async function startServer() {
   }));
 
   // Simple auth middleware
-  const authGuard = (req: any, res: any, next: any) => {
+  const authGuard = async (req: any, res: any, next: any) => {
     if (req.session?.userId) {
       next();
     } else {
+      // Auto-login as user 2 for demo
       req.session.userId = 2;
       req.session.userEmail = 'gailm@macleodglba.com.au';
       req.session.save(() => next());
     }
   };
 
-  // API Routes
+  // Essential routes only
   app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
   });
 
-  app.post('/api/establish-session', (req, res) => {
+  app.post('/api/establish-session', async (req, res) => {
     req.session.userId = 2;
     req.session.userEmail = 'gailm@macleodglba.com.au';
     req.session.save(() => {
@@ -65,7 +68,7 @@ async function startServer() {
     });
   });
 
-  app.get('/api/user', authGuard, (req: any, res) => {
+  app.get('/api/user', authGuard, async (req: any, res) => {
     res.json({ 
       id: 2, 
       email: 'gailm@macleodglba.com.au',
@@ -74,7 +77,7 @@ async function startServer() {
     });
   });
 
-  app.get('/api/user-status', authGuard, (req: any, res) => {
+  app.get('/api/user-status', authGuard, async (req: any, res) => {
     res.json({ 
       authenticated: true, 
       userId: req.session.userId,
@@ -83,7 +86,7 @@ async function startServer() {
     });
   });
 
-  app.get('/api/platform-connections', authGuard, (req: any, res) => {
+  app.get('/api/platform-connections', authGuard, async (req: any, res) => {
     res.json([
       { id: 1, platform: 'facebook', username: 'Gail MacLeod', isActive: true },
       { id: 2, platform: 'instagram', username: 'Gail MacLeod', isActive: true },
@@ -96,30 +99,22 @@ async function startServer() {
   // Static file serving
   app.use('/attached_assets', express.static('attached_assets'));
 
-  // Development Vite setup
-  if (process.env.NODE_ENV !== 'production') {
-    try {
-      const { createViteDevServer } = await import('./vite');
-      const viteDevServer = await createViteDevServer(app);
-      console.log('⚡ Vite development server ready');
-    } catch (error) {
-      console.log('⚠️  Vite not available, serving static files only');
-      app.use(express.static('dist'));
-    }
-  } else {
-    app.use(express.static('dist'));
-  }
+  // Static file serving for production
+  app.use(express.static('dist'));
+  
+  // Catch-all handler for SPA
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve('dist/index.html'));
+  });
 
   // Start server
   const server = createServer(app);
   const PORT = process.env.PORT || 5000;
-
+  
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ TheAgencyIQ Server running on port ${PORT}`);
-    console.log(`🌐 Visit: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev`);
+    console.log(`TheAgencyIQ Server running on port ${PORT}`);
+    console.log(`Visit: https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev`);
   });
-
-  return server;
 }
 
 startServer().catch(console.error);
