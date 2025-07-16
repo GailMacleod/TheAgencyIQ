@@ -34,6 +34,7 @@ interface UserStatus {
 }
 
 export default function OnboardingWizard() {
+  // ALL HOOKS AT THE TOP - Never conditional!
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isVisible, setIsVisible] = useState(true);
@@ -43,131 +44,87 @@ export default function OnboardingWizard() {
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
-  // Authenticated user data - primary source of truth with optimistic updates
+  // Always call these hooks - use enabled for conditional fetching
   const { data: user, isLoading: userLoading, error: userError } = useQuery<UserData>({
     queryKey: ["/api/user"],
-    retry: 3,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
-    onError: (error) => {
-      console.log('❌ User query failed:', error);
-      // Try token refresh on error
-      tokenRefreshService.refreshToken().then((result) => {
-        if (result.success) {
-          queryClient.invalidateQueries(["/api/user"]);
-        }
-      });
-    }
-  });
-
-  // User status for onboarding progress with optimistic updates
-  const { data: userStatus, isLoading: statusLoading } = useQuery<UserStatus>({
-    queryKey: ["/api/user-status"],
     enabled: true, // Always enabled to maintain hook order
     retry: 3,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
-    onError: (error) => {
-      console.log('❌ User status query failed:', error);
-      // Try token refresh on error
-      tokenRefreshService.refreshToken().then((result) => {
-        if (result.success) {
-          queryClient.invalidateQueries(["/api/user-status"]);
-        }
-      });
-    }
   });
 
-  // Use loading state without early return to prevent hook order issues
-  const isLoading = userLoading || statusLoading;
-  const isAuthenticated = !userError && user;
-  const hasActiveSubscription = userStatus?.hasActiveSubscription;
-  
-  // Handle authentication and subscription checks without early returns
-  if (!isAuthenticated && !isLoading) {
-    setTimeout(() => {
-      window.location.href = '/login';
-    }, 100);
-  }
-  
-  if (isAuthenticated && !hasActiveSubscription && !isLoading) {
-    setTimeout(() => {
-      window.location.href = '/subscription';
-    }, 100);
-  }
+  const { data: userStatus, isLoading: statusLoading } = useQuery<UserStatus>({
+    queryKey: ["/api/user-status"],
+    enabled: !!user, // Only fetch if user exists
+    retry: 3,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
-  // Save progress to localStorage
-  const saveProgress = () => {
-    const progress = {
-      currentStep,
-      completedSteps,
-      skippedSteps,
-      isSkipped,
-      timestamp: Date.now()
-    };
-    localStorage.setItem('onboarding-progress', JSON.stringify(progress));
-  };
-
-  // Load progress from localStorage
-  const loadProgress = () => {
-    const saved = localStorage.getItem('onboarding-progress');
-    if (saved) {
-      const progress = JSON.parse(saved);
-      // Only load if saved within last 24 hours
-      if (Date.now() - progress.timestamp < 24 * 60 * 60 * 1000) {
-        setCurrentStep(progress.currentStep);
-        setCompletedSteps(progress.completedSteps);
-        setSkippedSteps(progress.skippedSteps || []);
-        setIsSkipped(progress.isSkipped || false);
-        return true;
-      }
-    }
-    return false;
-  };
-
-  // Load progress on mount and start token refresh
+  // Load progress on mount - useEffect always called
   useEffect(() => {
-    const hasProgress = loadProgress();
-    if (hasProgress) {
-      console.log('Onboarding progress restored');
-    }
+    const loadProgress = () => {
+      const saved = localStorage.getItem('onboarding-progress');
+      if (saved) {
+        const progress = JSON.parse(saved);
+        if (Date.now() - progress.timestamp < 24 * 60 * 60 * 1000) {
+          setCurrentStep(progress.currentStep);
+          setCompletedSteps(progress.completedSteps);
+          setSkippedSteps(progress.skippedSteps || []);
+          setIsSkipped(progress.isSkipped || false);
+        }
+      }
+    };
     
-    // Start automatic token refresh
+    loadProgress();
     tokenRefreshService.startAutoRefresh();
     
-    // Cleanup on unmount
     return () => {
       tokenRefreshService.stopAutoRefresh();
     };
   }, []);
 
-  // Save progress when state changes
+  // Save progress when state changes - useEffect always called
   useEffect(() => {
+    const saveProgress = () => {
+      const progress = {
+        currentStep,
+        completedSteps,
+        skippedSteps,
+        isSkipped,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('onboarding-progress', JSON.stringify(progress));
+    };
     saveProgress();
   }, [currentStep, completedSteps, skippedSteps, isSkipped]);
 
-  // Get current step from URL for authenticated subscribers
-  const getStepFromUrl = (url: string): number => {
-    const urlToStepMap: { [key: string]: number } = {
-      '/': 0,
-      '/intelligent-schedule': 0,
-      '/schedule': 0,
-      '/brand-purpose': 1,
-      '/connect-platforms': 2,
-      '/analytics': 3
-    };
-    return urlToStepMap[url] || 0;
-  };
-
-  // Update current step based on URL
+  // Update current step based on URL - useEffect always called
   useEffect(() => {
+    const getStepFromUrl = (url: string): number => {
+      const urlToStepMap: { [key: string]: number } = {
+        '/': 0,
+        '/intelligent-schedule': 0,
+        '/schedule': 0,
+        '/brand-purpose': 1,
+        '/connect-platforms': 2,
+        '/analytics': 3
+      };
+      return urlToStepMap[url] || 0;
+    };
+
     const urlStep = getStepFromUrl(location);
     if (urlStep !== currentStep && !isSkipped) {
       setCurrentStep(urlStep);
     }
   }, [location, currentStep, isSkipped]);
 
-  // Get page-specific guidance for authenticated subscribers
+  // Calculate derived state after all hooks
+  const isLoading = userLoading || statusLoading;
+  const isAuthenticated = !userError && user;
+  const hasActiveSubscription = userStatus?.hasActiveSubscription;
+
+  // Helper functions (after all hooks)
   const getPageGuidance = () => {
     const url = location.split('?')[0];
     const guidanceMap: Record<string, string> = {
@@ -181,7 +138,6 @@ export default function OnboardingWizard() {
     return guidanceMap[url] || 'Continue your automation workflow using the menu.';
   };
 
-  // Get logical navigation route for next step
   const getLogicalNavigation = () => {
     const navigationMap: Record<number, string> = {
       0: '/brand-purpose',
@@ -191,6 +147,8 @@ export default function OnboardingWizard() {
     };
     return navigationMap[currentStep] || '/intelligent-schedule';
   };
+
+
 
   // Subscriber wizard steps for authenticated users
   const subscriberWizardSteps: WizardStep[] = [
@@ -399,8 +357,21 @@ export default function OnboardingWizard() {
     );
   }
 
-  // Don't render if not visible, authenticated, or has active subscription
-  if (!isVisible || !isAuthenticated || !hasActiveSubscription) {
+  // Handle authentication redirects
+  if (!isAuthenticated && !isLoading) {
+    // Redirect to login if not authenticated
+    window.location.href = '/login';
+    return null;
+  }
+
+  if (isAuthenticated && !hasActiveSubscription && !isLoading) {
+    // Redirect to subscription page if no active subscription
+    window.location.href = '/subscription';
+    return null;
+  }
+
+  // Don't render if not visible
+  if (!isVisible) {
     return null;
   }
 
