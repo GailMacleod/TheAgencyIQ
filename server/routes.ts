@@ -45,7 +45,6 @@ import { RealApiPublisher } from './services/real-api-publisher';
 import { userSignupService } from './services/user-signup-service';
 import { sessionActivityService } from './services/session-activity-service';
 import { LRUCache, MemoryMonitor, StreamProcessor } from './utils/memory-optimized-cache';
-
 // Session mapping for direct session management - LRU cache for memory optimization
 const sessionUserMap = new LRUCache({
   max: 500, // Maximum 500 sessions
@@ -53,7 +52,6 @@ const sessionUserMap = new LRUCache({
   updateAgeOnGet: true,
   updateAgeOnHas: true
 });
-
 // Extended session types
 declare module 'express-session' {
   interface SessionData {
@@ -63,13 +61,11 @@ declare module 'express-session' {
     lastSyncAt: string;
   }
 }
-
 declare module 'express-serve-static-core' {
   interface Request {
     sessionID: string;
   }
 }
-
 // Use our custom request interface
 interface CustomRequest extends Request {
   session: session.Session & Partial<session.SessionData> & {
@@ -77,12 +73,9 @@ interface CustomRequest extends Request {
     userEmail?: string;
   };
 }
-
 // OAuth token revocation functionality moved to DataCleanupService
-
 // Environment validation
 // Stripe validation removed to allow server startup
-
 // System health endpoints for launch testing
 function addSystemHealthEndpoints(app: Express) {
   app.get('/api/health', async (req, res) => {
@@ -99,7 +92,6 @@ function addSystemHealthEndpoints(app: Express) {
       res.status(500).json({ status: 'unhealthy', error: error.message });
     }
   });
-
   // Establish session endpoint for authenticated users
   app.post('/api/establish-session', async (req: any, res) => {
     try {
@@ -123,20 +115,17 @@ function addSystemHealthEndpoints(app: Express) {
           requiresLogin: true
         });
       }
-
       // Set session data
       req.session.userId = user.id;
       req.session.userEmail = user.email;
       req.session.subscriptionPlan = user.subscriptionPlan || user.subscription_plan || 'professional';
       req.session.subscriptionActive = user.subscriptionActive || user.subscription_active || true;
-
       // Save session and return response
       req.session.save((err: any) => {
         if (err) {
           console.error('Session save error:', err);
           return res.status(500).json({ error: 'Session save failed' });
         }
-
         // Store in session mapping for backup
         sessionUserMap.set(req.sessionID, user.id);
         
@@ -180,7 +169,6 @@ function addSystemHealthEndpoints(app: Express) {
       });
     }
   });
-
   // Analytics tracking endpoint
   app.post('/api/analytics/track', async (req, res) => {
     try {
@@ -195,7 +183,6 @@ function addSystemHealthEndpoints(app: Express) {
       res.status(500).json({ error: error.message });
     }
   });
-
   // Token validation endpoint
   app.get('/api/validate-tokens', authGuard, async (req: any, res) => {
     try {
@@ -214,7 +201,6 @@ function addSystemHealthEndpoints(app: Express) {
       res.status(500).json({ error: error.message });
     }
   });
-
   // Schedule endpoint
   app.post('/api/schedule', authGuard, async (req: any, res) => {
     try {
@@ -234,7 +220,6 @@ function addSystemHealthEndpoints(app: Express) {
       res.status(500).json({ error: error.message });
     }
   });
-
   app.get('/api/system/memory', async (req, res) => {
     try {
       const memoryData = process.memoryUsage();
@@ -249,7 +234,6 @@ function addSystemHealthEndpoints(app: Express) {
       res.status(500).json({ error: error.message });
     }
   });
-
   app.get('/api/stripe/customers', authGuard, async (req, res) => {
     try {
       const customers = await storage.getAllStripeCustomers();
@@ -258,7 +242,6 @@ function addSystemHealthEndpoints(app: Express) {
       res.status(500).json({ error: error.message });
     }
   });
-
   app.post('/api/analytics/track', async (req, res) => {
     try {
       const { event, data } = req.body;
@@ -268,7 +251,6 @@ function addSystemHealthEndpoints(app: Express) {
       res.status(500).json({ error: error.message });
     }
   });
-
   app.post('/api/schedule', authGuard, async (req, res) => {
     try {
       const { content, platforms, scheduleDate } = req.body;
@@ -288,7 +270,6 @@ function addSystemHealthEndpoints(app: Express) {
       res.status(500).json({ error: error.message });
     }
   });
-
   app.post('/api/connect/:platform', authGuard, async (req, res) => {
     try {
       const { platform } = req.params;
@@ -310,17 +291,12 @@ function addSystemHealthEndpoints(app: Express) {
     }
   });
 }
-
 // XAI validation removed to allow server startup
-
 // Twilio validation removed to allow server startup for X integration
-
 // SendGrid validation removed to allow server startup
-
 if (!process.env.SESSION_SECRET) {
   throw new Error('Missing required SESSION_SECRET');
 }
-
 // Initialize services
 // Initialize Stripe only if secret key is available
 let stripe: any = null;
@@ -329,18 +305,15 @@ if (process.env.STRIPE_SECRET_KEY) {
     apiVersion: "2025-05-28.basil",
   });
 }
-
 // Configure SendGrid if available
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
-
 // Initialize Twilio only if credentials are available
 let twilioClient: any = null;
 if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
   twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
-
 // Comprehensive subscription middleware - blocks ALL access except wizard
 const requirePaidSubscription = async (req: any, res: any, next: any) => {
   // Allow wizard and subscription endpoints to be public
@@ -416,7 +389,6 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
     });
   }
 };
-
 export async function registerRoutes(app: Express): Promise<Server> {
   // Make sessionUserMap available to the app
   app.locals.sessionUserMap = sessionUserMap;
@@ -427,7 +399,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add JSON middleware
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
   // Authentication routes
   app.use('/api/auth', authRoutes);
   
@@ -452,7 +423,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CRITICAL: Use proper authGuard for payment endpoints  
   // Import the authGuard middleware using ES modules
   const { requireAuth, requireAuthForPayment } = await import('./middleware/authGuard');
-
   // SESSION DEBUGGING ENDPOINT - To understand session persistence issues
   app.get('/api/session-debug', (req: any, res) => {
     try {
@@ -500,14 +470,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     next();
   });
-
   // Add body parsing middleware specifically for Facebook endpoints
   app.use('/facebook-data-deletion', express.urlencoded({ extended: true }));
   app.use('/facebook-data-deletion', express.json());
   
   // Facebook Data Deletion endpoints are handled in server/index.ts
   // This avoids duplicate route registration conflicts
-
   // Data deletion status endpoint - Also bypasses auth
   app.get('/api/deletion-status/:userId', (req, res) => {
     const { userId } = req.params;
@@ -525,7 +493,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Session configuration moved to server/index.ts to prevent duplicates
-
   // Session-based authentication endpoint with comprehensive logging
   app.post('/api/login', async (req, res) => {
     try {
@@ -602,7 +569,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: 'Login failed' });
     }
   });
-
   // TEMPORARILY DISABLED: Subscription middleware for testing authentication
   // Apply comprehensive subscription middleware to ALL routes EXCEPT auth  
   // app.use((req, res, next) => {
@@ -611,7 +577,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   //   }
   //   return requirePaidSubscription(req, res, next);
   // });
-
   // Initialize Passport and OAuth strategies
   const { passport: configuredPassport, configurePassportStrategies } = await import('./oauth-config.js');
   app.use(configuredPassport.initialize());
@@ -619,12 +584,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Configure all Passport.js strategies
   configurePassportStrategies();
-
   // Initialize isolated OAuth service
   const { OAuthService } = await import('./services/oauth-service.js');
   const oauthService = new OAuthService(app, configuredPassport);
   oauthService.initializeOAuthRoutes();
-
   // Global error and request logging middleware
   app.use((req: any, res: any, next: any) => {
     const originalSend = res.send;
@@ -665,23 +628,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     next();
   });
-
-
-
   configuredPassport.serializeUser((user: any, done) => {
     done(null, user);
   });
-
   configuredPassport.deserializeUser((user: any, done) => {
     done(null, user);
   });
-
   // Configure multer for file uploads
   const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
-
   const storage_multer = multer.diskStorage({
     destination: (req, file, cb) => {
       cb(null, uploadsDir);
@@ -692,7 +649,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       cb(null, filename);
     }
   });
-
   const upload = multer({
     storage: storage_multer,
     limits: {
@@ -706,13 +662,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   });
-
   // REMOVED: Duplicate requireAuth definition - using authGuard middleware instead
-
   // Duplicate webhook endpoint removed - using server/index.ts implementation
-
-
-
   // Facebook OAuth callback endpoint
   app.post('/api/facebook/callback', async (req, res) => {
     try {
@@ -725,40 +676,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!clientId || !clientSecret) {
         return res.status(500).json({ error: 'Facebook credentials not configured' });
       }
-
       const tokenParams = new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
         redirect_uri: `${req.protocol}://${req.get('host')}/callback`,
         code: code
       });
-
       const tokenResponse = await fetch(`https://graph.facebook.com/v20.0/oauth/access_token?${tokenParams}`);
       const tokenResult = await tokenResponse.json();
       
       if (tokenResult.error) {
         return res.status(400).json({ error: 'Token exchange failed' });
       }
-
       const longLivedParams = new URLSearchParams({
         grant_type: 'fb_exchange_token',
         client_id: clientId,
         client_secret: clientSecret,
         fb_exchange_token: tokenResult.access_token
       });
-
       const longLivedResponse = await fetch(`https://graph.facebook.com/v20.0/oauth/access_token?${longLivedParams}`);
       const longLivedResult = await longLivedResponse.json();
       
       const finalToken = longLivedResult.access_token || tokenResult.access_token;
-
       // Get user info and pages
       const userResponse = await fetch(`https://graph.facebook.com/v20.0/me?access_token=${finalToken}`);
       const userResult = await userResponse.json();
-
       const pagesResponse = await fetch(`https://graph.facebook.com/v20.0/me/accounts?access_token=${finalToken}`);
       const pagesResult = await pagesResponse.json();
-
       let pageId = userResult?.id || `fb_user_${Date.now()}`;
       let pageToken = finalToken;
       let pageName = userResult?.name || 'Facebook User';
@@ -771,7 +715,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pageName = firstPage.name || pageName;
         }
       }
-
       // CRITICAL: Only use valid authenticated session userId
       const sessionUserId = req.session?.userId;
       if (!sessionUserId) {
@@ -815,7 +758,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `);
     }
   });
-
   // LinkedIn OAuth callback endpoint  
   app.post('/api/linkedin/callback', async (req, res) => {
     try {
@@ -828,7 +770,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!clientId || !clientSecret) {
         return res.status(500).json({ error: 'LinkedIn credentials not configured' });
       }
-
       const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -840,12 +781,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           client_secret: clientSecret
         })
       });
-
       const tokenResult = await tokenResponse.json();
       if (tokenResult.error) {
         return res.status(400).json({ error: 'Token exchange failed' });
       }
-
       const profileResponse = await fetch('https://api.linkedin.com/v2/me', {
         headers: { 'Authorization': `Bearer ${tokenResult.access_token}` }
       });
@@ -853,7 +792,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const userId = profileResult.id || `linkedin_user_${Date.now()}`;
       const username = `${profileResult.firstName?.localized?.en_US || ''} ${profileResult.lastName?.localized?.en_US || ''}`.trim() || 'LinkedIn User';
-
       // CRITICAL: Only use valid authenticated session userId
       const sessionUserId = req.session?.userId;
       if (!sessionUserId) {
@@ -897,7 +835,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `);
     }
   });
-
   // LinkedIn token validation endpoint
   app.get('/api/linkedin/validate-token', requireAuth, async (req, res) => {
     try {
@@ -920,7 +857,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to validate LinkedIn token' });
     }
   });
-
   // LinkedIn token refresh endpoint  
   app.post('/api/linkedin/refresh-token', requireAuth, async (req, res) => {
     try {
@@ -941,7 +877,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to refresh LinkedIn token' });
     }
   });
-
   // OAuth token validation endpoint
   app.post('/api/oauth/validate-token', async (req, res) => {
     try {
@@ -955,7 +890,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ valid: false, error: error.message });
     }
   });
-
   // OAuth token refresh endpoint
   app.post('/api/oauth/refresh-token', async (req, res) => {
     try {
@@ -969,7 +903,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, error: error.message });
     }
   });
-
   // Real API publishing with token refresh
   app.post('/api/publish-with-token-refresh', async (req, res) => {
     try {
@@ -1003,7 +936,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, error: error.message });
     }
   });
-
   // Quota status endpoint
   app.get('/api/quota-status/:userId', async (req, res) => {
     try {
@@ -1017,7 +949,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
-
   app.post('/api/x/callback', async (req, res) => {
     try {
       const { code } = req.body;
@@ -1036,7 +967,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         code: code,
         redirect_uri: `${req.protocol}://${req.get('host')}/callback`
       });
-
       const response = await fetch('https://api.twitter.com/2/oauth2/token', {
         method: 'POST',
         headers: {
@@ -1045,12 +975,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         body: tokenParams
       });
-
       const tokenResult = await response.json();
       if (!response.ok) {
         return res.status(400).json({ error: 'Token exchange failed' });
       }
-
       const userResponse = await fetch('https://api.twitter.com/2/users/me', {
         headers: { 'Authorization': `Bearer ${tokenResult.access_token}` }
       });
@@ -1107,7 +1035,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `);
     }
   });
-
   // YouTube OAuth - Direct connection implementation (bypassing broken OAuth)
   app.get('/api/auth/youtube', async (req, res) => {
     try {
@@ -1115,7 +1042,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.redirect('/connect-platforms?error=no_session');
       }
-
       console.log('🔗 YouTube direct connection for user:', userId);
       
       // Create direct YouTube connection like LinkedIn
@@ -1125,7 +1051,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingYT) {
         await storage.deletePlatformConnection(existingYT.id);
       }
-
       const connectionId = await storage.createPlatformConnection({
         userId: userId,
         platform: 'youtube',
@@ -1137,7 +1062,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt: null,
         isActive: true
       });
-
       console.log(`✅ Direct YouTube connection created for user ${userId}:`, connectionId);
       
       res.send(`
@@ -1153,7 +1077,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send('<script>window.opener.postMessage("oauth_failure", "*"); window.close();</script>');
     }
   });
-
   app.post('/api/youtube/callback', async (req, res) => {
     try {
       const { code, state } = req.body;
@@ -1183,7 +1106,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         redirect_uri: `${req.protocol}://${req.get('host')}/callback`,
         grant_type: 'authorization_code'
       });
-
       const response = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: {
@@ -1191,7 +1113,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         body: tokenParams
       });
-
       const tokenResult = await response.json();
       
       if (response.ok) {
@@ -1274,7 +1195,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `);
     }
   });
-
   // Root route to handle OAuth callbacks (X, Facebook, and YouTube)
   app.get('/', (req, res, next) => {
     const code = req.query.code;
@@ -1428,7 +1348,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(); // Pass control to Vite middleware
     }
   });
-
   // Main authentication endpoint
   app.post('/api/auth/login', async (req: any, res: Response) => {
     try {
@@ -1437,9 +1356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!phone || !password) {
         return res.status(400).json({ message: "Phone and password are required" });
       }
-
       console.log(`🔐 Login attempt for phone: ${phone}`);
-
       // Special authentication for User ID 2
       if (phone === '+61424835189' && password === 'password123') {
         const user = await storage.getUser(2);
@@ -1479,18 +1396,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "User verification failed" });
         }
       }
-
       // Standard authentication for other users
       const user = await storage.getUserByPhone(phone);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-
       // Set session data
       req.session.userId = user.id;
       req.session.userEmail = user.email;
@@ -1507,11 +1421,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
       });
-
       console.log(`✅ Login successful for ${phone}: ${user.email}`);
       console.log(`✅ Session ID: ${req.sessionID}`);
       console.log(`✅ User ID in session: ${req.session.userId}`);
-
       res.json({ 
         success: true,
         user: { 
@@ -1527,10 +1439,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error logging in", error: error.message });
     }
   });
-
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-
   // Instagram OAuth fix endpoint for user_id: 2
   app.post('/api/instagram-oauth-fix', requireAuth, async (req: any, res) => {
     try {
@@ -1544,7 +1454,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: 'Instagram OAuth fix only available for authorized users'
         });
       }
-
       // Use Facebook Access Token to connect Instagram Business API
       const facebookToken = process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
       if (!facebookToken) {
@@ -1557,7 +1466,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           accessToken: `ig_business_token_${Date.now()}`,
           isActive: true
         });
-
         console.log(`[INSTAGRAM-OAUTH-FIX] Created direct Instagram connection ID: ${connection.id}`);
         
         return res.json({
@@ -1567,7 +1475,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: 'Instagram OAuth fixed - connection established'
         });
       }
-
       // Try Facebook Business API connection
       try {
         const graphResponse = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${facebookToken}`);
@@ -1613,7 +1520,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (fbError) {
         console.log('[INSTAGRAM-OAUTH-FIX] Facebook API failed, using direct connection');
       }
-
       // Fallback: Create direct Instagram connection
       const connection = await storage.createPlatformConnection({
         userId: userId,
@@ -1623,14 +1529,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accessToken: `ig_verified_token_${Date.now()}`,
         isActive: true
       });
-
       res.json({
         success: true,
         connectionId: connection.id,
         username: 'Instagram Business (Verified)',
         message: 'Instagram OAuth fixed - verified connection created'
       });
-
     } catch (error) {
       console.error('[INSTAGRAM-OAUTH-FIX] Error:', error);
       res.status(500).json({
@@ -1639,21 +1543,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // Stripe webhook endpoint for payment processing
   app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const sig = req.headers['stripe-signature'];
     let event;
-
     console.log('🔔 Stripe webhook received - verifying signature...');
-
     try {
       if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
         console.error('❌ Stripe webhook configuration missing');
         // CRITICAL FIX: Return 200-299 status to prevent webhook deactivation
         return res.status(200).json({ received: true, error: 'Webhook not configured but acknowledged' });
       }
-
       event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
       console.log(`✅ Webhook signature verified for event: ${event.type}`);
     } catch (err: any) {
@@ -1661,9 +1561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // CRITICAL FIX: Return 200-299 status to prevent webhook deactivation
       return res.status(200).json({ received: true, error: 'Signature verification failed but acknowledged' });
     }
-
     console.log(`🔔 Processing Stripe webhook: ${event.type}`);
-
     try {
       switch (event.type) {
         case 'checkout.session.completed':
@@ -1680,7 +1578,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`✅ User ${userId} upgraded to ${plan} plan`);
           }
           break;
-
         case 'invoice.payment_succeeded':
           const invoice = event.data.object;
           console.log('📄 Invoice payment succeeded:', invoice.id);
@@ -1698,7 +1595,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           break;
-
         case 'invoice.payment_failed':
           const failedInvoice = event.data.object;
           console.log('❌ Invoice payment failed:', failedInvoice.id);
@@ -1711,7 +1607,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           break;
-
         case 'customer.subscription.updated':
           const subscription = event.data.object;
           console.log('🔄 Subscription updated:', subscription.id, 'Status:', subscription.status);
@@ -1739,7 +1634,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`✅ User ${user.id} subscription updated to ${newPlan} (${subscription.status})`);
           }
           break;
-
         case 'customer.subscription.deleted':
           const deletedSubscription = event.data.object;
           console.log('🗑️ Subscription cancelled:', deletedSubscription.id);
@@ -1754,7 +1648,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`✅ User ${canceledUser.id} subscription cancelled - reverted to free plan`);
           }
           break;
-
         case 'customer.subscription.created':
           const newSubscription = event.data.object;
           console.log('🆕 New subscription created:', newSubscription.id);
@@ -1826,11 +1719,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           break;
-
         default:
           console.log(`ℹ️ Unhandled event type: ${event.type}`);
       }
-
       console.log(`✅ Webhook ${event.type} processed successfully`);
       res.status(200).json({ received: true, event: event.type });
     } catch (error) {
@@ -1840,7 +1731,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json({ received: true, event: event.type, error: 'Processing failed but acknowledged' });
     }
   });
-
   // Seedance webhook endpoint for video generation completion
   app.post('/api/seedance-webhook', async (req, res) => {
     try {
@@ -1873,7 +1763,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
-
   // Get latest generated Seedance video for preview testing
   app.get('/api/video/latest-seedance', (req, res) => {
     try {
@@ -1894,7 +1783,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to get latest video' });
     }
   });
-
   // Comprehensive post publishing endpoint with real API integration
   app.post('/api/posts/:id/publish', requireAuth, async (req: any, res) => {
     try {
@@ -1963,7 +1851,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error publishing post" });
     }
   });
-
   // Platform post ID management endpoints
   app.get('/api/posts/platform-ids', requireAuth, async (req: any, res) => {
     try {
@@ -1975,7 +1862,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error fetching platform posts" });
     }
   });
-
   app.get('/api/posts/:id/platform-id', requireAuth, async (req: any, res) => {
     try {
       const postId = parseInt(req.params.id);
@@ -1992,7 +1878,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error validating platform post ID" });
     }
   });
-
   app.post('/api/posts/validate-platform-id/:id', requireAuth, async (req: any, res) => {
     try {
       const postId = parseInt(req.params.id);
@@ -2003,7 +1888,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error validating platform post" });
     }
   });
-
   // Quota management endpoints
   app.get('/api/quota/stats', requireAuth, async (req: any, res) => {
     try {
@@ -2015,7 +1899,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error fetching quota statistics" });
     }
   });
-
   // Audit trail endpoints
   app.get('/api/audit/trail', requireAuth, async (req: any, res) => {
     try {
@@ -2027,7 +1910,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error fetching audit trail" });
     }
   });
-
   app.get('/api/audit/post/:id', requireAuth, async (req: any, res) => {
     try {
       const postId = parseInt(req.params.id);
@@ -2038,7 +1920,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error fetching post accountability" });
     }
   });
-
   // System health report endpoint
   app.get('/api/system/health', requireAuth, async (req: any, res) => {
     try {
@@ -2054,7 +1935,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error generating system health report" });
     }
   });
-
   // Admin endpoint to list all Stripe customers and subscriptions
   app.get('/api/admin/stripe-customers', requireAuth, async (req, res) => {
     try {
@@ -2125,7 +2005,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
-
   // Admin endpoint to cancel duplicate subscriptions for gailm@macleodglba.com.au
   app.post('/api/admin/cleanup-subscriptions', requireAuth, async (req, res) => {
     try {
@@ -2198,7 +2077,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: error.message });
     }
   });
-
   // Video preview endpoint for Art Director generated content
   app.get('/video-preview/:videoId', async (req, res) => {
     try {
@@ -2221,7 +2099,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // Device-agnostic session synchronization endpoint
   app.post('/api/sync-session', async (req, res) => {
     try {
@@ -2273,7 +2150,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // Dedicated login route with explicit cookie setting
   app.post('/api/login', async (req, res) => {
     const { email, phone } = req.body;
@@ -2347,7 +2223,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // Session establishment with proper user validation - FIXED FOR USER ID 2
   app.post('/api/establish-session', async (req, res) => {
     console.log('Session establishment request:', {
@@ -2717,7 +2592,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       loginRequired: true
     });
   });
-
   // Manifest.json route with public access
   app.get('/manifest.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -2744,9 +2618,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]
     });
   });
-
-
-
   // Create Stripe checkout session - REQUIRES USER AUTHENTICATION FIRST
   app.post("/api/create-checkout-session", requireAuthForPayment, async (req: any, res) => {
     try {
@@ -2755,30 +2626,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!priceId) {
         return res.status(400).json({ message: "Price ID is required" });
       }
-
       // CRITICAL: User must be authenticated and have account before payment
       const userId = req.session.userId;
       if (!userId) {
         return res.status(401).json({ message: "User must be authenticated before payment" });
       }
-
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User account not found" });
       }
-
       // Check if user already has an active subscription
       if (user.stripeSubscriptionId) {
         return res.status(400).json({ message: "User already has an active subscription" });
       }
-
       // Map price IDs to plan names only - PostQuotaService handles quotas
       const planMapping: { [key: string]: string } = {
         "price_starter": "starter",
         "price_growth": "growth", 
         "price_professional": "professional"
       };
-
       let planName = planMapping[priceId];
       
       // If not found in mapping, extract from Stripe metadata
@@ -2792,10 +2658,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Invalid price ID" });
         }
       }
-
       const domains = process.env.REPLIT_DOMAINS?.split(',') || [`localhost:5000`];
       const domain = domains[0];
-
       // Create or retrieve Stripe customer for authenticated user
       let stripeCustomer;
       if (user.stripeCustomerId) {
@@ -2815,7 +2679,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stripeCustomerId: stripeCustomer.id
         });
       }
-
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [{
@@ -2832,7 +2695,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userEmail: user.email
         }
       });
-
       // Log checkout session creation
       loggingService.logSubscriptionCreation(
         userId,
@@ -2847,14 +2709,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         undefined
       );
-
       res.json({ url: session.url });
     } catch (error: any) {
       console.error('Stripe error:', error);
       res.status(500).json({ message: "Error creating checkout session: " + error.message });
     }
   });
-
   // Send verification code
   app.post("/api/send-verification-code", async (req, res) => {
     try {
@@ -2863,16 +2723,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!phone) {
         return res.status(400).json({ message: "Phone number is required" });
       }
-
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
       await storage.createVerificationCode({
         phone,
         code,
         expiresAt,
       });
-
       // Enhanced SMS sending with fallback
       try {
         if (phone === '+15005550006' || phone.startsWith('+1500555')) {
@@ -2895,7 +2752,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Still allow verification to proceed - log code for manual verification
         console.log(`SMS failed. Manual verification code for ${phone}: ${code}`);
       }
-
       res.json({ 
         message: "Verification code sent", 
         testMode: phone.startsWith('+1500555') || !process.env.TWILIO_ACCOUNT_SID 
@@ -2905,7 +2761,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error sending verification code" });
     }
   });
-
   // Complete phone verification and create account
   app.post("/api/complete-phone-verification", async (req, res) => {
     try {
@@ -2914,28 +2769,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!phone || !code || !password) {
         return res.status(400).json({ message: "Phone, code, and password are required" });
       }
-
       // Verify the SMS code
       const storedCode = verificationCodes.get(phone);
       if (!storedCode) {
         return res.status(400).json({ message: "No verification code found for this phone number" });
       }
-
       if (storedCode.expiresAt < new Date()) {
         verificationCodes.delete(phone);
         return res.status(400).json({ message: "Verification code has expired" });
       }
-
       if (storedCode.code !== code) {
         return res.status(400).json({ message: "Invalid verification code" });
       }
-
       // Check for pending payment in session
       const pendingPayment = req.session.pendingPayment;
       if (!pendingPayment) {
         return res.status(400).json({ message: "No pending payment found. Please complete payment first." });
       }
-
       // Create user account with verified phone number
       const hashedPassword = await bcrypt.hash(password, 10);
       
@@ -2951,14 +2801,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         remainingPosts: pendingPayment.remainingPosts,
         totalPosts: pendingPayment.totalPosts
       });
-
       // Initialize post count ledger for the user
       console.log(`Initializing quota for ${phone} with ${pendingPayment.plan} plan`);
-
       // Clean up verification code and pending payment
       verificationCodes.delete(phone);
       delete req.session.pendingPayment;
-
       // CRITICAL: Log the user in with proper user ID assignment
       req.session.userId = user.id;
       console.log(`User ID assigned to session: ${user.id} for ${user.email}`);
@@ -2980,13 +2827,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
       });
-
     } catch (error: any) {
       console.error('Phone verification completion error:', error);
       res.status(500).json({ message: "Failed to complete verification" });
     }
   });
-
   // Verify code and create user
   // Generate gift certificates endpoint (admin only - based on actual purchase)
   app.post("/api/generate-gift-certificates", async (req, res) => {
@@ -2996,7 +2841,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-
       const { count = 10, plan = 'professional', createdFor = 'Testing Program' } = req.body;
       
       // Generate unique certificate codes
@@ -3013,7 +2857,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         certificates.push(certificate.code);
       }
-
       console.log(`✅ Generated ${count} gift certificates for ${plan} plan by user ${userId}`);
       res.json({ 
         message: `Generated ${count} gift certificates`,
@@ -3022,13 +2865,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: userId,
         instructions: "Users can redeem these at /api/redeem-gift-certificate after logging in"
       });
-
     } catch (error: any) {
       console.error('Gift certificate generation error:', error);
       res.status(500).json({ message: "Certificate generation failed" });
     }
   });
-
   // Gift certificate redemption endpoint - CREATES NEW ISOLATED USER ACCOUNT
   app.post("/api/redeem-gift-certificate", async (req, res) => {
     try {
@@ -3044,7 +2885,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!password || typeof password !== 'string') {
         return res.status(400).json({ message: "Password is required" });
       }
-
       // Get the certificate and log the viewing action
       const certificate = await storage.getGiftCertificate(code);
       if (!certificate) {
@@ -3067,7 +2907,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         return res.status(404).json({ message: "Invalid certificate code" });
       }
-
       if (certificate.isUsed) {
         // Log failed attempt to redeem used certificate
         await storage.logGiftCertificateAction({
@@ -3089,7 +2928,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         return res.status(400).json({ message: "Certificate has already been redeemed" });
       }
-
       // Log successful certificate viewing
       await storage.logGiftCertificateAction({
         certificateId: certificate.id,
@@ -3106,16 +2944,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId: req.sessionID,
         success: true
       });
-
       // Check if email already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: "Account with this email already exists" });
       }
-
       // Generate unique userId (required field)
       const userId = phone || `cert_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-
       // Create new isolated user account WITHOUT post allocations
       const newUser = await storage.createUser({
         userId,
@@ -3128,7 +2963,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionSource: 'certificate',
         subscriptionActive: true
       });
-
       // Use centralized PostQuotaService to initialize quota
       const { PostQuotaService } = await import('./PostQuotaService');
       const quotaInitialized = await PostQuotaService.initializeQuota(newUser.id, certificate.plan);
@@ -3136,7 +2970,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!quotaInitialized) {
         throw new Error('Failed to initialize post quota');
       }
-
       // Log gift certificate redemption to quota debug log
       try {
         const fs = await import('fs/promises');
@@ -3145,18 +2978,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (logError) {
         console.warn('Failed to log gift certificate redemption:', logError);
       }
-
       // Redeem the certificate to the new user
       await storage.redeemGiftCertificate(code, newUser.id);
-
       // Establish session for the new user
       req.session.userId = newUser.id;
-
       // Get updated user data with proper quota
       const updatedUser = await storage.getUser(newUser.id);
-
       console.log(`✅ Gift certificate ${code} redeemed - NEW USER CREATED: ${email} (ID: ${newUser.id}) for ${certificate.plan} plan`);
-
       res.json({ 
         message: "Certificate redeemed successfully - New account created",
         plan: certificate.plan,
@@ -3168,13 +2996,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalPosts: updatedUser.totalPosts
         }
       });
-
     } catch (error: any) {
       console.error('Gift certificate redemption error:', error);
       res.status(500).json({ message: "Certificate redemption failed: " + error.message });
     }
   });
-
   // Get all gift certificates (admin only)
   app.get("/api/admin/gift-certificates", async (req, res) => {
     try {
@@ -3183,16 +3009,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-
       const certificates = await storage.getAllGiftCertificates();
       res.json({ certificates });
-
     } catch (error: any) {
       console.error('Gift certificates retrieval error:', error);
       res.status(500).json({ message: "Failed to retrieve gift certificates" });
     }
   });
-
   // Get gift certificate action logs (admin only)
   app.get("/api/admin/gift-certificate-logs/:certificateCode", async (req, res) => {
     try {
@@ -3201,17 +3024,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-
       const { certificateCode } = req.params;
       const logs = await storage.getGiftCertificateActionLogByCode(certificateCode);
       res.json({ logs });
-
     } catch (error: any) {
       console.error('Gift certificate logs retrieval error:', error);
       res.status(500).json({ message: "Failed to retrieve certificate logs" });
     }
   });
-
   // Get user's gift certificate actions
   app.get("/api/my-gift-certificate-actions", async (req, res) => {
     try {
@@ -3220,13 +3040,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-
       const [createdCertificates, redeemedCertificates, actionLogs] = await Promise.all([
         storage.getGiftCertificatesByCreator(userId),
         storage.getGiftCertificatesByRedeemer(userId),
         storage.getGiftCertificateActionLogByUser(userId)
       ]);
-
       res.json({ 
         createdCertificates,
         redeemedCertificates,
@@ -3237,16 +3055,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalActions: actionLogs.length
         }
       });
-
     } catch (error: any) {
       console.error('User gift certificate actions retrieval error:', error);
       res.status(500).json({ message: "Failed to retrieve gift certificate actions" });
     }
   });
-
   // Twilio-aligned phone update endpoint mirroring successful signup SMS pattern
-
-
   // Data export endpoint for local development migration
   app.get("/api/export-data", async (req, res) => {
     try {
@@ -3322,7 +3136,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // User status endpoint - properly validate sessions
   app.get("/api/user-status", authGuard, async (req, res) => {
     try {
@@ -3373,80 +3186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
-  // OAuth token refresh endpoint for automatic token validation and refresh
-  app.post("/api/oauth/refresh/:platform", async (req, res) => {
-    try {
-      const { platform } = req.params;
-      const userId = req.session?.userId;
-      
-      if (!userId) {
-        return res.status(401).json({ error: "Session required" });
-      }
-      
-      console.log(`[OAUTH-REFRESH] Attempting to refresh ${platform} token for user ${userId}`);
-      
-      // Import OAuthRefreshService and attempt refresh
-      const { OAuthRefreshService } = await import('./oauth-refresh-service');
-      const refreshResult = await OAuthRefreshService.validateAndRefreshConnection(platform, userId);
-      
-      // Get current OAuth status for response
-      const { OAuthStatusChecker } = await import('./oauth-status-checker');
-      let currentStatus;
-      
-      // Get the latest token (refreshed if successful)
-      const connections = await storage.getPlatformConnectionsByUser(userId);
-      const connection = connections.find(c => c.platform === platform);
-      
-      if (connection) {
-        switch (platform) {
-          case 'facebook':
-            currentStatus = await OAuthStatusChecker.validateFacebookToken(connection.accessToken);
-            break;
-          case 'instagram':
-            currentStatus = await OAuthStatusChecker.validateInstagramToken(connection.accessToken);
-            break;
-          case 'youtube':
-            currentStatus = await OAuthStatusChecker.validateYouTubeToken(connection.accessToken);
-            break;
-          case 'x':
-            currentStatus = await OAuthStatusChecker.validateXToken(connection.accessToken, connection.refreshToken);
-            break;
-          case 'linkedin':
-            currentStatus = await OAuthStatusChecker.validateLinkedInToken(connection.accessToken);
-            break;
-          default:
-            currentStatus = { platform, isValid: false, error: 'Unsupported platform' };
-        }
-      } else {
-        currentStatus = { platform, isValid: false, error: 'No connection found' };
-      }
-      
-      res.json({
-        platform,
-        refreshAttempted: true,
-        refreshResult: {
-          success: refreshResult.success,
-          error: refreshResult.error,
-          requiresReauth: refreshResult.requiresReauth
-        },
-        currentStatus,
-        refreshRequired: refreshResult.requiresReauth,
-        message: refreshResult.success 
-          ? `${platform} token refreshed successfully`
-          : `${platform} token refresh failed - ${refreshResult.error}`
-      });
-      
-    } catch (error: any) {
-      console.error(`[OAUTH-REFRESH] Error refreshing ${req.params.platform}:`, error);
-      res.status(500).json({ 
-        error: "OAuth refresh failed", 
-        details: error.message,
-        platform: req.params.platform 
-      });
-    }
-  });
-
+  // OAuth token refresh endpoint - Removed duplicate, consolidated with route at line 4699
   // SMS verification code sending endpoint with Twilio integration
   app.post("/api/send-sms-code", async (req, res) => {
     try {
@@ -3478,9 +3218,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to send SMS: " + error.message });
     }
   });
-
-
-
   // Facebook data deletion status endpoint
   app.get("/api/facebook/data-deletion-status", async (req, res) => {
     try {
@@ -3489,13 +3226,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!id) {
         return res.status(400).json({ error: "Missing user ID parameter" });
       }
-
       // Check if Facebook user still has connections by platform user ID
       const allConnections = await storage.getPlatformConnectionsByPlatformUserId(id as string);
       const socialConnections = allConnections.filter(conn => 
         conn.platform === 'facebook' || conn.platform === 'instagram'
       );
-
       res.json({
         status: socialConnections.length === 0 ? "completed" : "in_progress",
         message: socialConnections.length === 0 
@@ -3503,13 +3238,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : "Data deletion in progress",
         timestamp: new Date().toISOString()
       });
-
     } catch (error: any) {
       console.error('Facebook data deletion status error:', error);
       res.status(500).json({ error: "Status check failed" });
     }
   });
-
   app.post("/api/verify-and-signup", async (req, res) => {
     try {
       const { email, password, phone, code } = req.body;
@@ -3517,22 +3250,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!email || !password || !phone || !code) {
         return res.status(400).json({ message: "All fields are required" });
       }
-
       // Verify the code
       const verificationRecord = await storage.getVerificationCode(phone, code);
       if (!verificationRecord || verificationRecord.expiresAt < new Date()) {
         return res.status(400).json({ message: "Invalid or expired verification code" });
       }
-
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: "User already exists" });
       }
-
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
-
       // Create user without active subscription - requires payment or certificate
       const user = await storage.createUser({
         userId: phone, // Phone number as UID
@@ -3546,10 +3275,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionSource: 'none',
         subscriptionActive: false
       });
-
       // Mark verification code as used
       await storage.markVerificationCodeUsed(verificationRecord.id);
-
       // Set session and save
       req.session.userId = user.id;
       req.session.userEmail = user.email;
@@ -3577,7 +3304,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error creating account" });
     }
   });
-
   // Session establishment endpoint - handles both GET and POST
   app.post("/api/auth/session", async (req: any, res) => {
     try {
@@ -3620,7 +3346,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Session establishment failed" });
     }
   });
-
   // Public session endpoint for anonymous access - allows frontend to get initial session
   app.get("/api/auth/session", async (req: any, res) => {
     try {
@@ -3660,7 +3385,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Session check failed" });
     }
   });
-
   // Public session establishment endpoint for auto-login
   app.post("/api/auth/establish-session", async (req: any, res) => {
     try {
@@ -3761,9 +3485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: 'Session establishment failed' });
     }
   });
-
   // ==================== COMPREHENSIVE USER SIGNUP SYSTEM ====================
-
   // User signup endpoint - CREATE NEW USER ACCOUNTS
   app.post("/api/auth/signup", async (req: any, res) => {
     try {
@@ -3804,7 +3526,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: 'Signup failed' });
     }
   });
-
   // User login endpoint - AUTHENTICATE EXISTING USERS
   app.post("/api/auth/login", async (req: any, res) => {
     try {
@@ -3871,7 +3592,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: 'Login failed' });
     }
   });
-
   // Check subscription eligibility - VALIDATE USER BEFORE PAYMENT
   app.post("/api/auth/check-subscription-eligibility", async (req: any, res) => {
     try {
@@ -3914,7 +3634,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // Link subscription to user - AFTER SUCCESSFUL STRIPE PAYMENT
   app.post("/api/auth/link-subscription", async (req: any, res) => {
     try {
@@ -3960,7 +3679,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // Reset quota cycle - ADMIN ENDPOINT
   app.post("/api/auth/reset-quota-cycle", async (req: any, res) => {
     try {
@@ -3999,7 +3717,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // Session activity stats - ADMIN ENDPOINT
   app.get("/api/auth/session-stats", async (req: any, res) => {
     try {
@@ -4024,9 +3741,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // ==================== END COMPREHENSIVE USER SIGNUP SYSTEM ====================
-
   // Login with phone number
   app.post("/api/auth/login", async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -4038,7 +3753,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!phone || !password) {
         return res.status(400).json({ message: "Phone number and password are required" });
       }
-
       // Test account bypass
       if (phone === '+61412345678' && password === 'test123') {
         req.session.userId = 999;
@@ -4052,7 +3766,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return res.json({ user: { id: 999, email: 'test@test.com', phone: '+61412345678' } });
       }
-
       // Updated authentication for phone +61424835189 with password123  
       if (phone === '+61424835189' && password === 'password123') {
         // Get user data to verify phone number
@@ -4084,18 +3797,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "User phone number verification failed" });
         }
       }
-
       // Find user by phone number (unique identifier)
       const user = await storage.getUserByPhone(phone);
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-
       // Phone number verification and correction on login
       let verifiedPhone = user.phone;
       
@@ -4137,7 +3847,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (verificationError) {
         console.log('Phone verification check failed, using stored phone number:', verificationError);
       }
-
       // CRITICAL: Assign proper user ID to session
       req.session.userId = user.id;
       console.log(`Login successful - User ID assigned to session: ${user.id} for ${user.email}`);
@@ -4148,14 +3857,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           resolve();
         });
       });
-
       res.json({ user: { id: user.id, email: user.email, phone: verifiedPhone } });
     } catch (error: any) {
       console.error('Login error:', error);
       res.status(500).json({ message: "Error logging in" });
     }
   });
-
   // Logout with complete session cleanup
   app.post("/api/auth/logout", async (req: any, res) => {
     try {
@@ -4220,12 +3927,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // Get current user - simplified for consistency
-
   // Memory-optimized LRU cache for user data
   const userDataCache = new LRUCache<any>(100, 30000); // 100 entries, 30s TTL
-
   app.get("/api/user", authGuard, async (req: any, res) => {
     try {
       // Reduced logging for production memory optimization
@@ -4237,7 +3941,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Authentication required
         return res.status(401).json({ message: "Not authenticated" });
       }
-
       // Check cache first for faster response
       const cacheKey = `user_${userId}`;
       const cachedData = userDataCache.get(cacheKey);
@@ -4246,13 +3949,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Fast cache hit
         return res.json(cachedData);
       }
-
       const user = await storage.getUser(userId);
       if (!user) {
         // User not found in database
         return res.status(404).json({ message: "User not found" });
       }
-
       // User data retrieved
       
       const userData = { 
@@ -4264,24 +3965,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         remainingPosts: user.remainingPosts,
         totalPosts: user.totalPosts
       };
-
       // Cache user data for faster subsequent requests
       userDataCache.set(cacheKey, userData);
-
       res.json(userData);
     } catch (error: any) {
       console.error('Get user error:', error);
       res.status(500).json({ message: "Error fetching user" });
     }
   });
-
   // Instagram OAuth fix endpoint for user_id: 2
   app.post("/api/user/instagram-fix", async (req: any, res) => {
     try {
       if (!req.session?.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-
       const userId = req.session.userId;
       console.log(`[INSTAGRAM-OAUTH-FIX] Creating Instagram connection for user ${userId}`);
       
@@ -4292,7 +3989,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: 'Instagram OAuth fix only available for authorized users'
         });
       }
-
       // Use Facebook Access Token to connect Instagram Business API
       const facebookToken = process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
       if (!facebookToken) {
@@ -4305,7 +4001,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           accessToken: `ig_business_token_${Date.now()}`,
           isActive: true
         });
-
         console.log(`[INSTAGRAM-OAUTH-FIX] Created direct Instagram connection ID: ${connection.id}`);
         
         return res.json({
@@ -4315,7 +4010,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: 'Instagram OAuth fixed - connection established'
         });
       }
-
       // Try Facebook Business API connection
       try {
         const graphResponse = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${facebookToken}`);
@@ -4361,7 +4055,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (fbError) {
         console.log('[INSTAGRAM-OAUTH-FIX] Facebook API failed, using direct connection');
       }
-
       // Fallback: Create direct Instagram connection
       const connection = await storage.createPlatformConnection({
         userId: userId,
@@ -4371,14 +4064,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accessToken: `ig_verified_token_${Date.now()}`,
         isActive: true
       });
-
       res.json({
         success: true,
         connectionId: connection.id,
         username: 'Instagram Business (Verified)',
         message: 'Instagram OAuth fixed - verified connection created'
       });
-
     } catch (error) {
       console.error('[INSTAGRAM-OAUTH-FIX] Error:', error);
       res.status(500).json({
@@ -4387,7 +4078,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // Get brand purpose data for a user
   app.get("/api/brand-purpose", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -4396,14 +4086,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!brandPurposeRecord) {
         return res.status(404).json({ message: "Brand purpose not found" });
       }
-
       res.json(brandPurposeRecord);
     } catch (error: any) {
       console.error('Get brand purpose error:', error);
       res.status(500).json({ message: "Error fetching brand purpose" });
     }
   });
-
   // Logo upload endpoint with multer
   app.post("/api/upload-logo", async (req: any, res) => {
     try {
@@ -4412,33 +4100,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (token !== 'valid-token') {
         return res.status(401).json({ message: "Unauthorized" });
       }
-
       // Use multer to handle file upload
       upload.single("logo")(req, res, (err) => {
         if (err) {
           return res.status(400).json({ message: "Upload error" });
         }
-
         if (!req.file) {
           return res.status(400).json({ message: "No file uploaded" });
         }
-
         // Check file size (max 5MB)
         if (req.file.size > 5 * 1024 * 1024) {
           return res.status(400).json({ message: "File too large" });
         }
-
         // Save file as logo.png and update preview
         const uploadsDir = './uploads';
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
         }
-
         const targetPath = path.join(uploadsDir, 'logo.png');
         fs.renameSync(req.file.path, targetPath);
-
         const logoUrl = '/uploads/logo.png';
-
         res.status(200).json({ message: "Logo uploaded successfully", logoUrl });
       });
     } catch (error: any) {
@@ -4446,7 +4127,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: "Upload failed" });
     }
   });
-
   // Save brand purpose with comprehensive Strategyzer data
   app.post("/api/brand-purpose", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -4462,7 +4142,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             error: 'Instagram OAuth fix only available for authorized users'
           });
         }
-
         // Use Facebook Access Token to connect Instagram Business API
         const facebookToken = process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
         if (!facebookToken) {
@@ -4475,7 +4154,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             accessToken: `ig_business_token_${Date.now()}`,
             isActive: true
           });
-
           console.log(`[INSTAGRAM-OAUTH-FIX] Created direct Instagram connection ID: ${connection.id}`);
           
           return res.json({
@@ -4485,7 +4163,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: 'Instagram OAuth fixed - connection established'
           });
         }
-
         // Try Facebook Business API connection
         try {
           const graphResponse = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${facebookToken}`);
@@ -4531,7 +4208,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (fbError) {
           console.log('[INSTAGRAM-OAUTH-FIX] Facebook API failed, using direct connection');
         }
-
         // Fallback: Create direct Instagram connection
         const connection = await storage.createPlatformConnection({
           userId: userId,
@@ -4541,7 +4217,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           accessToken: `ig_verified_token_${Date.now()}`,
           isActive: true
         });
-
         return res.json({
           success: true,
           connectionId: connection.id,
@@ -4549,7 +4224,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: 'Instagram OAuth fixed - verified connection created'
         });
       }
-
       const brandPurposeData = {
         userId: req.session.userId,
         brandName: req.body.brandName,
@@ -4563,7 +4237,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         logoUrl: req.body.logoUrl,
         contactDetails: req.body.contactDetails,
       };
-
       // Check if brand purpose already exists
       const existing = await storage.getBrandPurposeByUser(req.session.userId);
       
@@ -4573,7 +4246,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         brandPurposeRecord = await storage.createBrandPurpose(brandPurposeData);
       }
-
       // Auto-connect to predefined platforms for simplified flow
       const platforms = ['facebook', 'instagram', 'linkedin'];
       for (const platform of platforms) {
@@ -4591,20 +4263,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-
       res.json(brandPurposeRecord);
     } catch (error: any) {
       console.error('Brand purpose error:', error);
       res.status(500).json({ message: "Error saving brand purpose" });
     }
   });
-
   // Auto-save disabled to prevent server flooding
   app.post("/api/brand-purpose/auto-save", requireAuth, async (req: any, res) => {
     // Auto-save temporarily disabled to prevent excessive requests
     res.json({ success: true });
   });
-
   // Queensland events endpoint for calendar optimization
   app.get("/api/queensland-events", async (req, res) => {
     try {
@@ -4619,7 +4288,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json([]);
     }
   });
-
   // Fix X posts to comply with new hashtag prohibition policy
   app.post("/api/fix-x-posts", requireAuth, async (req: any, res) => {
     try {
@@ -4667,26 +4335,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fix X posts" });
     }
   });
-
   // Approve individual post for scheduling
   app.post("/api/approve-post", requireAuth, async (req: any, res) => {
     try {
       const { postId } = req.body;
       const userId = req.session.userId;
-
       if (!postId) {
         return res.status(400).json({ message: "Post ID is required" });
       }
-
       // Update post status to approved
       const updatedPost = await storage.updatePost(postId, { 
         status: 'approved'
       });
-
       if (!updatedPost) {
         return res.status(404).json({ message: "Post not found" });
       }
-
       console.log(`Post ${postId} approved by user ${userId}`);
       res.json({ success: true, post: updatedPost });
     } catch (error) {
@@ -4694,7 +4357,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to approve post" });
     }
   });
-
   // OAuth refresh endpoints
   app.post('/api/oauth/refresh/:platform', requireAuth, async (req: any, res) => {
     try {
@@ -4734,7 +4396,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
   // OAuth Authentication Routes
   
   // API auth routes that redirect to OAuth providers
@@ -4761,7 +4422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PASSPORT.JS OAUTH ROUTES - SIMPLIFIED AND REINTEGRATED
   
   // Session persistence middleware for OAuth routes
-  app.use('/auth/*', async (req: any, res, next) => {
+  app.use('/auth', async (req: any, res, next) => {
     // OAuth middleware - session must already exist from login
     if (!req.session?.userId) {
       console.log('⚠️ OAuth initiated without session - authentication required');
@@ -4773,17 +4434,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     next();
   });
-
   // Simple platform connection with username/password
   app.post("/api/connect-platform-simple", requireAuth, async (req: any, res) => {
     try {
       const { platform, username, password } = req.body;
       const userId = req.session.userId;
-
       if (!platform || !username || !password) {
         return res.status(400).json({ message: "Platform, username, and password are required" });
       }
-
       // Perform real OAuth token exchange using approved platform APIs
       console.log(`Authenticating ${platform} for user ${userId}`);
       
@@ -4815,7 +4473,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: `Authentication failed for ${platform}. Please check your credentials.` 
         });
       }
-
       // Store the connection with real tokens
       const connection = await storage.createPlatformConnection({
         userId,
@@ -4826,7 +4483,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         refreshToken: tokens.refreshToken,
         isActive: true
       });
-
       res.json({ 
         success: true, 
         connection,
@@ -4837,7 +4493,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to connect platform" });
     }
   });
-
   // Disconnect platform
   app.post("/api/disconnect-platform", requireAuth, async (req: any, res) => {
     try {
@@ -4856,41 +4511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to disconnect platform" });
     }
   });
-
-  // OAuth Token Refresh API Routes
-  app.post("/api/oauth/refresh/:platform", requireAuth, async (req: any, res) => {
-    try {
-      const { platform } = req.params;
-      const userId = req.session.userId?.toString();
-      
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-      
-      const result = await OAuthRefreshService.validateAndRefreshConnection(userId, platform);
-      
-      if (result.success) {
-        res.json({ 
-          success: true, 
-          message: `${platform} token refreshed successfully`,
-          expiresAt: result.expiresAt
-        });
-      } else {
-        res.status(400).json({ 
-          success: false, 
-          error: result.error || 'Token refresh failed',
-          needsReauth: true
-        });
-      }
-    } catch (error) {
-      console.error('OAuth refresh error:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Internal server error during token refresh' 
-      });
-    }
-  });
-
+  // OAuth Token Refresh API Routes - Consolidated with existing route above
   // Validate all platform tokens
   app.get("/api/oauth/validate-all", requireAuth, async (req: any, res) => {
     try {
@@ -4933,7 +4554,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to validate tokens' });
     }
   });
-
   // Auto-refresh expired tokens
   app.post("/api/oauth/auto-refresh", requireAuth, async (req: any, res) => {
     try {
@@ -4985,7 +4605,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to auto-refresh tokens' });
     }
   });
-
   // Supercharged Strategyzer-based guidance using Grok
   app.post("/api/generate-guidance", requireAuth, async (req: any, res) => {
     try {
@@ -4999,7 +4618,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (brandName && productsServices && corePurpose) {
         try {
           const strategyzerPrompt = `You are an expert Strategyzer methodology consultant analyzing a Queensland business. Perform a comprehensive Value Proposition Canvas and Business Model Canvas analysis.
-
 BUSINESS DATA:
 Brand: ${brandName}
 Products/Services: ${productsServices}
@@ -5008,9 +4626,7 @@ Audience: ${audience || "Not specified"}
 Job-to-be-Done: ${jobToBeDone || "Not specified"}
 Motivations: ${motivations || "Not specified"}
 Pain Points: ${painPoints || "Not specified"}
-
 PERFORM STRATEGYZER ANALYSIS:
-
 1. VALUE PROPOSITION CANVAS ANALYSIS:
    - Products & Services: Rate quality and market fit
    - Pain Relievers: Identify missing pain relief mechanisms
@@ -5020,18 +4636,14 @@ PERFORM STRATEGYZER ANALYSIS:
    - Customer Jobs: Functional, emotional, social jobs analysis
    - Pains: Current pain intensity and frequency mapping
    - Gains: Expected, desired, and unexpected gains identification
-
 3. STRATEGIC RECOMMENDATIONS:
    - Value Proposition-Market Fit scoring (1-10)
    - Critical gaps in current positioning
    - Queensland market-specific opportunities
    - Actionable next steps using Jobs-to-be-Done framework
-
 4. COMPLETION GUIDANCE:
    Provide specific, actionable suggestions for completing the remaining brand purpose fields based on Strategyzer best practices.
-
 Format your response as a strategic consultant would - direct, insightful, and immediately actionable. Focus on Queensland SME context and competitive positioning.`;
-
           console.log('Calling Grok for comprehensive Strategyzer analysis...');
           
           const timeoutPromise = new Promise((_, reject) => 
@@ -5048,49 +4660,37 @@ Format your response as a strategic consultant would - direct, insightful, and i
           
           // Comprehensive fallback using Strategyzer framework
           guidance = `## STRATEGYZER VALUE PROPOSITION ANALYSIS
-
 **VALUE PROPOSITION CANVAS ASSESSMENT:**
-
 **Your Value Proposition (${brandName}):**
 - Core Purpose: "${corePurpose}"
 - Offering: ${productsServices}
-
 **Value Proposition-Market Fit Score: 7/10**
-
 **CRITICAL GAPS IDENTIFIED:**
-
 1. **Customer Jobs Analysis Needed:**
    ${!jobToBeDone ? '- MISSING: Define the specific functional, emotional, and social jobs customers hire you for' : `- Current JTBD: "${jobToBeDone}" - Expand to include emotional and social dimensions`}
-
 2. **Pain Point Mapping Required:**
    ${!painPoints ? '- MISSING: Identify customer pains (undesired outcomes, obstacles, risks)' : `- Current pains identified: "${painPoints}" - Rate intensity and frequency`}
-
 3. **Customer Segment Precision:**
    ${!audience ? '- MISSING: Define specific customer archetype beyond demographics' : `- Current segment: "${audience}" - Add behavioral and psychographic characteristics`}
-
 **QUEENSLAND SME CONTEXT:**
 - Local competition: High visibility marketing crucial
 - Digital transformation: SMEs need automation & efficiency
 - Community connection: Personal relationships drive business
-
 **IMMEDIATE ACTIONS:**
 1. Complete Jobs-to-be-Done mapping (functional + emotional + social)
 2. Quantify pain points with specific examples
 3. Define audience with behavioral characteristics
 4. Test value proposition messaging with 5 target customers
-
 **STRATEGYZER METHODOLOGY NEXT STEPS:**
 - Map your Business Model Canvas
 - Validate assumptions through customer interviews
 - Test pricing strategy against value delivered
 - Design growth experiments based on validated learning
-
 Continue building your Value Proposition Canvas systematically.`;
         }
       } else {
         guidance = "## STRATEGYZER FOUNDATION REQUIRED\n\nComplete Brand Name, Products/Services, and Core Purpose to unlock comprehensive Value Proposition Canvas analysis using proven Strategyzer methodology.";
       }
-
       res.json({ guidance });
     } catch (error: any) {
       console.error('Strategyzer guidance error:', error);
@@ -5099,7 +4699,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Analytics endpoint
   app.get("/api/analytics/monthly", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -5161,7 +4760,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Failed to fetch analytics" });
     }
   });
-
   // Token validation endpoint for all platforms
   app.get('/api/oauth/validate-tokens', async (req: CustomRequest, res: Response) => {
     try {
@@ -5202,19 +4800,14 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Simple platform connection with customer credentials
   app.post("/api/connect-platform-simple", requireAuth, async (req: any, res) => {
     try {
       const { platform, username, password } = req.body;
       const userId = req.session.userId;
-
       if (!platform || !username || !password) {
         return res.status(400).json({ message: "Platform, username, and password are required" });
       }
-
-
-
       // Import authentication functions
       const { 
         authenticateFacebook, 
@@ -5223,7 +4816,6 @@ Continue building your Value Proposition Canvas systematically.`;
         authenticateTwitter, 
         authenticateYouTube 
       } = await import('./platform-auth');
-
       // Authenticate with the platform using provided credentials
       let authResult;
       try {
@@ -5246,7 +4838,6 @@ Continue building your Value Proposition Canvas systematically.`;
           default:
             return res.status(400).json({ message: "Unsupported platform" });
         }
-
         // Store the connection in database
         const connection = await storage.createPlatformConnection({
           userId,
@@ -5257,13 +4848,11 @@ Continue building your Value Proposition Canvas systematically.`;
           refreshToken: authResult.refreshToken,
           isActive: true
         });
-
         res.json({ 
           success: true, 
           connection,
           message: `${platform} connected successfully`
         });
-
       } catch (authError: any) {
         console.error(`${platform} authentication failed:`, authError);
         res.status(401).json({ 
@@ -5271,13 +4860,11 @@ Continue building your Value Proposition Canvas systematically.`;
           error: authError.message 
         });
       }
-
     } catch (error: any) {
       console.error('Platform connection error:', error);
       res.status(500).json({ message: "Error connecting platform" });
     }
   });
-
   // Connect platform (OAuth redirect only - no demo tokens)
   app.post("/api/connect-platform", requireAuth, async (req: any, res) => {
     try {
@@ -5286,7 +4873,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!platform) {
         return res.status(400).json({ message: "Platform is required" });
       }
-
       // Only allow real OAuth authentication - no demo/mock connections
       const authUrl = `/auth/${platform}`;
       res.json({ 
@@ -5299,7 +4885,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Error connecting platform" });
     }
   });
-
   // Disconnect platform
   app.delete("/api/platform-connections/:platform", requireAuth, async (req: any, res) => {
     try {
@@ -5308,7 +4893,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!platform) {
         return res.status(400).json({ message: "Platform is required" });
       }
-
       // Get existing connections
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
       const connection = connections.find(conn => conn.platform === platform);
@@ -5316,17 +4900,14 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!connection) {
         return res.status(404).json({ message: `${platform} connection not found` });
       }
-
       // Delete the platform connection
       await storage.deletePlatformConnection(connection.id);
-
       res.json({ message: `${platform} disconnected successfully` });
     } catch (error: any) {
       console.error('Platform disconnection error:', error);
       res.status(500).json({ message: "Error disconnecting platform" });
     }
   });
-
   // Brand posts endpoint with CSP header
   app.get("/api/brand-posts", requireAuth, async (req: any, res) => {
     // Set specific CSP header for this endpoint
@@ -5350,14 +4931,12 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Failed to fetch brand posts" });
     }
   });
-
   // Update post content and handle approval with quota deduction
   app.put("/api/posts/:id", requireAuth, async (req: any, res) => {
     try {
       const postId = parseInt(req.params.id);
       const { content, status } = req.body;
       const userId = req.session.userId;
-
       // Verify the post belongs to the user
       const posts = await storage.getPostsByUser(userId);
       const post = posts.find(p => p.id === postId);
@@ -5365,7 +4944,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
-
       // Check if user can edit this post (quota-aware)
       const canEdit = await PostQuotaService.canEditPost(userId, postId);
       if (!canEdit && status === 'approved') {
@@ -5373,7 +4951,6 @@ Continue building your Value Proposition Canvas systematically.`;
           message: "Cannot approve post: quota exceeded or insufficient subscription" 
         });
       }
-
       // Prepare update data
       const updateData: any = {};
       if (content !== undefined) {
@@ -5382,7 +4959,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (status !== undefined) {
         updateData.status = status;
       }
-
       // Update the post
       const updatedPost = await storage.updatePost(postId, updateData);
       
@@ -5406,14 +4982,12 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Failed to update post" });
     }
   });
-
   // Mock platform posting endpoint - demonstrates quota deduction after successful posting
   app.post("/api/post-to-platform/:postId", requireAuth, async (req: any, res) => {
     try {
       const postId = parseInt(req.params.postId);
       const { platform } = req.body;
       const userId = req.session.userId;
-
       // Verify post exists and is approved
       const posts = await storage.getPostsByUser(userId);
       const post = posts.find(p => p.id === postId);
@@ -5421,11 +4995,9 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
-
       if (post.status !== 'approved') {
         return res.status(400).json({ message: "Only approved posts can be published" });
       }
-
       // Simulate successful platform posting
       console.log(`📤 Simulating ${platform} posting for post ${postId}...`);
       
@@ -5440,7 +5012,6 @@ Continue building your Value Proposition Canvas systematically.`;
           message: "Post published but quota deduction failed - please contact support" 
         });
       }
-
       console.log(`✅ Post ${postId} successfully published to ${platform} with quota deduction`);
       
       res.json({ 
@@ -5455,7 +5026,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Failed to publish post" });
     }
   });
-
   // PostQuotaService debug endpoint
   app.post("/api/quota-debug", requireAuth, async (req: any, res) => {
     try {
@@ -5484,7 +5054,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Debug execution failed" });
     }
   });
-
   // Rollback System API Endpoints
   const rollbackAPI = new RollbackAPI();
   
@@ -5512,7 +5081,6 @@ Continue building your Value Proposition Canvas systematically.`;
   app.delete("/api/rollback/:snapshotId", requireAuth, async (req: any, res) => {
     await rollbackAPI.deleteSnapshot(req, res);
   });
-
   // Generate content calendar
   app.post("/api/generate-content-calendar", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -5520,7 +5088,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
       // QUOTA ENFORCEMENT: Check remaining posts before generation
       const quotaStatus = await PostQuotaService.getQuotaStatus(req.session.userId);
       if (!quotaStatus) {
@@ -5531,16 +5098,13 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!brandPurposeRecord) {
         return res.status(400).json({ message: "Brand purpose not found. Please complete setup." });
       }
-
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
       if (connections.length === 0) {
         return res.status(400).json({ message: "No platform connections found. Please connect at least one platform." });
       }
-
       // Generate full subscription amount - quota only consumed during publishing
       const maxPostsToGenerate = quotaStatus.totalPosts;
       console.log(`Content calendar quota-aware generation: ${maxPostsToGenerate} posts (${quotaStatus.remainingPosts} remaining from ${quotaStatus.totalPosts} total)`);
-
       // Generate posts using Grok with comprehensive brand data
       const generatedPosts = await generateContentCalendar({
         brandName: brandPurposeRecord.brandName,
@@ -5556,7 +5120,6 @@ Continue building your Value Proposition Canvas systematically.`;
         platforms: connections.map(c => c.platform),
         totalPosts: maxPostsToGenerate,
       });
-
       // Save posts to database
       const createdPosts = [];
       for (const postData of generatedPosts) {
@@ -5569,9 +5132,7 @@ Continue building your Value Proposition Canvas systematically.`;
         });
         createdPosts.push(post);
       }
-
       console.log(`Content calendar generated: ${createdPosts.length} posts created within quota limits`);
-
       res.json({ 
         posts: createdPosts,
         quotaStatus: {
@@ -5585,9 +5146,7 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Error generating content calendar: " + error.message });
     }
   });
-
   // Removed conflicting /schedule route to allow React component to render
-
   // Get posts for schedule screen
   app.get("/api/posts", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -5598,7 +5157,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Error fetching posts" });
     }
   });
-
   // Helper function to get platform scopes
   function getPlatformScopes(platform: string): string[] {
     const scopes = {
@@ -5610,7 +5168,6 @@ Continue building your Value Proposition Canvas systematically.`;
     };
     return scopes[platform] || [];
   }
-
   // Emergency deactivation endpoint for cleanup
   app.post('/api/platform-connections/deactivate', requireAuth, async (req: any, res: Response) => {
     try {
@@ -5640,7 +5197,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Deactivation failed' });
     }
   });
-
   // Emergency activation endpoint for debugging
   app.post('/api/platform-connections/activate', requireAuth, async (req: any, res: Response) => {
     try {
@@ -5670,7 +5226,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Activation failed' });
     }
   });
-
   // WORLD-CLASS PLATFORM CONNECTIONS ENDPOINT - Optimized for small business success
   app.get("/api/platform-connections", authGuard, async (req: any, res) => {
     try {
@@ -5747,7 +5302,6 @@ Continue building your Value Proposition Canvas systematically.`;
           };
         }
       }));
-
       // Performance-optimized sorting with connection health scores
       const sortedConnections = connectionsWithStatus.sort((a, b) => {
         const scoreA = a.oauthStatus?.isValid ? 1 : 0;
@@ -5755,17 +5309,14 @@ Continue building your Value Proposition Canvas systematically.`;
         if (scoreA !== scoreB) return scoreB - scoreA; // Valid connections first
         return a.platform.localeCompare(b.platform);
       });
-
       const processingTime = Date.now() - startTime;
       console.log(`⚡ Platform connections optimized: ${processingTime}ms total processing time`);
-
       res.json(sortedConnections);
     } catch (error: any) {
       console.error('Platform connections optimization error:', error);
       res.status(500).json({ message: "Connection optimization failed", details: error.message });
     }
   });
-
   // ENHANCED: Token refresh endpoint for expired platforms
   app.post('/api/platform-connections/:platform/refresh', requireAuth, async (req: any, res) => {
     try {
@@ -5809,7 +5360,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Instagram OAuth fix - POST to platform connections
   app.post("/api/platform-connections", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -5826,7 +5376,6 @@ Continue building your Value Proposition Canvas systematically.`;
             error: 'Instagram OAuth fix only available for authorized users'
           });
         }
-
         // Use Facebook Access Token to connect Instagram Business API
         const facebookToken = process.env.FACEBOOK_USER_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
         if (!facebookToken) {
@@ -5839,7 +5388,6 @@ Continue building your Value Proposition Canvas systematically.`;
             accessToken: `ig_business_token_${Date.now()}`,
             isActive: true
           });
-
           console.log(`[INSTAGRAM-OAUTH-FIX] Created direct Instagram connection ID: ${connection.id}`);
           
           return res.json({
@@ -5849,7 +5397,6 @@ Continue building your Value Proposition Canvas systematically.`;
             message: 'Instagram OAuth fixed - connection established'
           });
         }
-
         // Try Facebook Business API connection
         try {
           const graphResponse = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${facebookToken}`);
@@ -5895,7 +5442,6 @@ Continue building your Value Proposition Canvas systematically.`;
         } catch (fbError) {
           console.log('[INSTAGRAM-OAUTH-FIX] Facebook API failed, using direct connection');
         }
-
         // Fallback: Create direct Instagram connection
         const connection = await storage.createPlatformConnection({
           userId: userId,
@@ -5905,7 +5451,6 @@ Continue building your Value Proposition Canvas systematically.`;
           accessToken: `ig_verified_token_${Date.now()}`,
           isActive: true
         });
-
         return res.json({
           success: true,
           connectionId: connection.id,
@@ -5915,7 +5460,6 @@ Continue building your Value Proposition Canvas systematically.`;
       }
       
       return res.status(400).json({ error: 'Invalid action' });
-
     } catch (error) {
       console.error('[PLATFORM-CONNECTIONS] Error:', error);
       res.status(500).json({
@@ -5924,7 +5468,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // YouTube Direct Connection - Immediate working connection
   app.get("/api/auth/youtube", async (req, res) => {
     try {
@@ -5932,7 +5475,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!userId) {
         return res.redirect('/connect-platforms?error=no_session');
       }
-
       // Create direct YouTube connection immediately
       const result = await storage.createPlatformConnection({
         userId: userId,
@@ -5944,7 +5486,6 @@ Continue building your Value Proposition Canvas systematically.`;
         expiresAt: null,
         isActive: true
       });
-
       console.log(`✅ Direct YouTube connection created for user ${userId}:`, result.id);
       
       // Process any failed posts for retry when YouTube reconnects
@@ -5956,7 +5497,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.redirect('/platform-connections?error=youtube_connection_failed');
     }
   });
-
   // Get failed posts for retry management
   app.get("/api/failed-posts", requireAuth, async (req: any, res) => {
     try {
@@ -5964,7 +5504,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-
       const failedPosts = await PostRetryService.getFailedPosts(userId);
       
       res.json({
@@ -5977,7 +5516,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Failed to fetch failed posts" });
     }
   });
-
   // Manually retry a failed post
   app.post("/api/retry-post", requireAuth, async (req: any, res) => {
     try {
@@ -5987,7 +5525,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!postId) {
         return res.status(400).json({ message: "Post ID is required" });
       }
-
       const success = await PostRetryService.retryPost(postId);
       
       if (success) {
@@ -6006,7 +5543,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Failed to retry post" });
     }
   });
-
   // Platform Health Monitoring - Bulletproof Publishing Support
   app.get("/api/platform-health", requireAuth, async (req: any, res) => {
     try {
@@ -6039,7 +5575,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Force platform health repair
   app.post("/api/repair-connections", requireAuth, async (req: any, res) => {
     try {
@@ -6088,7 +5623,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Connection repair failed" });
     }
   });
-
   // Bulletproof System Test - Comprehensive reliability testing
   app.get("/api/bulletproof-test", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -6114,7 +5648,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Post Verification and Subscription Deduction - Independent Flow
   app.post("/api/check-post", async (req: any, res) => {
     try {
@@ -6126,7 +5659,6 @@ Continue building your Value Proposition Canvas systematically.`;
           message: "subscriptionId and postId are required"
         });
       }
-
       const { PostVerificationService } = await import('./post-verification-service');
       const result = await PostVerificationService.checkAndDeductPost(subscriptionId, postId);
       
@@ -6140,7 +5672,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Bulk Post Verification - For batch processing
   app.post("/api/check-posts-bulk", async (req: any, res) => {
     try {
@@ -6152,7 +5683,6 @@ Continue building your Value Proposition Canvas systematically.`;
           message: "subscriptionId and postIds array are required"
         });
       }
-
       const { PostVerificationService } = await import('./post-verification-service');
       const results = await PostVerificationService.bulkVerifyAndDeduct(subscriptionId, postIds);
       
@@ -6169,7 +5699,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Platform-specific Post Verification
   app.post("/api/verify-platform-posts", async (req: any, res) => {
     try {
@@ -6181,7 +5710,6 @@ Continue building your Value Proposition Canvas systematically.`;
           message: "postId and platforms array are required"
         });
       }
-
       const { PostVerificationService } = await import('./post-verification-service');
       const verificationResults = await PostVerificationService.verifyPostAcrossPlatforms(postId, platforms);
       
@@ -6199,7 +5727,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Instagram Business API Integration
   app.post("/api/instagram/setup", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -6217,7 +5744,6 @@ Continue building your Value Proposition Canvas systematically.`;
           message: "Active Facebook connection required for Instagram setup"
         });
       }
-
       // Get Facebook pages and associated Instagram accounts
       const pagesUrl = `https://graph.facebook.com/v20.0/me/accounts?access_token=${facebookConnection.accessToken}&fields=id,name,instagram_business_account`;
       
@@ -6231,7 +5757,6 @@ Continue building your Value Proposition Canvas systematically.`;
           error: pagesData.error
         });
       }
-
       // Find page with Instagram Business Account
       let instagramBusinessAccount = null;
       let parentPage = null;
@@ -6243,14 +5768,12 @@ Continue building your Value Proposition Canvas systematically.`;
           break;
         }
       }
-
       if (!instagramBusinessAccount) {
         return res.status(400).json({
           success: false,
           message: "No Instagram Business Account found. Please connect your Instagram account to your Facebook page first."
         });
       }
-
       // Get Instagram account details
       const instagramUrl = `https://graph.facebook.com/v20.0/${instagramBusinessAccount.id}?access_token=${facebookConnection.accessToken}&fields=id,username,account_type`;
       
@@ -6264,7 +5787,6 @@ Continue building your Value Proposition Canvas systematically.`;
           error: instagramData.error
         });
       }
-
       // Create Instagram connection
       const instagramConnection = await storage.createPlatformConnection({
         userId,
@@ -6276,7 +5798,6 @@ Continue building your Value Proposition Canvas systematically.`;
         expiresAt: facebookConnection.expiresAt,
         isActive: true
       });
-
       res.json({
         success: true,
         connectionId: instagramConnection.id,
@@ -6285,7 +5806,6 @@ Continue building your Value Proposition Canvas systematically.`;
         accountType: instagramData.account_type,
         parentPage: parentPage.name
       });
-
     } catch (error) {
       console.error('Instagram setup failed:', error);
       res.status(500).json({
@@ -6295,7 +5815,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Instagram Test Post
   app.post("/api/instagram/test-post", requireAuth, async (req: any, res) => {
     try {
@@ -6312,19 +5831,16 @@ Continue building your Value Proposition Canvas systematically.`;
           message: "Instagram connection not found"
         });
       }
-
       // Create Instagram media container
       const mediaUrl = `https://graph.facebook.com/v20.0/${instagramConnection.platformUserId}/media`;
       const mediaParams = new URLSearchParams({
         caption: content || 'Test post from TheAgencyIQ',
         access_token: instagramConnection.accessToken
       });
-
       const mediaResponse = await fetch(mediaUrl, {
         method: 'POST',
         body: mediaParams
       });
-
       const mediaData = await mediaResponse.json();
       
       if (mediaData.error) {
@@ -6334,14 +5850,12 @@ Continue building your Value Proposition Canvas systematically.`;
           error: mediaData.error
         });
       }
-
       res.json({
         success: true,
         message: "Instagram test successful",
         mediaId: mediaData.id,
         note: "Media container created (would be published in production)"
       });
-
     } catch (error) {
       console.error('Instagram test post failed:', error);
       res.status(500).json({
@@ -6351,7 +5865,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // YouTube OAuth Callback
   app.post("/api/youtube/callback", async (req: any, res) => {
     try {
@@ -6371,11 +5884,9 @@ Continue building your Value Proposition Canvas systematically.`;
           message: "Authorization code missing"
         });
       }
-
       const clientId = process.env.YOUTUBE_CLIENT_ID;
       const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
       const redirectUri = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/';
-
       // Exchange authorization code for access token
       const tokenParams = new URLSearchParams();
       tokenParams.append('grant_type', 'authorization_code');
@@ -6383,7 +5894,6 @@ Continue building your Value Proposition Canvas systematically.`;
       tokenParams.append('redirect_uri', redirectUri);
       tokenParams.append('client_id', clientId!);
       tokenParams.append('client_secret', clientSecret!);
-
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: {
@@ -6391,9 +5901,7 @@ Continue building your Value Proposition Canvas systematically.`;
         },
         body: tokenParams
       });
-
       const tokenData = await tokenResponse.json();
-
       if (!tokenResponse.ok) {
         return res.status(400).json({
           success: false,
@@ -6401,16 +5909,13 @@ Continue building your Value Proposition Canvas systematically.`;
           error: tokenData
         });
       }
-
       // Get YouTube channel information
       const channelResponse = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`
         }
       });
-
       const channelData = await channelResponse.json();
-
       if (!channelResponse.ok || !channelData.items || channelData.items.length === 0) {
         return res.status(400).json({
           success: false,
@@ -6418,9 +5923,7 @@ Continue building your Value Proposition Canvas systematically.`;
           error: channelData
         });
       }
-
       const channel = channelData.items[0];
-
       // Create or update YouTube connection
       const connection = await storage.createPlatformConnection({
         userId,
@@ -6432,7 +5935,6 @@ Continue building your Value Proposition Canvas systematically.`;
         expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
         isActive: true
       });
-
       res.json({
         success: true,
         connectionId: connection.id,
@@ -6441,7 +5943,6 @@ Continue building your Value Proposition Canvas systematically.`;
         channelTitle: channel.snippet.title,
         channelDescription: channel.snippet.description
       });
-
     } catch (error) {
       console.error('YouTube callback error:', error);
       res.status(500).json({
@@ -6451,7 +5952,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // LinkedIn OAuth Callback
   app.post("/api/linkedin/callback", async (req: any, res) => {
     try {
@@ -6471,11 +5971,9 @@ Continue building your Value Proposition Canvas systematically.`;
           message: "Authorization code missing"
         });
       }
-
       const clientId = process.env.LINKEDIN_CLIENT_ID;
       const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
       const redirectUri = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/';
-
       // Exchange authorization code for access token
       const tokenParams = new URLSearchParams();
       tokenParams.append('grant_type', 'authorization_code');
@@ -6483,7 +5981,6 @@ Continue building your Value Proposition Canvas systematically.`;
       tokenParams.append('redirect_uri', redirectUri);
       tokenParams.append('client_id', clientId!);
       tokenParams.append('client_secret', clientSecret!);
-
       const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
         method: 'POST',
         headers: {
@@ -6491,9 +5988,7 @@ Continue building your Value Proposition Canvas systematically.`;
         },
         body: tokenParams
       });
-
       const tokenData = await tokenResponse.json();
-
       if (!tokenResponse.ok) {
         return res.status(400).json({
           success: false,
@@ -6501,16 +5996,13 @@ Continue building your Value Proposition Canvas systematically.`;
           error: tokenData
         });
       }
-
       // Get LinkedIn profile information
       const profileResponse = await fetch('https://api.linkedin.com/v2/people/~', {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`
         }
       });
-
       const profileData = await profileResponse.json();
-
       if (!profileResponse.ok) {
         return res.status(400).json({
           success: false,
@@ -6518,7 +6010,6 @@ Continue building your Value Proposition Canvas systematically.`;
           error: profileData
         });
       }
-
       // Create or update LinkedIn connection
       const connection = await storage.createPlatformConnection({
         userId,
@@ -6530,7 +6021,6 @@ Continue building your Value Proposition Canvas systematically.`;
         expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
         isActive: true
       });
-
       // Test LinkedIn posting capability
       const testPost = {
         author: `urn:li:person:${profileData.id}`,
@@ -6547,7 +6037,6 @@ Continue building your Value Proposition Canvas systematically.`;
           'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
         }
       };
-
       const postResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
         method: 'POST',
         headers: {
@@ -6557,9 +6046,7 @@ Continue building your Value Proposition Canvas systematically.`;
         },
         body: JSON.stringify(testPost)
       });
-
       const postResult = await postResponse.json();
-
       res.json({
         success: true,
         connectionId: connection.id,
@@ -6568,7 +6055,6 @@ Continue building your Value Proposition Canvas systematically.`;
         testPost: postResponse.ok ? 'Success' : 'Failed',
         postId: postResponse.ok ? postResult.id : null
       });
-
     } catch (error) {
       console.error('LinkedIn callback error:', error);
       res.status(500).json({
@@ -6578,7 +6064,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // X.AI Credentials Test - Direct API test
   app.post("/api/grok-test", async (req: any, res) => {
     try {
@@ -6591,7 +6076,6 @@ Continue building your Value Proposition Canvas systematically.`;
           credentialsStatus: "missing"
         });
       }
-
       const { getAIResponse } = await import('./grok');
       const testPrompt = prompt || "Generate a brief business insight for Queensland small businesses using X.AI.";
       
@@ -6617,7 +6101,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Facebook reconnection with proper publishing permissions
   app.get("/api/reconnect/facebook", requireAuth, async (req: any, res) => {
     try {
@@ -6629,7 +6112,6 @@ Continue building your Value Proposition Canvas systematically.`;
           message: "Facebook App ID not configured" 
         });
       }
-
       // Use unified callback URI
       const redirectUri = 'https://app.theagencyiq.ai/callback';
       
@@ -6656,7 +6138,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // X platform integration test (no auth required for testing)
   app.post("/api/test-x-integration", async (req: any, res) => {
     try {
@@ -6684,7 +6165,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Auto-posting enforcer - Ensures posts are published within 30-day subscription
   app.post("/api/enforce-auto-posting", requireAuth, async (req: any, res) => {
     try {
@@ -6714,7 +6194,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Auto-post entire 30-day schedule with bulletproof publishing
   app.post("/api/auto-post-schedule", requireAuth, async (req: any, res) => {
     try {
@@ -6722,21 +6201,17 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
       // QUOTA ENFORCEMENT: Check quota status before publishing
       const quotaStatus = await PostQuotaService.getQuotaStatus(req.session.userId);
       if (!quotaStatus) {
         return res.status(400).json({ message: "Unable to retrieve quota status" });
       }
-
       // Get all approved posts for the user
       const posts = await storage.getPostsByUser(req.session.userId);
       const approvedPosts = posts.filter(post => post.status === 'approved');
-
       if (approvedPosts.length === 0) {
         return res.status(400).json({ message: "No approved posts found for scheduling" });
       }
-
       // QUOTA ENFORCEMENT: Check if user has sufficient quota
       if (quotaStatus.remainingPosts < approvedPosts.length) {
         return res.status(403).json({ 
@@ -6745,14 +6220,11 @@ Continue building your Value Proposition Canvas systematically.`;
           quotaExceeded: true
         });
       }
-
       const publishResults = [];
       let successCount = 0;
       let postsDeducted = 0;
-
       // Import bulletproof publisher
       const { BulletproofPublisher } = await import('./bulletproof-publisher');
-
       // Publish all approved posts using bulletproof system
       for (const post of approvedPosts) {
         try {
@@ -6764,7 +6236,6 @@ Continue building your Value Proposition Canvas systematically.`;
             content: post.content,
             imageUrl: post.imageUrl || undefined
           });
-
           if (result.success && result.platformPostId) {
             // Update post status
             await storage.updatePost(post.id, { 
@@ -6772,12 +6243,10 @@ Continue building your Value Proposition Canvas systematically.`;
               publishedAt: new Date(),
               errorLog: null
             });
-
             // QUOTA ENFORCEMENT: Deduct from quota using PostQuotaService
             await PostQuotaService.deductPost(req.session.userId, post.id);
             postsDeducted++;
             successCount++;
-
             publishResults.push({
               postId: post.id,
               platform: post.platform,
@@ -6786,7 +6255,6 @@ Continue building your Value Proposition Canvas systematically.`;
               scheduledFor: post.scheduledFor,
               publishedAt: new Date().toISOString()
             });
-
             console.log(`Auto-posting: Successfully published post ${post.id} to ${post.platform}`);
           } else {
             // Mark post as failed but don't deduct quota
@@ -6794,7 +6262,6 @@ Continue building your Value Proposition Canvas systematically.`;
               status: 'failed',
               errorLog: result.error || 'Bulletproof publisher failed'
             });
-
             publishResults.push({
               postId: post.id,
               platform: post.platform,
@@ -6802,7 +6269,6 @@ Continue building your Value Proposition Canvas systematically.`;
               error: result.error || 'Publishing failed',
               fallbackUsed: result.fallbackUsed || false
             });
-
             console.log(`Auto-posting: Failed to publish post ${post.id} to ${post.platform}: ${result.error}`);
           }
         } catch (error: any) {
@@ -6811,22 +6277,18 @@ Continue building your Value Proposition Canvas systematically.`;
             status: 'failed',
             errorLog: error.message
           });
-
           publishResults.push({
             postId: post.id,
             platform: post.platform,
             status: 'failed',
             error: error.message
           });
-
           console.error(`Auto-posting: Error publishing post ${post.id}:`, error.message);
         }
       }
-
       // Update user's remaining posts count
       const updatedUser = await storage.getUser(req.session.userId);
       const finalRemainingPosts = (updatedUser?.remainingPosts || 0);
-
       res.json({
         message: `Auto-posting complete: ${successCount}/${approvedPosts.length} posts published successfully`,
         totalPosts: approvedPosts.length,
@@ -6837,13 +6299,11 @@ Continue building your Value Proposition Canvas systematically.`;
         results: publishResults,
         bulletproofPublishing: true
       });
-
     } catch (error: any) {
       console.error('Auto-post schedule error:', error);
       res.status(500).json({ message: "Error auto-posting schedule", error: error.message });
     }
   });
-
   // CMO-Led Brand Domination Strategy Endpoint
   app.post("/api/generate-cmo-strategy", requireAuth, async (req: any, res) => {
     try {
@@ -6852,7 +6312,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!brandPurpose) {
         return res.status(400).json({ message: "Brand purpose data required for CMO strategy" });
       }
-
       // Import CMO strategy functions
       const { adaptToAnyBrand } = await import('./cmo-strategy');
       
@@ -6861,7 +6320,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!user || !user.subscriptionPlan) {
         return res.status(403).json({ message: "Active subscription required for CMO strategy generation" });
       }
-
       const planLimits = { starter: 12, growth: 27, professional: 52 };
       const planPostLimit = Math.min(totalPosts, planLimits[user.subscriptionPlan as keyof typeof planLimits] ?? 12);
       
@@ -6875,7 +6333,6 @@ Continue building your Value Proposition Canvas systematically.`;
         platforms || ['facebook', 'instagram', 'linkedin', 'youtube'],
         planPostLimit
       );
-
       // Save posts with June 11, 2025, 4:00 PM AEST launch timing
       const launchDate = new Date('2025-06-11T16:00:00+10:00');
       const savedPosts = [];
@@ -6897,7 +6354,6 @@ Continue building your Value Proposition Canvas systematically.`;
         
         savedPosts.push(savedPost);
       }
-
       res.json({
         success: true,
         strategy: "CMO-led brand domination",
@@ -6911,13 +6367,11 @@ Continue building your Value Proposition Canvas systematically.`;
         },
         message: "Unstoppable content strategy deployed - ready to annihilate competition and explode sales"
       });
-
     } catch (error: any) {
       console.error('CMO strategy generation error:', error);
       res.status(500).json({ message: "Error generating CMO strategy: " + error.message });
     }
   });
-
   // Strategic content generation endpoint with waterfall strategyzer methodology
   app.post("/api/generate-strategic-content", requireAuth, async (req: any, res) => {
     try {
@@ -6945,34 +6399,27 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!finalBrandPurpose) {
         return res.status(400).json({ message: "Brand purpose data required for strategic content generation" });
       }
-
       console.log(`🎯 Strategic Content Generation: User ${userId}, Posts: ${totalPosts}, Reset: ${resetQuota}`);
-
       // Import strategic content generator
       const { StrategicContentGenerator } = await import('./services/StrategicContentGenerator');
-
       // STEP 1: Clean up duplicate/test posts to stabilize count
       console.log('🧹 Cleaning up duplicate posts...');
       await StrategicContentGenerator.cleanupDuplicatePosts(userId);
-
       // STEP 2: Reset quota to Professional plan (52 posts) if requested
       if (resetQuota) {
         console.log('🔄 Resetting quota to Professional plan...');
         await StrategicContentGenerator.resetQuotaToFiftyTwo(userId);
       }
-
       // STEP 3: Verify quota status
       const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
       if (!quotaStatus) {
         return res.status(400).json({ message: "Unable to retrieve quota status" });
       }
-
       // STEP 4: Get user subscription and enforce limits
       const user = await storage.getUser(userId);
       if (!user || !user.subscriptionPlan) {
         return res.status(403).json({ message: "Active subscription required for strategic content generation" });
       }
-
       // STEP 5: Generate strategic content using waterfall strategyzer methodology
       const strategicPosts = await StrategicContentGenerator.generateStrategicContent({
         userId,
@@ -6980,7 +6427,6 @@ Continue building your Value Proposition Canvas systematically.`;
         totalPosts: Math.min(totalPosts, 52), // Cap at Professional plan limit
         platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
       });
-
       // STEP 6: Check quota before saving any posts
       const currentQuotaStatus = await PostQuotaService.getQuotaStatus(userId);
       if (!currentQuotaStatus || currentQuotaStatus.remainingPosts < strategicPosts.length) {
@@ -6989,7 +6435,6 @@ Continue building your Value Proposition Canvas systematically.`;
           quotaStatus: currentQuotaStatus
         });
       }
-
       // STEP 7: Save strategic posts to database using PostQuotaService
       let savedCount = 0;
       const savedPosts = [];
@@ -7052,9 +6497,7 @@ Continue building your Value Proposition Canvas systematically.`;
           console.error(`Failed to save strategic post ${savedCount + 1}:`, error);
         }
       }
-
       console.log(`✅ Strategic content generation complete: ${savedCount} posts created`);
-
       // STEP 8: Clear cache to ensure fresh quota data
       PostQuotaService.clearUserCache(userId);
       
@@ -7091,7 +6534,6 @@ Continue building your Value Proposition Canvas systematically.`;
           cycleDuration: '30-day optimization cycles'
         }
       };
-
       // Get final quota status
       const updatedQuota = await PostQuotaService.getQuotaStatus(userId);
       
@@ -7106,13 +6548,11 @@ Continue building your Value Proposition Canvas systematically.`;
         optimization: '30-day cycle for reach and conversion',
         targetMarket: 'Queensland SMEs'
       });
-
     } catch (error: any) {
       console.error('Strategic content generation error:', error);
       res.status(500).json({ message: "Strategic content generation failed", error: error.message });
     }
   });
-
   // Generate AI-powered schedule using xAI integration
   app.post("/api/generate-ai-schedule", requireAuth, async (req: any, res) => {
     try {
@@ -7145,7 +6585,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!brandPurpose) {
         return res.status(400).json({ message: "Brand purpose not found. Please complete your brand purpose setup first." });
       }
-
       // CRITICAL: Enforce live platform connections before any content generation
       const platformConnections = await storage.getPlatformConnectionsByUser(req.session.userId);
       const activePlatformConnections = platformConnections.filter(conn => conn.isActive);
@@ -7157,14 +6596,12 @@ Continue building your Value Proposition Canvas systematically.`;
           connectionModal: true
         });
       }
-
       // Validate requested platforms have active connections
       const requestedPlatforms = platforms || brandPurpose.platforms || [];
       const connectedPlatforms = activePlatformConnections.map(conn => conn.platform.toLowerCase());
       const missingConnections = requestedPlatforms.filter((platform: string) => 
         !connectedPlatforms.includes(platform.toLowerCase())
       );
-
       if (missingConnections.length > 0) {
         return res.status(400).json({ 
           message: `Missing platform connections: ${missingConnections.join(', ')}. Connect all required platforms before generating content.`,
@@ -7173,9 +6610,7 @@ Continue building your Value Proposition Canvas systematically.`;
           missingPlatforms: missingConnections
         });
       }
-
       console.log(`Platform connection validation passed: ${connectedPlatforms.join(', ')} connected`);
-
       // Get current subscription status and enforce strict plan limits
       const { SubscriptionService } = await import('./subscription-service');
       const subscriptionStatus = await SubscriptionService.getSubscriptionStatus(req.session.userId);
@@ -7190,7 +6625,6 @@ Continue building your Value Proposition Canvas systematically.`;
           subscriptionLimitReached: true
         });
       }
-
       // Users get their full subscription allocation and can regenerate schedule unlimited times
       // Only actual posting/publishing counts against their limit
       const planPostLimit = userPlan.postsPerMonth;
@@ -7205,7 +6639,6 @@ Continue building your Value Proposition Canvas systematically.`;
           await storage.deletePost(post.id);
         }
       }
-
       // Verify user ID consistency before proceeding
       if (!req.session.userId) {
         return res.status(401).json({ 
@@ -7213,7 +6646,6 @@ Continue building your Value Proposition Canvas systematically.`;
           error: 'User session required for content generation' 
         });
       }
-
       // Double-check user exists in database to prevent orphaned posts
       const sessionUser = await storage.getUser(req.session.userId);
       if (!sessionUser) {
@@ -7222,9 +6654,7 @@ Continue building your Value Proposition Canvas systematically.`;
           error: 'Invalid user session' 
         });
       }
-
       console.log(`User ID tracking verified: ${req.session.userId} (${sessionUser.email})`);
-
       // Log current post counts before generation  
       const currentPosts = await storage.getPostsByUser(req.session.userId);
       const postGenerationCounts = {
@@ -7237,7 +6667,6 @@ Continue building your Value Proposition Canvas systematically.`;
       
       console.log(`Pre-generation post counts for user ${req.session.userId}:`, postGenerationCounts);
       console.log(`Generating fresh ${planPostLimit} posts for ${brandPurpose.brandName}: ${userPlan.name} plan - unlimited regenerations allowed`)
-
       // Import xAI functions
       const { generateContentCalendar, analyzeBrandPurpose } = await import('./grok');
       
@@ -7255,15 +6684,12 @@ Continue building your Value Proposition Canvas systematically.`;
         platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
         totalPosts: maxPostsToGenerate // Generate only remaining quota amount
       };
-
       // Generate brand analysis
       const analysis = await analyzeBrandPurpose(contentParams);
       console.log(`Brand analysis completed. JTBD Score: ${analysis.jtbdScore}/100`);
-
       // Generate intelligent content calendar
       const generatedPosts = await generateContentCalendar(contentParams);
       console.log(`Generated ${generatedPosts.length} AI-optimized posts`);
-
       // Save posts to database with strict subscription limit enforcement
       const savedPosts = [];
       const postsToSave = generatedPosts.slice(0, planPostLimit); // Enforce exact plan limit
@@ -7285,7 +6711,6 @@ Continue building your Value Proposition Canvas systematically.`;
           };
           
           console.log(`Saving post ${i + 1}/${postsToSave.length}: ${post.platform} - ${post.content.substring(0, 50)}...`);
-
           const savedPost = await storage.createPost(postData);
           console.log(`Successfully saved post ID: ${savedPost.id} with content length: ${savedPost.content.length}`);
           savedPosts.push({
@@ -7312,7 +6737,6 @@ Continue building your Value Proposition Canvas systematically.`;
           savedCount: savedPosts.length
         });
       }
-
       // NO QUOTA DEDUCTION DURING GENERATION: Posts remain as drafts until approval
       console.log(`📝 Created ${savedPosts.length} draft posts. Quota will be deducted only after approval.`);
       
@@ -7326,7 +6750,6 @@ Continue building your Value Proposition Canvas systematically.`;
       console.log(`📊 QUOTA LOG: User ${req.session.userId}, Operation: generation, Details: Generated ${savedPosts.length} draft posts. Quota deduction deferred until approval. Current remaining: ${currentQuota.remainingPosts}`);
       
       console.log(`Current quota status: ${currentQuota.remainingPosts}/${currentQuota.totalPosts} posts remaining (no deduction during generation)`);
-
       // Prepare schedule insights with subscription information using PostQuotaService
       const scheduleData = {
         posts: savedPosts,
@@ -7366,7 +6789,6 @@ Continue building your Value Proposition Canvas systematically.`;
           ]
         }
       };
-
       // Verify post counts after generation to prevent duplication
       const finalPosts = await storage.getPostsByUser(req.session.userId);
       const finalCounts = {
@@ -7379,7 +6801,6 @@ Continue building your Value Proposition Canvas systematically.`;
       
       console.log(`Post-generation verification for user ${req.session.userId}:`, finalCounts);
       console.log(`AI schedule generated successfully: ${savedPosts.length} posts saved`);
-
       // Add verification data to response
       scheduleData.verification = {
         preGeneration: preGenerationCounts,
@@ -7387,9 +6808,7 @@ Continue building your Value Proposition Canvas systematically.`;
         newPostsCreated: savedPosts.length,
         userIdVerified: req.session.userId
       };
-
       res.json(scheduleData);
-
     } catch (error: any) {
       console.error('AI schedule generation error:', error);
       res.status(500).json({ 
@@ -7398,7 +6817,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Create new post
   app.post("/api/posts", authGuard, async (req: any, res) => {
     try {
@@ -7439,7 +6857,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(400).json({ message: "Error creating post" });
     }
   });
-
   // Create new post (alias for backward compatibility)
   app.all("/api/posts/create", authGuard, async (req: any, res) => {
     if (req.method !== 'POST') {
@@ -7448,7 +6865,6 @@ Continue building your Value Proposition Canvas systematically.`;
     // Redirect to the main posts endpoint
     return res.redirect(307, '/api/posts');
   });
-
   // Subscription status endpoint
   app.get("/api/subscription-status", authGuard, async (req: any, res) => {
     try {
@@ -7472,7 +6888,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Error fetching subscription status" });
     }
   });
-
   // Update existing post
   app.put("/api/posts/:id", requireAuth, async (req: any, res) => {
     try {
@@ -7486,7 +6901,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(400).json({ message: "Error updating post" });
     }
   });
-
   // Publish post to social media platforms with subscription tracking
   app.post("/api/publish-post", requireAuth, async (req: any, res) => {
     try {
@@ -7495,7 +6909,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!postId || !platform) {
         return res.status(400).json({ message: "Post ID and platform are required" });
       }
-
       // Check subscription limits using SubscriptionService
       const { SubscriptionService } = await import('./subscription-service');
       const limitCheck = await SubscriptionService.canCreatePost(req.session.userId);
@@ -7506,26 +6919,22 @@ Continue building your Value Proposition Canvas systematically.`;
           subscriptionLimitReached: true
         });
       }
-
       // Get user
       const user = await storage.getUser(req.session.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
       // Get platform connections for the user
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
       const platformConnection = connections.find(conn => 
         conn.platform.toLowerCase() === platform.toLowerCase() && conn.isActive
       );
-
       if (!platformConnection) {
         return res.status(400).json({ 
           message: `No active ${platform} connection found. Please connect your account first.`,
           platform 
         });
       }
-
       // Get the post content
       const posts = await storage.getPostsByUser(req.session.userId);
       const post = posts.find(p => p.id === parseInt(postId));
@@ -7533,7 +6942,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
-
       try {
         // Use PostPublisher to publish to the specific platform
         const publishResult = await PostPublisher.publishPost(
@@ -7541,7 +6949,6 @@ Continue building your Value Proposition Canvas systematically.`;
           parseInt(postId),
           [platform]
         );
-
         if (publishResult.success) {
           // Update post status to published
           await storage.updatePost(parseInt(postId), { 
@@ -7549,14 +6956,12 @@ Continue building your Value Proposition Canvas systematically.`;
             publishedAt: new Date(),
             analytics: publishResult.results?.[platform]?.analytics || {}
           });
-
           // Track successful post against subscription
           await SubscriptionService.trackSuccessfulPost(
             req.session.userId, 
             parseInt(postId), 
             publishResult.results?.[platform]?.analytics || {}
           );
-
           res.json({
             success: true,
             message: "Post published successfully and counted against your subscription",
@@ -7573,7 +6978,6 @@ Continue building your Value Proposition Canvas systematically.`;
             error: publishResult.results?.[platform]?.error || "Unknown error"
           });
         }
-
       } catch (publishError: any) {
         console.error('Post publishing error:', publishError);
         
@@ -7583,13 +6987,11 @@ Continue building your Value Proposition Canvas systematically.`;
           error: publishError.message
         });
       }
-
     } catch (error: any) {
       console.error('Publish post error:', error);
       res.status(500).json({ message: "Error publishing post" });
     }
   });
-
   // Approve and publish post with proper allocation tracking
   app.post("/api/schedule-post", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -7598,13 +7000,11 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!postId) {
         return res.status(400).json({ message: "Post ID is required" });
       }
-
       // Get user and check subscription limits
       const user = await storage.getUser(req.session.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
       // Check remaining posts allocation
       const remainingPosts = user.remainingPosts || 0;
       if (remainingPosts <= 0) {
@@ -7614,14 +7014,12 @@ Continue building your Value Proposition Canvas systematically.`;
           subscriptionPlan: user.subscriptionPlan
         });
       }
-
       // Get the post data first
       const posts = await storage.getPostsByUser(req.session.userId);
       const postData = posts.find(p => p.id === parseInt(postId));
       if (!postData) {
         return res.status(404).json({ message: "Post not found" });
       }
-
       try {
         // Use direct publishing system that works
         const { DirectPostPublisher } = await import('./post-publisher-direct');
@@ -7630,7 +7028,6 @@ Continue building your Value Proposition Canvas systematically.`;
           postData.content,
           platforms
         );
-
         if (publishResult.success) {
           const updatedUser = await storage.getUser(req.session.userId);
           res.json({
@@ -7650,7 +7047,6 @@ Continue building your Value Proposition Canvas systematically.`;
             troubleshooting: publishResult.results.map(r => `${r.platform}: ${r.error}`).join('; ')
           });
         }
-
       } catch (publishError: any) {
         console.error('Post publishing error:', publishError);
         
@@ -7660,13 +7056,11 @@ Continue building your Value Proposition Canvas systematically.`;
           error: publishError.message
         });
       }
-
     } catch (error: any) {
       console.error('Schedule post error:', error);
       res.status(500).json({ message: "Error processing post scheduling" });
     }
   });
-
   // Retry failed post publication
   app.post("/api/retry-post", requireAuth, async (req: any, res) => {
     try {
@@ -7675,13 +7069,11 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!postId) {
         return res.status(400).json({ message: "Post ID is required" });
       }
-
       // Get user and check subscription limits
       const user = await storage.getUser(req.session.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
       // Check remaining posts allocation
       const remainingPosts = user.remainingPosts || 0;
       if (remainingPosts <= 0) {
@@ -7691,7 +7083,6 @@ Continue building your Value Proposition Canvas systematically.`;
           subscriptionPlan: user.subscriptionPlan
         });
       }
-
       // Get the failed post
       const posts = await storage.getPostsByUser(req.session.userId);
       const post = posts.find(p => p.id === parseInt(postId));
@@ -7699,31 +7090,26 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
-
       if (post.status !== 'failed' && post.status !== 'partial') {
         return res.status(400).json({ message: "Post is not in a failed state" });
       }
-
       // Retry publishing
       const publishResult = await PostPublisher.publishPost(
         req.session.userId,
         parseInt(postId),
         platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
       );
-
       res.json({
         message: publishResult.success ? "Post retry successful" : "Post retry failed",
         remainingPosts: publishResult.remainingPosts,
         results: publishResult.results,
         postId: postId
       });
-
     } catch (error: any) {
       console.error('Post retry error:', error);
       res.status(500).json({ message: "Error retrying post publication" });
     }
   });
-
   // Post connection repair and diagnosis
   app.get("/api/connection-repair", requireAuth, async (req: any, res) => {
     try {
@@ -7732,7 +7118,6 @@ Continue building your Value Proposition Canvas systematically.`;
       // Generate repair instructions
       const repairInstructions = await ConnectionRepairService.generateRepairInstructions(req.session.userId);
       const quickSummary = await ConnectionRepairService.getQuickFixSummary();
-
       res.json({
         success: true,
         diagnosis: quickSummary,
@@ -7743,7 +7128,6 @@ Continue building your Value Proposition Canvas systematically.`;
           "Verify all 50 approved posts can be published"
         ]
       });
-
     } catch (error: any) {
       console.error('Connection repair error:', error);
       res.status(500).json({ 
@@ -7752,7 +7136,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // OAuth status endpoint
   app.get('/api/oauth-status', requireAuth, async (req: any, res) => {
     try {
@@ -7764,7 +7147,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Failed to get OAuth status' });
     }
   });
-
   // Test connection endpoint
   app.post('/api/test-connection', requireAuth, async (req: any, res) => {
     try {
@@ -7777,7 +7159,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Failed to test connection' });
     }
   });
-
   // Working post test endpoint
   app.get('/api/test-working-posts', requireAuth, async (req: any, res) => {
     try {
@@ -7789,7 +7170,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Failed to test working posts' });
     }
   });
-
   // Token validation endpoint
   app.get('/api/validate-tokens', requireAuth, async (req: any, res) => {
     try {
@@ -7811,7 +7191,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Failed to validate tokens' });
     }
   });
-
   // Direct OAuth fix endpoint
   app.get('/api/oauth-fix-direct', requireAuth, async (req: any, res) => {
     try {
@@ -7830,7 +7209,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Failed to generate OAuth fix' });
     }
   });
-
   // Instagram direct fix endpoint
   app.get('/api/instagram-fix', requireAuth, async (req: any, res) => {
     try {
@@ -7847,12 +7225,9 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Failed to fix Instagram connection' });
     }
   });
-
   // Instagram auth callback disabled - using direct connection method instead
-
   // OAuth configuration import disabled temporarily to clear Instagram cache
   // await import('./oauth-config');
-
   // OAuth reconnection routes
   app.get('/auth/facebook/reconnect', requireAuth, (req: any, res, next) => {
     console.log('Facebook OAuth reconnection initiated for user:', req.session.userId);
@@ -7860,7 +7235,6 @@ Continue building your Value Proposition Canvas systematically.`;
       scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_actions'] 
     })(req, res, next);
   });
-
   app.get('/auth/facebook/reconnect/callback', 
     configuredPassport.authenticate('facebook', { failureRedirect: '/oauth-reconnect?error=facebook' }),
     (req, res) => {
@@ -7868,7 +7242,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.redirect('/oauth-reconnect?success=facebook');
     }
   );
-
   // LinkedIn OAuth reconnection routes
   app.get('/auth/linkedin/reconnect', requireAuth, (req: any, res, next) => {
     console.log('LinkedIn OAuth reconnection initiated for user:', req.session.userId);
@@ -7876,7 +7249,6 @@ Continue building your Value Proposition Canvas systematically.`;
       scope: ['r_liteprofile', 'r_emailaddress', 'w_member_social'] 
     })(req, res, next);
   });
-
   app.get('/auth/linkedin/reconnect/callback',
     configuredPassport.authenticate('linkedin', { failureRedirect: '/oauth-reconnect?error=linkedin' }),
     (req, res) => {
@@ -7884,13 +7256,11 @@ Continue building your Value Proposition Canvas systematically.`;
       res.redirect('/oauth-reconnect?success=linkedin');
     }
   );
-
   // X/Twitter OAuth reconnection routes
   app.get('/auth/twitter/reconnect', requireAuth, (req: any, res, next) => {
     console.log('X OAuth reconnection initiated for user:', req.session.userId);
     configuredPassport.authenticate('twitter')(req, res, next);
   });
-
   app.get('/auth/twitter/reconnect/callback',
     configuredPassport.authenticate('twitter', { failureRedirect: '/oauth-reconnect?error=twitter' }),
     (req, res) => {
@@ -7898,7 +7268,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.redirect('/oauth-reconnect?success=twitter');
     }
   );
-
   // Get subscription usage statistics - CENTRALIZED VERSION
   app.get("/api/subscription-usage", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -7909,7 +7278,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!quotaStatus) {
         return res.status(404).json({ message: "User quota not found" });
       }
-
       // Get detailed post counts
       const postCounts = await PostQuotaService.getPostCounts(req.session.userId);
       
@@ -7918,7 +7286,6 @@ Continue building your Value Proposition Canvas systematically.`;
         reach: quotaStatus.subscriptionPlan === 'professional' ? 15000 : quotaStatus.subscriptionPlan === 'growth' ? 30000 : 5000,
         engagement: quotaStatus.subscriptionPlan === 'professional' ? 4.5 : quotaStatus.subscriptionPlan === 'growth' ? 5.5 : 3.5
       };
-
       res.json({
         subscriptionPlan: quotaStatus.subscriptionPlan,
         totalAllocation: quotaStatus.totalPosts,
@@ -7930,13 +7297,11 @@ Continue building your Value Proposition Canvas systematically.`;
         planLimits: planLimits,
         usagePercentage: quotaStatus.totalPosts > 0 ? Math.round(((quotaStatus.totalPosts - quotaStatus.remainingPosts) / quotaStatus.totalPosts) * 100) : 0
       });
-
     } catch (error: any) {
       console.error('Subscription usage error:', error);
       res.status(500).json({ message: "Error fetching subscription usage" });
     }
   });
-
   // Enhanced subscription management with single plan enforcement
   app.get("/api/subscriptions", requireAuth, async (req: any, res) => {
     try {
@@ -7946,7 +7311,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
       // Check for active Stripe subscription
       let stripeSubscription = null;
       if (user.stripeSubscriptionId && stripe) {
@@ -7957,7 +7321,6 @@ Continue building your Value Proposition Canvas systematically.`;
           console.log(`⚠️ Stripe subscription ${user.stripeSubscriptionId} not found for user ${userId}`);
         }
       }
-
       // If Stripe subscription is canceled/expired, update local database
       if (stripeSubscription && stripeSubscription.status === 'canceled') {
         await storage.updateUser(userId, {
@@ -7966,7 +7329,6 @@ Continue building your Value Proposition Canvas systematically.`;
         });
         console.log(`🔄 Updated user ${userId} to free plan due to canceled Stripe subscription`);
       }
-
       const response = {
         subscriptionPlan: user.subscriptionPlan,
         stripeSubscriptionId: user.stripeSubscriptionId,
@@ -7978,20 +7340,16 @@ Continue building your Value Proposition Canvas systematically.`;
         singlePlanEnforced: true, // New flag to indicate single plan enforcement
         lastUpdated: new Date().toISOString()
       };
-
       res.json(response);
-
     } catch (error: any) {
       console.error('Subscription retrieval error:', error);
       res.status(500).json({ message: "Error retrieving subscription" });
     }
   });
-
   // Security breach reporting endpoint - DISABLED for optimization
   // app.post("/api/security/report-breach", requireAuth, async (req: any, res) => {
   //   res.status(501).json({ message: "Security breach reporting temporarily disabled for optimization" });
   // });
-
   // Get security incidents for admin
   app.get("/api/security/incidents", async (req, res) => {
     try {
@@ -8015,28 +7373,23 @@ Continue building your Value Proposition Canvas systematically.`;
           }
         });
       }
-
     } catch (error: any) {
       console.error('Security incidents fetch error:', error);
       res.status(500).json({ message: "Failed to fetch security incidents" });
     }
   });
-
   // Test breach notification endpoint - DISABLED for optimization
   // app.post("/api/security/test-breach", async (req, res) => {
   //   res.status(501).json({ message: "Test breach notification temporarily disabled for optimization" });
   // });
-
   // Data cleanup status endpoint - DISABLED for optimization
   // app.get("/api/admin/data-cleanup/status", async (req, res) => {
   //   res.status(501).json({ message: "Data cleanup status temporarily disabled for optimization" });
   // });
-
   // Manual data cleanup trigger - DISABLED for optimization
   // app.post("/api/admin/data-cleanup/trigger", async (req, res) => {
   //   res.status(501).json({ message: "Data cleanup trigger temporarily disabled for optimization" });
   // });
-
   // Security dashboard endpoint for real-time monitoring
   app.get("/api/security/dashboard", async (req, res) => {
     try {
@@ -8044,10 +7397,8 @@ Continue building your Value Proposition Canvas systematically.`;
       const now = new Date();
       const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
       const recentIncidents = allIncidents.filter(i => i.detectedAt >= last24Hours);
       const weeklyIncidents = allIncidents.filter(i => i.detectedAt >= last7Days);
-
       const securityMetrics = {
         currentStatus: allIncidents.filter(i => i.severity === 'critical' || i.severity === 'high').length === 0 ? 'secure' : 'alert',
         totalIncidents: allIncidents.length,
@@ -8084,15 +7435,12 @@ Continue building your Value Proposition Canvas systematically.`;
             status: i.status
           }))
       };
-
       res.json(securityMetrics);
-
     } catch (error: any) {
       console.error('Security dashboard error:', error);
       res.status(500).json({ message: "Failed to load security dashboard" });
     }
   });
-
   // Monitor for unauthorized access attempts
   app.use((req, res, next) => {
     // Skip security monitoring for development environment and localhost
@@ -8103,7 +7451,6 @@ Continue building your Value Proposition Canvas systematically.`;
     if (isDevelopment && (isLocalhost || isViteDevAccess)) {
       return next();
     }
-
     // Monitor for suspicious activity patterns
     const suspiciousPatterns = [
       '/admin',
@@ -8113,11 +7460,9 @@ Continue building your Value Proposition Canvas systematically.`;
       '/../',
       '/etc/passwd'
     ];
-
     const hasSuspiciousPattern = suspiciousPatterns.some(pattern => 
       req.path.toLowerCase().includes(pattern.toLowerCase())
     );
-
     if (hasSuspiciousPattern) {
       console.log(`🚨 SUSPICIOUS ACCESS ATTEMPT DETECTED 🚨`);
       console.log(`Path: ${req.path}`);
@@ -8137,10 +7482,8 @@ Continue building your Value Proposition Canvas systematically.`;
         );
       }
     }
-
     next();
   });
-
   // Token refresh endpoint for enhanced security
   app.post('/api/refresh-token', async (req: any, res) => {
     try {
@@ -8224,7 +7567,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Token status endpoint
   app.get('/api/token-status', requireAuth, async (req: any, res) => {
     try {
@@ -8269,7 +7611,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Get AI recommendation with real-time brand purpose analysis
   app.post("/api/ai-query", async (req: any, res) => {
     try {
@@ -8278,14 +7619,12 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!query) {
         return res.status(400).json({ message: "Query is required" });
       }
-
       // Check if XAI API key is configured
       if (!process.env.XAI_API_KEY) {
         return res.status(503).json({ 
           response: "I'm currently unable to process your request. The AI service needs to be configured with valid API credentials."
         });
       }
-
       // Fetch brand purpose data for authenticated users
       let brandPurposeRecord = null;
       if (req.session?.userId) {
@@ -8305,7 +7644,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // ENHANCED: Comprehensive subscription cancellation with platform cleanup
   app.post("/api/cancel-subscription", requireAuth, async (req: any, res) => {
     try {
@@ -8315,7 +7653,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
       console.log(`🔴 Starting comprehensive subscription cancellation for user ${userId} (${user.email})`);
       
       // Step 1: IMMEDIATE STRIPE CANCELLATION - Cancel ALL subscriptions for this customer
@@ -8407,7 +7744,6 @@ Continue building your Value Proposition Canvas systematically.`;
           // Continue with cleanup even if Stripe fails
         }
       }
-
       // Step 2: Comprehensive data cleanup using DataCleanupService
       let cleanupResults;
       try {
@@ -8425,7 +7761,6 @@ Continue building your Value Proposition Canvas systematically.`;
           throw new Error(`Both primary and emergency cleanup failed: ${emergencyError.message}`);
         }
       }
-
       // Step 4: Update user subscription status
       await storage.updateUser(userId, {
         subscriptionPlan: "cancelled",
@@ -8434,7 +7769,6 @@ Continue building your Value Proposition Canvas systematically.`;
         totalPosts: 0,
         subscriptionActive: false
       });
-
       // Step 5: Log comprehensive cancellation summary
       const cancellationSummary = {
         userId,
@@ -8449,7 +7783,6 @@ Continue building your Value Proposition Canvas systematically.`;
       };
       
       console.log(`🔴 SUBSCRIPTION CANCELLATION COMPLETE:`, cancellationSummary);
-
       res.json({ 
         message: "Subscription cancelled successfully",
         summary: {
@@ -8477,7 +7810,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // ADMIN: Bulk cancel all active subscriptions (emergency cleanup)
   app.post("/api/admin/bulk-cancel-subscriptions", requireAuth, async (req: any, res) => {
     try {
@@ -8488,25 +7820,20 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!user || user.email !== 'gailm@macleodglba.com.au') {
         return res.status(403).json({ message: "Unauthorized - admin access required" });
       }
-
       console.log(`🔴 BULK CANCELLATION INITIATED by admin user ${userId}`);
       
       if (!stripe) {
         return res.status(500).json({ message: "Stripe not configured" });
       }
-
       const allCancelledSubscriptions = [];
       const errors = [];
-
       try {
         // Get all active subscriptions
         const subscriptions = await stripe.subscriptions.list({
           status: 'active',
           limit: 100
         });
-
         console.log(`📋 Found ${subscriptions.data.length} active subscriptions to cancel`);
-
         for (const subscription of subscriptions.data) {
           try {
             const cancelledSub = await stripe.subscriptions.cancel(subscription.id, {
@@ -8530,9 +7857,7 @@ Continue building your Value Proposition Canvas systematically.`;
             });
           }
         }
-
         console.log(`🔴 BULK CANCELLATION COMPLETE: ${allCancelledSubscriptions.length} cancelled, ${errors.length} errors`);
-
         res.json({
           message: "Bulk subscription cancellation completed",
           summary: {
@@ -8545,7 +7870,6 @@ Continue building your Value Proposition Canvas systematically.`;
             noBillingCycles: true
           }
         });
-
       } catch (listError) {
         console.error('Failed to list subscriptions for bulk cancellation:', listError);
         res.status(500).json({ 
@@ -8553,7 +7877,6 @@ Continue building your Value Proposition Canvas systematically.`;
           error: listError.message
         });
       }
-
     } catch (error: any) {
       console.error("Bulk cancellation failed:", error);
       res.status(500).json({ 
@@ -8562,7 +7885,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Test data cleanup endpoint (for testing cancellation functionality)
   app.post("/api/test-data-cleanup", requireAuth, async (req: any, res) => {
     try {
@@ -8572,7 +7894,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
       console.log(`🧪 Testing data cleanup for user ${userId} (${user.email})`);
       
       // Perform cleanup test (without actually canceling subscription)
@@ -8580,7 +7901,6 @@ Continue building your Value Proposition Canvas systematically.`;
       
       // Log results but don't update subscription status
       console.log(`🧪 Data cleanup test completed:`, cleanupResults);
-
       res.json({ 
         message: "Data cleanup test completed successfully",
         results: cleanupResults
@@ -8593,7 +7913,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Bulk delete posts endpoint
   app.delete("/api/posts/bulk", requireAuth, async (req: any, res) => {
     try {
@@ -8646,7 +7965,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Replace failed post
   app.post("/api/replace-post", requireAuth, async (req: any, res) => {
     try {
@@ -8655,19 +7973,16 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!postId) {
         return res.status(400).json({ message: "Post ID is required" });
       }
-
       const brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
       if (!brandPurposeRecord) {
         return res.status(400).json({ message: "Brand purpose not found" });
       }
-
       // Get the current post to know the platform
       const posts = await storage.getPostsByUser(req.session.userId);
       const currentPost = posts.find(p => p.id === postId);
       if (!currentPost) {
         return res.status(404).json({ message: "Post not found" });
       }
-
       // Generate new content with Grok
       const newContent = await generateReplacementPost(
         currentPost.platform,
@@ -8675,13 +7990,11 @@ Continue building your Value Proposition Canvas systematically.`;
         brandPurposeRecord.audience,
         typeof brandPurposeRecord.goals === 'object' ? JSON.stringify(brandPurposeRecord.goals) : String(brandPurposeRecord.goals || '{}')
       );
-
       const updatedPost = await storage.updatePost(postId, {
         content: newContent,
         status: "scheduled",
         errorLog: null,
       });
-
       res.json({ 
         post: updatedPost, 
         recommendation: `this post targets ${brandPurposeRecord.audience} to support ${brandPurposeRecord.goals}` 
@@ -8691,7 +8004,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Error replacing post: " + error.message });
     }
   });
-
   // AI content generation with thinking process
   app.post("/api/ai/generate-content", async (req, res) => {
     try {
@@ -8700,7 +8012,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-
       // Ensure user exists first
       let user = await storage.getUser(userId);
       if (!user) {
@@ -8713,7 +8024,6 @@ Continue building your Value Proposition Canvas systematically.`;
           totalPosts: 60
         });
       }
-
       // Get or create brand purpose data for demo
       let brandData = await storage.getBrandPurposeByUser(user.id);
       if (!brandData) {
@@ -8732,7 +8042,6 @@ Continue building your Value Proposition Canvas systematically.`;
           contactDetails: { email: "hello@qldbusiness.com.au", phone: "+61 7 3000 0000" }
         });
       }
-
       // Generate content using Grok with brand purpose context
       const contentParams = {
         brandName: brandData.brandName || "Your Business",
@@ -8747,7 +8056,6 @@ Continue building your Value Proposition Canvas systematically.`;
         platforms: ["linkedin", "instagram", "facebook"],
         totalPosts: 10
       };
-
       const generatedPosts = await generateContentCalendar(contentParams);
       res.json({ posts: generatedPosts });
     } catch (error: any) {
@@ -8755,7 +8063,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Failed to generate content: " + error.message });
     }
   });
-
   // Publish individual post endpoint
   app.post("/api/publish-post", requireAuth, async (req: any, res) => {
     try {
@@ -8765,13 +8072,11 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!postId || !platform) {
         return res.status(400).json({ message: "Post ID and platform are required" });
       }
-
       // Get user and verify subscription
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
       // Check subscription limits
       const remainingPosts = user.remainingPosts || 0;
       if (remainingPosts <= 0) {
@@ -8780,20 +8085,17 @@ Continue building your Value Proposition Canvas systematically.`;
           subscriptionLimitReached: true
         });
       }
-
       // Verify platform connection exists and is active
       const platformConnections = await storage.getPlatformConnectionsByUser(userId);
       const platformConnection = platformConnections.find(conn => 
         conn.platform.toLowerCase() === platform.toLowerCase() && conn.isActive
       );
-
       if (!platformConnection) {
         return res.status(400).json({ 
           message: `${platform} account not connected. Please connect your ${platform} account first.`,
           requiresConnection: true 
         });
       }
-
       // Check for demo/mock tokens
       if (platformConnection.accessToken.includes('demo_') || platformConnection.accessToken.includes('mock_')) {
         return res.status(400).json({ 
@@ -8801,10 +8103,8 @@ Continue building your Value Proposition Canvas systematically.`;
           requiresReconnection: true 
         });
       }
-
       // Publish the post using PostPublisher
       const result = await PostPublisher.publishPost(userId, postId, [platform]);
-
       if (result.success) {
         res.json({
           success: true,
@@ -8820,7 +8120,6 @@ Continue building your Value Proposition Canvas systematically.`;
           remainingPosts: result.remainingPosts
         });
       }
-
     } catch (error: any) {
       console.error('Post publishing error:', error);
       res.status(500).json({ 
@@ -8829,7 +8128,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Analytics dashboard data
   app.get("/api/analytics", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -8837,31 +8135,25 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-
       // Get user and published posts with analytics data
       const user = await storage.getUser(userId);
       const posts = await storage.getPostsByUser(userId);
       const connections = await storage.getPlatformConnectionsByUser(userId);
-
       if (!user) {
         return res.status(400).json({ message: "User not found" });
       }
-
       // Filter published posts that have analytics data
       const publishedPosts = posts.filter(post => 
         post.status === 'published' && 
         post.analytics && 
         typeof post.analytics === 'object'
       );
-
       let totalPosts = 0;
       let totalReach = 0;
       let totalEngagement = 0;
       const platformStats: any[] = [];
-
       // Aggregate analytics data from published posts by platform
       const platformData: Record<string, {posts: number, reach: number, engagement: number, impressions: number}> = {};
-
       publishedPosts.forEach(post => {
         if (post.analytics && typeof post.analytics === 'object') {
           const analytics = post.analytics;
@@ -8881,14 +8173,12 @@ Continue building your Value Proposition Canvas systematically.`;
           });
         }
       });
-
       // Convert aggregated data to platform stats
       Object.keys(platformData).forEach(platform => {
         const data = platformData[platform];
         totalPosts += data.posts;
         totalReach += data.reach;
         totalEngagement += data.engagement;
-
         const engagementRate = data.reach > 0 ? (data.engagement / data.reach * 100) : 0;
         
         platformStats.push({
@@ -8900,9 +8190,7 @@ Continue building your Value Proposition Canvas systematically.`;
           isPlaceholder: false
         });
       });
-
       const hasRealData = totalPosts > 0;
-
       // Add platforms without data to show complete overview
       const allPlatforms = ['facebook', 'instagram', 'linkedin', 'x', 'youtube'];
       for (const platform of allPlatforms) {
@@ -8917,7 +8205,6 @@ Continue building your Value Proposition Canvas systematically.`;
           });
         }
       }
-
       // Calculate overall engagement rate as percentage: (total engagement / total reach) * 100
       const avgEngagement = totalReach > 0 ? 
         Math.round((totalEngagement / totalReach) * 10000) / 100 : 0;
@@ -8925,16 +8212,13 @@ Continue building your Value Proposition Canvas systematically.`;
       // Calculate conversions from real engagement data
       const conversions = hasRealData ? 
         Math.round(totalReach * (avgEngagement / 100) * 0.02) : 0;
-
       // Set targets based on subscription plan
       const baseTargets = {
         starter: { posts: 15, reach: 5000, engagement: 3.5, conversions: 25 },
         professional: { posts: 30, reach: 15000, engagement: 4.5, conversions: 75 },
         growth: { posts: 60, reach: 30000, engagement: 5.5, conversions: 150 }
       };
-
       const targets = baseTargets[user.subscriptionPlan as keyof typeof baseTargets] || baseTargets.starter;
-
       // Goal progress based on real data
       const goalProgress = {
         growth: {
@@ -8958,7 +8242,6 @@ Continue building your Value Proposition Canvas systematically.`;
           percentage: hasRealData ? Math.min(100, Math.round((avgEngagement / targets.engagement) * 100)) : 0
         }
       };
-
       const analyticsData = {
         totalPosts: Number(totalPosts) || 0,
         totalReach: Number(totalReach) || 0, // Fix: Ensure totalReach is always a number for test compatibility
@@ -8993,14 +8276,12 @@ Continue building your Value Proposition Canvas systematically.`;
         hasRealData,
         connectedPlatforms: connections.map(conn => conn.platform)
       };
-
       res.json(analyticsData);
     } catch (error: any) {
       console.error("Analytics error:", error);
       res.status(500).json({ message: "Failed to load analytics: " + error.message });
     }
   });
-
   // AI Content Generation endpoint for comprehensive tests
   app.post("/api/generate-ai-content", requireActiveSubscription, async (req: any, res) => {
     try {
@@ -9008,19 +8289,15 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-
       const { brandPurpose, platforms, count } = req.body;
-
       if (!brandPurpose || !platforms || !Array.isArray(platforms)) {
         return res.status(400).json({ message: "Invalid request parameters" });
       }
-
       // Generate AI content posts using the Grok service
       const { generateGrokContent } = await import('./grok');
       
       const generatedPosts = [];
       const requestedCount = count || 2;
-
       for (let i = 0; i < requestedCount; i++) {
         for (const platform of platforms) {
           try {
@@ -9030,7 +8307,6 @@ Continue building your Value Proposition Canvas systematically.`;
                Maximum length: ${platform === 'x' ? '280' : platform === 'instagram' ? '400' : '500'} characters.`,
               platform
             );
-
             generatedPosts.push({
               id: `ai_${Date.now()}_${i}_${platform}`,
               platform,
@@ -9053,16 +8329,13 @@ Continue building your Value Proposition Canvas systematically.`;
           }
         }
       }
-
       console.log(`✅ Generated ${generatedPosts.length} AI posts for user ${userId}`);
-
       res.json({
         success: true,
         posts: generatedPosts,
         count: generatedPosts.length,
         message: `Generated ${generatedPosts.length} AI-powered posts`
       });
-
     } catch (error: any) {
       console.error('AI content generation error:', error);
       res.status(500).json({ 
@@ -9071,7 +8344,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Yearly analytics dashboard data
   app.get("/api/yearly-analytics", async (req, res) => {
     try {
@@ -9079,36 +8351,29 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-
       // Get user and brand purpose data
       const user = await storage.getUser(userId);
       const brandPurpose = await storage.getBrandPurposeByUser(userId);
       const posts = await storage.getPostsByUser(userId);
-
       if (!user || !brandPurpose) {
         return res.status(400).json({ message: "User profile not complete" });
       }
-
       const currentYear = new Date().getFullYear();
       const yearStart = new Date(currentYear, 0, 1);
       const yearEnd = new Date(currentYear, 11, 31);
-
       // Filter posts for current year
       const yearlyPosts = posts.filter(post => {
         if (!post.scheduledFor) return false;
         const postDate = new Date(post.scheduledFor);
         return postDate.getFullYear() === currentYear;
       });
-
       // Set targets based on subscription plan
       const baseTargets = {
         starter: { posts: 180, reach: 60000, engagement: 3.5, conversions: 300 },
         professional: { posts: 360, reach: 180000, engagement: 4.5, conversions: 900 },
         growth: { posts: 720, reach: 360000, engagement: 5.5, conversions: 1800 }
       };
-
       const yearlyTargets = baseTargets[user.subscriptionPlan as keyof typeof baseTargets] || baseTargets.professional;
-
       // Calculate monthly 30-day cycles
       const monthlyData = [];
       for (let month = 0; month < 12; month++) {
@@ -9118,27 +8383,23 @@ Continue building your Value Proposition Canvas systematically.`;
           const postDate = new Date(post.scheduledFor!);
           return postDate >= monthStart && postDate <= monthEnd;
         });
-
         const monthlyTargets = {
           posts: Math.floor(yearlyTargets.posts / 12),
           reach: Math.floor(yearlyTargets.reach / 12),
           engagement: yearlyTargets.engagement,
           conversions: Math.floor(yearlyTargets.conversions / 12)
         };
-
         // Calculate realistic metrics based on actual posts or simulated performance
         const postsCount = monthPosts.length || (month < new Date().getMonth() ? Math.floor(Math.random() * 35) + 15 : 0);
         const reachValue = postsCount > 0 ? postsCount * (800 + Math.floor(Math.random() * 400)) : 0;
         const engagementValue = postsCount > 0 ? 3.2 + Math.random() * 2.8 : 0;
         const conversionsValue = Math.floor(reachValue * (engagementValue / 100) * 0.05);
-
         const performance = postsCount > 0 ? Math.min(100, Math.round(
           (postsCount / monthlyTargets.posts * 25) +
           (reachValue / monthlyTargets.reach * 25) +
           (engagementValue / monthlyTargets.engagement * 25) +
           (conversionsValue / monthlyTargets.conversions * 25)
         )) : 0;
-
         monthlyData.push({
           month: monthStart.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' }),
           posts: postsCount,
@@ -9152,7 +8413,6 @@ Continue building your Value Proposition Canvas systematically.`;
           performance
         });
       }
-
       // Calculate year-to-date totals
       const currentMonth = new Date().getMonth();
       const ytdData = monthlyData.slice(0, currentMonth + 1);
@@ -9162,11 +8422,9 @@ Continue building your Value Proposition Canvas systematically.`;
       const avgEngagement = ytdData.length > 0 ? 
         ytdData.reduce((sum, month) => sum + month.engagement, 0) / ytdData.length : 0;
       const totalConversions = ytdData.reduce((sum, month) => sum + month.conversions, 0);
-
       // Find best performing month
       const bestMonth = monthlyData.reduce((best, current) => 
         current.performance > best.performance ? current : best, monthlyData[0]);
-
       // Calculate brand purpose alignment
       const brandPurposeAlignment = {
         growthGoal: {
@@ -9190,20 +8448,17 @@ Continue building your Value Proposition Canvas systematically.`;
           percentage: Math.min(100, Math.round((avgEngagement / yearlyTargets.engagement) * 100))
         }
       };
-
       // Calculate year-end projection based on current trends
       const monthsRemaining = 12 - (currentMonth + 1);
       const avgMonthlyPosts = totalPosts / Math.max(currentMonth + 1, 1);
       const avgMonthlyReach = totalReach / Math.max(currentMonth + 1, 1);
       const avgMonthlyConversions = totalConversions / Math.max(currentMonth + 1, 1);
-
       const yearEndProjection = {
         posts: totalPosts + Math.round(avgMonthlyPosts * monthsRemaining),
         reach: totalReach + Math.round(avgMonthlyReach * monthsRemaining),
         engagement: Math.round(avgEngagement * 10) / 10,
         conversions: totalConversions + Math.round(avgMonthlyConversions * monthsRemaining)
       };
-
       const yearlyAnalyticsData = {
         yearToDate: {
           totalPosts,
@@ -9243,16 +8498,13 @@ Continue building your Value Proposition Canvas systematically.`;
         brandPurposeAlignment,
         yearEndProjection
       };
-
       res.json(yearlyAnalyticsData);
     } catch (error: any) {
       console.error("Yearly analytics error:", error);
       res.status(500).json({ message: "Failed to load yearly analytics: " + error.message });
     }
   });
-
   // Duplicate brand purpose endpoint removed - using the one at line 2825 with requireActiveSubscription middleware
-
   // Forgot password with email and phone verification
   app.post("/api/forgot-password", async (req, res) => {
     try {
@@ -9261,26 +8513,21 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!email || !phone) {
         return res.status(400).json({ message: "Both email and phone number are required" });
       }
-
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return res.status(400).json({ message: "Invalid email format" });
       }
-
       // Find user by email
       const userByEmail = await storage.getUserByEmail(email);
       if (!userByEmail) {
         return res.json({ message: "If an account exists, a reset link has been sent" });
       }
-
       // Verify phone number matches the account
       if (userByEmail.phone !== phone) {
         return res.json({ message: "If an account exists, a reset link has been sent" });
       }
-
       const user = userByEmail;
-
       // Generate secure reset token
       const resetToken = crypto.randomUUID().replace(/-/g, '');
       const expiresAt = new Date(Date.now() + 3600000); // 1 hour expiry
@@ -9292,13 +8539,10 @@ Continue building your Value Proposition Canvas systematically.`;
         verified: false,
         expiresAt: expiresAt
       });
-
       const domains = process.env.REPLIT_DOMAINS?.split(',') || [`localhost:5000`];
       const domain = domains[0];
       const resetUrl = `https://${domain}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-
       console.log(`Password reset link for ${email}: ${resetUrl}`);
-
       // Send email via SendGrid
       try {
         const msg = {
@@ -9338,14 +8582,12 @@ Continue building your Value Proposition Canvas systematically.`;
         console.log(`Email sending failed for ${email}. Error: ${emailError.message}`);
         console.log(`Reset link (for testing): ${resetUrl}`);
       }
-
       res.json({ message: "If an account exists, a reset link has been sent" });
     } catch (error: any) {
       console.error('Forgot password error:', error);
       res.status(500).json({ message: "Error processing request" });
     }
   });
-
   // Validate reset token
   app.post("/api/validate-reset-token", async (req, res) => {
     try {
@@ -9354,24 +8596,20 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!token || !email) {
         return res.status(400).json({ message: "Token and email are required" });
       }
-
       const resetCode = await storage.getVerificationCode(email, token);
       if (!resetCode || resetCode.verified) {
         return res.status(400).json({ message: "Invalid or expired reset token" });
       }
-
       // Check if token is expired
       if (resetCode.expiresAt && new Date() > resetCode.expiresAt) {
         return res.status(400).json({ message: "Reset token has expired" });
       }
-
       res.json({ message: "Token is valid" });
     } catch (error: any) {
       console.error('Token validation error:', error);
       res.status(500).json({ message: "Error validating token" });
     }
   });
-
   // Reset password
   app.post("/api/reset-password", async (req, res) => {
     try {
@@ -9380,38 +8618,30 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!token || !email || !password) {
         return res.status(400).json({ message: "Token, email, and password are required" });
       }
-
       // Validate password length
       if (password.length < 8) {
         return res.status(400).json({ message: "Password must be at least 8 characters" });
       }
-
       // Find and validate reset token
       const resetCode = await storage.getVerificationCode(email, token);
       if (!resetCode || resetCode.verified) {
         return res.status(400).json({ message: "Invalid or expired reset token" });
       }
-
       // Check if token is expired
       if (resetCode.expiresAt && new Date() > resetCode.expiresAt) {
         return res.status(400).json({ message: "Reset token has expired" });
       }
-
       // Find user by email
       const user = await storage.getUserByEmail(email);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
       // Hash new password
       const hashedPassword = await bcrypt.hash(password, 10);
-
       // Update user password
       await storage.updateUser(user.id, { password: hashedPassword });
-
       // Mark reset token as used
       await storage.markVerificationCodeUsed(resetCode.id);
-
       console.log(`Password reset successful for user: ${email}`);
       res.json({ message: "Password reset successful" });
     } catch (error: any) {
@@ -9419,7 +8649,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Error resetting password" });
     }
   });
-
   // Update profile
   app.put("/api/profile", requireAuth, async (req: any, res) => {
     try {
@@ -9433,11 +8662,9 @@ Continue building your Value Proposition Canvas systematically.`;
       if (password) {
         updates.password = await bcrypt.hash(password, 10);
       }
-
       if (Object.keys(updates).length === 0) {
         return res.status(400).json({ message: "No updates provided" });
       }
-
       const user = await storage.updateUser(req.session.userId, updates);
       
       res.json({ 
@@ -9451,7 +8678,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Error updating profile" });
     }
   });
-
   // Handle payment success for authenticated users
   app.get("/api/payment-success", async (req: any, res) => {
     try {
@@ -9460,7 +8686,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!session_id) {
         return res.redirect('/subscription?error=missing_session');
       }
-
       // Retrieve the checkout session from Stripe
       const session = await stripe.checkout.sessions.retrieve(session_id);
       
@@ -9474,7 +8699,6 @@ Continue building your Value Proposition Canvas systematically.`;
           console.error('Payment session missing user information:', { userId, userEmail });
           return res.redirect('/subscription?error=missing_user_info');
         }
-
         // Retrieve the authenticated user
         const user = await storage.getUser(userId);
         
@@ -9482,13 +8706,11 @@ Continue building your Value Proposition Canvas systematically.`;
           console.error(`User not found for payment: ${userId}`);
           return res.redirect('/subscription?error=user_not_found');
         }
-
         // Verify user email matches payment
         if (user.email !== userEmail) {
           console.error(`Email mismatch: user=${user.email}, payment=${userEmail}`);
           return res.redirect('/subscription?error=email_mismatch');
         }
-
         // Check if user already has a subscription
         if (user.stripeSubscriptionId && user.stripeSubscriptionId !== session.subscription) {
           console.log(`⚠️ User ${userId} already has subscription ${user.stripeSubscriptionId}, canceling duplicate ${session.subscription}`);
@@ -9503,7 +8725,6 @@ Continue building your Value Proposition Canvas systematically.`;
           
           return res.redirect('/subscription?error=duplicate_subscription');
         }
-
         // Update user with subscription details
         const updatedUser = await storage.updateUser(userId, {
           subscriptionPlan: planName,
@@ -9511,7 +8732,6 @@ Continue building your Value Proposition Canvas systematically.`;
           stripeSubscriptionId: session.subscription as string,
           stripeCustomerId: session.customer as string
         });
-
         // Link Stripe subscription to user with end-to-end flow
         await storage.linkStripeSubscription(userId, session.customer as string, session.subscription as string);
         
@@ -9539,7 +8759,6 @@ Continue building your Value Proposition Canvas systematically.`;
             sessionId: session_id
           }
         }, true);
-
         // Establish session for the authenticated user
         req.session.userId = userId;
         req.session.userEmail = userEmail;
@@ -9561,14 +8780,12 @@ Continue building your Value Proposition Canvas systematically.`;
       return res.redirect('/subscription?error=processing_failed');
     }
   });
-
   // Facebook OAuth - Use passport strategy
   app.get("/api/auth/facebook", requireAuth, (req, res, next) => {
     passport.authenticate('facebook', { 
       scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement']
     })(req, res, next);
   });
-
   // Facebook callback handled by passport
   app.get("/api/auth/facebook/callback", 
     passport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
@@ -9576,16 +8793,12 @@ Continue building your Value Proposition Canvas systematically.`;
       res.redirect('/connect-platforms?connected=facebook');
     }
   );
-
-
-
   // Instagram OAuth - Use passport strategy
   app.get("/api/auth/instagram", requireAuth, (req, res, next) => {
     passport.authenticate('instagram', { 
       scope: ['instagram_basic', 'pages_show_list']
     })(req, res, next);
   });
-
   // Instagram callback handled by passport
   app.get("/api/auth/instagram/callback", 
     passport.authenticate('instagram', { failureRedirect: '/connect-platforms?error=instagram' }),
@@ -9593,9 +8806,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.redirect('/connect-platforms?connected=instagram');
     }
   );
-
-
-
   // Generic data deletion endpoint for all platforms
   app.post("/api/data-deletion", express.json(), async (req, res) => {
     try {
@@ -9607,7 +8817,6 @@ Continue building your Value Proposition Canvas systematically.`;
         req.url = '/api/facebook/data-deletion';
         return registerRoutes(app);
       }
-
       // Handle other platforms
       const confirmationCode = `DEL_${platform || 'UNKNOWN'}_${user_id || 'ANON'}_${Date.now()}`;
       
@@ -9625,7 +8834,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Admin endpoint for dynamic subscriber testing
   app.get("/api/admin/subscribers", requireAuth, async (req: any, res) => {
     try {
@@ -9670,7 +8878,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Admin endpoint to test subscription recreation prevention
   app.post("/api/admin/test-subscription-recreation", requireAuth, async (req: any, res) => {
     try {
@@ -9742,7 +8949,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Error testing subscription recreation: " + error.message });
     }
   });
-
   // Data deletion status page
   app.get("/data-deletion-status", (req, res) => {
     const { code } = req.query;
@@ -9780,21 +8986,18 @@ Continue building your Value Proposition Canvas systematically.`;
       </html>
     `);
   });
-
   // Instagram OAuth callback - handled by universal callback in server/index.ts
   // This route is kept for direct API calls but actual OAuth is handled by /callback
   app.get("/api/auth/instagram/callback", async (req, res) => {
     console.log('Instagram OAuth callback - redirecting to connect-platforms');
     res.redirect('/connect-platforms?connected=instagram');
   });
-
   // LinkedIn OAuth - Use passport strategy
   app.get("/api/auth/linkedin", requireAuth, (req, res, next) => {
     passport.authenticate('linkedin', { 
       scope: ['r_liteprofile', 'w_member_social']
     })(req, res, next);
   });
-
   // LinkedIn callback handled by passport
   app.get("/api/auth/linkedin/callback", 
     passport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
@@ -9802,14 +9005,11 @@ Continue building your Value Proposition Canvas systematically.`;
       res.redirect('/connect-platforms?connected=linkedin');
     }
   );
-
   // LinkedIn refresh function removed - using direct connections
-
   // X OAuth - Use passport strategy
   app.get("/api/auth/x", requireAuth, (req, res, next) => {
     passport.authenticate('twitter')(req, res, next);
   });
-
   // X callback handled by passport
   app.get("/api/auth/x/callback", 
     passport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=x' }),
@@ -9817,7 +9017,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.redirect('/connect-platforms?connected=x');
     }
   );
-
   // X OAuth 2.0 Callback - Manual implementation
   app.get("/api/auth/x/callback", async (req, res) => {
     try {
@@ -9834,7 +9033,6 @@ Continue building your Value Proposition Canvas systematically.`;
           </script>
         `);
       }
-
       const userId = req.session?.xUserId;
       if (!userId) {
         console.error('X OAuth: No userId in session');
@@ -9847,7 +9045,6 @@ Continue building your Value Proposition Canvas systematically.`;
           </script>
         `);
       }
-
       // Exchange code for access token
       const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
         method: 'POST',
@@ -9862,7 +9059,6 @@ Continue building your Value Proposition Canvas systematically.`;
           code_verifier: 'challenge'
         })
       });
-
       const tokenData = await tokenResponse.json();
       
       if (!tokenData.access_token) {
@@ -9876,14 +9072,12 @@ Continue building your Value Proposition Canvas systematically.`;
           </script>
         `);
       }
-
       // Get user profile
       const userResponse = await fetch('https://api.twitter.com/2/users/me', {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`
         }
       });
-
       const userData = await userResponse.json();
       
       if (!userData.data) {
@@ -9897,14 +9091,12 @@ Continue building your Value Proposition Canvas systematically.`;
           </script>
         `);
       }
-
       // Remove existing X connections for this user
       const existingConnections = await storage.getPlatformConnectionsByUser(userId);
       const existingX = existingConnections.find(conn => conn.platform === 'x');
       if (existingX) {
         await storage.deletePlatformConnection(existingX.id);
       }
-
       // Create new X connection
       const connectionData = {
         userId: userId,
@@ -9917,7 +9109,6 @@ Continue building your Value Proposition Canvas systematically.`;
         expiresAt: tokenData.expires_in ? new Date(Date.now() + (tokenData.expires_in * 1000)) : null,
         isActive: true
       };
-
       await storage.createPlatformConnection(connectionData);
       
       console.log(`✅ X OAuth 2.0 connection created for user ${userId}: @${userData.data.username}`);
@@ -9945,7 +9136,6 @@ Continue building your Value Proposition Canvas systematically.`;
       `);
     }
   });
-
   // Direct token generation endpoint - bypasses callback URL requirements
   app.post("/api/generate-tokens", requireAuth, async (req: any, res) => {
     try {
@@ -9972,7 +9162,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Failed to generate tokens" });
     }
   });
-
   // Simple platform connection with username/password
   app.post("/api/connect-platform", requireAuth, async (req: any, res) => {
     try {
@@ -9981,13 +9170,11 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!platform || !username || !password) {
         return res.status(400).json({ message: "Platform, username, and password are required" });
       }
-
       // Validate platform is supported
       const supportedPlatforms = ['facebook', 'instagram', 'linkedin', 'youtube', 'x'];
       if (!supportedPlatforms.includes(platform)) {
         return res.status(400).json({ message: "Unsupported platform" });
       }
-
       // Check if platform already connected
       const existingConnections = await storage.getPlatformConnectionsByUser(req.session.userId);
       const existingConnection = existingConnections.find(conn => conn.platform === platform);
@@ -9995,7 +9182,6 @@ Continue building your Value Proposition Canvas systematically.`;
       if (existingConnection) {
         return res.status(400).json({ message: `${platform} is already connected` });
       }
-
       // Store connection with encrypted credentials
       const encryptedPassword = await bcrypt.hash(password, 10);
       
@@ -10009,68 +9195,17 @@ Continue building your Value Proposition Canvas systematically.`;
         expiresAt: null,
         isActive: true
       });
-
       res.json({ 
         message: `${platform} connected successfully`,
         platform: platform,
         username: username
       });
-
     } catch (error: any) {
       console.error('Platform connection error:', error);
       res.status(500).json({ message: "Error connecting platform: " + error.message });
     }
   });
-
-  // OAuth token refresh endpoint
-  app.post("/api/oauth/refresh/:platform", requireActiveSubscription, async (req: any, res) => {
-    try {
-      const { platform } = req.params;
-      const userId = req.session.userId;
-      
-      const { OAuthStatusChecker } = await import('./oauth-status-checker');
-      const connections = await storage.getPlatformConnectionsByUser(userId);
-      const connection = connections.find(c => c.platform === platform);
-      
-      if (!connection) {
-        return res.status(404).json({ error: `No ${platform} connection found` });
-      }
-      
-      // Validate current token status
-      let validation;
-      switch (platform) {
-        case 'facebook':
-          validation = await OAuthStatusChecker.validateFacebookToken(connection.accessToken);
-          break;
-        case 'instagram':
-          validation = await OAuthStatusChecker.validateInstagramToken(connection.accessToken);
-          break;
-        case 'youtube':
-          validation = await OAuthStatusChecker.validateYouTubeToken(connection.accessToken);
-          break;
-        case 'x':
-          validation = await OAuthStatusChecker.validateXToken(connection.accessToken, connection.refreshToken);
-          break;
-        case 'linkedin':
-          validation = await OAuthStatusChecker.validateLinkedInToken(connection.accessToken);
-          break;
-        default:
-          return res.status(400).json({ error: `Unsupported platform: ${platform}` });
-      }
-      
-      res.json({
-        platform,
-        currentStatus: validation,
-        refreshRequired: validation.needsRefresh,
-        message: validation.isValid ? 'Token is valid' : 'Token requires refresh - please reconnect via OAuth'
-      });
-      
-    } catch (error: any) {
-      console.error('OAuth refresh error:', error);
-      res.status(500).json({ error: 'Failed to refresh OAuth token' });
-    }
-  });
-
+  // OAuth token refresh endpoint - Duplicate removed, consolidated with route at line 4628
   // Get connected platforms for current user (backup endpoint)
   app.get("/api/platform-connections-backup", async (req: any, res) => {
     try {
@@ -10084,10 +9219,8 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ message: "Error fetching platform connections: " + error.message });
     }
   });
-
   // Phone verification code storage (in-memory for development)
   const verificationCodes = new LRUCache<{ code: string; expiresAt: Date }>(1000, 300000); // 1000 entries, 5min TTL
-
   // Send SMS verification code endpoint
   app.post('/api/send-code', async (req, res) => {
     try {
@@ -10098,14 +9231,12 @@ Continue building your Value Proposition Canvas systematically.`;
       if (!phone) {
         return res.status(400).json({ error: "Phone number is required" });
       }
-
       // Generate random 6-digit code
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       
       // Store verification code
       verificationCodes.set(phone, { code, expiresAt });
-
       // Send SMS using Twilio
       try {
         await twilioClient.messages.create({
@@ -10130,13 +9261,11 @@ Continue building your Value Proposition Canvas systematically.`;
           developmentCode: code // Remove in production
         });
       }
-
     } catch (error) {
       console.error('Send code error:', error);
       res.status(500).json({ error: 'Failed to send verification code' });
     }
   });
-
   // Phone update endpoint with two-step verification
   app.post('/api/update-phone', async (req, res) => {
     // Force JSON response to prevent HTML injection
@@ -10152,15 +9281,12 @@ Continue building your Value Proposition Canvas systematically.`;
           error: "Email and new phone number are required" 
         });
       }
-
       // Session validation
       if (!req.session?.userId) {
         console.log('No session found for phone update');
         return res.status(401).json({ error: 'No session - please log in' });
       }
-
       console.log('Session validated for phone update');
-
       // Verify SMS code
       const storedData = verificationCodes.get(newPhone);
       if (!storedData || storedData.code !== verificationCode || new Date() > storedData.expiresAt) {
@@ -10168,15 +9294,12 @@ Continue building your Value Proposition Canvas systematically.`;
           error: "Invalid or expired verification code" 
         });
       }
-
       console.log(`SMS verified for ${email}: ${newPhone}`);
-
       // Get current user by email
       const user = await storage.getUserByEmail(email);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-
       const oldPhone = user.phone;
       
       // Update user phone number
@@ -10203,7 +9326,6 @@ Continue building your Value Proposition Canvas systematically.`;
           // Continue with phone update even if migration fails partially
         }
       }
-
       // Clear verification code
       verificationCodes.delete(newPhone);
       
@@ -10214,7 +9336,6 @@ Continue building your Value Proposition Canvas systematically.`;
         newPhone: newPhone,
         message: 'Phone number updated successfully'
       });
-
     } catch (error: any) {
       console.error('Phone update error:', error.stack);
       res.status(500).json({ 
@@ -10223,7 +9344,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Credential security check endpoint
   app.get('/api/check-credentials', (req, res) => {
     res.set('Content-Type', 'application/json');
@@ -10243,7 +9363,6 @@ Continue building your Value Proposition Canvas systematically.`;
     console.log('Credential security check:', credentialCheck);
     res.json(credentialCheck);
   });
-
   // Database cleanup endpoint for removing excess posts and optimizing performance
   app.post('/api/cleanup-db', async (req, res) => {
     res.set('Content-Type', 'application/json');
@@ -10254,7 +9373,6 @@ Continue building your Value Proposition Canvas systematically.`;
       console.log(`Cleanup access denied for ${req.ip}`);
       return res.status(403).json({ error: 'Unauthorized' });
     }
-
     try {
       let totalCleaned = 0;
       const cleanupReport = {
@@ -10263,7 +9381,6 @@ Continue building your Value Proposition Canvas systematically.`;
         quotaViolations: [],
         errors: []
       };
-
       // Get all users with their subscription plans
       const users = await storage.getAllUsers();
       
@@ -10277,7 +9394,6 @@ Continue building your Value Proposition Canvas systematically.`;
           let quota = 12; // Default starter
           if (user.subscriptionPlan === 'growth') quota = 27;
           if (user.subscriptionPlan === 'professional' || user.subscriptionPlan === 'pro') quota = 52;
-
           // Count posted posts for this user using Drizzle
           const postedPosts = await db.select().from(postSchedule)
             .where(sql`${postSchedule.userId} = ${user.phone} AND ${postSchedule.status} = 'posted' AND ${postSchedule.isCounted} = true`);
@@ -10315,13 +9431,11 @@ Continue building your Value Proposition Canvas systematically.`;
           cleanupReport.errors.push(`User ${user.phone}: ${userError.message}`);
         }
       }
-
       res.json({ 
         success: true, 
         message: `Database cleaned successfully. Removed ${totalCleaned} excess posts.`,
         report: cleanupReport
       });
-
     } catch (err) {
       console.error('Database cleanup error:', err);
       res.status(500).json({ 
@@ -10331,7 +9445,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // Token testing endpoints for launch preparation
   app.post("/api/test-x-token", requireAuth, async (req: any, res) => {
     try {
@@ -10347,7 +9460,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.json({ success: false, error: error.message });
     }
   });
-
   app.post("/api/test-facebook-token", requireAuth, async (req: any, res) => {
     try {
       const { DirectPublisher } = await import('./direct-publisher');
@@ -10362,7 +9474,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.json({ success: false, error: error.message });
     }
   });
-
   app.post("/api/launch-readiness", requireAuth, async (req: any, res) => {
     try {
       const { DirectPublisher } = await import('./direct-publisher');
@@ -10373,27 +9484,22 @@ Continue building your Value Proposition Canvas systematically.`;
         linkedin: { operational: false, error: '' },
         instagram: { operational: false, error: '' }
       };
-
       // Test X
       const xResult = await DirectPublisher.publishToTwitter('Launch readiness test - X platform');
       platforms.x.operational = xResult.success;
       platforms.x.error = xResult.error || '';
-
       // Test Facebook
       const fbResult = await DirectPublisher.publishToFacebook('Launch readiness test - Facebook platform');
       platforms.facebook.operational = fbResult.success;
       platforms.facebook.error = fbResult.error || '';
-
       // Test LinkedIn
       const liResult = await DirectPublisher.publishToLinkedIn('Launch readiness test - LinkedIn platform');
       platforms.linkedin.operational = liResult.success;
       platforms.linkedin.error = liResult.error || '';
-
       // Test Instagram
       const igResult = await DirectPublisher.publishToInstagram('Launch readiness test - Instagram platform');
       platforms.instagram.operational = igResult.success;
       platforms.instagram.error = igResult.error || '';
-
       const allOperational = Object.values(platforms).every(p => p.operational);
       
       res.json({ 
@@ -10406,7 +9512,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.json({ success: false, error: error.message });
     }
   });
-
   // X OAuth 2.0 callback endpoint
   app.get("/api/x/callback", async (req, res) => {
     try {
@@ -10431,7 +9536,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Callback processing failed', details: error.message });
     }
   });
-
   // Direct publishing endpoint - with automatic token refresh
   app.post("/api/direct-publish", requireAuth, async (req: any, res) => {
     try {
@@ -10439,7 +9543,6 @@ Continue building your Value Proposition Canvas systematically.`;
       const userId = targetUserId || req.session.userId;
       
       console.log(`📝 Direct publish request: action=${action}, userId=${userId}, body:`, req.body);
-
       if (action === 'test_publish_all') {
         // Test publishing to all platforms with automatic token refresh
         const { DirectPublisher } = await import('./direct-publisher');
@@ -10529,7 +9632,6 @@ Continue building your Value Proposition Canvas systematically.`;
         
         return res.json(resultsArray);
       }
-
       if (action === 'force_publish_all') {
         // Get all approved/draft posts for the user
         const posts = await storage.getPostsByUser(userId);
@@ -10538,7 +9640,6 @@ Continue building your Value Proposition Canvas systematically.`;
         if (pendingPosts.length === 0) {
           return res.json({ success: false, message: 'No posts to publish' });
         }
-
         // Force publish all posts immediately
         let publishedCount = 0;
         for (const post of pendingPosts) {
@@ -10553,7 +9654,6 @@ Continue building your Value Proposition Canvas systematically.`;
             console.error(`Failed to publish post ${post.id}:`, error);
           }
         }
-
         return res.json({
           success: true,
           message: `Force published ${publishedCount}/${pendingPosts.length} posts`,
@@ -10561,7 +9661,6 @@ Continue building your Value Proposition Canvas systematically.`;
           totalPosts: pendingPosts.length
         });
       }
-
       if (action === 'publish_single') {
         // REAL API PUBLISHING - Single platform test using ONLY stored OAuth connections
         const { platform, content } = req.body;
@@ -10569,7 +9668,6 @@ Continue building your Value Proposition Canvas systematically.`;
         if (!platform || !content) {
           return res.status(400).json({ message: 'Platform and content are required for single publishing' });
         }
-
         try {
           // Get platform connection for token
           const connections = await storage.getPlatformConnectionsByUser(userId);
@@ -10582,13 +9680,10 @@ Continue building your Value Proposition Canvas systematically.`;
               platform
             });
           }
-
           // Import DirectPublisher for real API publishing
           const { DirectPublisher } = await import('./direct-publisher');
-
           // Publish using DirectPublisher with real platform APIs
           const result = await DirectPublisher.publishToPlatform(platform, content, connection.accessToken);
-
           if (result.success && result.platformPostId) {
             console.log(`✅ Real API publish successful: ${platform} - Post ID: ${result.platformPostId}`);
             return res.json({
@@ -10614,18 +9709,15 @@ Continue building your Value Proposition Canvas systematically.`;
           });
         }
       }
-
       if (action === 'publish_all') {
         // QUOTA ENFORCEMENT: Check quota status before publishing
         const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
         if (!quotaStatus) {
           return res.status(400).json({ message: "Unable to retrieve quota status" });
         }
-
         // Get all draft and approved posts for the user
         const posts = await storage.getPostsByUser(userId);
         let approvedPosts = posts.filter(post => post.status === 'approved');
-
         // If no approved posts, auto-approve the first 10 draft posts for production readiness
         if (approvedPosts.length === 0) {
           const draftPosts = posts.filter(post => post.status === 'draft').slice(0, 10);
@@ -10645,7 +9737,6 @@ Continue building your Value Proposition Canvas systematically.`;
           approvedPosts = draftPosts.map(p => ({ ...p, status: 'approved' }));
           console.log(`✅ Auto-approved ${approvedPosts.length} posts for immediate publishing`);
         }
-
         // QUOTA ENFORCEMENT: Check if user has sufficient quota
         if (quotaStatus.remainingPosts < approvedPosts.length) {
           return res.status(403).json({ 
@@ -10654,15 +9745,12 @@ Continue building your Value Proposition Canvas systematically.`;
             quotaExceeded: true
           });
         }
-
         const publishResults = [];
         let successCount = 0;
         let failureCount = 0;
-
         // Import bulletproof publisher
         const { BulletproofPublisher } = await import('./bulletproof-publisher');
         const { DirectPublisher } = await import('./direct-publisher');
-
         // Publish all approved posts using bulletproof system
         for (const post of approvedPosts) {
           try {
@@ -10684,7 +9772,6 @@ Continue building your Value Proposition Canvas systematically.`;
               failureCount++;
               continue;
             }
-
             // Attempt to refresh/validate token first
             const refreshResult = await OAuthRefreshService.validateAndRefreshConnection(userId.toString(), post.platform);
             
@@ -10693,10 +9780,8 @@ Continue building your Value Proposition Canvas systematically.`;
             } else {
               console.log(`⚠️ ${post.platform} token refresh failed: ${refreshResult.error}`);
             }
-
             // Publish using DirectPublisher
             const result = await DirectPublisher.publishToPlatform(post.platform, post.content, connection.accessToken);
-
             if (result.success && result.platformPostId) {
               // Update post status
               await storage.updatePost(post.id, { 
@@ -10704,11 +9789,9 @@ Continue building your Value Proposition Canvas systematically.`;
                 publishedAt: new Date(),
                 errorLog: null
               });
-
               // QUOTA ENFORCEMENT: Deduct from quota using PostQuotaService
               await PostQuotaService.deductPost(userId, post.id);
               successCount++;
-
               publishResults.push({
                 postId: post.id,
                 platform: post.platform,
@@ -10717,7 +9800,6 @@ Continue building your Value Proposition Canvas systematically.`;
                 scheduledFor: post.scheduledFor,
                 publishedAt: new Date().toISOString()
               });
-
               console.log(`✅ Published post ${post.id} to ${post.platform}: ${result.platformPostId}`);
             } else {
               // Update post with error
@@ -10725,7 +9807,6 @@ Continue building your Value Proposition Canvas systematically.`;
                 status: 'failed',
                 errorLog: result.error || 'Unknown publishing error'
               });
-
               failureCount++;
               publishResults.push({
                 postId: post.id,
@@ -10734,7 +9815,6 @@ Continue building your Value Proposition Canvas systematically.`;
                 error: result.error || 'Unknown publishing error',
                 scheduledFor: post.scheduledFor
               });
-
               console.log(`❌ Failed to publish post ${post.id} to ${post.platform}: ${result.error}`);
             }
           } catch (error: any) {
@@ -10745,7 +9825,6 @@ Continue building your Value Proposition Canvas systematically.`;
               status: 'failed',
               errorLog: error.message
             });
-
             failureCount++;
             publishResults.push({
               postId: post.id,
@@ -10756,7 +9835,6 @@ Continue building your Value Proposition Canvas systematically.`;
             });
           }
         }
-
         return res.json({
           success: successCount > 0,
           message: `Published ${successCount}/${approvedPosts.length} posts successfully`,
@@ -10766,24 +9844,19 @@ Continue building your Value Proposition Canvas systematically.`;
           results: publishResults
         });
       }
-
       res.status(400).json({ message: 'Invalid action' });
     } catch (error: any) {
       console.error('Direct publish error:', error);
       res.status(500).json({ message: 'Direct publish failed' });
     }
   });
-
   // Webhook endpoint moved to server/index.ts to prevent conflicts
-
   // OAuth Routes for Real Platform Connections
   
   // Facebook OAuth - DISABLED (using custom implementation in authModule.ts)
   // Custom Facebook OAuth routes implemented in authModule.ts to bypass passport-facebook conflicts
   console.log('Facebook OAuth routes disabled in server/routes.ts - using custom implementation');
-
   // Instagram OAuth disabled - using direct connection method instead
-
   // LinkedIn OAuth
   app.get('/auth/linkedin', requireAuth, passport.authenticate('linkedin', { scope: ['r_liteprofile', 'w_member_social'] }));
   
@@ -10793,7 +9866,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.redirect('/platform-connections?success=linkedin_connected');
     }
   );
-
   // X (Twitter) OAuth
   app.get('/auth/twitter', requireAuth, passport.authenticate('twitter'));
   
@@ -10803,7 +9875,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.redirect('/platform-connections?success=twitter_connected');
     }
   );
-
   // YouTube OAuth
   app.get('/auth/youtube', requireAuth, passport.authenticate('youtube', { scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload'] }));
   
@@ -10813,7 +9884,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
     }
   );
-
   // Real platform connection endpoint - ENHANCED with direct connection creation
   app.post("/api/platform-connections/connect", requireAuth, async (req: any, res) => {
     try {
@@ -10886,60 +9956,19 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Connection failed' });
     }
   });
-
   // REMOVED: /api/check-live-status - Unified into /api/platform-connections endpoint above
-
-  // OAuth token refresh endpoint
-  app.post("/api/oauth/refresh/:platform", requireAuth, async (req: any, res) => {
-    try {
-      const { platform } = req.params;
-      const userId = req.session.userId;
-
-      if (!platform) {
-        return res.status(400).json({ success: false, error: "Platform is required" });
-      }
-
-      const { OAuthRefreshService } = await import('./oauth-refresh-service');
-      const result = await OAuthRefreshService.validateAndRefreshConnection(platform, userId);
-
-      if (result.success) {
-        res.json({ 
-          success: true, 
-          message: `${platform} token refreshed successfully`,
-          expiresAt: result.expiresAt 
-        });
-      } else {
-        res.json({ 
-          success: false, 
-          error: result.error,
-          requiresReauth: result.requiresReauth || false
-        });
-      }
-
-    } catch (error: any) {
-      console.error(`OAuth refresh error for ${req.params.platform}:`, error);
-      res.status(500).json({ 
-        success: false, 
-        error: "Token refresh failed",
-        requiresReauth: true
-      });
-    }
-  });
-
+  // OAuth token refresh endpoint - Duplicate removed, consolidated with route at line 4628
   // Get real platform analytics
   app.get("/api/platform-analytics/:platform", requireAuth, async (req: any, res) => {
     try {
       const { platform } = req.params;
       const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
       const connection = connections.find(c => c.platform === platform && c.isActive);
-
       if (!connection) {
         return res.status(404).json({ message: "Platform not connected" });
       }
-
       // Use platform APIs to fetch real analytics
       let analyticsData = {};
-
       switch (platform) {
         case 'facebook':
           analyticsData = await fetchFacebookAnalytics(connection.accessToken);
@@ -10959,14 +9988,12 @@ Continue building your Value Proposition Canvas systematically.`;
         default:
           return res.status(400).json({ message: "Analytics not available for this platform" });
       }
-
       res.json(analyticsData);
     } catch (error: any) {
       console.error('Platform analytics error:', error);
       res.status(500).json({ message: "Error fetching platform analytics" });
     }
   });
-
   // User Feedback API Endpoints
   app.post('/api/submit-feedback', async (req: Request, res: Response) => {
     try {
@@ -10979,14 +10006,12 @@ Continue building your Value Proposition Canvas systematically.`;
           error: 'Authentication required' 
         });
       }
-
       if (!feedbackType || !message) {
         return res.status(400).json({ 
           success: false, 
           error: 'Missing required fields: feedbackType and message are required' 
         });
       }
-
       const feedback = {
         userId,
         feedbackType,
@@ -11000,7 +10025,6 @@ Continue building your Value Proposition Canvas systematically.`;
           sessionId: (req as any).sessionID
         }
       };
-
       const result = await userFeedbackService.submitFeedback(feedback);
       
       console.log(`📝 Feedback submitted: ${feedbackType} from user ${userId}`);
@@ -11013,7 +10037,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   app.get('/api/feedback-analytics', async (req: Request, res: Response) => {
     try {
       const userId = (req as any).session?.userId;
@@ -11031,7 +10054,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   app.get('/api/user-feedback', async (req: Request, res: Response) => {
     try {
       const userId = (req as any).session?.userId;
@@ -11059,7 +10081,6 @@ Continue building your Value Proposition Canvas systematically.`;
       });
     }
   });
-
   // AI CONTENT OPTIMIZATION ENDPOINTS - World-class content generation
   app.post('/api/ai/optimize-content', requireAuth, async (req: any, res) => {
     try {
@@ -11086,7 +10107,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Content optimization failed', details: error.message });
     }
   });
-
   // AI LEARNING & OPTIMIZATION ENDPOINT - 30-day improvement cycles
   app.get('/api/ai/learning-insights/:userId', requireAuth, async (req: any, res) => {
     try {
@@ -11105,7 +10125,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Learning analysis failed', details: error.message });
     }
   });
-
   // SEO HASHTAG GENERATION ENDPOINT - Keywords & meta tags optimization
   app.post('/api/ai/generate-seo', requireAuth, async (req: any, res) => {
     try {
@@ -11128,7 +10147,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'SEO generation failed', details: error.message });
     }
   });
-
   // OPTIMAL TIMING ANALYSIS ENDPOINT - AI-powered scheduling
   app.get('/api/ai/optimal-timing/:platform', requireAuth, async (req: any, res) => {
     try {
@@ -11148,7 +10166,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Timing calculation failed', details: error.message });
     }
   });
-
   // BUSINESS ANALYTICS ENDPOINT - Growth insights & performance tracking
   app.get('/api/analytics/growth-insights', requireAuth, async (req: any, res) => {
     try {
@@ -11168,7 +10185,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Growth insights failed', details: error.message });
     }
   });
-
   // POST PERFORMANCE TRACKING ENDPOINT - Real-time analytics
   app.get('/api/analytics/post-performance/:postId', requireAuth, async (req: any, res) => {
     try {
@@ -11187,7 +10203,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Performance tracking failed', details: error.message });
     }
   });
-
   // AUDIENCE INSIGHTS ENDPOINT - Advanced targeting optimization
   app.get('/api/analytics/audience-insights', requireAuth, async (req: any, res) => {
     try {
@@ -11206,7 +10221,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Audience insights failed', details: error.message });
     }
   });
-
   // COMPETITOR ANALYSIS ENDPOINT - Industry benchmarking
   app.post('/api/analytics/competitor-analysis', requireAuth, async (req: any, res) => {
     try {
@@ -11228,7 +10242,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Competitor analysis failed', details: error.message });
     }
   });
-
   // Direct publish endpoint with comprehensive quota management
   app.post('/api/direct-publish', async (req: any, res) => {
     try {
@@ -11306,13 +10319,11 @@ Continue building your Value Proposition Canvas systematically.`;
       return res.status(500).json({ message: 'Failed to fetch posts' });
     }
   });
-
   // CRITICAL FIX: Import and mount apiRouter from src/routes/apiRoutes.ts to handle legacy endpoints
   // This must be AFTER the main webhook endpoint to prevent conflicts
   // Only mount if needed - commenting out since main webhook is working
   // const { apiRouter } = await import('../src/routes/apiRoutes');
   // app.use('/api', apiRouter);
-
   const httpServer = createServer(app);
   // Real API publishing endpoint for platform post ID management test
   app.post('/api/publish-post', requireAuth, async (req: any, res) => {
@@ -11367,7 +10378,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Internal server error' });
     }
   });
-
   // API endpoints for platform post ID management
   app.get('/api/posts/platform-ids', requireAuth, async (req: any, res) => {
     try {
@@ -11386,7 +10396,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Internal server error' });
     }
   });
-
   app.get('/api/posts/:postId/platform-id', requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId;
@@ -11416,7 +10425,6 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Internal server error' });
     }
   });
-
   app.get('/api/posts/validate-platform-id/:postId', requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId;
@@ -11450,10 +10458,8 @@ Continue building your Value Proposition Canvas systematically.`;
       res.status(500).json({ error: 'Internal server error' });
     }
   });
-
   return httpServer;
 }
-
 // Platform Analytics Functions
 async function fetchFacebookAnalytics(accessToken: string) {
   try {
@@ -11464,7 +10470,6 @@ async function fetchFacebookAnalytics(accessToken: string) {
     const posts = response.data.data || [];
     let totalReach = 0;
     let totalEngagement = 0;
-
     posts.forEach((post: any) => {
       if (post.insights?.data) {
         const impressions = post.insights.data.find((m: any) => m.name === 'post_impressions')?.values[0]?.value || 0;
@@ -11473,7 +10478,6 @@ async function fetchFacebookAnalytics(accessToken: string) {
         totalEngagement += engagement;
       }
     });
-
     return {
       platform: 'facebook',
       totalPosts: posts.length,
@@ -11486,7 +10490,6 @@ async function fetchFacebookAnalytics(accessToken: string) {
     throw new Error('Failed to fetch Facebook analytics');
   }
 }
-
 async function fetchInstagramAnalytics(accessToken: string) {
   try {
     const response = await axios.get(
@@ -11496,7 +10499,6 @@ async function fetchInstagramAnalytics(accessToken: string) {
     const posts = response.data.data || [];
     let totalReach = 0;
     let totalEngagement = 0;
-
     posts.forEach((post: any) => {
       if (post.insights?.data) {
         const impressions = post.insights.data.find((m: any) => m.name === 'impressions')?.values[0]?.value || 0;
@@ -11505,7 +10507,6 @@ async function fetchInstagramAnalytics(accessToken: string) {
         totalEngagement += engagement;
       }
     });
-
     return {
       platform: 'instagram',
       totalPosts: posts.length,
@@ -11518,7 +10519,6 @@ async function fetchInstagramAnalytics(accessToken: string) {
     throw new Error('Failed to fetch Instagram analytics');
   }
 }
-
 async function fetchLinkedInAnalytics(accessToken: string) {
   try {
     const response = await axios.get(
@@ -11537,7 +10537,6 @@ async function fetchLinkedInAnalytics(accessToken: string) {
     let totalPosts = posts.length;
     let totalReach = posts.length * 500; // Estimated based on network size
     let totalEngagement = posts.length * 25; // Estimated engagement
-
     return {
       platform: 'linkedin',
       totalPosts,
@@ -11550,7 +10549,6 @@ async function fetchLinkedInAnalytics(accessToken: string) {
     throw new Error('Failed to fetch LinkedIn analytics');
   }
 }
-
 async function fetchTwitterAnalytics(accessToken: string, refreshToken: string) {
   try {
     // Twitter API v2 requires Bearer token authentication
@@ -11567,7 +10565,6 @@ async function fetchTwitterAnalytics(accessToken: string, refreshToken: string) 
     const tweets = response.data.data || [];
     let totalReach = 0;
     let totalEngagement = 0;
-
     tweets.forEach((tweet: any) => {
       if (tweet.public_metrics) {
         totalReach += tweet.public_metrics.impression_count || 0;
@@ -11576,7 +10573,6 @@ async function fetchTwitterAnalytics(accessToken: string, refreshToken: string) 
                           (tweet.public_metrics.reply_count || 0);
       }
     });
-
     return {
       platform: 'x',
       totalPosts: tweets.length,
@@ -11589,7 +10585,6 @@ async function fetchTwitterAnalytics(accessToken: string, refreshToken: string) 
     throw new Error('Failed to fetch Twitter analytics');
   }
 }
-
 async function fetchYouTubeAnalytics(accessToken: string) {
   try {
     // YouTube API v3 requires API key or OAuth
@@ -11612,7 +10607,6 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     const videos = response.data.items || [];
     let totalReach = 0;
     let totalEngagement = 0;
-
     // For each video, fetch detailed statistics
     for (const video of videos) {
       try {
@@ -11639,7 +10633,6 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         console.error(`Failed to fetch stats for video ${video.id.videoId}:`, error);
       }
     }
-
     return {
       platform: 'youtube',
       totalPosts: videos.length,
@@ -11652,9 +10645,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     throw new Error('Failed to fetch YouTube analytics');
   }
 }
-
 // NOTIFICATION ENDPOINTS
-
 // Notify expired posts endpoint for failed posts
 export function addNotificationEndpoints(app: any) {
   app.post('/api/notify-expired', async (req: any, res: any) => {
@@ -11664,7 +10655,6 @@ export function addNotificationEndpoints(app: any) {
       if (!userId || !postIds || !Array.isArray(postIds)) {
         return res.status(400).json({ error: 'Invalid request parameters' });
       }
-
       console.log(`Expired posts notification for user ${userId}: ${postIds.length} posts`);
       
       // Log to quota-debug.log
@@ -11692,7 +10682,6 @@ export function addNotificationEndpoints(app: any) {
       });
     }
   });
-
   // DATA CLEANUP AND QUOTA MANAGEMENT ENDPOINTS
   
   // Platform Post ID Management Endpoints
@@ -11807,7 +10796,6 @@ export function addNotificationEndpoints(app: any) {
       });
     }
   });
-
   // Get quota dashboard
   app.get('/api/quota-dashboard', requireAuth, async (req: any, res) => {
     try {
@@ -11822,7 +10810,6 @@ export function addNotificationEndpoints(app: any) {
       });
     }
   });
-
   // Detect quota anomalies
   app.get('/api/quota-anomalies', requireAuth, async (req: any, res) => {
     try {
@@ -11841,7 +10828,6 @@ export function addNotificationEndpoints(app: any) {
       });
     }
   });
-
   // VIDEO GENERATION API ENDPOINTS - WORKING VERSION
   // Generate video prompts for post content
   app.post('/api/video/generate-prompts', async (req: any, res) => {
@@ -11855,10 +10841,8 @@ export function addNotificationEndpoints(app: any) {
           error: 'Missing postContent or platform' 
         });
       }
-
       // Get authenticated user for prompt variety tracking
       const authenticatedUserId = req.session?.userId || userId;
-
       // Use fallback brand data for video generation
       const brandData = {
         brandName: 'The AgencyIQ',
@@ -11889,7 +10873,6 @@ export function addNotificationEndpoints(app: any) {
       });
     }
   });
-
   // ART DIRECTOR: Professional cinematic video generation
   app.post('/api/video/render', async (req: any, res) => {
     try {
@@ -11918,7 +10901,6 @@ export function addNotificationEndpoints(app: any) {
       
       // Use prompt content as post content for Art Director
       postContent = typeof prompt === 'string' ? prompt : prompt?.content || editedText || 'Queensland business strategy';
-
       
       // Import Art Director VideoService
       const VideoService = (await import('./videoService.js')).default;
@@ -11955,7 +10937,6 @@ export function addNotificationEndpoints(app: any) {
       });
     }
   });
-
   // Approve video for a post (combines video + text into single unit)
   app.post('/api/video/approve', async (req: any, res) => {
     try {
@@ -11988,7 +10969,6 @@ export function addNotificationEndpoints(app: any) {
       });
     }
   });
-
   // Publish approved post (with video + text) to platforms
   app.post('/api/post/publish-approved', async (req: any, res) => {
     try {
@@ -12021,7 +11001,6 @@ export function addNotificationEndpoints(app: any) {
       });
     }
   });
-
   // Proxy video content for CORS compatibility
   app.post('/api/video/proxy', async (req, res) => {
     try {
@@ -12030,21 +11009,18 @@ export function addNotificationEndpoints(app: any) {
       if (!videoUrl) {
         return res.status(400).json({ error: 'Video URL required' });
       }
-
       // Set CORS headers
       res.set({
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Content-Type': 'video/mp4'
       });
-
       // Stream the video directly
       const axios = (await import('axios')).default;
       const response = await axios.get(videoUrl, {
         responseType: 'stream',
         timeout: 30000
       });
-
       response.data.pipe(res);
     } catch (error) {
       console.error('Video proxy failed:', error);
