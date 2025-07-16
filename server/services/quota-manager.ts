@@ -1,200 +1,235 @@
-import { db } from '../db';
-import { sql } from 'drizzle-orm';
-import { userQuotas } from '@shared/schema';
-
-interface PlatformQuotas {
-  facebook: number;
-  instagram: number;
-  twitter: number;
-  linkedin: number;
-  youtube: number;
-}
-
-interface QuotaUsage {
-  used: number;
-  limit: number;
-  remaining: number;
-  resetDate: Date;
-}
+/**
+ * Quota Manager Service
+ * Handles quota tracking and management for all platforms
+ */
 
 export class QuotaManager {
-  private readonly DEFAULT_QUOTAS: PlatformQuotas = {
-    facebook: 52,
-    instagram: 52,
-    twitter: 52,
-    linkedin: 52,
-    youtube: 52
+  private static quotas: Map<string, { used: number; limit: number; resetTime: Date }> = new Map();
+  private static readonly DAILY_LIMITS = {
+    'Facebook': 50,
+    'Instagram': 50,
+    'LinkedIn': 30,
+    'X': 100,
+    'YouTube': 20
   };
 
-  async getUserQuotas(userId: number): Promise<PlatformQuotas> {
-    try {
-      const result = await db.execute(sql`
-        SELECT platform_quotas FROM user_quotas 
-        WHERE user_id = ${userId}
-      `);
-      
-      if (result.rows.length === 0) {
-        // Initialize quotas for new user
-        await this.initializeUserQuotas(userId);
-        return this.DEFAULT_QUOTAS;
-      }
-      
-      const quotas = result.rows[0].platform_quotas as PlatformQuotas;
-      return quotas || this.DEFAULT_QUOTAS;
-    } catch (error) {
-      console.error('Error getting user quotas:', error);
-      return this.DEFAULT_QUOTAS;
-    }
-  }
-
-  async checkQuota(userId: number, platform: string): Promise<boolean> {
-    try {
-      const quotas = await this.getUserQuotas(userId);
-      const platformQuota = quotas[platform as keyof PlatformQuotas];
-      
-      if (!platformQuota) {
-        return false;
-      }
-      
-      // Check current usage
-      const usage = await this.getQuotaUsage(userId, platform);
-      return usage.remaining > 0;
-    } catch (error) {
-      console.error('Error checking quota:', error);
-      return false;
-    }
-  }
-
-  async consumeQuota(userId: number, platform: string): Promise<boolean> {
-    try {
-      const hasQuota = await this.checkQuota(userId, platform);
-      if (!hasQuota) {
-        return false;
-      }
-      
-      // Record quota consumption
-      await db.execute(sql`
-        INSERT INTO posts (user_id, platform, content, quota_deducted, created_at)
-        VALUES (${userId}, ${platform}, 'Quota consumed', ${true}, ${new Date()})
-      `);
-      
-      console.log(`📊 Quota consumed for user ${userId} on ${platform}`);
-      return true;
-    } catch (error) {
-      console.error('Error consuming quota:', error);
-      return false;
-    }
-  }
-
-  async getQuotaUsage(userId: number, platform: string): Promise<QuotaUsage> {
-    try {
-      const quotas = await this.getUserQuotas(userId);
-      const limit = quotas[platform as keyof PlatformQuotas] || 0;
-      
-      // Get current month usage
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      
-      const result = await db.execute(sql`
-        SELECT COUNT(*) as used_count
-        FROM posts
-        WHERE user_id = ${userId}
-        AND platform = ${platform}
-        AND quota_deducted = true
-        AND created_at >= ${startOfMonth}
-      `);
-      
-      const used = parseInt(result.rows[0]?.used_count || '0');
-      const remaining = Math.max(0, limit - used);
-      
-      const resetDate = new Date();
-      resetDate.setMonth(resetDate.getMonth() + 1);
-      resetDate.setDate(1);
-      resetDate.setHours(0, 0, 0, 0);
-      
-      return {
-        used,
-        limit,
-        remaining,
-        resetDate
-      };
-    } catch (error) {
-      console.error('Error getting quota usage:', error);
-      return {
+  /**
+   * Initialize quota manager
+   */
+  static initialize(): void {
+    // Initialize quotas for all platforms
+    for (const [platform, limit] of Object.entries(this.DAILY_LIMITS)) {
+      this.quotas.set(platform, {
         used: 0,
-        limit: 0,
-        remaining: 0,
-        resetDate: new Date()
+        limit,
+        resetTime: this.getNextResetTime()
+      });
+    }
+
+    // Set up daily reset
+    this.setupDailyReset();
+    console.log('✅ Quota Manager initialized');
+  }
+
+  /**
+   * Check if platform has quota available
+   */
+  static async checkQuota(platform: string): Promise<boolean> {
+    const quota = this.quotas.get(platform);
+    if (!quota) return false;
+
+    // Check if quota needs reset
+    if (new Date() >= quota.resetTime) {
+      this.resetQuota(platform);
+      return true;
+    }
+
+    return quota.used < quota.limit;
+  }
+
+  /**
+   * Get remaining quota for platform
+   */
+  static async getRemainingQuota(platform: string): Promise<number> {
+    const quota = this.quotas.get(platform);
+    if (!quota) return 0;
+
+    // Check if quota needs reset
+    if (new Date() >= quota.resetTime) {
+      this.resetQuota(platform);
+      return quota.limit;
+    }
+
+    return Math.max(0, quota.limit - quota.used);
+  }
+
+  /**
+   * Use quota for platform
+   */
+  static async useQuota(platform: string, amount: number = 1): Promise<boolean> {
+    const quota = this.quotas.get(platform);
+    if (!quota) return false;
+
+    // Check if quota needs reset
+    if (new Date() >= quota.resetTime) {
+      this.resetQuota(platform);
+    }
+
+    // Check if we have enough quota
+    if (quota.used + amount > quota.limit) {
+      return false;
+    }
+
+    // Use quota
+    quota.used += amount;
+    this.quotas.set(platform, quota);
+    
+    console.log(`📊 Used ${amount} quota for ${platform}. Remaining: ${quota.limit - quota.used}`);
+    return true;
+  }
+
+  /**
+   * Reset quota for platform
+   */
+  static async resetQuota(platform: string): Promise<void> {
+    const quota = this.quotas.get(platform);
+    if (!quota) return;
+
+    quota.used = 0;
+    quota.resetTime = this.getNextResetTime();
+    this.quotas.set(platform, quota);
+    
+    console.log(`🔄 Reset quota for ${platform}`);
+  }
+
+  /**
+   * Get quota status for all platforms
+   */
+  static async getQuotaStatus(): Promise<any> {
+    const status: any = {};
+    
+    for (const [platform, quota] of Array.from(this.quotas.entries())) {
+      // Check if quota needs reset
+      if (new Date() >= quota.resetTime) {
+        this.resetQuota(platform);
+      }
+
+      status[platform] = {
+        used: quota.used,
+        limit: quota.limit,
+        remaining: quota.limit - quota.used,
+        resetTime: quota.resetTime.toISOString(),
+        percentageUsed: Math.round((quota.used / quota.limit) * 100)
       };
     }
+
+    return status;
   }
 
-  async updateQuotas(userId: number, newQuotas: Partial<PlatformQuotas>): Promise<boolean> {
-    try {
-      const currentQuotas = await this.getUserQuotas(userId);
-      const updatedQuotas = { ...currentQuotas, ...newQuotas };
-      
-      await db.execute(sql`
-        UPDATE user_quotas 
-        SET platform_quotas = ${JSON.stringify(updatedQuotas)}, updated_at = ${new Date()}
-        WHERE user_id = ${userId}
-      `);
-      
-      console.log(`📊 Quotas updated for user ${userId}`);
-      return true;
-    } catch (error) {
-      console.error('Error updating quotas:', error);
+  /**
+   * Get quota summary
+   */
+  static async getQuotaSummary(): Promise<any> {
+    const status = await this.getQuotaStatus();
+    
+    let totalUsed = 0;
+    let totalLimit = 0;
+    let platformsAtLimit = 0;
+    
+    for (const [platform, quota] of Object.entries(status)) {
+      const q = quota as any;
+      totalUsed += q.used;
+      totalLimit += q.limit;
+      if (q.used >= q.limit) {
+        platformsAtLimit++;
+      }
+    }
+
+    return {
+      totalUsed,
+      totalLimit,
+      totalRemaining: totalLimit - totalUsed,
+      overallPercentage: Math.round((totalUsed / totalLimit) * 100),
+      platformsAtLimit,
+      totalPlatforms: Object.keys(status).length,
+      nextReset: this.getNextResetTime().toISOString()
+    };
+  }
+
+  /**
+   * Check if platform is at quota limit
+   */
+  static async isAtQuotaLimit(platform: string): Promise<boolean> {
+    const quota = this.quotas.get(platform);
+    if (!quota) return true;
+
+    // Check if quota needs reset
+    if (new Date() >= quota.resetTime) {
+      this.resetQuota(platform);
       return false;
     }
+
+    return quota.used >= quota.limit;
   }
 
-  async resetMonthlyQuotas(userId: number): Promise<boolean> {
-    try {
-      // Reset to default quotas
-      await db.execute(sql`
-        UPDATE user_quotas 
-        SET platform_quotas = ${JSON.stringify(this.DEFAULT_QUOTAS)}, updated_at = ${new Date()}
-        WHERE user_id = ${userId}
-      `);
+  /**
+   * Get next reset time (next midnight)
+   */
+  private static getNextResetTime(): Date {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    return tomorrow;
+  }
+
+  /**
+   * Setup daily reset interval
+   */
+  private static setupDailyReset(): void {
+    const now = new Date();
+    const tomorrow = this.getNextResetTime();
+    const msUntilReset = tomorrow.getTime() - now.getTime();
+
+    // Schedule first reset
+    setTimeout(() => {
+      this.resetAllQuotas();
       
-      console.log(`📊 Monthly quotas reset for user ${userId}`);
-      return true;
-    } catch (error) {
-      console.error('Error resetting monthly quotas:', error);
-      return false;
-    }
+      // Then set up daily interval
+      setInterval(() => {
+        this.resetAllQuotas();
+      }, 24 * 60 * 60 * 1000); // 24 hours
+    }, msUntilReset);
   }
 
-  async getAllUserQuotas(userId: number): Promise<Record<string, QuotaUsage>> {
-    const platforms = ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube'];
-    const quotaUsage: Record<string, QuotaUsage> = {};
-    
-    for (const platform of platforms) {
-      quotaUsage[platform] = await this.getQuotaUsage(userId, platform);
+  /**
+   * Reset all quotas
+   */
+  private static resetAllQuotas(): void {
+    for (const platform of Object.keys(this.DAILY_LIMITS)) {
+      this.resetQuota(platform);
     }
-    
-    return quotaUsage;
+    console.log('🔄 All quotas reset for new day');
   }
 
-  async checkQuotaThreshold(userId: number, platform: string, threshold: number = 0.8): Promise<boolean> {
-    const usage = await this.getQuotaUsage(userId, platform);
-    const usagePercentage = usage.used / usage.limit;
+  /**
+   * Get quota statistics
+   */
+  static getStats(): any {
+    const stats: any = {};
     
-    return usagePercentage >= threshold;
-  }
-
-  private async initializeUserQuotas(userId: number): Promise<void> {
-    try {
-      await db.execute(sql`
-        INSERT INTO user_quotas (user_id, platform_quotas, updated_at)
-        VALUES (${userId}, ${JSON.stringify(this.DEFAULT_QUOTAS)}, ${new Date()})
-        ON CONFLICT (user_id) DO NOTHING
-      `);
-    } catch (error) {
-      console.error('Error initializing user quotas:', error);
+    for (const [platform, quota] of Array.from(this.quotas.entries())) {
+      stats[platform] = {
+        used: quota.used,
+        limit: quota.limit,
+        remaining: quota.limit - quota.used,
+        percentageUsed: Math.round((quota.used / quota.limit) * 100),
+        resetTime: quota.resetTime.toISOString()
+      };
     }
+
+    return stats;
   }
 }
 
-export const quotaManager = new QuotaManager();
+// Initialize quota manager on module load
+QuotaManager.initialize();

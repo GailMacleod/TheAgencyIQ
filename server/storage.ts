@@ -67,6 +67,14 @@ export interface IStorage {
   // Platform connection creation
   createPlatformConnection(connectionData: any): Promise<PlatformConnection>;
 
+  // OAuth operations
+  storeOAuthState(userId: number, platform: string, state: string, codeVerifier: string): Promise<void>;
+  getOAuthState(userId: number, platform: string): Promise<{ state: string; codeVerifier: string } | null>;
+  deleteOAuthState(userId: number, platform: string): Promise<void>;
+  storeOAuthTokens(userId: number, platform: string, tokens: any): Promise<void>;
+  getOAuthTokens(userId: number, platform: string): Promise<any>;
+  deleteOAuthTokens(userId: number, platform: string): Promise<void>;
+
   // Post operations
   getPostsByUser(userId: number): Promise<Post[]>;
   getPostsByUserPaginated(userId: number, limit: number, offset: number): Promise<Post[]>;
@@ -834,6 +842,63 @@ export class DatabaseStorage implements IStorage {
 
     return updated;
   }
+
+  // OAuth operations
+  async storeOAuthState(userId: number, platform: string, state: string, codeVerifier: string): Promise<void> {
+    // For now, store in memory - in production, use database table
+    const key = `oauth_state_${userId}_${platform}`;
+    // Store in a simple Map for now - this should be replaced with proper database storage
+    if (!this.oauthStates) {
+      this.oauthStates = new Map();
+    }
+    this.oauthStates.set(key, { state, codeVerifier, expires: Date.now() + 3600000 }); // 1 hour
+  }
+
+  async getOAuthState(userId: number, platform: string): Promise<{ state: string; codeVerifier: string } | null> {
+    const key = `oauth_state_${userId}_${platform}`;
+    if (!this.oauthStates) {
+      return null;
+    }
+    const stored = this.oauthStates.get(key);
+    if (!stored || stored.expires < Date.now()) {
+      this.oauthStates.delete(key);
+      return null;
+    }
+    return { state: stored.state, codeVerifier: stored.codeVerifier };
+  }
+
+  async deleteOAuthState(userId: number, platform: string): Promise<void> {
+    const key = `oauth_state_${userId}_${platform}`;
+    if (this.oauthStates) {
+      this.oauthStates.delete(key);
+    }
+  }
+
+  async storeOAuthTokens(userId: number, platform: string, tokens: any): Promise<void> {
+    const key = `oauth_tokens_${userId}_${platform}`;
+    if (!this.oauthTokens) {
+      this.oauthTokens = new Map();
+    }
+    this.oauthTokens.set(key, tokens);
+  }
+
+  async getOAuthTokens(userId: number, platform: string): Promise<any> {
+    const key = `oauth_tokens_${userId}_${platform}`;
+    if (!this.oauthTokens) {
+      return null;
+    }
+    return this.oauthTokens.get(key) || null;
+  }
+
+  async deleteOAuthTokens(userId: number, platform: string): Promise<void> {
+    const key = `oauth_tokens_${userId}_${platform}`;
+    if (this.oauthTokens) {
+      this.oauthTokens.delete(key);
+    }
+  }
+
+  private oauthStates?: Map<string, { state: string; codeVerifier: string; expires: number }>;
+  private oauthTokens?: Map<string, any>;
 
 }
 

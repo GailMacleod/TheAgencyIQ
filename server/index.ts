@@ -204,7 +204,28 @@ async function startServer() {
 
   // Session configuration with database persistence and secure settings
   console.log('✅ Initializing session management with SessionManager');
-  app.use(session(SessionManager.getSessionConfig()));
+
+  // Initialize services
+  SessionManager.initialize();
+  console.log('🚀 Services initialized successfully');
+
+  // Initialize auto-post scheduler
+  const { AutoPostScheduler } = await import('./services/auto-post-scheduler');
+  AutoPostScheduler.start();
+  console.log('✅ Auto Post Scheduler started');
+  
+  // Session configuration
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'theagencyiq-session-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: false,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    }
+  }));
 
   // Session timeout middleware - handled by SessionManager rolling configuration
   app.use((req: any, res, next) => {
@@ -797,10 +818,23 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development Vite...');
-      const { setupVite } = await import('./vite');
-      await setupVite(app, httpServer);
-      console.log('✅ Vite setup complete');
+      console.log('⚡ Setting up development static files...');
+      // Serve static files for development
+      app.use(express.static('dist'));
+      app.use('/attached_assets', express.static('attached_assets'));
+      
+      // Development fallback - serve index.html for SPA routes
+      app.get('*', (req, res) => {
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+          try {
+            res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+          } catch (error) {
+            console.error('Error serving index.html for development route:', req.path, error);
+            res.status(500).json({ error: 'Failed to serve index.html' });
+          }
+        }
+      });
+      console.log('✅ Development static files setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);

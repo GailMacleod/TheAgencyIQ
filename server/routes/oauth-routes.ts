@@ -1,301 +1,288 @@
 /**
- * Secure OAuth Routes with Token Refresh and CSRF Protection
- * Addresses the "leaky, no refresh, Replit nightmare" issues
+ * OAuth Routes with Security and PKCE Implementation
+ * Handles OAuth initiation, callbacks, and token management
  */
 
 import { Router } from 'express';
-import { enhancedOAuthManager } from '../services/enhanced-oauth-manager';
-import { OAuthSecurityMiddleware } from '../middleware/oauth-security-middleware';
-import { requireAuth } from '../middleware/authGuard';
+import { oauthTokenManager } from '../services/oauth-token-manager';
+import { oauthSecurityMiddleware } from '../middleware/oauth-security-middleware';
+// For now, we'll create a simple auth guard inline
+const authGuard = (req: any, res: any, next: any) => {
+  if (req.session && req.session.userId) {
+    req.user = { userId: req.session.userId };
+    next();
+  } else {
+    res.status(401).json({ error: 'Unauthorized', message: 'Authentication required' });
+  }
+};
 
 const router = Router();
 
 /**
- * Initiate OAuth flow with CSRF protection
+ * Initiate OAuth flow for a platform
  * GET /api/oauth/initiate/:platform
  */
 router.get('/initiate/:platform', 
-  requireAuth,
-  OAuthSecurityMiddleware.csrfProtection,
-  OAuthSecurityMiddleware.rateLimiter,
-  OAuthSecurityMiddleware.securityHeaders,
-  OAuthSecurityMiddleware.auditLogger,
-  async (req, res) => {
+  ...oauthSecurityMiddleware.getMiddlewareStack(),
+  authGuard,
+  async (req: any, res) => {
     try {
       const { platform } = req.params;
-      const userId = req.user?.id;
+      const userId = req.user?.userId || req.session?.userId;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      const supportedPlatforms = ['facebook', 'instagram', 'linkedin', 'twitter', 'youtube'];
-      if (!supportedPlatforms.includes(platform)) {
-        return res.status(400).json({ 
-          error: 'Unsupported platform',
-          supportedPlatforms 
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'User session required'
         });
       }
 
-      console.log(`🔐 Initiating OAuth flow for ${platform} - User ${userId}`);
-
-      const result = await enhancedOAuthManager.initiateOAuthFlow(platform, userId);
-
-      if (!result.success) {
-        console.error(`❌ OAuth initiation failed for ${platform}:`, result.error);
-        return res.status(400).json({
-          error: result.error,
-          code: 'OAUTH_INITIATION_FAILED'
-        });
-      }
-
-      // Return auth URL for client redirect
-      res.json({
-        success: true,
-        authUrl: result.authUrl,
-        state: result.state,
-        platform
-      });
-
+      const result = await oauthTokenManager.initiateOAuth(platform, userId);
+      
+      // Redirect to OAuth provider
+      res.redirect(result.authUrl);
     } catch (error) {
-      console.error('❌ OAuth initiation error:', error);
-      res.status(500).json({ 
+      console.error(`OAuth initiation failed for ${req.params.platform}:`, error);
+      res.status(500).json({
         error: 'OAuth initiation failed',
-        code: 'INTERNAL_ERROR'
+        message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
 );
 
 /**
- * Handle OAuth callback with state validation
+ * Handle OAuth callback from platform
  * GET /api/oauth/callback/:platform
  */
 router.get('/callback/:platform',
-  OAuthSecurityMiddleware.validateOAuthState,
-  OAuthSecurityMiddleware.rateLimiter,
-  OAuthSecurityMiddleware.securityHeaders,
-  OAuthSecurityMiddleware.auditLogger,
-  async (req, res) => {
+  ...oauthSecurityMiddleware.getCallbackMiddlewareStack(),
+  authGuard,
+  async (req: any, res) => {
     try {
       const { platform } = req.params;
       const { code, state, error } = req.query;
+      const userId = req.user?.userId || req.session?.userId;
 
-      console.log(`🔐 OAuth callback received for ${platform}`);
+      if (!userId) {
+        return res.redirect('/connect-platforms?error=unauthorized');
+      }
 
+      // Handle OAuth error from provider
       if (error) {
-        console.error(`❌ OAuth error from ${platform}:`, error);
-        return res.redirect(`/connect-platforms?error=${encodeURIComponent(error as string)}&platform=${platform}`);
+        console.error(`OAuth error from ${platform}:`, error);
+        return res.redirect(`/connect-platforms?error=${error}&platform=${platform}`);
       }
 
       if (!code || !state) {
-        console.error(`❌ Missing OAuth parameters for ${platform}`);
-        return res.redirect(`/connect-platforms?error=missing_parameters&platform=${platform}`);
+        return res.redirect('/connect-platforms?error=missing_params');
       }
 
-      const result = await enhancedOAuthManager.handleOAuthCallback(
+      const result = await oauthTokenManager.handleCallback(
         platform,
         code as string,
         state as string,
-        error as string
+        userId
       );
 
-      if (!result.success) {
-        console.error(`❌ OAuth callback failed for ${platform}:`, result.error);
-        const errorParam = result.requiresReauth ? 'reauth_required' : 'callback_failed';
-        return res.redirect(`/connect-platforms?error=${errorParam}&platform=${platform}&details=${encodeURIComponent(result.error || '')}`);
+      if (result.success) {
+        // Successful OAuth connection
+        res.redirect(`/connect-platforms?success=true&platform=${platform}`);
+      } else {
+        // OAuth callback failed
+        res.redirect(`/connect-platforms?error=callback_failed&platform=${platform}&message=${encodeURIComponent(result.error || 'Unknown error')}`);
       }
-
-      console.log(`✅ OAuth callback successful for ${platform} - User ${result.userId}`);
-      
-      // Redirect to success page
-      res.redirect(`/connect-platforms?success=true&platform=${platform}`);
-
     } catch (error) {
-      console.error('❌ OAuth callback error:', error);
-      res.redirect(`/connect-platforms?error=internal_error&platform=${req.params.platform}`);
+      console.error(`OAuth callback failed for ${req.params.platform}:`, error);
+      res.redirect('/connect-platforms?error=server_error');
     }
   }
 );
 
 /**
- * Refresh OAuth token
+ * Refresh OAuth token for a platform
  * POST /api/oauth/refresh/:platform
  */
 router.post('/refresh/:platform',
-  requireAuth,
-  OAuthSecurityMiddleware.rateLimiter,
-  OAuthSecurityMiddleware.securityHeaders,
-  OAuthSecurityMiddleware.auditLogger,
-  async (req, res) => {
+  ...oauthSecurityMiddleware.getMiddlewareStack(),
+  authGuard,
+  async (req: any, res) => {
     try {
       const { platform } = req.params;
-      const userId = req.user?.id;
+      const userId = req.user?.userId || req.session?.userId;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      console.log(`🔄 Token refresh requested for ${platform} - User ${userId}`);
-
-      const result = await enhancedOAuthManager.refreshAccessToken(userId, platform);
-
-      if (!result.success) {
-        console.error(`❌ Token refresh failed for ${platform}:`, result.error);
-        return res.status(400).json({
-          error: result.error,
-          requiresReauth: result.requiresReauth,
-          code: 'TOKEN_REFRESH_FAILED'
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'User session required'
         });
       }
 
-      console.log(`✅ Token refreshed successfully for ${platform} - User ${userId}`);
-
-      res.json({
-        success: true,
-        platform,
-        expiresAt: result.expiresAt,
-        message: 'Token refreshed successfully'
-      });
-
+      const result = await oauthTokenManager.refreshToken(userId, platform);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          message: 'Token refreshed successfully'
+        });
+      } else {
+        res.status(400).json({
+          error: 'Token refresh failed',
+          message: result.error || 'Unknown error'
+        });
+      }
     } catch (error) {
-      console.error('❌ Token refresh error:', error);
-      res.status(500).json({ 
+      console.error(`Token refresh failed for ${req.params.platform}:`, error);
+      res.status(500).json({
         error: 'Token refresh failed',
-        code: 'INTERNAL_ERROR'
+        message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
 );
 
 /**
- * Get valid access token (with automatic refresh)
- * GET /api/oauth/token/:platform
+ * Check OAuth connection status for a platform
+ * GET /api/oauth/status/:platform
  */
-router.get('/token/:platform',
-  requireAuth,
-  OAuthSecurityMiddleware.rateLimiter,
-  OAuthSecurityMiddleware.securityHeaders,
-  async (req, res) => {
+router.get('/status/:platform',
+  authGuard,
+  async (req: any, res) => {
     try {
       const { platform } = req.params;
-      const userId = req.user?.id;
+      const userId = req.user?.userId || req.session?.userId;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      const token = await enhancedOAuthManager.getValidAccessToken(userId, platform);
-
-      if (!token) {
-        return res.status(404).json({
-          error: 'No valid token available',
-          requiresReauth: true,
-          code: 'TOKEN_NOT_FOUND'
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'User session required'
         });
       }
 
+      const hasValidConnection = await oauthTokenManager.hasValidConnection(userId, platform);
+      
       res.json({
-        success: true,
         platform,
-        hasToken: true,
-        // Note: Never send actual token in response for security
-        message: 'Valid token available'
+        connected: hasValidConnection,
+        timestamp: new Date().toISOString()
       });
-
     } catch (error) {
-      console.error('❌ Token retrieval error:', error);
-      res.status(500).json({ 
-        error: 'Token retrieval failed',
-        code: 'INTERNAL_ERROR'
+      console.error(`Status check failed for ${req.params.platform}:`, error);
+      res.status(500).json({
+        error: 'Status check failed',
+        message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
 );
 
 /**
- * Validate token status
- * GET /api/oauth/validate/:platform
+ * Get OAuth connection status for all platforms
+ * GET /api/oauth/status
  */
-router.get('/validate/:platform',
-  requireAuth,
-  OAuthSecurityMiddleware.rateLimiter,
-  OAuthSecurityMiddleware.securityHeaders,
-  async (req, res) => {
+router.get('/status',
+  authGuard,
+  async (req: any, res) => {
     try {
-      const { platform } = req.params;
-      const userId = req.user?.id;
+      const userId = req.user?.userId || req.session?.userId;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'User session required'
+        });
       }
 
-      const validation = await enhancedOAuthManager.validateToken(userId, platform);
-
+      const connectionStatus = await oauthTokenManager.getConnectionStatus(userId);
+      
       res.json({
-        success: true,
-        platform,
-        isValid: validation.isValid,
-        needsRefresh: validation.needsRefresh,
-        error: validation.error
+        userId,
+        platforms: connectionStatus,
+        timestamp: new Date().toISOString()
       });
-
     } catch (error) {
-      console.error('❌ Token validation error:', error);
-      res.status(500).json({ 
-        error: 'Token validation failed',
-        code: 'INTERNAL_ERROR'
+      console.error('Status check failed:', error);
+      res.status(500).json({
+        error: 'Status check failed',
+        message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
 );
 
 /**
- * Revoke OAuth connection
+ * Revoke OAuth connection for a platform
  * DELETE /api/oauth/revoke/:platform
  */
 router.delete('/revoke/:platform',
-  requireAuth,
-  OAuthSecurityMiddleware.rateLimiter,
-  OAuthSecurityMiddleware.securityHeaders,
-  OAuthSecurityMiddleware.auditLogger,
-  async (req, res) => {
+  ...oauthSecurityMiddleware.getMiddlewareStack(),
+  authGuard,
+  async (req: any, res) => {
     try {
       const { platform } = req.params;
-      const userId = req.user?.id;
+      const userId = req.user?.userId || req.session?.userId;
 
       if (!userId) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'User session required'
+        });
       }
 
-      // Delete tokens from secure storage
-      const { db } = await import('../db');
-      const { sql } = await import('drizzle-orm');
+      const success = await oauthTokenManager.revokeConnection(userId, platform);
       
-      await db.execute(sql`
-        DELETE FROM platform_tokens
-        WHERE user_id = ${userId} AND platform = ${platform}
-      `);
-
-      console.log(`🗑️ OAuth connection revoked for ${platform} - User ${userId}`);
-
-      res.json({
-        success: true,
-        platform,
-        message: 'OAuth connection revoked successfully'
-      });
-
+      if (success) {
+        res.json({
+          success: true,
+          message: `${platform} connection revoked successfully`
+        });
+      } else {
+        res.status(500).json({
+          error: 'Revocation failed',
+          message: 'Failed to revoke connection'
+        });
+      }
     } catch (error) {
-      console.error('❌ OAuth revocation error:', error);
-      res.status(500).json({ 
-        error: 'OAuth revocation failed',
-        code: 'INTERNAL_ERROR'
+      console.error(`Connection revocation failed for ${req.params.platform}:`, error);
+      res.status(500).json({
+        error: 'Revocation failed',
+        message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
 );
 
-// Apply error handler
-router.use(OAuthSecurityMiddleware.errorHandler);
+/**
+ * Get OAuth configuration for a platform (public info only)
+ * GET /api/oauth/config/:platform
+ */
+router.get('/config/:platform', async (req, res) => {
+  try {
+    const { platform } = req.params;
+    const config = oauthTokenManager.getPlatformConfig(platform);
+    
+    if (!config) {
+      return res.status(404).json({
+        error: 'Platform not found',
+        message: `OAuth not configured for platform: ${platform}`
+      });
+    }
+
+    // Return only public configuration
+    res.json({
+      platform,
+      authUrl: config.authUrl,
+      scope: config.scope,
+      usePKCE: config.usePKCE,
+      configured: !!config.clientId
+    });
+  } catch (error) {
+    console.error(`Config retrieval failed for ${req.params.platform}:`, error);
+    res.status(500).json({
+      error: 'Config retrieval failed',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 
 export default router;

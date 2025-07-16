@@ -11678,6 +11678,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  const httpServer = createServer(app);
   return httpServer;
 }
 
