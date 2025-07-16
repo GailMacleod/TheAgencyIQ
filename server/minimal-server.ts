@@ -3,7 +3,7 @@ import { parse } from 'url';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-const PORT = parseInt(process.env.PORT) || 5000;
+const PORT = process.env.PORT || 5000;
 
 const server = createServer((req, res) => {
   const url = parse(req.url || '/', true);
@@ -38,22 +38,20 @@ const server = createServer((req, res) => {
   
   // Serve static files
   try {
-    const filePath = join(process.cwd(), 'dist', url.pathname === '/' ? 'index.html' : url.pathname);
+    const filePath = join(process.cwd(), 'dist/public', url.pathname === '/' ? 'index.html' : url.pathname);
     const content = readFileSync(filePath);
     
     const ext = url.pathname.split('.').pop();
     const contentType = ext === 'js' ? 'application/javascript' : 
                        ext === 'css' ? 'text/css' : 
-                       ext === 'html' ? 'text/html' : 
-                       ext === 'json' ? 'application/json' :
-                       'text/plain';
+                       ext === 'html' ? 'text/html' : 'text/plain';
     
     res.writeHead(200, { 'Content-Type': contentType });
     res.end(content);
   } catch (err) {
     // Fallback to index.html for SPA
     try {
-      const indexPath = join(process.cwd(), 'dist/index.html');
+      const indexPath = join(process.cwd(), 'dist/public/index.html');
       const content = readFileSync(indexPath);
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(content);
@@ -64,6 +62,6 @@ const server = createServer((req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Server running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

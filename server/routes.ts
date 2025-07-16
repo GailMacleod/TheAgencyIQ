@@ -9875,8 +9875,10 @@ Continue building your Value Proposition Canvas systematically.`;
       res.redirect('/platform-connections?success=twitter_connected');
     }
   );
-  // YouTube OAuth
-  app.get('/auth/youtube', requireAuth, passport.authenticate('youtube', { scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload'] }));
+  // YouTube OAuth - TEMPORARILY DISABLED DUE TO PATH-TO-REGEXP ERROR
+  // app.get('/auth/youtube', requireAuth, passport.authenticate('youtube', { 
+  //   scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload'] 
+  // }));
   
   app.get('/auth/youtube/callback',
     passport.authenticate('youtube', { failureRedirect: '/platform-connections?error=youtube_failed' }),
