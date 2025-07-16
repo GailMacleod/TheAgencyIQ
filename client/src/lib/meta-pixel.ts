@@ -211,8 +211,17 @@ export class MetaPixelTracker {
 
 // Auto-initialize when module loads
 if (typeof window !== 'undefined') {
-  // Wait for pixel to load before initializing
-  setTimeout(() => {
-    MetaPixelTracker.initialize();
-  }, 1000);
+  // Wait for pixel to load before initializing (wrapped in useEffect equivalent)
+  let isInitialized = false;
+  const initializeOnce = () => {
+    if (!isInitialized) {
+      isInitialized = true;
+      MetaPixelTracker.initialize();
+    }
+  };
+  
+  // Use requestAnimationFrame for better timing
+  requestAnimationFrame(() => {
+    setTimeout(initializeOnce, 1000);
+  });
 }

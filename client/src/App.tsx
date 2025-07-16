@@ -130,7 +130,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
 
-  // Initialize Google Analytics when app loads
+  // Initialize Google Analytics when app loads (prevent multiple inits)
   useEffect(() => {
     // Verify required environment variable is present
     if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
@@ -138,6 +138,7 @@ function App() {
     } else {
       initGA();
     }
+  }, []); // Empty dependency array prevents multiple initializations
   }, []);
 
   // Establish session on app startup to prevent 401 errors - ENHANCED FOR USER ID 2

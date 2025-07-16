@@ -23,9 +23,21 @@ app.get('/favicon.ico', (req, res) => {
   }
 });
 
-// Serve static files from public directory
-app.use('/public', express.static(path.join(__dirname, 'public')));
-app.use('/', express.static(path.join(__dirname, 'public')));
+// Serve static files with proper MIME types
+app.use('/public', express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.js') || path.endsWith('.jsx') || path.endsWith('.tsx')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
+app.use('/', express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.js') || path.endsWith('.jsx') || path.endsWith('.tsx')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
 
 // Basic health check
 app.get('/api/health', (req, res) => {
@@ -65,6 +77,9 @@ app.use(express.static(path.join(__dirname, 'dist'), {
     if (path.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache');
     }
+    if (path.endsWith('.js') || path.endsWith('.jsx') || path.endsWith('.tsx')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
   }
 }));
 
@@ -76,9 +91,13 @@ app.get('*', (req, res) => {
   }
   
   try {
-    // First try to serve from dist directory (Vite build)
+    // First try to serve from dist/public directory (Vite build output)
+    const distPublicIndex = path.join(__dirname, 'dist', 'public', 'index.html');
     const distIndex = path.join(__dirname, 'dist', 'index.html');
-    if (require('fs').existsSync(distIndex)) {
+    
+    if (require('fs').existsSync(distPublicIndex)) {
+      res.sendFile(distPublicIndex);
+    } else if (require('fs').existsSync(distIndex)) {
       res.sendFile(distIndex);
     } else {
       // Fallback to client directory
@@ -124,8 +143,9 @@ app.get('*', (req, res) => {
                 button:hover { background: #2640e8; }
               </style>
               <script>
-                // Meta Pixel conditional initialization
-                if (!window.fbq) {
+                // Meta Pixel conditional initialization with useEffect-like behavior
+                if (!window.fbq && !window.fbPixelInitialized) {
+                  window.fbPixelInitialized = true;
                   !function(f,b,e,v,n,t,s)
                   {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
                   n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -137,6 +157,19 @@ app.get('*', (req, res) => {
                   fbq('init', '1409057863445071');
                   fbq('track', 'PageView');
                   console.log('Meta Pixel initialized (single firing)');
+                }
+                
+                // Disable Replit telemetry to prevent 400 Bad Request errors
+                if (window.fetch) {
+                  const originalFetch = window.fetch;
+                  window.fetch = function(...args) {
+                    const url = args[0];
+                    if (typeof url === 'string' && url.includes('sp.replit.com/v1/t')) {
+                      console.log('Blocked Replit telemetry request to:', url);
+                      return Promise.resolve(new Response('', { status: 204 }));
+                    }
+                    return originalFetch.apply(this, args);
+                  };
                 }
               </script>
             </head>

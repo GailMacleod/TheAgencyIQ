@@ -51,7 +51,7 @@ export async function apiRequest(
     clearTimeout(timeoutId);
     
   } catch (error: any) {
-    // Enhanced error handling for AbortController issues
+    // Enhanced error handling for AbortController and WebSocket issues
     if (error.name === 'AbortError') {
       const reason = error.message || 'Request was aborted';
       console.error('Request timeout for:', method, url);
@@ -63,6 +63,10 @@ export async function apiRequest(
       return null;
     } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
       console.error('Network error for:', method, url);
+      // Return null instead of throwing to allow app to continue
+      return null;
+    } else if (error.message?.includes('WebSocket') || error.message?.includes('CLOSING') || error.message?.includes('CLOSED')) {
+      console.warn('WebSocket connection issue for:', method, url, '- continuing gracefully');
       // Return null instead of throwing to allow app to continue
       return null;
     }
