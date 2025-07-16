@@ -23,8 +23,7 @@ class SessionManager {
         method: 'GET',
         credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Content-Type': 'application/json'
         }
       });
       
@@ -43,11 +42,10 @@ class SessionManager {
           
           return this.sessionInfo;
         }
-      } else {
-        console.log('❌ Session check failed with status:', response.status);
       }
     } catch (error) {
-      console.log('❌ Session verification error:', error);
+      console.log('⚠️ Session verification failed - NO FALLBACK LOGIC');
+      throw error; // Prevent re-establishment on failure
     }
 
     this.sessionPromise = this.doEstablishSession();
@@ -99,20 +97,13 @@ class SessionManager {
         console.log('User ID:', data.user?.id);
         console.log('Session ID:', sessionId);
         
-        // Store user info and session ID for localStorage fallback
+        // Store user info
         if (data.user) {
           sessionStorage.setItem('currentUser', JSON.stringify({
             id: data.user.id,
             email: data.user.email,
             phone: data.user.phone
           }));
-        }
-        
-        // Store session ID for localStorage fallback
-        if (sessionId) {
-          sessionStorage.setItem('sessionId', sessionId);
-          localStorage.setItem('sessionId', sessionId);
-          console.log('💾 Session ID stored in localStorage for fallback');
         }
         
         // Add a delay to ensure cookie is set by the browser before returning

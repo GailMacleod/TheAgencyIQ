@@ -8,7 +8,6 @@ import crypto from 'crypto';
 import OAuth from 'oauth-1.0a';
 import axios from 'axios';
 import { PlatformPostManager } from './platform-post-manager';
-import { OAuthTokenRefreshService } from './services/oauth-token-refresh';
 
 export interface DirectPublishResult {
   success: boolean;
@@ -121,45 +120,21 @@ export class DirectPublisher {
    */
   static async validateAndRefreshToken(connection: any): Promise<{valid: boolean, connection?: any, error?: string}> {
     try {
-      // Use the new OAuth token refresh service
-      const validation = await OAuthTokenRefreshService.validateToken(connection.userId, connection.platform);
-      if (!validation.valid) {
-        console.log(`Token invalid for ${connection.platform}, attempting refresh...`);
-        const refreshResult = await OAuthTokenRefreshService.refreshPlatformToken(connection.userId, connection.platform);
+      // Check if token is expired
+      if (connection.expiresAt && new Date() > new Date(connection.expiresAt)) {
+        console.log(`Token expired for ${connection.platform}, attempting refresh`);
         
+        // Try to refresh token
+        const refreshResult = await this.refreshToken(connection);
         if (refreshResult.success) {
-          console.log(`✅ Token refreshed for ${connection.platform}: ${refreshResult.method}`);
-          return {
-            valid: true,
-            connection: {
-              ...connection,
-              accessToken: refreshResult.accessToken,
-              refreshToken: refreshResult.refreshToken,
-              expiresAt: refreshResult.expiresAt
-            }
-          };
+          console.log(`✅ Token refreshed successfully for ${connection.platform}`);
+          return { valid: true, connection: { ...connection, ...refreshResult } };
         } else {
-          // Try fallback authentication
-          const fallbackAuth = await OAuthTokenRefreshService.getFallbackAuthentication(connection.platform);
-          if (fallbackAuth.success) {
-            console.log(`✅ Using fallback authentication for ${connection.platform}: ${fallbackAuth.method}`);
-            return {
-              valid: true,
-              connection: {
-                ...connection,
-                accessToken: fallbackAuth.accessToken,
-                refreshToken: fallbackAuth.refreshToken
-              }
-            };
-          }
-          
-          return {
-            valid: false,
-            error: `Token refresh and fallback failed: ${refreshResult.error}`
-          };
+          return { valid: false, error: 'Token refresh failed' };
         }
       }
-      
+
+      // Token is still valid or no expiry set
       return { valid: true, connection };
     } catch (error) {
       return { valid: false, error: error instanceof Error ? error.message : 'Unknown error' };

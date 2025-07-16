@@ -62,15 +62,7 @@ class ApiClient {
   }
 
   async get(url: string, options: RequestInit = {}): Promise<Response> {
-    return this.makeRequest(url, { 
-      ...options, 
-      method: 'GET', 
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      }
-    });
+    return this.makeRequest(url, { ...options, method: 'GET', credentials: 'include' });
   }
 
   async post(url: string, data?: any, options: RequestInit = {}): Promise<Response> {
@@ -79,10 +71,6 @@ class ApiClient {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      }
     });
   }
 

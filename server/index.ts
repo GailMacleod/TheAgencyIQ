@@ -1,6 +1,6 @@
 import express from 'express';
 import session from 'express-session';
-import connectSqlite3 from 'connect-sqlite3';
+import connectPg from 'connect-pg-simple';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
@@ -8,7 +8,6 @@ import path from 'path';
 import crypto from 'crypto';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
 import { memoryManager } from './utils/memory-manager';
-import { sessionUserMap } from './middleware/authGuard';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -28,38 +27,21 @@ async function startServer() {
   
   const app = express();
 
-  app.set('trust proxy', 1); // Trust Replit proxy
+  app.set('trust proxy', 0);
   
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   
-  app.use(cookieParser('theagencyiq-secure-session-secret-2025'));
+  app.use(cookieParser('secret'));
   
-  // CORS configuration - MUST be before routes - Enhanced for SameSite=None;Secure
+  // CORS configuration - MUST be before routes
   app.use(cors({
-    origin: function(origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      // Allow all Replit domains and production domain
-      const allowed = [
-        'https://app.theagencyiq.ai',
-        'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'
-      ];
-      
-      if (allowed.includes(origin) || origin.includes('replit.dev')) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Allow all origins for development
-      }
-    },
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie', 'Set-Cookie'],
-    exposedHeaders: ['Set-Cookie', 'Access-Control-Allow-Credentials'],
-    optionsSuccessStatus: 200, // Some legacy browsers choke on 204
-    preflightContinue: false
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
   }));
   
   // Filter out Replit-specific tracking in production
@@ -71,6 +53,32 @@ async function startServer() {
     }
     
     res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+    
+    // Production-ready CSP with frame-ancestors for embedding and Replit beacon support
+    res.header('Content-Security-Policy', 
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com https://replit.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; " +
+      "img-src 'self' data: https: blob:; " +
+      "connect-src 'self' https: wss: ws:; " +
+      "frame-src 'self' https://www.facebook.com https://accounts.google.com; " +
+      "frame-ancestors 'self' https://app.theagencyiq.ai https://www.facebook.com;"
+    );
+    
+    // Clean Permissions-Policy - only recognized features with payment request support
+    res.header('Permissions-Policy', 
+      'camera=(), ' +
+      'microphone=(), ' +
+      'geolocation=(), ' +
+      'payment=self, ' +
+      'usb=(), ' +
+      'accelerometer=(), ' +
+      'gyroscope=(), ' +
+      'magnetometer=(), ' +
+      'fullscreen=self'
+    );
+    
     res.header('X-Frame-Options', 'SAMEORIGIN');
     res.header('X-Content-Type-Options', 'nosniff');
     res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -137,16 +145,23 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
+  app.set('trust proxy', 0);
+  app.use(cookieParser('secret'));
+
   // Device-agnostic session configuration for mobile-to-desktop continuity
-  // Configure SQLite3 session store for persistent sessions
+  // Configure PostgreSQL session store
   const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
-  const SQLiteStore = connectSqlite3(session);
-  const sessionStore = new SQLiteStore({
-    db: 'sessions.db',
-    table: 'sessions',
-    dir: './data',
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
     ttl: sessionTtl,
-    concurrentDB: true
+    tableName: "sessions",
+    schemaName: "public",
+    pruneSessionInterval: 60 * 15, // 15 minutes
+    errorLog: (error) => {
+      console.error('Session store error:', error);
+    }
   });
   
   // Add debugging to session store to see if it's being called
@@ -169,20 +184,19 @@ async function startServer() {
   console.log('✅ Session store initialized successfully');
 
   app.use(session({
-    secret: 'theagencyiq-secure-session-secret-2025',
+    secret: 'secret',
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
     name: 'theagencyiq.session',
     cookie: { 
-      secure: true,  // Secure cookies for HTTPS
-      sameSite: 'none',  // Required for cross-origin requests
-      path: '/',
-      httpOnly: true,  // Prevent XSS attacks
-      maxAge: sessionTtl
+      secure: false,
+      sameSite: 'lax',
+      maxAge: sessionTtl,
+      httpOnly: false,
+      path: '/'
     },
     rolling: true,
-    proxy: true,  // Trust the proxy for secure cookies
     genid: () => {
       return crypto.randomBytes(16).toString('hex');
     }
@@ -190,10 +204,6 @@ async function startServer() {
 
   // Add session consistency middleware to fix session ID mismatch
   app.use((req, res, next) => {
-    // Session debugging
-    console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
-    console.log(`📋 Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
-    
     // Extract session ID from cookie
     const cookieHeader = req.headers.cookie || '';
     const sessionMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
@@ -201,7 +211,7 @@ async function startServer() {
     if (sessionMatch) {
       let cookieSessionId = sessionMatch[1];
       
-      // Handle signed cookies properly
+      // Handle signed cookies
       if (cookieSessionId.startsWith('s%3A')) {
         const decoded = decodeURIComponent(cookieSessionId);
         cookieSessionId = decoded.substring(4).split('.')[0];
@@ -209,173 +219,68 @@ async function startServer() {
       
       console.log(`🔧 SessionConsistency: Cookie ID ${cookieSessionId}, Express ID ${req.sessionID}`);
       
-      // If session IDs don't match, try to restore from store
+      // Force session ID consistency by overriding express-session ID
       if (cookieSessionId !== req.sessionID) {
-        // Check if we have session data for the cookie session ID
-        const sessionStore = req.sessionStore;
-        sessionStore.get(cookieSessionId, (err: any, sessionData: any) => {
+        Object.defineProperty(req, 'sessionID', {
+          value: cookieSessionId,
+          writable: false,
+          enumerable: true,
+          configurable: true
+        });
+        
+        // Force session middleware to reload from store with correct ID
+        sessionStore.get(cookieSessionId, (err, sessionData) => {
           if (!err && sessionData) {
-            console.log(`🔄 Restoring session from store: ${cookieSessionId}`);
-            
-            // Override the session ID
-            Object.defineProperty(req, 'sessionID', {
-              value: cookieSessionId,
-              writable: false,
-              enumerable: true,
-              configurable: true
-            });
-            
-            // Restore session data
-            req.session = sessionData;
-            req.session.id = cookieSessionId;
-            
-            console.log(`✅ Session restored for User ID: ${req.session.userId}`);
+            // Manually restore session data to current session
+            req.session.userId = sessionData.userId;
+            req.session.userEmail = sessionData.userEmail;
+            req.session.subscriptionPlan = sessionData.subscriptionPlan;
+            req.session.subscriptionActive = sessionData.subscriptionActive;
+            console.log(`✅ Session restored: ${cookieSessionId} -> User ${sessionData.userId}`);
           } else {
-            console.log(`❌ Failed to restore session: ${cookieSessionId}`);
-            // Create new session with original ID
-            req.session.regenerate((err: any) => {
-              if (err) {
-                console.error('Session regeneration failed:', err);
-              } else {
-                console.log(`🆕 New session initialized: ${req.sessionID}`);
-              }
-            });
+            console.log(`🆕 New session initialized: ${cookieSessionId}`);
           }
           next();
         });
-        return;
+        return; // Wait for async callback
       }
     }
     
     next();
   });
 
-  // Add session debugging middleware
+
+
+
+
+  // Enhanced CSP for Facebook compliance, Google services, video content, and security
   app.use((req, res, next) => {
-    // Force session save on every request to ensure persistence
-    const originalSend = res.send;
-    const originalJson = res.json;
-    const originalEnd = res.end;
+    res.setHeader('Content-Security-Policy', [
+      "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com",
+      "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://api.replicate.com https://replicate.delivery",
+      "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
+      "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net https://www.google-analytics.com https://www.google.com",
+      "media-src 'self' https://commondatastorage.googleapis.com https://*.googleapis.com https://*.google.com https://replicate.delivery https://*.replicate.delivery https://seedance.delivery https://*.seedance.delivery data: blob:",
+      "frame-src 'self' https://connect.facebook.net https://*.facebook.com https://www.google.com",
+      "frame-ancestors 'self' https://www.google.com"
+    ].join('; '));
     
-    res.send = function(data) {
-      if (req.session) {
-        req.session.save((err: any) => {
-          if (err) {
-            console.error('Session save error:', err);
-          }
-        });
-      }
-      return originalSend.call(this, data);
-    };
-    
-    res.json = function(data) {
-      if (req.session) {
-        req.session.save((err: any) => {
-          if (err) {
-            console.error('Session save error:', err);
-          }
-        });
-      }
-      return originalJson.call(this, data);
-    };
-    
-    res.end = function(data?) {
-      if (req.session) {
-        req.session.save((err: any) => {
-          if (err) {
-            console.error('Session save error:', err);
-          }
-        });
-      }
-      return originalEnd.call(this, data);
-    };
-    
-    next();
-  });
-
-  // Import sessionUserMap from authGuard
-  const { sessionUserMap } = await import('./middleware/authGuard.js');
-  
-  // Add session recovery middleware
-  app.use((req, res, next) => {
-    if (!req.session?.userId && req.sessionID) {
-      // Check if we have a mapping for this session ID
-      if (sessionUserMap.has(req.sessionID)) {
-        const userId = sessionUserMap.get(req.sessionID);
-        req.session.userId = userId;
-        console.log(`🔄 Session recovery: User ${userId} for session ${req.sessionID}`);
-      }
-    }
-    
-    next();
-  });
-
-  // Add manifest.json and static file handling to prevent 403 errors
-  app.get('/manifest.json', (req, res) => {
-    res.status(200).json({
-      name: "TheAgencyIQ",
-      short_name: "AgencyIQ",
-      description: "AI-powered social media automation platform",
-      start_url: "/",
-      display: "standalone",
-      background_color: "#ffffff",
-      theme_color: "#3250fa",
-      icons: [
-        {
-          src: "/icon-192x192.png",
-          sizes: "192x192",
-          type: "image/png"
-        },
-        {
-          src: "/icon-512x512.png",
-          sizes: "512x512",
-          type: "image/png"
-        }
-      ]
-    });
-  });
-
-  // Handle favicon requests
-  app.get('/favicon.ico', (req, res) => {
-    res.status(204).send();
-  });
-
-  // Handle other static assets
-  app.get('/icon-*', (req, res) => {
-    res.status(204).send();
-  });
-
-
-
-
-
-  // Enhanced CSP for Facebook compliance, Google services, video content, and security  
-  app.use((req, res, next) => {
-    // Only set CSP if not already set to avoid conflicts
-    if (!res.getHeader('Content-Security-Policy')) {
-      res.setHeader('Content-Security-Policy', [
-        "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com",
-        "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://api.replicate.com https://replicate.delivery",
-        "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
-        "img-src 'self' data: https: blob: https://*.facebook.com https://*.fbcdn.net https://www.google-analytics.com https://www.google.com",
-        "media-src 'self' https://commondatastorage.googleapis.com https://*.googleapis.com https://*.google.com https://replicate.delivery https://*.replicate.delivery https://seedance.delivery https://*.seedance.delivery data: blob:",
-        "frame-src 'self' https://connect.facebook.net https://*.facebook.com https://www.google.com",
-        "frame-ancestors 'self' https://www.google.com"
-      ].join('; '));
-    }
-    
-    // Fixed Permissions Policy - only standard features
-    if (!res.getHeader('Permissions-Policy')) {
-      res.setHeader('Permissions-Policy', [
-        'camera=()',
-        'fullscreen=self',
-        'geolocation=()',
-        'microphone=()',
-        'payment=self'
-      ].join(', '));
-    }
+    // Fixed Permissions Policy - removed unsupported features, fixed sandbox flags
+    res.setHeader('Permissions-Policy', [
+      'camera=()',
+      'fullscreen=self',
+      'geolocation=()',
+      'gyroscope=()',
+      'magnetometer=()',
+      'microphone=()',
+      'payment=()',
+      'picture-in-picture=()',
+      'usb=()',
+      'screen-wake-lock=()',
+      'web-share=()'
+    ].join(', '));
     
     next();
   });

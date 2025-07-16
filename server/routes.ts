@@ -20,7 +20,7 @@ import crypto, { createHash } from "crypto";
 import { passport } from "./oauth-config";
 import axios from "axios";
 import PostPublisher from "./post-publisher";
-// import BreachNotificationService from "./breach-notification"; // Removed for optimization
+import BreachNotificationService from "./breach-notification";
 import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
 import { requireActiveSubscription, establishSession, requireAuth } from './middleware/subscriptionAuth';
 import { requireAuth as authGuard, requireAuthForPayment } from './middleware/authGuard';
@@ -34,7 +34,7 @@ import RollbackAPI from './rollback-api';
 import { OAuthRefreshService } from './services/OAuthRefreshService';
 import { AIContentOptimizer } from './services/AIContentOptimizer';
 import { AnalyticsEngine } from './services/AnalyticsEngine';
-// import { DataCleanupService } from './services/DataCleanupService'; // Removed for optimization
+import { DataCleanupService } from './services/DataCleanupService';
 import { linkedinTokenValidator } from './linkedin-token-validator';
 import { DirectPublishService } from './services/DirectPublishService';
 import { UnifiedOAuthService } from './services/UnifiedOAuthService';
@@ -123,61 +123,31 @@ function addSystemHealthEndpoints(app: Express) {
           requiresLogin: true
         });
       }
-
-      // Set session data
+      
+      // Set session userId
       req.session.userId = user.id;
-      req.session.userEmail = user.email;
-      req.session.subscriptionPlan = user.subscriptionPlan || user.subscription_plan || 'professional';
-      req.session.subscriptionActive = user.subscriptionActive || user.subscription_active || true;
-
-      // Save session and return response
-      req.session.save((err: any) => {
-        if (err) {
-          console.error('Session save error:', err);
-          return res.status(500).json({ error: 'Session save failed' });
-        }
-
-        // Store in session mapping for backup
-        sessionUserMap.set(req.sessionID, user.id);
-        
-        console.log(`✅ Session established: ${user.email} -> Session ID: ${req.sessionID}`);
-        
-        // Set proper cookie headers for cross-origin requests with SameSite=None;Secure
-        res.cookie('theagencyiq.session', req.sessionID, {
-          signed: true,
-          secure: true,
-          sameSite: 'none',
-          path: '/',
-          httpOnly: false,
-          maxAge: 86400000
+      
+      req.session.save(() => {
+        res.cookie('theagencyiq.session', req.sessionID, { 
+          secure: false, 
+          sameSite: 'lax', 
+          path: '/', 
+          httpOnly: false 
         });
         
-        // Also set backup session cookie
-        res.cookie('aiq_backup_session', req.sessionID, {
-          signed: true,
-          secure: true,
-          sameSite: 'none',
-          path: '/',
-          httpOnly: false,
-          maxAge: 86400000
-        });
-        
-        res.json({
+        res.json({ 
           sessionEstablished: true,
           user: {
             id: user.id,
             email: user.email,
-            subscriptionPlan: user.subscriptionPlan || user.subscription_plan || 'professional'
+            subscriptionPlan: user.subscriptionPlan
           },
           sessionId: req.sessionID
         });
       });
     } catch (error) {
       console.error('Session establishment error:', error);
-      res.status(500).json({ 
-        error: 'Session establishment failed',
-        details: error.message
-      });
+      res.status(500).json({ error: error.message });
     }
   });
 
@@ -939,82 +909,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('LinkedIn token refresh error:', error);
       res.status(500).json({ error: 'Failed to refresh LinkedIn token' });
-    }
-  });
-
-  // OAuth token validation endpoint
-  app.post('/api/oauth/validate-token', async (req, res) => {
-    try {
-      const { userId, platform } = req.body;
-      const { OAuthTokenRefreshService } = await import('./services/oauth-token-refresh');
-      
-      const result = await OAuthTokenRefreshService.validateToken(userId, platform);
-      res.json(result);
-    } catch (error) {
-      console.error('Token validation error:', error);
-      res.status(500).json({ valid: false, error: error.message });
-    }
-  });
-
-  // OAuth token refresh endpoint
-  app.post('/api/oauth/refresh-token', async (req, res) => {
-    try {
-      const { userId, platform } = req.body;
-      const { OAuthTokenRefreshService } = await import('./services/oauth-token-refresh');
-      
-      const result = await OAuthTokenRefreshService.refreshPlatformToken(userId, platform);
-      res.json(result);
-    } catch (error) {
-      console.error('Token refresh error:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  // Real API publishing with token refresh
-  app.post('/api/publish-with-token-refresh', async (req, res) => {
-    try {
-      const { userId, platform, content } = req.body;
-      const { OAuthTokenRefreshService } = await import('./services/oauth-token-refresh');
-      const { DirectPublisher } = await import('./direct-publisher');
-      
-      // Validate and refresh token first
-      const validation = await OAuthTokenRefreshService.validateToken(userId, platform);
-      if (!validation.valid) {
-        const refreshResult = await OAuthTokenRefreshService.refreshPlatformToken(userId, platform);
-        if (!refreshResult.success) {
-          const fallbackAuth = await OAuthTokenRefreshService.getFallbackAuthentication(platform);
-          if (!fallbackAuth.success) {
-            return res.json({ success: false, error: 'Token validation and refresh failed' });
-          }
-        }
-      }
-      
-      // Get updated connection
-      const connection = await storage.getPlatformConnection(userId, platform);
-      if (!connection) {
-        return res.json({ success: false, error: 'No platform connection found' });
-      }
-      
-      // Publish with refreshed token
-      const publishResult = await DirectPublisher.publishWithReliability(platform, content, connection);
-      res.json(publishResult);
-    } catch (error) {
-      console.error('Publishing with token refresh error:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  // Quota status endpoint
-  app.get('/api/quota-status/:userId', async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const { PostQuotaService } = await import('./PostQuotaService');
-      
-      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
-      res.json(quotaStatus);
-    } catch (error) {
-      console.error('Quota status error:', error);
-      res.status(500).json({ error: error.message });
     }
   });
 
@@ -2364,16 +2258,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const existingUser = await storage.getUser(req.session.userId);
         if (existingUser) {
           console.log(`Session already established for user ${existingUser.email}`);
-          
-          // Import and update session mapping for consistency
-          const { setSessionMapping } = await import('./middleware/authGuard.js');
-          setSessionMapping(req.sessionID, existingUser.id);
-          
           return res.json({ 
             success: true, 
             user: existingUser,
             sessionEstablished: true,
-            sessionId: req.sessionID,
             message: `Session active for ${existingUser.email}`
           });
         }
@@ -2390,43 +2278,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const user = await storage.getUser(userId);
         if (user) {
           req.session.userId = user.id;
-          req.session.userEmail = user.email;
-          req.session.subscriptionPlan = user.subscriptionPlan;
-          req.session.subscriptionActive = user.subscriptionActive;
+          req.session.save();
+          res.cookie('theagencyiq.session', req.sessionID, {secure: false, sameSite: 'lax'});
           
-          // Store session mapping for direct authentication
-          sessionUserMap.set(req.sessionID, user.id);
+          console.log(`Session established for user ${user.email}`);
           
-          // Import and update session mapping for consistency
-          const { setSessionMapping } = await import('./middleware/authGuard.js');
-          setSessionMapping(req.sessionID, user.id);
-          
-          // Enhanced session save with callback to ensure persistence
-          req.session.save((err: any) => {
-            if (err) {
-              console.error('Session save error:', err);
-              return res.status(500).json({ error: 'Session save failed' });
-            }
-            
-            // Force Set-Cookie header with explicit cookie setting
-            res.cookie('theagencyiq.session', `s:${req.sessionID}`, {
-              secure: true,
-              httpOnly: true,
-              sameSite: 'none',
-              path: '/',
-              maxAge: 24 * 60 * 60 * 1000, // 24 hours
-              signed: true
-            });
-            
-            console.log(`✅ Session established: ${user.email} -> Session ID: ${req.sessionID}`);
-            
-            return res.json({ 
-              success: true, 
-              user,
-              sessionId: req.sessionID,
-              sessionEstablished: true,
-              message: `Session established for ${user.email}`
-            });
+          return res.json({ 
+            success: true, 
+            user,
+            sessionId: req.sessionID,
+            sessionEstablished: true,
+            message: `Session established for ${user.email}`
           });
         }
       } catch (error) {
@@ -7987,10 +7849,34 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Security breach reporting endpoint - DISABLED for optimization
-  // app.post("/api/security/report-breach", requireAuth, async (req: any, res) => {
-  //   res.status(501).json({ message: "Security breach reporting temporarily disabled for optimization" });
-  // });
+  // Security breach reporting endpoint
+  app.post("/api/security/report-breach", requireAuth, async (req: any, res) => {
+    try {
+      const { incidentType, description, affectedPlatforms = [], severity = 'medium' } = req.body;
+      
+      if (!incidentType || !description) {
+        return res.status(400).json({ message: "Incident type and description are required" });
+      }
+
+      const incidentId = await BreachNotificationService.recordIncident(
+        req.session.userId,
+        incidentType,
+        description,
+        affectedPlatforms,
+        severity
+      );
+
+      res.json({
+        message: "Security incident reported",
+        incidentId,
+        notificationScheduled: "72 hours from detection"
+      });
+
+    } catch (error: any) {
+      console.error('Breach reporting error:', error);
+      res.status(500).json({ message: "Failed to report security incident" });
+    }
+  });
 
   // Get security incidents for admin
   app.get("/api/security/incidents", async (req, res) => {
@@ -8022,20 +7908,77 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Test breach notification endpoint - DISABLED for optimization
-  // app.post("/api/security/test-breach", async (req, res) => {
-  //   res.status(501).json({ message: "Test breach notification temporarily disabled for optimization" });
-  // });
+  // Test breach notification endpoint (for verification)
+  app.post("/api/security/test-breach", async (req, res) => {
+    try {
+      console.log("🧪 TESTING BREACH NOTIFICATION SYSTEM");
+      
+      // Create a test security incident
+      const testIncidentId = await BreachNotificationService.recordIncident(
+        1, // Test user ID
+        'system_vulnerability',
+        'TEST: Security notification system verification - unauthorized access attempt detected',
+        ['facebook', 'instagram'],
+        'high'
+      );
 
-  // Data cleanup status endpoint - DISABLED for optimization
-  // app.get("/api/admin/data-cleanup/status", async (req, res) => {
-  //   res.status(501).json({ message: "Data cleanup status temporarily disabled for optimization" });
-  // });
+      console.log(`✅ Test security incident created: ${testIncidentId}`);
+      console.log("📧 Admin notification should be triggered within 72 hours");
+      
+      res.json({
+        message: "Test security incident created successfully",
+        incidentId: testIncidentId,
+        note: "This is a test to verify the breach notification system is working"
+      });
 
-  // Manual data cleanup trigger - DISABLED for optimization
-  // app.post("/api/admin/data-cleanup/trigger", async (req, res) => {
-  //   res.status(501).json({ message: "Data cleanup trigger temporarily disabled for optimization" });
-  // });
+    } catch (error: any) {
+      console.error('Test breach notification error:', error);
+      res.status(500).json({ message: "Failed to create test security incident" });
+    }
+  });
+
+  // Data cleanup status endpoint
+  app.get("/api/admin/data-cleanup/status", async (req, res) => {
+    try {
+      const { DataCleanupService } = await import("./data-cleanup");
+      const status = DataCleanupService.getCleanupStatus();
+      
+      res.json({
+        status: "scheduled",
+        nextScheduledRun: status.nextRun.toISOString(),
+        retentionPolicies: status.retentionPolicies,
+        description: "Automated data cleanup runs daily at 2 AM"
+      });
+
+    } catch (error: any) {
+      console.error('Data cleanup status error:', error);
+      res.status(500).json({ message: "Failed to fetch data cleanup status" });
+    }
+  });
+
+  // Manual data cleanup trigger (admin only)
+  app.post("/api/admin/data-cleanup/trigger", async (req, res) => {
+    try {
+      const { DataCleanupService } = await import("./data-cleanup");
+      
+      console.log("🧹 Manual data cleanup triggered by admin");
+      const report = await DataCleanupService.performScheduledCleanup();
+      
+      res.json({
+        message: "Data cleanup completed successfully",
+        report: {
+          timestamp: report.timestamp,
+          deletedItems: report.deletedItems,
+          retainedItems: report.retainedItems,
+          errors: report.errors
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Manual data cleanup error:', error);
+      res.status(500).json({ message: "Failed to perform data cleanup" });
+    }
+  });
 
   // Security dashboard endpoint for real-time monitoring
   app.get("/api/security/dashboard", async (req, res) => {

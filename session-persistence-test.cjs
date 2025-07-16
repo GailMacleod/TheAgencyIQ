@@ -1,226 +1,302 @@
-#!/usr/bin/env node
 /**
- * Comprehensive Session Persistence Test
- * Tests all implemented fixes for 100% success rate
+ * SESSION PERSISTENCE TEST
+ * Simulates multiple logins to test session consistency and User ID 2 maintenance
  */
 
 const axios = require('axios');
-const tough = require('tough-cookie');
 
 const BASE_URL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+const TARGET_USER = {
+  id: 2,
+  email: 'gailm@macleodglba.com.au'
+};
 
-// Create cookie jar for persistent session
-const cookieJar = new tough.CookieJar();
-const axiosInstance = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true,
-  jar: cookieJar,
-  headers: {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
-    'Accept': 'application/json',
-    'Content-Type': 'application/json'
+class SessionPersistenceTest {
+  constructor() {
+    this.testResults = [];
+    this.sessionCount = 0;
   }
-});
 
-// Add axios interceptor to handle cookies
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const cookies = cookieJar.getCookieStringSync(BASE_URL);
-    if (cookies) {
-      config.headers['Cookie'] = cookies;
-      console.log('🍪 Request cookies:', cookies.substring(0, 100) + '...');
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-axiosInstance.interceptors.response.use(
-  (response) => {
-    const setCookieHeader = response.headers['set-cookie'];
-    if (setCookieHeader) {
-      console.log('🍪 Set-Cookie received:', setCookieHeader.join('; '));
-      setCookieHeader.forEach(cookie => {
-        cookieJar.setCookieSync(cookie, BASE_URL);
-      });
-    }
-    return response;
-  },
-  (error) => {
-    console.error('❌ Request failed:', error.response?.status, error.response?.data);
-    return Promise.reject(error);
-  }
-);
-
-async function runComprehensiveTest() {
-  console.log('🔍 COMPREHENSIVE SESSION PERSISTENCE TEST');
-  console.log('============================================================');
-  
-  const results = {
-    sessionEstablishment: false,
-    sessionPersistence: false,
-    authGuardWorking: false,
-    cookieTransmission: false,
-    apiAuthentication: false,
-    overallSuccess: false
-  };
-  
-  let sessionId = null;
-  
-  try {
-    // TEST 1: Session Establishment
-    console.log('\n📱 TEST 1: Session Establishment');
-    console.log('------------------------------------------------------------');
-    
-    const sessionResponse = await axiosInstance.post('/api/establish-session', {
-      email: 'gailm@macleodglba.com.au'
-    });
-    
-    if (sessionResponse.status === 200 && sessionResponse.data.sessionEstablished) {
-      console.log('✅ Session establishment: SUCCESS');
-      console.log('📋 Session ID:', sessionResponse.data.sessionId);
-      console.log('👤 User:', sessionResponse.data.user.email);
-      results.sessionEstablishment = true;
-      sessionId = sessionResponse.data.sessionId;
-    } else {
-      console.log('❌ Session establishment: FAILED');
-      throw new Error('Session establishment failed');
-    }
-    
-    // TEST 2: Cookie Transmission
-    console.log('\n🍪 TEST 2: Cookie Transmission');
-    console.log('------------------------------------------------------------');
-    
-    const cookies = cookieJar.getCookieStringSync(BASE_URL);
-    if (cookies && cookies.includes('theagencyiq.session')) {
-      console.log('✅ Cookie transmission: SUCCESS');
-      console.log('🍪 Session cookie found:', cookies.substring(0, 100) + '...');
-      results.cookieTransmission = true;
-    } else {
-      console.log('❌ Cookie transmission: FAILED');
-      console.log('🍪 Available cookies:', cookies || 'NONE');
-    }
-    
-    // TEST 3: Session Persistence
-    console.log('\n🔐 TEST 3: Session Persistence');
-    console.log('------------------------------------------------------------');
-    
-    // Wait a moment to simulate browser behavior
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const userResponse = await axiosInstance.get('/api/user');
-    
-    if (userResponse.status === 200 && userResponse.data.email) {
-      console.log('✅ Session persistence: SUCCESS');
-      console.log('👤 Authenticated user:', userResponse.data.email);
-      console.log('🆔 User ID:', userResponse.data.id);
-      results.sessionPersistence = true;
-      results.authGuardWorking = true;
-      results.apiAuthentication = true;
-    } else {
-      console.log('❌ Session persistence: FAILED');
-      console.log('📋 Response status:', userResponse.status);
-      console.log('📋 Response data:', userResponse.data);
-    }
-    
-    // TEST 4: Multiple API Calls
-    console.log('\n🔄 TEST 4: Multiple API Calls');
-    console.log('------------------------------------------------------------');
+  async run() {
+    console.log('🔐 Starting session persistence test...');
+    console.log(`📋 Target: User ID ${TARGET_USER.id} (${TARGET_USER.email})`);
     
     try {
-      const endpoints = ['/api/user-status', '/api/platform-connections', '/api/posts'];
-      let apiSuccesses = 0;
+      // Test 1: Initial session establishment
+      await this.testSessionEstablishment();
       
-      for (const endpoint of endpoints) {
+      // Test 2: Multiple login simulation
+      await this.testMultipleLogins();
+      
+      // Test 3: Cookie reliability across requests
+      await this.testCookieReliability();
+      
+      // Test 4: Session consistency validation
+      await this.testSessionConsistency();
+      
+      // Generate report
+      this.generateReport();
+      
+    } catch (error) {
+      console.error('❌ Session persistence test failed:', error);
+    }
+  }
+
+  async testSessionEstablishment() {
+    console.log('\n📝 Test 1: Session establishment...');
+    
+    try {
+      const response = await axios.post(`${BASE_URL}/api/establish-session`, {
+        email: TARGET_USER.email,
+        userId: TARGET_USER.id
+      });
+      
+      const sessionCookies = response.headers['set-cookie'];
+      const sessionData = response.data;
+      
+      this.recordResult('session_establishment', {
+        status: response.status,
+        sessionId: sessionData.sessionId,
+        userId: sessionData.user?.id,
+        email: sessionData.user?.email,
+        cookiesSet: !!sessionCookies,
+        success: response.status === 200 && sessionData.user?.id === TARGET_USER.id
+      });
+      
+      if (sessionData.user?.id === TARGET_USER.id) {
+        console.log(`✅ Session established for User ID ${sessionData.user.id}`);
+      } else {
+        console.log(`❌ Session established for wrong user: ${sessionData.user?.id}`);
+      }
+      
+    } catch (error) {
+      this.recordResult('session_establishment', {
+        error: error.message,
+        success: false
+      });
+    }
+  }
+
+  async testMultipleLogins() {
+    console.log('\n🔄 Test 2: Multiple login simulation...');
+    
+    const loginAttempts = 5;
+    const userIds = [];
+    
+    for (let i = 0; i < loginAttempts; i++) {
+      try {
+        const response = await axios.post(`${BASE_URL}/api/establish-session`, {
+          email: TARGET_USER.email,
+          userId: TARGET_USER.id
+        });
+        
+        const userId = response.data.user?.id;
+        userIds.push(userId);
+        
+        console.log(`  Login ${i + 1}: User ID ${userId}`);
+        
+        // Brief delay between attempts
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+      } catch (error) {
+        console.log(`  Login ${i + 1}: Error - ${error.message}`);
+        userIds.push(null);
+      }
+    }
+    
+    const consistentUserId = userIds.every(id => id === TARGET_USER.id);
+    
+    this.recordResult('multiple_logins', {
+      attempts: loginAttempts,
+      userIds,
+      consistentUserId,
+      allCorrect: consistentUserId,
+      success: consistentUserId
+    });
+    
+    if (consistentUserId) {
+      console.log(`✅ All ${loginAttempts} logins returned User ID ${TARGET_USER.id}`);
+    } else {
+      console.log(`❌ Inconsistent user IDs detected: ${JSON.stringify(userIds)}`);
+    }
+  }
+
+  async testCookieReliability() {
+    console.log('\n🍪 Test 3: Cookie reliability...');
+    
+    try {
+      // Establish session and get cookies
+      const sessionResponse = await axios.post(`${BASE_URL}/api/establish-session`, {
+        email: TARGET_USER.email,
+        userId: TARGET_USER.id
+      });
+      
+      const cookies = sessionResponse.headers['set-cookie'];
+      const headers = cookies ? { Cookie: cookies.join('; ') } : {};
+      
+      // Test cookie persistence across multiple requests
+      const requests = [
+        { endpoint: '/api/user', name: 'user_data' },
+        { endpoint: '/api/user-status', name: 'user_status' },
+        { endpoint: '/api/auth/session', name: 'session_check' }
+      ];
+      
+      const results = {};
+      
+      for (const request of requests) {
         try {
-          const response = await axiosInstance.get(endpoint);
-          if (response.status === 200) {
-            apiSuccesses++;
-            console.log(`✅ ${endpoint}: SUCCESS`);
-          } else {
-            console.log(`❌ ${endpoint}: FAILED (${response.status})`);
-          }
+          const response = await axios.get(`${BASE_URL}${request.endpoint}`, { headers });
+          results[request.name] = {
+            status: response.status,
+            userId: response.data.id || response.data.userId || response.data.user?.id,
+            success: response.status === 200
+          };
         } catch (error) {
-          console.log(`❌ ${endpoint}: FAILED (${error.response?.status || 'ERROR'})`);
+          results[request.name] = {
+            error: error.message,
+            success: false
+          };
         }
       }
       
-      if (apiSuccesses === endpoints.length) {
-        console.log('✅ All API calls: SUCCESS');
-        results.apiAuthentication = true;
+      const allSuccessful = Object.values(results).every(result => result.success);
+      const consistentUserIds = Object.values(results)
+        .filter(result => result.userId)
+        .every(result => result.userId === TARGET_USER.id);
+      
+      this.recordResult('cookie_reliability', {
+        cookiesProvided: !!cookies,
+        requestResults: results,
+        allSuccessful,
+        consistentUserIds,
+        success: allSuccessful && consistentUserIds
+      });
+      
+      if (allSuccessful && consistentUserIds) {
+        console.log('✅ Cookies working reliably across all endpoints');
       } else {
-        console.log(`⚠️ API calls: ${apiSuccesses}/${endpoints.length} successful`);
+        console.log('❌ Cookie reliability issues detected');
       }
+      
     } catch (error) {
-      console.log('❌ Multiple API calls: FAILED');
-      console.error('Error:', error.message);
+      this.recordResult('cookie_reliability', {
+        error: error.message,
+        success: false
+      });
     }
+  }
+
+  async testSessionConsistency() {
+    console.log('\n🔍 Test 4: Session consistency validation...');
     
-    // TEST 5: Session Restoration
-    console.log('\n🔄 TEST 5: Session Restoration');
-    console.log('------------------------------------------------------------');
+    try {
+      // Test concurrent session requests
+      const concurrentRequests = 3;
+      const promises = [];
+      
+      for (let i = 0; i < concurrentRequests; i++) {
+        promises.push(
+          axios.post(`${BASE_URL}/api/establish-session`, {
+            email: TARGET_USER.email,
+            userId: TARGET_USER.id
+          })
+        );
+      }
+      
+      const responses = await Promise.all(promises);
+      const userIds = responses.map(response => response.data.user?.id);
+      const sessionIds = responses.map(response => response.data.sessionId);
+      
+      const consistentUserIds = userIds.every(id => id === TARGET_USER.id);
+      const uniqueSessionIds = new Set(sessionIds).size === sessionIds.length;
+      
+      this.recordResult('session_consistency', {
+        concurrentRequests,
+        userIds,
+        sessionIds,
+        consistentUserIds,
+        uniqueSessionIds,
+        success: consistentUserIds && uniqueSessionIds
+      });
+      
+      if (consistentUserIds) {
+        console.log(`✅ Consistent User ID ${TARGET_USER.id} across ${concurrentRequests} concurrent requests`);
+      } else {
+        console.log(`❌ Inconsistent user IDs: ${JSON.stringify(userIds)}`);
+      }
+      
+      if (uniqueSessionIds) {
+        console.log('✅ Unique session IDs generated');
+      } else {
+        console.log('❌ Duplicate session IDs detected');
+      }
+      
+    } catch (error) {
+      this.recordResult('session_consistency', {
+        error: error.message,
+        success: false
+      });
+    }
+  }
+
+  recordResult(testName, result) {
+    this.testResults.push({
+      test: testName,
+      result,
+      timestamp: new Date()
+    });
+  }
+
+  generateReport() {
+    const passedTests = this.testResults.filter(test => test.result.success).length;
+    const totalTests = this.testResults.length;
+    const successRate = (passedTests / totalTests) * 100;
     
-    // Create new axios instance to simulate fresh browser
-    const newAxiosInstance = axios.create({
-      baseURL: BASE_URL,
-      withCredentials: true,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Cookie': cookies // Use the same cookies
+    console.log('\n📊 SESSION PERSISTENCE TEST REPORT');
+    console.log('='.repeat(40));
+    console.log(`📋 Total Tests: ${totalTests}`);
+    console.log(`✅ Passed: ${passedTests}`);
+    console.log(`❌ Failed: ${totalTests - passedTests}`);
+    console.log(`📊 Success Rate: ${successRate.toFixed(2)}%`);
+    console.log(`🎯 Target User: ${TARGET_USER.email} (ID: ${TARGET_USER.id})`);
+    
+    console.log('\n📋 DETAILED RESULTS:');
+    this.testResults.forEach((test, index) => {
+      console.log(`${index + 1}. ${test.test}: ${test.result.success ? '✅ PASS' : '❌ FAIL'}`);
+      if (!test.result.success && test.result.error) {
+        console.log(`   Error: ${test.result.error}`);
       }
     });
     
-    try {
-      const restoredResponse = await newAxiosInstance.get('/api/user');
-      if (restoredResponse.status === 200 && restoredResponse.data.email) {
-        console.log('✅ Session restoration: SUCCESS');
-        console.log('👤 Restored user:', restoredResponse.data.email);
-        results.sessionPersistence = true;
-      } else {
-        console.log('❌ Session restoration: FAILED');
-        console.log('📋 Response:', restoredResponse.data);
-      }
-    } catch (error) {
-      console.log('❌ Session restoration: FAILED');
-      console.error('Error:', error.response?.data || error.message);
-    }
+    // Write report to file
+    const fs = require('fs');
+    const reportPath = `SESSION_PERSISTENCE_TEST_REPORT_${Date.now()}.json`;
+    fs.writeFileSync(reportPath, JSON.stringify({
+      summary: { totalTests, passedTests, successRate },
+      tests: this.testResults,
+      targetUser: TARGET_USER
+    }, null, 2));
     
-  } catch (error) {
-    console.error('❌ Test failed:', error.message);
+    console.log(`\n📄 Full report saved to: ${reportPath}`);
+    
+    if (successRate >= 80) {
+      console.log('\n🎉 SESSION PERSISTENCE: PASSED');
+    } else {
+      console.log('\n⚠️ SESSION PERSISTENCE: NEEDS ATTENTION');
+    }
   }
-  
-  // Final Results
-  console.log('\n📊 FINAL RESULTS');
-  console.log('============================================================');
-  
-  const passedTests = Object.values(results).filter(result => result === true).length;
-  const totalTests = Object.keys(results).length - 1; // Exclude overallSuccess
-  
-  results.overallSuccess = passedTests === totalTests;
-  
-  console.log(`Session Establishment: ${results.sessionEstablishment ? '✅ PASS' : '❌ FAIL'}`);
-  console.log(`Cookie Transmission: ${results.cookieTransmission ? '✅ PASS' : '❌ FAIL'}`);
-  console.log(`Session Persistence: ${results.sessionPersistence ? '✅ PASS' : '❌ FAIL'}`);
-  console.log(`AuthGuard Working: ${results.authGuardWorking ? '✅ PASS' : '❌ FAIL'}`);
-  console.log(`API Authentication: ${results.apiAuthentication ? '✅ PASS' : '❌ FAIL'}`);
-  console.log('------------------------------------------------------------');
-  console.log(`OVERALL SUCCESS: ${results.overallSuccess ? '✅ PASS' : '❌ FAIL'}`);
-  console.log(`SUCCESS RATE: ${passedTests}/${totalTests} (${Math.round(passedTests/totalTests*100)}%)`);
-  
-  if (results.overallSuccess) {
-    console.log('\n🎉 ALL TESTS PASSED! Session persistence is working correctly.');
-  } else {
-    console.log('\n⚠️ Some tests failed. Session persistence needs additional fixes.');
-  }
-  
-  return results;
 }
 
-// Run the test
+// Execute test if run directly
 if (require.main === module) {
-  runComprehensiveTest().catch(console.error);
+  const test = new SessionPersistenceTest();
+  test.run()
+    .then(() => {
+      console.log('✅ Session persistence test completed');
+    })
+    .catch((error) => {
+      console.error('❌ Session persistence test failed:', error);
+    });
 }
 
-module.exports = { runComprehensiveTest };
+module.exports = { SessionPersistenceTest };
