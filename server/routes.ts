@@ -12,7 +12,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { generateContentCalendar, generateReplacementPost, getAIResponse, generateEngagementInsight } from "./grok";
 import twilio from 'twilio';
-import sgMail from '@sendgrid/mail';
+// import sgMail from '@sendgrid/mail'; // Temporarily removed due to package issues
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -53,6 +53,11 @@ import { userSignupService } from './services/user-signup-service';
 import { sessionActivityService } from './services/session-activity-service';
 import { LRUCache, MemoryMonitor, StreamProcessor } from './utils/memory-optimized-cache';
 import { TokenRefreshService } from './services/token-refresh-service';
+import { jwtSessionManager } from './services/jwt-session-manager';
+import { quotaManager } from './services/quota-manager';
+import { replitAuthManager } from './services/replit-auth-manager';
+import authRoutes from './routes/auth-routes';
+import { jwtAuthMiddleware, requireSpecificUser } from './middleware/jwt-auth-middleware';
 import { tokenRefreshMiddleware } from './middleware/token-refresh-middleware';
 import { AIAutoApprovalService } from './services/ai-auto-approval-service';
 import { OAuthCallbackHandler } from './services/oauth-callback-handler';
@@ -793,6 +798,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add JSON middleware
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  
+  // Add JWT auth routes
+  app.use('/api/auth', authRoutes);
   
   // Session debugging middleware (NO AUTO-ESTABLISHMENT)
   app.use(async (req: any, res: any, next: any) => {

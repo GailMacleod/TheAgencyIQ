@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean, jsonb, varchar, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean, jsonb, varchar, index, uuid } from "drizzle-orm/pg-core";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -177,6 +177,28 @@ export const subscriptionAnalytics = pgTable("subscription_analytics", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// User quotas table for quota management
+export const userQuotas = pgTable("user_quotas", {
+  userId: integer("user_id").primaryKey().references(() => users.id),
+  platformQuotas: jsonb("platform_quotas").notNull(), // JSON object with platform limits
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Post queue table for scheduled posts
+export const postQueue = pgTable("post_queue", {
+  id: text("id").primaryKey(), // UUID string
+  userId: integer("user_id").notNull().references(() => users.id),
+  platform: text("platform").notNull(),
+  content: text("content").notNull(),
+  mediaUrl: text("media_url"),
+  scheduledTime: timestamp("scheduled_time").notNull(),
+  retryCount: integer("retry_count").default(0),
+  status: text("status").notNull().default("pending"), // 'pending', 'processing', 'completed', 'failed'
+  createdAt: timestamp("created_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+  errorMessage: text("error_message"),
+});
+
 // Create insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -223,6 +245,15 @@ export const insertSubscriptionAnalyticsSchema = createInsertSchema(subscription
   createdAt: true,
 });
 
+export const insertUserQuotasSchema = createInsertSchema(userQuotas).omit({
+  updatedAt: true,
+});
+
+export const insertPostQueueSchema = createInsertSchema(postQueue).omit({
+  createdAt: true,
+  processedAt: true,
+});
+
 export const insertPostScheduleSchema = createInsertSchema(postSchedule).omit({
   createdAt: true,
   approvedAt: true,
@@ -255,3 +286,7 @@ export type GiftCertificateActionLog = typeof giftCertificateActionLog.$inferSel
 export type InsertGiftCertificateActionLog = z.infer<typeof insertGiftCertificateActionLogSchema>;
 export type SubscriptionAnalytics = typeof subscriptionAnalytics.$inferSelect;
 export type InsertSubscriptionAnalytics = z.infer<typeof insertSubscriptionAnalyticsSchema>;
+export type UserQuotas = typeof userQuotas.$inferSelect;
+export type InsertUserQuotas = z.infer<typeof insertUserQuotasSchema>;
+export type PostQueue = typeof postQueue.$inferSelect;
+export type InsertPostQueue = z.infer<typeof insertPostQueueSchema>;
