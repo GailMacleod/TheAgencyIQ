@@ -225,8 +225,8 @@ app.get('/manifest.json', (req, res) => {
   }
 });
 
-// Static file serving with proper MIME types
-app.use(express.static(path.join(process.cwd(), 'dist'), {
+// Static file serving with proper MIME types - serve from client/dist
+app.use(express.static(path.join(process.cwd(), 'client', 'dist'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
@@ -252,7 +252,7 @@ app.use('/public', express.static('public'));
 // Root route
 app.get('/', (req, res) => {
   try {
-    res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
+    res.sendFile(path.join(process.cwd(), 'client', 'dist', 'index.html'));
   } catch (error) {
     console.error('Error serving index.html:', error);
     res.status(500).json({ error: 'Failed to serve index.html' });
@@ -265,7 +265,7 @@ app.get('*', (req, res) => {
       !req.path.startsWith('/callback') && !req.path.startsWith('/health') &&
       !req.path.startsWith('/facebook') && !req.path.startsWith('/deletion-status')) {
     try {
-      res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
+      res.sendFile(path.join(process.cwd(), 'client', 'dist', 'index.html'));
     } catch (error) {
       console.error('Error serving SPA route:', req.path, error);
       res.status(500).json({ error: 'Failed to serve SPA route' });
