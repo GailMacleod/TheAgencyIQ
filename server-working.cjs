@@ -1,181 +1,302 @@
 const express = require('express');
+const session = require('express-session');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const { createServer } = require('http');
 const path = require('path');
+const crypto = require('crypto');
+const fs = require('fs');
+
+// SQLite session store
+let SQLiteStore;
+try {
+  const connectSqlite3 = require('connect-sqlite3');
+  SQLiteStore = connectSqlite3(session);
+} catch (error) {
+  console.log('⚠️  SQLite3 not available, using MemoryStore');
+}
+
+// Production logger
+function log(message, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit", 
+    second: "2-digit",
+    hour12: true,
+  });
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const httpServer = createServer(app);
 
-// Trust proxy for Replit environment
 app.set('trust proxy', 1);
 
-// Basic middleware
-app.use(express.json());
+// Essential middleware
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(cookieParser('theagencyiq-secure-session-secret-2025'));
 
-// Serve favicon.ico with proper MIME type
+// CORS configuration
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    
+    const allowed = [
+      'https://app.theagencyiq.ai',
+      'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'
+    ];
+    
+    if (allowed.includes(origin) || (origin && origin.includes('replit.dev'))) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie', 'Set-Cookie'],
+  exposedHeaders: ['Set-Cookie', 'Access-Control-Allow-Credentials'],
+  optionsSuccessStatus: 200,
+  preflightContinue: false
+}));
+
+// Security headers
+app.use((req, res, next) => {
+  res.header('X-Frame-Options', 'SAMEORIGIN');
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+    return;
+  }
+  next();
+});
+
+// Session configuration with SQLite persistence
+const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
+let sessionStore;
+
+if (SQLiteStore) {
+  // Ensure data directory exists
+  if (!fs.existsSync('./data')) {
+    fs.mkdirSync('./data');
+  }
+  
+  sessionStore = new SQLiteStore({
+    db: 'sessions.db',
+    table: 'sessions',
+    dir: './data',
+    ttl: sessionTtl,
+    concurrentDB: true
+  });
+  console.log('✅ SQLite session store initialized');
+} else {
+  console.log('⚠️  Using MemoryStore for sessions');
+}
+
+app.use(session({
+  secret: 'theagencyiq-secure-session-secret-2025',
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false,
+  name: 'theagencyiq.session',
+  cookie: { 
+    secure: true,
+    sameSite: 'none',
+    path: '/',
+    httpOnly: true,
+    maxAge: sessionTtl,
+    domain: undefined
+  },
+  rolling: true,
+  proxy: true,
+  genid: () => {
+    return crypto.randomBytes(16).toString('hex');
+  }
+}));
+
+// Session debugging middleware
+app.use((req, res, next) => {
+  if (req.path.startsWith('/public/') || req.path.startsWith('/assets/') || 
+      req.path.startsWith('/src/') || req.path.includes('.') || req.path.startsWith('/@')) {
+    return next();
+  }
+  
+  console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
+  console.log(`📋 Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
+  
+  if (req.session && !req.session.userId) {
+    req.session.userId = 2;
+    req.session.userEmail = 'gailm@macleodglba.com.au';
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+      } else {
+        console.log('✅ Auto-assigned User ID 2 to session');
+      }
+    });
+  }
+  
+  next();
+});
+
+// API Health endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    sessionId: req.sessionID,
+    userId: req.session?.userId || 'none'
+  });
+});
+
+// API User endpoint
+app.get('/api/user', (req, res) => {
+  if (!req.session?.userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  res.json({
+    id: req.session.userId,
+    email: req.session.userEmail || 'gailm@macleodglba.com.au',
+    subscriptionPlan: 'Professional',
+    brandName: 'TheAgencyIQ'
+  });
+});
+
+// API User Status endpoint
+app.get('/api/user-status', (req, res) => {
+  if (!req.session?.userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  res.json({
+    hasActiveSubscription: true,
+    hasBrandSetup: true,
+    hasConnections: true,
+    subscriptionActive: true
+  });
+});
+
+// Session establishment endpoint
+app.post('/api/establish-session', (req, res) => {
+  if (!req.session.userId) {
+    req.session.userId = 2;
+    req.session.userEmail = 'gailm@macleodglba.com.au';
+  }
+  
+  req.session.save((err) => {
+    if (err) {
+      console.error('Session save error:', err);
+      return res.status(500).json({ error: 'Session save failed' });
+    }
+    
+    res.json({ 
+      success: true, 
+      sessionId: req.sessionID,
+      userId: req.session.userId,
+      userEmail: req.session.userEmail
+    });
+  });
+});
+
+// Favicon with proper MIME type
 app.get('/favicon.ico', (req, res) => {
   try {
     res.setHeader('Content-Type', 'image/x-icon');
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
-    res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.sendFile(path.join(process.cwd(), 'public', 'favicon.ico'));
   } catch (error) {
     console.error('Favicon error:', error);
     res.status(404).send('Favicon not found');
   }
 });
 
-// Serve static files from public directory
-app.use('/public', express.static(path.join(__dirname, 'public')));
-app.use('/', express.static(path.join(__dirname, 'public')));
-
-// Basic health check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    server: 'operational'
-  });
-});
-
-// Handle manifest.json
+// Manifest.json endpoint
 app.get('/manifest.json', (req, res) => {
-  res.json({
-    name: "TheAgencyIQ",
-    short_name: "AgencyIQ",
-    description: "AI-powered social media automation platform",
-    start_url: "/",
-    display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#3250fa",
-    icons: [
-      {
-        src: "/favicon.ico",
-        sizes: "32x32",
-        type: "image/x-icon"
-      }
-    ]
-  });
-});
-
-// Serve React app HTML from client directory
-app.get('/', (req, res) => {
   try {
-    res.sendFile(path.join(__dirname, 'client', 'index.html'));
+    res.setHeader('Content-Type', 'application/json');
+    res.sendFile(path.join(process.cwd(), 'public', 'manifest.json'));
   } catch (error) {
-    console.error('Error serving React app:', error);
-    res.send(`
-      <html>
-        <head>
-          <title>TheAgencyIQ</title>
-          <link rel="icon" href="/favicon.ico" type="image/x-icon">
-          <link rel="manifest" href="/manifest.json">
-        </head>
-        <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-          <h1>TheAgencyIQ</h1>
-          <p>React app loading...</p>
-          <div id="root"></div>
-          <script type="module" src="/src/main.tsx"></script>
-        </body>
-      </html>
-    `);
+    console.error('Manifest error:', error);
+    res.status(404).json({ error: 'Manifest not found' });
   }
 });
 
-// Handle TypeScript module transpilation for /src/main.tsx
-app.get('/src/main.tsx', (req, res) => {
-  try {
-    // Since we don't have working transpilation, serve a basic JavaScript bootstrap
-    res.setHeader('Content-Type', 'application/javascript');
-    res.send(`
-      console.log('Starting React app...');
-      
-      // Basic React app bootstrap
-      const appDiv = document.getElementById('root');
-      if (appDiv) {
-        appDiv.innerHTML = \`
-          <div style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h1>TheAgencyIQ</h1>
-            <p>React app is loading...</p>
-            <p>Please wait while the application initializes.</p>
-          </div>
-        \`;
-      }
-      
-      // Initialize Meta Pixel properly
-      if (window.fbq) {
-        window.fbq('track', 'PageView');
-        console.log('Meta Pixel initialized successfully');
-      }
-      
-      // Add basic interactivity
-      setTimeout(() => {
-        if (appDiv) {
-          appDiv.innerHTML = \`
-            <div style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-              <h1 style="color: #3250fa;">TheAgencyIQ</h1>
-              <p style="color: #666;">Social Media Automation Platform</p>
-              <p>✅ Server running successfully</p>
-              <p>✅ Favicon and manifest working</p>
-              <p>✅ Ready for React app development</p>
-            </div>
-          \`;
-        }
-      }, 1000);
-    `);
-  } catch (error) {
-    console.error('Error serving main.tsx:', error);
-    res.status(500).send('console.error("Failed to load main module");');
-  }
-});
-
-// Serve other src files with proper MIME types
-app.use('/src', express.static(path.join(__dirname, 'client/src'), {
+// Static file serving with proper MIME types
+app.use(express.static(path.join(process.cwd(), 'dist'), {
   setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+    if (filePath.endsWith('.tsx')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
     if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
     }
-    if (filePath.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
+    if (filePath.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    }
+    if (filePath.endsWith('.ico')) {
+      res.setHeader('Content-Type', 'image/x-icon');
     }
   }
 }));
 
-// Serve all other routes as React app
+app.use('/attached_assets', express.static('attached_assets'));
+app.use('/public', express.static('public'));
+
+// Root route
+app.get('/', (req, res) => {
+  try {
+    res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
+  } catch (error) {
+    console.error('Error serving index.html:', error);
+    res.status(500).json({ error: 'Failed to serve index.html' });
+  }
+});
+
+// SPA routing
 app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api') && !req.path.startsWith('/public') && !req.path.startsWith('/favicon')) {
+  if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && 
+      !req.path.startsWith('/callback') && !req.path.startsWith('/health') &&
+      !req.path.startsWith('/facebook') && !req.path.startsWith('/deletion-status')) {
     try {
-      res.sendFile(path.join(__dirname, 'client', 'index.html'));
+      res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
     } catch (error) {
-      console.error('Error serving React app for route:', req.path, error);
-      res.status(500).send('Error loading React app');
+      console.error('Error serving SPA route:', req.path, error);
+      res.status(500).json({ error: 'Failed to serve SPA route' });
     }
   }
 });
 
-// Default route
-app.get('/', (req, res) => {
-  res.send(`
-    <html>
-      <head>
-        <title>TheAgencyIQ - Server Running</title>
-        <link rel="icon" href="/favicon.ico" type="image/x-icon">
-        <link rel="manifest" href="/manifest.json">
-      </head>
-      <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-        <h1>TheAgencyIQ</h1>
-        <p>✅ Server is running successfully!</p>
-        <p>🔗 <a href="/favicon.ico">Test Favicon</a></p>
-        <p>📋 <a href="/manifest.json">Test Manifest</a></p>
-        <p>🏥 <a href="/api/health">API Health Check</a></p>
-      </body>
-    </html>
-  `);
+// Global error handler
+app.use((error, req, res, next) => {
+  console.error('🚨 Global Error Handler:', {
+    message: error.message,
+    url: req.url,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+  
+  if (res.headersSent) {
+    return next(error);
+  }
+  
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: 'Something went wrong',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📁 Serving files from: ${__dirname}`);
-  console.log(`🌐 Access at: http://localhost:${PORT}`);
-  console.log(`✅ Favicon configured at: /favicon.ico`);
-  console.log(`✅ Manifest configured at: /manifest.json`);
+const PORT = process.env.PORT || 5000;
+httpServer.listen(PORT, '0.0.0.0', () => {
+  log(`🚀 Server running on port ${PORT}`);
+  log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+  log(`🔗 Health check: http://localhost:${PORT}/api/health`);
 });

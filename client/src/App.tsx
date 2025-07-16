@@ -13,6 +13,7 @@ import { useAnalytics } from "./hooks/use-analytics";
 import { clearBrowserCache } from "./utils/cache-utils";
 import { sessionManager } from "./utils/session-manager";
 import { apiClient } from "./utils/api-client";
+import { initializeDevServerReconnection } from "./utils/websocket-reconnect";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
@@ -130,7 +131,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
 
-  // Initialize Google Analytics when app loads
+  // Initialize Google Analytics and WebSocket reconnection when app loads
   useEffect(() => {
     // Verify required environment variable is present
     if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
@@ -138,6 +139,9 @@ function App() {
     } else {
       initGA();
     }
+    
+    // Initialize WebSocket reconnection for development server
+    initializeDevServerReconnection();
   }, []);
 
   // Establish session on app startup to prevent 401 errors - ENHANCED FOR USER ID 2
