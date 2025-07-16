@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import path from 'path';
 import crypto from 'crypto';
-import { initializeMonitoring, logInfo, logError } from './monitoring';
+// import { initializeMonitoring, logInfo, logError } from './monitoring';
 import { memoryManager } from './utils/memory-manager';
 import { sessionUserMap } from './middleware/authGuard';
 
@@ -23,7 +23,7 @@ function log(message: string, source = "express") {
 
 async function startServer() {
   // Initialize monitoring and memory management
-  initializeMonitoring();
+  // initializeMonitoring();
   memoryManager; // Initialize memory manager
   
   const app = express();
@@ -132,8 +132,13 @@ async function startServer() {
   });
 
   // Data deletion status
-  app.get('/deletion-status/:userId?', (req, res) => {
+  app.get('/deletion-status/:userId', (req, res) => {
     const userId = req.params.userId || 'anonymous';
+    res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
+  });
+  
+  app.get('/deletion-status', (req, res) => {
+    const userId = 'anonymous';
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
