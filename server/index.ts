@@ -302,9 +302,16 @@ async function startServer() {
     });
   });
 
-  // Handle favicon requests
+  // Handle favicon requests with proper MIME type
   app.get('/favicon.ico', (req, res) => {
-    res.status(204).send();
+    try {
+      res.setHeader('Content-Type', 'image/x-icon');
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+      res.sendFile(path.join(process.cwd(), 'public', 'favicon.ico'));
+    } catch (error) {
+      console.error('Favicon error:', error);
+      res.status(404).send('Favicon not found');
+    }
   });
 
   // Handle other static assets
