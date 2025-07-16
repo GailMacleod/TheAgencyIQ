@@ -62,6 +62,30 @@ export const postLedger = pgTable("post_ledger", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// OAuth security tables for enhanced token management
+export const oauthStates = pgTable("oauth_states", {
+  state: text("state").primaryKey(),
+  platform: text("platform").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  codeVerifier: text("code_verifier").notNull(),
+  csrfToken: text("csrf_token").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const platformTokens = pgTable("platform_tokens", {
+  userId: integer("user_id").notNull().references(() => users.id),
+  platform: text("platform").notNull(),
+  accessToken: text("access_token").notNull(), // Encrypted
+  refreshToken: text("refresh_token"), // Encrypted
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  // Composite primary key for user-platform combination
+  { primaryKey: [table.userId, table.platform] }
+]);
+
 // Legacy posts table (keeping for backward compatibility)
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),

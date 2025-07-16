@@ -13,7 +13,7 @@ import connectPg from "connect-pg-simple";
 import { generateContentCalendar, generateReplacementPost, getAIResponse, generateEngagementInsight } from "./grok";
 import twilio from 'twilio';
 // import sgMail from '@sendgrid/mail'; // Temporarily removed due to package issues
-import multer from "multer";
+// import multer from "multer"; // Disabled temporarily to fix import issue
 import path from "path";
 import fs from "fs";
 import crypto, { createHash } from "crypto";
@@ -63,6 +63,7 @@ import { AIAutoApprovalService } from './services/ai-auto-approval-service';
 import { OAuthCallbackHandler } from './services/oauth-callback-handler';
 import { EnhancedTokenRefresh } from './services/enhanced-token-refresh';
 import { apiRateLimit, authRateLimit, publishRateLimit, signupRateLimit } from './middleware/rate-limit-middleware';
+import oauthRoutes from './routes/oauth-routes';
 
 // Session mapping for direct session management - LRU cache for memory optimization
 const sessionUserMap = new LRUCache({
@@ -802,6 +803,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add JWT auth routes
   app.use('/api/auth', authRoutes);
   
+  // Enhanced OAuth routes with refresh token support
+  app.use('/api/oauth', oauthRoutes);
+  
   // Session debugging middleware (NO AUTO-ESTABLISHMENT)
   app.use(async (req: any, res: any, next: any) => {
     // Skip debug for static assets
@@ -1044,36 +1048,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     done(null, user);
   });
 
-  // Configure multer for file uploads
-  const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
+  // Configure multer for file uploads - DISABLED temporarily
+  // const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
+  // if (!fs.existsSync(uploadsDir)) {
+  //   fs.mkdirSync(uploadsDir, { recursive: true });
+  // }
 
-  const storage_multer = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, uploadsDir);
-    },
-    filename: (req: any, file, cb) => {
-      const ext = path.extname(file.originalname);
-      const filename = `${req.session.userId}_${Date.now()}${ext}`;
-      cb(null, filename);
-    }
-  });
+  // const storage_multer = multer.diskStorage({
+  //   destination: (req, file, cb) => {
+  //     cb(null, uploadsDir);
+  //   },
+  //   filename: (req: any, file, cb) => {
+  //     const ext = path.extname(file.originalname);
+  //     const filename = `${req.session.userId}_${Date.now()}${ext}`;
+  //     cb(null, filename);
+  //   }
+  // });
 
-  const upload = multer({
-    storage: storage_multer,
-    limits: {
-      fileSize: 500000, // 500KB
-    },
-    fileFilter: (req, file, cb) => {
-      if (file.mimetype.match(/^image\/(png|jpeg|jpg)$/)) {
-        cb(null, true);
-      } else {
-        cb(new Error('Only PNG and JPG images are allowed'));
-      }
-    }
-  });
+  // const upload = multer({
+  //   storage: storage_multer,
+  //   limits: {
+  //     fileSize: 500000, // 500KB
+  //   },
+  //   fileFilter: (req, file, cb) => {
+  //     if (file.mimetype.match(/^image\/(png|jpeg|jpg)$/)) {
+  //       cb(null, true);
+  //     } else {
+  //       cb(new Error('Only PNG and JPG images are allowed'));
+  //     }
+  //   }
+  // });
 
   // REMOVED: Duplicate requireAuth definition - using authGuard middleware instead
 
@@ -4664,7 +4668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logo upload endpoint with multer
+  // Logo upload endpoint with multer - DISABLED temporarily
   app.post("/api/upload-logo", async (req: any, res) => {
     try {
       // Check Authorization token
@@ -4673,34 +4677,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      // Use multer to handle file upload
-      upload.single("logo")(req, res, (err) => {
-        if (err) {
-          return res.status(400).json({ message: "Upload error" });
-        }
-
-        if (!req.file) {
-          return res.status(400).json({ message: "No file uploaded" });
-        }
-
-        // Check file size (max 5MB)
-        if (req.file.size > 5 * 1024 * 1024) {
-          return res.status(400).json({ message: "File too large" });
-        }
-
-        // Save file as logo.png and update preview
-        const uploadsDir = './uploads';
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-
-        const targetPath = path.join(uploadsDir, 'logo.png');
-        fs.renameSync(req.file.path, targetPath);
-
-        const logoUrl = '/uploads/logo.png';
-
-        res.status(200).json({ message: "Logo uploaded successfully", logoUrl });
+      // Multer temporarily disabled - return placeholder response
+      return res.status(501).json({ 
+        message: "File upload temporarily unavailable - multer dependency issue",
+        error: "SERVICE_UNAVAILABLE"
       });
+
+      // Use multer to handle file upload
+      // upload.single("logo")(req, res, (err) => {
+      //   if (err) {
+      //     return res.status(400).json({ message: "Upload error" });
+      //   }
+
+      //   if (!req.file) {
+      //     return res.status(400).json({ message: "No file uploaded" });
+      //   }
+
+      //   // Check file size (max 5MB)
+      //   if (req.file.size > 5 * 1024 * 1024) {
+      //     return res.status(400).json({ message: "File too large" });
+      //   }
+
+      //   // Save file as logo.png and update preview
+      //   const uploadsDir = './uploads';
+      //   if (!fs.existsSync(uploadsDir)) {
+      //     fs.mkdirSync(uploadsDir, { recursive: true });
+      //   }
+
+      //   const targetPath = path.join(uploadsDir, 'logo.png');
+      //   fs.renameSync(req.file.path, targetPath);
+
+      //   const logoUrl = '/uploads/logo.png';
+
+      //   res.status(200).json({ message: "Logo uploaded successfully", logoUrl });
+      // });
     } catch (error: any) {
       console.error('Logo upload error:', error);
       res.status(400).json({ message: "Upload failed" });
