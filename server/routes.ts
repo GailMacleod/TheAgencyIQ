@@ -1,48 +1,10 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { insertUserSchema, insertBrandPurposeSchema, insertPostSchema, users, postLedger, postSchedule, platformConnections, posts, brandPurpose, giftCertificates } from "@shared/schema";
-import { db } from "./db";
-import { sql, eq, and, desc, asc } from "drizzle-orm";
-import bcrypt from "bcrypt";
-import Stripe from "stripe";
 import { z } from "zod";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
-import { generateContentCalendar, generateReplacementPost, getAIResponse, generateEngagementInsight } from "./grok";
-import twilio from 'twilio';
-import sgMail from '@sendgrid/mail';
-import multer from "multer";
-import path from "path";
-import fs from "fs";
-import crypto, { createHash } from "crypto";
-import { passport } from "./oauth-config";
-import axios from "axios";
-import PostPublisher from "./post-publisher";
-import BreachNotificationService from "./breach-notification";
-import { authenticateLinkedIn, authenticateFacebook, authenticateInstagram, authenticateTwitter, authenticateYouTube } from './platform-auth';
-import { requireActiveSubscription, establishSession, requireAuth } from './middleware/subscriptionAuth';
-import { requireAuth as authGuard, requireAuthForPayment } from './middleware/authGuard';
-import authRoutes from './auth/routes';
-import stripeRoutes from './stripe/routes';
-import { subscriptionService } from './services/SubscriptionService';
-import { analyticsService } from './services/AnalyticsService';
-import { PostQuotaService } from './PostQuotaService';
-import { userFeedbackService } from './userFeedbackService.js';
-import RollbackAPI from './rollback-api';
-import { OAuthRefreshService } from './services/OAuthRefreshService';
-import { AIContentOptimizer } from './services/AIContentOptimizer';
-import { AnalyticsEngine } from './services/AnalyticsEngine';
-import { DataCleanupService } from './services/DataCleanupService';
-import { linkedinTokenValidator } from './linkedin-token-validator';
-import { DirectPublishService } from './services/DirectPublishService';
-import { UnifiedOAuthService } from './services/UnifiedOAuthService';
-import { directTokenGenerator } from './services/DirectTokenGenerator';
-import { loggingService } from './services/logging-service';
-import { platformPostManager } from './services/platform-post-manager';
-import { RealApiPublisher } from './services/real-api-publisher';
-import { userSignupService } from './services/user-signup-service';
+
+// Temporarily simplified imports to get React working
+// Will restore full functionality once basic server is operational
 import { sessionActivityService } from './services/session-activity-service';
 import { LRUCache, MemoryMonitor, StreamProcessor } from './utils/memory-optimized-cache';
 
