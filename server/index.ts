@@ -97,17 +97,15 @@ async function startServer() {
   // Static file serving
   app.use('/attached_assets', express.static('attached_assets'));
 
-  // Serve working app first
-  app.get('/', (req, res) => {
-    res.sendFile(path.resolve('client/working-app.html'));
-  });
-  
-  // Serve client source files for development
+  // Serve the React app development files
   app.use('/src', express.static('client/src'));
-  app.use('/public', express.static('client/public'));
+  app.use('/node_modules', express.static('node_modules'));
+  app.use(express.static('client/public'));
   
-  // Serve the development React app
-  app.use(express.static('client'));
+  // Main app route - serve the development index.html
+  app.get('/', (req, res) => {
+    res.sendFile(path.resolve('client/index.html'));
+  });
   
 
 
