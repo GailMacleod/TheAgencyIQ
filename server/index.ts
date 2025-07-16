@@ -4,6 +4,7 @@ import connectSqlite3 from 'connect-sqlite3';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
+import path from 'path';
 
 async function startServer() {
   const app = express();
@@ -96,21 +97,10 @@ async function startServer() {
   // Static file serving
   app.use('/attached_assets', express.static('attached_assets'));
 
-  // Development Vite setup
-  if (process.env.NODE_ENV !== 'production') {
-    try {
-      const { createViteDevServer } = await import('./vite');
-      const viteDevServer = await createViteDevServer(app);
-      console.log('⚡ Vite development server ready');
-    } catch (error) {
-      console.log('⚠️  Vite not available, serving static files only');
-      app.use(express.static('dist'));
-    }
-  } else {
-    app.use(express.static('dist'));
-  }
+  // Serve the built React app
+  app.use(express.static('client/dist'));
 
-  // Start server
+  // Start server first
   const server = createServer(app);
   const PORT = process.env.PORT || 5000;
 
