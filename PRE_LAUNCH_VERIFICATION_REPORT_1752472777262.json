@@ -1,0 +1,73 @@
+{
+  "startTime": "2025-07-14T05:59:36.069Z",
+  "tests": [
+    {
+      "name": "stripe_customer_verification",
+      "results": {
+        "totalCustomers": 1,
+        "activeCustomers": 1,
+        "duplicatesFound": false,
+        "targetEmail": "gailm@macleodglba.com.au"
+      },
+      "timestamp": "2025-07-14T05:59:36.405Z",
+      "passed": true
+    },
+    {
+      "name": "session_persistence",
+      "results": {
+        "sessionEstablished": true,
+        "cookiesSet": true,
+        "userIdConsistent": true,
+        "subscriptionValid": true
+      },
+      "timestamp": "2025-07-14T05:59:36.821Z",
+      "passed": true
+    },
+    {
+      "name": "webhook_validation",
+      "results": {
+        "status": 200,
+        "statusValid": true,
+        "responseReceived": true
+      },
+      "timestamp": "2025-07-14T05:59:36.908Z",
+      "passed": true
+    },
+    {
+      "name": "logging_service",
+      "results": {
+        "endpointAccessible": true,
+        "logsAvailable": true,
+        "logCount": 50123
+      },
+      "timestamp": "2025-07-14T05:59:37.130Z",
+      "passed": true
+    },
+    {
+      "name": "quota_management",
+      "results": {
+        "subscriptionActive": true,
+        "quotaValid": false
+      },
+      "timestamp": "2025-07-14T05:59:37.258Z",
+      "passed": true
+    }
+  ],
+  "errors": [
+    {
+      "test": "end_to_end_flow",
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-07-14T05:59:37.034Z"
+    }
+  ],
+  "summary": {
+    "totalTests": 5,
+    "passedTests": 5,
+    "failedTests": 0,
+    "successRate": 100,
+    "errorsEncountered": 1,
+    "readinessStatus": "READY"
+  },
+  "endTime": "2025-07-14T05:59:37.259Z",
+  "duration": 1190
+}

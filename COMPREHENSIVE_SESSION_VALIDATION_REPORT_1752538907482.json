@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-07-15T00-21-47-482Z",
+  "totalTests": 5,
+  "passed": 5,
+  "failed": 0,
+  "successRate": 100,
+  "results": [
+    {
+      "test": "Server Status",
+      "status": "PASSED",
+      "message": "Server responding correctly",
+      "timestamp": "2025-07-15T00:21:46.127Z"
+    },
+    {
+      "test": "Session Establishment",
+      "status": "PASSED",
+      "message": "User ID: 2",
+      "timestamp": "2025-07-15T00:21:46.572Z"
+    },
+    {
+      "test": "Session Persistence",
+      "status": "PASSED",
+      "message": "Session persisted successfully",
+      "timestamp": "2025-07-15T00:21:46.699Z"
+    },
+    {
+      "test": "API Authentication",
+      "status": "PASSED",
+      "message": "API access working",
+      "timestamp": "2025-07-15T00:21:46.820Z"
+    },
+    {
+      "test": "Session Consistency",
+      "status": "PASSED",
+      "message": "All endpoints consistent",
+      "timestamp": "2025-07-15T00:21:47.480Z"
+    }
+  ],
+  "sessionId": "4FyQzD2mRycJEiN3fjKIQ850yHEN76J5",
+  "userId": 2,
+  "cookies": "theagencyiq.session=s%3A4FyQzD2mRycJEiN3fjKIQ850yHEN76J5.tyRDN%2FRbP8Q1hTs1xqqUgSO7uamQGim6dlUaxKin5IQ; Path=/; Expires=Wed, 16 Jul 2025 00:21:46 GMT; Secure; SameSite=None"
+}

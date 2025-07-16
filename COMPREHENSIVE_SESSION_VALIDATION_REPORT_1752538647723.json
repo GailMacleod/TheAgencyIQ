@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-07-15T00-17-27-723Z",
+  "totalTests": 5,
+  "passed": 0,
+  "failed": 5,
+  "successRate": 0,
+  "results": [
+    {
+      "test": "Server Status",
+      "status": "FAILED",
+      "message": "Server returned 500",
+      "timestamp": "2025-07-15T00:17:27.675Z"
+    },
+    {
+      "test": "Session Establishment",
+      "status": "FAILED",
+      "message": "Status: 500",
+      "timestamp": "2025-07-15T00:17:27.698Z"
+    },
+    {
+      "test": "Session Persistence",
+      "status": "FAILED",
+      "message": "Status: 500",
+      "timestamp": "2025-07-15T00:17:27.707Z"
+    },
+    {
+      "test": "API Authentication",
+      "status": "FAILED",
+      "message": "Status: 500",
+      "timestamp": "2025-07-15T00:17:27.714Z"
+    },
+    {
+      "test": "Session Consistency",
+      "status": "FAILED",
+      "message": "Session inconsistent across endpoints",
+      "timestamp": "2025-07-15T00:17:27.721Z"
+    }
+  ],
+  "sessionId": "",
+  "userId": "",
+  "cookies": ""
+}

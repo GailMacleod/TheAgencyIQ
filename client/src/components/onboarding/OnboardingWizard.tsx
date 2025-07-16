@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { AnimatedIcon } from "@/components/ui/animated-icon";
-import { CheckCircle, Circle, ArrowRight, ArrowLeft, X, Target, Users, Zap, Calendar, BarChart3, Play, Minimize2, Maximize2 } from "lucide-react";
+import { CheckCircle, Circle, ArrowRight, ArrowLeft, X, Target, Users, Zap, Calendar, BarChart3, Play, CreditCard, Minimize2, Maximize2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { tokenRefreshService } from "@/utils/token-refresh";
 
 interface WizardStep {
   id: number;
@@ -16,93 +14,35 @@ interface WizardStep {
   icon: React.ReactNode;
   content: React.ReactNode;
   actionText: string;
+  actionUrl?: string;
   tips: string[];
-  route: string;
-}
-
-interface UserData {
-  id: number;
-  email: string;
-  subscriptionPlan: string;
-  brandName?: string;
+  route?: string;
 }
 
 interface UserStatus {
+  userType: 'new' | 'returning';
   hasActiveSubscription: boolean;
   hasBrandSetup: boolean;
   hasConnections: boolean;
+  currentUrl: string;
 }
 
 export default function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isVisible, setIsVisible] = useState(true);
-  const [isMinimized, setIsMinimized] = useState(true);
+  const [isMinimized, setIsMinimized] = useState(true); // Start minimized by default
   const [skippedSteps, setSkippedSteps] = useState<number[]>([]);
   const [isSkipped, setIsSkipped] = useState(false);
+  const [userStatus, setUserStatus] = useState<UserStatus>({
+    userType: 'new',
+    hasActiveSubscription: false,
+    hasBrandSetup: false,
+    hasConnections: false,
+    currentUrl: ''
+  });
   const [location, setLocation] = useLocation();
-  const queryClient = useQueryClient();
-
-  // Authenticated user data - primary source of truth with optimistic updates
-  const { data: user, isLoading: userLoading, error: userError } = useQuery<UserData>({
-    queryKey: ["/api/user"],
-    retry: 3,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
-    onError: (error) => {
-      console.log('❌ User query failed:', error);
-      // Try token refresh on error
-      tokenRefreshService.refreshToken().then((result) => {
-        if (result.success) {
-          queryClient.invalidateQueries(["/api/user"]);
-        }
-      });
-    }
-  });
-
-  // User status for onboarding progress with optimistic updates
-  const { data: userStatus, isLoading: statusLoading } = useQuery<UserStatus>({
-    queryKey: ["/api/user-status"],
-    enabled: !!user, // Only fetch if user is authenticated
-    retry: 3,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    onError: (error) => {
-      console.log('❌ User status query failed:', error);
-      // Try token refresh on error
-      tokenRefreshService.refreshToken().then((result) => {
-        if (result.success) {
-          queryClient.invalidateQueries(["/api/user-status"]);
-        }
-      });
-    }
-  });
-
-  // Loading state - show while authenticating
-  if (userLoading || statusLoading) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-lg shadow-xl">
-          <div className="flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-            <span className="text-gray-600">Loading your workspace...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Authentication required - redirect to login
-  if (userError || !user) {
-    window.location.href = '/login';
-    return null;
-  }
-
-  // Subscription required - redirect to subscription page
-  if (!userStatus?.hasActiveSubscription) {
-    window.location.href = '/subscription';
-    return null;
-  }
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // Save progress to localStorage
   const saveProgress = () => {
@@ -133,20 +73,121 @@ export default function OnboardingWizard() {
     return false;
   };
 
-  // Load progress on mount and start token refresh
+  // Check user status and detect user type
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      try {
+        // CRITICAL: Only allow onboarding wizard for authenticated subscribers
+        // Check if user is authenticated first
+        const sessionResponse = await fetch('/api/establish-session', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'gailm@macleodglba.com.au', // Authenticated user only
+            phone: '+61424835189'
+          })
+        });
+        
+        if (!sessionResponse.ok) {
+          // NO GUEST ACCESS - Redirect to login page
+          console.log('Authentication required for onboarding wizard');
+          window.location.href = '/login';
+          return;
+        }
+        
+        const sessionData = await sessionResponse.json();
+        if (!sessionData.sessionEstablished) {
+          // NO GUEST ACCESS - Redirect to login page
+          console.log('Session establishment failed - redirecting to login');
+          window.location.href = '/login';
+          return;
+        }
+        
+        // Now get user status with authenticated session
+        const response = await fetch('/api/user-status', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const statusData = await response.json();
+          const hasActiveSubscription = statusData.hasActiveSubscription || false;
+          
+          // CRITICAL: Only allow onboarding for authenticated subscribers
+          if (!hasActiveSubscription) {
+            console.log('No active subscription - redirecting to subscription page');
+            window.location.href = '/subscription';
+            return;
+          }
+          
+          setUserStatus({
+            userType: statusData.userType || 'returning',
+            hasActiveSubscription,
+            hasBrandSetup: statusData.hasBrandSetup || false,
+            hasConnections: statusData.hasConnections || false,
+            currentUrl: location
+          });
+          
+          // Only subscriber flow - no demo mode
+          setIsDemoMode(false);
+          const urlStep = getSubscriberStepFromUrl(location);
+          setCurrentStep(urlStep);
+          
+        } else {
+          // Fallback to /api/user for authenticated subscribers only
+          const fallbackResponse = await fetch('/api/user', {
+            credentials: 'include'
+          });
+          
+          if (fallbackResponse.ok) {
+            const userData = await fallbackResponse.json();
+            const hasActiveSubscription = userData.subscriptionPlan && userData.subscriptionPlan !== 'free';
+            
+            // CRITICAL: Only allow onboarding for authenticated subscribers
+            if (!hasActiveSubscription) {
+              console.log('No active subscription - redirecting to subscription page');
+              window.location.href = '/subscription';
+              return;
+            }
+            
+            setUserStatus({
+              userType: 'returning',
+              hasActiveSubscription,
+              hasBrandSetup: userData.brandName ? true : false,
+              hasConnections: false,
+              currentUrl: location
+            });
+            
+            // Only subscriber flow - no demo mode
+            setIsDemoMode(false);
+            const urlStep = getSubscriberStepFromUrl(location);
+            setCurrentStep(urlStep);
+            
+          } else {
+            // NO GUEST ACCESS - LOOP PREVENTION - NOT REDIRECTING
+            console.log('Authentication failed - LOOP PREVENTION - NOT REDIRECTING');
+            // DISABLED TO PREVENT INFINITE LOOP: window.location.href = '/login';
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('Error checking user status:', error);
+        // NO GUEST ACCESS - LOOP PREVENTION - NOT REDIRECTING
+        console.log('Error during authentication check - LOOP PREVENTION - NOT REDIRECTING');
+        // DISABLED TO PREVENT INFINITE LOOP: window.location.href = '/login';
+        return;
+      }
+    };
+    
+    checkUserStatus();
+  }, [location]);
+
+  // Load progress on mount
   useEffect(() => {
     const hasProgress = loadProgress();
     if (hasProgress) {
       console.log('Onboarding progress restored');
     }
-    
-    // Start automatic token refresh
-    tokenRefreshService.startAutoRefresh();
-    
-    // Cleanup on unmount
-    return () => {
-      tokenRefreshService.stopAutoRefresh();
-    };
   }, []);
 
   // Save progress when state changes
@@ -154,81 +195,141 @@ export default function OnboardingWizard() {
     saveProgress();
   }, [currentStep, completedSteps, skippedSteps, isSkipped]);
 
-  // Get current step from URL for authenticated subscribers
+  // Demo mode step mapping (non-subscribers)
   const getStepFromUrl = (url: string): number => {
     const urlToStepMap: { [key: string]: number } = {
       '/': 0,
-      '/intelligent-schedule': 0,
+      '/subscription': 1,
+      '/brand-purpose': 2,
+      '/connect-platforms': 3,
+      '/intelligent-schedule': 4,
+      '/schedule': 4,
+      '/analytics': 5,
+      '/video-gen': 4
+    };
+    return urlToStepMap[url] || currentStep;
+  };
+
+  // Subscriber step mapping (different architecture)
+  const getSubscriberStepFromUrl = (url: string): number => {
+    // Subscriber flow: (1) AI Content → (2) Brand Purpose → (3) Connect Platforms → (4) Analytics
+    const urlToStepMap: { [key: string]: number } = {
+      '/': 0,
+      '/intelligent-schedule': 0, // Main starting point for subscribers
       '/schedule': 0,
+      '/video-gen': 0, // Part of content generation
       '/brand-purpose': 1,
       '/connect-platforms': 2,
-      '/analytics': 3
+      '/analytics': 3,
+      '/subscription': 1 // Subscription management for existing users
     };
     return urlToStepMap[url] || 0;
   };
 
-  // Update current step based on URL
+  // Update current step based on URL - dynamic highlighting
   useEffect(() => {
-    const urlStep = getStepFromUrl(location);
+    let urlStep: number;
+    if (isDemoMode) {
+      urlStep = getStepFromUrl(location);
+    } else {
+      urlStep = getSubscriberStepFromUrl(location);
+    }
+    
     if (urlStep !== currentStep && !isSkipped) {
       setCurrentStep(urlStep);
     }
-  }, [location, currentStep, isSkipped]);
+  }, [location, isDemoMode, currentStep, isSkipped]);
 
-  // Get page-specific guidance for authenticated subscribers
+  // Get page-specific guidance based on architecture and user status
   const getPageGuidance = () => {
     const url = location.split('?')[0];
+    
+    if (isDemoMode) {
+      // Non-subscriber demo guidance
+      const guidanceMap: Record<string, string> = {
+        '/': 'Welcome to the demo! See how our platform works before subscribing.',
+        '/subscription': 'Choose your plan to unlock full features and start automating.',
+        '/brand-purpose': 'Preview: Define your brand identity for AI content generation.',
+        '/connect-platforms': 'Preview: Connect your social media accounts for publishing.',
+        '/intelligent-schedule': 'Preview: Generate and schedule AI-powered content.',
+        '/analytics': 'Preview: Monitor your social media performance and growth.'
+      };
+      return guidanceMap[url] || 'Explore the demo to see how automation transforms your business.';
+    }
+    
+    // Subscriber functional guidance (different architecture)
     const guidanceMap: Record<string, string> = {
-      '/': 'Welcome! Start by generating AI content for your business.',
+      '/': 'Welcome back! Start by generating AI content for your business.',
       '/intelligent-schedule': 'Generate your AI content here, then define your brand purpose.',
       '/schedule': 'Generate your AI content here, then define your brand purpose.',
+      '/video-gen': 'Create video content here, then define your brand purpose.',
       '/brand-purpose': 'Define your brand purpose here, then connect your platforms.',
       '/connect-platforms': 'Connect your social media accounts here, then monitor analytics.',
-      '/analytics': 'Monitor your performance here and optimize your strategy.'
+      '/analytics': 'Monitor your performance here and optimize your strategy.',
+      '/subscription': 'Manage your subscription and upgrade for more features.'
     };
+    
     return guidanceMap[url] || 'Continue your automation workflow using the menu.';
   };
 
-  // Get logical navigation route for next step
+  // Get logical navigation route based on architecture and current step
   const getLogicalNavigation = () => {
+    if (isDemoMode) {
+      // Demo flow: Welcome → Subscription → Preview pages
+      const navigationMap: Record<number, string> = {
+        0: '/subscription',
+        1: '/brand-purpose', 
+        2: '/connect-platforms',
+        3: '/intelligent-schedule',
+        4: '/analytics',
+        5: '/subscription' // Final step leads to subscription
+      };
+      return navigationMap[currentStep] || '/subscription';
+    }
+    
+    // Subscriber flow: AI Content → Brand Purpose → Connect Platforms → Analytics
     const navigationMap: Record<number, string> = {
-      0: '/brand-purpose',
-      1: '/connect-platforms',
-      2: '/analytics',
-      3: '/intelligent-schedule'
+      0: '/brand-purpose',  // From AI content to brand purpose
+      1: '/connect-platforms', // From brand purpose to connections
+      2: '/analytics',      // From connections to analytics
+      3: '/intelligent-schedule' // From analytics back to content
     };
+    
     return navigationMap[currentStep] || '/intelligent-schedule';
   };
 
-  // Subscriber wizard steps for authenticated users
-  const subscriberWizardSteps: WizardStep[] = [
+  // Demo mode wizard steps (informational only)
+  const demoWizardSteps: WizardStep[] = [
     {
       id: 0,
-      title: "AI Content Generation",
-      description: "Generate Queensland-focused content for your business",
+      title: "Welcome to TheAgencyIQ",
+      description: "Preview your AI-powered social media automation platform",
       icon: <AnimatedIcon icon={Zap} colorScheme="gradient" size="sm" />,
-      actionText: "Generate Content",
-      route: "/intelligent-schedule",
+      actionText: "Learn More",
       tips: [
-        "AI creates content tailored to your Queensland audience",
-        "Generate up to 52 posts per month with your subscription"
+        "This is a demo preview of TheAgencyIQ features",
+        "Explore each step to understand the platform capabilities"
       ],
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-6 rounded-lg">
-            <h3 className="font-semibold text-lg mb-3">Content Generation:</h3>
+            <h3 className="font-semibold text-lg mb-3">Platform Preview:</h3>
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">AI-powered Queensland content</span>
+                <span className="text-sm">AI-powered content generation</span>
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">Platform-optimized posts</span>
+                <span className="text-sm">Multi-platform publishing</span>
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">Brand-aligned messaging</span>
+                <span className="text-sm">Queensland business focussed</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                <span className="text-sm">Advanced analytics and insights</span>
               </div>
             </div>
           </div>
@@ -237,34 +338,27 @@ export default function OnboardingWizard() {
     },
     {
       id: 1,
-      title: "Brand Purpose Setup",
-      description: "Define your brand identity for personalized content",
-      icon: <AnimatedIcon icon={Target} colorScheme="blue" size="sm" />,
-      actionText: "Setup Brand",
-      route: "/brand-purpose",
+      title: "Choose Your Plan",
+      description: "Select the subscription that fits your business needs",
+      icon: <AnimatedIcon icon={CreditCard} colorScheme="cyan" size="sm" />,
+      actionText: "View Plans",
       tips: [
-        "Brand purpose drives AI content generation",
-        "Setup takes about 5 minutes"
+        "Professional plan includes 52 posts per month",
+        "All plans include multi-platform publishing"
       ],
       content: (
         <div className="space-y-4">
-          <div className="bg-white border border-gray-200 p-6 rounded-lg">
-            <h3 className="font-semibold text-lg mb-3">Brand Setup:</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Define your business purpose, target audience, and core messaging to generate personalized content that resonates with your Queensland customers.
-            </p>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">Business purpose and values</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">Target audience definition</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">Core messaging framework</span>
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">Plan Options:</h4>
+            <div className="space-y-3">
+              <div className="bg-white p-4 rounded-lg">
+                <h4 className="font-medium text-gray-800 mb-2">Professional Plan</h4>
+                <p className="text-2xl font-bold text-gray-600">$99.99</p>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <div>52 posts per month</div>
+                  <div>5 platforms</div>
+                  <div>Premium analytics</div>
+                </div>
               </div>
             </div>
           </div>
@@ -273,70 +367,100 @@ export default function OnboardingWizard() {
     },
     {
       id: 2,
-      title: "Connect Platforms",
-      description: "Link your social media accounts for publishing",
-      icon: <AnimatedIcon icon={Users} colorScheme="pink" size="sm" />,
-      actionText: "Connect Platforms",
-      route: "/connect-platforms",
+      title: "Brand Purpose Setup",
+      description: "Define your brand identity for personalized content",
+      icon: <AnimatedIcon icon={Target} colorScheme="blue" size="sm" />,
+      actionText: "Setup Brand",
       tips: [
-        "Connect Facebook, Instagram, LinkedIn, YouTube, and X",
-        "OAuth secure authentication for all platforms"
+        "Brand purpose drives AI content generation",
+        "Setup takes about 5 minutes"
       ],
       content: (
         <div className="space-y-4">
-          <div className="bg-white border border-gray-200 p-6 rounded-lg">
-            <h3 className="font-semibold text-lg mb-3">Platform Integration:</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Securely connect your social media accounts to enable automatic posting across all major platforms.
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">Brand Setup Preview:</h4>
+            <p className="text-sm text-gray-600">
+              Define your business purpose, target audience, and core messaging to generate personalized content that resonates with your Queensland customers.
             </p>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">Facebook and Instagram</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">LinkedIn professional network</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">X (Twitter) and YouTube</span>
-              </div>
-            </div>
           </div>
         </div>
       )
     },
     {
       id: 3,
-      title: "Analytics & Insights",
-      description: "Monitor performance and optimize your strategy",
-      icon: <AnimatedIcon icon={BarChart3} colorScheme="cyan" size="sm" />,
-      actionText: "View Analytics",
-      route: "/analytics",
+      title: "Connect Platforms",
+      description: "Link your social media accounts for publishing",
+      icon: <AnimatedIcon icon={Users} colorScheme="pink" size="sm" />,
+      actionText: "Connect",
       tips: [
-        "Track engagement across all platforms",
-        "Get AI insights for optimization"
+        "Connect Facebook, Instagram, LinkedIn, YouTube, and X",
+        "OAuth secure authentication"
+      ],
+      content: (
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">Platform Integration:</h4>
+            <p className="text-sm text-gray-600">
+              Securely connect your social media accounts to enable automatic posting across all major platforms.
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 4,
+      title: "AI Content Generation",
+      description: "Generate and schedule your social media content",
+      icon: <Zap className="w-4 h-4" />,
+      actionText: "Generate",
+      tips: [
+        "AI creates Queensland-focussed content",
+        "Includes video generation capabilities"
+      ],
+      content: (
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">AI Content Preview:</h4>
+            <p className="text-sm text-gray-600">
+              Advanced AI generates engaging content tailored to Queensland markets with automatic scheduling and video creation.
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 5,
+      title: "Subscribe Now",
+      description: "Unlock the full power of AI social media automation",
+      icon: <BarChart3 className="w-4 h-4" />,
+      actionText: "Subscribe Now",
+      tips: [
+        "Ready to transform your social media presence?",
+        "Start your 30-day content cycle today"
       ],
       content: (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 p-6 rounded-lg">
-            <h3 className="font-semibold text-lg mb-3">Analytics Dashboard:</h3>
+            <h3 className="font-semibold text-lg mb-3">Ready to Get Started?</h3>
             <p className="text-sm text-gray-600 mb-4">
-              Monitor your social media performance and get AI-powered insights to optimize your content strategy.
+              Subscribe now to unlock the full power of AI-driven social media automation for your Queensland business.
             </p>
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">Real-time engagement metrics</span>
+                <span className="text-sm">52 AI-generated posts monthly</span>
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">AI-powered content insights</span>
+                <span className="text-sm">Multi-platform publishing</span>
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">Performance optimization tips</span>
+                <span className="text-sm">Queensland business focus</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                <span className="text-sm">Advanced analytics dashboard</span>
               </div>
             </div>
           </div>
@@ -345,172 +469,304 @@ export default function OnboardingWizard() {
     }
   ];
 
-  // Get current step data
-  const currentStepData = subscriberWizardSteps[currentStep];
-  const totalSteps = subscriberWizardSteps.length;
+  // Functional mode wizard steps (subscriber architecture)
+  const functionalWizardSteps: WizardStep[] = [
+    {
+      id: 0,
+      title: "Generate smart content",
+      description: "Start by creating your social media posts",
+      icon: <Zap className="w-4 h-4" />,
+      actionText: "Generate",
+      route: "/intelligent-schedule",
+      tips: [
+        "This is where subscribers start their workflow",
+        "Generate content first, then set up brand purpose"
+      ],
+      content: (
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-200 p-6 rounded-lg">
+            <h3 className="font-semibold text-lg mb-3">AI Content Generation:</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Start here! Generate engaging content tailored to Queensland markets with automatic scheduling and video creation.
+            </p>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                <span className="text-sm">Active subscription confirmed</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                <span className="text-sm">AI content generation enabled</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                <span className="text-sm">Multi-platform publishing ready</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 1,
+      title: "Define Brand Purpose",
+      description: "Set up your brand identity for personalized content",
+      icon: <Target className="w-4 h-4" />,
+      actionText: "Setup Brand",
+      route: "/brand-purpose",
+      tips: [
+        "Complete brand setup to unlock AI generation",
+        "Takes about 5 minutes to complete"
+      ],
+      content: (
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">Brand Purpose Setup:</h4>
+            <p className="text-sm text-gray-600">
+              {userStatus.hasBrandSetup ? 
+                "Your brand purpose is configured. You can update it anytime." :
+                "Define your business purpose and target audience to generate personalized content."
+              }
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 2,
+      title: "Connect Platforms",
+      description: "Link your social media accounts for publishing",
+      icon: <Users className="w-4 h-4" />,
+      actionText: "Connect",
+      route: "/connect-platforms",
+      tips: [
+        "Connect all platforms for maximum reach",
+        "OAuth authentication ensures security"
+      ],
+      content: (
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">Platform Connections:</h4>
+            <p className="text-sm text-gray-600">
+              {userStatus.hasConnections ? 
+                "Platform connections are active. Check status regularly." :
+                "Connect your social media accounts to enable automatic posting."
+              }
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 3,
+      title: "Monitor Performance",
+      description: "Track analytics and optimize your strategy",
+      icon: <BarChart3 className="w-4 h-4" />,
+      actionText: "View Analytics",
+      route: "/analytics",
+      tips: [
+        "Monitor engagement across all platforms",
+        "Use insights to optimize content strategy"
+      ],
+      content: (
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-200 p-4 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">Analytics Dashboard:</h4>
+            <p className="text-sm text-gray-600">
+              Track performance metrics and get actionable insights to improve your social media strategy.
+            </p>
+          </div>
+        </div>
+      )
+    }
+  ];
 
-  // Handle next step
+  // Select appropriate wizard steps based on mode
+  const wizardSteps = isDemoMode ? demoWizardSteps : functionalWizardSteps;
+
+  // Navigation functions for different modes
   const handleNext = () => {
-    if (currentStep < totalSteps - 1) {
-      setCurrentStep(currentStep + 1);
-      setCompletedSteps([...completedSteps, currentStep]);
+    if (isDemoMode) {
+      // Demo mode: just advance to next step
+      if (currentStep < wizardSteps.length - 1) {
+        setCurrentStep(currentStep + 1);
+      }
+    } else {
+      // Functional mode: navigate to logical route
+      const nextRoute = getLogicalNavigation();
+      if (nextRoute) {
+        setLocation(nextRoute);
+      }
     }
   };
 
-  // Handle previous step
   const handlePrevious = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
-      setCompletedSteps(completedSteps.filter(step => step !== currentStep));
     }
   };
 
-  // Handle skip
+  const handleActionClick = () => {
+    if (isDemoMode) {
+      // Demo mode: last step goes to subscription
+      if (currentStep === wizardSteps.length - 1) {
+        setLocation('/subscription');
+      } else {
+        handleNext();
+      }
+    } else {
+      // Functional mode: navigate to route or next step
+      handleNext();
+    }
+  };
+
+  // Get current step data
+  const currentWizardStep = wizardSteps[currentStep];
+
+  // Handle minimization
+  const handleMinimize = () => {
+    setIsMinimized(!isMinimized);
+  };
+
+  // Handle skip functionality
   const handleSkip = () => {
-    setSkippedSteps([...skippedSteps, currentStep]);
-    if (currentStep < totalSteps - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  // Handle action (navigate to specific route)
-  const handleAction = () => {
-    const route = currentStepData.route;
-    if (route) {
-      setLocation(route);
-      setCompletedSteps([...completedSteps, currentStep]);
-      
-      // Add completion parameter for tracking
-      const url = new URL(window.location.href);
-      url.searchParams.set('wizard-completed', 'true');
-      window.history.replaceState({}, '', url.toString());
-    }
-  };
-
-  // Handle close wizard
-  const handleClose = () => {
-    setIsVisible(false);
     setIsSkipped(true);
+    setIsVisible(false);
   };
 
-  // Don't render if not visible
-  if (!isVisible) {
-    return null;
+  // Handle resume functionality
+  const handleResume = () => {
+    setIsSkipped(false);
+    setIsVisible(true);
+  };
+
+  // Skip floating button
+  const FloatingResumeButton = () => (
+    <div className="fixed bottom-2 right-2 sm:bottom-4 sm:right-4 z-50">
+      <Button
+        onClick={handleResume}
+        className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg text-xs sm:text-sm px-2 sm:px-4"
+        size="sm"
+      >
+        <span className="hidden sm:inline">Resume Guide</span>
+        <span className="sm:hidden">Resume</span>
+      </Button>
+    </div>
+  );
+
+  if (isSkipped) {
+    return <FloatingResumeButton />;
   }
 
+  if (!isVisible) return null;
+
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <Card className={`w-96 bg-white shadow-xl border-2 border-blue-200 transition-all duration-300 ${
-        isMinimized ? 'h-16' : 'h-auto max-h-96'
+    <div className={`fixed bottom-2 right-2 sm:bottom-4 sm:right-4 z-50 transition-all duration-300 ${
+      isMinimized ? 'w-16 h-16' : 'w-[calc(100vw-1rem)] sm:w-80'
+    } max-w-[calc(100vw-1rem)]`}>
+      <Card className={`bg-white border-gray-200 shadow-lg transition-all duration-300 ${
+        isMinimized ? 'border-2 border-purple-200 hover:border-purple-300' : ''
       }`}>
-        <CardHeader className="pb-2">
+        <CardHeader 
+          className={`${isMinimized ? 'p-2 cursor-pointer hover:bg-gray-50' : 'pb-2 sm:pb-3'}`}
+          onClick={isMinimized ? handleMinimize : undefined}
+        >
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <CardTitle className="text-lg font-semibold text-gray-800">
-                {isMinimized ? 'Onboarding Guide' : currentStepData.title}
-              </CardTitle>
+            <div className={`flex items-center space-x-1 sm:space-x-2 min-w-0 ${isMinimized ? 'hidden' : ''}`}>
+              <div className="flex items-center min-w-0">
+                {isDemoMode && (
+                  <Badge variant="secondary" className="mr-1 sm:mr-2 text-xs shrink-0">
+                    Learn more
+                  </Badge>
+                )}
+                <div className="w-2 h-2 bg-blue-500 rounded-full mr-1 sm:mr-2 shrink-0"></div>
+                <CardTitle className="text-sm sm:text-lg font-semibold text-muted-foreground truncate">
+                  {currentWizardStep?.title}
+                </CardTitle>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsMinimized(!isMinimized)}
-                className="p-1 h-8 w-8"
-              >
-                {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClose}
-                className="p-1 h-8 w-8"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              onClick={handleMinimize}
+              variant="ghost"
+              size="sm"
+              className="text-gray-500 hover:text-gray-700 shrink-0"
+              title={isMinimized ? "Expand wizard" : "Minimize wizard"}
+            >
+              {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+            </Button>
           </div>
-        </CardHeader>
-
-        {!isMinimized && (
-          <CardContent className="space-y-4">
-            {/* Progress Bar */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Step {currentStep + 1} of {totalSteps}</span>
-                <span className="text-gray-600">{Math.round(((currentStep + 1) / totalSteps) * 100)}%</span>
+          {!isMinimized && (
+            <div className="mt-2 sm:mt-3">
+              <p className="text-xs sm:text-sm text-gray-600 mb-2">
+                {currentWizardStep?.description}
+              </p>
+              <div className="bg-blue-50 border border-blue-200 p-2 rounded-md">
+                <p className="text-xs sm:text-sm text-blue-800">
+                  {getPageGuidance()}
+                </p>
               </div>
-              <Progress value={((currentStep + 1) / totalSteps) * 100} className="h-2" />
+              <div className="flex items-center space-x-2 mb-2 sm:mb-3">
+                <Progress 
+                  value={((currentStep + 1) / wizardSteps.length) * 100} 
+                  className="flex-1 h-2"
+                />
+                <span className="text-xs text-gray-500 shrink-0">
+                  {currentStep + 1} / {wizardSteps.length}
+                </span>
+              </div>
             </div>
-
-            {/* Step Content */}
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3">
-                {currentStepData.icon}
-                <div>
-                  <h3 className="font-medium text-gray-800">{currentStepData.title}</h3>
-                  <p className="text-sm text-gray-600">{currentStepData.description}</p>
-                </div>
+          )}
+        </CardHeader>
+        
+        {!isMinimized && (
+          <CardContent className="pt-0 px-3 sm:px-6">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="text-xs sm:text-sm">
+                {currentWizardStep?.content}
               </div>
-
-              {/* Page Guidance */}
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-800">{getPageGuidance()}</p>
-              </div>
-
-              {/* Step Content */}
-              <div className="max-h-40 overflow-y-auto">
-                {currentStepData.content}
-              </div>
-
-              {/* Tips */}
-              <div className="space-y-2">
-                {currentStepData.tips.map((tip, index) => (
-                  <div key={index} className="flex items-start space-x-2">
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2"></div>
-                    <span className="text-sm text-gray-600">{tip}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-between pt-3">
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrevious}
-                    disabled={currentStep === 0}
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSkip}
-                  >
-                    Skip
-                  </Button>
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    size="sm"
-                    onClick={handleAction}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    {currentStepData.actionText}
-                    <Play className="h-4 w-4 ml-1" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNext}
-                    disabled={currentStep === totalSteps - 1}
-                  >
-                    Next
-                    <ArrowRight className="h-4 w-4 ml-1" />
-                  </Button>
+              
+              <div className="flex items-center justify-between pt-3 sm:pt-4">
+                <Button
+                  onClick={handlePrevious}
+                  disabled={currentStep === 0}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-1 text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Prev</span>
+                </Button>
+                
+                <div className="flex space-x-1 sm:space-x-2">
+                  {currentStep === wizardSteps.length - 1 ? (
+                    <Button
+                      onClick={handleActionClick}
+                      className={`${
+                        isDemoMode 
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' 
+                          : 'bg-blue-500 hover:bg-blue-600'
+                      } text-white text-xs sm:text-sm px-2 sm:px-3`}
+                      size="sm"
+                    >
+                      {isDemoMode ? (
+                        <>
+                          <span className="hidden sm:inline">Subscribe Now</span>
+                          <span className="sm:hidden">Subscribe</span>
+                        </>
+                      ) : (
+                        'Complete'
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleNext}
+                      className="bg-blue-500 hover:bg-blue-600 text-white text-xs sm:text-sm px-2 sm:px-3"
+                      size="sm"
+                    >
+                      Next
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -519,4 +775,4 @@ export default function OnboardingWizard() {
       </Card>
     </div>
   );
-}
+};

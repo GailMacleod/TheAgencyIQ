@@ -1,0 +1,42 @@
+{
+  "startTime": "2025-07-14T05:58:26.041Z",
+  "duplicateSubscriptions": [],
+  "duplicateCustomers": [
+    {
+      "id": "cus_SSrwnXeRt8QIKw",
+      "email": "gailm@macleodglba.com.au",
+      "action": "deleted",
+      "timestamp": "2025-07-14T05:58:26.907Z"
+    },
+    {
+      "id": "cus_SRQ04DkoGJionQ",
+      "email": "gailm@macleodglba.com.au",
+      "action": "deleted",
+      "timestamp": "2025-07-14T05:58:27.392Z"
+    },
+    {
+      "id": "cus_SRMqPDew0yyINV",
+      "email": "gailm@macleodglba.com.au",
+      "action": "deleted",
+      "timestamp": "2025-07-14T05:58:27.892Z"
+    },
+    {
+      "id": "cus_SRLoXTZBiOAQK0",
+      "email": "gailm@macleodglba.com.au",
+      "action": "deleted",
+      "timestamp": "2025-07-14T05:58:28.418Z"
+    }
+  ],
+  "actions": [],
+  "errors": [],
+  "endTime": "2025-07-14T05:58:28.586Z",
+  "duration": 2545,
+  "summary": {
+    "duplicatesFound": 0,
+    "subscriptionsCanceled": 0,
+    "customersDeleted": 4,
+    "errorsEncountered": 0,
+    "targetUserPreserved": 2,
+    "targetEmail": "gailm@macleodglba.com.au"
+  }
+}

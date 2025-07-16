@@ -1,0 +1,40 @@
+{
+  "timestamp": "2025-07-15T01:50:12.687Z",
+  "tests": {
+    "sessionEstablishment": {
+      "status": "passed",
+      "sessionId": "8fabce25bda30168ffc9b0d139867ff3",
+      "hasSigned": true,
+      "hasUnsigned": true
+    },
+    "signedCookieAuth": {
+      "status": "passed",
+      "user": {
+        "id": 2,
+        "email": "gailm@macleodglba.com.au",
+        "phone": "gailm@macleodglba.com.au",
+        "subscriptionPlan": "professional",
+        "subscriptionActive": true,
+        "remainingPosts": 48,
+        "totalPosts": 52
+      }
+    },
+    "unsignedCookieAuth": {
+      "status": "passed",
+      "user": {
+        "id": 2,
+        "email": "gailm@macleodglba.com.au",
+        "phone": "gailm@macleodglba.com.au",
+        "subscriptionPlan": "professional",
+        "subscriptionActive": true,
+        "remainingPosts": 48,
+        "totalPosts": 52
+      }
+    },
+    "credentialsIncluded": {
+      "status": "failed",
+      "error": 401
+    }
+  },
+  "success": false
+}

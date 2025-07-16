@@ -1,0 +1,23 @@
+{
+  "timestamp": "2025-07-15T08:55:02.331Z",
+  "testType": "PLATFORM_POST_ID_MANAGEMENT",
+  "platforms": [
+    "facebook",
+    "instagram",
+    "linkedin",
+    "x",
+    "youtube"
+  ],
+  "results": [],
+  "summary": {
+    "totalPosts": 0,
+    "successfulPosts": 0,
+    "failedPosts": 0,
+    "quotaDeducted": 0,
+    "rollbacksPerformed": 0
+  },
+  "error": "Quota status failed: Request failed with status code 401",
+  "testCompleted": "2025-07-15T08:55:03.784Z",
+  "successRate": null,
+  "quotaAccuracy": null
+}

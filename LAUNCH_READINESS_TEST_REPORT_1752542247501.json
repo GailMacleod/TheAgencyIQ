@@ -1,0 +1,46 @@
+{
+  "summary": {
+    "totalTests": 2,
+    "passed": 1,
+    "failed": 1,
+    "successRate": "50.0%",
+    "duration": "97ms",
+    "launchReady": false
+  },
+  "testResults": [
+    {
+      "name": "Health Endpoints",
+      "status": "PASSED",
+      "duration": "7ms",
+      "result": {
+        "status": "healthy",
+        "server": "operational",
+        "database": "connected",
+        "memoryMB": 263
+      }
+    },
+    {
+      "name": "Session Management",
+      "status": "FAILED",
+      "duration": "6ms",
+      "error": "No session cookies received"
+    }
+  ],
+  "memoryUsage": [
+    {
+      "timestamp": "2025-07-15T01:17:27.479Z",
+      "rss": 275742720,
+      "heapTotal": 134275072,
+      "heapUsed": 128982504,
+      "external": 29448986
+    }
+  ],
+  "errors": [
+    {
+      "test": "Session Management",
+      "error": "No session cookies received",
+      "stack": "Error: No session cookies received\n    at /home/runner/workspace/launch-readiness-test.cjs:116:15\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async LaunchReadinessTest.runTest (/home/runner/workspace/launch-readiness-test.cjs:31:22)\n    at async LaunchReadinessTest.testSessionManagement (/home/runner/workspace/launch-readiness-test.cjs:103:12)\n    at async LaunchReadinessTest.runAllTests (/home/runner/workspace/launch-readiness-test.cjs:461:7)"
+    }
+  ],
+  "timestamp": "2025-07-15T01:17:27.500Z"
+}

@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-07-15T00-21-19-589Z",
+  "totalTests": 5,
+  "passed": 2,
+  "failed": 3,
+  "successRate": 40,
+  "results": [
+    {
+      "test": "Server Status",
+      "status": "PASSED",
+      "message": "Server responding correctly",
+      "timestamp": "2025-07-15T00:21:19.123Z"
+    },
+    {
+      "test": "Session Establishment",
+      "status": "PASSED",
+      "message": "User ID: 2",
+      "timestamp": "2025-07-15T00:21:19.566Z"
+    },
+    {
+      "test": "Session Persistence",
+      "status": "FAILED",
+      "message": "Status: 401",
+      "timestamp": "2025-07-15T00:21:19.574Z"
+    },
+    {
+      "test": "API Authentication",
+      "status": "FAILED",
+      "message": "Status: 401",
+      "timestamp": "2025-07-15T00:21:19.582Z"
+    },
+    {
+      "test": "Session Consistency",
+      "status": "FAILED",
+      "message": "Session inconsistent across endpoints",
+      "timestamp": "2025-07-15T00:21:19.588Z"
+    }
+  ],
+  "sessionId": "S9KERyj4n2cXfzjfIheMLV1MLqfW_Z6x",
+  "userId": 2,
+  "cookies": "theagencyiq.session=S9KERyj4n2cXfzjfIheMLV1MLqfW_Z6x; Path=/; Max-Age=86400; Secure; SameSite=None; theagencyiq.session=s%3AS9KERyj4n2cXfzjfIheMLV1MLqfW_Z6x.AvDfc2hPF3lkXD6RfRVNdXIxCJoV1WNL6DgV1Iltp3M; Path=/; Expires=Wed, 16 Jul 2025 00:21:19 GMT; Secure; SameSite=None"
+}

@@ -1,0 +1,106 @@
+{
+  "timestamp": "2025-07-15T11:24:36.818Z",
+  "overallScore": 82,
+  "totalTests": 11,
+  "totalPassed": 9,
+  "deploymentChecks": [
+    {
+      "category": "System Health",
+      "test": "Health Endpoint",
+      "status": "PASS",
+      "details": {
+        "status": "healthy",
+        "timestamp": "2025-07-15T11:24:35.411Z",
+        "server": "operational",
+        "database": "connected",
+        "memory": {
+          "rss": 545619968,
+          "heapTotal": 288673792,
+          "heapUsed": 142764792,
+          "external": 13606467,
+          "arrayBuffers": 1952439
+        }
+      }
+    },
+    {
+      "category": "Authentication",
+      "test": "Session Establishment",
+      "status": "PASS",
+      "details": "Session created successfully"
+    },
+    {
+      "category": "Authentication",
+      "test": "Authenticated /api/user",
+      "status": "PASS",
+      "details": "Endpoint accessible"
+    },
+    {
+      "category": "Authentication",
+      "test": "Authenticated /api/user-status",
+      "status": "PASS",
+      "details": "Endpoint accessible"
+    },
+    {
+      "category": "Authentication",
+      "test": "Authenticated /api/platform-connections",
+      "status": "PASS",
+      "details": "Endpoint accessible"
+    },
+    {
+      "category": "Database",
+      "test": "Database Connectivity",
+      "status": "FAIL",
+      "details": "Request failed with status code 401"
+    },
+    {
+      "category": "Memory",
+      "test": "Memory Optimization",
+      "status": "PASS",
+      "details": {
+        "memoryBefore": 63,
+        "memoryAfter": 64,
+        "increase": 1
+      }
+    },
+    {
+      "category": "Security",
+      "test": "content-security-policy Header",
+      "status": "PASS",
+      "details": "Header present"
+    },
+    {
+      "category": "Security",
+      "test": "permissions-policy Header",
+      "status": "PASS",
+      "details": "Header present"
+    },
+    {
+      "category": "Security",
+      "test": "cache-control Header",
+      "status": "PASS",
+      "details": "Header present"
+    },
+    {
+      "category": "Performance",
+      "test": "Response Times",
+      "status": "FAIL",
+      "details": [
+        {
+          "endpoint": "/",
+          "responseTime": 19,
+          "status": "PASS"
+        },
+        {
+          "endpoint": "/api/user-status",
+          "responseTime": "TIMEOUT",
+          "status": "FAIL"
+        },
+        {
+          "endpoint": "/api/platform-connections",
+          "responseTime": "TIMEOUT",
+          "status": "FAIL"
+        }
+      ]
+    }
+  ]
+}

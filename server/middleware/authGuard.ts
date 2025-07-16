@@ -124,33 +124,6 @@ export const requireAuth = async (req: any, res: Response, next: NextFunction) =
       return;
     }
 
-    // Final fallback: If we have a session but no userId, auto-assign User ID 2 for development
-    if (req.session) {
-      console.log(`🔧 AuthGuard: Auto-assigning User ID 2 to existing session`);
-      req.session.userId = 2;
-      req.session.userEmail = 'gailm@macleodglba.com.au';
-      req.session.subscriptionPlan = 'professional';
-      req.session.subscriptionActive = true;
-      
-      // Set session mapping
-      sessionUserMap.set(req.sessionID, 2);
-      
-      req.user = { 
-        id: 2,
-        email: 'gailm@macleodglba.com.au'
-      };
-      
-      req.session.save((err: any) => {
-        if (err) {
-          console.error('Session save error in AuthGuard fallback:', err);
-        }
-      });
-      
-      console.log(`✅ AuthGuard: User ID 2 auto-assigned to session ${req.sessionID}`);
-      next();
-      return;
-    }
-    
     console.log(`❌ AuthGuard: Authentication failed - no valid session found`);
     res.status(401).json({ message: 'Unauthorized', redirectTo: '/login' });
   } catch (error) {

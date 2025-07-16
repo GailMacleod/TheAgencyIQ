@@ -1,0 +1,131 @@
+{
+  "timestamp": "2025-07-14T23:44:34.351Z",
+  "duration": 5.902,
+  "totalUsers": 200,
+  "successCount": 200,
+  "failureCount": 0,
+  "successRate": "100.0",
+  "avgResponseTime": "30",
+  "sampleResults": [
+    {
+      "userId": 1,
+      "success": true,
+      "sessionId": "uIaf1KVSgTwXrOYQ36jwTnOzf9h08Ppf",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 2,
+      "success": true,
+      "sessionId": "2AVLSb6267UZpUZei7sbnwQ7P4pJ7jpD",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 3,
+      "success": true,
+      "sessionId": "dPNVmcN1rI2CHX_7MSzxkzzspoa6LA-l",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 4,
+      "success": true,
+      "sessionId": "dzmy2f4S59AvUOLfNsDqgFfAPUlXqtzV",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 5,
+      "success": true,
+      "sessionId": "5gsy50cK2VeUNiEcKEDHbpL5Mt9D49Ze",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 6,
+      "success": true,
+      "sessionId": "fm91eLTFjJ1SuG1BWgdGOJHd6VFVyU6k",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 7,
+      "success": true,
+      "sessionId": "oRiHMuqKaqXOqOL0bve_xAGEeIXHqvmU",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 8,
+      "success": true,
+      "sessionId": "ctyMbsQUKDfdZjsxq-Z9FKn5T89oh4sJ",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 9,
+      "success": true,
+      "sessionId": "9S0UjJhLvu4cfJw7dcM-XXo1CPZxOice",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 10,
+      "success": true,
+      "sessionId": "G_7q5KSyqnfn9-Gzk1TUTfEjBYpYUCs6",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 11,
+      "success": true,
+      "sessionId": "CUNDmITZxLP0_yrQRfeYIi3mW82YvEo_",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 12,
+      "success": true,
+      "sessionId": "ewA4VAsfUU6VkAAXiGaAbhYzX75v6qwq",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 13,
+      "success": true,
+      "sessionId": "Eu-Xgq2u8ye2SGwiAvZHtrG32jch45rF",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 14,
+      "success": true,
+      "sessionId": "R3g97q287NtTVvo7veVCldGBxsNYXi4i",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 15,
+      "success": true,
+      "sessionId": "uHq-f_h4BFkas8_kiHuZEApeJ0aZE0K-",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 16,
+      "success": true,
+      "sessionId": "DLi7gO11m95uBpj2cB1Te1Z0L2qlVFuu",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 17,
+      "success": true,
+      "sessionId": "_3EeSHM0fO9z-IC2xIZ4nzLvZH-wUPKT",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 18,
+      "success": true,
+      "sessionId": "wIkmM1V5oParpk3MLHBJCOmsJUlSOicR",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 19,
+      "success": true,
+      "sessionId": "gRfTN3hcFUFlNAmBWrv3ohSXFgvYv78X",
+      "user": "gailm@macleodglba.com.au"
+    },
+    {
+      "userId": 20,
+      "success": true,
+      "sessionId": "khSUXlpwW0Ay5_hikd6ntYK7mMcTsdPJ",
+      "user": "gailm@macleodglba.com.au"
+    }
+  ]
+}

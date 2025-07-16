@@ -1,0 +1,34 @@
+{
+  "timestamp": "2025-07-14T01:57:20.075Z",
+  "totalPlatforms": 5,
+  "successfulPlatforms": 0,
+  "results": [
+    {
+      "platform": "facebook",
+      "success": false,
+      "error": "Facebook error: require is not defined"
+    },
+    {
+      "platform": "instagram",
+      "success": false,
+      "error": "Instagram error: require is not defined"
+    },
+    {
+      "platform": "linkedin",
+      "success": false,
+      "error": "LinkedIn error: require is not defined"
+    },
+    {
+      "platform": "x",
+      "success": false,
+      "error": "X error: require is not defined"
+    },
+    {
+      "platform": "youtube",
+      "success": false,
+      "error": "YouTube error: require is not defined"
+    }
+  ],
+  "note": "Using ONLY stored OAuth connections - NO fallback credentials",
+  "securityCompliant": true
+}

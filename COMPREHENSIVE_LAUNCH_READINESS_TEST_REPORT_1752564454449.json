@@ -1,0 +1,71 @@
+{
+  "timestamp": "2025-07-15T07:27:34.449Z",
+  "duration": 2.2582235930000003,
+  "totalTests": 10,
+  "successCount": 2,
+  "successRate": 20,
+  "results": [
+    {
+      "test": "Session Management",
+      "status": "FAILED",
+      "message": "Session establishment failed: Unknown error",
+      "timestamp": "2025-07-15T07:27:32.350Z"
+    },
+    {
+      "test": "User Creation & Signup",
+      "status": "FAILED",
+      "message": "Signup failed: Unknown error",
+      "timestamp": "2025-07-15T07:27:32.444Z"
+    },
+    {
+      "test": "User Authentication",
+      "status": "FAILED",
+      "message": "Authentication failed: Phone and password are required",
+      "timestamp": "2025-07-15T07:27:32.451Z"
+    },
+    {
+      "test": "Subscription System",
+      "status": "FAILED",
+      "message": "Subscription check failed: 401",
+      "timestamp": "2025-07-15T07:27:32.459Z"
+    },
+    {
+      "test": "Platform Connections",
+      "status": "FAILED",
+      "message": "Platform connections failed: 401",
+      "timestamp": "2025-07-15T07:27:32.465Z"
+    },
+    {
+      "test": "Post Publishing",
+      "status": "FAILED",
+      "message": "Post creation failed: 401",
+      "timestamp": "2025-07-15T07:27:32.471Z"
+    },
+    {
+      "test": "Quota Management",
+      "status": "FAILED",
+      "message": "Quota check failed: 401",
+      "timestamp": "2025-07-15T07:27:32.477Z"
+    },
+    {
+      "test": "Multi-User Scalability",
+      "status": "FAILED",
+      "message": "Low success rate: 0.0%",
+      "timestamp": "2025-07-15T07:27:33.824Z"
+    },
+    {
+      "test": "Error Handling",
+      "status": "PASSED",
+      "message": "Security controls working properly",
+      "timestamp": "2025-07-15T07:27:33.830Z"
+    },
+    {
+      "test": "Memory & Performance",
+      "status": "PASSED",
+      "message": "6ms average response time",
+      "timestamp": "2025-07-15T07:27:34.447Z"
+    }
+  ],
+  "errors": [],
+  "status": "NEEDS_WORK"
+}

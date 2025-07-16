@@ -4,7 +4,6 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["imagemagick_light", "nodejs"]
 
 [deployment]
 deploymentTarget = "gce"
@@ -31,10 +30,6 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
-
-[[ports]]
-localPort = 80
-externalPort = 3003
 
 [[ports]]
 localPort = 3001

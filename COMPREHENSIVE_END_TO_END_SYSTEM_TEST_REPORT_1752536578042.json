@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-07-14T23:42:58.042Z",
+  "duration": 8.328,
+  "totalTests": 6,
+  "passedTests": 6,
+  "failedTests": 0,
+  "successRate": "100.0",
+  "testResults": [
+    {
+      "testName": "Session Establishment",
+      "status": "PASSED",
+      "details": "User ID: 2, Session: viOKt1GOiwao_bWB7reZTIsGcMjDJlMp",
+      "timestamp": "2025-07-14T23:42:54.386Z"
+    },
+    {
+      "testName": "Session Persistence",
+      "status": "PASSED",
+      "details": "User: gailm@macleodglba.com.au",
+      "timestamp": "2025-07-14T23:42:54.729Z"
+    },
+    {
+      "testName": "User Creation",
+      "status": "PASSED",
+      "details": "Created test user: scalability-test-67@example67.com",
+      "timestamp": "2025-07-14T23:42:54.939Z"
+    },
+    {
+      "testName": "Multi-User Scalability",
+      "status": "PASSED",
+      "details": "50/50 users (100.0%)",
+      "timestamp": "2025-07-14T23:42:57.289Z"
+    },
+    {
+      "testName": "API Endpoint Functionality",
+      "status": "PASSED",
+      "details": "3/3 endpoints working",
+      "timestamp": "2025-07-14T23:42:58.035Z"
+    },
+    {
+      "testName": "Error Handling",
+      "status": "PASSED",
+      "details": "Proper 401 response for unauthenticated request",
+      "timestamp": "2025-07-14T23:42:58.041Z"
+    }
+  ]
+}

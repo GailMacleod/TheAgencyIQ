@@ -1,0 +1,65 @@
+{
+  "timestamp": "2025-07-15T07:38:23.036Z",
+  "duration": 7.341843546,
+  "totalTests": 9,
+  "successCount": 7,
+  "successRate": 77.77777777777779,
+  "results": [
+    {
+      "test": "User Creation System",
+      "status": "FAILED",
+      "message": "User creation failed: 401",
+      "timestamp": "2025-07-15T07:38:16.041Z"
+    },
+    {
+      "test": "Session Management",
+      "status": "PASSED",
+      "message": "Session persistence working",
+      "timestamp": "2025-07-15T07:38:16.164Z"
+    },
+    {
+      "test": "Subscription System",
+      "status": "PASSED",
+      "message": "Subscription validation working",
+      "timestamp": "2025-07-15T07:38:16.284Z"
+    },
+    {
+      "test": "Post Publishing System",
+      "status": "PASSED",
+      "message": "Post creation system operational",
+      "timestamp": "2025-07-15T07:38:16.474Z"
+    },
+    {
+      "test": "Quota Management",
+      "status": "PASSED",
+      "message": "Quota tracking operational",
+      "timestamp": "2025-07-15T07:38:16.595Z"
+    },
+    {
+      "test": "Multi-User Scalability",
+      "status": "FAILED",
+      "message": "Low success rate: 0.0%",
+      "timestamp": "2025-07-15T07:38:21.568Z"
+    },
+    {
+      "test": "Error Handling",
+      "status": "PASSED",
+      "message": "Security controls working",
+      "timestamp": "2025-07-15T07:38:21.578Z"
+    },
+    {
+      "test": "Memory & Performance",
+      "status": "PASSED",
+      "message": "8ms average response time",
+      "timestamp": "2025-07-15T07:38:22.341Z"
+    },
+    {
+      "test": "End-to-End Flow",
+      "status": "PASSED",
+      "message": "Complete flow operational",
+      "timestamp": "2025-07-15T07:38:23.034Z"
+    }
+  ],
+  "errors": [],
+  "status": "NEEDS_WORK"
+}

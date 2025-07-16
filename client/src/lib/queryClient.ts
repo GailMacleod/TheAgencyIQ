@@ -1,7 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { sessionManager } from "@/utils/session-manager";
 import { apiClient } from "@/utils/api-client";
-import { tokenRefreshService } from "@/utils/token-refresh";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -80,27 +79,10 @@ export async function apiRequest(
     const text = await response.text();
     console.error('API Error:', text);
     
-    // Handle subscription validation responses and token refresh
+    // Handle subscription validation responses
     if (response.status === 401 || response.status === 403) {
       try {
         const errorData = JSON.parse(text);
-        
-        // Try token refresh first for 401 errors
-        if (response.status === 401 && !errorData.requiresLogin) {
-          console.log('🔄 Attempting token refresh for 401 error...');
-          const refreshResult = await tokenRefreshService.refreshToken();
-          
-          if (refreshResult.success) {
-            // Retry the original request with new token
-            console.log('✅ Token refreshed, retrying request...');
-            return apiRequest(method, url, data);
-          } else {
-            console.log('❌ Token refresh failed, redirecting to login');
-            window.location.href = '/login';
-            return;
-          }
-        }
-        
         if (errorData.requiresSubscription) {
           // Redirect to subscription page for subscription requirement
           window.location.href = '/subscription';
@@ -164,25 +146,6 @@ export const getQueryFn: <T>(options: {
       clearTimeout(timeoutId);
 
       if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-        // Try token refresh before returning null
-        console.log('🔄 Query got 401, attempting token refresh...');
-        const refreshResult = await tokenRefreshService.refreshToken();
-        
-        if (refreshResult.success) {
-          // Retry the query with new token
-          console.log('✅ Token refreshed, retrying query...');
-          const retryRes = await sessionManager.makeAuthenticatedRequest(queryKey[0] as string, {
-            signal: controller.signal,
-            cache: 'no-cache',
-            credentials: 'include',
-            headers,
-          });
-          
-          if (retryRes.ok) {
-            return await retryRes.json();
-          }
-        }
-        
         return null;
       }
 
@@ -214,7 +177,7 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "returnNull" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes instead of Infinity for better auth handling
+      staleTime: Infinity,
       retry: (failureCount, error: any) => {
         // Don't retry on network errors or timeouts
         if (error?.message?.includes('Network connection failed') || 
@@ -228,20 +191,6 @@ export const queryClient = new QueryClient({
     },
     mutations: {
       retry: false,
-      // Enable optimistic updates for better UX
-      onMutate: () => {
-        console.log('🔄 Mutation starting with optimistic update...');
-      },
-      onSuccess: (data, variables, context) => {
-        console.log('✅ Mutation succeeded, invalidating related queries...');
-        // Invalidate related queries to refresh data
-        queryClient.invalidateQueries();
-      },
-      onError: (error, variables, context) => {
-        console.log('❌ Mutation failed, reverting optimistic update...');
-        // Revert optimistic updates on error
-        queryClient.invalidateQueries();
-      },
     },
   },
 });

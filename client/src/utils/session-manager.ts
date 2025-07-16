@@ -1,7 +1,6 @@
 /**
  * Session Manager - Ensures consistent session cookie transmission
  */
-import { tokenRefreshService } from "./token-refresh";
 
 interface SessionInfo {
   id: string;
