@@ -20,11 +20,23 @@ export async function setupVite(app: Express, server: Server) {
   
   // TypeScript/JSX transformation middleware
   app.use(async (req, res, next) => {
-    const filePath = path.join(process.cwd(), 'client', req.path);
+    let filePath = path.join(process.cwd(), 'client', req.path);
     
-    if (shouldTransform(req.path) && fs.existsSync(filePath)) {
+    // If the file doesn't exist, try to find it with .tsx/.ts extension
+    if (!fs.existsSync(filePath)) {
+      const extensions = ['.tsx', '.ts', '.js', '.jsx'];
+      for (const ext of extensions) {
+        const testPath = filePath + ext;
+        if (fs.existsSync(testPath)) {
+          filePath = testPath;
+          break;
+        }
+      }
+    }
+    
+    if (shouldTransform(filePath) && fs.existsSync(filePath)) {
       try {
-        console.log(`🔄 Transforming TypeScript file: ${req.path}`);
+        console.log(`🔄 Transforming TypeScript file: ${req.path} -> ${filePath}`);
         const transformedCode = await transformTypeScriptFile(filePath);
         
         res.setHeader('Content-Type', 'application/javascript');

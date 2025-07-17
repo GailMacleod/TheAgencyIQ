@@ -793,14 +793,52 @@ async function startServer() {
       console.log('⚡ Setting up development Vite...');
       try {
         console.log('🔧 Attempting to setup Vite development server...');
-        const { setupVite } = await import('./vite');
-        await setupVite(app, httpServer);
+        const { createViteDevServer } = await import('./vite-dev');
+        await createViteDevServer(app);
         console.log('✅ Vite development server setup complete');
       } catch (error) {
         console.warn('⚠️ Vite setup failed:', error.message);
         console.warn('⚠️ Using fallback static serving with TypeScript transformation');
-        const { setupVite } = await import('./vite-fallback-simple');
-        await setupVite(app, httpServer);
+        // Production-ready static serving with proper MIME types
+        if (process.env.NODE_ENV === 'production') {
+          // Serve built assets with correct MIME types
+          app.use(express.static(path.join(__dirname, '../dist'), {
+            setHeaders: (res, path) => {
+              if (path.endsWith('.js')) {
+                res.setHeader('Content-Type', 'application/javascript');
+              } else if (path.endsWith('.css')) {
+                res.setHeader('Content-Type', 'text/css');
+              } else if (path.endsWith('.html')) {
+                res.setHeader('Content-Type', 'text/html');
+              }
+              res.setHeader('Cache-Control', 'public, max-age=31536000');
+            }
+          }));
+          
+          // Serve index.html for all non-API routes
+          app.get('*', (req, res) => {
+            if (!req.path.startsWith('/api/')) {
+              res.sendFile(path.join(__dirname, '../dist/index.html'));
+            }
+          });
+        } else {
+          // Development mode with immediate static serving bypass
+          app.use('/src', express.static(path.join(__dirname, '../client/src'), {
+            setHeaders: (res, path) => {
+              if (path.endsWith('.tsx') || path.endsWith('.ts') || path.endsWith('.jsx') || path.endsWith('.js')) {
+                res.setHeader('Content-Type', 'application/javascript');
+              }
+              res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            }
+          }));
+          
+          // Serve index.html for development
+          app.get('*', (req, res) => {
+            if (!req.path.startsWith('/api/') && !req.path.startsWith('/src/')) {
+              res.sendFile(path.join(__dirname, '../client/index.html'));
+            }
+          });
+        }
         console.log('✅ Fallback static serving setup complete');
       }
     }

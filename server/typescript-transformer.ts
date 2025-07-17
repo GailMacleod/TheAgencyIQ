@@ -29,16 +29,28 @@ export async function transformTypeScriptFile(filePath: string): Promise<string>
   try {
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     
-    // Basic TypeScript to JavaScript transformation
+    // Skip transformation for .tsx files in development - serve as-is with proper MIME
+    if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
+      return fileContent;
+    }
+    
+    // For other files, minimal transformation
     let transformedCode = fileContent;
     
-    // Remove TypeScript type annotations
-    transformedCode = transformedCode.replace(/:\s*[^=\s{}\[\](),;]+(\s*=)/g, '$1');
-    transformedCode = transformedCode.replace(/:\s*[^=\s{}\[\](),;]+(\s*[,\)\}])/g, '$1');
-    transformedCode = transformedCode.replace(/:\s*[^=\s{}\[\](),;]+(\s*$)/g, '$1');
+    // Add React import for JSX files
+    if (filePath.endsWith('.tsx') && !transformedCode.includes('import React')) {
+      transformedCode = `import React from 'react';\n${transformedCode}`;
+    }
     
-    // Replace import statements to use correct paths
+    // Fix only the import paths that need to be resolved
     transformedCode = transformedCode.replace(/import\s+([^'"]+)\s+from\s+["']([^'"]+)["']/g, (match, imports, importPath) => {
+      // Remove .tsx/.ts extensions from relative imports
+      if (importPath.startsWith('./') || importPath.startsWith('../')) {
+        const cleanPath = importPath.replace(/\.tsx?$/, '');
+        return `import ${imports} from "${cleanPath}"`;
+      }
+      
+      // Handle @ aliases
       if (importPath.startsWith('@/')) {
         return `import ${imports} from "/src/${importPath.replace('@/', '')}"`;
       }
@@ -48,25 +60,12 @@ export async function transformTypeScriptFile(filePath: string): Promise<string>
       if (importPath.startsWith('@assets/')) {
         return `import ${imports} from "/attached_assets/${importPath.replace('@assets/', '')}"`;
       }
-      if (importPath.startsWith('./') || importPath.startsWith('../')) {
-        // Handle relative imports - resolve proper file extensions
-        const resolvedImport = resolveFileExtension(filePath, importPath);
-        return `import ${imports} from "${resolvedImport}"`;
-      }
-      if (importPath === 'react' || importPath === 'react-dom/client' || importPath.startsWith('react-') || importPath.includes('node_modules')) {
-        return match; // Keep external package imports as-is
-      }
-      return match;
+      
+      return match; // Keep all other imports as-is
     });
     
-    // Handle CSS imports - remove them for now since they cause module errors
+    // Remove CSS imports to prevent module errors
     transformedCode = transformedCode.replace(/import\s+["']([^'"]*\.css)["'];?\s*\n?/g, '// CSS import removed: $1\n');
-    
-    // Handle JSX transformations (basic)
-    if (filePath.endsWith('.tsx')) {
-      // Convert JSX to React.createElement calls (basic transformation)
-      transformedCode = `import React from 'react';\n${transformedCode}`;
-    }
     
     return transformedCode;
   } catch (error) {
@@ -76,5 +75,5 @@ export async function transformTypeScriptFile(filePath: string): Promise<string>
 }
 
 export function shouldTransform(filePath: string): boolean {
-  return filePath.endsWith('.ts') || filePath.endsWith('.tsx');
+  return filePath.endsWith('.ts') || filePath.endsWith('.tsx') || filePath.endsWith('.js') || filePath.endsWith('.jsx');
 }
