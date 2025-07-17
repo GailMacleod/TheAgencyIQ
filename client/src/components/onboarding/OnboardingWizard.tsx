@@ -31,7 +31,7 @@ export default function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isVisible, setIsVisible] = useState(true);
-  const [isMinimized, setIsMinimized] = useState(true); // Start minimized by default
+  const [isMinimized, setIsMinimized] = useState(false);
   const [skippedSteps, setSkippedSteps] = useState<number[]>([]);
   const [isSkipped, setIsSkipped] = useState(false);
   const [userStatus, setUserStatus] = useState<UserStatus>({
@@ -77,34 +77,6 @@ export default function OnboardingWizard() {
   useEffect(() => {
     const checkUserStatus = async () => {
       try {
-        // CRITICAL: Only allow onboarding wizard for authenticated subscribers
-        // Check if user is authenticated first
-        const sessionResponse = await fetch('/api/establish-session', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: 'gailm@macleodglba.com.au', // Authenticated user only
-            phone: '+61424835189'
-          })
-        });
-        
-        if (!sessionResponse.ok) {
-          // NO GUEST ACCESS - Redirect to login page
-          console.log('Authentication required for onboarding wizard');
-          window.location.href = '/login';
-          return;
-        }
-        
-        const sessionData = await sessionResponse.json();
-        if (!sessionData.sessionEstablished) {
-          // NO GUEST ACCESS - Redirect to login page
-          console.log('Session establishment failed - redirecting to login');
-          window.location.href = '/login';
-          return;
-        }
-        
-        // Now get user status with authenticated session
         const response = await fetch('/api/user-status', {
           credentials: 'include'
         });
@@ -112,29 +84,29 @@ export default function OnboardingWizard() {
         if (response.ok) {
           const statusData = await response.json();
           const hasActiveSubscription = statusData.hasActiveSubscription || false;
-          
-          // CRITICAL: Only allow onboarding for authenticated subscribers
-          if (!hasActiveSubscription) {
-            console.log('No active subscription - redirecting to subscription page');
-            window.location.href = '/subscription';
-            return;
-          }
-          
           setUserStatus({
-            userType: statusData.userType || 'returning',
+            userType: statusData.userType || 'new',
             hasActiveSubscription,
             hasBrandSetup: statusData.hasBrandSetup || false,
             hasConnections: statusData.hasConnections || false,
             currentUrl: location
           });
           
-          // Only subscriber flow - no demo mode
-          setIsDemoMode(false);
-          const urlStep = getSubscriberStepFromUrl(location);
-          setCurrentStep(urlStep);
+          // Set mode based on subscription status and current page
+          const isDemo = !hasActiveSubscription;
+          setIsDemoMode(isDemo);
           
+          // Set appropriate starting step based on architecture
+          if (!isDemo) {
+            // Subscriber flow: different step mapping
+            const urlStep = getSubscriberStepFromUrl(location);
+            setCurrentStep(urlStep);
+          } else {
+            // Non-subscriber flow: demo mode steps
+            setCurrentStep(0);
+          }
         } else {
-          // Fallback to /api/user for authenticated subscribers only
+          // Fallback to /api/user if user-status endpoint doesn't exist
           const fallbackResponse = await fetch('/api/user', {
             credentials: 'include'
           });
@@ -142,40 +114,52 @@ export default function OnboardingWizard() {
           if (fallbackResponse.ok) {
             const userData = await fallbackResponse.json();
             const hasActiveSubscription = userData.subscriptionPlan && userData.subscriptionPlan !== 'free';
-            
-            // CRITICAL: Only allow onboarding for authenticated subscribers
-            if (!hasActiveSubscription) {
-              console.log('No active subscription - redirecting to subscription page');
-              window.location.href = '/subscription';
-              return;
-            }
-            
             setUserStatus({
-              userType: 'returning',
+              userType: hasActiveSubscription ? 'returning' : 'new',
               hasActiveSubscription,
               hasBrandSetup: userData.brandName ? true : false,
-              hasConnections: false,
+              hasConnections: false, // Default to false without specific endpoint
               currentUrl: location
             });
             
-            // Only subscriber flow - no demo mode
-            setIsDemoMode(false);
-            const urlStep = getSubscriberStepFromUrl(location);
-            setCurrentStep(urlStep);
+            // Set mode based on subscription status
+            const isDemo = !hasActiveSubscription;
+            setIsDemoMode(isDemo);
             
+            // Set appropriate starting step based on architecture
+            if (!isDemo) {
+              // Subscriber flow: different step mapping
+              const urlStep = getSubscriberStepFromUrl(location);
+              setCurrentStep(urlStep);
+            } else {
+              // Non-subscriber flow: demo mode steps
+              setCurrentStep(0);
+            }
           } else {
-            // NO GUEST ACCESS - LOOP PREVENTION - NOT REDIRECTING
-            console.log('Authentication failed - LOOP PREVENTION - NOT REDIRECTING');
-            // DISABLED TO PREVENT INFINITE LOOP: window.location.href = '/login';
-            return;
+            // Default to demo mode for non-authenticated users
+            setIsDemoMode(true);
+            setCurrentStep(0);
+            setUserStatus({
+              userType: 'new',
+              hasActiveSubscription: false,
+              hasBrandSetup: false,
+              hasConnections: false,
+              currentUrl: location
+            });
           }
         }
       } catch (error) {
-        console.log('Error checking user status:', error);
-        // NO GUEST ACCESS - LOOP PREVENTION - NOT REDIRECTING
-        console.log('Error during authentication check - LOOP PREVENTION - NOT REDIRECTING');
-        // DISABLED TO PREVENT INFINITE LOOP: window.location.href = '/login';
-        return;
+        console.log('Could not check user status:', error);
+        // Default to demo mode on any error
+        setIsDemoMode(true);
+        setCurrentStep(0);
+        setUserStatus({
+          userType: 'new',
+          hasActiveSubscription: false,
+          hasBrandSetup: false,
+          hasConnections: false,
+          currentUrl: location
+        });
       }
     };
     
@@ -661,18 +645,14 @@ export default function OnboardingWizard() {
   if (!isVisible) return null;
 
   return (
-    <div className={`fixed bottom-2 right-2 sm:bottom-4 sm:right-4 z-50 transition-all duration-300 ${
-      isMinimized ? 'w-16 h-16' : 'w-[calc(100vw-1rem)] sm:w-80'
-    } max-w-[calc(100vw-1rem)]`}>
-      <Card className={`bg-white border-gray-200 shadow-lg transition-all duration-300 ${
-        isMinimized ? 'border-2 border-purple-200 hover:border-purple-300' : ''
-      }`}>
+    <div className="fixed bottom-2 right-2 sm:bottom-4 sm:right-4 z-50 w-[calc(100vw-1rem)] sm:w-80 max-w-[calc(100vw-1rem)]">
+      <Card className="bg-white border-gray-200 shadow-lg">
         <CardHeader 
-          className={`${isMinimized ? 'p-2 cursor-pointer hover:bg-gray-50' : 'pb-2 sm:pb-3'}`}
+          className={`pb-2 sm:pb-3 ${isMinimized ? 'cursor-pointer hover:bg-gray-50' : ''}`}
           onClick={isMinimized ? handleMinimize : undefined}
         >
           <div className="flex items-center justify-between">
-            <div className={`flex items-center space-x-1 sm:space-x-2 min-w-0 ${isMinimized ? 'hidden' : ''}`}>
+            <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
               <div className="flex items-center min-w-0">
                 {isDemoMode && (
                   <Badge variant="secondary" className="mr-1 sm:mr-2 text-xs shrink-0">
@@ -738,7 +718,7 @@ export default function OnboardingWizard() {
                   <span className="sm:hidden">Prev</span>
                 </Button>
                 
-                <div className="flex space-x-1 sm:space-x-2">
+                <div className="flex space-x-2">
                   {currentStep === wizardSteps.length - 1 ? (
                     <Button
                       onClick={handleActionClick}

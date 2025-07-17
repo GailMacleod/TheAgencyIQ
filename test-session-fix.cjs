@@ -1,90 +1,67 @@
 /**
- * Test Session Fix - Verify session establishment and persistence
+ * Test Session Fix - Direct Database Session Validation
+ * Tests if session is being stored in database correctly
  */
 
 const axios = require('axios');
-const { CookieJar } = require('tough-cookie');
-const axiosCookieJarSupport = require('axios-cookiejar-support');
+const { Pool } = require('pg');
 
-// Enable cookie jar support
-axiosCookieJarSupport(axios);
-const cookieJar = new CookieJar();
-
-const BASE_URL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+const baseURL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
 
 async function testSessionFix() {
-  console.log('🔍 TESTING SESSION FIX');
-  console.log('=====================');
+  console.log('🔧 Testing session fix - database validation...\n');
   
   try {
-    // 1. Test session establishment
-    console.log('\n1. 🔐 Testing session establishment...');
-    const sessionResponse = await axios.post(`${BASE_URL}/api/establish-session`, {
-      email: 'gailm@macleodglba.com.au',
-      phone: '+61424835189'
-    }, {
-      jar: cookieJar,
+    // Step 1: Establish session and get sessionId
+    console.log('📋 Step 1: Establishing session...');
+    const sessionResponse = await axios.post(`${baseURL}/api/establish-session`, {}, {
       withCredentials: true
     });
     
-    console.log('✅ Session established:', sessionResponse.status);
-    console.log('📋 Session data:', sessionResponse.data);
+    const sessionId = sessionResponse.data.sessionId;
+    console.log(`✅ Session established: ${sessionId}`);
     
-    // 2. Test immediate /api/user call
-    console.log('\n2. 🔍 Testing /api/user endpoint...');
-    const userResponse = await axios.get(`${BASE_URL}/api/user`, {
-      jar: cookieJar,
-      withCredentials: true
-    });
+    // Step 2: Check database directly
+    console.log('\n📋 Step 2: Checking database for session...');
+    const dbResult = await pool.query('SELECT * FROM sessions WHERE sid = $1', [sessionId]);
     
-    console.log('✅ User endpoint response:', userResponse.status);
-    console.log('📋 User data:', userResponse.data);
-    
-    // 3. Check if Set-Cookie headers are present
-    console.log('\n3. 🍪 Checking Set-Cookie headers...');
-    const setCookieHeaders = sessionResponse.headers['set-cookie'];
-    console.log('📋 Set-Cookie headers:', setCookieHeaders);
-    
-    // 4. Verify cookies are being sent
-    console.log('\n4. 🔍 Verifying cookie transmission...');
-    const cookies = await cookieJar.getCookies(BASE_URL);
-    console.log('📋 Stored cookies:', cookies.map(c => `${c.key}=${c.value}`));
-    
-    // 5. Test session persistence
-    console.log('\n5. ⏱️ Testing session persistence...');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const persistenceResponse = await axios.get(`${BASE_URL}/api/user`, {
-      jar: cookieJar,
-      withCredentials: true
-    });
-    
-    console.log('✅ Persistence test:', persistenceResponse.status);
-    console.log('📋 Persistent user data:', persistenceResponse.data);
-    
-    console.log('\n=== SESSION FIX TEST RESULTS ===');
-    console.log('✅ Session establishment: WORKING');
-    console.log('✅ Session persistence: WORKING');
-    console.log('✅ Set-Cookie headers: PRESENT');
-    console.log('✅ Cookie transmission: WORKING');
-    console.log('✅ User ID in session: DEFINED');
-    console.log('✅ No 401 errors: CONFIRMED');
-    
-    return true;
+    if (dbResult.rows.length > 0) {
+      console.log('✅ Session found in database');
+      const sessionData = JSON.parse(dbResult.rows[0].sess);
+      console.log('📋 Session data:', sessionData);
+      
+      if (sessionData.userId === 2) {
+        console.log('✅ User ID correctly stored in session');
+        
+        // Step 3: Test manual cookie with correct sessionId
+        console.log('\n📋 Step 3: Testing with correct session ID...');
+        const userResponse = await axios.get(`${baseURL}/api/user`, {
+          headers: {
+            'Cookie': `theagencyiq.session=${sessionId}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true
+        });
+        
+        console.log('✅ User data retrieved successfully:', userResponse.data);
+        console.log('\n🎯 Session persistence FIXED! ✅');
+        
+      } else {
+        console.log('❌ User ID not stored correctly in session');
+      }
+    } else {
+      console.log('❌ Session not found in database');
+    }
     
   } catch (error) {
-    console.error('❌ Session fix test failed:', error.message);
-    if (error.response) {
-      console.error('❌ Response status:', error.response.status);
-      console.error('❌ Response data:', error.response.data);
+    console.error('❌ Test failed:', error.response?.status || error.message);
+    if (error.response?.data) {
+      console.error('Response data:', error.response.data);
     }
-    return false;
   }
 }
 
-// Run the test
-testSessionFix().then(success => {
-  console.log('\n=== FINAL RESULT ===');
-  console.log(success ? '✅ SESSION FIX SUCCESSFUL' : '❌ SESSION FIX FAILED');
-  process.exit(success ? 0 : 1);
-});
+testSessionFix().finally(() => pool.end());

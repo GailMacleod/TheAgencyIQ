@@ -116,12 +116,9 @@ export default function RedeemCertificate() {
                     <FormControl>
                       <Input
                         {...field}
-                        id="code"
-                        name="code"
                         placeholder="PROF-TEST-XXXXXXXX"
                         className="text-center font-mono text-lg tracking-wider uppercase"
                         onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                        aria-label="Certificate code"
                       />
                     </FormControl>
                     <FormMessage />
@@ -138,11 +135,8 @@ export default function RedeemCertificate() {
                     <FormControl>
                       <Input
                         {...field}
-                        id="email"
-                        name="email"
                         type="email"
                         placeholder="your@email.com"
-                        aria-label="Email address"
                       />
                     </FormControl>
                     <FormMessage />
@@ -159,11 +153,8 @@ export default function RedeemCertificate() {
                     <FormControl>
                       <Input
                         {...field}
-                        id="password"
-                        name="password"
                         type="password"
                         placeholder="Create a secure password"
-                        aria-label="Password"
                       />
                     </FormControl>
                     <FormMessage />
@@ -180,11 +171,8 @@ export default function RedeemCertificate() {
                     <FormControl>
                       <Input
                         {...field}
-                        id="phone"
-                        name="phone"
                         type="tel"
                         placeholder="+61 xxx xxx xxx"
-                        aria-label="Phone number"
                       />
                     </FormControl>
                     <FormMessage />

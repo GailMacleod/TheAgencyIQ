@@ -17,26 +17,23 @@ class SessionManager {
       return this.sessionPromise;
     }
 
-    // First check if we already have a valid session using the user endpoint
+    // First check if we already have a valid session using the public endpoint
     try {
-      const response = await fetch('/api/user', {
+      const response = await fetch('/api/auth/session', {
         method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        credentials: 'include'
       });
       
       if (response.ok) {
-        const user = await response.json();
-        console.log('🔍 Session check result:', { authenticated: true, user });
+        const sessionData = await response.json();
+        console.log('🔍 Session check result:', sessionData);
         
-        if (user && user.email) {
-          console.log('✅ Existing session verified for:', user.email);
+        if (sessionData.authenticated && sessionData.user) {
+          console.log('✅ Existing session verified for:', sessionData.user.email);
           
           this.sessionInfo = {
-            id: 'existing',
-            user: user,
+            id: sessionData.sessionId,
+            user: sessionData.user,
             established: true
           };
           
@@ -44,8 +41,7 @@ class SessionManager {
         }
       }
     } catch (error) {
-      console.log('⚠️ Session verification failed - NO FALLBACK LOGIC');
-      throw error; // Prevent re-establishment on failure
+      console.log('⚠️ Session verification failed, creating new session');
     }
 
     this.sessionPromise = this.doEstablishSession();
@@ -54,50 +50,27 @@ class SessionManager {
 
   private async doEstablishSession(): Promise<SessionInfo> {
     try {
-      console.log('🔍 Establishing session...');
-      
-      const response = await fetch('/api/establish-session', {
+      const response = await fetch('/api/auth/establish-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify({
-          email: 'gailm@macleodglba.com.au',
-          phone: '+61424835189'
-        })
+        credentials: 'include'
       });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Session establishment response:', data);
-        
-        // Extract session ID from response
-        const sessionId = data.sessionId;
-        if (sessionId) {
-          console.log('📋 Session ID received:', sessionId);
-          
-          // Check if cookies are being set by examining the response headers
-          const cookies = response.headers.get('Set-Cookie');
-          if (cookies) {
-            console.log('🍪 Set-Cookie headers found:', cookies);
-          } else {
-            console.log('⚠️ No Set-Cookie headers found in response');
-          }
-        }
-        
         this.sessionInfo = {
-          id: sessionId || 'established',
+          id: data.sessionId || 'established',
           user: data.user,
           established: true
         };
         
         console.log('✅ Session established:', data.user?.email || 'User authenticated');
         console.log('User ID:', data.user?.id);
-        console.log('Session ID:', sessionId);
         
-        // Store user info
+        // Store in sessionStorage for debugging
         if (data.user) {
           sessionStorage.setItem('currentUser', JSON.stringify({
             id: data.user.id,
@@ -106,14 +79,9 @@ class SessionManager {
           }));
         }
         
-        // Add a delay to ensure cookie is set by the browser before returning
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
         return this.sessionInfo;
       } else {
-        console.error('Session establishment failed with status:', response.status);
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Session establishment failed');
+        throw new Error('Session establishment failed');
       }
     } catch (error) {
       console.error('Session establishment error:', error);
@@ -126,9 +94,10 @@ class SessionManager {
   }
 
   async makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
-    console.log(`🔍 Making authenticated request to: ${url}`);
-    
-    // Use browser's built-in cookie mechanism - credentials: 'include' handles cookies automatically
+    // Ensure session is established
+    await this.establishSession();
+
+    // Always include credentials and fresh session cookie
     const requestOptions: RequestInit = {
       ...options,
       credentials: 'include',
@@ -140,25 +109,29 @@ class SessionManager {
     };
 
     const response = await fetch(url, requestOptions);
-    
-    // NO FALLBACK LOGIC - prevent authentication loops
-    if (!response.ok && response.status === 401) {
-      console.log('Authentication failed - LOOP PREVENTION - NOT REDIRECTING');
-      return response;
+
+    // If we get a 401, try to re-establish session once
+    if (response.status === 401 && !options.headers?.['X-Retry-Session']) {
+      console.log('🔄 Session expired, re-establishing...');
+      this.sessionInfo = null;
+      this.sessionPromise = null;
+      
+      await this.establishSession();
+      
+      return fetch(url, {
+        ...requestOptions,
+        headers: {
+          ...requestOptions.headers,
+          'X-Retry-Session': 'true',
+        },
+      });
     }
-    
+
     return response;
   }
 
   private getSessionCookie(): string | null {
-    // First try to get session cookie from sessionStorage (manual handling)
-    const sessionCookie = sessionStorage.getItem('sessionCookie');
-    if (sessionCookie) {
-      console.log('🔑 Using stored session cookie:', sessionCookie.substring(0, 50) + '...');
-      return sessionCookie;
-    }
-    
-    // Fallback: Extract session cookie from document.cookie
+    // Extract session cookie from document.cookie
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
@@ -170,38 +143,13 @@ class SessionManager {
     
     // Debug: log all available cookies
     console.log('🍪 Available cookies:', document.cookie);
-    console.log('🔑 Session ID in storage:', sessionStorage.getItem('sessionId'));
     return null;
   }
 
   clearSession() {
     this.sessionInfo = null;
     this.sessionPromise = null;
-    sessionStorage.removeItem('sessionId');
-    sessionStorage.removeItem('sessionCookie');
     sessionStorage.removeItem('currentUser');
-    
-    // Clear all session-related cookies
-    document.cookie = 'theagencyiq.session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    document.cookie = 'theagencyiq.session.unsigned=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    
-    // Clear localStorage session data
-    localStorage.removeItem('aiq_session_cookie');
-    localStorage.removeItem('aiq_session_cookie_unsigned');
-  }
-  
-  /**
-   * Generate a mock signature for session cookies (development only)
-   */
-  private generateSignature(sessionId: string): string {
-    // Simple hash for development - matches server-side signing
-    let hash = 0;
-    for (let i = 0; i < sessionId.length; i++) {
-      const char = sessionId.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash).toString(36);
   }
 }
 

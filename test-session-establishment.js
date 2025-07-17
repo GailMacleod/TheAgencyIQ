@@ -1,63 +1,77 @@
-const axios = require('axios');
+/**
+ * Test Session Establishment for gailm@macleodglba.com.au
+ * Tests the complete session flow to fix authentication issues
+ */
+
+import { exec } from 'child_process';
 
 async function testSessionEstablishment() {
-  const baseUrl = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
-  
-  console.log('Testing session establishment...');
+  console.log('🔍 Testing session establishment for gailm@macleodglba.com.au...');
   
   try {
-    const response = await axios.post(`${baseUrl}/api/establish-session`, {
-      email: 'gailm@macleodglba.com.au',
-      phone: '+61424835189'
-    }, {
-      timeout: 30000,
-      validateStatus: () => true
+    // Step 1: Test /api/establish-session
+    console.log('\n1. Testing /api/establish-session...');
+    const establishResponse = await fetch('http://localhost:3000/api/establish-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: 'gailm@macleodglba.com.au',
+        phone: '+61424835189'
+      }),
+      credentials: 'include'
     });
     
-    console.log('Status:', response.status);
-    console.log('Data:', response.data);
+    const establishData = await establishResponse.json();
+    console.log('Session establishment response:', establishData);
     
-    if (response.status === 200 && response.data.success) {
-      console.log('✅ Session establishment successful');
-      console.log('User:', response.data.user.email);
-      console.log('Session ID:', response.data.sessionId);
-      
-      // Test session persistence
-      const cookieHeader = response.headers['set-cookie'];
-      if (cookieHeader) {
-        const signedCookie = cookieHeader.find(cookie => cookie.includes('s%3A'));
-        if (signedCookie) {
-          console.log('✅ Signed cookie found');
-          
-          // Test API call with cookie
-          const userResponse = await axios.get(`${baseUrl}/api/user`, {
-            headers: { 'Cookie': signedCookie.split(';')[0] },
-            timeout: 30000,
-            validateStatus: () => true
-          });
-          
-          console.log('User API Status:', userResponse.status);
-          if (userResponse.status === 200) {
-            console.log('✅ Session persistence working');
-          } else {
-            console.log('❌ Session persistence failed');
-          }
-        } else {
-          console.log('❌ No signed cookie found');
-        }
-      } else {
-        console.log('❌ No cookies in response');
-      }
-    } else {
-      console.log('❌ Session establishment failed');
-      console.log('Error:', response.data);
+    // Extract session cookie
+    const setCookieHeader = establishResponse.headers.get('set-cookie');
+    console.log('Session cookie:', setCookieHeader);
+    
+    // Step 2: Test /api/user with session cookie
+    console.log('\n2. Testing /api/user with session...');
+    const userResponse = await fetch('http://localhost:3000/api/user', {
+      method: 'GET',
+      headers: {
+        'Cookie': setCookieHeader || '',
+      },
+      credentials: 'include'
+    });
+    
+    const userData = await userResponse.json();
+    console.log('User API response:', userData);
+    
+    // Step 3: Test /api/user-status with session cookie
+    console.log('\n3. Testing /api/user-status with session...');
+    const statusResponse = await fetch('http://localhost:3000/api/user-status', {
+      method: 'GET',
+      headers: {
+        'Cookie': setCookieHeader || '',
+      },
+      credentials: 'include'
+    });
+    
+    const statusData = await statusResponse.json();
+    console.log('User status response:', statusData);
+    
+    // Final report
+    console.log('\n📊 SESSION TEST RESULTS:');
+    console.log('Session establishment:', establishResponse.ok ? '✅ Success' : '❌ Failed');
+    console.log('User API:', userResponse.ok ? '✅ Success' : '❌ Failed');
+    console.log('User status:', statusResponse.ok ? '✅ Success' : '❌ Failed');
+    
+    if (!userResponse.ok) {
+      console.log('\n🔍 User API Error Details:');
+      console.log('Status:', userResponse.status);
+      console.log('Response:', userData);
     }
+    
   } catch (error) {
-    console.error('❌ Request failed:', error.message);
-    if (error.response) {
-      console.error('Response:', error.response.data);
-    }
+    console.error('Test failed:', error);
   }
 }
 
+// Run the test
 testSessionEstablishment();

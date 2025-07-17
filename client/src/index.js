@@ -6,18 +6,17 @@ if (window.matchMedia('(max-width: 768px)').matches) {
   const checkButtonResponsiveness = () => {
     const generateButtons = document.querySelectorAll('.generate-button');
     generateButtons.forEach(button => {
-      // Modern event listener with proper options
-      button.addEventListener('click', (event) => {
+      button.addEventListener('click', () => {
         if (!button.offsetParent || button.disabled) {
           console.log('Reverting schedule layout');
         }
-      }, { passive: true });
+      });
     });
   };
   
-  // Check when DOM is loaded - modern approach
+  // Check when DOM is loaded
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', checkButtonResponsiveness, { once: true });
+    document.addEventListener('DOMContentLoaded', checkButtonResponsiveness);
   } else {
     checkButtonResponsiveness();
   }

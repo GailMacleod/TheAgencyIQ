@@ -68,13 +68,10 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
           <div>
             <Label className="text-sm font-medium text-foreground lowercase">email address</Label>
             <Input
-              id="email"
-              name="email"
               type="email"
               placeholder="your@email.com"
               {...form.register('email')}
               className="mt-2"
-              aria-label="Email address"
             />
             {form.formState.errors.email && (
               <p className="text-sm text-destructive mt-1">{form.formState.errors.email.message}</p>
@@ -84,13 +81,10 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
           <div>
             <Label className="text-sm font-medium text-foreground lowercase">phone number</Label>
             <Input
-              id="phone"
-              name="phone"
               type="tel"
               placeholder="+61412345678"
               {...form.register('phone')}
               className="mt-2"
-              aria-label="Phone number"
             />
             {form.formState.errors.phone && (
               <p className="text-sm text-destructive mt-1">{form.formState.errors.phone.message}</p>

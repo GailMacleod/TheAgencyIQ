@@ -53,7 +53,6 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
       const response = await fetch('/api/post/publish-approved', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           userId,
           postId: post.id,
@@ -185,7 +184,6 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
       const response = await fetch('/api/video/generate-prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           postContent: post.content,
           platform: post.platform,

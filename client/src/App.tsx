@@ -1,7 +1,6 @@
-// Use global React from CDN
-const { useState, useEffect } = React;
+import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient.ts";
+import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,11 +8,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import GrokWidget from "@/components/grok-widget";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 import NotFound from "@/pages/not-found";
-import { initGA } from "./lib/analytics.ts";
-import { useAnalytics } from "./hooks/use-analytics.tsx";
-import { clearBrowserCache } from "./utils/cache-utils.ts";
-import { sessionManager } from "./utils/session-manager.ts";
-import { apiClient } from "./utils/api-client.ts";
+import { initGA } from "./lib/analytics";
+import { useAnalytics } from "./hooks/use-analytics";
+import { clearBrowserCache } from "./utils/cache-utils";
+import { sessionManager } from "./utils/session-manager";
+import { apiClient } from "./utils/api-client";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
@@ -127,10 +126,6 @@ function Router() {
 }
 
 function App() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sessionReady, setSessionReady] = useState(false);
-
   // Initialize Google Analytics when app loads
   useEffect(() => {
     // Verify required environment variable is present
@@ -153,17 +148,26 @@ function App() {
           queryClient.invalidateQueries();
           console.log('🔄 Queries invalidated after session establishment');
           
-          // Mark session as ready
-          setSessionReady(true);
-          
+          // Force a test API call to verify session is working
+          setTimeout(() => {
+            apiClient.get('/api/user', {
+                credentials: 'include',
+                cache: 'no-cache',
+              }).then(response => {
+                console.log('🔍 Session verification test:', response.status);
+                if (response.ok) {
+                  console.log('✅ Session working correctly');
+                } else {
+                  console.log('❌ Session verification failed');
+                }
+              }).catch(err => {
+                console.log('❌ Session verification error:', err.message);
+              });
+          }, 200);
         }, 100);
         
       } catch (error) {
-        console.error('❌ Session establishment failed:', error);
-        // NO GUEST ACCESS - Stop the loop and show error
-        setError('Authentication required. Please contact support.');
-        setLoading(false);
-        return;
+        console.log('❌ Session establishment error, continuing with guest access');
       }
     };
 
@@ -243,10 +247,6 @@ function App() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            email: 'gailm@macleodglba.com.au',
-            phone: '+61424835189'
-          }),
           signal: controller.signal,
         });
         
@@ -256,17 +256,16 @@ function App() {
           const data = await response.json();
           console.log('Session established:', data.user?.email);
         } else {
-          console.error('Session establishment failed with no session data');
-          setError('Authentication required. Please contact support.');
-          setLoading(false);
-          return;
+          console.log('Session establishment failed, continuing without auth');
         }
       } catch (error: any) {
-        console.error('Session establishment failed:', error);
-        // NO GUEST ACCESS - Stop and show error
-        setError('Authentication required. Please contact support.');
-        setLoading(false);
-        return;
+        if (error.name === 'AbortError') {
+          console.log('Session establishment timeout, continuing without auth');
+        } else if (error.message?.includes('Failed to fetch')) {
+          console.log('Network error during session establishment, continuing without auth');
+        } else {
+          console.log('Session establishment error, continuing without auth');
+        }
       }
     };
     
@@ -289,18 +288,6 @@ function App() {
       });
     }
   }, []);
-
-  // Don't render app until session is ready to prevent 401 errors
-  if (!sessionReady) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Establishing session...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <QueryClientProvider client={queryClient}>

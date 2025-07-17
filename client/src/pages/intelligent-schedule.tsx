@@ -228,8 +228,8 @@ function IntelligentSchedule() {
   // Redirect to login if authentication failed
   useEffect(() => {
     if (userError && !userLoading) {
-      console.log('Authentication failed - LOOP PREVENTION - NOT REDIRECTING');
-      // DISABLED TO PREVENT INFINITE LOOP: setLocation('/login');
+      console.log('Authentication failed, redirecting to login');
+      setLocation('/login');
     }
   }, [userError, userLoading, setLocation]);
 

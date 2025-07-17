@@ -1,18 +1,10 @@
-// Conditional OpenAI import to handle missing package
+import OpenAI from "openai";
 import { storage } from "../storage";
 
-let OpenAI: any = null;
-let openai: any = null;
-
-try {
-  OpenAI = require('openai');
-  openai = new OpenAI({ 
-    baseURL: "https://api.x.ai/v1", 
-    apiKey: process.env.XAI_API_KEY 
-  });
-} catch (error) {
-  console.warn('⚠️ OpenAI not available in AIContentOptimizer:', error.message);
-}
+const openai = new OpenAI({ 
+  baseURL: "https://api.x.ai/v1", 
+  apiKey: process.env.XAI_API_KEY 
+});
 
 interface ContentAnalytics {
   reach: number;

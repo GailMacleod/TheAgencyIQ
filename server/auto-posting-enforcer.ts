@@ -7,8 +7,6 @@
 import { storage } from './storage';
 import { PostQuotaService } from './PostQuotaService';
 import { OAuthRefreshService } from './oauth-refresh';
-import { RealApiPublisher } from './real-api-publisher';
-import axios from 'axios';
 
 interface AutoPostingResult {
   success: boolean;
@@ -104,17 +102,13 @@ export class AutoPostingEnforcer {
           // Find platform connection with enhanced reliability
           let connection = connections.find(conn => conn.platform === post.platform);
           if (!connection || !connection.isConnected) {
-            // ENHANCED CONNECTION REPAIR - Try to repair the connection
-            const repairResult = await this.enhancedConnectionRepair(userId, post.platform);
-            if (repairResult.success) {
-              connection = repairResult.connection;
-              result.connectionRepairs.push(`${post.platform}: ${repairResult.action}`);
-              console.log(`✅ Connection repaired for ${post.platform} using ${repairResult.action}`);
+            // Enhanced connection repair with token refresh and alternate auth
+            const repair = await AutoPostingEnforcer.enhancedConnectionRepair(userId, post.platform);
+            if (repair.success) {
+              result.connectionRepairs.push(repair.action);
+              connection = repair.connection;
             } else {
-              result.errors.push(`Connection repair failed for ${post.platform}: ${repairResult.error}`);
-              console.log(`❌ Connection repair failed for ${post.platform}: ${repairResult.error}`);
-              result.postsFailed++;
-              continue;
+              throw new Error(`Platform ${post.platform} not connected and enhanced repair failed: ${repair.error}`);
             }
           }
           
@@ -863,7 +857,6 @@ export class AutoPostingEnforcer {
       
       return {
         success: false,
-        action: `Repair failed for ${platform}`,
         error: `All repair methods failed for ${platform}`
       };
       
@@ -871,7 +864,6 @@ export class AutoPostingEnforcer {
       console.error(`❌ Enhanced connection repair failed for ${platform}:`, error);
       return {
         success: false,
-        action: `Repair error for ${platform}`,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }

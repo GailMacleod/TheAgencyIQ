@@ -27,7 +27,7 @@ import {
   type InsertSubscriptionAnalytics,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User operations - phone UID architecture
@@ -36,32 +36,11 @@ export interface IStorage {
   getUserByPhone(phone: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined>;
-  getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User>;
   updateUserPhone(oldPhone: string, newPhone: string): Promise<User>;
   updateUserStripeInfo(id: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
   updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User>;
-  
-  // Subscription management - Enhanced for end-to-end flow
-  validateActiveSubscription(userId: number): Promise<boolean>;
-  updateQuotaUsage(userId: number, quotaUsed: number): Promise<User>;
-  resetMonthlyQuota(userId: number): Promise<User>;
-  checkDuplicateSubscription(email: string, stripeCustomerId: string): Promise<boolean>;
-  linkStripeSubscription(userId: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
-  preventDuplicateSubscription(userId: number): Promise<boolean>;
-  set30DayQuotaCycle(userId: number, quotaAmount: number): Promise<User>;
-  
-  // Cleanup operations
-  listAllStripeCustomers(): Promise<User[]>;
-  getAllStripeCustomers(): Promise<User[]>;
-  clearDuplicateStripeCustomers(keepUserId: number): Promise<void>;
-  
-  // Scheduling operations
-  createScheduledPost(postData: any): Promise<any>;
-  
-  // Platform connection creation
-  createPlatformConnection(connectionData: any): Promise<PlatformConnection>;
 
   // Post operations
   getPostsByUser(userId: number): Promise<Post[]>;
@@ -115,8 +94,6 @@ export interface IStorage {
   updatePostLedger(userId: string, updates: any): Promise<any>;
   
   // Stripe subscription management
-  getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
-  listAllStripeCustomers(): Promise<User[]>;
   getUsersWithStripeCustomers(): Promise<User[]>;
   clearDuplicateStripeCustomers(keepUserId: number): Promise<void>;
 }
@@ -149,25 +126,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    try {
-      // Check for duplicate email first
-      const existingUser = await this.getUserByEmail(insertUser.email);
-      if (existingUser) {
-        throw new Error(`User with email ${insertUser.email} already exists`);
-      }
-      
-      // Create the user
-      const [user] = await db
-        .insert(users)
-        .values(insertUser)
-        .returning();
-      
-      console.log(`✅ User created successfully: ${user.email} (ID: ${user.id})`);
-      return user;
-    } catch (error) {
-      console.error('User creation error:', error);
-      throw error;
-    }
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
   }
 
   async updateUser(id: number, updates: Partial<InsertUser>): Promise<User> {
@@ -215,11 +178,6 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
-    return user;
-  }
-
   async updateUserStripeInfo(id: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
     const [user] = await db
       .update(users)
@@ -244,151 +202,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return user;
   }
-
-  // Subscription management methods
-  async validateActiveSubscription(userId: number): Promise<boolean> {
-    const user = await this.getUser(userId);
-    if (!user || !user.stripeSubscriptionId) {
-      return false;
-    }
-    
-    // Check if subscription is active and not expired
-    return user.subscriptionActive === true && user.subscriptionPlan !== 'free';
-  }
-
-  async updateQuotaUsage(userId: number, quotaUsed: number): Promise<User> {
-    const user = await this.getUser(userId);
-    if (!user) {
-      throw new Error(`User ${userId} not found`);
-    }
-
-    const newRemainingPosts = Math.max(0, (user.totalPosts || 0) - quotaUsed);
-    
-    const [updatedUser] = await db
-      .update(users)
-      .set({
-        remainingPosts: newRemainingPosts,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    
-    return updatedUser;
-  }
-
-  async resetMonthlyQuota(userId: number): Promise<User> {
-    const user = await this.getUser(userId);
-    if (!user) {
-      throw new Error(`User ${userId} not found`);
-    }
-
-    // Reset to full quota based on subscription plan
-    let totalPosts = 52; // Professional plan default
-    if (user.subscriptionPlan === 'starter') totalPosts = 20;
-    else if (user.subscriptionPlan === 'growth') totalPosts = 35;
-    else if (user.subscriptionPlan === 'professional') totalPosts = 52;
-
-    const [updatedUser] = await db
-      .update(users)
-      .set({
-        totalPosts,
-        remainingPosts: totalPosts,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    
-    return updatedUser;
-  }
-
-  async checkDuplicateSubscription(email: string, stripeCustomerId: string): Promise<boolean> {
-    // Check if user already has active subscription
-    const existingUser = await this.getUserByEmail(email);
-    if (existingUser && existingUser.stripeSubscriptionId) {
-      return true; // Duplicate found
-    }
-
-    // Check if Stripe customer ID is already associated with different user
-    const existingCustomer = await this.getUserByStripeCustomerId(stripeCustomerId);
-    if (existingCustomer && existingCustomer.email !== email) {
-      return true; // Duplicate found
-    }
-
-    return false; // No duplicate
-  }
-
-  async listAllStripeCustomers(): Promise<User[]> {
-    return await db
-      .select()
-      .from(users)
-      .where(sql`stripe_customer_id IS NOT NULL`);
-  }
-
-  async clearDuplicateStripeCustomers(keepUserId: number): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        stripeCustomerId: null,
-        stripeSubscriptionId: null,
-        subscriptionPlan: 'free',
-        subscriptionActive: false,
-        updatedAt: new Date()
-      })
-      .where(sql`id != ${keepUserId} AND stripe_customer_id IS NOT NULL`);
-  }
-
-  // Enhanced subscription management methods for end-to-end flow
-  async linkStripeSubscription(userId: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({
-        stripeCustomerId,
-        stripeSubscriptionId,
-        subscriptionActive: true,
-        subscriptionPlan: 'professional', // Default to professional plan
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    
-    console.log(`🔗 SUBSCRIPTION LINKED: User ${userId} -> Stripe ${stripeSubscriptionId}`);
-    return user;
-  }
-
-  async preventDuplicateSubscription(userId: number): Promise<boolean> {
-    const user = await this.getUser(userId);
-    if (!user) {
-      return false;
-    }
-
-    // Check if user already has active subscription
-    if (user.stripeSubscriptionId && user.subscriptionActive) {
-      console.log(`🚫 DUPLICATE PREVENTED: User ${userId} already has active subscription ${user.stripeSubscriptionId}`);
-      return false;
-    }
-
-    return true;
-  }
-
-  async set30DayQuotaCycle(userId: number, quotaAmount: number): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({
-        totalPosts: quotaAmount,
-        remainingPosts: quotaAmount,
-        subscriptionPlan: 'professional', // Set based on quota amount
-        subscriptionActive: true,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    
-    console.log(`📊 30-DAY QUOTA SET: User ${userId} -> ${quotaAmount} posts`);
-    return user;
-  }
-
-
-
 
   // Post operations
   async getPostsByUser(userId: number): Promise<Post[]> {
@@ -497,6 +310,7 @@ export class DatabaseStorage implements IStorage {
         accessToken,
         refreshToken,
         expiresAt: expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000), // Default 24 hours
+        updatedAt: new Date()
       })
       .where(and(
         eq(platformConnections.userId, userIdNum),
@@ -760,36 +574,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Stripe subscription management
-
-  async getAllStripeCustomers(): Promise<User[]> {
-    return this.listAllStripeCustomers();
-  }
-
-  async createScheduledPost(postData: any): Promise<any> {
-    const [scheduledPost] = await db
-      .insert(postSchedule)
-      .values({
-        postId: `post_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        userId: postData.userId.toString(),
-        content: postData.content,
-        platform: postData.platforms?.[0] || 'facebook',
-        status: postData.status || 'scheduled',
-        scheduledAt: postData.scheduleDate ? new Date(postData.scheduleDate) : null,
-        createdAt: new Date()
-      })
-      .returning();
-    return scheduledPost;
-  }
-
   async getUsersWithStripeCustomers(): Promise<User[]> {
     const usersWithStripe = await db
       .select()
       .from(users)
-      .where(sql`${users.stripeCustomerId} IS NOT NULL`);
+      .where(eq(users.stripeCustomerId, users.stripeCustomerId)); // Users with non-null stripe customer ID
     return usersWithStripe;
   }
 
-
+  async clearDuplicateStripeCustomers(keepUserId: number): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        subscriptionPlan: 'free'
+      })
+      .where(and(
+        eq(users.id, keepUserId),
+        eq(users.stripeCustomerId, users.stripeCustomerId)
+      ));
+  }
 }
 
 export const storage = new DatabaseStorage();

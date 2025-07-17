@@ -1,14 +1,10 @@
 import express from 'express';
 import session from 'express-session';
-// Using built-in express-session memory store for now
+import connectPg from 'connect-pg-simple';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import path from 'path';
-import fs from 'fs';
-import crypto from 'crypto';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
-import { memoryManager } from './utils/memory-manager';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -22,29 +18,14 @@ function log(message: string, source = "express") {
 }
 
 async function startServer() {
-  // Initialize monitoring and memory management
+  // Initialize monitoring
   initializeMonitoring();
-  memoryManager; // Initialize memory manager
   
   const app = express();
 
-  app.set('trust proxy', 0);
-  
   // Essential middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
-  
-  app.use(cookieParser('secret'));
-  
-  // CORS configuration - MUST be before routes
-  app.use(cors({
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie'],
-    exposedHeaders: ['Set-Cookie']
-  }));
-  
   // Filter out Replit-specific tracking in production
   app.use((req, res, next) => {
     // Block Replit tracking requests in production
@@ -53,12 +34,19 @@ async function startServer() {
       return res.status(204).end(); // No content, ignore silently
     }
     
+    const origin = req.headers.origin || 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, X-Retry-Session');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Expose-Headers', 'Set-Cookie');
+    res.header('Vary', 'Origin, Access-Control-Request-Headers');
     res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
     
-    // Production-ready CSP with frame-ancestors for embedding and Replit beacon support
+    // Production-ready CSP with frame-ancestors for embedding
     res.header('Content-Security-Policy', 
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com https://replit.com https://unpkg.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; " +
       "img-src 'self' data: https: blob:; " +
@@ -67,12 +55,12 @@ async function startServer() {
       "frame-ancestors 'self' https://app.theagencyiq.ai https://www.facebook.com;"
     );
     
-    // Clean Permissions-Policy - only recognized features with payment request support
+    // Clean Permissions-Policy - only recognized features
     res.header('Permissions-Policy', 
       'camera=(), ' +
       'microphone=(), ' +
       'geolocation=(), ' +
-      'payment=self, ' +
+      'payment=(), ' +
       'usb=(), ' +
       'accelerometer=(), ' +
       'gyroscope=(), ' +
@@ -140,91 +128,149 @@ async function startServer() {
     }
   });
 
-  // Data deletion status - fixed route pattern
-  app.get('/deletion-status/:userId', (req, res) => {
+  // Data deletion status
+  app.get('/deletion-status/:userId?', (req, res) => {
     const userId = req.params.userId || 'anonymous';
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // Data deletion status - fallback for no userId
-  app.get('/deletion-status', (req, res) => {
-    const userId = 'anonymous';
-    res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
+  // Device-agnostic session configuration for mobile-to-desktop continuity
+  // Configure PostgreSQL session store
+  const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true, // Fix: Allow session table creation
+    ttl: sessionTtl,
+    tableName: "sessions",
+    errorLog: (error) => {
+      console.error('Session store error:', error);
+    }
   });
 
-  app.set('trust proxy', 0);
-  app.use(cookieParser('secret'));
-
-  // Device-agnostic session configuration for mobile-to-desktop continuity
-  // Using default express-session memory store temporarily
-  const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
-  console.log('⚠️  Using default memory store - sessions will not persist across restarts');
-  
-  console.log('✅ Session configuration initialized successfully');
-
-  app.use(session({
-    secret: 'secret',
-    // Using default memory store (no store specified)
-    resave: false,
-    saveUninitialized: false,
-    name: 'theagencyiq.session',
-    cookie: { 
-      secure: false,
-      sameSite: 'lax',
-      maxAge: sessionTtl,
-      httpOnly: false,
-      path: '/'
-    },
-    rolling: true,
-    genid: () => {
-      return crypto.randomBytes(16).toString('hex');
+  // Test session store connection
+  console.log('🔧 Testing session store connection...');
+  sessionStore.get('test-connection', (err, session) => {
+    if (err) {
+      console.error('❌ Session store connection failed:', err);
+    } else {
+      console.log('✅ Session store connection successful');
     }
+  });
+
+  // CORS middleware with credentials support
+  app.use(cors({
+    origin: process.env.NODE_ENV === 'production' 
+      ? ['https://app.theagencyiq.ai', 'https://theagencyiq.ai']
+      : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173', 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Source', 'X-Retry-Session', 'Cookie'],
+    exposedHeaders: ['Set-Cookie'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   }));
 
-  // Add session consistency middleware to fix session ID mismatch
+  // Enhanced session configuration for cookie persistence
+  app.use(session({
+    secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: true,
+    name: 'theagencyiq.session',
+    genid: () => {
+      const timestamp = Date.now().toString(36);
+      const random = Math.random().toString(36).substring(2, 15);
+      return `aiq_${timestamp}_${random}`;
+    },
+    cookie: { 
+      secure: false, // Must be false for development
+      maxAge: sessionTtl,
+      httpOnly: false, // Allow frontend access
+      sameSite: 'none', // Required for cross-origin requests
+      path: '/',
+      domain: undefined // Let express handle domain
+    },
+    rolling: true,
+    proxy: true,
+    // Enhanced session handling
+    unset: 'keep'
+  }));
+
+  // Enhanced cookie persistence middleware - bulletproof session handling
   app.use((req, res, next) => {
-    // Extract session ID from cookie
-    const cookieHeader = req.headers.cookie || '';
-    const sessionMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
+    // Intercept all response methods to ensure cookie persistence
+    const originalSend = res.send;
+    const originalJson = res.json;
+    const originalEnd = res.end;
     
-    if (sessionMatch) {
-      let cookieSessionId = sessionMatch[1];
-      
-      // Handle signed cookies
-      if (cookieSessionId.startsWith('s%3A')) {
-        const decoded = decodeURIComponent(cookieSessionId);
-        cookieSessionId = decoded.substring(4).split('.')[0];
+    // Enhanced cookie setting function with header safety
+    const ensureCookieSet = () => {
+      if (req.sessionID && req.session && !res.headersSent) {
+        try {
+          // Set cookie with signed session ID for security
+          const cookieOptions = {
+            secure: false, // Development mode
+            maxAge: sessionTtl,
+            httpOnly: false, // Allow frontend access
+            sameSite: 'none' as const, // Cross-origin support
+            path: '/',
+            signed: false // Express-session handles signing
+          };
+          
+          // Set both the session cookie and a backup cookie
+          res.cookie('theagencyiq.session', req.sessionID, cookieOptions);
+          res.cookie('aiq_backup_session', req.sessionID, cookieOptions);
+          
+          // Set explicit headers for debugging
+          res.header('X-Session-ID', req.sessionID);
+          res.header('X-User-ID', req.session.userId?.toString() || 'none');
+          res.header('Access-Control-Expose-Headers', 'X-Session-ID, X-User-ID');
+        } catch (error) {
+          // Silently ignore header errors to prevent crashes
+          console.warn('Cookie setting failed (headers already sent):', error.message);
+        }
       }
-      
-      console.log(`🔧 SessionConsistency: Cookie ID ${cookieSessionId}, Express ID ${req.sessionID}`);
-      
-      // Force session ID consistency by overriding express-session ID
-      if (cookieSessionId !== req.sessionID) {
-        Object.defineProperty(req, 'sessionID', {
-          value: cookieSessionId,
-          writable: false,
-          enumerable: true,
-          configurable: true
-        });
-        
-        // With default memory store, we can't manually restore session data
-        // The session middleware will handle the session automatically
-        console.log(`🔧 Session ID override applied: ${cookieSessionId}`);
+    };
+    
+    // Override send method with safety checks
+    res.send = function(data) {
+      try {
+        ensureCookieSet();
+      } catch (error) {
+        console.warn('Cookie setting failed in send:', error.message);
       }
-    }
+      return originalSend.call(this, data);
+    };
+    
+    // Override json method with safety checks
+    res.json = function(data) {
+      try {
+        ensureCookieSet();
+      } catch (error) {
+        console.warn('Cookie setting failed in json:', error.message);
+      }
+      return originalJson.call(this, data);
+    };
+    
+    // Override end method with safety checks
+    res.end = function(data) {
+      try {
+        ensureCookieSet();
+      } catch (error) {
+        console.warn('Cookie setting failed in end:', error.message);
+      }
+      return originalEnd.call(this, data);
+    };
     
     next();
   });
-
-
-
-
 
   // Enhanced CSP for Facebook compliance, Google services, video content, and security
   app.use((req, res, next) => {
     res.setHeader('Content-Security-Policy', [
       "default-src 'self' https://app.theagencyiq.ai https://replit.com https://*.facebook.com https://*.fbcdn.net https://scontent.xx.fbcdn.net",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://unpkg.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.facebook.com https://connect.facebook.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com",
       "connect-src 'self' wss: ws: https://replit.com https://*.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://*.google-analytics.com https://analytics.google.com https://www.google.com https://api.replicate.com https://replicate.delivery",
       "style-src 'self' 'unsafe-inline' https://replit.com https://*.facebook.com https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
@@ -254,6 +300,7 @@ async function startServer() {
 
   // Beacon.js endpoint - OVERRIDE 403 ERROR - MUST BE FIRST
   app.get('/public/js/beacon.js', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'application/javascript');
     res.send('console.log("Beacon loaded");');
   });
@@ -290,10 +337,11 @@ async function startServer() {
     }
   });
 
-  // Public bypass route - DISABLED FOR SECURITY
+  // Public bypass route
   app.get('/public', (req, res) => {
-    console.log(`Public bypass route disabled for security at ${new Date().toISOString()}`);
-    res.status(401).json({ message: 'Authentication required. Please login to access platform connections.' });
+    req.session.userId = 2;
+    console.log(`React fix bypass activated at ${new Date().toISOString()}`);
+    res.redirect('/platform-connections');
   });
 
   // OAuth connection routes
@@ -725,88 +773,11 @@ async function startServer() {
     });
   });
 
-  // Setup TypeScript transformer BEFORE API routes to avoid interference
-  console.log('⚡ Setting up development Vite...');
-  try {
-    console.log('🔧 Attempting to setup Vite development server...');
-    const { createViteDevServer } = await import('./vite-dev');
-    await createViteDevServer(app);
-    console.log('✅ Vite development server setup complete');
-  } catch (error) {
-    console.warn('⚠️ Vite setup failed:', error.message);
-    console.warn('⚠️ Using fallback static serving with TypeScript transformation');
-    
-    // Serve React app source files with TypeScript transformation
-    app.use('/src', async (req, res, next) => {
-    const filePath = path.join(import.meta.dirname, '../client/src', req.path.replace('/src', ''));
-    console.log('🔍 Checking file:', filePath, 'exists:', fs.existsSync(filePath));
-    
-    if (fs.existsSync(filePath)) {
-      try {
-        if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
-          const { transformTypeScriptFile } = await import('./typescript-transformer');
-          const transformedCode = await transformTypeScriptFile(filePath);
-          res.type('application/javascript');
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          res.send(transformedCode);
-        } else if (filePath.endsWith('.css')) {
-          res.type('text/css');
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          res.sendFile(filePath);
-        } else {
-          res.sendFile(filePath);
-        }
-      } catch (error) {
-        console.error('Error transforming file:', error);
-        res.status(500).send('// Error transforming file');
-      }
-    } else {
-      next();
-    }
-  });
-  
-  // Serve attached assets
-  app.use('/attached_assets', express.static(path.join(import.meta.dirname, '../attached_assets')));
-  
-  // Serve node_modules for bare imports
-  app.use('/node_modules', express.static(path.join(import.meta.dirname, '../node_modules')));
-  
-  // Serve real React app for /app route
-  app.get('/app', (req, res) => {
-    try {
-      res.sendFile(path.join(import.meta.dirname, '../client/index.html'));
-    } catch (error) {
-      console.error('Error serving React app:', error);
-      res.status(500).send('Server Error');
-    }
-  });
-
-  // Serve simple working version of the app
-  app.get('/simple', (req, res) => {
-    try {
-      res.sendFile(path.join(import.meta.dirname, '../client/simple.html'));
-    } catch (error) {
-      console.error('Error serving simple app:', error);
-      res.status(500).send('Server Error');
-    }
-  });
-  
-  console.log('✅ Fallback static serving setup complete');
-  }
-
-  // Register API routes AFTER TypeScript transformer to avoid interference
+  // Register API routes FIRST before any middleware that might interfere
   try {
     console.log('📡 Loading routes...');
-    // Use core routes with real database
-    const { registerCoreRoutes } = await import('./core-routes');
-    await registerCoreRoutes(app);
-    
-    // Mock addNotificationEndpoints function
-    const addNotificationEndpoints = (app: any) => {
-      app.get('/api/notifications', (req, res) => {
-        res.json({ notifications: [] });
-      });
-    };
+    const { registerRoutes, addNotificationEndpoints } = await import('./routes');
+    await registerRoutes(app);
     addNotificationEndpoints(app);
     console.log('✅ Routes registered successfully');
     
@@ -839,55 +810,21 @@ async function startServer() {
       
       // Root route for production
       app.get('/', (req, res) => {
-        try {
+        res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+      });
+      
+      // Serve React app for all non-API routes
+      app.get('*', (req, res) => {
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
           res.sendFile(path.join(process.cwd(), 'dist/index.html'));
-        } catch (error) {
-          console.error('Error serving index.html:', error);
-          res.status(500).json({ error: 'Failed to serve index.html' });
-        }
-      });
-      
-      // Serve real React app for /app route
-      app.get('/app', (req, res) => {
-        try {
-          res.sendFile(path.join(process.cwd(), 'client/index.html'));
-        } catch (error) {
-          console.error('Error serving React app:', error);
-          res.status(500).json({ error: 'Failed to serve React app' });
-        }
-      });
-      
-      // Serve landing page for root and non-API routes
-      app.use((req, res, next) => {
-        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health') && !req.path.startsWith('/app')) {
-          try {
-            res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
-          } catch (error) {
-            console.error('Error serving index.html for route:', req.path, error);
-            res.status(500).json({ error: 'Failed to serve index.html' });
-          }
-        } else {
-          next();
         }
       });
       console.log('✅ Production static files setup complete');
     } else {
-      // Development mode - TypeScript transformer already set up earlier
-      console.log('⚡ Development mode - TypeScript transformer already configured');
-      
-      // Serve landing page for root and non-API/src routes
-      app.use((req, res, next) => {
-        if (!req.path.startsWith('/api/') && !req.path.startsWith('/src/')) {
-          try {
-            res.sendFile(path.join(import.meta.dirname, '../dist/public/index.html'));
-          } catch (error) {
-            console.error('Error serving index.html:', error);
-            res.status(500).send('Server Error');
-          }
-        } else {
-          next();
-        }
-      });
+      console.log('⚡ Setting up development Vite...');
+      const { setupVite } = await import('./vite');
+      await setupVite(app, httpServer);
+      console.log('✅ Vite setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);

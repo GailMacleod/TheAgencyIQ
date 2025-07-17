@@ -187,8 +187,6 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export const insertPostSchema = createInsertSchema(posts).omit({
   id: true,
   createdAt: true,
-  publishedAt: true,
-  quotaDeducted: true,
 });
 
 export const insertPlatformConnectionSchema = createInsertSchema(platformConnections).omit({
@@ -225,13 +223,11 @@ export const insertSubscriptionAnalyticsSchema = createInsertSchema(subscription
 
 export const insertPostScheduleSchema = createInsertSchema(postSchedule).omit({
   createdAt: true,
-  approvedAt: true,
 });
 
 export const insertPostLedgerSchema = createInsertSchema(postLedger).omit({
   createdAt: true,
   updatedAt: true,
-  lastPosted: true,
 });
 
 // Types
