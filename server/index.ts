@@ -760,11 +760,25 @@ async function startServer() {
 
   // Setup static file serving after API routes
   try {
+    // MIME type configuration will be handled by setHeaders in static middleware
+
     // Production static file serving
     if (process.env.NODE_ENV === 'production') {
       console.log('⚡ Setting up production static files...');
-      // Serve built frontend assets
-      app.use(express.static(path.join(process.cwd(), 'dist/public')));
+      // Serve built frontend assets with proper MIME types
+      app.use(express.static(path.join(process.cwd(), 'dist/public'), {
+        setHeaders: (res, filepath) => {
+          if (filepath.endsWith('.js') || filepath.endsWith('.mjs')) {
+            res.setHeader('Content-Type', 'application/javascript');
+          } else if (filepath.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+          } else if (filepath.endsWith('.json')) {
+            res.setHeader('Content-Type', 'application/json');
+          } else if (filepath.endsWith('.svg')) {
+            res.setHeader('Content-Type', 'image/svg+xml');
+          }
+        }
+      }));
       // Serve attached assets in production
       app.use('/attached_assets', express.static('attached_assets'));
       
@@ -782,8 +796,41 @@ async function startServer() {
     } else {
       console.log('⚡ Setting up development mode...');
       
-      // Serve static files directly without Vite for now
-      app.use(express.static(path.join(process.cwd(), 'client')));
+      // Serve client root directory
+      app.use(express.static(path.join(process.cwd(), 'client'), {
+        setHeaders: (res, filepath) => {
+          if (filepath.endsWith('.js') || filepath.endsWith('.mjs')) {
+            res.setHeader('Content-Type', 'application/javascript');
+          } else if (filepath.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+          } else if (filepath.endsWith('.json')) {
+            res.setHeader('Content-Type', 'application/json');
+          } else if (filepath.endsWith('.svg')) {
+            res.setHeader('Content-Type', 'image/svg+xml');
+          }
+        }
+      }));
+      
+      // Specific route for main.js with correct MIME type
+      app.get('/dist/main.js', (req, res) => {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        res.sendFile(path.join(process.cwd(), 'client', 'dist', 'main.js'));
+      });
+      
+      // Serve client dist directory with proper MIME types for ES modules
+      app.use('/dist', express.static(path.join(process.cwd(), 'client', 'dist'), {
+        setHeaders: (res, filepath) => {
+          if (filepath.endsWith('.js') || filepath.endsWith('.mjs')) {
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+          } else if (filepath.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css; charset=utf-8');
+          } else if (filepath.endsWith('.json')) {
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          } else if (filepath.endsWith('.svg')) {
+            res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+          }
+        }
+      }));
       
       console.log('✅ Development mode setup complete (without Vite)');
     }
