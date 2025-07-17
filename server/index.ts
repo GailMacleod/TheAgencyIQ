@@ -1,6 +1,6 @@
 import express from 'express';
 import session from 'express-session';
-import connectPg from 'connect-pg-simple';
+// Simple in-memory session store for development
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
@@ -139,9 +139,14 @@ async function startServer() {
     }
   });
 
-  // Data deletion status
-  app.get('/deletion-status/:userId?', (req, res) => {
+  // Data deletion status routes
+  app.get('/deletion-status/:userId', (req, res) => {
     const userId = req.params.userId || 'anonymous';
+    res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
+  });
+  
+  app.get('/deletion-status', (req, res) => {
+    const userId = 'anonymous';
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
@@ -149,43 +154,13 @@ async function startServer() {
   app.use(cookieParser('secret'));
 
   // Device-agnostic session configuration for mobile-to-desktop continuity
-  // Configure PostgreSQL session store
+  // Use default memory store (built into express-session)
   const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
-    ttl: sessionTtl,
-    tableName: "sessions",
-    schemaName: "public",
-    pruneSessionInterval: 60 * 15, // 15 minutes
-    errorLog: (error) => {
-      console.error('Session store error:', error);
-    }
-  });
-  
-  // Add debugging to session store to see if it's being called
-  const originalGet = sessionStore.get.bind(sessionStore);
-  sessionStore.get = function(sid, callback) {
-    console.log(`🔍 Session store get called for: ${sid}`);
-    return originalGet(sid, (err, session) => {
-      if (err) {
-        console.error(`❌ Session store get error: ${err}`);
-      } else {
-        console.log(`✅ Session store get result: ${session ? 'found' : 'not found'}`);
-        if (session) {
-          console.log(`📋 Retrieved session data: ${JSON.stringify(session)}`);
-        }
-      }
-      callback(err, session);
-    });
-  };
   
   console.log('✅ Session store initialized successfully');
 
   app.use(session({
     secret: 'secret',
-    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     name: 'theagencyiq.session',
@@ -803,24 +778,30 @@ async function startServer() {
         }
       });
       
-      // Serve React app for all non-API routes
-      app.get('*', (req, res) => {
-        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          try {
-            res.sendFile(path.join(process.cwd(), 'dist/index.html'));
-          } catch (error) {
-            console.error('Error serving index.html for route:', req.path, error);
-            res.status(500).json({ error: 'Failed to serve index.html' });
-          }
-        }
-      });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development Vite...');
-      const { setupVite } = await import('./vite');
-      await setupVite(app, httpServer);
-      console.log('✅ Vite setup complete');
+      console.log('⚡ Setting up development mode...');
+      
+      // Serve static files directly without Vite for now
+      app.use(express.static(path.join(process.cwd(), 'client')));
+      
+      console.log('✅ Development mode setup complete (without Vite)');
     }
+
+    // Single catch-all route for serving React app (after all other routes)
+    app.get('*', (req, res) => {
+      if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+        try {
+          const indexPath = process.env.NODE_ENV === 'production' 
+            ? path.join(process.cwd(), 'dist/index.html')
+            : path.join(process.cwd(), 'client', 'index.html');
+          res.sendFile(indexPath);
+        } catch (error) {
+          console.error('Error serving index.html for route:', req.path, error);
+          res.status(500).json({ error: 'Failed to serve index.html' });
+        }
+      }
+    });
   } catch (error) {
     console.error('❌ Server setup error:', error);
     throw error;

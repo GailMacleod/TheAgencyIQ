@@ -1,9 +1,15 @@
-import OpenAI from "openai";
-
-const aiClient = new OpenAI({ 
-  baseURL: "https://api.x.ai/v1", 
-  apiKey: process.env.XAI_API_KEY 
-});
+// Optional OpenAI import - fallback available if package missing
+let OpenAI: any = null;
+let aiClient: any = null;
+try {
+  OpenAI = (await import("openai")).default;
+  aiClient = new OpenAI({ 
+    baseURL: "https://api.x.ai/v1", 
+    apiKey: process.env.XAI_API_KEY 
+  });
+} catch (error) {
+  console.log('OpenAI package not available - CMO strategy will be limited');
+}
 
 export interface CMOTeamInsights {
   cmoStrategy: {

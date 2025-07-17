@@ -1,4 +1,11 @@
-import OpenAI from "openai";
+// Optional OpenAI import - fallback available if package missing
+let OpenAI: any = null;
+try {
+  OpenAI = (await import("openai")).default;
+} catch (error) {
+  console.log('OpenAI package not available - AI features will be limited');
+}
+
 import { seoOptimizationService } from './seoOptimizationService';
 
 // Comprehensive TheAgencyIQ Knowledge Base for AI Assistant
