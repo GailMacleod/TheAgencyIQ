@@ -726,13 +726,18 @@ async function startServer() {
   });
 
   // Setup TypeScript transformer BEFORE API routes to avoid interference
-  console.log('⚡ Setting up development environment...');
-  
-  // Skip Vite server setup due to missing dependencies, use fallback directly
-  console.log('⚠️ Using fallback static serving with TypeScript transformation (Vite disabled)');
-  
-  // Serve React app source files with TypeScript transformation
-  app.use('/src', async (req, res, next) => {
+  console.log('⚡ Setting up development Vite...');
+  try {
+    console.log('🔧 Attempting to setup Vite development server...');
+    const { createViteDevServer } = await import('./vite-dev');
+    await createViteDevServer(app);
+    console.log('✅ Vite development server setup complete');
+  } catch (error) {
+    console.warn('⚠️ Vite setup failed:', error.message);
+    console.warn('⚠️ Using fallback static serving with TypeScript transformation');
+    
+    // Serve React app source files with TypeScript transformation
+    app.use('/src', async (req, res, next) => {
     const filePath = path.join(import.meta.dirname, '../client/src', req.path.replace('/src', ''));
     console.log('🔍 Checking file:', filePath, 'exists:', fs.existsSync(filePath));
     
@@ -787,6 +792,7 @@ async function startServer() {
   });
   
   console.log('✅ Fallback static serving setup complete');
+  }
 
   // Register API routes AFTER TypeScript transformer to avoid interference
   try {
