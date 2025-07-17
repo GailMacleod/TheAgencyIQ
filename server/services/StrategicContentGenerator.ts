@@ -10,13 +10,13 @@ import { posts } from '../../shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { analyzeCMOStrategy, generateJobsToBeDoneAnalysis, createBrandDominationStrategy } from '../cmo-strategy';
 import { generateContentCalendar } from '../grok';
-import OpenAI from 'openai';
+// import OpenAI from 'openai';
 import { createHash } from 'crypto';
 
-const aiClient = new OpenAI({
-  baseURL: "https://api.x.ai/v1",
-  apiKey: process.env.XAI_API_KEY,
-});
+// const aiClient = new OpenAI({
+//   baseURL: "https://api.x.ai/v1",
+//   apiKey: process.env.XAI_API_KEY,
+// });
 
 interface StrategicContentParams {
   userId: number;

@@ -1,10 +1,10 @@
-import OpenAI from "openai";
+// import OpenAI from "openai";
 import { storage } from "../storage";
 
-const openai = new OpenAI({ 
-  baseURL: "https://api.x.ai/v1", 
-  apiKey: process.env.XAI_API_KEY 
-});
+// const openai = new OpenAI({ 
+//   baseURL: "https://api.x.ai/v1", 
+//   apiKey: process.env.XAI_API_KEY 
+// });
 
 interface ContentAnalytics {
   reach: number;

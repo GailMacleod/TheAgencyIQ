@@ -1,9 +1,9 @@
-import OpenAI from "openai";
+// import OpenAI from "openai";
 
-const aiClient = new OpenAI({ 
-  baseURL: "https://api.x.ai/v1", 
-  apiKey: process.env.XAI_API_KEY 
-});
+// const aiClient = new OpenAI({ 
+//   baseURL: "https://api.x.ai/v1", 
+//   apiKey: process.env.XAI_API_KEY 
+// });
 
 export interface CMOTeamInsights {
   cmoStrategy: {

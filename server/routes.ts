@@ -11,9 +11,9 @@ import { z } from "zod";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { generateContentCalendar, generateReplacementPost, getAIResponse, generateEngagementInsight } from "./grok";
-import twilio from 'twilio';
-import sgMail from '@sendgrid/mail';
-import multer from "multer";
+// import twilio from 'twilio';
+// import sgMail from '@sendgrid/mail';
+// import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto, { createHash } from "crypto";
@@ -84,15 +84,15 @@ if (process.env.STRIPE_SECRET_KEY) {
 }
 
 // Configure SendGrid if available
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
+// if (process.env.SENDGRID_API_KEY) {
+//   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// }
 
 // Initialize Twilio only if credentials are available
-let twilioClient: any = null;
-if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-  twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-}
+// let twilioClient: any = null;
+// if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+//   twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+// }
 
 // Comprehensive subscription middleware - blocks ALL access except wizard
 const requirePaidSubscription = async (req: any, res: any, next: any) => {
@@ -425,36 +425,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     done(null, user);
   });
 
-  // Configure multer for file uploads
-  const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
+  // Configure multer for file uploads (disabled - multer not available)
+  // const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
+  // if (!fs.existsSync(uploadsDir)) {
+  //   fs.mkdirSync(uploadsDir, { recursive: true });
+  // }
 
-  const storage_multer = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, uploadsDir);
-    },
-    filename: (req: any, file, cb) => {
-      const ext = path.extname(file.originalname);
-      const filename = `${req.session.userId}_${Date.now()}${ext}`;
-      cb(null, filename);
-    }
-  });
+  // const storage_multer = multer.diskStorage({
+  //   destination: (req, file, cb) => {
+  //     cb(null, uploadsDir);
+  //   },
+  //   filename: (req: any, file, cb) => {
+  //     const ext = path.extname(file.originalname);
+  //     const filename = `${req.session.userId}_${Date.now()}${ext}`;
+  //     cb(null, filename);
+  //   }
+  // });
 
-  const upload = multer({
-    storage: storage_multer,
-    limits: {
-      fileSize: 500000, // 500KB
-    },
-    fileFilter: (req, file, cb) => {
-      if (file.mimetype.match(/^image\/(png|jpeg|jpg)$/)) {
-        cb(null, true);
-      } else {
-        cb(new Error('Only PNG and JPG images are allowed'));
-      }
-    }
-  });
+  // const upload = multer({
+  //   storage: storage_multer,
+  //   limits: {
+  //     fileSize: 500000, // 500KB
+  //   },
+  //   fileFilter: (req, file, cb) => {
+  //     if (file.mimetype.match(/^image\/(png|jpeg|jpg)$/)) {
+  //       cb(null, true);
+  //     } else {
+  //       cb(new Error('Only PNG and JPG images are allowed'));
+  //     }
+  //   }
+  // });
 
   // Resilient authentication middleware with database connectivity handling
   const requireAuth = async (req: any, res: any, next: any) => {
@@ -3373,7 +3373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logo upload endpoint with multer
+  // Logo upload endpoint (disabled - multer not available)
   app.post("/api/upload-logo", async (req: any, res) => {
     try {
       // Check Authorization token
@@ -3382,34 +3382,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      // Use multer to handle file upload
-      upload.single("logo")(req, res, (err) => {
-        if (err) {
-          return res.status(400).json({ message: "Upload error" });
-        }
+      // File upload disabled - multer not available
+      return res.status(501).json({ message: "File upload temporarily disabled" });
+      
+      // // Use multer to handle file upload
+      // upload.single("logo")(req, res, (err) => {
+      //   if (err) {
+      //     return res.status(400).json({ message: "Upload error" });
+      //   }
 
-        if (!req.file) {
-          return res.status(400).json({ message: "No file uploaded" });
-        }
+      //   if (!req.file) {
+      //     return res.status(400).json({ message: "No file uploaded" });
+      //   }
 
-        // Check file size (max 5MB)
-        if (req.file.size > 5 * 1024 * 1024) {
-          return res.status(400).json({ message: "File too large" });
-        }
+      //   // Check file size (max 5MB)
+      //   if (req.file.size > 5 * 1024 * 1024) {
+      //     return res.status(400).json({ message: "File too large" });
+      //   }
 
-        // Save file as logo.png and update preview
-        const uploadsDir = './uploads';
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
+      //   // Save file as logo.png and update preview
+      //   const uploadsDir = './uploads';
+      //   if (!fs.existsSync(uploadsDir)) {
+      //     fs.mkdirSync(uploadsDir, { recursive: true });
+      //   }
 
-        const targetPath = path.join(uploadsDir, 'logo.png');
-        fs.renameSync(req.file.path, targetPath);
+      //   const targetPath = path.join(uploadsDir, 'logo.png');
+      //   fs.renameSync(req.file.path, targetPath);
 
-        const logoUrl = '/uploads/logo.png';
+      //   const logoUrl = '/uploads/logo.png';
 
-        res.status(200).json({ message: "Logo uploaded successfully", logoUrl });
-      });
+      //   res.status(200).json({ message: "Logo uploaded successfully", logoUrl });
+      // });
     } catch (error: any) {
       console.error('Logo upload error:', error);
       res.status(400).json({ message: "Upload failed" });
@@ -8223,8 +8226,8 @@ Continue building your Value Proposition Canvas systematically.`;
           `,
         };
         
-        await sgMail.send(msg);
-        console.log(`Password reset email sent successfully to ${email}`);
+        // await sgMail.send(msg);
+        console.log(`Password reset email would be sent to ${email} (email service disabled)`);
         
       } catch (emailError: any) {
         console.error('SendGrid email error:', emailError);
