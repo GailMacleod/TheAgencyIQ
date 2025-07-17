@@ -1,0 +1,158 @@
+{
+  "timestamp": "2025-07-17T08:11:16.559Z",
+  "totalTests": 17,
+  "passedTests": 13,
+  "failedTests": 4,
+  "results": [
+    {
+      "test": "Health Check",
+      "status": "PASS",
+      "details": "Server status: healthy",
+      "duration": "35ms"
+    },
+    {
+      "test": "User Login",
+      "status": "PASS",
+      "details": "Login successful for gailm@macleodglba.com.au",
+      "duration": "420ms"
+    },
+    {
+      "test": "Session Establishment",
+      "status": "PASS",
+      "details": "Session ID: 79e39a70488fe368da9274320d9787",
+      "duration": "83ms"
+    },
+    {
+      "test": "User Info",
+      "status": "PASS",
+      "details": "Status: 200",
+      "duration": "83ms"
+    },
+    {
+      "test": "User Status",
+      "status": "PASS",
+      "details": "Status: 200",
+      "duration": "161ms"
+    },
+    {
+      "test": "Platform Connections",
+      "status": "PASS",
+      "details": "Status: 200",
+      "duration": "82ms"
+    },
+    {
+      "test": "Brand Purpose",
+      "status": "PASS",
+      "details": "Status: 200",
+      "duration": "102ms"
+    },
+    {
+      "test": "Posts",
+      "status": "PASS",
+      "details": "Status: 200",
+      "duration": "83ms"
+    },
+    {
+      "test": "Memory Info",
+      "status": "FAIL",
+      "details": "Request failed with status code 404",
+      "duration": "0ms"
+    },
+    {
+      "test": "OAuth FACEBOOK",
+      "status": "PASS",
+      "details": "Redirect status: 302",
+      "duration": "5ms"
+    },
+    {
+      "test": "OAuth INSTAGRAM",
+      "status": "PASS",
+      "details": "Redirect status: 302",
+      "duration": "4ms"
+    },
+    {
+      "test": "OAuth LINKEDIN",
+      "status": "PASS",
+      "details": "Redirect status: 302",
+      "duration": "3ms"
+    },
+    {
+      "test": "OAuth X",
+      "status": "FAIL",
+      "details": "Request failed with status code 404",
+      "duration": "0ms"
+    },
+    {
+      "test": "OAuth YOUTUBE",
+      "status": "PASS",
+      "details": "Redirect status: 302",
+      "duration": "3ms"
+    },
+    {
+      "test": "Post Creation",
+      "status": "FAIL",
+      "details": "Request failed with status code 500",
+      "duration": "0ms"
+    },
+    {
+      "test": "Concurrent Requests",
+      "status": "PASS",
+      "details": "3 concurrent requests completed",
+      "duration": "416ms"
+    },
+    {
+      "test": "System Performance",
+      "status": "FAIL",
+      "details": "Request failed with status code 404",
+      "duration": "0ms"
+    }
+  ],
+  "summary": {
+    "userStatus": {
+      "authenticated": true,
+      "userId": 2,
+      "email": "gailm@macleodglba.com.au",
+      "subscriptionPlan": "professional",
+      "hasActiveSubscription": true,
+      "quotaRemaining": 0
+    },
+    "platformConnections": [
+      {
+        "id": 330,
+        "platform": "instagram",
+        "isActive": true,
+        "connectedAt": "2025-07-13T12:30:26.263Z",
+        "expiresAt": "2025-09-11T12:30:26.242Z"
+      },
+      {
+        "id": 328,
+        "platform": "youtube",
+        "isActive": true,
+        "connectedAt": "2025-07-13T12:23:49.465Z",
+        "expiresAt": null
+      },
+      {
+        "id": 329,
+        "platform": "linkedin",
+        "isActive": true,
+        "connectedAt": "2025-07-13T12:30:26.260Z",
+        "expiresAt": "2025-09-11T12:30:26.240Z"
+      },
+      {
+        "id": 332,
+        "platform": "facebook",
+        "isActive": true,
+        "connectedAt": "2025-07-13T12:30:26.265Z",
+        "expiresAt": "2025-09-11T12:30:26.244Z"
+      },
+      {
+        "id": 331,
+        "platform": "x",
+        "isActive": true,
+        "connectedAt": "2025-07-13T12:30:26.265Z",
+        "expiresAt": null
+      }
+    ],
+    "totalPosts": 19
+  }
+}

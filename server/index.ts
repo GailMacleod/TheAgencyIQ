@@ -727,9 +727,9 @@ async function startServer() {
   // Register API routes FIRST before any middleware that might interfere
   try {
     console.log('📡 Loading routes...');
-    // Temporarily using minimal routes to bypass path-to-regexp error
-    const { registerRoutes } = await import('./routes-minimal');
-    await registerRoutes(app);
+    // Use core routes with real database
+    const { registerCoreRoutes } = await import('./core-routes');
+    await registerCoreRoutes(app);
     
     // Mock addNotificationEndpoints function
     const addNotificationEndpoints = (app: any) => {
@@ -792,12 +792,14 @@ async function startServer() {
     } else {
       console.log('⚡ Setting up development Vite...');
       try {
+        console.log('🔧 Attempting to setup Vite development server...');
         const { setupVite } = await import('./vite');
         await setupVite(app, httpServer);
-        console.log('✅ Vite setup complete');
+        console.log('✅ Vite development server setup complete');
       } catch (error) {
-        console.warn('⚠️ Vite not available, using fallback static serving');
-        const { setupVite } = await import('./vite-fallback');
+        console.warn('⚠️ Vite setup failed:', error.message);
+        console.warn('⚠️ Using fallback static serving with TypeScript transformation');
+        const { setupVite } = await import('./vite-fallback-simple');
         await setupVite(app, httpServer);
         console.log('✅ Fallback static serving setup complete');
       }
