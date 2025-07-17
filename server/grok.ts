@@ -1,4 +1,10 @@
-import OpenAI from "openai";
+// Conditional OpenAI import to handle missing package
+let OpenAI: any = null;
+try {
+  OpenAI = require('openai');
+} catch (error) {
+  console.warn('⚠️ OpenAI not available:', error.message);
+}
 import { seoOptimizationService } from './seoOptimizationService';
 
 // Comprehensive TheAgencyIQ Knowledge Base for AI Assistant
