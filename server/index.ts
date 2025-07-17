@@ -5,6 +5,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
 import { memoryManager } from './utils/memory-manager';
@@ -57,7 +58,7 @@ async function startServer() {
     // Production-ready CSP with frame-ancestors for embedding and Replit beacon support
     res.header('Content-Security-Policy', 
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com https://replit.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com https://replit.com https://unpkg.com; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; " +
       "img-src 'self' data: https: blob:; " +
@@ -724,7 +725,65 @@ async function startServer() {
     });
   });
 
-  // Register API routes FIRST before any middleware that might interfere
+  // Setup TypeScript transformer BEFORE API routes to avoid interference
+  console.log('⚡ Setting up development Vite...');
+  try {
+    console.log('🔧 Attempting to setup Vite development server...');
+    const { createViteDevServer } = await import('./vite-dev');
+    await createViteDevServer(app);
+    console.log('✅ Vite development server setup complete');
+  } catch (error) {
+    console.warn('⚠️ Vite setup failed:', error.message);
+    console.warn('⚠️ Using fallback static serving with TypeScript transformation');
+    // Serve React app source files with TypeScript transformation
+    app.use('/src', async (req, res, next) => {
+      const filePath = path.join(import.meta.dirname, '../client/src', req.path.replace('/src', ''));
+      console.log('🔍 Checking file:', filePath, 'exists:', fs.existsSync(filePath));
+      
+      if (fs.existsSync(filePath)) {
+        try {
+          if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
+            const { transformTypeScriptFile } = await import('./typescript-transformer');
+            const transformedCode = await transformTypeScriptFile(filePath);
+            res.type('application/javascript');
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.send(transformedCode);
+          } else if (filePath.endsWith('.css')) {
+            res.type('text/css');
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.sendFile(filePath);
+          } else {
+            res.sendFile(filePath);
+          }
+        } catch (error) {
+          console.error('Error transforming file:', error);
+          res.status(500).send('// Error transforming file');
+        }
+      } else {
+        next();
+      }
+    });
+    
+    // Serve attached assets
+    app.use('/attached_assets', express.static(path.join(import.meta.dirname, '../attached_assets')));
+    
+    // Serve node_modules for bare imports
+    app.use('/node_modules', express.static(path.join(import.meta.dirname, '../node_modules')));
+    
+    // Serve real React app for /app route
+    app.get('/app', (req, res) => {
+      try {
+        res.sendFile(path.join(import.meta.dirname, '../client/index.html'));
+      } catch (error) {
+        console.error('Error serving React app:', error);
+        res.status(500).send('Server Error');
+      }
+    });
+    
+    console.log('✅ Fallback static serving setup complete');
+  }
+
+  // Register API routes AFTER TypeScript transformer to avoid interference
   try {
     console.log('📡 Loading routes...');
     // Use core routes with real database
@@ -777,9 +836,19 @@ async function startServer() {
         }
       });
       
-      // Serve React app for all non-API routes (temporary bypass)
+      // Serve real React app for /app route
+      app.get('/app', (req, res) => {
+        try {
+          res.sendFile(path.join(process.cwd(), 'client/index.html'));
+        } catch (error) {
+          console.error('Error serving React app:', error);
+          res.status(500).json({ error: 'Failed to serve React app' });
+        }
+      });
+      
+      // Serve landing page for root and non-API routes
       app.use((req, res, next) => {
-        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health') && !req.path.startsWith('/app')) {
           try {
             res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
           } catch (error) {
@@ -792,44 +861,22 @@ async function startServer() {
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development Vite...');
-      try {
-        console.log('🔧 Attempting to setup Vite development server...');
-        const { createViteDevServer } = await import('./vite-dev');
-        await createViteDevServer(app);
-        console.log('✅ Vite development server setup complete');
-      } catch (error) {
-        console.warn('⚠️ Vite setup failed:', error.message);
-        console.warn('⚠️ Using fallback static serving with TypeScript transformation');
-        // Serve built dist/public with proper MIME overrides
-        app.use(express.static(path.join(import.meta.dirname, '../dist/public'), {
-          setHeaders: (res, filePath) => {
-            if (filePath.endsWith('.js')) {
-              res.type('application/javascript');
-            } else if (filePath.endsWith('.css')) {
-              res.type('text/css');
-            } else if (filePath.endsWith('.html')) {
-              res.type('text/html');
-            }
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      // Development mode - TypeScript transformer already set up earlier
+      console.log('⚡ Development mode - TypeScript transformer already configured');
+      
+      // Serve landing page for root and non-API/src routes
+      app.use((req, res, next) => {
+        if (!req.path.startsWith('/api/') && !req.path.startsWith('/src/')) {
+          try {
+            res.sendFile(path.join(import.meta.dirname, '../dist/public/index.html'));
+          } catch (error) {
+            console.error('Error serving index.html:', error);
+            res.status(500).send('Server Error');
           }
-        }));
-        
-        // Serve index.html for all non-API routes (temporary bypass)
-        app.use((req, res, next) => {
-          if (!req.path.startsWith('/api/')) {
-            try {
-              res.sendFile(path.join(import.meta.dirname, '../dist/public/index.html'));
-            } catch (error) {
-              console.error('Error serving index.html:', error);
-              res.status(500).send('Server Error');
-            }
-          } else {
-            next();
-          }
-        });
-        console.log('✅ Fallback static serving setup complete');
-      }
+        } else {
+          next();
+        }
+      });
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);
