@@ -802,7 +802,7 @@ async function startServer() {
         // Production-ready static serving with proper MIME types
         if (process.env.NODE_ENV === 'production') {
           // Serve built assets with correct MIME types
-          app.use(express.static(path.join(__dirname, '../dist'), {
+          app.use(express.static(path.join(import.meta.dirname, '../dist'), {
             setHeaders: (res, path) => {
               if (path.endsWith('.js')) {
                 res.setHeader('Content-Type', 'application/javascript');
@@ -818,12 +818,12 @@ async function startServer() {
           // Serve index.html for all non-API routes
           app.get('*', (req, res) => {
             if (!req.path.startsWith('/api/')) {
-              res.sendFile(path.join(__dirname, '../dist/index.html'));
+              res.sendFile(path.join(import.meta.dirname, '../dist/index.html'));
             }
           });
         } else {
           // Development mode with immediate static serving bypass
-          app.use('/src', express.static(path.join(__dirname, '../client/src'), {
+          app.use('/src', express.static(path.join(import.meta.dirname, '../client/src'), {
             setHeaders: (res, path) => {
               if (path.endsWith('.tsx') || path.endsWith('.ts') || path.endsWith('.jsx') || path.endsWith('.js')) {
                 res.setHeader('Content-Type', 'application/javascript');
@@ -835,7 +835,7 @@ async function startServer() {
           // Serve index.html for development
           app.get('*', (req, res) => {
             if (!req.path.startsWith('/api/') && !req.path.startsWith('/src/')) {
-              res.sendFile(path.join(__dirname, '../client/index.html'));
+              res.sendFile(path.join(import.meta.dirname, '../client/index.html'));
             }
           });
         }
