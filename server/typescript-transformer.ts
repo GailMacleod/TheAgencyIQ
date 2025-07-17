@@ -29,13 +29,16 @@ export async function transformTypeScriptFile(filePath: string): Promise<string>
   try {
     const fileContent = fs.readFileSync(filePath, 'utf-8');
     
-    // Skip transformation for .tsx files in development - serve as-is with proper MIME
-    if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
-      return fileContent;
-    }
-    
-    // For other files, minimal transformation
+    // Strip .tsx fully and ensure imports resolve to built JS
     let transformedCode = fileContent;
+    
+    // Remove TypeScript extensions completely
+    transformedCode = transformedCode.replace(/\.tsx?\b/g, '');
+    
+    // Fix imports to resolve to built JS paths
+    transformedCode = transformedCode.replace(/from\s+['"](\.\/[^'"]+)['"]/g, (match, importPath) => {
+      return match.replace(importPath, importPath.replace(/\.tsx?$/, ''));
+    });
     
     // Add React import for JSX files
     if (filePath.endsWith('.tsx') && !transformedCode.includes('import React')) {

@@ -777,15 +777,17 @@ async function startServer() {
         }
       });
       
-      // Serve React app for all non-API routes
-      app.get('*', (req, res) => {
+      // Serve React app for all non-API routes (temporary bypass)
+      app.use((req, res, next) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
           try {
-            res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+            res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
           } catch (error) {
             console.error('Error serving index.html for route:', req.path, error);
             res.status(500).json({ error: 'Failed to serve index.html' });
           }
+        } else {
+          next();
         }
       });
       console.log('✅ Production static files setup complete');
@@ -799,46 +801,33 @@ async function startServer() {
       } catch (error) {
         console.warn('⚠️ Vite setup failed:', error.message);
         console.warn('⚠️ Using fallback static serving with TypeScript transformation');
-        // Production-ready static serving with proper MIME types
-        if (process.env.NODE_ENV === 'production') {
-          // Serve built assets with correct MIME types
-          app.use(express.static(path.join(import.meta.dirname, '../dist'), {
-            setHeaders: (res, path) => {
-              if (path.endsWith('.js')) {
-                res.setHeader('Content-Type', 'application/javascript');
-              } else if (path.endsWith('.css')) {
-                res.setHeader('Content-Type', 'text/css');
-              } else if (path.endsWith('.html')) {
-                res.setHeader('Content-Type', 'text/html');
-              }
-              res.setHeader('Cache-Control', 'public, max-age=31536000');
+        // Serve built dist/public with proper MIME overrides
+        app.use(express.static(path.join(import.meta.dirname, '../dist/public'), {
+          setHeaders: (res, filePath) => {
+            if (filePath.endsWith('.js')) {
+              res.type('application/javascript');
+            } else if (filePath.endsWith('.css')) {
+              res.type('text/css');
+            } else if (filePath.endsWith('.html')) {
+              res.type('text/html');
             }
-          }));
-          
-          // Serve index.html for all non-API routes
-          app.get('*', (req, res) => {
-            if (!req.path.startsWith('/api/')) {
-              res.sendFile(path.join(import.meta.dirname, '../dist/index.html'));
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          }
+        }));
+        
+        // Serve index.html for all non-API routes (temporary bypass)
+        app.use((req, res, next) => {
+          if (!req.path.startsWith('/api/')) {
+            try {
+              res.sendFile(path.join(import.meta.dirname, '../dist/public/index.html'));
+            } catch (error) {
+              console.error('Error serving index.html:', error);
+              res.status(500).send('Server Error');
             }
-          });
-        } else {
-          // Development mode with immediate static serving bypass
-          app.use('/src', express.static(path.join(import.meta.dirname, '../client/src'), {
-            setHeaders: (res, path) => {
-              if (path.endsWith('.tsx') || path.endsWith('.ts') || path.endsWith('.jsx') || path.endsWith('.js')) {
-                res.setHeader('Content-Type', 'application/javascript');
-              }
-              res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            }
-          }));
-          
-          // Serve index.html for development
-          app.get('*', (req, res) => {
-            if (!req.path.startsWith('/api/') && !req.path.startsWith('/src/')) {
-              res.sendFile(path.join(import.meta.dirname, '../client/index.html'));
-            }
-          });
-        }
+          } else {
+            next();
+          }
+        });
         console.log('✅ Fallback static serving setup complete');
       }
     }
