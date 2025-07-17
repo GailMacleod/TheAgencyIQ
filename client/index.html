@@ -253,6 +253,13 @@
           headers: { 'Content-Type': 'application/json' },
           ...options
         });
+        
+        if (!response.ok) {
+          const error = await response.text();
+          console.error(`API call failed: ${endpoint}`, error);
+          throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+        }
+        
         return response.json();
       }
       
@@ -282,7 +289,7 @@
         }
         
         return React.createElement('div', { style: { padding: '20px' } }, [
-          React.createElement('h2', { key: 'welcome' }, `Welcome, ${user.email}`),
+          React.createElement('h2', { key: 'welcome' }, `Welcome, ${user.email || 'Guest'}`),
           React.createElement('div', { 
             key: 'platforms',
             style: { 
@@ -428,11 +435,17 @@
         useEffect(() => {
           async function checkAuth() {
             try {
-              await establishSession();
+              // Try to get user data directly (session may already exist)
               const userData = await apiCall('/api/user');
-              setUser(userData);
+              console.log('User data:', userData);
+              
+              if (userData && userData.id) {
+                setUser(userData);
+              } else {
+                console.log('No valid user data received');
+              }
             } catch (error) {
-              console.log('No active session');
+              console.log('No active session, showing login');
             } finally {
               setLoading(false);
             }
