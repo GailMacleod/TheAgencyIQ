@@ -775,6 +775,16 @@ async function startServer() {
       res.status(500).send('Server Error');
     }
   });
+
+  // Serve simple working version of the app
+  app.get('/simple', (req, res) => {
+    try {
+      res.sendFile(path.join(import.meta.dirname, '../client/simple.html'));
+    } catch (error) {
+      console.error('Error serving simple app:', error);
+      res.status(500).send('Server Error');
+    }
+  });
   
   console.log('✅ Fallback static serving setup complete');
 

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TheAgencyIQ</title>
+    <link rel="icon" type="image/png" href="/attached_assets/agency_logo_1749083054761.png" />
+    
+    <!-- React and ReactDOM from CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Basic styles -->
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .container {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        text-align: center;
+        max-width: 500px;
+        width: 90%;
+      }
+      
+      .logo {
+        width: 150px;
+        height: auto;
+        margin-bottom: 30px;
+      }
+      
+      h1 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 2.5em;
+        background: linear-gradient(135deg, #3250fa, #00f0ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 1.2em;
+        line-height: 1.6;
+      }
+      
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      
+      input {
+        padding: 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+      }
+      
+      input:focus {
+        outline: none;
+        border-color: #3250fa;
+      }
+      
+      button {
+        padding: 15px;
+        background: linear-gradient(135deg, #3250fa, #00f0ff);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(50, 80, 250, 0.3);
+      }
+      
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 30px;
+      }
+      
+      .feature {
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        text-align: left;
+      }
+      
+      .feature h3 {
+        color: #3250fa;
+        margin-bottom: 10px;
+      }
+      
+      .status {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 10px;
+        font-weight: 500;
+      }
+      
+      .status.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      
+      .status.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      
+      .loading {
+        color: #666;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script>
+      // Simple React component for TheAgencyIQ
+      function TheAgencyIQApp() {
+        const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+        const [loading, setLoading] = React.useState(false);
+        const [email, setEmail] = React.useState('gailm@macleodglba.com.au');
+        const [password, setPassword] = React.useState('');
+        const [status, setStatus] = React.useState('');
+        const [userInfo, setUserInfo] = React.useState(null);
+
+        // Check if user is already logged in
+        React.useEffect(() => {
+          checkLoginStatus();
+        }, []);
+
+        const checkLoginStatus = async () => {
+          try {
+            const response = await fetch('/api/user', {
+              credentials: 'include'
+            });
+            if (response.ok) {
+              const userData = await response.json();
+              setUserInfo(userData);
+              setIsLoggedIn(true);
+            }
+          } catch (error) {
+            console.log('Not logged in yet');
+          }
+        };
+
+        const handleLogin = async (e) => {
+          e.preventDefault();
+          setLoading(true);
+          setStatus('');
+          
+          try {
+            const response = await fetch('/api/login', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                email: email,
+                password: password
+              })
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              setStatus('Login successful! Loading your dashboard...');
+              setUserInfo(data.user);
+              setIsLoggedIn(true);
+            } else {
+              const errorData = await response.json();
+              setStatus('Login failed: ' + (errorData.message || 'Invalid credentials'));
+            }
+          } catch (error) {
+            setStatus('Login failed: Network error');
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        const handleLogout = async () => {
+          try {
+            await fetch('/api/auth/logout', {
+              method: 'POST',
+              credentials: 'include'
+            });
+            setIsLoggedIn(false);
+            setUserInfo(null);
+            setStatus('Logged out successfully');
+          } catch (error) {
+            setStatus('Logout failed');
+          }
+        };
+
+        if (isLoggedIn && userInfo) {
+          return React.createElement('div', { className: 'container' }, [
+            React.createElement('img', { 
+              key: 'logo',
+              src: '/attached_assets/agency_logo_1749083054761.png', 
+              alt: 'TheAgencyIQ Logo', 
+              className: 'logo' 
+            }),
+            React.createElement('h1', { key: 'title' }, 'Welcome Back!'),
+            React.createElement('div', { key: 'user-info', className: 'subtitle' }, [
+              React.createElement('p', { key: 'email' }, `Email: ${userInfo.email}`),
+              React.createElement('p', { key: 'subscription' }, `Subscription: ${userInfo.subscriptionTier || 'Professional'}`),
+              React.createElement('p', { key: 'posts' }, `Posts Remaining: ${userInfo.postsRemaining || 'N/A'}/52`)
+            ]),
+            React.createElement('div', { key: 'features', className: 'features' }, [
+              React.createElement('div', { key: 'feature1', className: 'feature' }, [
+                React.createElement('h3', { key: 'h3-1' }, 'Platform Connections'),
+                React.createElement('p', { key: 'p-1' }, 'Manage your social media accounts')
+              ]),
+              React.createElement('div', { key: 'feature2', className: 'feature' }, [
+                React.createElement('h3', { key: 'h3-2' }, 'Content Scheduling'),
+                React.createElement('p', { key: 'p-2' }, 'Schedule posts across platforms')
+              ]),
+              React.createElement('div', { key: 'feature3', className: 'feature' }, [
+                React.createElement('h3', { key: 'h3-3' }, 'Analytics'),
+                React.createElement('p', { key: 'p-3' }, 'Track your social media performance')
+              ]),
+              React.createElement('div', { key: 'feature4', className: 'feature' }, [
+                React.createElement('h3', { key: 'h3-4' }, 'AI Assistant'),
+                React.createElement('p', { key: 'p-4' }, 'Get strategic content recommendations')
+              ])
+            ]),
+            React.createElement('button', { 
+              key: 'logout-btn',
+              onClick: handleLogout,
+              style: { marginTop: '20px' }
+            }, 'Logout')
+          ]);
+        }
+
+        return React.createElement('div', { className: 'container' }, [
+          React.createElement('img', { 
+            key: 'logo',
+            src: '/attached_assets/agency_logo_1749083054761.png', 
+            alt: 'TheAgencyIQ Logo', 
+            className: 'logo' 
+          }),
+          React.createElement('h1', { key: 'title' }, 'TheAgencyIQ'),
+          React.createElement('p', { key: 'subtitle', className: 'subtitle' }, 
+            'AI-Powered Social Media Automation for Queensland Small Businesses'
+          ),
+          React.createElement('form', { 
+            key: 'form',
+            className: 'login-form',
+            onSubmit: handleLogin 
+          }, [
+            React.createElement('input', {
+              key: 'email',
+              type: 'email',
+              placeholder: 'Email Address',
+              value: email,
+              onChange: (e) => setEmail(e.target.value),
+              required: true
+            }),
+            React.createElement('input', {
+              key: 'password',
+              type: 'password',
+              placeholder: 'Password',
+              value: password,
+              onChange: (e) => setPassword(e.target.value),
+              required: true
+            }),
+            React.createElement('button', {
+              key: 'submit',
+              type: 'submit',
+              disabled: loading
+            }, loading ? 'Logging in...' : 'Login to Dashboard')
+          ]),
+          status && React.createElement('div', {
+            key: 'status',
+            className: `status ${status.includes('successful') ? 'success' : 'error'}`
+          }, status)
+        ]);
+      }
+
+      // Mount the app
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(React.createElement(TheAgencyIQApp));
+    </script>
+  </body>
+</html>
