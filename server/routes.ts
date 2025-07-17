@@ -4640,8 +4640,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // PASSPORT.JS OAUTH ROUTES - SIMPLIFIED AND REINTEGRATED
   
-  // Session persistence middleware for OAuth routes
-  app.use('/auth/*', async (req: any, res, next) => {
+  // Session persistence middleware for OAuth routes - using specific paths instead of wildcard
+  const oauthMiddleware = async (req: any, res: any, next: any) => {
     // OAuth middleware - session must already exist from login
     if (!req.session?.userId) {
       console.log('⚠️ OAuth initiated without session - authentication required');
@@ -4652,7 +4652,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     next();
-  });
+  };
+  
+  // Apply OAuth middleware to specific routes instead of wildcard
+  app.use('/auth/facebook', oauthMiddleware);
+  app.use('/auth/instagram', oauthMiddleware);
+  app.use('/auth/linkedin', oauthMiddleware);
+  app.use('/auth/x', oauthMiddleware);
+  app.use('/auth/youtube', oauthMiddleware);
 
   // Simple platform connection with username/password
   app.post("/api/connect-platform-simple", requireAuth, async (req: any, res) => {

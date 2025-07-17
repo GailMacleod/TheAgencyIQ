@@ -788,9 +788,23 @@ async function startServer() {
       console.log('✅ Development mode setup complete (without Vite)');
     }
 
-    // Single catch-all route for serving React app (after all other routes)
-    app.get('*', (req, res) => {
-      if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+    // Specific frontend routes instead of catch-all to avoid path-to-regexp errors
+    const frontendRoutes = [
+      '/',
+      '/dashboard',
+      '/schedule',
+      '/analytics',
+      '/subscription',
+      '/profile',
+      '/brand-purpose',
+      '/onboarding',
+      '/login',
+      '/ai-dashboard',
+      '/grok-test'
+    ];
+    
+    frontendRoutes.forEach(route => {
+      app.get(route, (req, res) => {
         try {
           const indexPath = process.env.NODE_ENV === 'production' 
             ? path.join(process.cwd(), 'dist/index.html')
@@ -800,7 +814,7 @@ async function startServer() {
           console.error('Error serving index.html for route:', req.path, error);
           res.status(500).json({ error: 'Failed to serve index.html' });
         }
-      }
+      });
     });
   } catch (error) {
     console.error('❌ Server setup error:', error);
