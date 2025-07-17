@@ -726,62 +726,57 @@ async function startServer() {
   });
 
   // Setup TypeScript transformer BEFORE API routes to avoid interference
-  console.log('⚡ Setting up development Vite...');
-  try {
-    console.log('🔧 Attempting to setup Vite development server...');
-    const { createViteDevServer } = await import('./vite-dev');
-    await createViteDevServer(app);
-    console.log('✅ Vite development server setup complete');
-  } catch (error) {
-    console.warn('⚠️ Vite setup failed:', error.message);
-    console.warn('⚠️ Using fallback static serving with TypeScript transformation');
-    // Serve React app source files with TypeScript transformation
-    app.use('/src', async (req, res, next) => {
-      const filePath = path.join(import.meta.dirname, '../client/src', req.path.replace('/src', ''));
-      console.log('🔍 Checking file:', filePath, 'exists:', fs.existsSync(filePath));
-      
-      if (fs.existsSync(filePath)) {
-        try {
-          if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
-            const { transformTypeScriptFile } = await import('./typescript-transformer');
-            const transformedCode = await transformTypeScriptFile(filePath);
-            res.type('application/javascript');
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.send(transformedCode);
-          } else if (filePath.endsWith('.css')) {
-            res.type('text/css');
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.sendFile(filePath);
-          } else {
-            res.sendFile(filePath);
-          }
-        } catch (error) {
-          console.error('Error transforming file:', error);
-          res.status(500).send('// Error transforming file');
-        }
-      } else {
-        next();
-      }
-    });
+  console.log('⚡ Setting up development environment...');
+  
+  // Skip Vite server setup due to missing dependencies, use fallback directly
+  console.log('⚠️ Using fallback static serving with TypeScript transformation (Vite disabled)');
+  
+  // Serve React app source files with TypeScript transformation
+  app.use('/src', async (req, res, next) => {
+    const filePath = path.join(import.meta.dirname, '../client/src', req.path.replace('/src', ''));
+    console.log('🔍 Checking file:', filePath, 'exists:', fs.existsSync(filePath));
     
-    // Serve attached assets
-    app.use('/attached_assets', express.static(path.join(import.meta.dirname, '../attached_assets')));
-    
-    // Serve node_modules for bare imports
-    app.use('/node_modules', express.static(path.join(import.meta.dirname, '../node_modules')));
-    
-    // Serve real React app for /app route
-    app.get('/app', (req, res) => {
+    if (fs.existsSync(filePath)) {
       try {
-        res.sendFile(path.join(import.meta.dirname, '../client/index.html'));
+        if (filePath.endsWith('.tsx') || filePath.endsWith('.ts')) {
+          const { transformTypeScriptFile } = await import('./typescript-transformer');
+          const transformedCode = await transformTypeScriptFile(filePath);
+          res.type('application/javascript');
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.send(transformedCode);
+        } else if (filePath.endsWith('.css')) {
+          res.type('text/css');
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.sendFile(filePath);
+        } else {
+          res.sendFile(filePath);
+        }
       } catch (error) {
-        console.error('Error serving React app:', error);
-        res.status(500).send('Server Error');
+        console.error('Error transforming file:', error);
+        res.status(500).send('// Error transforming file');
       }
-    });
-    
-    console.log('✅ Fallback static serving setup complete');
-  }
+    } else {
+      next();
+    }
+  });
+  
+  // Serve attached assets
+  app.use('/attached_assets', express.static(path.join(import.meta.dirname, '../attached_assets')));
+  
+  // Serve node_modules for bare imports
+  app.use('/node_modules', express.static(path.join(import.meta.dirname, '../node_modules')));
+  
+  // Serve real React app for /app route
+  app.get('/app', (req, res) => {
+    try {
+      res.sendFile(path.join(import.meta.dirname, '../client/index.html'));
+    } catch (error) {
+      console.error('Error serving React app:', error);
+      res.status(500).send('Server Error');
+    }
+  });
+  
+  console.log('✅ Fallback static serving setup complete');
 
   // Register API routes AFTER TypeScript transformer to avoid interference
   try {
