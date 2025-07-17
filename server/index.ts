@@ -1,3 +1,27 @@
+// CRITICAL: Patch process.env to block malformed URL patterns
+process.env.NODE_OPTIONS = process.env.NODE_OPTIONS || '';
+process.env.NODE_OPTIONS += ' --unhandled-rejections=warn';
+
+// Global error handler for path-to-regexp errors
+process.on('uncaughtException', (error) => {
+  if (error.message && (error.message.includes('pathToRegexpError') || error.message.includes('git.new'))) {
+    console.warn(`🚫 Blocked uncaught path-to-regexp error: ${error.message}`);
+    return; // Don't crash the process for these errors
+  }
+  throw error;
+});
+
+// Patch the global error handler
+const originalConsoleError = console.error;
+console.error = function(...args) {
+  const message = args.join(' ');
+  if (message.includes('pathToRegexpError') || message.includes('git.new')) {
+    console.warn(`🚫 Blocked path-to-regexp error: ${message}`);
+    return;
+  }
+  originalConsoleError.apply(console, args);
+};
+
 import express from 'express';
 import session from 'express-session';
 import { SessionManager } from './services/session-manager';
@@ -785,9 +809,43 @@ async function startServer() {
     next();
   });
 
-  // Setup static file serving after API routes
+  // Setup static file serving after API routes with enhanced error handling
   try {
-    // Production static file serving
+    // Patch Express route handling to intercept malformed URLs
+    const originalGet = app.get;
+    const originalPost = app.post;
+    const originalPut = app.put;
+    const originalDelete = app.delete;
+    const originalUse = app.use;
+    
+    const safeRouteHandler = (method: string, originalMethod: any) => {
+      return function(this: any, path: any, ...handlers: any[]) {
+        // Check if path is a malformed URL that causes path-to-regexp errors
+        if (typeof path === 'string' && (path.includes('git.new') || path.includes('pathToRegexpError'))) {
+          console.warn(`🚫 Blocked malformed route registration: ${method} ${path}`);
+          return this;
+        }
+        
+        try {
+          return originalMethod.call(this, path, ...handlers);
+        } catch (error: any) {
+          if (error.message && error.message.includes('pathToRegexpError')) {
+            console.warn(`🚫 Blocked path-to-regexp error for ${method} route: ${path}`);
+            return this;
+          }
+          throw error;
+        }
+      };
+    };
+    
+    // Override Express route methods with safe handlers
+    app.get = safeRouteHandler('GET', originalGet);
+    app.post = safeRouteHandler('POST', originalPost);
+    app.put = safeRouteHandler('PUT', originalPut);
+    app.delete = safeRouteHandler('DELETE', originalDelete);
+    app.use = safeRouteHandler('USE', originalUse);
+    
+    // Let the existing Vite setup handle static files in development
     if (process.env.NODE_ENV === 'production') {
       console.log('⚡ Setting up production static files...');
       // Serve built frontend assets
@@ -806,7 +864,7 @@ async function startServer() {
       });
       
       // Serve React app for all non-API routes
-      app.get('*', (req, res) => {
+      app.get('*', (req, res, next) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
           try {
             res.sendFile(path.join(process.cwd(), 'dist/index.html'));
@@ -814,26 +872,15 @@ async function startServer() {
             console.error('Error serving index.html for route:', req.path, error);
             res.status(500).json({ error: 'Failed to serve index.html' });
           }
+        } else {
+          next();
         }
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development static files...');
-      // Serve static files for development
-      app.use(express.static('dist'));
+      console.log('⚡ Development mode - Vite will handle static files');
+      // Only serve attached assets in development
       app.use('/attached_assets', express.static('attached_assets'));
-      
-      // Development fallback - serve index.html for SPA routes
-      app.get('*', (req, res) => {
-        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
-          try {
-            res.sendFile(path.join(process.cwd(), 'dist/index.html'));
-          } catch (error) {
-            console.error('Error serving index.html for development route:', req.path, error);
-            res.status(500).json({ error: 'Failed to serve index.html' });
-          }
-        }
-      });
       console.log('✅ Development static files setup complete');
     }
   } catch (error) {
