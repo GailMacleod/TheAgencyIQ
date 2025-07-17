@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+// Use global React from CDN
+const { useState, useEffect } = React;
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient.ts";
 import { QueryClientProvider } from "@tanstack/react-query";

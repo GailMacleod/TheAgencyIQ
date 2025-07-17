@@ -1,6 +1,6 @@
-import { createRoot } from "react-dom/client";
+// Use global React and ReactDOM from CDN
 import App from "./App.tsx";
-import "./index.css";
+// CSS import removed due to serving issues
 
 // Add error handling for React mounting
 try {
@@ -10,8 +10,9 @@ try {
   }
   
   console.log("🚀 Starting React app mount...");
-  const root = createRoot(rootElement);
-  root.render(<App />);
+  // Use global ReactDOM from CDN
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(React.createElement(App));
   console.log("✅ React app mounted successfully");
 } catch (error) {
   console.error("❌ React app mount failed:", error);
