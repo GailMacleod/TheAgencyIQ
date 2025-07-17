@@ -11,10 +11,9 @@ import { z } from "zod";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { generateContentCalendar, generateReplacementPost, getAIResponse, generateEngagementInsight } from "./grok";
-// Optional imports for email, SMS, and file upload functionality
-let twilio: any = null;
-let sgMail: any = null;
-let multer: any = null;
+import twilio from 'twilio';
+import sgMail from '@sendgrid/mail';
+import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto, { createHash } from "crypto";
@@ -301,20 +300,16 @@ if (process.env.STRIPE_SECRET_KEY) {
   });
 }
 
-// Configure SendGrid if available - load dynamically
+// Configure SendGrid if available
 if (process.env.SENDGRID_API_KEY) {
-  try {
-    if (!sgMail) {
-      sgMail = (await import('@sendgrid/mail')).default;
-    }
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  } catch (error) {
-    console.log('SendGrid package not available - email functionality will be disabled');
-  }
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
-// Initialize Twilio only if credentials are available (will be loaded dynamically)
+// Initialize Twilio only if credentials are available
 let twilioClient: any = null;
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+  twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+}
 
 // Comprehensive subscription middleware - blocks ALL access except wizard
 const requirePaidSubscription = async (req: any, res: any, next: any) => {
@@ -651,49 +646,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     done(null, user);
   });
 
-  // Configure multer for file uploads - load dynamically
-  let upload: any = null;
-  try {
-    if (!multer) {
-      multer = (await import('multer')).default;
-    }
-    
-    const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    const storage_multer = multer.diskStorage({
-      destination: (req, file, cb) => {
-        cb(null, uploadsDir);
-      },
-      filename: (req: any, file, cb) => {
-        const ext = path.extname(file.originalname);
-        const filename = `${req.session.userId}_${Date.now()}${ext}`;
-        cb(null, filename);
-      }
-    });
-
-    upload = multer({
-      storage: storage_multer,
-      limits: {
-        fileSize: 500000, // 500KB
-      },
-      fileFilter: (req, file, cb) => {
-        if (file.mimetype.match(/^image\/(png|jpeg|jpg)$/)) {
-          cb(null, true);
-        } else {
-          cb(new Error('Only PNG and JPG images are allowed'));
-        }
-      }
-    });
-  } catch (error) {
-    console.log('Multer package not available - file upload functionality will be disabled');
-    upload = { 
-      single: () => (req, res, next) => next(),
-      array: () => (req, res, next) => next()
-    };
+  // Configure multer for file uploads
+  const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
   }
+
+  const storage_multer = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (req: any, file, cb) => {
+      const ext = path.extname(file.originalname);
+      const filename = `${req.session.userId}_${Date.now()}${ext}`;
+      cb(null, filename);
+    }
+  });
+
+  const upload = multer({
+    storage: storage_multer,
+    limits: {
+      fileSize: 500000, // 500KB
+    },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.match(/^image\/(png|jpeg|jpg)$/)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only PNG and JPG images are allowed'));
+      }
+    }
+  });
 
   // REMOVED: Duplicate requireAuth definition - using authGuard middleware instead
 
@@ -4640,8 +4622,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // PASSPORT.JS OAUTH ROUTES - SIMPLIFIED AND REINTEGRATED
   
-  // Session persistence middleware for OAuth routes - using specific paths instead of wildcard
-  const oauthMiddleware = async (req: any, res: any, next: any) => {
+  // Session persistence middleware for OAuth routes
+  app.use('/auth/*', async (req: any, res, next) => {
     // OAuth middleware - session must already exist from login
     if (!req.session?.userId) {
       console.log('⚠️ OAuth initiated without session - authentication required');
@@ -4652,14 +4634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     next();
-  };
-  
-  // Apply OAuth middleware to specific routes instead of wildcard
-  app.use('/auth/facebook', oauthMiddleware);
-  app.use('/auth/instagram', oauthMiddleware);
-  app.use('/auth/linkedin', oauthMiddleware);
-  app.use('/auth/x', oauthMiddleware);
-  app.use('/auth/youtube', oauthMiddleware);
+  });
 
   // Simple platform connection with username/password
   app.post("/api/connect-platform-simple", requireAuth, async (req: any, res) => {

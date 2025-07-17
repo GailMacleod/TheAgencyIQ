@@ -1,17 +1,10 @@
-// Optional OpenAI import - fallback available if package missing
-let OpenAI: any = null;
-let openai: any = null;
-try {
-  OpenAI = (await import("openai")).default;
-  openai = new OpenAI({ 
-    baseURL: "https://api.x.ai/v1", 
-    apiKey: process.env.XAI_API_KEY 
-  });
-} catch (error) {
-  console.log('OpenAI package not available - AI content optimization will be limited');
-}
-
+import OpenAI from "openai";
 import { storage } from "../storage";
+
+const openai = new OpenAI({ 
+  baseURL: "https://api.x.ai/v1", 
+  apiKey: process.env.XAI_API_KEY 
+});
 
 interface ContentAnalytics {
   reach: number;

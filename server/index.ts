@@ -1,6 +1,6 @@
 import express from 'express';
 import session from 'express-session';
-// Simple in-memory session store for development
+import connectPg from 'connect-pg-simple';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
@@ -139,14 +139,9 @@ async function startServer() {
     }
   });
 
-  // Data deletion status routes
-  app.get('/deletion-status/:userId', (req, res) => {
+  // Data deletion status
+  app.get('/deletion-status/:userId?', (req, res) => {
     const userId = req.params.userId || 'anonymous';
-    res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
-  });
-  
-  app.get('/deletion-status', (req, res) => {
-    const userId = 'anonymous';
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
@@ -154,13 +149,43 @@ async function startServer() {
   app.use(cookieParser('secret'));
 
   // Device-agnostic session configuration for mobile-to-desktop continuity
-  // Use default memory store (built into express-session)
+  // Configure PostgreSQL session store
   const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    ttl: sessionTtl,
+    tableName: "sessions",
+    schemaName: "public",
+    pruneSessionInterval: 60 * 15, // 15 minutes
+    errorLog: (error) => {
+      console.error('Session store error:', error);
+    }
+  });
+  
+  // Add debugging to session store to see if it's being called
+  const originalGet = sessionStore.get.bind(sessionStore);
+  sessionStore.get = function(sid, callback) {
+    console.log(`🔍 Session store get called for: ${sid}`);
+    return originalGet(sid, (err, session) => {
+      if (err) {
+        console.error(`❌ Session store get error: ${err}`);
+      } else {
+        console.log(`✅ Session store get result: ${session ? 'found' : 'not found'}`);
+        if (session) {
+          console.log(`📋 Retrieved session data: ${JSON.stringify(session)}`);
+        }
+      }
+      callback(err, session);
+    });
+  };
   
   console.log('✅ Session store initialized successfully');
 
   app.use(session({
     secret: 'secret',
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     name: 'theagencyiq.session',
@@ -760,25 +785,11 @@ async function startServer() {
 
   // Setup static file serving after API routes
   try {
-    // MIME type configuration will be handled by setHeaders in static middleware
-
     // Production static file serving
     if (process.env.NODE_ENV === 'production') {
       console.log('⚡ Setting up production static files...');
-      // Serve built frontend assets with proper MIME types
-      app.use(express.static(path.join(process.cwd(), 'dist/public'), {
-        setHeaders: (res, filepath) => {
-          if (filepath.endsWith('.js') || filepath.endsWith('.mjs')) {
-            res.setHeader('Content-Type', 'application/javascript');
-          } else if (filepath.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css');
-          } else if (filepath.endsWith('.json')) {
-            res.setHeader('Content-Type', 'application/json');
-          } else if (filepath.endsWith('.svg')) {
-            res.setHeader('Content-Type', 'image/svg+xml');
-          }
-        }
-      }));
+      // Serve built frontend assets
+      app.use(express.static(path.join(process.cwd(), 'dist/public')));
       // Serve attached assets in production
       app.use('/attached_assets', express.static('attached_assets'));
       
@@ -792,77 +803,24 @@ async function startServer() {
         }
       });
       
+      // Serve React app for all non-API routes
+      app.get('*', (req, res) => {
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
+          try {
+            res.sendFile(path.join(process.cwd(), 'dist/index.html'));
+          } catch (error) {
+            console.error('Error serving index.html for route:', req.path, error);
+            res.status(500).json({ error: 'Failed to serve index.html' });
+          }
+        }
+      });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Setting up development mode...');
-      
-      // Serve client root directory
-      app.use(express.static(path.join(process.cwd(), 'client'), {
-        setHeaders: (res, filepath) => {
-          if (filepath.endsWith('.js') || filepath.endsWith('.mjs')) {
-            res.setHeader('Content-Type', 'application/javascript');
-          } else if (filepath.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css');
-          } else if (filepath.endsWith('.json')) {
-            res.setHeader('Content-Type', 'application/json');
-          } else if (filepath.endsWith('.svg')) {
-            res.setHeader('Content-Type', 'image/svg+xml');
-          }
-        }
-      }));
-      
-      // Specific route for main.js with correct MIME type
-      app.get('/dist/main.js', (req, res) => {
-        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-        res.sendFile(path.join(process.cwd(), 'client', 'dist', 'main.js'));
-      });
-      
-      // Serve client dist directory with proper MIME types for ES modules
-      app.use('/dist', express.static(path.join(process.cwd(), 'client', 'dist'), {
-        setHeaders: (res, filepath) => {
-          if (filepath.endsWith('.js') || filepath.endsWith('.mjs')) {
-            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-          } else if (filepath.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css; charset=utf-8');
-          } else if (filepath.endsWith('.json')) {
-            res.setHeader('Content-Type', 'application/json; charset=utf-8');
-          } else if (filepath.endsWith('.svg')) {
-            res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
-          }
-        }
-      }));
-      
-      console.log('✅ Development mode setup complete (without Vite)');
+      console.log('⚡ Setting up development Vite...');
+      const { setupVite } = await import('./vite');
+      await setupVite(app, httpServer);
+      console.log('✅ Vite setup complete');
     }
-
-    // Specific frontend routes instead of catch-all to avoid path-to-regexp errors
-    const frontendRoutes = [
-      '/',
-      '/dashboard',
-      '/schedule',
-      '/analytics',
-      '/subscription',
-      '/profile',
-      '/brand-purpose',
-      '/onboarding',
-      '/login',
-      '/ai-dashboard',
-      '/grok-test'
-    ];
-    
-    frontendRoutes.forEach(route => {
-      app.get(route, (req, res) => {
-        try {
-          const indexPath = process.env.NODE_ENV === 'production' 
-            ? path.join(process.cwd(), 'dist/index.html')
-            : path.join(process.cwd(), 'client', 'index.html');
-          res.sendFile(indexPath);
-        } catch (error) {
-          console.error('Error serving index.html for route:', req.path, error);
-          res.status(500).json({ error: 'Failed to serve index.html' });
-        }
-      });
-    });
   } catch (error) {
     console.error('❌ Server setup error:', error);
     throw error;

@@ -10,20 +10,13 @@ import { posts } from '../../shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { analyzeCMOStrategy, generateJobsToBeDoneAnalysis, createBrandDominationStrategy } from '../cmo-strategy';
 import { generateContentCalendar } from '../grok';
-// Optional OpenAI import - fallback available if package missing
-let OpenAI: any = null;
-let aiClient: any = null;
-try {
-  OpenAI = (await import('openai')).default;
-  aiClient = new OpenAI({
-    baseURL: "https://api.x.ai/v1",
-    apiKey: process.env.XAI_API_KEY,
-  });
-} catch (error) {
-  console.log('OpenAI package not available - strategic content generation will be limited');
-}
-
+import OpenAI from 'openai';
 import { createHash } from 'crypto';
+
+const aiClient = new OpenAI({
+  baseURL: "https://api.x.ai/v1",
+  apiKey: process.env.XAI_API_KEY,
+});
 
 interface StrategicContentParams {
   userId: number;

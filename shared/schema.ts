@@ -189,16 +189,6 @@ export const insertPostSchema = createInsertSchema(posts).omit({
   createdAt: true,
   publishedAt: true,
   quotaDeducted: true,
-}).extend({
-  platform: z.string().min(1, "Platform is required"),
-  content: z.string().min(1, "Content is required"),
-  userId: z.number().min(1, "User ID is required"),
-  status: z.string().default("draft"),
-  scheduledFor: z.date().optional().nullable(),
-  contentHash: z.string().optional(),
-  generationId: z.string().optional(),
-  idempotencyKey: z.string().optional(),
-  subscriptionCycle: z.string().optional()
 });
 
 export const insertPlatformConnectionSchema = createInsertSchema(platformConnections).omit({
