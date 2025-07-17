@@ -12255,5 +12255,3 @@ export function addNotificationEndpoints(app: any) {
   const httpServer = createServer(app);
   return httpServer;
 }
-
-export { addNotificationEndpoints };
