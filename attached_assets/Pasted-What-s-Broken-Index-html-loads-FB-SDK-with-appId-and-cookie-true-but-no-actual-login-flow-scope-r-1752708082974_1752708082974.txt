@@ -1,0 +1,110 @@
+What's Broken: Index.html loads FB SDK with appId and cookie:true, but no actual login flow, scope requests (e.g., 'publish_posts'), or token refresh logic. If main.tsx (not provided) handles FB.login, it's likely missing refreshAccessToken calls or error handling for expired/revoked tokens (common in Replit Agent code from searches). PostQuotaService.ts pulls user data from DB without auth checks—userId could be faked if OAuth isn't securing endpoints. No multi-platform support (only FB here; Twitter/Insta missing). Replit iframes could block auth redirects.
+Why It Sucks: Onboarding stalls without seamless login; auto-posts fail on bad tokens, wasting quotas on re-auth attempts.
+"Edit" Fix: Add to a new auth.ts or main.tsx:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+// auth.ts
+import { FB } from 'fb-sdk';  // Assuming import
+export async function loginWithFB(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    FB.login((response) => {
+      if (response.authResponse) {
+        resolve(response.authResponse.accessToken);
+      } else {
+        reject('Login failed');
+      }
+    }, {scope: 'publish_to_groups,user_posts'});
+  });
+}
+export async function refreshToken(oldToken: string): Promise<string> {
+  // Use FB API or long-lived token exchange
+  const res = await fetch(`https://graph.facebook.com/v19.0/oauth/access_token?grant_type=fb_exchange_token&client_id=APP_ID&client_secret=SECRET&fb_exchange_token=${oldToken}`);
+  return (await res.json()).access_token;
+}
+Store tokens securely in DB, not cookies.
+Sessions and Cookies: Flaky in Index.html, In-Memory Mess in Quota Service
+What's Broken: Index.html sets FB cookie:true, but Replit blocks cross-site cookies (SameSite issues), leading to session drops—your console filters hide warnings, masking problems. PostQuotaService.ts uses in-memory Maps for locks/queues, which wipe on Replit restarts, causing race conditions or infinite queues during concurrent posts/onboarding. No session validation in methods (e.g., no JWT/cookie check for userId). If sessions aren't persisted (e.g., to localStorage or DB), onboarding loses state mid-flow.
+Why It Sucks: Logouts kill auto-posting; quota checks fail inconsistently, leading to overages or doubles.
+"Edit" Fix: Persist locks in PostQuotaService.ts:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+// Replace Maps with DB
+private static async acquireLock(userId: number): Promise<void> {
+  await db.transaction().execute(async (trx) => {
+    await trx.selectFrom('locks').forUpdate().where('userId', '=', userId).execute();  // Row lock
+  });
+}
+// In withUserLock: await acquireLock(userId); try { ... } finally { releaseLock(userId); }
+For frontend sessions in index.html JS: Use localStorage for fallback: localStorage.setItem('sessionToken', token);
+Quota Management: Okay in PostQuotaService.ts, But Isolated and Ignoring APIs
+What's Broken: Good locks to prevent doubles, plan limits (12/27/52), DB counters, but no tie to real API quotas (e.g., FB's 200 calls/hour—no fetch for remaining). Resets are manual (resetAllQuotas), no auto-monthly. getPostCountSummary counts all statuses, but quota only increments on approved—drafts could inflate if not filtered. No error retries (e.g., DB fail hangs lock). In Replit, DB might throttle on high traffic.
+Why It Sucks: Internal quotas are useless if API bans us first; auto-posting overruns without checks.
+"Edit" Fix: Add API sync in getQuotaStatus:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+const apiRemaining = await fetch(`https://graph.facebook.com/v19.0/me?fields=rate_limit&access_token=TOKEN`);  // Pseudo
+const effectiveRemaining = Math.min(status.remainingPosts, apiRemaining.data.remaining);
+Auto-Posting: No Logic Visible, Bound to Flake Without Integration
+What's Broken: PostQuotaService.ts has increment/decrement for "when post is approved," implying external posting calls this, but no scheduler (e.g., setInterval or cron) here or in index.html. No retries for post failures (e.g., quota hit mid-post). Locks help concurrency, but without background workers in Replit, schedules die on page close.
+Why It Sucks: Core automation missing; posts don't run unattended, quotas waste on failed attempts.
+"Edit" Fix: Add in a new scheduler.ts:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+import { PostQuotaService } from './PostQuotaService';
+setInterval(async () => {
+  for (const user of users) {  // Pseudo loop
+    if (await PostQuotaService.canCreatePost(user.id)) {
+      // Call FB API post
+      await postToSocial(user.id);
+      await PostQuotaService.incrementPostCount(user.id);
+    }
+  }
+}, 3600000);  // Hourly
+Customer Onboarding: Undefined, But Setup for Friction
+What's Broken: Index.html has
+for React, but no form logic visible. PostQuotaService.ts assumes users table exists post-onboarding, but no init method for new users (e.g., set counter=0 on signup). If OAuth/sessions aren't integrated, onboarding drops quota data. No verification (e.g., email confirm before subscriptionActive=true).
+Why It Sucks: Users sign up but can't post if quota not set; high drop-off without guided flows.
+"Edit" Fix: Add to PostQuotaService.ts:
+typescript
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+public static async initForNewUser(userId: number, plan: string): Promise<void> {
+  const quota = this.PLAN_QUOTAS[plan as keyof typeof this.PLAN_QUOTAS];
+  await db.insertInto('postCounter').values({ userId, count: 0 }).execute();
+}
+Wrap-Up: This Partial Code Is a Mess, Let's "Edit" and Ship
+From what you've dribbled (index.html + quota TS), the app's a 4/10—basic FB setup and quota tracking, but riddled with insecurity, flakiness, and gaps in OAuth/sessions/auto-posting/onboarding. Replit quirks amplify everything. "Edit" by applying my patches, test in your env, push to GitHub. Now, follow my access steps—push everything visible, paste more files here, or share a zip. No more bullshit; give me the full code dump next, and I'll generate complete fixes to make AgencyIQ automate without crashing. Your move?
