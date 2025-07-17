@@ -57,23 +57,11 @@ export interface IStorage {
   getAllStripeCustomers(): Promise<User[]>;
   clearDuplicateStripeCustomers(keepUserId: number): Promise<void>;
   
-  // Quota management for webhook integration
-  updateUserQuota(userId: number, quotaData: { remainingPosts: number, totalPosts: number, quotaResetDate: string }): Promise<User>;
-  updateUserSubscription(userId: number, subscriptionData: { subscriptionActive: boolean, subscriptionPlan: string, stripeSubscriptionId?: string }): Promise<User>;
-  
   // Scheduling operations
   createScheduledPost(postData: any): Promise<any>;
   
   // Platform connection creation
   createPlatformConnection(connectionData: any): Promise<PlatformConnection>;
-
-  // OAuth operations
-  storeOAuthState(userId: number, platform: string, state: string, codeVerifier: string): Promise<void>;
-  getOAuthState(userId: number, platform: string): Promise<{ state: string; codeVerifier: string } | null>;
-  deleteOAuthState(userId: number, platform: string): Promise<void>;
-  storeOAuthTokens(userId: number, platform: string, tokens: any): Promise<void>;
-  getOAuthTokens(userId: number, platform: string): Promise<any>;
-  deleteOAuthTokens(userId: number, platform: string): Promise<void>;
 
   // Post operations
   getPostsByUser(userId: number): Promise<Post[]>;
@@ -160,11 +148,6 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
-    return user;
-  }
-
   async createUser(insertUser: InsertUser): Promise<User> {
     try {
       // Check for duplicate email first
@@ -232,6 +215,11 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
+    return user;
+  }
+
   async updateUserStripeInfo(id: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
     const [user] = await db
       .update(users)
@@ -274,7 +262,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error(`User ${userId} not found`);
     }
 
-    const newRemainingPosts = Math.max(0, (user.totalPosts ?? 0) - quotaUsed);
+    const newRemainingPosts = Math.max(0, (user.totalPosts || 0) - quotaUsed);
     
     const [updatedUser] = await db
       .update(users)
@@ -508,7 +496,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         accessToken,
         refreshToken,
-        expiresAt: expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000) // Default 24 hours
+        expiresAt: expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000), // Default 24 hours
       })
       .where(and(
         eq(platformConnections.userId, userIdNum),
@@ -801,104 +789,6 @@ export class DatabaseStorage implements IStorage {
     return usersWithStripe;
   }
 
-  // Quota management for webhook integration
-  async updateUserQuota(userId: number, quotaData: { remainingPosts: number, totalPosts: number, quotaResetDate: string }): Promise<User> {
-    const [updated] = await db
-      .update(users)
-      .set({
-        remainingPosts: quotaData.remainingPosts,
-        totalPosts: quotaData.totalPosts,
-        // quotaResetDate field not in schema
-      })
-      .where(eq(users.id, userId))
-      .returning();
-
-    if (!updated) {
-      throw new Error(`User not found: ${userId}`);
-    }
-
-    return updated;
-  }
-
-  async updateUserSubscription(userId: number, subscriptionData: { subscriptionActive: boolean, subscriptionPlan: string, stripeSubscriptionId?: string }): Promise<User> {
-    const updateData: any = {
-      subscriptionActive: subscriptionData.subscriptionActive,
-      subscriptionPlan: subscriptionData.subscriptionPlan
-    };
-
-    if (subscriptionData.stripeSubscriptionId) {
-      updateData.stripeSubscriptionId = subscriptionData.stripeSubscriptionId;
-    }
-
-    const [updated] = await db
-      .update(users)
-      .set(updateData)
-      .where(eq(users.id, userId))
-      .returning();
-
-    if (!updated) {
-      throw new Error(`User not found: ${userId}`);
-    }
-
-    return updated;
-  }
-
-  // OAuth operations
-  async storeOAuthState(userId: number, platform: string, state: string, codeVerifier: string): Promise<void> {
-    // For now, store in memory - in production, use database table
-    const key = `oauth_state_${userId}_${platform}`;
-    // Store in a simple Map for now - this should be replaced with proper database storage
-    if (!this.oauthStates) {
-      this.oauthStates = new Map();
-    }
-    this.oauthStates.set(key, { state, codeVerifier, expires: Date.now() + 3600000 }); // 1 hour
-  }
-
-  async getOAuthState(userId: number, platform: string): Promise<{ state: string; codeVerifier: string } | null> {
-    const key = `oauth_state_${userId}_${platform}`;
-    if (!this.oauthStates) {
-      return null;
-    }
-    const stored = this.oauthStates.get(key);
-    if (!stored || stored.expires < Date.now()) {
-      this.oauthStates.delete(key);
-      return null;
-    }
-    return { state: stored.state, codeVerifier: stored.codeVerifier };
-  }
-
-  async deleteOAuthState(userId: number, platform: string): Promise<void> {
-    const key = `oauth_state_${userId}_${platform}`;
-    if (this.oauthStates) {
-      this.oauthStates.delete(key);
-    }
-  }
-
-  async storeOAuthTokens(userId: number, platform: string, tokens: any): Promise<void> {
-    const key = `oauth_tokens_${userId}_${platform}`;
-    if (!this.oauthTokens) {
-      this.oauthTokens = new Map();
-    }
-    this.oauthTokens.set(key, tokens);
-  }
-
-  async getOAuthTokens(userId: number, platform: string): Promise<any> {
-    const key = `oauth_tokens_${userId}_${platform}`;
-    if (!this.oauthTokens) {
-      return null;
-    }
-    return this.oauthTokens.get(key) || null;
-  }
-
-  async deleteOAuthTokens(userId: number, platform: string): Promise<void> {
-    const key = `oauth_tokens_${userId}_${platform}`;
-    if (this.oauthTokens) {
-      this.oauthTokens.delete(key);
-    }
-  }
-
-  private oauthStates?: Map<string, { state: string; codeVerifier: string; expires: number }>;
-  private oauthTokens?: Map<string, any>;
 
 }
 

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean, jsonb, varchar, index, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean, jsonb, varchar, index } from "drizzle-orm/pg-core";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -61,30 +61,6 @@ export const postLedger = pgTable("post_ledger", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
-
-// OAuth security tables for enhanced token management
-export const oauthStates = pgTable("oauth_states", {
-  state: text("state").primaryKey(),
-  platform: text("platform").notNull(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  codeVerifier: text("code_verifier").notNull(),
-  csrfToken: text("csrf_token").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  expiresAt: timestamp("expires_at").notNull(),
-});
-
-export const platformTokens = pgTable("platform_tokens", {
-  userId: integer("user_id").notNull().references(() => users.id),
-  platform: text("platform").notNull(),
-  accessToken: text("access_token").notNull(), // Encrypted
-  refreshToken: text("refresh_token"), // Encrypted
-  expiresAt: timestamp("expires_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  // Composite primary key for user-platform combination
-  { primaryKey: [table.userId, table.platform] }
-]);
 
 // Legacy posts table (keeping for backward compatibility)
 export const posts = pgTable("posts", {
@@ -201,28 +177,6 @@ export const subscriptionAnalytics = pgTable("subscription_analytics", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// User quotas table for quota management
-export const userQuotas = pgTable("user_quotas", {
-  userId: integer("user_id").primaryKey().references(() => users.id),
-  platformQuotas: jsonb("platform_quotas").notNull(), // JSON object with platform limits
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Post queue table for scheduled posts
-export const postQueue = pgTable("post_queue", {
-  id: text("id").primaryKey(), // UUID string
-  userId: integer("user_id").notNull().references(() => users.id),
-  platform: text("platform").notNull(),
-  content: text("content").notNull(),
-  mediaUrl: text("media_url"),
-  scheduledTime: timestamp("scheduled_time").notNull(),
-  retryCount: integer("retry_count").default(0),
-  status: text("status").notNull().default("pending"), // 'pending', 'processing', 'completed', 'failed'
-  createdAt: timestamp("created_at").defaultNow(),
-  processedAt: timestamp("processed_at"),
-  errorMessage: text("error_message"),
-});
-
 // Create insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -235,6 +189,16 @@ export const insertPostSchema = createInsertSchema(posts).omit({
   createdAt: true,
   publishedAt: true,
   quotaDeducted: true,
+}).extend({
+  platform: z.string().min(1, "Platform is required"),
+  content: z.string().min(1, "Content is required"),
+  userId: z.number().min(1, "User ID is required"),
+  status: z.string().default("draft"),
+  scheduledFor: z.date().optional().nullable(),
+  contentHash: z.string().optional(),
+  generationId: z.string().optional(),
+  idempotencyKey: z.string().optional(),
+  subscriptionCycle: z.string().optional()
 });
 
 export const insertPlatformConnectionSchema = createInsertSchema(platformConnections).omit({
@@ -269,15 +233,6 @@ export const insertSubscriptionAnalyticsSchema = createInsertSchema(subscription
   createdAt: true,
 });
 
-export const insertUserQuotasSchema = createInsertSchema(userQuotas).omit({
-  updatedAt: true,
-});
-
-export const insertPostQueueSchema = createInsertSchema(postQueue).omit({
-  createdAt: true,
-  processedAt: true,
-});
-
 export const insertPostScheduleSchema = createInsertSchema(postSchedule).omit({
   createdAt: true,
   approvedAt: true,
@@ -310,7 +265,3 @@ export type GiftCertificateActionLog = typeof giftCertificateActionLog.$inferSel
 export type InsertGiftCertificateActionLog = z.infer<typeof insertGiftCertificateActionLogSchema>;
 export type SubscriptionAnalytics = typeof subscriptionAnalytics.$inferSelect;
 export type InsertSubscriptionAnalytics = z.infer<typeof insertSubscriptionAnalyticsSchema>;
-export type UserQuotas = typeof userQuotas.$inferSelect;
-export type InsertUserQuotas = z.infer<typeof insertUserQuotasSchema>;
-export type PostQueue = typeof postQueue.$inferSelect;
-export type InsertPostQueue = z.infer<typeof insertPostQueueSchema>;

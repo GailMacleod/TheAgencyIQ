@@ -189,8 +189,8 @@ export default function Subscription() {
               <Link href="/" className="flex items-center">
                 <ArrowLeft className="h-5 w-5 text-muted-foreground mr-3" />
                 <img 
-                  src="/attached_assets/agency_logo_medium.svg" 
-                  alt="AiQ" 
+                  src="attached_assets/agency_logo_verified_1752580869784.png" 
+                  alt="AIQ" 
                   className="h-12 w-auto"
                 />
               </Link>
@@ -219,7 +219,7 @@ export default function Subscription() {
               Technology Intelligence Plans
             </div>
             <h1 className="text-4xl md:text-5xl font-bold">
-              Choose Your <img src="attached_assets/agency_logo_medium.svg" alt="AiQ" className="inline h-12 w-auto mx-2" /> Plan
+              Choose Your <img src="attached_assets/agency_logo_verified_1752580869784.png" alt="AIQ" className="inline h-12 w-auto mx-2" /> Plan
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Select the perfect plan for your Queensland business. All plans include AI-powered content generation, smart scheduling, and platform connections.

@@ -1,36 +1,13 @@
-// CRITICAL: Patch process.env to block malformed URL patterns
-process.env.NODE_OPTIONS = process.env.NODE_OPTIONS || '';
-process.env.NODE_OPTIONS += ' --unhandled-rejections=warn';
-
-// Global error handler for path-to-regexp errors
-process.on('uncaughtException', (error) => {
-  if (error.message && (error.message.includes('pathToRegexpError') || error.message.includes('git.new'))) {
-    console.warn(`🚫 Blocked uncaught path-to-regexp error: ${error.message}`);
-    return; // Don't crash the process for these errors
-  }
-  throw error;
-});
-
-// Patch the global error handler
-const originalConsoleError = console.error;
-console.error = function(...args) {
-  const message = args.join(' ');
-  if (message.includes('pathToRegexpError') || message.includes('git.new')) {
-    console.warn(`🚫 Blocked path-to-regexp error: ${message}`);
-    return;
-  }
-  originalConsoleError.apply(console, args);
-};
-
 import express from 'express';
 import session from 'express-session';
-import { SessionManager } from './services/session-manager';
-import crypto from 'crypto';
+import connectPg from 'connect-pg-simple';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import path from 'path';
-// Removed monitoring and memory manager imports to simplify startup
+import crypto from 'crypto';
+import { initializeMonitoring, logInfo, logError } from './monitoring';
+import { memoryManager } from './utils/memory-manager';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -44,6 +21,10 @@ function log(message: string, source = "express") {
 }
 
 async function startServer() {
+  // Initialize monitoring and memory management
+  initializeMonitoring();
+  memoryManager; // Initialize memory manager
+  
   const app = express();
 
   app.set('trust proxy', 0);
@@ -54,73 +35,14 @@ async function startServer() {
   
   app.use(cookieParser('secret'));
   
-  // Enhanced CORS configuration with proper headers for all API routes
-  app.use((req, res, next) => {
-    // Development: Allow all origins
-    // Production: Restrict to specific domains
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const allowedOrigins = isDevelopment 
-      ? ['*'] 
-      : ['https://app.theagencyiq.ai', 'https://theagencyiq.ai'];
-    
-    const origin = req.headers.origin;
-    if (isDevelopment) {
-      res.setHeader('Access-Control-Allow-Origin', '*');
-    } else if (origin && allowedOrigins.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    }
-    
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cookie');
-    res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
-    
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-      res.status(200).end();
-      return;
-    }
-    
-    next();
-  });
-  
-  // Simple rate limiting: 100 requests per minute
-  const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-  app.use((req, res, next) => {
-    const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
-    
-    // Skip rate limiting in development
-    if (process.env.NODE_ENV === 'development') {
-      return next();
-    }
-    
-    const now = Date.now();
-    const windowMs = 60 * 1000; // 1 minute window
-    const maxRequests = 100; // 100 requests per minute
-    
-    const current = rateLimitMap.get(clientIp) || { count: 0, resetTime: now + windowMs };
-    
-    // Reset window if time passed
-    if (now > current.resetTime) {
-      current.count = 0;
-      current.resetTime = now + windowMs;
-    }
-    
-    // Check if over limit
-    if (current.count >= maxRequests) {
-      return res.status(429).json({
-        error: 'Rate limit exceeded',
-        message: 'Too many requests. Please try again later.',
-        retryAfter: current.resetTime - now
-      });
-    }
-    
-    // Increment counter
-    current.count++;
-    rateLimitMap.set(clientIp, current);
-    
-    next();
-  });
+  // CORS configuration - MUST be before routes
+  app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
+  }));
   
   // Filter out Replit-specific tracking in production
   app.use((req, res, next) => {
@@ -218,7 +140,7 @@ async function startServer() {
   });
 
   // Data deletion status
-  app.get('/deletion-status/:userId', (req, res) => {
+  app.get('/deletion-status/:userId?', (req, res) => {
     const userId = req.params.userId || 'anonymous';
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
@@ -226,50 +148,102 @@ async function startServer() {
   app.set('trust proxy', 0);
   app.use(cookieParser('secret'));
 
-  // Session configuration with database persistence and secure settings
-  console.log('✅ Initializing session management with SessionManager');
-
-  // Initialize services
-  SessionManager.initialize();
-  console.log('🚀 Services initialized successfully');
-
-  // Initialize auto-post scheduler
-  const { AutoPostScheduler } = await import('./services/auto-post-scheduler');
-  AutoPostScheduler.start();
-  console.log('✅ Auto Post Scheduler started');
+  // Device-agnostic session configuration for mobile-to-desktop continuity
+  // Configure PostgreSQL session store
+  const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    ttl: sessionTtl,
+    tableName: "sessions",
+    schemaName: "public",
+    pruneSessionInterval: 60 * 15, // 15 minutes
+    errorLog: (error) => {
+      console.error('Session store error:', error);
+    }
+  });
   
-  // Session configuration
+  // Add debugging to session store to see if it's being called
+  const originalGet = sessionStore.get.bind(sessionStore);
+  sessionStore.get = function(sid, callback) {
+    console.log(`🔍 Session store get called for: ${sid}`);
+    return originalGet(sid, (err, session) => {
+      if (err) {
+        console.error(`❌ Session store get error: ${err}`);
+      } else {
+        console.log(`✅ Session store get result: ${session ? 'found' : 'not found'}`);
+        if (session) {
+          console.log(`📋 Retrieved session data: ${JSON.stringify(session)}`);
+        }
+      }
+      callback(err, session);
+    });
+  };
+  
+  console.log('✅ Session store initialized successfully');
+
   app.use(session({
-    secret: process.env.SESSION_SECRET || 'theagencyiq-session-secret',
+    secret: 'secret',
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
+    name: 'theagencyiq.session',
+    cookie: { 
+      secure: false,
+      sameSite: 'lax',
+      maxAge: sessionTtl,
       httpOnly: false,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+      path: '/'
+    },
+    rolling: true,
+    genid: () => {
+      return crypto.randomBytes(16).toString('hex');
     }
   }));
 
-  // Session timeout middleware - handled by SessionManager rolling configuration
-  app.use((req: any, res, next) => {
-    if (!req.session) {
-      return next();
-    }
-    
-    // SessionManager handles rolling sessions automatically
-    // Just update last activity for tracking
-    req.session.lastActivity = Date.now();
-    
-    next();
-  });
-
-  // Session consistency handled by SessionManager with database persistence
+  // Add session consistency middleware to fix session ID mismatch
   app.use((req, res, next) => {
-    // SessionManager handles session consistency automatically
-    // Just ensure session is available for routes
-    if (req.session) {
-      console.log(`🔧 Session active: ${req.sessionID} -> User ${req.session.userId || 'not logged in'}`);
+    // Extract session ID from cookie
+    const cookieHeader = req.headers.cookie || '';
+    const sessionMatch = cookieHeader.match(/theagencyiq\.session=([^;]+)/);
+    
+    if (sessionMatch) {
+      let cookieSessionId = sessionMatch[1];
+      
+      // Handle signed cookies
+      if (cookieSessionId.startsWith('s%3A')) {
+        const decoded = decodeURIComponent(cookieSessionId);
+        cookieSessionId = decoded.substring(4).split('.')[0];
+      }
+      
+      console.log(`🔧 SessionConsistency: Cookie ID ${cookieSessionId}, Express ID ${req.sessionID}`);
+      
+      // Force session ID consistency by overriding express-session ID
+      if (cookieSessionId !== req.sessionID) {
+        Object.defineProperty(req, 'sessionID', {
+          value: cookieSessionId,
+          writable: false,
+          enumerable: true,
+          configurable: true
+        });
+        
+        // Force session middleware to reload from store with correct ID
+        sessionStore.get(cookieSessionId, (err, sessionData) => {
+          if (!err && sessionData) {
+            // Manually restore session data to current session
+            req.session.userId = sessionData.userId;
+            req.session.userEmail = sessionData.userEmail;
+            req.session.subscriptionPlan = sessionData.subscriptionPlan;
+            req.session.subscriptionActive = sessionData.subscriptionActive;
+            console.log(`✅ Session restored: ${cookieSessionId} -> User ${sessionData.userId}`);
+          } else {
+            console.log(`🆕 New session initialized: ${cookieSessionId}`);
+          }
+          next();
+        });
+        return; // Wait for async callback
+      }
     }
     
     next();
@@ -809,43 +783,9 @@ async function startServer() {
     next();
   });
 
-  // Setup static file serving after API routes with enhanced error handling
+  // Setup static file serving after API routes
   try {
-    // Patch Express route handling to intercept malformed URLs
-    const originalGet = app.get;
-    const originalPost = app.post;
-    const originalPut = app.put;
-    const originalDelete = app.delete;
-    const originalUse = app.use;
-    
-    const safeRouteHandler = (method: string, originalMethod: any) => {
-      return function(this: any, path: any, ...handlers: any[]) {
-        // Check if path is a malformed URL that causes path-to-regexp errors
-        if (typeof path === 'string' && (path.includes('git.new') || path.includes('pathToRegexpError'))) {
-          console.warn(`🚫 Blocked malformed route registration: ${method} ${path}`);
-          return this;
-        }
-        
-        try {
-          return originalMethod.call(this, path, ...handlers);
-        } catch (error: any) {
-          if (error.message && error.message.includes('pathToRegexpError')) {
-            console.warn(`🚫 Blocked path-to-regexp error for ${method} route: ${path}`);
-            return this;
-          }
-          throw error;
-        }
-      };
-    };
-    
-    // Override Express route methods with safe handlers
-    app.get = safeRouteHandler('GET', originalGet);
-    app.post = safeRouteHandler('POST', originalPost);
-    app.put = safeRouteHandler('PUT', originalPut);
-    app.delete = safeRouteHandler('DELETE', originalDelete);
-    app.use = safeRouteHandler('USE', originalUse);
-    
-    // Let the existing Vite setup handle static files in development
+    // Production static file serving
     if (process.env.NODE_ENV === 'production') {
       console.log('⚡ Setting up production static files...');
       // Serve built frontend assets
@@ -864,7 +804,7 @@ async function startServer() {
       });
       
       // Serve React app for all non-API routes
-      app.get('*', (req, res, next) => {
+      app.get('*', (req, res) => {
         if (!req.path.startsWith('/api') && !req.path.startsWith('/oauth') && !req.path.startsWith('/callback') && !req.path.startsWith('/health')) {
           try {
             res.sendFile(path.join(process.cwd(), 'dist/index.html'));
@@ -872,16 +812,14 @@ async function startServer() {
             console.error('Error serving index.html for route:', req.path, error);
             res.status(500).json({ error: 'Failed to serve index.html' });
           }
-        } else {
-          next();
         }
       });
       console.log('✅ Production static files setup complete');
     } else {
-      console.log('⚡ Development mode - Vite will handle static files');
-      // Only serve attached assets in development
-      app.use('/attached_assets', express.static('attached_assets'));
-      console.log('✅ Development static files setup complete');
+      console.log('⚡ Setting up development Vite...');
+      const { setupVite } = await import('./vite');
+      await setupVite(app, httpServer);
+      console.log('✅ Vite setup complete');
     }
   } catch (error) {
     console.error('❌ Server setup error:', error);

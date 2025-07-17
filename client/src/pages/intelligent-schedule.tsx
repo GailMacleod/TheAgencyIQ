@@ -758,7 +758,7 @@ function IntelligentSchedule() {
                     post={post}
                     onVideoApproved={handleVideoApproved}
                     brandData={brandPurpose}
-                    userId={user?.id}
+                    userId={user?.id || 0}
                   />
                 )) : (
                   <div className="text-center p-8">
