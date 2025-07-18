@@ -6669,8 +6669,11 @@ Continue building your Value Proposition Canvas systematically.`;
   // Get subscription usage statistics - CENTRALIZED VERSION
   app.get("/api/subscription-usage", requireActiveSubscription, async (req: any, res) => {
     try {
-      // Use centralized PostQuotaService for accurate quota data
+      // Clear cache first to ensure fresh calculations after post deletion
       const { PostQuotaService } = await import('./PostQuotaService');
+      PostQuotaService.clearUserCache(req.session.userId);
+      
+      // Use centralized PostQuotaService for accurate quota data
       const quotaStatus = await PostQuotaService.getQuotaStatus(req.session.userId);
       
       if (!quotaStatus) {

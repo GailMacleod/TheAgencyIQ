@@ -120,6 +120,23 @@ function IntelligentSchedule() {
 
   const queryClient = useQueryClient();
 
+  // Force refresh when strategic content generation completes
+  useEffect(() => {
+    if (scheduleGenerated) {
+      // Wait a moment for backend to complete all operations
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/subscription-usage"] });
+        
+        // Force refetch of data
+        refetchPosts();
+        if (refetchSubscriptionUsage) {
+          refetchSubscriptionUsage();
+        }
+      }, 1000);
+    }
+  }, [scheduleGenerated, queryClient, refetchPosts, refetchSubscriptionUsage]);
+
   // Video handling
   const handleVideoApproved = async (postId: number, videoData: any) => {
     try {
@@ -198,7 +215,7 @@ function IntelligentSchedule() {
   });
 
   // Fetch subscription usage for quota-aware generation
-  const { data: subscriptionUsage, isLoading: subscriptionLoading } = useQuery<SubscriptionUsage>({
+  const { data: subscriptionUsage, isLoading: subscriptionLoading, refetch: refetchSubscriptionUsage } = useQuery<SubscriptionUsage>({
     queryKey: ["/api/subscription-usage"],
     enabled: !!user && !userLoading,
     refetchOnMount: true,

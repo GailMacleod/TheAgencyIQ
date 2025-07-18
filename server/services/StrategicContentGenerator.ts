@@ -618,12 +618,30 @@ export class StrategicContentGenerator {
       
       console.log(`✅ Successfully deleted all posts for user ${userId}`);
       
+      // Clear the PostQuotaService cache to ensure fresh calculations
+      await this.clearPostQuotaCache(userId);
+      
       // Also reset the quota to ensure clean slate
       await this.resetQuotaToFiftyTwo(userId);
       
     } catch (error) {
       console.error(`❌ Error deleting posts for user ${userId}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * CLEAR POST QUOTA CACHE
+   * Clears the PostQuotaService cache to ensure fresh quota calculations
+   */
+  static async clearPostQuotaCache(userId: number): Promise<void> {
+    try {
+      // Import and clear the cache from PostQuotaService
+      const { PostQuotaService } = await import('../PostQuotaService');
+      PostQuotaService.clearUserCache(userId);
+      console.log(`🗑️  Cleared quota cache for user ${userId}`);
+    } catch (error) {
+      console.error(`❌ Error clearing quota cache for user ${userId}:`, error);
     }
   }
 }
