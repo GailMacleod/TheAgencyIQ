@@ -49,8 +49,6 @@ export interface IStorage {
   updatePost(id: number, updates: Partial<InsertPost>): Promise<Post>;
   deletePost(id: number): Promise<void>;
   getPost(postId: number): Promise<Post | undefined>;
-  getPostsWithPlatformIds(userId: number): Promise<Post[]>;
-  updatePostPlatformId(postId: number, platformPostId: string, quotaDeducted: boolean): Promise<Post>;
 
   // Platform connection operations
   getPlatformConnectionsByUser(userId: number): Promise<PlatformConnection[]>;
@@ -92,10 +90,6 @@ export interface IStorage {
   getPostLedgerByUser(userId: string): Promise<any | undefined>;
   createPostLedger(ledger: any): Promise<any>;
   updatePostLedger(userId: string, updates: any): Promise<any>;
-  
-  // Stripe subscription management
-  getUsersWithStripeCustomers(): Promise<User[]>;
-  clearDuplicateStripeCustomers(keepUserId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -248,31 +242,6 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(posts)
       .where(eq(posts.id, postId));
-    return post;
-  }
-
-  async getPostsWithPlatformIds(userId: number): Promise<Post[]> {
-    return await db
-      .select()
-      .from(posts)
-      .where(and(
-        eq(posts.userId, userId),
-        eq(posts.status, 'published')
-      ))
-      .orderBy(desc(posts.publishedAt));
-  }
-
-  async updatePostPlatformId(postId: number, platformPostId: string, quotaDeducted: boolean): Promise<Post> {
-    const [post] = await db
-      .update(posts)
-      .set({
-        platformPostId,
-        quotaDeducted,
-        status: 'published',
-        publishedAt: new Date()
-      })
-      .where(eq(posts.id, postId))
-      .returning();
     return post;
   }
 
@@ -571,29 +540,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(postLedger.userId, userId))
       .returning();
     return updatedLedger;
-  }
-
-  // Stripe subscription management
-  async getUsersWithStripeCustomers(): Promise<User[]> {
-    const usersWithStripe = await db
-      .select()
-      .from(users)
-      .where(eq(users.stripeCustomerId, users.stripeCustomerId)); // Users with non-null stripe customer ID
-    return usersWithStripe;
-  }
-
-  async clearDuplicateStripeCustomers(keepUserId: number): Promise<void> {
-    await db
-      .update(users)
-      .set({ 
-        stripeCustomerId: null,
-        stripeSubscriptionId: null,
-        subscriptionPlan: 'free'
-      })
-      .where(and(
-        eq(users.id, keepUserId),
-        eq(users.stripeCustomerId, users.stripeCustomerId)
-      ));
   }
 }
 

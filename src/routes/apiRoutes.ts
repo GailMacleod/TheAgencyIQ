@@ -378,8 +378,22 @@ apiRouter.post('/generate-content', requireAuth, async (req, res) => {
   }
 });
 
-// CRITICAL FIX: Webhook endpoint removed from here
-// Main webhook endpoint is now handled in server/routes.ts to prevent conflicts
-// No duplicate /webhook endpoint needed in apiRouter
+// Webhook endpoint for Stripe
+apiRouter.post('/webhook', async (req, res) => {
+  if (!stripe) {
+    return res.status(500).json({ error: 'Stripe not configured' });
+  }
+
+  try {
+    const sig = req.headers['stripe-signature'] as string;
+    const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    
+    console.log('Webhook event received:', event.type);
+    res.json({ received: true });
+  } catch (error: any) {
+    console.error('Webhook error:', error);
+    res.status(400).json({ error: 'Webhook signature verification failed' });
+  }
+});
 
 export { apiRouter };

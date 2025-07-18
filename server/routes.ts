@@ -11,9 +11,9 @@ import { z } from "zod";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { generateContentCalendar, generateReplacementPost, getAIResponse, generateEngagementInsight } from "./grok";
-// import twilio from 'twilio';
-// import sgMail from '@sendgrid/mail';
-// import multer from "multer";
+import twilio from 'twilio';
+import sgMail from '@sendgrid/mail';
+import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto, { createHash } from "crypto";
@@ -84,15 +84,15 @@ if (process.env.STRIPE_SECRET_KEY) {
 }
 
 // Configure SendGrid if available
-// if (process.env.SENDGRID_API_KEY) {
-//   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-// }
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 // Initialize Twilio only if credentials are available
-// let twilioClient: any = null;
-// if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-//   twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-// }
+let twilioClient: any = null;
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+  twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+}
 
 // Comprehensive subscription middleware - blocks ALL access except wizard
 const requirePaidSubscription = async (req: any, res: any, next: any) => {
@@ -425,36 +425,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     done(null, user);
   });
 
-  // Configure multer for file uploads (disabled - multer not available)
-  // const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
-  // if (!fs.existsSync(uploadsDir)) {
-  //   fs.mkdirSync(uploadsDir, { recursive: true });
-  // }
+  // Configure multer for file uploads
+  const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
 
-  // const storage_multer = multer.diskStorage({
-  //   destination: (req, file, cb) => {
-  //     cb(null, uploadsDir);
-  //   },
-  //   filename: (req: any, file, cb) => {
-  //     const ext = path.extname(file.originalname);
-  //     const filename = `${req.session.userId}_${Date.now()}${ext}`;
-  //     cb(null, filename);
-  //   }
-  // });
+  const storage_multer = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (req: any, file, cb) => {
+      const ext = path.extname(file.originalname);
+      const filename = `${req.session.userId}_${Date.now()}${ext}`;
+      cb(null, filename);
+    }
+  });
 
-  // const upload = multer({
-  //   storage: storage_multer,
-  //   limits: {
-  //     fileSize: 500000, // 500KB
-  //   },
-  //   fileFilter: (req, file, cb) => {
-  //     if (file.mimetype.match(/^image\/(png|jpeg|jpg)$/)) {
-  //       cb(null, true);
-  //     } else {
-  //       cb(new Error('Only PNG and JPG images are allowed'));
-  //     }
-  //   }
-  // });
+  const upload = multer({
+    storage: storage_multer,
+    limits: {
+      fileSize: 500000, // 500KB
+    },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.match(/^image\/(png|jpeg|jpg)$/)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only PNG and JPG images are allowed'));
+      }
+    }
+  });
 
   // Resilient authentication middleware with database connectivity handling
   const requireAuth = async (req: any, res: any, next: any) => {
@@ -1361,16 +1361,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
         console.error('❌ Stripe webhook configuration missing');
-        // CRITICAL FIX: Return 200 even when not configured to prevent webhook deactivation
-        return res.status(200).json({ received: true, error: 'Webhook not configured but acknowledged' });
+        return res.status(500).json({ error: 'Webhook not configured' });
       }
 
       event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
       console.log(`✅ Webhook signature verified for event: ${event.type}`);
     } catch (err: any) {
       console.error('❌ Stripe webhook signature verification failed:', err.message);
-      // CRITICAL FIX: Return 200 even on signature verification failure to prevent webhook deactivation
-      return res.status(200).json({ received: true, error: 'Signature verification failed but acknowledged' });
+      return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
     console.log(`🔔 Processing Stripe webhook: ${event.type}`);
@@ -1470,57 +1468,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const newSubscription = event.data.object;
           console.log('🆕 New subscription created:', newSubscription.id);
           
-          // CRITICAL FIX: Prevent duplicate subscriptions
-          // Check if user already has active subscription before creating new one
+          // Handle new subscription creation
           const customer = await stripe.customers.retrieve(newSubscription.customer);
           if (customer && customer.email) {
-            let user = await storage.getUserByEmail(customer.email);
+            const user = await storage.getUserByEmail(customer.email);
             if (user) {
-              // Check if user already has an active subscription
-              if (user.stripeSubscriptionId && user.stripeSubscriptionId !== newSubscription.id) {
-                console.log(`⚠️ User ${user.id} already has subscription ${user.stripeSubscriptionId}, canceling duplicate ${newSubscription.id}`);
-                
-                // Cancel the duplicate subscription
-                try {
-                  await stripe.subscriptions.cancel(newSubscription.id);
-                  console.log(`✅ Canceled duplicate subscription ${newSubscription.id}`);
-                } catch (cancelError) {
-                  console.error('Failed to cancel duplicate subscription:', cancelError);
-                }
-              } else {
-                // No existing subscription, proceed with normal flow
-                const amount = newSubscription.items.data[0]?.price?.unit_amount || 0;
-                let plan = 'professional';
-                if (amount >= 9999) plan = 'professional';
-                else if (amount >= 4199) plan = 'growth';
-                else if (amount >= 1999) plan = 'starter';
-                
-                await storage.updateUser(user.id, {
-                  subscriptionPlan: plan,
-                  stripeSubscriptionId: newSubscription.id,
-                  stripeCustomerId: customer.id
-                });
-                console.log(`✅ User ${user.id} linked to new ${plan} subscription`);
-              }
-            } else {
-              // No user found by email, check by phone for gailm@macleodglba.com.au
-              if (customer.email === 'gailm@macleodglba.com.au') {
-                user = await storage.getUser(2); // User ID 2 is gailm@macleodglba.com.au
-                if (user) {
-                  const amount = newSubscription.items.data[0]?.price?.unit_amount || 0;
-                  let plan = 'professional';
-                  if (amount >= 9999) plan = 'professional';
-                  else if (amount >= 4199) plan = 'growth';
-                  else if (amount >= 1999) plan = 'starter';
-                  
-                  await storage.updateUser(user.id, {
-                    subscriptionPlan: plan,
-                    stripeSubscriptionId: newSubscription.id,
-                    stripeCustomerId: customer.id
-                  });
-                  console.log(`✅ User ${user.id} linked to new ${plan} subscription via phone lookup`);
-                }
-              }
+              const amount = newSubscription.items.data[0]?.price?.unit_amount || 0;
+              let plan = 'professional';
+              if (amount >= 9999) plan = 'professional';
+              else if (amount >= 4199) plan = 'growth';
+              else if (amount >= 1999) plan = 'starter';
+              
+              await storage.updateUser(user.id, {
+                subscriptionPlan: plan,
+                stripeSubscriptionId: newSubscription.id,
+                stripeCustomerId: customer.id
+              });
+              console.log(`✅ User ${user.id} linked to new ${plan} subscription`);
             }
           }
           break;
@@ -1533,9 +1497,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json({ received: true, event: event.type });
     } catch (error) {
       console.error('❌ Stripe webhook processing error:', error);
-      // CRITICAL FIX: Always return 200 to prevent Stripe from disabling webhook
-      // Log the error but acknowledge receipt to prevent webhook deactivation
-      res.status(200).json({ received: true, event: event.type, error: 'Processing failed but acknowledged' });
+      res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
 
@@ -1590,150 +1552,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error serving latest video:', error);
       res.status(500).json({ error: 'Failed to get latest video' });
-    }
-  });
-
-  // Admin endpoint to list all Stripe customers and subscriptions
-  app.get('/api/admin/stripe-customers', requireAuth, async (req, res) => {
-    try {
-      // Only allow User ID 2 (gailm@macleodglba.com.au) to access this endpoint
-      if (req.session.userId !== 2) {
-        return res.status(403).json({ error: 'Admin access required' });
-      }
-      
-      if (!stripe) {
-        return res.status(500).json({ error: 'Stripe not configured' });
-      }
-      
-      console.log('🔍 Admin: Listing all Stripe customers and subscriptions');
-      
-      // Get all customers
-      const customers = await stripe.customers.list({ limit: 100 });
-      
-      // Get all subscriptions
-      const subscriptions = await stripe.subscriptions.list({ limit: 100 });
-      
-      // Format customer data with subscription info
-      const customerData = await Promise.all(customers.data.map(async (customer) => {
-        const customerSubscriptions = subscriptions.data.filter(sub => sub.customer === customer.id);
-        
-        // Get database user info if available
-        let dbUser = null;
-        if (customer.email) {
-          try {
-            dbUser = await storage.getUserByEmail(customer.email);
-          } catch (e) {
-            // User not found in database
-          }
-        }
-        
-        return {
-          id: customer.id,
-          email: customer.email,
-          name: customer.name,
-          created: customer.created,
-          subscriptions: customerSubscriptions.map(sub => ({
-            id: sub.id,
-            status: sub.status,
-            current_period_start: sub.current_period_start,
-            current_period_end: sub.current_period_end,
-            plan: sub.items.data[0]?.price?.unit_amount || 0,
-            currency: sub.items.data[0]?.price?.currency || 'aud'
-          })),
-          dbUser: dbUser ? {
-            id: dbUser.id,
-            email: dbUser.email,
-            phone: dbUser.phone,
-            subscriptionPlan: dbUser.subscriptionPlan,
-            stripeCustomerId: dbUser.stripeCustomerId,
-            stripeSubscriptionId: dbUser.stripeSubscriptionId
-          } : null
-        };
-      }));
-      
-      res.json({
-        success: true,
-        totalCustomers: customers.data.length,
-        totalSubscriptions: subscriptions.data.length,
-        customers: customerData
-      });
-      
-    } catch (error: any) {
-      console.error('Admin Stripe listing error:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Admin endpoint to cancel duplicate subscriptions for gailm@macleodglba.com.au
-  app.post('/api/admin/cleanup-subscriptions', requireAuth, async (req, res) => {
-    try {
-      // Only allow User ID 2 (gailm@macleodglba.com.au) to access this endpoint
-      if (req.session.userId !== 2) {
-        return res.status(403).json({ error: 'Admin access required' });
-      }
-      
-      if (!stripe) {
-        return res.status(500).json({ error: 'Stripe not configured' });
-      }
-      
-      console.log('🧹 Admin: Cleaning up duplicate subscriptions for gailm@macleodglba.com.au');
-      
-      // Get all customers with email gailm@macleodglba.com.au
-      const customers = await stripe.customers.list({
-        email: 'gailm@macleodglba.com.au',
-        limit: 100
-      });
-      
-      let canceledCount = 0;
-      let keptSubscription = null;
-      
-      for (const customer of customers.data) {
-        const subscriptions = await stripe.subscriptions.list({
-          customer: customer.id,
-          status: 'active'
-        });
-        
-        console.log(`Found ${subscriptions.data.length} active subscriptions for customer ${customer.id}`);
-        
-        // Keep only the professional subscription, cancel others
-        for (const subscription of subscriptions.data) {
-          const amount = subscription.items.data[0]?.price?.unit_amount || 0;
-          const isProfessional = amount >= 9999; // $99.99 AUD
-          
-          if (isProfessional && !keptSubscription) {
-            // Keep this professional subscription
-            keptSubscription = subscription;
-            console.log(`✅ Keeping professional subscription: ${subscription.id}`);
-            
-            // Update database to link to this subscription
-            await storage.updateUser(2, {
-              subscriptionPlan: 'professional',
-              stripeCustomerId: customer.id,
-              stripeSubscriptionId: subscription.id
-            });
-          } else {
-            // Cancel this subscription
-            try {
-              await stripe.subscriptions.cancel(subscription.id);
-              canceledCount++;
-              console.log(`❌ Canceled duplicate subscription: ${subscription.id}`);
-            } catch (cancelError) {
-              console.error(`Failed to cancel subscription ${subscription.id}:`, cancelError);
-            }
-          }
-        }
-      }
-      
-      res.json({
-        success: true,
-        canceledCount,
-        keptSubscription: keptSubscription ? keptSubscription.id : null,
-        message: `Canceled ${canceledCount} duplicate subscriptions, kept 1 professional subscription`
-      });
-      
-    } catch (error: any) {
-      console.error('Admin subscription cleanup error:', error);
-      res.status(500).json({ error: error.message });
     }
   });
 
@@ -3373,7 +3191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logo upload endpoint (disabled - multer not available)
+  // Logo upload endpoint with multer
   app.post("/api/upload-logo", async (req: any, res) => {
     try {
       // Check Authorization token
@@ -3382,37 +3200,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      // File upload disabled - multer not available
-      return res.status(501).json({ message: "File upload temporarily disabled" });
-      
-      // // Use multer to handle file upload
-      // upload.single("logo")(req, res, (err) => {
-      //   if (err) {
-      //     return res.status(400).json({ message: "Upload error" });
-      //   }
+      // Use multer to handle file upload
+      upload.single("logo")(req, res, (err) => {
+        if (err) {
+          return res.status(400).json({ message: "Upload error" });
+        }
 
-      //   if (!req.file) {
-      //     return res.status(400).json({ message: "No file uploaded" });
-      //   }
+        if (!req.file) {
+          return res.status(400).json({ message: "No file uploaded" });
+        }
 
-      //   // Check file size (max 5MB)
-      //   if (req.file.size > 5 * 1024 * 1024) {
-      //     return res.status(400).json({ message: "File too large" });
-      //   }
+        // Check file size (max 5MB)
+        if (req.file.size > 5 * 1024 * 1024) {
+          return res.status(400).json({ message: "File too large" });
+        }
 
-      //   // Save file as logo.png and update preview
-      //   const uploadsDir = './uploads';
-      //   if (!fs.existsSync(uploadsDir)) {
-      //     fs.mkdirSync(uploadsDir, { recursive: true });
-      //   }
+        // Save file as logo.png and update preview
+        const uploadsDir = './uploads';
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
 
-      //   const targetPath = path.join(uploadsDir, 'logo.png');
-      //   fs.renameSync(req.file.path, targetPath);
+        const targetPath = path.join(uploadsDir, 'logo.png');
+        fs.renameSync(req.file.path, targetPath);
 
-      //   const logoUrl = '/uploads/logo.png';
+        const logoUrl = '/uploads/logo.png';
 
-      //   res.status(200).json({ message: "Logo uploaded successfully", logoUrl });
-      // });
+        res.status(200).json({ message: "Logo uploaded successfully", logoUrl });
+      });
     } catch (error: any) {
       console.error('Logo upload error:', error);
       res.status(400).json({ message: "Upload failed" });
@@ -8226,8 +8041,8 @@ Continue building your Value Proposition Canvas systematically.`;
           `,
         };
         
-        // await sgMail.send(msg);
-        console.log(`Password reset email would be sent to ${email} (email service disabled)`);
+        await sgMail.send(msg);
+        console.log(`Password reset email sent successfully to ${email}`);
         
       } catch (emailError: any) {
         console.error('SendGrid email error:', emailError);
@@ -9372,59 +9187,6 @@ Continue building your Value Proposition Canvas systematically.`;
         });
       }
 
-      if (action === 'publish_single') {
-        // REAL API PUBLISHING - Single platform test using ONLY stored OAuth connections
-        const { platform, content } = req.body;
-        
-        if (!platform || !content) {
-          return res.status(400).json({ message: 'Platform and content are required for single publishing' });
-        }
-
-        try {
-          // Get platform connection for token
-          const connections = await storage.getPlatformConnectionsByUser(userId);
-          const connection = connections.find(c => c.platform === platform && c.isActive);
-          
-          if (!connection) {
-            return res.json({
-              success: false,
-              error: `No active connection found for ${platform}`,
-              platform
-            });
-          }
-
-          // Import DirectPublisher for real API publishing
-          const { DirectPublisher } = await import('./direct-publisher');
-
-          // Publish using DirectPublisher with real platform APIs
-          const result = await DirectPublisher.publishToPlatform(platform, content, connection.accessToken);
-
-          if (result.success && result.platformPostId) {
-            console.log(`✅ Real API publish successful: ${platform} - Post ID: ${result.platformPostId}`);
-            return res.json({
-              success: true,
-              platformPostId: result.platformPostId,
-              platform,
-              message: `Successfully published to ${platform}`
-            });
-          } else {
-            console.log(`❌ Real API publish failed: ${platform} - Error: ${result.error}`);
-            return res.json({
-              success: false,
-              error: result.error || 'Unknown publishing error',
-              platform
-            });
-          }
-        } catch (error: any) {
-          console.error(`Real API publish error for ${platform}:`, error);
-          return res.json({
-            success: false,
-            error: error.message,
-            platform
-          });
-        }
-      }
-
       if (action === 'publish_all') {
         // QUOTA ENFORCEMENT: Check quota status before publishing
         const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
@@ -10136,12 +9898,6 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // CRITICAL FIX: Import and mount apiRouter from src/routes/apiRoutes.ts to handle legacy endpoints
-  // This must be AFTER the main webhook endpoint to prevent conflicts
-  // Only mount if needed - commenting out since main webhook is working
-  // const { apiRouter } = await import('../src/routes/apiRoutes');
-  // app.use('/api', apiRouter);
-
   const httpServer = createServer(app);
   return httpServer;
 }
@@ -10386,98 +10142,6 @@ export function addNotificationEndpoints(app: any) {
   });
 
   // DATA CLEANUP AND QUOTA MANAGEMENT ENDPOINTS
-  
-  // Platform Post ID Management Endpoints
-  app.get('/api/posts/platform-ids', requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId;
-      const { PlatformPostManager } = await import('./platform-post-manager');
-      
-      const postsWithPlatformIds = await PlatformPostManager.getPublishedPosts(userId);
-      const quotaStatus = await PlatformPostManager.getQuotaStatusWithValidation(userId);
-      
-      res.json({
-        success: true,
-        publishedPosts: postsWithPlatformIds,
-        quotaStatus,
-        validPublishedCount: postsWithPlatformIds.length
-      });
-    } catch (error: any) {
-      console.error('Error fetching platform post IDs:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-  
-  app.post('/api/posts/:postId/platform-id', requireAuth, async (req, res) => {
-    try {
-      const userId = req.session.userId;
-      const { postId } = req.params;
-      const { platformPostId, success } = req.body;
-      
-      // Fixed validation: Allow null platformPostId for failed publications
-      if (success === undefined || (success === true && !platformPostId)) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Success status required. Platform post ID required only for successful publications.' 
-        });
-      }
-      
-      const { PlatformPostManager } = await import('./platform-post-manager');
-      
-      let result;
-      if (success && platformPostId) {
-        // Successful publication - record with platform post ID and deduct quota
-        result = await PlatformPostManager.recordSuccessfulPublication(
-          userId,
-          'manual', // Platform will be determined from post data
-          'Manual platform post ID entry',
-          platformPostId,
-          parseInt(postId)
-        );
-        
-        console.log(`✅ Successfully recorded publication with platform post ID: ${platformPostId}`);
-      } else {
-        // Failed publication - record failure without quota deduction
-        result = await PlatformPostManager.recordFailedPublication(
-          userId,
-          'manual',
-          'Manual platform post ID entry',
-          'Publication failed - no platform post ID generated',
-          parseInt(postId)
-        );
-        
-        console.log(`❌ Recorded failed publication for post ${postId} - quota not deducted`);
-      }
-      
-      res.json({
-        success: true,
-        result,
-        quotaDeducted: success ? result.quotaDeducted : false,
-        platformPostId: success ? platformPostId : null
-      });
-    } catch (error: any) {
-      console.error('Error updating platform post ID:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-  
-  app.post('/api/posts/validate-platform-id/:postId', requireAuth, async (req, res) => {
-    try {
-      const { postId } = req.params;
-      const { PlatformPostManager } = await import('./platform-post-manager');
-      
-      const isValid = await PlatformPostManager.verifyPlatformPostId(parseInt(postId));
-      
-      res.json({
-        success: true,
-        isValid,
-        postId: parseInt(postId)
-      });
-    } catch (error: any) {
-      console.error('Error validating platform post ID:', error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
   
   // Perform comprehensive data cleanup
   app.post('/api/data-cleanup', requireAuth, async (req: any, res) => {

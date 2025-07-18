@@ -1,4 +1,4 @@
-// import OpenAI from "openai";
+import OpenAI from "openai";
 import { seoOptimizationService } from './seoOptimizationService';
 
 // Comprehensive TheAgencyIQ Knowledge Base for AI Assistant

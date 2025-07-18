@@ -1,9 +1,10 @@
 import express from 'express';
 import session from 'express-session';
+import connectPg from 'connect-pg-simple';
 import cors from 'cors';
 import { createServer } from 'http';
 import path from 'path';
-// import { initializeMonitoring, logInfo, logError } from './monitoring';
+import { initializeMonitoring, logInfo, logError } from './monitoring';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -18,7 +19,7 @@ function log(message: string, source = "express") {
 
 async function startServer() {
   // Initialize monitoring
-  // initializeMonitoring();
+  initializeMonitoring();
   
   const app = express();
 
@@ -128,23 +129,34 @@ async function startServer() {
   });
 
   // Data deletion status
-  app.get('/deletion-status/:userId', (req, res) => {
+  app.get('/deletion-status/:userId?', (req, res) => {
     const userId = req.params.userId || 'anonymous';
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // Data deletion status without userId
-  app.get('/deletion-status', (req, res) => {
-    const userId = 'anonymous';
-    res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
+  // Device-agnostic session configuration for mobile-to-desktop continuity
+  // Configure PostgreSQL session store
+  const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true, // Fix: Allow session table creation
+    ttl: sessionTtl,
+    tableName: "sessions",
+    errorLog: (error) => {
+      console.error('Session store error:', error);
+    }
   });
 
-  // Device-agnostic session configuration for mobile-to-desktop continuity
-  // Use MemoryStore for simplicity (development mode)
-  const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
-  
-  console.log('🔧 Using MemoryStore for session management...');
-  console.log('✅ Session store configured successfully');
+  // Test session store connection
+  console.log('🔧 Testing session store connection...');
+  sessionStore.get('test-connection', (err, session) => {
+    if (err) {
+      console.error('❌ Session store connection failed:', err);
+    } else {
+      console.log('✅ Session store connection successful');
+    }
+  });
 
   // CORS middleware with credentials support
   app.use(cors({
@@ -162,6 +174,7 @@ async function startServer() {
   // Enhanced session configuration for cookie persistence
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
+    store: sessionStore,
     resave: false,
     saveUninitialized: true,
     name: 'theagencyiq.session',
