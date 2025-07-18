@@ -82,13 +82,22 @@ const server = http.createServer(async (req, res) => {
     }
   }
   
-  // Serve from backup dist folder (working built version)
+  // Serve from backup dist folder (working built version) with UI fixes
   if (pathname === '/' || pathname === '/index.html') {
     const backupIndexPath = path.join(__dirname, 'dist_backup_20250712_110901', 'index.html');
     
     if (fs.existsSync(backupIndexPath)) {
       try {
-        const data = fs.readFileSync(backupIndexPath, 'utf8');
+        let data = fs.readFileSync(backupIndexPath, 'utf8');
+        
+        // Inject UI fixes
+        const uiFixScript = fs.readFileSync(path.join(__dirname, 'enhanced-splash-fix.js'), 'utf8');
+        const workflowFixScript = fs.readFileSync(path.join(__dirname, 'workflow-ui-fix.js'), 'utf8');
+        data = data.replace(
+          '</body>',
+          `<script>${uiFixScript}</script><script>${workflowFixScript}</script></body>`
+        );
+        
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(data);
       } catch (err) {
