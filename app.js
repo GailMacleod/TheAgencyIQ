@@ -104,12 +104,23 @@ const server = http.createServer((req, res) => {
   res.end('Not Found');
 });
 
-server.listen(port, () => {
-  console.log(`🚀 TheAgencyIQ Server restored and running on port ${port}`);
-  console.log(`🌐 Access at: http://localhost:${port}`);
-  console.log(`📁 Serving from: dist_backup_20250712_110901`);
-  console.log(`⚠️  Note: Using backup server. To use Vite, run: npx tsx server/index.ts`);
+// Always use enhanced server with Vite configuration
+console.log('🚀 Starting Enhanced Development Server with Vite Configuration...');
+import('./enhanced-dev-server.js').then(() => {
+  console.log('✅ Enhanced server with Vite configuration loaded successfully');
+}).catch(err => {
+  console.log('❌ Enhanced server failed, falling back to backup');
+  startBackupServer();
 });
+
+function startBackupServer() {
+  server.listen(port, () => {
+    console.log(`🚀 TheAgencyIQ Server restored and running on port ${port}`);
+    console.log(`🌐 Access at: http://localhost:${port}`);
+    console.log(`📁 Serving from: dist_backup_20250712_110901`);
+    console.log(`⚡ To use enhanced TypeScript server: USE_ENHANCED_SERVER=true node app.js`);
+  });
+}
 
 // Handle shutdown
 process.on('SIGINT', () => {
