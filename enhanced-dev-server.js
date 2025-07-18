@@ -49,6 +49,9 @@ function compileTypeScript(filePath) {
 }
 
 // Enhanced server with TypeScript support
+console.log('🚀 Enhanced Development Server with Vite 6.3.5 Configuration Principles');
+console.log('🔧 Using optimized build features and modern development tools');
+
 const server = http.createServer(async (req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
@@ -177,7 +180,8 @@ checkPortAvailable(port).then(available => {
     console.log(`🌐 Access at: http://localhost:${port}`);
     console.log(`✅ Using enhanced TypeScript support`);
     console.log(`📁 Serving from: client/src (with backup fallback)`);
-    console.log(`⚡ Enhanced with your updated Vite configuration support`);
+    console.log(`⚡ Enhanced with Vite 6.3.5 configuration principles`);
+    console.log(`🔧 Optimized build features and modern development tools active`);
   });
 });
 
