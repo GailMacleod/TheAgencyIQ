@@ -1,0 +1,12 @@
+{
+  "name": "theagencyiq-minimal",
+  "version": "1.0.0",
+  "main": "server/minimal-server.js",
+  "scripts": {
+    "dev": "node server/minimal-server.js",
+    "start": "node server/minimal-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
