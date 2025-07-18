@@ -123,17 +123,31 @@ function IntelligentSchedule() {
   // Force refresh when strategic content generation completes
   useEffect(() => {
     if (scheduleGenerated) {
-      // Wait a moment for backend to complete all operations
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/subscription-usage"] });
+      // Comprehensive cache reset after generation
+      const performDelayedCacheReset = async () => {
+        // Clear all cached data first
+        queryClient.removeQueries({ queryKey: ["/api/posts"] });
+        queryClient.removeQueries({ queryKey: ["/api/subscription-usage"] });
+        queryClient.removeQueries({ queryKey: ["/api/user"] });
+        queryClient.removeQueries({ queryKey: ["/api/user-status"] });
         
-        // Force refetch of data
-        refetchPosts();
-        if (refetchSubscriptionUsage) {
-          refetchSubscriptionUsage();
-        }
-      }, 1000);
+        // Invalidate all queries
+        await queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/subscription-usage"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/user-status"] });
+        
+        // Force fresh fetches
+        await Promise.all([
+          refetchPosts(),
+          refetchSubscriptionUsage ? refetchSubscriptionUsage() : Promise.resolve()
+        ]);
+      };
+      
+      // Perform cache reset with multiple attempts
+      setTimeout(performDelayedCacheReset, 500);
+      setTimeout(performDelayedCacheReset, 1500);
+      setTimeout(performDelayedCacheReset, 3000);
     }
   }, [scheduleGenerated, queryClient, refetchPosts, refetchSubscriptionUsage]);
 
@@ -480,15 +494,30 @@ function IntelligentSchedule() {
           description: `Created ${strategicData.savedCount} strategic posts using waterfall strategyzer methodology with Value Proposition Canvas integration`,
         });
 
-        // Invalidate and refresh all related queries to show new strategic content
-        queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/subscription-usage"] });
+        // Comprehensive cache invalidation and refresh
+        const performCacheReset = async () => {
+          // Clear all cached data
+          queryClient.removeQueries({ queryKey: ["/api/posts"] });
+          queryClient.removeQueries({ queryKey: ["/api/subscription-usage"] });
+          queryClient.removeQueries({ queryKey: ["/api/user"] });
+          queryClient.removeQueries({ queryKey: ["/api/user-status"] });
+          
+          // Invalidate all related queries
+          await queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+          await queryClient.invalidateQueries({ queryKey: ["/api/subscription-usage"] });
+          await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+          await queryClient.invalidateQueries({ queryKey: ["/api/user-status"] });
+          
+          // Force fresh fetches
+          await Promise.all([
+            refetchPosts(),
+            refetchSubscriptionUsage ? refetchSubscriptionUsage() : Promise.resolve()
+          ]);
+        };
         
-        // Force immediate refresh of posts and quota data
-        refetchPosts();
-        if (refetchSubscriptionUsage) {
-          refetchSubscriptionUsage();
-        }
+        // Perform cache reset immediately and again after a short delay
+        performCacheReset();
+        setTimeout(performCacheReset, 1000);
       } else {
         const error = await response.json();
         throw new Error(error.message || 'Failed to generate strategic content');
