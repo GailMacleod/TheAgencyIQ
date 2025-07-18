@@ -280,6 +280,20 @@ function IntelligentSchedule() {
     }
   }, [subscriptionUsage, subscriptionLoading, queryClient]);
 
+  // Refresh UI when strategic content generation completes
+  useEffect(() => {
+    if (scheduleGenerated && !isGeneratingSchedule) {
+      // Force refresh of posts to show new strategic content
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      refetchPosts();
+      
+      // Reset the flag after refresh
+      setTimeout(() => {
+        setScheduleGenerated(false);
+      }, 1000);
+    }
+  }, [scheduleGenerated, isGeneratingSchedule, queryClient, refetchPosts]);
+
   // Generate calendar dates for next 30 days with AEST timezone consistency
   const generateCalendarDates = () => {
     const dates = [];
@@ -449,7 +463,11 @@ function IntelligentSchedule() {
           description: `Created ${strategicData.savedCount} strategic posts using waterfall strategyzer methodology with Value Proposition Canvas integration`,
         });
 
-        // Refresh posts and quota to show new strategic content
+        // Invalidate and refresh all related queries to show new strategic content
+        queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/subscription-usage"] });
+        
+        // Force immediate refresh of posts and quota data
         refetchPosts();
         if (refetchSubscriptionUsage) {
           refetchSubscriptionUsage();
