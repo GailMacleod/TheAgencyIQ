@@ -172,7 +172,6 @@ export class StrategicContentGenerator {
       };
     }
   }
-  }
 
   /**
    * PHASE 2: Audience Insights with Jobs-to-be-Done Framework
