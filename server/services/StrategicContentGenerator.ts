@@ -63,34 +63,39 @@ export class StrategicContentGenerator {
   static async generateStrategicContent(params: StrategicContentParams): Promise<StrategicPost[]> {
     console.log(`🎯 Starting strategic content generation for user ${params.userId}`);
     
-    // Phase 1: Brand Purpose Analysis
-    const brandAnalysis = await this.analyzeBrandPurpose(params.brandPurpose);
-    
-    // Phase 2: Audience Insights with Jobs-to-be-Done Framework
-    const audienceInsights = await this.generateAudienceInsights(params.brandPurpose);
-    
-    // Phase 3: Queensland Market Data Integration
-    const marketData = await this.getQueenslandMarketData(params.brandPurpose);
-    
-    // Phase 4: SEO Keywords for Queensland SMEs
-    const seoKeywords = await this.generateSEOKeywords(params.brandPurpose, marketData);
-    
-    // Phase 5: Value Proposition Canvas
-    const valueCanvas = await this.createValuePropositionCanvas(params.brandPurpose, audienceInsights);
-    
-    // Phase 6: High-Engagement Templates with Sales CTAs
-    const contentTemplates = await this.generateEngagementTemplates(valueCanvas, seoKeywords);
-    
-    // Phase 7: 30-Day Cycle Optimization for Reach/Conversion
-    const optimisedContent = await this.optimise30DayCycle(
-      contentTemplates,
-      params.totalPosts,
-      params.platforms,
-      marketData,
-      params.brandPurpose
-    );
-    
-    return optimisedContent;
+    try {
+      // Phase 1: Brand Purpose Analysis
+      const brandAnalysis = await this.analyzeBrandPurpose(params.brandPurpose);
+      
+      // Phase 2: Audience Insights with Jobs-to-be-Done Framework
+      const audienceInsights = await this.generateAudienceInsights(params.brandPurpose);
+      
+      // Phase 3: Queensland Market Data Integration
+      const marketData = await this.getQueenslandMarketData(params.brandPurpose);
+      
+      // Phase 4: SEO Keywords for Queensland SMEs
+      const seoKeywords = await this.generateSEOKeywords(params.brandPurpose, marketData);
+      
+      // Phase 5: Value Proposition Canvas
+      const valueCanvas = await this.createValuePropositionCanvas(params.brandPurpose, audienceInsights);
+      
+      // Phase 6: High-Engagement Templates with Sales CTAs
+      const contentTemplates = await this.generateEngagementTemplates(valueCanvas, seoKeywords);
+      
+      // Phase 7: 30-Day Cycle Optimization for Reach/Conversion
+      const optimisedContent = await this.optimise30DayCycle(
+        contentTemplates,
+        params.totalPosts,
+        params.platforms,
+        marketData,
+        params.brandPurpose
+      );
+      
+      return optimisedContent;
+    } catch (error) {
+      console.error(`❌ Strategic content generation failed for user ${params.userId}:`, error);
+      throw error;
+    }
   }
 
   /**
@@ -100,29 +105,73 @@ export class StrategicContentGenerator {
   private static async analyzeBrandPurpose(brandPurpose: any): Promise<any> {
     console.log('🔍 Phase 1: Analyzing brand purpose...');
     
-    const prompt = `Analyze this Queensland SME brand purpose for strategic content creation:
-    
-    Brand: ${brandPurpose.brandName}
-    Purpose: ${brandPurpose.corePurpose}
-    Products/Services: ${brandPurpose.productsServices}
-    Audience: ${brandPurpose.audience}
-    
-    Provide strategic analysis:
-    1. Core brand pillars (3-5 key themes)
-    2. Unique value drivers
-    3. Market positioning opportunities
-    4. Content themes for authority building
-    5. Competitive differentiation factors
-    
-    Focus on Queensland small business market with emphasis on rapid growth and customer acquisition.`;
+    try {
+      const prompt = `Analyze this Queensland SME brand purpose for strategic content creation:
+      
+      Brand: ${brandPurpose.brandName}
+      Purpose: ${brandPurpose.corePurpose}
+      Products/Services: ${brandPurpose.productsServices}
+      Audience: ${brandPurpose.audience}
+      
+      Provide strategic analysis:
+      1. Core brand pillars (3-5 key themes)
+      2. Unique value drivers
+      3. Market positioning opportunities
+      4. Content themes for authority building
+      5. Competitive differentiation factors
+      
+      Focus on Queensland small business market with emphasis on rapid growth and customer acquisition.`;
 
-    const response = await aiClient.chat.completions.create({
-      model: "grok-2-1212",
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" },
-    });
+      console.log('🔍 Sending request to AI client...');
+      const response = await aiClient.chat.completions.create({
+        model: "grok-2-1212",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      });
 
-    return JSON.parse(response.choices[0].message.content || "{}");
+      console.log('✅ Phase 1 complete: Brand purpose analysis received');
+      return JSON.parse(response.choices[0].message.content || "{}");
+    } catch (error) {
+      console.error('❌ Phase 1 AI failed, using fallback analysis:', error);
+      
+      // Fallback: Create strategic analysis based on brand purpose data
+      return {
+        coreBrandPillars: [
+          'Queensland Local Business Authority',
+          'Time-Efficient Marketing Automation',
+          'Professional Social Media Presence',
+          'Authentic Community Connection',
+          'Growth-Driven Results'
+        ],
+        uniqueValueDrivers: [
+          'Set & Forget automation for time-poor business owners',
+          'Queensland-specific market understanding',
+          'Professional brand presence without extra work',
+          'Measurable growth through consistent posting'
+        ],
+        marketPositioningOpportunities: [
+          'Local market leader in automated social media',
+          'Go-to solution for Queensland SMEs',
+          'Bridge between big brand presence and small business reality',
+          'Community-focused brand building'
+        ],
+        contentThemesForAuthority: [
+          'Local business success stories',
+          'Queensland market insights',
+          'Time-saving business tips',
+          'Community engagement strategies',
+          'Growth and visibility tactics'
+        ],
+        competitiveDifferentiationFactors: [
+          'Queensland-specific content and timing',
+          'True automation vs manual posting',
+          'SME-focused rather than enterprise',
+          'Local community understanding',
+          'Authentic voice preservation'
+        ]
+      };
+    }
+  }
   }
 
   /**
@@ -147,27 +196,80 @@ export class StrategicContentGenerator {
   private static async getQueenslandMarketData(brandPurpose: any): Promise<QueenslandMarketInsights> {
     console.log('🏖️ Phase 3: Gathering Queensland market data...');
     
-    const prompt = `Generate Queensland market insights for: ${brandPurpose.brandName}
-    
-    Industry: ${brandPurpose.productsServices}
-    Target Audience: ${brandPurpose.audience}
-    
-    Provide Queensland-specific data:
-    1. Key industries driving growth (mining, tourism, agriculture, tech)
-    2. Seasonal business trends unique to Queensland
-    3. Competitive advantages for local businesses
-    4. Major local events and networking opportunities
-    5. SEO keywords specific to Queensland market
-    
-    Focus on actionable insights for small business growth and customer acquisition.`;
+    try {
+      const prompt = `Generate Queensland market insights for: ${brandPurpose.brandName}
+      
+      Industry: ${brandPurpose.productsServices}
+      Target Audience: ${brandPurpose.audience}
+      
+      Provide Queensland-specific data:
+      1. Key industries driving growth (mining, tourism, agriculture, tech)
+      2. Seasonal business trends unique to Queensland
+      3. Competitive advantages for local businesses
+      4. Major local events and networking opportunities
+      5. SEO keywords specific to Queensland market
+      
+      Focus on actionable insights for small business growth and customer acquisition.`;
 
-    const response = await aiClient.chat.completions.create({
-      model: "grok-2-1212",
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" },
-    });
+      const response = await aiClient.chat.completions.create({
+        model: "grok-2-1212",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      });
 
-    return JSON.parse(response.choices[0].message.content || "{}");
+      console.log('✅ Phase 3 complete: Queensland market data received');
+      return JSON.parse(response.choices[0].message.content || "{}");
+    } catch (error) {
+      console.error('❌ Phase 3 AI failed, using fallback market data:', error);
+      
+      // Fallback: Pre-defined Queensland market insights
+      return {
+        keyIndustries: [
+          'Mining and Resources',
+          'Tourism and Hospitality',
+          'Agriculture and Food Production',
+          'Technology and Innovation',
+          'Construction and Infrastructure',
+          'Healthcare and Aged Care',
+          'Education and Training',
+          'Professional Services'
+        ],
+        seasonalTrends: [
+          'Winter dry season (May-October) - peak tourism',
+          'Summer wet season (November-April) - agricultural focus',
+          'Brisbane Ekka (August) - major marketing opportunity',
+          'School holidays - family-focused campaigns',
+          'Christmas/New Year - retail peak season',
+          'Easter - travel and hospitality focus'
+        ],
+        competitiveAdvantages: [
+          'Local knowledge and community connections',
+          'Personalized service vs large corporations',
+          'Quick response times and flexibility',
+          'Supporting local Queensland economy',
+          'Understanding of local regulations and culture',
+          'Authentic Queensland voice and values'
+        ],
+        localEvents: [
+          'Brisbane Ekka (August)',
+          'Gold Coast 600 (October)',
+          'Brisbane Festival (September)',
+          'Cairns Festival (August-September)',
+          'Townsville Cultural Festival (July)',
+          'Sunshine Coast Marathon (August)'
+        ],
+        seoKeywords: [
+          'Queensland small business',
+          'Brisbane local services',
+          'Gold Coast marketing',
+          'Sunshine Coast business',
+          'Queensland SME solutions',
+          'local business Queensland',
+          'Brisbane automation',
+          'Queensland social media'
+        ]
+      };
+    }
   }
 
   /**
