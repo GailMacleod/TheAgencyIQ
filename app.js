@@ -108,6 +108,7 @@ server.listen(port, () => {
   console.log(`🚀 TheAgencyIQ Server restored and running on port ${port}`);
   console.log(`🌐 Access at: http://localhost:${port}`);
   console.log(`📁 Serving from: dist_backup_20250712_110901`);
+  console.log(`⚠️  Note: Using backup server. To use Vite, run: npx tsx server/index.ts`);
 });
 
 // Handle shutdown
