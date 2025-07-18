@@ -5776,29 +5776,13 @@ Continue building your Value Proposition Canvas systematically.`;
       // Import strategic content generator
       const { StrategicContentGenerator } = await import('./services/StrategicContentGenerator');
 
-      // STEP 1: Delete all existing posts before creating new strategic content
-      console.log('🗑️  Deleting all existing posts to replace with new strategic content...');
-      await StrategicContentGenerator.deleteAllUserPosts(userId);
-
-      // STEP 2: Reset quota to Professional plan (52 posts) if requested
-      if (resetQuota) {
-        console.log('🔄 Resetting quota to Professional plan...');
-        await StrategicContentGenerator.resetQuotaToFiftyTwo(userId);
-      }
-
-      // STEP 3: Verify quota status
-      const quotaStatus = await PostQuotaService.getQuotaStatus(userId);
-      if (!quotaStatus) {
-        return res.status(400).json({ message: "Unable to retrieve quota status" });
-      }
-
-      // STEP 4: Get user subscription and enforce limits
+      // STEP 1: Get user subscription and enforce limits
       const user = await storage.getUser(userId);
       if (!user || !user.subscriptionPlan) {
         return res.status(403).json({ message: "Active subscription required for strategic content generation" });
       }
 
-      // STEP 5: Generate strategic content using waterfall strategyzer methodology
+      // STEP 2: Generate strategic content using waterfall strategyzer methodology
       const strategicPosts = await StrategicContentGenerator.generateStrategicContent({
         userId,
         brandPurpose: finalBrandPurpose,
@@ -5806,77 +5790,32 @@ Continue building your Value Proposition Canvas systematically.`;
         platforms: platforms || ['facebook', 'instagram', 'linkedin', 'x', 'youtube']
       });
 
-      // STEP 6: Check quota before saving any posts
-      const currentQuotaStatus = await PostQuotaService.getQuotaStatus(userId);
-      if (!currentQuotaStatus || currentQuotaStatus.remainingPosts < strategicPosts.length) {
-        return res.status(400).json({ 
-          message: `Insufficient quota: ${currentQuotaStatus?.remainingPosts || 0} remaining, ${strategicPosts.length} required`,
-          quotaStatus: currentQuotaStatus
-        });
-      }
+      // STEP 3: Format posts for database insertion
+      const formattedPosts = strategicPosts.map((post, index) => ({
+        userId: userId,
+        platform: post.platform,
+        content: post.content,
+        status: 'approved', // Start as approved for immediate publishing capability
+        scheduledFor: new Date(post.scheduledFor),
+        hashtags: [],
+        videoUrl: null,
+        imageUrl: null,
+        errorLog: null,
+        retryCount: 0,
+        contentHash: createHash('md5').update(post.content).digest('hex'),
+        idempotencyKey: `strategic_${userId}_${index}_${post.platform}_${Date.now()}`,
+        generationId: `strategic_batch_${Date.now()}`,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
 
-      // STEP 7: Save strategic posts to database using PostQuotaService
-      let savedCount = 0;
-      const savedPosts = [];
-      
-      for (const post of strategicPosts) {
-        try {
-          // Check quota before each post creation
-          const quotaCheck = await PostQuotaService.hasPostsRemaining(userId);
-          if (!quotaCheck) {
-            console.log(`❌ Quota exhausted after ${savedCount} posts for user ${userId}`);
-            break;
-          }
-          
-          // Generate idempotency key to prevent duplicate creation
-          const contentHash = createHash('md5').update(post.content).digest('hex');
-          const idempotencyKey = `strategic_${userId}_${savedCount}_${post.platform}_${Date.now()}`;
-          
-          // Check if post already exists with same content hash
-          const existingPost = await db.query.posts.findFirst({
-            where: and(
-              eq(posts.userId, userId),
-              eq(posts.platform, post.platform),
-              eq(posts.contentHash, contentHash)
-            )
-          });
-          
-          if (existingPost) {
-            console.log(`⚠️  Skipping duplicate post: ${post.platform} - ${post.strategicTheme}`);
-            continue;
-          }
-          
-          // Use PostQuotaService to create post with proper quota tracking
-          const savedPost = await PostQuotaService.createPost(userId, {
-            platform: post.platform,
-            content: post.content,
-            status: 'approved', // Start as approved for immediate publishing capability
-            scheduledFor: new Date(post.scheduledFor),
-            hashtags: [],
-            videoUrl: null,
-            imageUrl: null,
-            errorLog: null,
-            retryCount: 0,
-            contentHash: contentHash,
-            idempotencyKey: idempotencyKey,
-            generationId: `strategic_batch_${Date.now()}`
-          });
-          
-          savedPosts.push({
-            ...savedPost,
-            strategicTheme: post.strategicTheme,
-            businessCanvasPhase: post.businessCanvasPhase,
-            engagementOptimization: post.engagementOptimization,
-            conversionFocus: post.conversionFocus,
-            audienceSegment: post.audienceSegment
-          });
-          
-          console.log(`Strategic post ${savedCount + 1}/${strategicPosts.length}: ${post.platform} - ${post.strategicTheme}`);
-          savedCount++;
-        } catch (error) {
-          console.error(`Failed to save strategic post ${savedCount + 1}:`, error);
-        }
-      }
+      // STEP 4: TRANSACTIONAL REPLACEMENT - Delete all existing posts and create new ones atomically
+      console.log('🔄 Starting transactional post replacement...');
+      await StrategicContentGenerator.replaceAllUserPostsTransactional(userId, formattedPosts);
+
+      // STEP 5: Retrieve the newly created posts for response
+      const savedPosts = await storage.getPostsByUser(userId);
+      const savedCount = savedPosts.length;
 
       console.log(`✅ Strategic content generation complete: ${savedCount} posts created`);
 

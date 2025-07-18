@@ -14,8 +14,7 @@ import OpenAI from 'openai';
 import { createHash } from 'crypto';
 
 const aiClient = new OpenAI({
-  baseURL: "https://api.x.ai/v1",
-  apiKey: process.env.XAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 interface StrategicContentParams {
@@ -124,7 +123,7 @@ export class StrategicContentGenerator {
 
       console.log('🔍 Sending request to AI client...');
       const response = await aiClient.chat.completions.create({
-        model: "grok-2-1212",
+        model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       });
@@ -211,7 +210,7 @@ export class StrategicContentGenerator {
       Focus on actionable insights for small business growth and customer acquisition.`;
 
       const response = await aiClient.chat.completions.create({
-        model: "grok-2-1212",
+        model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       });
@@ -295,7 +294,7 @@ export class StrategicContentGenerator {
     Focus on high-intent, low-competition keywords for rapid ranking and customer acquisition.`;
 
     const response = await aiClient.chat.completions.create({
-      model: "grok-2-1212",
+      model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -328,7 +327,7 @@ export class StrategicContentGenerator {
     Focus on subscriber delight and Queensland small business growth acceleration.`;
 
     const response = await aiClient.chat.completions.create({
-      model: "grok-2-1212",
+      model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
     });
@@ -492,7 +491,7 @@ export class StrategicContentGenerator {
     Write content that makes invisible Queensland SMEs feel seen and understood, then compels them to take action.`;
 
     const response = await aiClient.chat.completions.create({
-      model: "grok-2-1212",
+      model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -604,7 +603,40 @@ export class StrategicContentGenerator {
   }
 
   /**
-   * DELETE ALL USER POSTS
+   * TRANSACTIONAL DELETE-BEFORE-CREATE
+   * Atomic operation to replace all user posts with new strategic content
+   * Prevents post doubling by ensuring complete replacement in single transaction
+   */
+  static async replaceAllUserPostsTransactional(userId: number, newPosts: any[]): Promise<void> {
+    console.log(`🔄 Starting transactional post replacement for user ${userId}`);
+    
+    try {
+      // Use database transaction to ensure atomicity
+      await db.transaction(async (tx) => {
+        // Step 1: Delete all existing posts within transaction
+        console.log(`🗑️  Deleting all existing posts for user ${userId} in transaction`);
+        await tx.delete(posts).where(eq(posts.userId, userId));
+        
+        // Step 2: Create new posts within same transaction
+        console.log(`✨ Creating ${newPosts.length} new strategic posts for user ${userId} in transaction`);
+        if (newPosts.length > 0) {
+          await tx.insert(posts).values(newPosts);
+        }
+        
+        console.log(`✅ Transactional post replacement completed for user ${userId}`);
+      });
+      
+      // Clear cache after transaction completes
+      await this.clearPostQuotaCache(userId);
+      
+    } catch (error) {
+      console.error(`❌ Transactional post replacement failed for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * DELETE ALL USER POSTS (Legacy method - replaced by transactional approach)
    * Completely removes all existing posts for a user to enable fresh strategic content generation
    */
   static async deleteAllUserPosts(userId: number): Promise<void> {
