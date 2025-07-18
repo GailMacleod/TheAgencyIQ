@@ -5776,9 +5776,9 @@ Continue building your Value Proposition Canvas systematically.`;
       // Import strategic content generator
       const { StrategicContentGenerator } = await import('./services/StrategicContentGenerator');
 
-      // STEP 1: Clean up duplicate/test posts to stabilize count
-      console.log('🧹 Cleaning up duplicate posts...');
-      await StrategicContentGenerator.cleanupDuplicatePosts(userId);
+      // STEP 1: Delete all existing posts before creating new strategic content
+      console.log('🗑️  Deleting all existing posts to replace with new strategic content...');
+      await StrategicContentGenerator.deleteAllUserPosts(userId);
 
       // STEP 2: Reset quota to Professional plan (52 posts) if requested
       if (resetQuota) {

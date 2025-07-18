@@ -603,4 +603,27 @@ export class StrategicContentGenerator {
     
     console.log(`✅ Duplicate cleanup complete for user ${userId}`);
   }
+
+  /**
+   * DELETE ALL USER POSTS
+   * Completely removes all existing posts for a user to enable fresh strategic content generation
+   */
+  static async deleteAllUserPosts(userId: number): Promise<void> {
+    console.log(`🗑️  Deleting all existing posts for user ${userId} to make room for new strategic content`);
+    
+    try {
+      // Delete all posts for this user from the database
+      const deleteResult = await db.delete(posts)
+        .where(eq(posts.userId, userId));
+      
+      console.log(`✅ Successfully deleted all posts for user ${userId}`);
+      
+      // Also reset the quota to ensure clean slate
+      await this.resetQuotaToFiftyTwo(userId);
+      
+    } catch (error) {
+      console.error(`❌ Error deleting posts for user ${userId}:`, error);
+      throw error;
+    }
+  }
 }
