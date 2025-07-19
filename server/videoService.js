@@ -43,23 +43,49 @@ class VideoService {
       // Create traditional prompts as fallback/additional options
       const traditionalPrompts = await this.createDistinctVideoStyles(postContent, platform, brandData, userHistory);
       
-      // Combine Grok copywriting with traditional prompts
-      const enhancedPrompts = {
-        grokEnhanced: {
-          title: "Grok Copywriter Special",
-          description: "Witty, engaging video copy with professional Queensland business focus",
+      // Create THREE distinct options: two auto-generated + one custom
+      const threeOptions = [
+        {
+          id: 1,
+          type: "auto-generated",
+          title: "Grok Enhanced Script A",
+          description: "Witty, engaging Queensland business copy",
           prompt: grokResult.videoPrompt || traditionalPrompts.primary,
           postCopy: grokResult.postCopy || postContent,
           editable: true,
-          style: "witty-engaging",
+          grokEnhanced: true,
+          wittyStyle: true,
           platform: platform
         },
-        ...traditionalPrompts
-      };
+        {
+          id: 2,
+          type: "auto-generated", 
+          title: "Alternative Creative Script B",
+          description: "Professional success story approach",
+          prompt: traditionalPrompts.secondary || traditionalPrompts.primary,
+          postCopy: this.generateAlternativePostCopy(postContent, platform),
+          editable: true,
+          grokEnhanced: false,
+          wittyStyle: false,
+          platform: platform
+        },
+        {
+          id: 3,
+          type: "custom",
+          title: "Create Your Own Script",
+          description: "Custom script template for your unique vision",
+          prompt: this.getCustomTemplate(platform),
+          postCopy: this.getCustomPostCopyTemplate(platform),
+          editable: true,
+          grokEnhanced: false,
+          wittyStyle: false,
+          platform: platform
+        }
+      ];
       
       return {
         success: true,
-        prompts: enhancedPrompts,
+        prompts: threeOptions, // Return array of three options
         grokEnhanced: true,
         wittyStyle: true,
         variety: true,
@@ -73,6 +99,58 @@ class VideoService {
       // Fallback to traditional method
       return this.generateVideoPrompts(postContent, platform, brandData, userId);
     }
+  }
+
+  // Generate alternative post copy for second auto-generated option
+  static generateAlternativePostCopy(originalContent, platform) {
+    const platformLimits = {
+      instagram: 400,
+      linkedin: 1300,
+      x: 280,
+      youtube: 600,
+      facebook: 2000
+    };
+    
+    const charLimit = platformLimits[platform] || 500;
+    
+    // Alternative style templates (success story approach)
+    const alternativeTemplates = {
+      instagram: `✨ Success Story Alert! ${originalContent.substring(0, 200)} Join 1000+ Queensland businesses who've made this transformation! 📈 #SuccessStory #QLD`,
+      linkedin: `Case Study: ${originalContent} This approach has delivered measurable results for Queensland SMEs across multiple industries. Ready to implement similar strategies in your business? Let's discuss your specific objectives and growth potential.`,
+      x: `📊 Proven Results: ${originalContent.substring(0, 180)} Join the winners! 🏆`,
+      youtube: `Real Results from Real Businesses: ${originalContent} See how Queensland entrepreneurs are implementing these strategies and achieving breakthrough growth. Like and subscribe for more success stories!`,
+      facebook: `🎉 Another Queensland Business Success! ${originalContent} Want to know exactly how they did it? We're sharing the complete playbook with serious business owners. Comment 'STRATEGY' to get started! 💼🚀`
+    };
+    
+    return alternativeTemplates[platform] || originalContent;
+  }
+  
+  // Get custom template for user-created option
+  static getCustomTemplate(platform) {
+    const customTemplates = {
+      instagram: "Professional business video showing [your unique value proposition]. Include engaging visuals that connect with Queensland audience and showcase your expertise.",
+      linkedin: "Corporate video demonstrating [your business solution]. Focus on professional presentation that resonates with B2B Queensland market and builds industry credibility.",
+      x: "Dynamic business video highlighting [your key message]. Create impactful content that drives engagement and showcases your Queensland business advantage.",
+      youtube: "Educational business video explaining [your unique approach]. Develop content that provides value while positioning your Queensland business as the industry leader.",
+      facebook: "Community-focused business video sharing [your story]. Build connection with local Queensland audience and demonstrate authentic business values."
+    };
+    
+    return customTemplates[platform] || "Custom business video showcasing your unique value proposition to Queensland market.";
+  }
+  
+  // Get custom post copy template
+  static getCustomPostCopyTemplate(platform) {
+    const platformLimits = {
+      instagram: 400,
+      linkedin: 1300,
+      x: 280,
+      youtube: 600,
+      facebook: 2000
+    };
+    
+    const charLimit = platformLimits[platform] || 500;
+    
+    return `[Write your custom ${platform} post here - up to ${charLimit} characters]\n\n• Share your unique story\n• Connect with Queensland audience\n• Include clear call-to-action\n• Showcase your business value\n\n#YourHashtags #Queensland #Business`;
   }
 
   // LEGACY: Original video prompt generation (kept for compatibility)
