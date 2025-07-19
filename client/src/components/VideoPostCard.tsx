@@ -652,12 +652,10 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <h4 className="font-medium text-sm mb-1">
-                                  {prompt.type.includes('Epic') ? '🎬 Epic Corporate' : 
-                                   prompt.type.includes('Documentary') ? '📹 Business Documentary' : 
-                                   prompt.type.includes('Tech') ? '💻 Tech Showcase' : '⚡ Professional Video'}
+                                  {prompt.title || `Option ${index + 1}`}
                                 </h4>
-                                <p className="text-xs text-gray-600 mb-2">{prompt.style}</p>
-                                <p className="text-xs text-gray-800 line-clamp-3">{prompt.content}</p>
+                                <p className="text-xs text-gray-600 mb-2">{prompt.description}</p>
+                                <p className="text-xs text-gray-800 line-clamp-3">{prompt.prompt}</p>
                               </div>
                               <Badge variant="secondary" className="text-xs">
                                 {prompt.duration}
