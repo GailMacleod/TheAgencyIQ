@@ -103,51 +103,51 @@ export default function Splash() {
         </div>
       </nav>
       {/* Hero Section */}
-      <section className="hero-gradient py-12">
+      <section className="hero-gradient py-6 sm:py-12">
         <div className="container-atomiq">
-          <div className="flex flex-col items-center justify-center text-center space-y-8">
-            <div className="space-y-6 animate-fade-in-up max-w-4xl">
-              <div className="space-y-4">
-                <div className="flex flex-col items-center space-y-4">
+          <div className="flex flex-col items-center justify-center text-center space-y-4 sm:space-y-8">
+            <div className="space-y-3 sm:space-y-6 animate-fade-in-up max-w-4xl">
+              <div className="space-y-2 sm:space-y-4">
+                <div className="flex flex-col items-center space-y-2 sm:space-y-4">
                   <img 
                     src="attached_assets/On Pencil_distance education_e-learning_online education_online learning_online courses_icon.png" 
                     alt="Education & Learning Icon"
-                    className="w-20 h-20 object-contain hover:scale-110 transition-transform duration-300"
+                    className="w-12 h-12 sm:w-20 sm:h-20 object-contain hover:scale-110 transition-transform duration-300"
                   />
-                  <div className="inline-flex items-center px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium">
-                    <Lightbulb className="h-4 w-4 mr-2" />
+                  <div className="inline-flex items-center px-3 py-1 sm:px-4 sm:py-2 bg-primary/10 rounded-full text-primary text-xs sm:text-sm font-medium">
+                    <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                     BETA
                   </div>
                 </div>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-[#3250fa] text-[58px]">
+                <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-[#3250fa]">
                   Set & forget
                 </h1>
-                <h2 className="md:text-5xl lg:text-6xl font-bold text-[55px] bg-gradient-to-r from-[#3250fa] to-[#00f0ff] bg-clip-text text-transparent">
+                <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-[#3250fa] to-[#00f0ff] bg-clip-text text-transparent leading-tight">
                   Social media for small businesses
                 </h2>
-                <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">Complete waterfall workflow to drive small businesses' online social presence.</p>
+                <p className="text-sm sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto px-4 sm:px-0">Complete waterfall workflow to drive small businesses' online social presence.</p>
               </div>
               
               {/* Platform logos for education */}
-              <div className="platform-logos flex justify-center items-center space-x-8">
-                <SiFacebook className="w-8 h-8" style={{ color: '#1877F2' }} />
-                <SiInstagram className="w-8 h-8" style={{ color: '#E4405F' }} />
-                <SiLinkedin className="w-8 h-8" style={{ color: '#0A66C2' }} />
-                <SiYoutube className="w-8 h-8" style={{ color: '#FF0000' }} />
-                <SiX className="w-8 h-8" style={{ color: '#000000' }} />
+              <div className="platform-logos flex justify-center items-center space-x-4 sm:space-x-8">
+                <SiFacebook className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#1877F2' }} />
+                <SiInstagram className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#E4405F' }} />
+                <SiLinkedin className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#0A66C2' }} />
+                <SiYoutube className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#FF0000' }} />
+                <SiX className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#000000' }} />
               </div>
             </div>
 
-            <div className="relative animate-slide-in-right">
+            <div className="relative animate-slide-in-right w-full px-4 sm:px-0">
               <div className="relative z-10">
                 <div className="max-w-md mx-auto">
                   <OnboardingWizard />
                 </div>
                 
                 {/* Video Feature Description - Centered under card */}
-                <div className="mt-4 flex justify-center">
-                  <div className="px-6 py-2 rounded-full text-sm font-bold text-black flex items-center gap-2" style={{ backgroundColor: '#00f0ff' }}>
-                    <Film className="w-4 h-4" />
+                <div className="mt-2 sm:mt-4 flex justify-center">
+                  <div className="px-4 py-1 sm:px-6 sm:py-2 rounded-full text-xs sm:text-sm font-bold text-black flex items-center gap-1 sm:gap-2" style={{ backgroundColor: '#00f0ff' }}>
+                    <Film className="w-3 h-3 sm:w-4 sm:h-4" />
                     Includes text-to-video generation
                   </div>
                 </div>
@@ -158,13 +158,13 @@ export default function Splash() {
         </div>
       </section>
       {/* Call to Action Section */}
-      <section className="py-20 bg-muted/30" id="pricing">
+      <section className="py-8 sm:py-20 bg-muted/30" id="pricing">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <Link href="/subscription">
               <Button 
                 size="lg" 
-                className="relative overflow-hidden text-white px-8 py-4 text-xl font-black tracking-wider
+                className="relative overflow-hidden text-white px-6 py-3 sm:px-8 sm:py-4 text-lg sm:text-xl font-black tracking-wider
                           transition-all duration-300 ease-in-out
                           hover:scale-105 hover:shadow-2xl
                           transform-gpu will-change-transform
@@ -179,20 +179,20 @@ export default function Splash() {
             </Link>
             
             {/* Subscription Options */}
-            <div className="mt-4 bg-white rounded-lg border border-gray-200 p-4 max-w-2xl mx-auto text-[#6b7280]">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
+            <div className="mt-3 sm:mt-4 bg-white rounded-lg border border-gray-200 p-3 sm:p-4 max-w-2xl mx-auto text-[#6b7280]">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 text-center">
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold mb-1 text-gray-900">Starter</h4>
+                  <h4 className="text-xs sm:text-sm font-semibold mb-1 text-gray-900">Starter</h4>
                   <p className="text-xs text-[#3b5cff] font-medium mb-1">$19.99/month</p>
                   <p className="text-xs text-gray-600">12 posts (10 + 2 free)</p>
                 </div>
-                <div className="flex-1 border-l border-r border-gray-200 px-4">
-                  <h4 className="text-sm font-semibold mb-1 text-gray-900">Growth</h4>
+                <div className="flex-1 sm:border-l sm:border-r border-gray-200 sm:px-4">
+                  <h4 className="text-xs sm:text-sm font-semibold mb-1 text-gray-900">Growth</h4>
                   <p className="text-xs text-[#3b5cff] font-medium mb-1">$41.99/month</p>
                   <p className="text-xs text-gray-600">27 posts (25 + 2 free)</p>
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold mb-1 text-gray-900">Professional</h4>
+                  <h4 className="text-xs sm:text-sm font-semibold mb-1 text-gray-900">Professional</h4>
                   <p className="text-xs text-[#3b5cff] font-medium mb-1">$99.99/month</p>
                   <p className="text-xs text-gray-600">52 posts (50 + 2 free)</p>
                 </div>
@@ -203,12 +203,12 @@ export default function Splash() {
         </div>
       </section>
       {/* Features Section */}
-      <section id="features" className="py-16 bg-white">
+      <section id="features" className="py-8 sm:py-16 bg-white">
         <div className="container-atomiq">
-          <div className="text-center space-y-4 mb-12">
+          <div className="text-center space-y-2 sm:space-y-4 mb-8 sm:mb-12 px-4 sm:px-0">
             
-            <h3 className="text-4xl md:text-5xl font-bold text-[#3b5cff]">6 Simple Steps </h3>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <h3 className="text-2xl sm:text-4xl md:text-5xl font-bold text-[#3b5cff]">6 Simple Steps </h3>
+            <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto">
               Our AI-powered platform handles your entire social media workflow with modern technology and intelligent automation
             </p>
           </div>
