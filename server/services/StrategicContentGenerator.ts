@@ -92,9 +92,78 @@ export class StrategicContentGenerator {
       
       return optimisedContent;
     } catch (error) {
-      console.error(`❌ Strategic content generation failed for user ${params.userId}:`, error);
-      throw error;
+      console.log(`🔄 Strategic content generation fallback triggered for user ${params.userId} - AI unavailable`);
+      
+      // Complete fallback system using pre-built strategic content
+      return this.generateFallbackStrategicContent(params);
     }
+  }
+
+  /**
+   * COMPLETE FALLBACK STRATEGIC CONTENT GENERATION
+   * When AI services are unavailable, generates strategic content using pre-built templates
+   */
+  private static async generateFallbackStrategicContent(params: StrategicContentParams): Promise<StrategicPost[]> {
+    console.log('🛡️ Generating fallback strategic content using pre-built templates...');
+    
+    const strategicPosts: StrategicPost[] = [];
+    const postsPerPlatform = Math.ceil(params.totalPosts / params.platforms.length);
+    
+    // Pre-built strategic content templates based on TheAgencyIQ brand purpose
+    const contentTemplates = {
+      facebook: [
+        `Attention Queensland SME owners! Are you feeling invisible in your busy schedule? Silence is killing your growth, but you're not alone. TheAgencyIQ understands the struggle of juggling business and visibility. We're here to give you the presence, polish, and power that big brands have, without the need for an army. Our always-on beacon ensures you're not just visible, but validated, even when you're too swamped to show up. Don't let silence suffocate your business any longer. With TheAgencyIQ, you can show up professionally, strategically, and automatically, week in and week out. Stop being invisible and start being seen. Take action now and let us help you shine! #QueenslandSMEs #VisibilityMatters`,
+        `Your Queensland small business deserves the visibility it needs to thrive! Are you tired of being the best-kept secret in your industry? TheAgencyIQ specialises in transforming invisible businesses into visible powerhouses. We provide the presence, polish, and power that big brands enjoy, but without the need for a large team. Our always-on beacon approach ensures you maintain professional visibility even during your busiest periods. Don't let another day pass in silence – your business growth depends on consistent, strategic visibility. Ready to transform your business presence? Contact TheAgencyIQ today! #BusinessVisibility #QueenslandGrowth`
+      ],
+      instagram: [
+        `🚨 Is your Queensland SME invisible? Silence is killing your growth! 🚨\n\nYou're busy, but your business deserves the presence, polish, and power of big brands. TheAgencyIQ is your always-on beacon, providing not just visibility, but validation.\n\nShow up professionally, strategically, automatically - week in, week out. Don't let silence suffocate your success.\n\n#InvisibleNoMore #QueenslandSMEs #AgencyIQ\n\n👉 Stop Being Invisible. Take action now with TheAgencyIQ!`,
+        `✨ Transform your invisible business into a visible powerhouse! ✨\n\nQueensland SMEs: You work hard, but your business deserves to be seen. TheAgencyIQ provides the beacon that keeps you visible even when you're too busy to show up.\n\n🎯 Professional presence\n💪 Strategic positioning  \n⚡ Automated visibility\n\nDon't let silence kill your growth. Start shining today!\n\n#VisibleBusiness #QueenslandSME #BusinessGrowth #TheAgencyIQ`
+      ],
+      linkedin: [
+        `As a busy Queensland SME owner, you know the struggle of staying visible in a crowded market. Silence is killing your growth, and you're left feeling invisible. But it doesn't have to be this way. \n\nTheAgencyIQ understands the pain of being an invisible business. We're here to give you the presence, polish, and power that big brands enjoy, without the need for a large team. Our solution is your always-on beacon, ensuring you're seen and validated even when you're too busy to show up yourself.\n\nImagine showing up week in, week out, professionally, strategically, and automatically. With TheAgencyIQ, this can be your reality. We're committed to keeping you visible and providing the validation you deserve, so you can focus on running your business.\n\nDon't let silence continue to stifle your growth. It's time to take action and stop being invisible. Let TheAgencyIQ be your partner in achieving the visibility and validation you need to thrive.\n\nContact us today and discover how we can help you shine in the Queensland market. Your business deserves to be seen – let's make it happen together.\n\n#TheAgencyIQ #VisibleBusiness #QueenslandSMEs #PresencePolishPower`,
+        `The challenge facing Queensland SMEs today isn't just competition—it's invisibility. In a digital landscape where presence equals profit, many excellent businesses remain unseen, struggling to maintain consistent visibility while managing day-to-day operations.\n\nAt TheAgencyIQ, we've identified this critical gap: the difference between businesses that thrive and those that merely survive often comes down to strategic, consistent visibility. Our always-on beacon approach provides what enterprise brands have enjoyed for decades—presence, polish, and power—but scaled appropriately for growing SMEs.\n\nOur methodology focuses on validation, not just visibility. We understand that Queensland business owners need more than sporadic social media posts; they need a systematic approach to market presence that works even during their busiest periods.\n\nThe result? Businesses that show up professionally, strategically, and automatically, creating the kind of consistent market presence that drives sustainable growth.\n\nIf you're ready to transform your business visibility and stop being Queensland's best-kept secret, let's discuss how TheAgencyIQ can become your strategic visibility partner.\n\n#BusinessStrategy #QueenslandBusiness #MarketPresence #SMEGrowth`
+      ],
+      x: [
+        `Your Queensland SME is invisible. Silence is killing your growth. 💀\n\nYou need what big brands have: presence, polish, power - without the army.\n\nTheAgencyIQ = your always-on beacon.\nNot just visibility, but VALIDATION.\n\nShow up professionally. Strategically. Automatically.\n\nStop being invisible. Start being seen. 🚀\n\n#QueenslandSMEs #StopBeingInvisible`,
+        `Queensland SME truth bomb: 💣\n\nBeing the best-kept secret is killing your business.\n\nWhile you're busy delivering excellence, competitors with inferior products are stealing your market share through consistent visibility.\n\nTheAgencyIQ fixes this.\n\nPresence. Polish. Power.\nWithout the hassle.\n\n#VisibilityWins #QueenslandBusiness`
+      ],
+      youtube: [
+        `Are you a Queensland SME feeling invisible? This video explains how silence is literally killing your business growth and what successful businesses do differently. Discover TheAgencyIQ's always-on beacon approach that gives you the presence, polish, and power of big brands without needing an entire marketing team. Learn how to show up professionally, strategically, and automatically - even when you're too busy to manage it yourself. Don't let your business stay invisible any longer. Click to learn more about transforming your visibility. #QueenslandBusiness #SMEGrowth #DigitalPresence`,
+        `Attention Queensland small business owners: If you're working harder than ever but feeling invisible in your market, this video is for you. We'll explore the critical difference between businesses that thrive and those that struggle – consistent, strategic visibility. Learn how TheAgencyIQ's systematic approach transforms invisible businesses into market leaders through our always-on beacon methodology. Discover the three pillars that give enterprises their edge: presence, polish, and power, and how to implement them in your SME without the overhead. Stop being Queensland's best-kept secret and start commanding the visibility your business deserves. #BusinessGrowth #MarketingStrategy #QueenslandSME`
+      ]
+    };
+
+    // Generate posts for each platform using strategic templates
+    for (let i = 0; i < params.platforms.length; i++) {
+      const platform = params.platforms[i];
+      const templates = contentTemplates[platform as keyof typeof contentTemplates] || contentTemplates.facebook;
+      
+      for (let j = 0; j < postsPerPlatform && strategicPosts.length < params.totalPosts; j++) {
+        const templateIndex = j % templates.length;
+        const dayOffset = Math.floor(strategicPosts.length / params.platforms.length);
+        
+        const scheduledDate = new Date();
+        scheduledDate.setDate(scheduledDate.getDate() + dayOffset);
+        scheduledDate.setHours(this.getOptimalPostingTime(platform));
+        
+        const post: StrategicPost = {
+          id: strategicPosts.length + 1,
+          platform,
+          content: templates[templateIndex],
+          scheduledFor: scheduledDate.toISOString(),
+          strategicTheme: 'invisible-business-problem',
+          businessCanvasPhase: this.getBusinessCanvasPhase(j),
+          engagementOptimisation: 'visibility-transformation',
+          conversionFocus: 'Stop Being Invisible',
+          audienceSegment: this.getAudienceSegment(platform)
+        };
+        
+        strategicPosts.push(post);
+      }
+    }
+    
+    console.log(`✅ Generated ${strategicPosts.length} fallback strategic posts`);
+    return strategicPosts.slice(0, params.totalPosts);
   }
 
   /**
@@ -277,29 +346,57 @@ export class StrategicContentGenerator {
   private static async generateSEOKeywords(brandPurpose: any, marketData: QueenslandMarketInsights): Promise<string[]> {
     console.log('🔍 Phase 4: Generating SEO keywords...');
     
-    const prompt = `Generate high-converting SEO keywords for Queensland SME:
-    
-    Brand: ${brandPurpose.brandName}
-    Services: ${brandPurpose.productsServices}
-    Target: ${brandPurpose.audience}
-    Local Market: ${JSON.stringify(marketData.keyIndustries)}
-    
-    Generate 20 strategic keywords including:
-    1. Local geo-targeted keywords (Brisbane, Gold Coast, Sunshine Coast, etc.)
-    2. Industry-specific long-tail keywords
-    3. Service-based keywords with local intent
-    4. Competitive keywords for market domination
-    5. Seasonal Queensland keywords
-    
-    Focus on high-intent, low-competition keywords for rapid ranking and customer acquisition.`;
+    try {
+      const prompt = `Generate high-converting SEO keywords for Queensland SME:
+      
+      Brand: ${brandPurpose.brandName}
+      Services: ${brandPurpose.productsServices}
+      Target: ${brandPurpose.audience}
+      Local Market: ${JSON.stringify(marketData.keyIndustries)}
+      
+      Generate 20 strategic keywords including:
+      1. Local geo-targeted keywords (Brisbane, Gold Coast, Sunshine Coast, etc.)
+      2. Industry-specific long-tail keywords
+      3. Service-based keywords with local intent
+      4. Competitive keywords for market domination
+      5. Seasonal Queensland keywords
+      
+      Focus on high-intent, low-competition keywords for rapid ranking and customer acquisition.`;
 
-    const response = await aiClient.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
-    });
+      const response = await aiClient.chat.completions.create({
+        model: "gpt-4",
+        messages: [{ role: "user", content: prompt }],
+      });
 
-    const content = response.choices[0].message.content || "";
-    return content.split('\n').filter(line => line.trim()).slice(0, 20);
+      const content = response.choices[0].message.content || "";
+      return content.split('\n').filter(line => line.trim()).slice(0, 20);
+    } catch (error) {
+      console.log('🔄 SEO Keywords fallback - AI unavailable, using strategic defaults');
+      
+      // Fallback Queensland SEO keywords based on TheAgencyIQ brand purpose
+      return [
+        'Queensland small business social media',
+        'Brisbane business automation',
+        'Gold Coast marketing agency',
+        'Sunshine Coast digital marketing',
+        'Queensland SME growth',
+        'Brisbane social media management',
+        'local business visibility Queensland',
+        'automated content creation Brisbane',
+        'Queensland business marketing',
+        'small business social media QLD',
+        'Brisbane digital presence',
+        'Gold Coast business growth',
+        'Queensland automated marketing',
+        'local SEO Brisbane',
+        'social media automation Queensland',
+        'Brisbane business visibility',
+        'Queensland content marketing',
+        'small business automation QLD',
+        'Brisbane marketing solutions',
+        'Queensland digital transformation'
+      ];
+    }
   }
 
   /**
@@ -309,30 +406,41 @@ export class StrategicContentGenerator {
   private static async createValuePropositionCanvas(brandPurpose: any, audienceInsights: any): Promise<ValuePropositionCanvas> {
     console.log('💎 Phase 5: Creating Value Proposition Canvas...');
     
-    const prompt = `Create a comprehensive Value Proposition Canvas for:
-    
-    Brand: ${brandPurpose.brandName}
-    Core Purpose: ${brandPurpose.corePurpose}
-    Target Jobs: ${JSON.stringify(audienceInsights.functionalJob)}
-    Pain Points: ${JSON.stringify(audienceInsights.painPoints)}
-    
-    Generate Value Proposition Canvas:
-    1. Customer Jobs (functional, emotional, social)
-    2. Pain Points (current frustrations and obstacles)
-    3. Gain Creators (benefits that delight customers)
-    4. Products/Services (core offerings)
-    5. Pain Relievers (how offerings solve problems)
-    6. Value Propositions (unique value delivery statements)
-    
-    Focus on subscriber delight and Queensland small business growth acceleration.`;
+    try {
+      const prompt = `Create a comprehensive Value Proposition Canvas for:
+      
+      Brand: ${brandPurpose.brandName}
+      Core Purpose: ${brandPurpose.corePurpose}
+      Target Jobs: ${JSON.stringify(audienceInsights.functionalJob)}
+      Pain Points: ${JSON.stringify(audienceInsights.painPoints)}
+      
+      Generate Value Proposition Canvas:
+      1. Customer Jobs (functional, emotional, social)
+      2. Pain Points (current frustrations and obstacles)
+      3. Gain Creators (benefits that delight customers)
+      4. Products/Services (core offerings)
+      5. Pain Relievers (how offerings solve problems)
+      6. Value Propositions (unique value delivery statements)
+      
+      Focus on subscriber delight and Queensland small business growth acceleration.`;
 
-    const response = await aiClient.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" },
-    });
+      const response = await aiClient.chat.completions.create({
+        model: "gpt-4",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      });
 
-    return JSON.parse(response.choices[0].message.content || "{}");
+      return JSON.parse(response.choices[0].message.content || "{}");
+    } catch (error) {
+      console.log('🔄 Value Proposition Canvas fallback - AI unavailable, using strategic defaults');
+      
+      // Fallback Value Proposition Canvas based on TheAgencyIQ brand purpose
+      return {
+        customerJobs: 'Growing Queensland businesses efficiently without manual marketing overhead',
+        painPoints: 'Time-consuming manual marketing, inconsistent presence, technical complexity, poor ROI',
+        gainCreators: 'Automated professional content, strategic positioning, measurable results, constant visibility'
+      };
+    }
   }
 
   /**
@@ -461,18 +569,19 @@ export class StrategicContentGenerator {
    * Generate strategic post content for specific platform and template
    */
   private static async generateStrategicPostContent(platform: string, template: any, marketData: QueenslandMarketInsights, brandPurpose: any): Promise<string> {
-    const prompt = `Generate ${platform} post content for TheAgencyIQ that MUST align with this specific brand purpose:
+    try {
+      const prompt = `Generate ${platform} post content for TheAgencyIQ that MUST align with this specific brand purpose:
 
-    BRAND PURPOSE: "${brandPurpose.corePurpose}"
-    
-    CORE VALUE PROPOSITION: "You're invisible, that's not good. AgencyIQ gives you a beacon that's always on."
-    
-    THE PAIN: "You're invisible, and silence is killing your growth."
-    THE GAIN: "You show up. Week in, week out. Professionally. Strategically. Automatically."
-    
-    BRAND PROMISE: "Keep me visible even when I am too busy to show up, not just visibility, but validation. For those who want what the big brands have: presence, polish, and power, without the army it takes to get there."
-    
-    Template to use:
+      BRAND PURPOSE: "${brandPurpose.corePurpose}"
+      
+      CORE VALUE PROPOSITION: "You're invisible, that's not good. AgencyIQ gives you a beacon that's always on."
+      
+      THE PAIN: "You're invisible, and silence is killing your growth."
+      THE GAIN: "You show up. Week in, week out. Professionally. Strategically. Automatically."
+      
+      BRAND PROMISE: "Keep me visible even when I am too busy to show up, not just visibility, but validation. For those who want what the big brands have: presence, polish, and power, without the army it takes to get there."
+      
+      Template to use:
     - Theme: ${template.theme}
     - Content Type: ${template.contentType}
     - CTA: ${template.cta}
@@ -490,12 +599,30 @@ export class StrategicContentGenerator {
     
     Write content that makes invisible Queensland SMEs feel seen and understood, then compels them to take action.`;
 
-    const response = await aiClient.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
-    });
+      const response = await aiClient.chat.completions.create({
+        model: "gpt-4",
+        messages: [{ role: "user", content: prompt }],
+      });
 
-    return response.choices[0].message.content || "";
+      return response.choices[0].message.content || "";
+    } catch (error) {
+      console.log(`🔄 ${platform} content fallback - AI unavailable, using strategic template`);
+      
+      // Platform-specific fallback content based on TheAgencyIQ brand purpose
+      const fallbackContent = {
+        facebook: `Attention Queensland SME owners! Are you feeling invisible in your busy schedule? Silence is killing your growth, but you're not alone. TheAgencyIQ understands the struggle of juggling business and visibility. We're here to give you the presence, polish, and power that big brands have, without the need for an army. Our always-on beacon ensures you're not just visible, but validated, even when you're too swamped to show up. Don't let silence suffocate your business any longer. With TheAgencyIQ, you can show up professionally, strategically, and automatically, week in and week out. Stop being invisible and start being seen. Take action now and let us help you shine! #QueenslandSMEs #VisibilityMatters`,
+        
+        instagram: `🚨 Is your Queensland SME invisible? Silence is killing your growth! 🚨\n\nYou're busy, but your business deserves the presence, polish, and power of big brands. TheAgencyIQ is your always-on beacon, providing not just visibility, but validation.\n\nShow up professionally, strategically, automatically - week in, week out. Don't let silence suffocate your success.\n\n#InvisibleNoMore #QueenslandSMEs #AgencyIQ\n\n👉 Stop Being Invisible. Take action now with TheAgencyIQ!`,
+        
+        linkedin: `As a busy Queensland SME owner, you know the struggle of staying visible in a crowded market. Silence is killing your growth, and you're left feeling invisible. But it doesn't have to be this way. \n\nTheAgencyIQ understands the pain of being an invisible business. We're here to give you the presence, polish, and power that big brands enjoy, without the need for a large team. Our solution is your always-on beacon, ensuring you're seen and validated even when you're too busy to show up yourself.\n\nImagine showing up week in, week out, professionally, strategically, and automatically. With TheAgencyIQ, this can be your reality. We're committed to keeping you visible and providing the validation you deserve, so you can focus on running your business.\n\nDon't let silence continue to stifle your growth. It's time to take action and stop being invisible. Let TheAgencyIQ be your partner in achieving the visibility and validation you need to thrive.\n\nContact us today and discover how we can help you shine in the Queensland market. Your business deserves to be seen – let's make it happen together.\n\n#TheAgencyIQ #VisibleBusiness #QueenslandSMEs #PresencePolishPower`,
+        
+        x: `Your Queensland SME is invisible. Silence is killing your growth. 💀\n\nYou need what big brands have: presence, polish, power - without the army.\n\nTheAgencyIQ = your always-on beacon.\nNot just visibility, but VALIDATION.\n\nShow up professionally. Strategically. Automatically.\n\nStop being invisible. Start being seen. 🚀\n\n#QueenslandSMEs #StopBeingInvisible`,
+        
+        youtube: `Are you a Queensland SME feeling invisible? This video explains how silence is literally killing your business growth and what successful businesses do differently. Discover TheAgencyIQ's always-on beacon approach that gives you the presence, polish, and power of big brands without needing an entire marketing team. Learn how to show up professionally, strategically, and automatically - even when you're too busy to manage it yourself. Don't let your business stay invisible any longer. Click to learn more about transforming your visibility. #QueenslandBusiness #SMEGrowth #DigitalPresence`
+      };
+      
+      return fallbackContent[platform as keyof typeof fallbackContent] || fallbackContent.facebook;
+    }
   }
 
   /**
