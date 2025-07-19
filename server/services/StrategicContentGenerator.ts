@@ -98,52 +98,51 @@ export class StrategicContentGenerator {
     const mediaPlanneryPrompt = `You are the world's best media planner with expertise in Queensland business cycles, events, and optimal posting strategies.
 
 BUSINESS CONTEXT:
-- Business Name: ${params.brandPurpose?.businessName || 'Queensland SME'}
-- Industry: ${params.brandPurpose?.industry || 'Professional Services'}
-- Target Audience: ${params.brandPurpose?.targetAudience || 'Queensland small business owners'}
-- Core Purpose: ${params.brandPurpose?.corePurpose || 'Help businesses grow'}
+- Business: TheAgencyIQ (Queensland SME automation platform)
+- Target Audience: Time-poor Queensland business owners needing visibility
+- Core Purpose: Help busy owners with automated social media for professional visibility
+- Brand Promise: "Stop being invisible - get your always-on beacon"
 
 PLATFORMS AVAILABLE: ${params.platforms.join(', ')}
 TOTAL POSTS NEEDED: ${params.totalPosts}
+START DATE: 2025-07-19 (30-day calendar)
 
-TASK: Create a strategic media calendar selecting the optimal platform and date for maximum ROI. Consider:
+KEY QUEENSLAND EVENTS TO ALIGN WITH:
+- Curated Plate: July 25 - August 3 (premium dining/networking)
+- Great Barrier Reef Festival: August 1-3 (tourism/local pride)
+- Taste Port Douglas: August 7-10 (local business showcase)
+- Brisbane Ekka: July-August (major Queensland event)
+- School holidays impact (business networking timing)
 
-1. **Queensland Events & Seasons**:
-   - Brisbane Ekka (July-August)
-   - School holidays
-   - Business quarterly cycles
-   - Local festivals and events
-   - Weather patterns affecting business
+TASK: Create strategic 30-day calendar from 2025-07-19 onwards, selecting optimal platform/day combinations for maximum ROI based on:
 
-2. **Platform-Specific Optimal Days**:
-   - Facebook: Community engagement peaks
-   - Instagram: Visual content performance
-   - LinkedIn: B2B professional timing
-   - X: Real-time conversation windows
-   - YouTube: Educational content consumption
+1. **Event Alignment Strategy**:
+   - Pre-event buzz building (1-2 days before)
+   - During-event engagement (real-time relevance)
+   - Post-event follow-up (networking continuation)
 
-3. **Business Cycle Alignment**:
-   - Monday motivation posts
-   - Wednesday expertise sharing
-   - Friday community building
-   - Weekend lifestyle integration
+2. **Platform-Day Optimization**:
+   - LinkedIn: Tuesday-Thursday B2B peaks
+   - Facebook: Wednesday-Friday community engagement
+   - Instagram: Thursday-Sunday visual content performance
+   - X: Monday-Wednesday conversation windows  
+   - YouTube: Weekend educational consumption
 
-4. **ROI Optimization**:
-   - Days with highest engagement rates
-   - Times when target audience is most active
-   - Event-driven content opportunities
-   - Seasonal business relevance
+3. **Busy Owner Psychology**:
+   - Monday motivation (new week energy)
+   - Wednesday wisdom (mid-week expertise)
+   - Friday inspiration (week-end positivity)
 
-Return a JSON array of exactly ${params.totalPosts} entries with this structure:
+Return JSON array "calendar" with exactly ${params.totalPosts} entries:
 {
   "platform": "facebook/instagram/linkedin/x/youtube",
-  "date": "2025-MM-DD",
-  "strategicReason": "Brief reason why this day/platform combination maximizes ROI",
-  "eventAlignment": "Specific event or business cycle this aligns with",
-  "roiPotential": "Expected ROI benefit (high/medium/optimal)"
+  "date": "2025-07-DD", 
+  "strategicReason": "Why this platform/day maximizes ROI for busy owners",
+  "eventAlignment": "Specific Queensland event or business cycle alignment",
+  "roiPotential": "high/medium/optimal"
 }
 
-Focus on strategic distribution across platforms and dates for maximum business impact.`;
+Focus on event-driven opportunities and optimal engagement windows for Queensland SMEs.`;
 
     const response = await aiClient.chat.completions.create({
       model: "grok-beta",
@@ -175,39 +174,41 @@ Focus on strategic distribution across platforms and dates for maximum business 
     for (let i = 0; i < mediaCalendar.length; i++) {
       const entry = mediaCalendar[i];
       
-      const copywriterPrompt = `You are an expert copywriter creating high-converting content for Queensland SMEs. 
+      const copywriterPrompt = `You are an expert copywriter creating witty, engaging content for TheAgencyIQ targeting Queensland SME owners.
 
-CALENDAR ENTRY FROM MEDIA PLANNER:
+STRATEGIC CALENDAR ENTRY FROM MEDIA PLANNER:
 - Platform: ${entry.platform}
 - Date: ${entry.date}
 - Strategic Reason: ${entry.strategicReason}
 - Event Alignment: ${entry.eventAlignment}
 - ROI Potential: ${entry.roiPotential}
 
-BUSINESS CONTEXT:
-- Business Name: ${params.brandPurpose?.businessName || 'Queensland SME'}
-- Industry: ${params.brandPurpose?.industry || 'Professional Services'}
-- Target Audience: ${params.brandPurpose?.targetAudience || 'Queensland small business owners'}
-- Core Purpose: ${params.brandPurpose?.corePurpose || 'Help businesses grow'}
+THEAGENCYIQ BRAND CONTEXT:
+- Mission: Help time-poor Queensland business owners with automated social media for visibility
+- Core Problem: "You're invisible, and silence is killing your growth"
+- Solution: "Always-on beacon that gives you presence, polish, and power without the army"
+- Target: Busy Queensland SME owners who need professional visibility but lack time
 
 PLATFORM REQUIREMENTS:
 ${this.getPlatformContentGuidelines(entry.platform)}
 
-CONTENT CREATION TASK:
-Create compelling, conversion-focused content that:
-1. Aligns with the strategic reason and event from the media planner
-2. Follows platform-specific best practices
-3. Includes Queensland-relevant context
-4. Drives engagement and business results
-5. Uses authentic Australian spelling and local references
+COPYWRITER INSTRUCTIONS:
+Create engaging, conversion-focused content that:
+1. Hooks busy owners with relatable visibility pain points
+2. Aligns with the Queensland event/timing from media planner
+3. Uses witty, conversational Australian tone (not corporate)
+4. Includes subtle TheAgencyIQ solution integration
+5. Drives action with compelling CTAs
+6. Makes content editable: true for easy customization
 
-The content should feel natural and valuable while subtly promoting the business benefits.
+Content should feel authentic and valuable while addressing the "invisible business" problem with the "always-on beacon" solution.
 
 Return JSON with:
 {
-  "content": "Platform-optimized post content",
-  "strategicTheme": "Main strategic focus",
-  "conversionFocus": "Primary conversion goal"
+  "content": "Witty, engaging platform-optimized post content",
+  "strategicTheme": "Main strategic focus from media planning",
+  "conversionFocus": "Primary conversion goal",
+  "editable": true
 }`;
 
       const copyResponse = await aiClient.chat.completions.create({
@@ -227,11 +228,15 @@ Return JSON with:
 
       const copyResult = JSON.parse(copyResponse.choices[0].message.content);
       
+      // Create proper date with time for scheduling
+      const scheduledDate = new Date(entry.date);
+      scheduledDate.setHours(this.getOptimalPostingTime(entry.platform));
+      
       strategicPosts.push({
         id: i + 1,
         platform: entry.platform,
         content: copyResult.content || `Strategic content for ${entry.platform} on ${entry.date}`,
-        scheduledFor: entry.date,
+        scheduledFor: scheduledDate.toISOString(),
         strategicTheme: copyResult.strategicTheme || entry.strategicReason,
         businessCanvasPhase: entry.eventAlignment,
         engagementOptimization: entry.roiPotential,
@@ -248,14 +253,14 @@ Return JSON with:
    */
   private static getPlatformContentGuidelines(platform: string): string {
     const guidelines = {
-      facebook: "Facebook: 400-2000 characters, community-focused, encourage comments and shares, use engaging questions",
-      instagram: "Instagram: 400-600 characters, visual storytelling, use relevant hashtags, include call-to-action",
-      linkedin: "LinkedIn: 1000-3000 characters, professional tone, industry insights, thought leadership approach",
-      x: "X: 200-280 characters, conversational, trending topics, use relevant hashtags, encourage retweets",
-      youtube: "YouTube: 600-800 characters, educational focus, preview video content, encourage subscriptions"
+      facebook: "Facebook: 400-1500 characters, community-focused tone, encourage comments/shares, use engaging questions, Queensland local references",
+      instagram: "Instagram: 300-400 characters max, visual storytelling, relevant hashtags (#QueenslandSME #BusinessVisibility), strong call-to-action",
+      linkedin: "LinkedIn: 700-1000 characters, professional B2B tone, industry insights, thought leadership, networking focus",
+      x: "X: 200-280 characters max, conversational and witty, trending topics, hashtags, encourage retweets and engagement",
+      youtube: "YouTube: 500-600 characters, educational preview format, encourage subscriptions, video content teasers"
     };
     
-    return guidelines[platform] || "General: Engaging, authentic, conversion-focused content";
+    return guidelines[platform] || "General: Engaging, authentic, conversion-focused content with Queensland context";
   }
 
   /**
