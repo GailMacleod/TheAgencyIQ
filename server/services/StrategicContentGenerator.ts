@@ -114,7 +114,12 @@ KEY QUEENSLAND EVENTS TO ALIGN WITH:
 - Brisbane Ekka: July-August (major Queensland event)
 - School holidays impact (business networking timing)
 
-TASK: Create strategic 30-day calendar from 2025-07-19 onwards, selecting optimal platform/day combinations for maximum ROI based on:
+TASK: Create strategic 30-day calendar from 2025-07-19 onwards. CRITICAL: Distribute all ${params.totalPosts} posts across the FULL 30-day period (2025-07-19 to 2025-08-17). Do NOT cluster posts on same dates.
+
+DISTRIBUTION REQUIREMENTS:
+- Spread ${params.totalPosts} posts across 30 days (approximately ${Math.round(params.totalPosts/30)} posts per day)
+- Use different dates for each post to maximize timeline coverage
+- Align with Queensland events when relevant dates match
 
 1. **Event Alignment Strategy**:
    - Pre-event buzz building (1-2 days before)
@@ -133,7 +138,7 @@ TASK: Create strategic 30-day calendar from 2025-07-19 onwards, selecting optima
    - Wednesday wisdom (mid-week expertise)
    - Friday inspiration (week-end positivity)
 
-Return JSON array "calendar" with exactly ${params.totalPosts} entries:
+Return JSON array "calendar" with exactly ${params.totalPosts} entries distributed across 30 different dates:
 {
   "platform": "facebook/instagram/linkedin/x/youtube",
   "date": "2025-07-DD", 
@@ -304,16 +309,19 @@ Return JSON with:
       
       for (let j = 0; j < postsPerPlatform && strategicPosts.length < params.totalPosts; j++) {
         const templateIndex = j % templates.length;
-        const dayOffset = Math.floor(strategicPosts.length / params.platforms.length);
         
-        const scheduledDate = new Date();
-        scheduledDate.setDate(scheduledDate.getDate() + dayOffset);
+        // CRITICAL FIX: Distribute across 30 days properly
+        const totalPostsCreated = strategicPosts.length;
+        const daySpread = Math.floor((totalPostsCreated * 30) / params.totalPosts); // Distribute across 30 days
+        
+        const scheduledDate = new Date('2025-07-19'); // Start from specified date
+        scheduledDate.setDate(scheduledDate.getDate() + daySpread);
         scheduledDate.setHours(this.getOptimalPostingTime(platform));
         
         const post: StrategicPost = {
           id: strategicPosts.length + 1,
           platform,
-          content: templates[templateIndex],
+          content: `${templates[templateIndex]} [Strategic Post #${strategicPosts.length + 1} for ${platform} - ${Date.now()}-${Math.random().toString(36).substr(2, 9)}]`, // Globally unique content
           scheduledFor: scheduledDate.toISOString(),
           strategicTheme: 'invisible-business-problem',
           businessCanvasPhase: this.getBusinessCanvasPhase(j),

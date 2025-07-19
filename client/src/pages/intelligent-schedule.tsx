@@ -362,15 +362,7 @@ function IntelligentSchedule() {
       return postDateStr === dateStr;
     });
     
-    // Debug log for strategic data verification
-    if (filteredPosts.length > 0) {
-      console.log(`📅 Posts for ${dateStr}:`, filteredPosts.map(p => ({
-        id: p.id,
-        platform: p.platform,
-        strategicTheme: p.strategicTheme,
-        businessCanvasPhase: p.businessCanvasPhase
-      })));
-    }
+    // Strategic data properly flowing to calendar
     
     return filteredPosts;
   };

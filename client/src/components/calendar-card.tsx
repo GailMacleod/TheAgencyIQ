@@ -181,8 +181,9 @@ export default function CalendarCard({ date, posts, events = [] }: CalendarCardP
                             )}
                           </div>
                         )}
-                        <div className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
-                          {post.content}
+                        {/* Content hidden in calendar - strategic planning info shown above */}
+                        <div className="text-xs text-gray-500 italic">
+                          Click post to view full content
                         </div>
                         {post.status === 'published' && (
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
