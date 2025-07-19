@@ -717,7 +717,7 @@ Return JSON with:
           scheduledFor: scheduledDate.toISOString(),
           strategicTheme: template.theme,
           businessCanvasPhase: this.getBusinessCanvasPhase(j),
-          engagementOptimisation: template.focus,
+          engagementOptimization: template.focus,
           conversionFocus: template.cta,
           audienceSegment: this.getAudienceSegment(platform)
         };

@@ -79,6 +79,10 @@ export const posts = pgTable("posts", {
   idempotencyKey: text("idempotency_key"), // Unique key for preventing duplicate creation
   aiRecommendation: text("ai_recommendation"),
   subscriptionCycle: text("subscription_cycle"), // Track which 30-day cycle this post belongs to
+  // Strategic content generation fields for two-stage Grok workflow
+  strategicTheme: text("strategic_theme"), // Media planner strategic reason
+  businessCanvasPhase: text("business_canvas_phase"), // Event alignment
+  engagementOptimization: text("engagement_optimization"), // ROI potential
   createdAt: timestamp("created_at").defaultNow(),
 });
 

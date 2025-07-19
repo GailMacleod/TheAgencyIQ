@@ -5805,6 +5805,10 @@ Continue building your Value Proposition Canvas systematically.`;
         contentHash: createHash('md5').update(post.content).digest('hex'),
         idempotencyKey: `strategic_${userId}_${index}_${post.platform}_${Date.now()}`,
         generationId: `strategic_batch_${Date.now()}`,
+        // Strategic content generation fields for two-stage Grok workflow
+        strategicTheme: post.strategicTheme,
+        businessCanvasPhase: post.businessCanvasPhase,
+        engagementOptimization: post.engagementOptimization,
         createdAt: new Date(),
         updatedAt: new Date()
       }));
