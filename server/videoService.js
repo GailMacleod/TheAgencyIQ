@@ -43,43 +43,49 @@ class VideoService {
       // Create traditional prompts as fallback/additional options
       const traditionalPrompts = await this.createDistinctVideoStyles(postContent, platform, brandData, userHistory);
       
+      // Generate fucking awesome scroll-stopping prompts
+      const awesomePrompts = this.generateAwesomeVideoPrompts(postContent, platform, brandData);
+      
       // Create THREE distinct options: two auto-generated + one custom
       const threeOptions = [
         {
           id: 1,
           type: "auto-generated",
-          title: "Grok Enhanced Script A",
-          description: "Witty, engaging Queensland business copy",
-          prompt: grokResult.videoPrompt || traditionalPrompts.primary,
-          postCopy: grokResult.postCopy || postContent,
+          title: awesomePrompts[0].title,
+          description: "Companion-style hero journey with scroll-stopping appeal",
+          prompt: awesomePrompts[0].prompt,
+          postCopy: awesomePrompts[0].postCopy,
           editable: true,
           grokEnhanced: true,
           wittyStyle: true,
-          platform: platform
+          platform: platform,
+          style: awesomePrompts[0].style
         },
         {
           id: 2,
           type: "auto-generated", 
-          title: "Alternative Creative Script B",
-          description: "Professional success story approach",
-          prompt: traditionalPrompts.secondary || traditionalPrompts.primary,
-          postCopy: this.generateAlternativePostCopy(postContent, platform),
+          title: awesomePrompts[1].title,
+          description: "Strategyzer beacon transformation with uplifting vibes",
+          prompt: awesomePrompts[1].prompt,
+          postCopy: awesomePrompts[1].postCopy,
           editable: true,
-          grokEnhanced: false,
-          wittyStyle: false,
-          platform: platform
+          grokEnhanced: true,
+          wittyStyle: true,
+          platform: platform,
+          style: awesomePrompts[1].style
         },
         {
           id: 3,
           type: "custom",
-          title: "Create Your Own Script",
-          description: "Custom script template for your unique vision",
-          prompt: this.getCustomTemplate(platform),
+          title: "Create Your Own Fucking Awesome Script",
+          description: "Custom template with companion-style energy and local Queensland vibes",
+          prompt: this.getCustomAwesomeTemplate(platform),
           postCopy: this.getCustomPostCopyTemplate(platform),
           editable: true,
           grokEnhanced: false,
-          wittyStyle: false,
-          platform: platform
+          wittyStyle: true,
+          platform: platform,
+          style: "custom-awesome"
         }
       ];
       
@@ -124,6 +130,115 @@ class VideoService {
     
     return alternativeTemplates[platform] || originalContent;
   }
+
+  // ENHANCED: Generate fucking awesome scroll-stopping video prompts
+  static generateAwesomeVideoPrompts(postContent, platform, brandData) {
+    console.log(`🎬 Creating scroll-stopping, fucking awesome prompts for ${platform}...`);
+    
+    // Platform specifications with aspect ratios
+    const platformSpecs = {
+      instagram: { ratio: '9:16', style: 'vertical mobile-first', duration: '5-10s' },
+      youtube: { ratio: '16:9', style: 'horizontal cinematic', duration: '10s' },
+      facebook: { ratio: '1:1', style: 'square social', duration: '5-10s' },
+      linkedin: { ratio: '1:1', style: 'professional square', duration: '5-10s' },
+      x: { ratio: '16:9', style: 'horizontal dynamic', duration: '5-8s' }
+    };
+    
+    const spec = platformSpecs[platform] || platformSpecs.instagram;
+    
+    // Queensland local events integration (Curated Plate example)
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentDay = currentDate.getDate();
+    
+    let localEventContext = '';
+    if (currentMonth >= 7 && currentMonth <= 8) {
+      localEventContext = 'Curated Plate festival energy (July 25 - Aug 3) ';
+    } else {
+      localEventContext = 'Queensland business boom season ';
+    }
+    
+    // Strategyzer invisibility-to-beacon transformation themes
+    const heroicJourneyThemes = [
+      'invisible → beacon transformation',
+      'hidden gem → market leader journey', 
+      'quiet achiever → industry voice',
+      'behind-scenes → spotlight success',
+      'unnoticed → unmissable evolution'
+    ];
+    
+    const selectedTheme = heroicJourneyThemes[Math.floor(Math.random() * heroicJourneyThemes.length)];
+    
+    // Generate three fucking awesome prompts
+    const awesomePrompts = [
+      {
+        id: 1,
+        title: "Companion-Style Hero Journey",
+        prompt: `${spec.ratio} ${spec.style} video: Queensland SME hero's journey from ${selectedTheme}. ${localEventContext}vibes with witty animations, bold electric colors (neon blues, vibrant oranges, power purples). Modern humor via storytelling questions like "Ever feel invisible in your market?" Quick cuts every 1-2 seconds, dynamic camera moves (zoom-ins, smooth pans), warm dramatic lighting with golden hour feels. Uplifting aspirational soundtrack. Character: confident business owner conquering challenges. Companion-style fun energy - supportive, witty, empowering. NO boring stock footage - custom scenes only. Make it scroll-stopping awesome that screams "watch me!"`,
+        postCopy: this.generateCompanionStyleCopy(postContent, platform, 'hero-journey'),
+        style: "companion-hero",
+        editable: true
+      },
+      {
+        id: 2, 
+        title: "Strategyzer Beacon Transformation",
+        prompt: `${spec.ratio} ${spec.style} video: Strategyzer-inspired transformation showing business going from invisible to beacon presence. ${localEventContext}energy with playful animations of beacon lights, radar sweeps, signal waves. Bold modern colors (electric cyan, power red, victory gold). Witty storytelling: "Your business is a lighthouse - time to turn on the light!" Quick dynamic cuts, swooshing camera movements, warm cinematic lighting. Upbeat companion-style soundtrack. Show metaphorical beacon activation sequence. Fun, supportive vibes with humor. Zero stock footage - all custom creative scenes. Fucking awesome scroll-stopping content that demands attention!`,
+        postCopy: this.generateCompanionStyleCopy(postContent, platform, 'beacon-transformation'),
+        style: "strategyzer-beacon",
+        editable: true
+      },
+      {
+        id: 3,
+        title: "Local Event Power Surge", 
+        prompt: `${spec.ratio} ${spec.style} video: ${localEventContext}powered business surge story. Witty animations of Queensland map, event excitement, business growth arrows. Bold festival colors (sunset orange, celebration purple, energy yellow). Modern humor questions: "Ready to ride the ${localEventContext}wave?" Ultra-quick cuts (1 second max), dynamic camera spins and zooms, warm golden lighting with celebration vibes. Aspirational upbeat music. Show business catching the local event momentum. Companion-style supportive energy with witty charm. Custom visuals only - no boring stock. Create scroll-stopping, fucking awesome content that makes viewers stop and watch!`,
+        postCopy: this.generateCompanionStyleCopy(postContent, platform, 'local-event'),
+        style: "local-event-power",
+        editable: true
+      }
+    ];
+    
+    return awesomePrompts;
+  }
+
+  // Generate companion-style copy for different themes
+  static generateCompanionStyleCopy(originalContent, platform, theme) {
+    const platformLimits = {
+      instagram: 400,
+      linkedin: 1300, 
+      x: 280,
+      youtube: 600,
+      facebook: 2000
+    };
+    
+    const charLimit = platformLimits[platform] || 500;
+    
+    const companionStyles = {
+      'hero-journey': {
+        instagram: `🚀 Plot twist: Your business isn't invisible - it just needs the right spotlight! ${originalContent.substring(0, 200)} Ready for your hero moment? Let's make it happen! 💪✨ #HeroJourney #QLD`,
+        linkedin: `Fellow Queensland business heroes: Every great success story starts with someone who felt invisible. ${originalContent} The difference? They found their beacon moment. Ready to transform from hidden gem to market leader? Your hero's journey starts now. 🎯`,
+        x: `🎬 From invisible to unstoppable: ${originalContent.substring(0, 150)} Your hero moment awaits! 🚀 #QLD`,
+        youtube: `Queensland business owners, this is your hero's journey moment! ${originalContent} Watch how smart SMEs transform from invisible to unstoppable. It's not magic - it's strategy. Ready to be the hero of your own success story? 🎬✨`,
+        facebook: `🎭 Every Queensland business has a hero story waiting to be told! ${originalContent} Tired of being the best-kept secret? Time to step into your spotlight and show the world what you're made of! Drop a 🚀 if you're ready for your transformation! #QLD #HeroJourney`
+      },
+      'beacon-transformation': {
+        instagram: `💡 Your business = lighthouse. Time to turn on the beam! ${originalContent.substring(0, 200)} From invisible to irresistible in 3...2...1! 🌟 #BeaconMode #QLD`,
+        linkedin: `Queensland business leaders: Your expertise is the lighthouse - but is the beacon on? ${originalContent} Strategic visibility transforms invisible businesses into market beacons. Ready to activate your signal and guide customers to your shore? 🚨`,
+        x: `🚨 Beacon activated! ${originalContent.substring(0, 150)} From hidden to unmissable! 💫 #QLD`,
+        youtube: `Queensland SMEs: You're not invisible - your beacon just isn't switched on yet! ${originalContent} Discover how Strategyzer methodology transforms hidden businesses into market lighthouses. Ready to activate your beacon presence? 🚨💡`,
+        facebook: `🚨 BEACON ALERT: Queensland businesses going from invisible to unmissable! ${originalContent} Your business has lighthouse potential - we just need to flip the switch! Ready to guide customers straight to your door? Comment 'BEACON' if you're ready to shine! 💡✨ #QLD`
+      },
+      'local-event': {
+        instagram: `🎪 Queensland's buzzing and your business should be too! ${originalContent.substring(0, 200)} Ride the local energy wave to success! 🌊🚀 #QLD #LocalPower`,
+        linkedin: `Queensland business timing insight: Local events create momentum waves smart businesses ride to success. ${originalContent} While others wait for "perfect timing," strategic SMEs harness community energy for business growth. Ready to catch your wave? 🌊`,
+        x: `🌊 Queensland energy surge incoming! ${originalContent.substring(0, 150)} Catch the wave! 🚀 #QLD`,
+        youtube: `Queensland business owners: Local events aren't just community fun - they're business opportunities waiting to be seized! ${originalContent} Learn how smart SMEs harness local energy for growth momentum. Ready to ride the Queensland wave? 🌊🎪`,
+        facebook: `🎪 Queensland's electric right now and your business should be riding this energy! ${originalContent} Local events = local opportunities = local growth! Ready to harness the community buzz for your business success? Tell us your favorite Queensland event below! 🌊🚀 #QLD`
+      }
+    };
+    
+    const themeTemplates = companionStyles[theme] || companionStyles['hero-journey'];
+    return themeTemplates[platform] || originalContent;
+  }
   
   // Get custom template for user-created option
   static getCustomTemplate(platform) {
@@ -136,6 +251,42 @@ class VideoService {
     };
     
     return customTemplates[platform] || "Custom business video showcasing your unique value proposition to Queensland market.";
+  }
+
+  // Get custom fucking awesome template for user-created option
+  static getCustomAwesomeTemplate(platform) {
+    const platformSpecs = {
+      instagram: { ratio: '9:16', style: 'vertical mobile-first' },
+      youtube: { ratio: '16:9', style: 'horizontal cinematic' },
+      facebook: { ratio: '1:1', style: 'square social' },
+      linkedin: { ratio: '1:1', style: 'professional square' },
+      x: { ratio: '16:9', style: 'horizontal dynamic' }
+    };
+    
+    const spec = platformSpecs[platform] || platformSpecs.instagram;
+    
+    // Queensland local events context
+    const currentMonth = new Date().getMonth() + 1;
+    let localEventContext = '';
+    if (currentMonth >= 7 && currentMonth <= 8) {
+      localEventContext = 'Curated Plate festival energy (July 25 - Aug 3) ';
+    } else {
+      localEventContext = 'Queensland business boom season ';
+    }
+    
+    const awesomeCustomTemplates = {
+      instagram: `${spec.ratio} ${spec.style} video: [Your unique Queensland business story]. Infuse companion-style fun with witty animations, bold electric colors (your brand colors + neon accents). Modern humor via questions like "[Your engaging question?]" ${localEventContext}vibes. Quick cuts every 1-2 seconds, dynamic moves (zoom-ins, pans), warm dramatic lighting. Uplifting soundtrack. Show your heroic SME journey from invisible to beacon. NO boring stock - custom scenes only. Make it fucking awesome and scroll-stopping!`,
+      
+      linkedin: `${spec.ratio} ${spec.style} video: [Your professional transformation story]. Companion-style supportive energy with sophisticated animations, bold business colors (power blues, success golds). Witty professional storytelling: "[Your industry insight?]" ${localEventContext}momentum. Quick dynamic cuts, smooth camera movements, warm cinematic lighting. Aspirational soundtrack. Demonstrate your Strategyzer invisibility-to-beacon journey. Zero stock footage - all custom professional scenes. Create scroll-stopping content that demands attention!`,
+      
+      youtube: `${spec.ratio} ${spec.style} video: [Your educational/entertaining business content]. Companion-style fun energy with engaging animations, vibrant colors matching your brand. Modern humor and storytelling: "[Your hook question?]" ${localEventContext}celebration vibes. Ultra-quick cuts (1-2 seconds), dynamic camera work, golden hour lighting. Upbeat music. Show your unique approach to solving Queensland business challenges. Custom visuals only - no stock. Make it fucking awesome that makes viewers stop scrolling!`,
+      
+      x: `${spec.ratio} ${spec.style} video: [Your punchy business message]. Companion-style wit with rapid animations, bold contrast colors. Quick humor: "[Your Twitter-style question?]" ${localEventContext}energy. Lightning-fast cuts (1 second max), dynamic movements, dramatic lighting. High-energy soundtrack. Demonstrate your business advantage in seconds. Custom scenes only. Create scroll-stopping, fucking awesome content!`,
+      
+      facebook: `${spec.ratio} ${spec.style} video: [Your community connection story]. Companion-style warmth with playful animations, welcoming colors (warm oranges, friendly blues). Conversational humor: "[Your community question?]" ${localEventContext}local pride. Quick engaging cuts, smooth movements, golden lighting. Feel-good music. Show your Queensland business serving the community. No stock footage - authentic custom scenes. Make it scroll-stopping awesome that builds connection!`
+    };
+    
+    return awesomeCustomTemplates[platform] || awesomeCustomTemplates.instagram;
   }
   
   // Get custom post copy template
