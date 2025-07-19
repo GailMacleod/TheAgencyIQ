@@ -121,11 +121,11 @@ class VideoService {
     
     // Alternative style templates (success story approach)
     const alternativeTemplates = {
-      instagram: `✨ Success Story Alert! ${originalContent.substring(0, 200)} Join 1000+ Queensland businesses who've made this transformation! 📈 #SuccessStory #QLD`,
+      instagram: `Success Story Alert! ${originalContent.substring(0, 200)} Join 1000+ Queensland businesses who've made this transformation! #SuccessStory #QLD`,
       linkedin: `Case Study: ${originalContent} This approach has delivered measurable results for Queensland SMEs across multiple industries. Ready to implement similar strategies in your business? Let's discuss your specific objectives and growth potential.`,
-      x: `📊 Proven Results: ${originalContent.substring(0, 180)} Join the winners! 🏆`,
+      x: `Proven Results: ${originalContent.substring(0, 180)} Join the winners!`,
       youtube: `Real Results from Real Businesses: ${originalContent} See how Queensland entrepreneurs are implementing these strategies and achieving breakthrough growth. Like and subscribe for more success stories!`,
-      facebook: `🎉 Another Queensland Business Success! ${originalContent} Want to know exactly how they did it? We're sharing the complete playbook with serious business owners. Comment 'STRATEGY' to get started! 💼🚀`
+      facebook: `Another Queensland Business Success! ${originalContent} Want to know exactly how they did it? We're sharing the complete playbook with serious business owners. Comment 'STRATEGY' to get started!`
     };
     
     return alternativeTemplates[platform] || originalContent;
@@ -214,25 +214,25 @@ class VideoService {
     
     const companionStyles = {
       'hero-journey': {
-        instagram: `🚀 Plot twist: Your business isn't invisible - it just needs the right spotlight! ${originalContent.substring(0, 200)} Ready for your hero moment? Let's make it happen! 💪✨ #HeroJourney #QLD`,
-        linkedin: `Fellow Queensland business heroes: Every great success story starts with someone who felt invisible. ${originalContent} The difference? They found their beacon moment. Ready to transform from hidden gem to market leader? Your hero's journey starts now. 🎯`,
-        x: `🎬 From invisible to unstoppable: ${originalContent.substring(0, 150)} Your hero moment awaits! 🚀 #QLD`,
-        youtube: `Queensland business owners, this is your hero's journey moment! ${originalContent} Watch how smart SMEs transform from invisible to unstoppable. It's not magic - it's strategy. Ready to be the hero of your own success story? 🎬✨`,
-        facebook: `🎭 Every Queensland business has a hero story waiting to be told! ${originalContent} Tired of being the best-kept secret? Time to step into your spotlight and show the world what you're made of! Drop a 🚀 if you're ready for your transformation! #QLD #HeroJourney`
+        instagram: `Plot twist: Your business isn't invisible - it just needs the right spotlight! ${originalContent.substring(0, 200)} Ready for your hero moment? Let's make it happen! #HeroJourney #QLD`,
+        linkedin: `Fellow Queensland business heroes: Every great success story starts with someone who felt invisible. ${originalContent} The difference? They found their beacon moment. Ready to transform from hidden gem to market leader? Your hero's journey starts now.`,
+        x: `From invisible to unstoppable: ${originalContent.substring(0, 150)} Your hero moment awaits! #QLD`,
+        youtube: `Queensland business owners, this is your hero's journey moment! ${originalContent} Watch how smart SMEs transform from invisible to unstoppable. It's not magic - it's strategy. Ready to be the hero of your own success story?`,
+        facebook: `Every Queensland business has a hero story waiting to be told! ${originalContent} Tired of being the best-kept secret? Time to step into your spotlight and show the world what you're made of! Comment 'READY' if you're ready for your transformation! #QLD #HeroJourney`
       },
       'beacon-transformation': {
-        instagram: `💡 Your business = lighthouse. Time to turn on the beam! ${originalContent.substring(0, 200)} From invisible to irresistible in 3...2...1! 🌟 #BeaconMode #QLD`,
-        linkedin: `Queensland business leaders: Your expertise is the lighthouse - but is the beacon on? ${originalContent} Strategic visibility transforms invisible businesses into market beacons. Ready to activate your signal and guide customers to your shore? 🚨`,
-        x: `🚨 Beacon activated! ${originalContent.substring(0, 150)} From hidden to unmissable! 💫 #QLD`,
-        youtube: `Queensland SMEs: You're not invisible - your beacon just isn't switched on yet! ${originalContent} Discover how Strategyzer methodology transforms hidden businesses into market lighthouses. Ready to activate your beacon presence? 🚨💡`,
-        facebook: `🚨 BEACON ALERT: Queensland businesses going from invisible to unmissable! ${originalContent} Your business has lighthouse potential - we just need to flip the switch! Ready to guide customers straight to your door? Comment 'BEACON' if you're ready to shine! 💡✨ #QLD`
+        instagram: `Your business = lighthouse. Time to turn on the beam! ${originalContent.substring(0, 200)} From invisible to irresistible in 3...2...1! #BeaconMode #QLD`,
+        linkedin: `Queensland business leaders: Your expertise is the lighthouse - but is the beacon on? ${originalContent} Strategic visibility transforms invisible businesses into market beacons. Ready to activate your signal and guide customers to your shore?`,
+        x: `Beacon activated! ${originalContent.substring(0, 150)} From hidden to unmissable! #QLD`,
+        youtube: `Queensland SMEs: You're not invisible - your beacon just isn't switched on yet! ${originalContent} Discover how Strategyzer methodology transforms hidden businesses into market lighthouses. Ready to activate your beacon presence?`,
+        facebook: `BEACON ALERT: Queensland businesses going from invisible to unmissable! ${originalContent} Your business has lighthouse potential - we just need to flip the switch! Ready to guide customers straight to your door? Comment 'BEACON' if you're ready to shine! #QLD`
       },
       'local-event': {
-        instagram: `🎪 Queensland's buzzing and your business should be too! ${originalContent.substring(0, 200)} Ride the local energy wave to success! 🌊🚀 #QLD #LocalPower`,
-        linkedin: `Queensland business timing insight: Local events create momentum waves smart businesses ride to success. ${originalContent} While others wait for "perfect timing," strategic SMEs harness community energy for business growth. Ready to catch your wave? 🌊`,
-        x: `🌊 Queensland energy surge incoming! ${originalContent.substring(0, 150)} Catch the wave! 🚀 #QLD`,
-        youtube: `Queensland business owners: Local events aren't just community fun - they're business opportunities waiting to be seized! ${originalContent} Learn how smart SMEs harness local energy for growth momentum. Ready to ride the Queensland wave? 🌊🎪`,
-        facebook: `🎪 Queensland's electric right now and your business should be riding this energy! ${originalContent} Local events = local opportunities = local growth! Ready to harness the community buzz for your business success? Tell us your favorite Queensland event below! 🌊🚀 #QLD`
+        instagram: `Queensland's buzzing and your business should be too! ${originalContent.substring(0, 200)} Ride the local energy wave to success! #QLD #LocalPower`,
+        linkedin: `Queensland business timing insight: Local events create momentum waves smart businesses ride to success. ${originalContent} While others wait for "perfect timing," strategic SMEs harness community energy for business growth. Ready to catch your wave?`,
+        x: `Queensland energy surge incoming! ${originalContent.substring(0, 150)} Catch the wave! #QLD`,
+        youtube: `Queensland business owners: Local events aren't just community fun - they're business opportunities waiting to be seized! ${originalContent} Learn how smart SMEs harness local energy for growth momentum. Ready to ride the Queensland wave?`,
+        facebook: `Queensland's electric right now and your business should be riding this energy! ${originalContent} Local events = local opportunities = local growth! Ready to harness the community buzz for your business success? Tell us your favorite Queensland event below! #QLD`
       }
     };
     
