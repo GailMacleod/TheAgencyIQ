@@ -510,12 +510,12 @@ class VideoService {
             postCopy = grokResult.postCopy || editedText;
             isGrokEnhanced = true;
           } else {
-            videoPrompt = this.artDirectorInterpretation(strategicIntent, editedText, platform);
+            videoPrompt = this.artDirectorPromptInterpretation(strategicIntent, editedText, platform);
             postCopy = editedText;
           }
         } catch (error) {
           console.log('🔄 Grok fallback - using Art Director');
-          videoPrompt = this.artDirectorInterpretation(strategicIntent, editedText, platform);
+          videoPrompt = this.artDirectorPromptInterpretation(strategicIntent, editedText, platform);
           postCopy = editedText;
         }
       } else if (prompt && typeof prompt === 'object' && (prompt.content || prompt.prompt)) {
@@ -529,12 +529,12 @@ class VideoService {
             postCopy = grokResult.postCopy || promptText;
             isGrokEnhanced = true;
           } else {
-            videoPrompt = this.artDirectorInterpretation(strategicIntent, promptText, platform);
+            videoPrompt = this.artDirectorPromptInterpretation(strategicIntent, promptText, platform);
             postCopy = promptText;
           }
         } catch (error) {
           console.log('🔄 Grok fallback - using Art Director');
-          videoPrompt = this.artDirectorInterpretation(strategicIntent, promptText, platform);
+          videoPrompt = this.artDirectorPromptInterpretation(strategicIntent, promptText, platform);
           postCopy = promptText;
         }
       } else if (typeof prompt === 'string') {
@@ -547,12 +547,12 @@ class VideoService {
             postCopy = grokResult.postCopy || prompt;
             isGrokEnhanced = true;
           } else {
-            videoPrompt = this.artDirectorInterpretation(strategicIntent, prompt, platform);
+            videoPrompt = this.artDirectorPromptInterpretation(strategicIntent, prompt, platform);
             postCopy = prompt;
           }
         } catch (error) {
           console.log('🔄 Grok fallback - using Art Director');
-          videoPrompt = this.artDirectorInterpretation(strategicIntent, prompt, platform);
+          videoPrompt = this.artDirectorPromptInterpretation(strategicIntent, prompt, platform);
           postCopy = prompt;
         }
       } else {
@@ -739,7 +739,7 @@ class VideoService {
       const renderTime = Math.floor((Date.now() - startTime) / 1000);
       
       // Generate authentic Art Director video
-      const generatedVideo = await generateArtDirectorVideo(selectedTheme, strategicIntent, creativeDirection, platform);
+      const generatedVideo = await this.generateArtDirectorVideo(selectedTheme, strategicIntent, creativeDirection, platform);
       
       console.log(`🎬 ✅ Art Director Production Complete: Custom ${selectedTheme} video in ${renderTime}s`);
       
@@ -780,7 +780,7 @@ class VideoService {
       
       // Emergency fallback with authentic Art Director generation
       const emergencyTheme = 'professional corporate environments';
-      const emergencyVideo = await generateArtDirectorVideo(emergencyTheme, 'Professional business growth and automation', 'Emergency business transformation strategy', platform);
+      const emergencyVideo = await this.generateArtDirectorVideo(emergencyTheme, 'Professional business growth and automation', 'Emergency business transformation strategy', platform);
       
       return {
         success: true,
@@ -805,6 +805,21 @@ class VideoService {
         wittyStyle: false
       };
     }
+  }
+
+  // Art Director prompt interpretation for video creation
+  static artDirectorPromptInterpretation(strategicIntent, creativeDirection, platform) {
+    const platformSpecs = {
+      'instagram': '9:16 vertical mobile-first',
+      'youtube': '16:9 horizontal cinematic', 
+      'facebook': '1:1 square social',
+      'linkedin': '1:1 professional square',
+      'x': '16:9 horizontal dynamic'
+    };
+    
+    const spec = platformSpecs[platform.toLowerCase()] || platformSpecs.instagram;
+    
+    return `Generate 10-second ${spec} professional business video featuring Queensland SME transformation journey. Strategic focus: ${strategicIntent}. Creative direction: ${creativeDirection}. Show modern business environments, dynamic professional scenes, success visualization with premium lighting and quick cuts. Zero animals or child themes - pure business focus.`;
   }
 
   // ENHANCED: Grok Copywriter for witty, engaging video content
