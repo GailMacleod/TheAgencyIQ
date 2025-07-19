@@ -43,19 +43,19 @@ async function startServer() {
     res.header('Vary', 'Origin, Access-Control-Request-Headers');
     res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
     
-    // Production-ready CSP with frame-ancestors for embedding
+    // Production-ready CSP with Grammarly support and frame-ancestors for embedding
     res.header('Content-Security-Policy', 
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com; " +
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com https://www.grammarly.com https://gnar.grammarly.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.grammarly.com; " +
       "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; " +
       "img-src 'self' data: https: blob:; " +
-      "connect-src 'self' https: wss: ws:; " +
+      "connect-src 'self' https: wss: ws: https://www.grammarly.com https://gnar.grammarly.com; " +
       "frame-src 'self' https://www.facebook.com https://accounts.google.com; " +
       "frame-ancestors 'self' https://app.theagencyiq.ai https://www.facebook.com;"
     );
     
-    // Clean Permissions-Policy - only recognized features
+    // Enhanced Permissions-Policy with unload support for Grammarly extension
     res.header('Permissions-Policy', 
       'camera=(), ' +
       'microphone=(), ' +
@@ -65,7 +65,8 @@ async function startServer() {
       'accelerometer=(), ' +
       'gyroscope=(), ' +
       'magnetometer=(), ' +
-      'fullscreen=self'
+      'fullscreen=self, ' +
+      'unload=()'
     );
     
     res.header('X-Frame-Options', 'SAMEORIGIN');
