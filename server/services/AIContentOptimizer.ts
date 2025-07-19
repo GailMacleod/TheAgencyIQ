@@ -47,7 +47,7 @@ export class AIContentOptimizer {
       const prompt = this.buildPersonalizedPrompt(brandPurpose, contentType, performanceData);
       
       const response = await openai.chat.completions.create({
-        model: "grok-2-1212",
+        model: "grok-beta",
         messages: [
           {
             role: "system",
@@ -120,7 +120,7 @@ export class AIContentOptimizer {
       `;
 
       const response = await openai.chat.completions.create({
-        model: "grok-2-1212",
+        model: "grok-beta",
         messages: [
           {
             role: "system",
@@ -178,7 +178,7 @@ export class AIContentOptimizer {
       `;
 
       const response = await openai.chat.completions.create({
-        model: "grok-2-1212",
+        model: "grok-beta",
         messages: [
           {
             role: "system",
@@ -236,7 +236,7 @@ export class AIContentOptimizer {
       `;
 
       const response = await openai.chat.completions.create({
-        model: "grok-2-1212",
+        model: "grok-beta",
         messages: [
           {
             role: "system",

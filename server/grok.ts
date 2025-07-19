@@ -30,7 +30,7 @@ const THEAGENCYIQ_KNOWLEDGE_BASE = {
     },
     
     contentGeneration: {
-      aiEngine: "Grok X.AI (grok-2-1212) integration for strategic content creation",
+      aiEngine: "Grok X.AI (grok-beta) integration for strategic content creation",
       methodology: "Waterfall strategyzer with Value Proposition Canvas integration",
       contentTypes: ["Authority-building posts", "Problem-solution templates", "Social proof case studies", "Urgency/scarcity promotions", "Community engagement content"],
       characterLimits: {
@@ -338,7 +338,7 @@ Return ONLY the post content within ${wordRange}, no formatting.`;
 
     try {
       const response = await openai.chat.completions.create({
-        model: "grok-2-1212",
+        model: "grok-beta",
         messages: [
           {
             role: "system", 
@@ -683,7 +683,7 @@ RESPONSE FORMAT:
 Respond as the definitive expert on TheAgencyIQ with deep understanding of how every feature solves Queensland SME challenges.`;
 
     const response = await aiClient.chat.completions.create({
-      model: "grok-2-1212",
+      model: "grok-beta",
       messages: [{ role: "user", content: analysisPrompt }],
       temperature: 0.7,
       max_tokens: 500
@@ -954,7 +954,7 @@ Ready to see your specific strategy? Complete the brand purpose setup to unlock 
 
 **Platform Capabilities**:
 - **5 Platform Integration**: Facebook, Instagram, LinkedIn, X, YouTube
-- **AI Content Engine**: Grok X.AI (grok-2-1212) for strategic content
+- **AI Content Engine**: Grok X.AI (grok-beta) for strategic content
 - **Character Optimisation**: Automatic platform-specific formatting
 - **Queensland Focus**: Brisbane Ekka + local event-driven content
 

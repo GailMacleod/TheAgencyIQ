@@ -101,7 +101,7 @@ Social Media Expert:
 Focus on Queensland small business market with emphasis on immediate results and measurable ROI.`;
 
   const response = await aiClient.chat.completions.create({
-    model: "grok-2-1212",
+    model: "grok-beta",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
   });
@@ -136,7 +136,7 @@ Identify:
 Focus on Queensland small business context with emphasis on rapid business growth and market domination.`;
 
   const response = await aiClient.chat.completions.create({
-    model: "grok-2-1212",
+    model: "grok-beta",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
   });
@@ -175,7 +175,7 @@ Generate:
 Focus on immediate impact, scalable growth, and sustainable competitive advantage.`;
 
   const response = await aiClient.chat.completions.create({
-    model: "grok-2-1212",
+    model: "grok-beta",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
   });
@@ -255,7 +255,7 @@ Schedule starting June 11, 2025, 4:00 PM AEST with optimal timing for maximum en
 Return as JSON with "posts" array containing: platform, content, scheduledFor, strategicInsight, conversionFocus, dominationTactic.`;
 
   const response = await aiClient.chat.completions.create({
-    model: "grok-2-1212",
+    model: "grok-beta",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
   });

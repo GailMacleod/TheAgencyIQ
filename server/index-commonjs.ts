@@ -53,7 +53,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'", "https://connect.facebook.net", "https://www.googletagmanager.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-      connectSrc: ["'self'", "https://api.openai.com", "https://graph.facebook.com"],
+      connectSrc: ["'self'", "https://api.x.ai", "https://graph.facebook.com"],
       frameSrc: ["'self'", "https://www.facebook.com"],
       frameAncestors: ["'self'", "https://www.facebook.com"]
     }

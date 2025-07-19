@@ -14,7 +14,8 @@ import OpenAI from 'openai';
 import { createHash } from 'crypto';
 
 const aiClient = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "https://api.x.ai/v1", 
+  apiKey: process.env.XAI_API_KEY
 });
 
 interface StrategicContentParams {
@@ -174,25 +175,28 @@ export class StrategicContentGenerator {
     console.log('🔍 Phase 1: Analyzing brand purpose...');
     
     try {
-      const prompt = `Analyze this Queensland SME brand purpose for strategic content creation:
+      const prompt = `G'day mate! Let's dive deep into this Queensland SME's brand DNA and uncover some golden strategic insights, shall we? 
+
+      Here's what we're working with:
+      🏢 Brand: ${brandPurpose.brandName}
+      🎯 Purpose: ${brandPurpose.corePurpose}
+      🛠️ What they do: ${brandPurpose.productsServices}
+      👥 Who they serve: ${brandPurpose.audience}
       
-      Brand: ${brandPurpose.brandName}
-      Purpose: ${brandPurpose.corePurpose}
-      Products/Services: ${brandPurpose.productsServices}
-      Audience: ${brandPurpose.audience}
+      Now, here's the thing - most brands are just noise in the digital wilderness. But THIS one? Let's make it a beacon that cuts through the Queensland market clutter like a hot knife through butter.
       
-      Provide strategic analysis:
-      1. Core brand pillars (3-5 key themes)
-      2. Unique value drivers
-      3. Market positioning opportunities
-      4. Content themes for authority building
-      5. Competitive differentiation factors
+      I need you to channel your inner strategic genius and give me:
+      1. 🏗️ Core brand pillars (3-5 themes that'll make competitors weep)
+      2. 💎 Unique value drivers (what makes them irresistibly different?)
+      3. 📍 Market positioning gold mines (where can they dominate?)
+      4. 📚 Authority-building content themes (what makes people listen?)
+      5. ⚔️ Competitive differentiation weapons (their secret sauce)
       
-      Focus on Queensland small business market with emphasis on rapid growth and customer acquisition.`;
+      Remember: We're talking Queensland SMEs here - businesses that hustle hard but often stay invisible. Let's fix that invisibility problem with some serious strategic firepower!`;
 
       console.log('🔍 Sending request to AI client...');
       const response = await aiClient.chat.completions.create({
-        model: "gpt-4",
+        model: "grok-beta",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       });
@@ -264,22 +268,24 @@ export class StrategicContentGenerator {
     console.log('🏖️ Phase 3: Gathering Queensland market data...');
     
     try {
-      const prompt = `Generate Queensland market insights for: ${brandPurpose.brandName}
+      const prompt = `Right, let's get deep into Queensland market intelligence! 🇦🇺 Time to uncover the hidden gems that'll make ${brandPurpose.brandName} absolutely dominate their local market.
+
+      Here's what we're working with:
+      🏭 Industry: ${brandPurpose.productsServices}
+      🎯 They're targeting: ${brandPurpose.audience}
       
-      Industry: ${brandPurpose.productsServices}
-      Target Audience: ${brandPurpose.audience}
+      Now, here's what I need from you - and I need it to be laser-focused on Queensland's unique market dynamics:
       
-      Provide Queensland-specific data:
-      1. Key industries driving growth (mining, tourism, agriculture, tech)
-      2. Seasonal business trends unique to Queensland
-      3. Competitive advantages for local businesses
-      4. Major local events and networking opportunities
-      5. SEO keywords specific to Queensland market
+      1. 🏗️ Key industries driving growth (think mining powerhouses, tourism gold mines, agricultural excellence, tech innovation hubs)
+      2. 🌴 Seasonal business trends that are uniquely Queenslander (because let's face it, QLD has its own rhythm!)
+      3. ⚔️ Competitive advantages that local businesses can leverage (what makes Queensland businesses special?)
+      4. 🎪 Major local events and networking goldmines (where the magic happens)
+      5. 🔍 SEO keywords that'll make them top of search in Queensland
       
-      Focus on actionable insights for small business growth and customer acquisition.`;
+      Remember: We're not just gathering data here - we're building a strategic arsenal for small business domination. Make every insight count!`;
 
       const response = await aiClient.chat.completions.create({
-        model: "gpt-4",
+        model: "grok-beta",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       });
@@ -364,7 +370,7 @@ export class StrategicContentGenerator {
       Focus on high-intent, low-competition keywords for rapid ranking and customer acquisition.`;
 
       const response = await aiClient.chat.completions.create({
-        model: "gpt-4",
+        model: "grok-beta",
         messages: [{ role: "user", content: prompt }],
       });
 
@@ -425,7 +431,7 @@ export class StrategicContentGenerator {
       Focus on subscriber delight and Queensland small business growth acceleration.`;
 
       const response = await aiClient.chat.completions.create({
-        model: "gpt-4",
+        model: "grok-beta",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       });
@@ -600,7 +606,7 @@ export class StrategicContentGenerator {
     Write content that makes invisible Queensland SMEs feel seen and understood, then compels them to take action.`;
 
       const response = await aiClient.chat.completions.create({
-        model: "gpt-4",
+        model: "grok-beta",
         messages: [{ role: "user", content: prompt }],
       });
 
