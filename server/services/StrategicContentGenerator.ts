@@ -42,6 +42,14 @@ interface ValuePropositionCanvas {
   valuePropositions: string[];
 }
 
+interface MediaPlanEntry {
+  platform: string;
+  date: string;
+  strategicReason: string;
+  eventAlignment: string;
+  roiPotential: string;
+}
+
 interface StrategicPost {
   id: number;
   platform: string;
@@ -57,47 +65,197 @@ interface StrategicPost {
 export class StrategicContentGenerator {
   
   /**
-   * WATERFALL STRATEGYZER METHODOLOGY
-   * Sequential business model canvas-inspired content generation
+   * TWO-STAGE GROK EXPERT APPROACH
+   * Stage 1: Grok as World's Best Media Planner - Creates calendar with optimal days/platforms
+   * Stage 2: Grok as Expert Copywriter - Creates tailored content for each calendar entry
    */
   static async generateStrategicContent(params: StrategicContentParams): Promise<StrategicPost[]> {
-    console.log(`🎯 Starting strategic content generation for user ${params.userId}`);
+    console.log(`🎯 Starting two-stage strategic content generation for user ${params.userId}`);
     
     try {
-      // Phase 1: Brand Purpose Analysis
-      const brandAnalysis = await this.analyzeBrandPurpose(params.brandPurpose);
+      // STAGE 1: GROK AS MEDIA PLANNER - Create strategic calendar
+      console.log('📅 Stage 1: Grok acting as world\'s best media planner...');
+      const mediaCalendar = await this.createMediaPlanningCalendar(params);
       
-      // Phase 2: Audience Insights with Jobs-to-be-Done Framework
-      const audienceInsights = await this.generateAudienceInsights(params.brandPurpose);
+      // STAGE 2: GROK AS EXPERT COPYWRITER - Create tailored content for each calendar entry
+      console.log('✍️ Stage 2: Grok acting as expert copywriter for each calendar entry...');
+      const strategicContent = await this.createExpertCopywritingContent(mediaCalendar, params);
       
-      // Phase 3: Queensland Market Data Integration
-      const marketData = await this.getQueenslandMarketData(params.brandPurpose);
-      
-      // Phase 4: SEO Keywords for Queensland SMEs
-      const seoKeywords = await this.generateSEOKeywords(params.brandPurpose, marketData);
-      
-      // Phase 5: Value Proposition Canvas
-      const valueCanvas = await this.createValuePropositionCanvas(params.brandPurpose, audienceInsights);
-      
-      // Phase 6: High-Engagement Templates with Sales CTAs
-      const contentTemplates = await this.generateEngagementTemplates(valueCanvas, seoKeywords);
-      
-      // Phase 7: 30-Day Cycle Optimization for Reach/Conversion
-      const optimisedContent = await this.optimise30DayCycle(
-        contentTemplates,
-        params.totalPosts,
-        params.platforms,
-        marketData,
-        params.brandPurpose
-      );
-      
-      return optimisedContent;
+      return strategicContent;
     } catch (error) {
       console.log(`🔄 Strategic content generation fallback triggered for user ${params.userId} - AI unavailable`);
       
       // Complete fallback system using pre-built strategic content
       return this.generateFallbackStrategicContent(params);
     }
+  }
+
+  /**
+   * STAGE 1: GROK AS WORLD'S BEST MEDIA PLANNER
+   * Selects optimal days and platforms based on events, business relevance, and ROI potential
+   */
+  private static async createMediaPlanningCalendar(params: StrategicContentParams): Promise<MediaPlanEntry[]> {
+    const mediaPlanneryPrompt = `You are the world's best media planner with expertise in Queensland business cycles, events, and optimal posting strategies.
+
+BUSINESS CONTEXT:
+- Business Name: ${params.brandPurpose?.businessName || 'Queensland SME'}
+- Industry: ${params.brandPurpose?.industry || 'Professional Services'}
+- Target Audience: ${params.brandPurpose?.targetAudience || 'Queensland small business owners'}
+- Core Purpose: ${params.brandPurpose?.corePurpose || 'Help businesses grow'}
+
+PLATFORMS AVAILABLE: ${params.platforms.join(', ')}
+TOTAL POSTS NEEDED: ${params.totalPosts}
+
+TASK: Create a strategic media calendar selecting the optimal platform and date for maximum ROI. Consider:
+
+1. **Queensland Events & Seasons**:
+   - Brisbane Ekka (July-August)
+   - School holidays
+   - Business quarterly cycles
+   - Local festivals and events
+   - Weather patterns affecting business
+
+2. **Platform-Specific Optimal Days**:
+   - Facebook: Community engagement peaks
+   - Instagram: Visual content performance
+   - LinkedIn: B2B professional timing
+   - X: Real-time conversation windows
+   - YouTube: Educational content consumption
+
+3. **Business Cycle Alignment**:
+   - Monday motivation posts
+   - Wednesday expertise sharing
+   - Friday community building
+   - Weekend lifestyle integration
+
+4. **ROI Optimization**:
+   - Days with highest engagement rates
+   - Times when target audience is most active
+   - Event-driven content opportunities
+   - Seasonal business relevance
+
+Return a JSON array of exactly ${params.totalPosts} entries with this structure:
+{
+  "platform": "facebook/instagram/linkedin/x/youtube",
+  "date": "2025-MM-DD",
+  "strategicReason": "Brief reason why this day/platform combination maximizes ROI",
+  "eventAlignment": "Specific event or business cycle this aligns with",
+  "roiPotential": "Expected ROI benefit (high/medium/optimal)"
+}
+
+Focus on strategic distribution across platforms and dates for maximum business impact.`;
+
+    const response = await aiClient.chat.completions.create({
+      model: "grok-beta",
+      messages: [
+        {
+          role: "system",
+          content: "You are the world's best media planner specializing in Queensland SME marketing strategies. You understand optimal platform timing, event alignment, and ROI maximization for small businesses."
+        },
+        {
+          role: "user",
+          content: mediaPlanneryPrompt
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+
+    const plannerResult = JSON.parse(response.choices[0].message.content);
+    return plannerResult.calendar || plannerResult.entries || [];
+  }
+
+  /**
+   * STAGE 2: GROK AS EXPERT COPYWRITER
+   * Creates tailored content for each planned calendar entry
+   */
+  private static async createExpertCopywritingContent(mediaCalendar: MediaPlanEntry[], params: StrategicContentParams): Promise<StrategicPost[]> {
+    const strategicPosts: StrategicPost[] = [];
+    
+    // Process each calendar entry with expert copywriting
+    for (let i = 0; i < mediaCalendar.length; i++) {
+      const entry = mediaCalendar[i];
+      
+      const copywriterPrompt = `You are an expert copywriter creating high-converting content for Queensland SMEs. 
+
+CALENDAR ENTRY FROM MEDIA PLANNER:
+- Platform: ${entry.platform}
+- Date: ${entry.date}
+- Strategic Reason: ${entry.strategicReason}
+- Event Alignment: ${entry.eventAlignment}
+- ROI Potential: ${entry.roiPotential}
+
+BUSINESS CONTEXT:
+- Business Name: ${params.brandPurpose?.businessName || 'Queensland SME'}
+- Industry: ${params.brandPurpose?.industry || 'Professional Services'}
+- Target Audience: ${params.brandPurpose?.targetAudience || 'Queensland small business owners'}
+- Core Purpose: ${params.brandPurpose?.corePurpose || 'Help businesses grow'}
+
+PLATFORM REQUIREMENTS:
+${this.getPlatformContentGuidelines(entry.platform)}
+
+CONTENT CREATION TASK:
+Create compelling, conversion-focused content that:
+1. Aligns with the strategic reason and event from the media planner
+2. Follows platform-specific best practices
+3. Includes Queensland-relevant context
+4. Drives engagement and business results
+5. Uses authentic Australian spelling and local references
+
+The content should feel natural and valuable while subtly promoting the business benefits.
+
+Return JSON with:
+{
+  "content": "Platform-optimized post content",
+  "strategicTheme": "Main strategic focus",
+  "conversionFocus": "Primary conversion goal"
+}`;
+
+      const copyResponse = await aiClient.chat.completions.create({
+        model: "grok-beta",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert copywriter specializing in Queensland SME content that converts. You understand platform nuances, local business context, and engagement optimization."
+          },
+          {
+            role: "user",
+            content: copywriterPrompt
+          }
+        ],
+        response_format: { type: "json_object" }
+      });
+
+      const copyResult = JSON.parse(copyResponse.choices[0].message.content);
+      
+      strategicPosts.push({
+        id: i + 1,
+        platform: entry.platform,
+        content: copyResult.content || `Strategic content for ${entry.platform} on ${entry.date}`,
+        scheduledFor: entry.date,
+        strategicTheme: copyResult.strategicTheme || entry.strategicReason,
+        businessCanvasPhase: entry.eventAlignment,
+        engagementOptimization: entry.roiPotential,
+        conversionFocus: copyResult.conversionFocus || 'Awareness building',
+        audienceSegment: 'Queensland SME owners'
+      });
+    }
+    
+    return strategicPosts;
+  }
+
+  /**
+   * Platform-specific content guidelines for expert copywriter
+   */
+  private static getPlatformContentGuidelines(platform: string): string {
+    const guidelines = {
+      facebook: "Facebook: 400-2000 characters, community-focused, encourage comments and shares, use engaging questions",
+      instagram: "Instagram: 400-600 characters, visual storytelling, use relevant hashtags, include call-to-action",
+      linkedin: "LinkedIn: 1000-3000 characters, professional tone, industry insights, thought leadership approach",
+      x: "X: 200-280 characters, conversational, trending topics, use relevant hashtags, encourage retweets",
+      youtube: "YouTube: 600-800 characters, educational focus, preview video content, encourage subscriptions"
+    };
+    
+    return guidelines[platform] || "General: Engaging, authentic, conversion-focused content";
   }
 
   /**

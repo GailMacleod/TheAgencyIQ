@@ -8,6 +8,9 @@ interface ScheduledPost {
   content: string;
   scheduledFor: string;
   status: string;
+  strategicTheme?: string;
+  businessCanvasPhase?: string;
+  engagementOptimization?: string;
 }
 
 interface CalendarCardProps {
@@ -142,14 +145,42 @@ export default function CalendarCard({ date, posts, events = [] }: CalendarCardP
                           ${post.status === 'failed' ? 'bg-red-50 border-red-200' : ''}
                         `}
                       >
-                        <div className="flex items-center space-x-1 mb-2">
-                          {IconComponent && (
-                            <IconComponent className={`w-3 h-3 ${colorClass}`} />
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-1">
+                            {IconComponent && (
+                              <IconComponent className={`w-3 h-3 ${colorClass}`} />
+                            )}
+                            <span className="capitalize text-gray-700 font-medium">
+                              {post.platform}
+                            </span>
+                          </div>
+                          {/* Strategic Media Planning Info */}
+                          {post.strategicTheme && (
+                            <div className="text-xs text-purple-600 font-medium bg-purple-50 px-2 py-1 rounded">
+                              Strategic
+                            </div>
                           )}
-                          <span className="capitalize text-gray-700 font-medium">
-                            {post.platform}
-                          </span>
                         </div>
+                        
+                        {/* Strategic Reason Display */}
+                        {post.strategicTheme && (
+                          <div className="mb-2 p-2 bg-gray-50 rounded-md">
+                            <div className="text-xs font-medium text-gray-700 mb-1">Media Planning Strategy:</div>
+                            <div className="text-xs text-gray-600">
+                              <strong>Reason:</strong> {post.strategicTheme}
+                            </div>
+                            {post.businessCanvasPhase && (
+                              <div className="text-xs text-gray-600">
+                                <strong>Event:</strong> {post.businessCanvasPhase}
+                              </div>
+                            )}
+                            {post.engagementOptimization && (
+                              <div className="text-xs text-gray-600">
+                                <strong>ROI:</strong> {post.engagementOptimization}
+                              </div>
+                            )}
+                          </div>
+                        )}
                         <div className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
                           {post.content}
                         </div>

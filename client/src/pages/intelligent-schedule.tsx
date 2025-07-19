@@ -31,6 +31,9 @@ interface Post {
   aiRecommendation?: string;
   aiScore?: number;
   localEvent?: string;
+  strategicTheme?: string;
+  businessCanvasPhase?: string;
+  engagementOptimization?: string;
   analytics?: {
     reach: number;
     engagement: number;
