@@ -104,9 +104,9 @@ export default function Splash() {
       </nav>
       {/* Hero Section */}
       <section className="hero-gradient py-6 sm:py-12">
-        <div className="container-atomiq">
+        <div className="container-atomiq px-4">
           <div className="flex flex-col items-center justify-center text-center space-y-4 sm:space-y-8">
-            <div className="space-y-3 sm:space-y-6 animate-fade-in-up max-w-4xl">
+            <div className="space-y-3 sm:space-y-6 animate-fade-in-up max-w-4xl w-full">
               <div className="space-y-2 sm:space-y-4">
                 <div className="flex flex-col items-center space-y-2 sm:space-y-4">
                   <img 
@@ -119,10 +119,10 @@ export default function Splash() {
                     BETA
                   </div>
                 </div>
-                <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-[#3250fa]">
+                <h1 className="text-xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-[#3250fa] px-2">
                   Set & forget
                 </h1>
-                <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-[#3250fa] to-[#00f0ff] bg-clip-text text-transparent leading-tight">
+                <h2 className="text-lg sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-[#3250fa] to-[#00f0ff] bg-clip-text text-transparent leading-tight px-2">
                   Social media for small businesses
                 </h2>
                 <p className="text-sm sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto px-4 sm:px-0">Complete waterfall workflow to drive small businesses' online social presence.</p>

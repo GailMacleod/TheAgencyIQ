@@ -167,6 +167,23 @@ html, body {
   .wizard-header-mobile {
     padding: 0.75rem;
   }
+  
+  /* Force smaller text sizes on mobile for splash page */
+  h1 {
+    font-size: 1.25rem !important; /* Force text-xl */
+    line-height: 1.2 !important;
+  }
+  
+  h2 {
+    font-size: 1.125rem !important; /* Force text-lg */
+    line-height: 1.2 !important;
+  }
+  
+  /* Ensure proper mobile spacing */
+  .hero-gradient {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
 }
 
 @layer base {
