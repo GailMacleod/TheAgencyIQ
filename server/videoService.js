@@ -518,23 +518,24 @@ class VideoService {
           videoPrompt = this.artDirectorInterpretation(strategicIntent, editedText, platform);
           postCopy = editedText;
         }
-      } else if (prompt && typeof prompt === 'object' && prompt.content) {
+      } else if (prompt && typeof prompt === 'object' && (prompt.content || prompt.prompt)) {
         // AI-generated strategic prompt - use Grok copywriter enhancement
+        const promptText = prompt.prompt || prompt.content;
         console.log(`✍️ Grok Copywriter: Interpreting AI strategic prompt`);
         try {
-          const grokResult = await this.grokCopywriterInterpretation(strategicIntent, prompt.content, platform);
+          const grokResult = await this.grokCopywriterInterpretation(strategicIntent, promptText, platform);
           if (grokResult && grokResult.videoPrompt) {
             videoPrompt = grokResult.videoPrompt;
-            postCopy = grokResult.postCopy || prompt.content;
+            postCopy = grokResult.postCopy || promptText;
             isGrokEnhanced = true;
           } else {
-            videoPrompt = this.artDirectorInterpretation(strategicIntent, prompt.content, platform);
-            postCopy = prompt.content;
+            videoPrompt = this.artDirectorInterpretation(strategicIntent, promptText, platform);
+            postCopy = promptText;
           }
         } catch (error) {
           console.log('🔄 Grok fallback - using Art Director');
-          videoPrompt = this.artDirectorInterpretation(strategicIntent, prompt.content, platform);
-          postCopy = prompt.content;
+          videoPrompt = this.artDirectorInterpretation(strategicIntent, promptText, platform);
+          postCopy = promptText;
         }
       } else if (typeof prompt === 'string') {
         // Basic prompt - add Grok copywriter enhancement

@@ -266,7 +266,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: selectedPrompt.content,
+          prompt: selectedPrompt.prompt,
           editedText,
           platform: post.platform,
           userId,
