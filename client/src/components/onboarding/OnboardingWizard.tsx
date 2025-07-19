@@ -31,7 +31,7 @@ export default function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isVisible, setIsVisible] = useState(true);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true); // Start minimized
   const [skippedSteps, setSkippedSteps] = useState<number[]>([]);
   const [isSkipped, setIsSkipped] = useState(false);
   const [userStatus, setUserStatus] = useState<UserStatus>({
@@ -51,6 +51,7 @@ export default function OnboardingWizard() {
       completedSteps,
       skippedSteps,
       isSkipped,
+      isMinimized,
       timestamp: Date.now()
     };
     localStorage.setItem('onboarding-progress', JSON.stringify(progress));
@@ -67,6 +68,7 @@ export default function OnboardingWizard() {
         setCompletedSteps(progress.completedSteps);
         setSkippedSteps(progress.skippedSteps || []);
         setIsSkipped(progress.isSkipped || false);
+        setIsMinimized(progress.isMinimized !== undefined ? progress.isMinimized : true);
         return true;
       }
     }
@@ -610,6 +612,7 @@ export default function OnboardingWizard() {
   // Handle minimization
   const handleMinimize = () => {
     setIsMinimized(!isMinimized);
+    saveProgress();
   };
 
   // Handle skip functionality
@@ -645,34 +648,41 @@ export default function OnboardingWizard() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-2 right-2 sm:bottom-4 sm:right-4 z-50 w-[calc(100vw-1rem)] sm:w-80 max-w-[calc(100vw-1rem)]">
+    <div className="fixed bottom-2 right-2 sm:bottom-4 sm:right-4 z-50 w-[calc(100vw-1rem)] sm:w-96 max-w-[calc(100vw-1rem)] wizard-mobile-optimized">
       <Card className="bg-white border-gray-200 shadow-lg">
         <CardHeader 
-          className={`pb-2 sm:pb-3 ${isMinimized ? 'cursor-pointer hover:bg-gray-50' : ''}`}
-          onClick={isMinimized ? handleMinimize : undefined}
+          className="pb-2 sm:pb-3 wizard-header-mobile"
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
-              <div className="flex items-center min-w-0">
-                {isDemoMode && (
+            <div 
+              className={`flex items-center space-x-1 sm:space-x-2 min-w-0 flex-1 ${isMinimized ? 'cursor-pointer hover:bg-gray-50 rounded-md p-1 -m-1' : ''}`}
+              onClick={isMinimized ? handleMinimize : undefined}
+            >
+              <div className="flex items-center min-w-0 flex-1">
+                {isDemoMode && !isMinimized && (
                   <Badge variant="secondary" className="mr-1 sm:mr-2 text-xs shrink-0">
                     Learn more
                   </Badge>
                 )}
                 <div className="w-2 h-2 bg-blue-500 rounded-full mr-1 sm:mr-2 shrink-0"></div>
-                <CardTitle className="text-sm sm:text-lg font-semibold text-muted-foreground truncate">
-                  {currentWizardStep?.title}
+                <CardTitle className="text-xs sm:text-sm lg:text-base font-semibold text-muted-foreground truncate">
+                  {isMinimized ? "TheAgencyIQ Guide" : currentWizardStep?.title}
                 </CardTitle>
+                {isMinimized && (
+                  <div className="ml-2 text-xs text-gray-400 hidden sm:inline">
+                    Step {currentStep + 1}/{wizardSteps.length}
+                  </div>
+                )}
               </div>
             </div>
             <Button
               onClick={handleMinimize}
               variant="ghost"
               size="sm"
-              className="text-gray-500 hover:text-gray-700 shrink-0"
-              title={isMinimized ? "Expand wizard" : "Minimize wizard"}
+              className="text-gray-500 hover:text-gray-700 shrink-0 ml-2 p-1"
+              title={isMinimized ? "Expand guide" : "Minimize guide"}
             >
-              {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+              {isMinimized ? <Maximize2 className="w-3 h-3 sm:w-4 sm:h-4" /> : <Minimize2 className="w-3 h-3 sm:w-4 sm:h-4" />}
             </Button>
           </div>
           {!isMinimized && (
@@ -701,24 +711,47 @@ export default function OnboardingWizard() {
         {!isMinimized && (
           <CardContent className="pt-0 px-3 sm:px-6">
             <div className="space-y-3 sm:space-y-4">
-              <div className="text-xs sm:text-sm">
+              <div className="text-xs sm:text-sm leading-relaxed">
                 {currentWizardStep?.content}
               </div>
               
-              <div className="flex items-center justify-between pt-3 sm:pt-4">
+              {/* Tips section for better mobile UX */}
+              {currentWizardStep?.tips && currentWizardStep.tips.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="space-y-1">
+                    {currentWizardStep.tips.map((tip, index) => (
+                      <div key={index} className="flex items-start space-x-2">
+                        <div className="w-1 h-1 bg-blue-500 rounded-full mt-2 shrink-0"></div>
+                        <p className="text-xs sm:text-sm text-blue-700">{tip}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between pt-3 sm:pt-4 gap-3">
                 <Button
                   onClick={handlePrevious}
                   disabled={currentStep === 0}
                   variant="outline"
                   size="sm"
-                  className="flex items-center space-x-1 text-xs sm:text-sm px-2 sm:px-3"
+                  className="flex items-center space-x-1 text-xs sm:text-sm px-3 sm:px-4 py-2 min-h-[36px] touch-manipulation"
                 >
-                  <ArrowLeft className="w-3 h-3" />
+                  <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Previous</span>
                   <span className="sm:hidden">Prev</span>
                 </Button>
                 
                 <div className="flex space-x-2">
+                  <Button
+                    onClick={handleSkip}
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 px-2 sm:px-3 py-2 min-h-[36px] touch-manipulation"
+                  >
+                    Skip
+                  </Button>
+                  
                   {currentStep === wizardSteps.length - 1 ? (
                     <Button
                       onClick={handleActionClick}
@@ -726,7 +759,7 @@ export default function OnboardingWizard() {
                         isDemoMode 
                           ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700' 
                           : 'bg-blue-500 hover:bg-blue-600'
-                      } text-white text-xs sm:text-sm px-2 sm:px-3`}
+                      } text-white text-xs sm:text-sm px-3 sm:px-4 py-2 min-h-[36px] touch-manipulation`}
                       size="sm"
                     >
                       {isDemoMode ? (
@@ -741,10 +774,11 @@ export default function OnboardingWizard() {
                   ) : (
                     <Button
                       onClick={handleNext}
-                      className="bg-blue-500 hover:bg-blue-600 text-white text-xs sm:text-sm px-2 sm:px-3"
+                      className="bg-blue-500 hover:bg-blue-600 text-white text-xs sm:text-sm px-3 sm:px-4 py-2 min-h-[36px] touch-manipulation flex items-center space-x-1"
                       size="sm"
                     >
-                      Next
+                      <span>Next</span>
+                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                   )}
                 </div>
