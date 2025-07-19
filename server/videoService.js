@@ -739,7 +739,7 @@ class VideoService {
       const renderTime = Math.floor((Date.now() - startTime) / 1000);
       
       // Generate authentic Art Director video
-      const generatedVideo = await this.generateArtDirectorVideo(selectedTheme, strategicIntent, creativeDirection, platform);
+      const generatedVideo = await generateArtDirectorVideo(selectedTheme, strategicIntent, creativeDirection, platform);
       
       console.log(`🎬 ✅ Art Director Production Complete: Custom ${selectedTheme} video in ${renderTime}s`);
       
@@ -780,7 +780,7 @@ class VideoService {
       
       // Emergency fallback with authentic Art Director generation
       const emergencyTheme = 'professional corporate environments';
-      const emergencyVideo = await this.generateArtDirectorVideo(emergencyTheme, 'Professional business growth and automation', 'Emergency business transformation strategy', platform);
+      const emergencyVideo = await generateArtDirectorVideo(emergencyTheme, 'Professional business growth and automation', 'Emergency business transformation strategy', platform);
       
       return {
         success: true,
