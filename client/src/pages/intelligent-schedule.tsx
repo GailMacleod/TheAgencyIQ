@@ -353,7 +353,7 @@ function IntelligentSchedule() {
     const aestDate = new Date(date.toLocaleString("en-US", { timeZone: "Australia/Brisbane" }));
     const dateStr = aestDate.toISOString().split('T')[0];
     
-    return postsArray.filter(post => {
+    const filteredPosts = postsArray.filter(post => {
       if (!post.scheduledFor) return false;
       // Convert post scheduled date to AEST
       const postDate = new Date(post.scheduledFor);
@@ -361,6 +361,18 @@ function IntelligentSchedule() {
       const postDateStr = aestPostDate.toISOString().split('T')[0];
       return postDateStr === dateStr;
     });
+    
+    // Debug log for strategic data verification
+    if (filteredPosts.length > 0) {
+      console.log(`📅 Posts for ${dateStr}:`, filteredPosts.map(p => ({
+        id: p.id,
+        platform: p.platform,
+        strategicTheme: p.strategicTheme,
+        businessCanvasPhase: p.businessCanvasPhase
+      })));
+    }
+    
+    return filteredPosts;
   };
 
   // Get Queensland events for a specific date

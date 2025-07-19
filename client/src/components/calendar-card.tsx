@@ -156,27 +156,27 @@ export default function CalendarCard({ date, posts, events = [] }: CalendarCardP
                           </div>
                           {/* Strategic Media Planning Info */}
                           {post.strategicTheme && (
-                            <div className="text-xs text-purple-600 font-medium bg-purple-50 px-2 py-1 rounded">
-                              Strategic
+                            <div className="text-xs text-purple-700 font-bold bg-purple-100 px-2 py-1 rounded-full border border-purple-300">
+                              ✨ Strategic
                             </div>
                           )}
                         </div>
                         
                         {/* Strategic Reason Display */}
                         {post.strategicTheme && (
-                          <div className="mb-2 p-2 bg-gray-50 rounded-md">
-                            <div className="text-xs font-medium text-gray-700 mb-1">Media Planning Strategy:</div>
-                            <div className="text-xs text-gray-600">
-                              <strong>Reason:</strong> {post.strategicTheme}
+                          <div className="mb-2 p-2 bg-purple-50 rounded-md border-l-4 border-purple-400">
+                            <div className="text-xs font-medium text-purple-700 mb-1">Media Planning Strategy:</div>
+                            <div className="text-xs text-purple-600">
+                              <strong>Strategic Theme:</strong> {post.strategicTheme.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </div>
                             {post.businessCanvasPhase && (
-                              <div className="text-xs text-gray-600">
-                                <strong>Event:</strong> {post.businessCanvasPhase}
+                              <div className="text-xs text-purple-600">
+                                <strong>Business Phase:</strong> {post.businessCanvasPhase}
                               </div>
                             )}
                             {post.engagementOptimization && (
-                              <div className="text-xs text-gray-600">
-                                <strong>ROI:</strong> {post.engagementOptimization}
+                              <div className="text-xs text-purple-600">
+                                <strong>ROI Potential:</strong> {post.engagementOptimization}
                               </div>
                             )}
                           </div>
