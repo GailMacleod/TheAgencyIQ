@@ -838,11 +838,11 @@ PAIN TO TRIUMPH ARC: ${selectedArc.transformationJourney}
 VISUAL DYNAMICS: ${visualTheme} with quick 1-2s cuts, sweeping cams capturing expressions and reveals. Layer dramatic yet warm lighting, bold colors, upbeat tracks. Theme evolves dynamically - always vibrant, no static frames.
 
 NARRATIVE FLOW ENGINE:
-- RAW STRUGGLE: Furrowed brows, chaos swirling, overwhelming pressure
-- DISCOVERY SPARK: Eyes widen, spark ignites, "aha" moment with witty reveal
-- ACTION ORCHESTRATION: Hands orchestrate change, systems hum, transformation building
-- SUCCESS BLOOMS: Crowd cheers, results visible, triumph achieved
-- FUTURE BRIGHT: Hero beams, confident stride, new reality established
+RAW STRUGGLE: Furrowed brows, chaos swirling, overwhelming pressure
+DISCOVERY SPARK: Eyes widen, spark ignites, "aha" moment with witty reveal
+ACTION ORCHESTRATION: Hands orchestrate change, systems hum, transformation building
+SUCCESS BLOOMS: Crowd cheers, results visible, triumph achieved
+FUTURE BRIGHT: Hero beams, confident stride, new reality established
 
 WITTY "AHA" MOMENTS: ${selectedArc.humorElements}
 
