@@ -330,7 +330,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
         
         toast({
           title: "Art Director Video Ready!",
-          description: `${data.animalType} video generated in ${renderingTime}s (${data.size})`
+          description: `JTBD hero transformation video generated in ${renderingTime}s (${data.size})`
         });
       } else {
         setError('Video rendering failed');
@@ -716,7 +716,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                         {currentPhase && (
                           <p className="text-sm text-blue-600 font-medium">{currentPhase}</p>
                         )}
-                        <p className="text-xs text-gray-500 mt-1">Creating epic animal business video</p>
+                        <p className="text-xs text-gray-500 mt-1">Creating epic Queensland business transformation video</p>
                       </div>
                       
                       <div className="space-y-2">
@@ -787,7 +787,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                                 🎯 Brand Purpose Driven
                               </Badge>
                               <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">
-                                🐾 {videoData.animalType}
+                                🎯 JTBD Hero Arc
                               </Badge>
                             </div>
                           )}
@@ -914,7 +914,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
               </Button>
             </div>
             <div className="mt-2 text-xs text-green-600">
-              Video and text combined - {post.videoData.animalType || 'Art Director'} video with your copywritten content
+              Video and text combined - JTBD hero transformation video with your copywritten content
             </div>
           </div>
         )}
