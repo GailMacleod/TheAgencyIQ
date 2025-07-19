@@ -30,7 +30,7 @@ class VideoService {
       if (!this.userPromptHistory.has(userId)) {
         this.userPromptHistory.set(userId, {
           usedScenes: new Set(),
-          usedAnimals: new Set(),
+          usedJTBDArcs: new Set(),
           lastGenerated: 0
         });
       }
@@ -97,7 +97,7 @@ class VideoService {
         variety: true,
         userHistory: {
           totalGenerated: userHistory.usedScenes.size,
-          uniqueAnimals: userHistory.usedAnimals.size
+          uniqueJTBDArcs: userHistory.usedJTBDArcs.size
         }
       };
     } catch (error) {
@@ -311,7 +311,7 @@ class VideoService {
       if (!this.userPromptHistory.has(userId)) {
         this.userPromptHistory.set(userId, {
           usedScenes: new Set(),
-          usedAnimals: new Set(),
+          usedJTBDArcs: new Set(),
           lastGenerated: 0
         });
       }
@@ -327,7 +327,7 @@ class VideoService {
         variety: true,
         userHistory: {
           totalGenerated: userHistory.usedScenes.size,
-          uniqueAnimals: userHistory.usedAnimals.size
+          uniqueJTBDArcs: userHistory.usedJTBDArcs.size
         }
       };
     } catch (error) {
@@ -808,100 +808,144 @@ class VideoService {
     }
   }
 
-  // HERO CHARACTER BUSINESS PROMPT GENERATOR - Creates viral-worthy business content with specific characters and focal points
+  // DYNAMIC VIDEO PROMPT GENERATION SYSTEM - JTBD-Based Hero Character Story Arcs
   static createHeroCharacterBusinessPrompt(strategicIntent, creativeDirection, platform, visualTheme) {
-    // Business hero character archetypes with specific actions and visual focal points
-    const businessHeroTemplates = [
-      {
-        character: "Queensland small business owner",
-        action: "transforming from invisible to industry leader",
-        focal_point: "dramatic before/after split screen showing empty vs packed office",
-        hook: "watches competitor's success, then implements strategic visibility plan"
-      },
-      {
-        character: "stressed entrepreneur working late nights",
-        action: "discovering automation that saves 20 hours per week",
-        focal_point: "hands moving from manual tasks to pressing single 'automate' button",
-        hook: "coffee cup empties as workload lightens, stress melts away"
-      },
-      {
-        character: "professional consultant",
-        action: "turning expertise into magnetic content that attracts ideal clients",
-        focal_point: "phone lighting up with notification after notification of new inquiries",
-        hook: "transforms from unknown expert to Queensland's go-to authority"
-      },
-      {
-        character: "local service provider",
-        action: "converting one-time customers into raving fans who refer constantly",
-        focal_point: "single customer multiplying into network of happy referrals",
-        hook: "discovers the psychology of turning customers into advocates"
-      },
-      {
-        character: "ambitious startup founder",
-        action: "scaling from bedroom operation to Queensland market leader",
-        focal_point: "laptop on kitchen table transforming into modern office headquarters",
-        hook: "cracks the code of sustainable growth without burning out"
-      },
-      {
-        character: "traditional business owner",
-        action: "embracing digital transformation that 3x's their revenue",
-        focal_point: "old-school ledger morphing into real-time digital dashboard",
-        hook: "reluctantly tries new approach, then becomes unstoppable advocate"
-      }
-    ];
-
-    // Select template based on strategic intent keywords
-    let selectedTemplate = businessHeroTemplates[0]; // Default
-    const intentLower = strategicIntent.toLowerCase();
+    // JTBD (Job To Be Done) Unlock Key - Extract the core job from brand purpose
+    const jtbdAnalysis = this.extractJTBDFromBrandPurpose(strategicIntent);
     
-    if (intentLower.includes('automation') || intentLower.includes('efficiency')) {
-      selectedTemplate = businessHeroTemplates[1]; // automation hero
-    } else if (intentLower.includes('expert') || intentLower.includes('content')) {
-      selectedTemplate = businessHeroTemplates[2]; // consultant hero
-    } else if (intentLower.includes('customer') || intentLower.includes('service')) {
-      selectedTemplate = businessHeroTemplates[3]; // service provider hero
-    } else if (intentLower.includes('growth') || intentLower.includes('scale')) {
-      selectedTemplate = businessHeroTemplates[4]; // startup founder hero
-    } else if (intentLower.includes('digital') || intentLower.includes('transform')) {
-      selectedTemplate = businessHeroTemplates[5]; // traditional business hero
-    }
-
-    // Platform-specific aspect ratios and styling
+    // Dynamic Hero Character Story Arcs - Craft hero journeys on-the-fly from brand purpose and JTBD
+    const heroJourneyTemplates = this.generateDynamicHeroArcs(jtbdAnalysis, strategicIntent);
+    
+    // Platform Adaptations - Tailor visuals fluidly for platform-native engagement
     const platformSpecs = {
-      'Instagram': '9:16 vertical mobile-first TikTok-style',
-      'YouTube': '16:9 horizontal cinematic YouTube-style', 
-      'Facebook': '1:1 square social Facebook-style',
-      'LinkedIn': '1:1 professional square LinkedIn-style',
-      'X': '16:9 horizontal dynamic Twitter-style'
+      'Instagram': '9:16 vertical TikTok-energy bursts',
+      'YouTube': '16:9 horizontal cinematic flows', 
+      'Facebook': '1:1 square social vibes',
+      'LinkedIn': '1:1 professional polish',
+      'X': '16:9 snappy horizontal punches'
     };
     
     const platformSpec = platformSpecs[platform] || platformSpecs.Instagram;
+    const selectedArc = heroJourneyTemplates[0]; // Primary arc selection
 
-    // Create viral-worthy hero character prompt
-    return `Create ${platformSpec} video: ${selectedTemplate.character} ${selectedTemplate.action}. 
+    // Narrative Flow Engine - Build stories with emotional rhythm
+    return `Create ${platformSpec} video: ${selectedArc.heroEvolution}
 
-FOCAL POINT: ${selectedTemplate.focal_point}
+JTBD UNLOCK KEY: ${jtbdAnalysis.coreJob}
 
-STORY ARC: ${selectedTemplate.hook}
+PAIN TO TRIUMPH ARC: ${selectedArc.transformationJourney}
 
-VISUAL STYLE: ${visualTheme} with dramatic lighting, quick cuts every 1-2 seconds, dynamic camera movements (close-ups on expressions, wide shots for transformation reveals, smooth transitions between before/after states).
+VISUAL DYNAMICS: ${visualTheme} with quick 1-2s cuts, sweeping cams capturing expressions and reveals. Layer dramatic yet warm lighting, bold colors, upbeat tracks. Theme evolves dynamically - always vibrant, no static frames.
 
-EMOTIONAL BEATS:
-- Opening: Problem/struggle (concerned expression, overwhelming task)
-- Middle: Discovery moment (eyes lighting up, "aha" moment, trying new approach)  
-- Climax: Transformation in action (hands moving confidently, systems working)
-- Resolution: Success achieved (satisfied smile, results visible, confidence radiating)
+NARRATIVE FLOW ENGINE:
+- RAW STRUGGLE: Furrowed brows, chaos swirling, overwhelming pressure
+- DISCOVERY SPARK: Eyes widen, spark ignites, "aha" moment with witty reveal
+- ACTION ORCHESTRATION: Hands orchestrate change, systems hum, transformation building
+- SUCCESS BLOOMS: Crowd cheers, results visible, triumph achieved
+- FUTURE BRIGHT: Hero beams, confident stride, new reality established
 
-SPECIFIC ACTIONS TO FILM:
-1. Character struggling with current situation (frustrated gestures, pile of work)
-2. Moment of discovery/decision (picking up phone, opening laptop, meeting with advisor)
-3. Implementing solution (focused work, strategic actions, using tools/systems)
-4. Transformation visible (results appearing, success metrics, positive reactions)
-5. New confident state (relaxed posture, satisfied expression, thriving business environment)
+WITTY "AHA" MOMENTS: ${selectedArc.humorElements}
 
-QUEENSLAND CONTEXT: ${creativeDirection}
+QUEENSLAND FLAIR: Sunlit offices, local events, relatable Queensland business context - ${creativeDirection}
 
-Make it feel authentic, aspirational, and business-focused. Show real transformation that Queensland business owners can relate to and aspire to achieve.`;
+JTBD IMPACT VISUALIZATION: Show "${jtbdAnalysis.emotionalOutcome}" as ${selectedArc.metaphoricalVisual}
+
+Make it scroll-stopping, aspirational, and humor-infused for Queensland SMEs chasing visibility. From invisible to invincible—watch the glow-up!`;
+  }
+
+  // Extract JTBD (Job To Be Done) from brand purpose - Our secret sauce unlock key
+  static extractJTBDFromBrandPurpose(strategicIntent) {
+    const intentLower = strategicIntent.toLowerCase();
+    
+    // JTBD Categories based on strategic intent analysis
+    if (intentLower.includes('automation') || intentLower.includes('efficiency') || intentLower.includes('time')) {
+      return {
+        coreJob: "Get peace of mind through effortless automation",
+        emotionalOutcome: "peace of mind",
+        painPoint: "overwhelmed by manual tasks",
+        desiredState: "effortless control"
+      };
+    } else if (intentLower.includes('growth') || intentLower.includes('scale') || intentLower.includes('expand')) {
+      return {
+        coreJob: "Achieve sustainable growth without burnout",
+        emotionalOutcome: "confident expansion",
+        painPoint: "stuck in plateau mode",
+        desiredState: "thriving growth engine"
+      };
+    } else if (intentLower.includes('customer') || intentLower.includes('service') || intentLower.includes('retention')) {
+      return {
+        coreJob: "Transform customers into loyal advocates",
+        emotionalOutcome: "customer loyalty",
+        painPoint: "one-time transactions only",
+        desiredState: "raving fan network"
+      };
+    } else if (intentLower.includes('expert') || intentLower.includes('authority') || intentLower.includes('content')) {
+      return {
+        coreJob: "Establish unshakeable industry authority",
+        emotionalOutcome: "recognized expertise",
+        painPoint: "invisible in crowded market",
+        desiredState: "go-to Queensland authority"
+      };
+    } else if (intentLower.includes('digital') || intentLower.includes('transform') || intentLower.includes('modern')) {
+      return {
+        coreJob: "Embrace digital transformation confidently",
+        emotionalOutcome: "digital confidence",
+        painPoint: "stuck in old methods",
+        desiredState: "future-ready operations"
+      };
+    } else {
+      return {
+        coreJob: "Transform from invisible to industry beacon",
+        emotionalOutcome: "market visibility",
+        painPoint: "lost in the noise",
+        desiredState: "beacon presence"
+      };
+    }
+  }
+
+  // Generate Dynamic Hero Arcs based on JTBD analysis
+  static generateDynamicHeroArcs(jtbdAnalysis, strategicIntent) {
+    const arcTemplates = {
+      "peace of mind": {
+        heroEvolution: "Stressed Queensland founder discovers automation spark, transforming chaotic workspace into thriving hub",
+        transformationJourney: "Late nights fade to confident strides as systems take over manual chaos",
+        humorElements: "Coffee cup empties as workload lightens—from caffeine-dependent to automation-confident",
+        metaphoricalVisual: "waves calming stormy seas, not static desks"
+      },
+      "confident expansion": {
+        heroEvolution: "Ambitious SME owner cracks sustainable growth code, bedroom operation becomes market leader",
+        transformationJourney: "Kitchen table laptop transforms into modern headquarters with strategic precision",
+        humorElements: "From 'where do I even start?' to 'watch me scale Queensland!'",
+        metaphoricalVisual: "single seed growing into mighty Queensland tree with deep roots"
+      },
+      "customer loyalty": {
+        heroEvolution: "Local service provider discovers customer psychology, single transactions become referral networks",
+        transformationJourney: "One happy customer multiplies into army of advocates through strategic relationship building",
+        humorElements: "From 'please just one review' to 'can't keep up with referrals!'",
+        metaphoricalVisual: "ripples expanding across Queensland business landscape"
+      },
+      "recognized expertise": {
+        heroEvolution: "Professional consultant transforms expertise into magnetic content attracting ideal Queensland clients",
+        transformationJourney: "Unknown expert becomes Queensland's go-to authority through strategic visibility",
+        humorElements: "Phone notifications shift from 'crickets' to 'can't silence the inquiries'",
+        metaphoricalVisual: "lighthouse beam cutting through market fog, guiding clients home"
+      },
+      "digital confidence": {
+        heroEvolution: "Traditional business owner embraces digital transformation, revenue triples through modern systems",
+        transformationJourney: "Old-school ledger morphs into real-time dashboard, reluctance becomes advocacy",
+        humorElements: "From 'kids these days with technology' to 'I'm the tech-savvy one now!'",
+        metaphoricalVisual: "bridge spanning from traditional shore to digital island paradise"
+      },
+      "market visibility": {
+        heroEvolution: "Queensland SME owner transforms from invisible player to industry beacon through strategic positioning",
+        transformationJourney: "Empty office becomes packed with opportunities as visibility strategy unfolds",
+        humorElements: "Competitor watches in amazement—'How did they get so visible so fast?'",
+        metaphoricalVisual: "spotlight illuminating stage where once stood in shadows"
+      }
+    };
+
+    const selectedTemplate = arcTemplates[jtbdAnalysis.emotionalOutcome] || arcTemplates["market visibility"];
+    return [selectedTemplate];
   }
 
   // Art Director prompt interpretation for video creation
@@ -916,7 +960,7 @@ Make it feel authentic, aspirational, and business-focused. Show real transforma
     
     const spec = platformSpecs[platform.toLowerCase()] || platformSpecs.instagram;
     
-    return `Generate 10-second ${spec} professional business video featuring Queensland SME transformation journey. Strategic focus: ${strategicIntent}. Creative direction: ${creativeDirection}. Show modern business environments, dynamic professional scenes, success visualization with premium lighting and quick cuts. Zero animals or child themes - pure business focus.`;
+    return `Generate 10-second ${spec} professional business video featuring Queensland SME transformation journey. Strategic focus: ${strategicIntent}. Creative direction: ${creativeDirection}. Show modern business environments, dynamic professional scenes, success visualization with premium lighting and quick cuts. Pure business focus with human transformation stories.`;
   }
 
   // ENHANCED: Grok Copywriter for witty, engaging video content
