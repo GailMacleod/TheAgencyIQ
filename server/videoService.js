@@ -615,8 +615,9 @@ class VideoService {
         const spec = videoSpecs[platform] || videoSpecs.YouTube;
         const videoId = `artdirected_${visualTheme.replace(/\s+/g, '_')}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        // Professional Art Director prompt for Seedance API
-        const prompt = `Generate 10-second cinematic movie trailer for adult business audience, interpreting Strategyzer brand purpose: ${strategicIntent}. Clever art director twist: Visualize strategic intent as hero's journey through "${creativeDirection}". ${spec.ratio} aspect ratio, present tense, quick cuts, low-angle shots, vivid colors, dramatic lighting, high visual fidelity; no animals or child themes. Queensland SME professional focus.`;
+        // HERO CHARACTER BUSINESS PROMPT - Inspired by viral TikTok/Instagram success patterns
+        const heroCharacterPrompt = VideoService.createHeroCharacterBusinessPrompt(strategicIntent, creativeDirection, platform, visualTheme);
+        const prompt = heroCharacterPrompt;
         
         console.log(`🎬 Art Director generating custom ${visualTheme} video: ${prompt.substring(0, 100)}...`);
         
@@ -805,6 +806,102 @@ class VideoService {
         wittyStyle: false
       };
     }
+  }
+
+  // HERO CHARACTER BUSINESS PROMPT GENERATOR - Creates viral-worthy business content with specific characters and focal points
+  static createHeroCharacterBusinessPrompt(strategicIntent, creativeDirection, platform, visualTheme) {
+    // Business hero character archetypes with specific actions and visual focal points
+    const businessHeroTemplates = [
+      {
+        character: "Queensland small business owner",
+        action: "transforming from invisible to industry leader",
+        focal_point: "dramatic before/after split screen showing empty vs packed office",
+        hook: "watches competitor's success, then implements strategic visibility plan"
+      },
+      {
+        character: "stressed entrepreneur working late nights",
+        action: "discovering automation that saves 20 hours per week",
+        focal_point: "hands moving from manual tasks to pressing single 'automate' button",
+        hook: "coffee cup empties as workload lightens, stress melts away"
+      },
+      {
+        character: "professional consultant",
+        action: "turning expertise into magnetic content that attracts ideal clients",
+        focal_point: "phone lighting up with notification after notification of new inquiries",
+        hook: "transforms from unknown expert to Queensland's go-to authority"
+      },
+      {
+        character: "local service provider",
+        action: "converting one-time customers into raving fans who refer constantly",
+        focal_point: "single customer multiplying into network of happy referrals",
+        hook: "discovers the psychology of turning customers into advocates"
+      },
+      {
+        character: "ambitious startup founder",
+        action: "scaling from bedroom operation to Queensland market leader",
+        focal_point: "laptop on kitchen table transforming into modern office headquarters",
+        hook: "cracks the code of sustainable growth without burning out"
+      },
+      {
+        character: "traditional business owner",
+        action: "embracing digital transformation that 3x's their revenue",
+        focal_point: "old-school ledger morphing into real-time digital dashboard",
+        hook: "reluctantly tries new approach, then becomes unstoppable advocate"
+      }
+    ];
+
+    // Select template based on strategic intent keywords
+    let selectedTemplate = businessHeroTemplates[0]; // Default
+    const intentLower = strategicIntent.toLowerCase();
+    
+    if (intentLower.includes('automation') || intentLower.includes('efficiency')) {
+      selectedTemplate = businessHeroTemplates[1]; // automation hero
+    } else if (intentLower.includes('expert') || intentLower.includes('content')) {
+      selectedTemplate = businessHeroTemplates[2]; // consultant hero
+    } else if (intentLower.includes('customer') || intentLower.includes('service')) {
+      selectedTemplate = businessHeroTemplates[3]; // service provider hero
+    } else if (intentLower.includes('growth') || intentLower.includes('scale')) {
+      selectedTemplate = businessHeroTemplates[4]; // startup founder hero
+    } else if (intentLower.includes('digital') || intentLower.includes('transform')) {
+      selectedTemplate = businessHeroTemplates[5]; // traditional business hero
+    }
+
+    // Platform-specific aspect ratios and styling
+    const platformSpecs = {
+      'Instagram': '9:16 vertical mobile-first TikTok-style',
+      'YouTube': '16:9 horizontal cinematic YouTube-style', 
+      'Facebook': '1:1 square social Facebook-style',
+      'LinkedIn': '1:1 professional square LinkedIn-style',
+      'X': '16:9 horizontal dynamic Twitter-style'
+    };
+    
+    const platformSpec = platformSpecs[platform] || platformSpecs.Instagram;
+
+    // Create viral-worthy hero character prompt
+    return `Create ${platformSpec} video: ${selectedTemplate.character} ${selectedTemplate.action}. 
+
+FOCAL POINT: ${selectedTemplate.focal_point}
+
+STORY ARC: ${selectedTemplate.hook}
+
+VISUAL STYLE: ${visualTheme} with dramatic lighting, quick cuts every 1-2 seconds, dynamic camera movements (close-ups on expressions, wide shots for transformation reveals, smooth transitions between before/after states).
+
+EMOTIONAL BEATS:
+- Opening: Problem/struggle (concerned expression, overwhelming task)
+- Middle: Discovery moment (eyes lighting up, "aha" moment, trying new approach)  
+- Climax: Transformation in action (hands moving confidently, systems working)
+- Resolution: Success achieved (satisfied smile, results visible, confidence radiating)
+
+SPECIFIC ACTIONS TO FILM:
+1. Character struggling with current situation (frustrated gestures, pile of work)
+2. Moment of discovery/decision (picking up phone, opening laptop, meeting with advisor)
+3. Implementing solution (focused work, strategic actions, using tools/systems)
+4. Transformation visible (results appearing, success metrics, positive reactions)
+5. New confident state (relaxed posture, satisfied expression, thriving business environment)
+
+QUEENSLAND CONTEXT: ${creativeDirection}
+
+Make it feel authentic, aspirational, and business-focused. Show real transformation that Queensland business owners can relate to and aspire to achieve.`;
   }
 
   // Art Director prompt interpretation for video creation
