@@ -544,25 +544,10 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
           )}
         </div>
         <div className="mt-2 text-xs font-medium text-purple-600">
-          ⚡ AI Video Generation Available
+          AI Video Generation Available
         </div>
         
-        {/* Video Generation Guide */}
-        <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-            🤖 Video Generation Guide
-          </h4>
-          <ul className="text-sm text-gray-700 space-y-1">
-            <li>• <strong>One video per post:</strong> You can generate one video per social media post</li>
-            <li>• <strong>Three options:</strong> Choose from two AI prompts or create your own custom prompt</li>
-            <li>• <strong>10-second duration:</strong> All videos are automatically capped at 10 seconds for optimal engagement</li>
-            <li>• <strong>Platform optimized:</strong> Videos are automatically formatted for {post.platform}</li>
-            <li>• <strong>Art Director system:</strong> AI creates professional cinematic business videos with strategic messaging</li>
-          </ul>
-          <div className="mt-2 p-2 bg-purple-50 rounded text-xs text-purple-700">
-            <strong>Tip:</strong> Click "Generate Video" to see your options and create scroll-stopping content!
-          </div>
-        </div>
+
       </CardHeader>
       
       <CardContent>
@@ -594,7 +579,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
               
               <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>🎬 Art Director Video Generation for {post.platform}</DialogTitle>
+                  <DialogTitle>Art Director Video Generation for {post.platform}</DialogTitle>
                   <p className="text-sm text-gray-600">Create professional cinematic business videos</p>
                 </DialogHeader>
                 
