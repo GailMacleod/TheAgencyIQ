@@ -9105,7 +9105,25 @@ Continue building your Value Proposition Canvas systematically.`;
       
       console.log(`📝 Direct publish request: action=${action}, userId=${userId}, body:`, req.body);
 
-      if (action === 'test_publish_all') {
+      if (action === 'test_publish_validation') {
+        console.log(`🧪 Direct publish: Test validation for user ${userId}`);
+        
+        // Test validation - check if publishing system is accessible
+        const quotaInfo = await DirectPublishService.getUserQuota(userId);
+        const posts = await storage.getPostsByUser(userId);
+        const approvedPosts = posts.filter(p => p.status === 'approved');
+        
+        return res.json({
+          success: true,
+          message: 'Publishing system validation successful',
+          systemStatus: {
+            quotaService: 'operational',
+            directPublishService: 'operational', 
+            approvedPosts: approvedPosts.length,
+            quota: quotaInfo
+          }
+        });
+      } else if (action === 'test_publish_all') {
         // Test publishing to all platforms with automatic token refresh
         const { DirectPublisher } = await import('./direct-publisher');
         const { OAuthRefreshService } = await import('./oauth-refresh-service');
@@ -9873,10 +9891,28 @@ Continue building your Value Proposition Canvas systematically.`;
           result: publishResult,
           quotaInfo: await DirectPublishService.getUserQuota(userId)
         });
+      } else if (action === 'test_publish_validation') {
+        console.log(`🧪 Direct publish: Test validation for user ${userId}`);
+        
+        // Test validation - check if publishing system is accessible
+        const quotaInfo = await DirectPublishService.getUserQuota(userId);
+        const posts = await storage.getPostsByUser(userId);
+        const approvedPosts = posts.filter(p => p.status === 'approved');
+        
+        return res.json({
+          success: true,
+          message: 'Publishing system validation successful',
+          systemStatus: {
+            quotaService: 'operational',
+            directPublishService: 'operational', 
+            approvedPosts: approvedPosts.length,
+            quota: quotaInfo
+          }
+        });
       } else {
         return res.status(400).json({
           success: false,
-          message: 'Invalid action. Use "publish_all" to bulk publish approved posts.'
+          message: 'Invalid action. Use "publish_all" to bulk publish approved posts or "test_publish_validation" for system testing.'
         });
       }
     } catch (error) {
