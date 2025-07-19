@@ -21,6 +21,61 @@ class VideoService {
   // User prompt history storage (in-memory for session variety)
   static userPromptHistory = new Map();
   
+  // ENHANCED: Grok Copywriter Video Prompt Generation
+  static async generateVideoPromptsWithGrokCopywriter(postContent, platform, brandData, userId = 'default') {
+    try {
+      console.log(`✍️ Grok Copywriter enhanced video generation for ${platform}...`);
+      
+      // Get user's prompt history
+      if (!this.userPromptHistory.has(userId)) {
+        this.userPromptHistory.set(userId, {
+          usedScenes: new Set(),
+          usedAnimals: new Set(),
+          lastGenerated: 0
+        });
+      }
+      
+      const userHistory = this.userPromptHistory.get(userId);
+      
+      // Generate Grok copywriter enhanced prompts
+      const grokResult = await this.grokCopywriterInterpretation(brandData?.corePurpose || 'Professional business growth', postContent, platform);
+      
+      // Create traditional prompts as fallback/additional options
+      const traditionalPrompts = await this.createDistinctVideoStyles(postContent, platform, brandData, userHistory);
+      
+      // Combine Grok copywriting with traditional prompts
+      const enhancedPrompts = {
+        grokEnhanced: {
+          title: "Grok Copywriter Special",
+          description: "Witty, engaging video copy with professional Queensland business focus",
+          prompt: grokResult.videoPrompt || traditionalPrompts.primary,
+          postCopy: grokResult.postCopy || postContent,
+          editable: true,
+          style: "witty-engaging",
+          platform: platform
+        },
+        ...traditionalPrompts
+      };
+      
+      return {
+        success: true,
+        prompts: enhancedPrompts,
+        grokEnhanced: true,
+        wittyStyle: true,
+        variety: true,
+        userHistory: {
+          totalGenerated: userHistory.usedScenes.size,
+          uniqueAnimals: userHistory.usedAnimals.size
+        }
+      };
+    } catch (error) {
+      console.error('🔄 Grok copywriter video generation fallback:', error);
+      // Fallback to traditional method
+      return this.generateVideoPrompts(postContent, platform, brandData, userId);
+    }
+  }
+
+  // LEGACY: Original video prompt generation (kept for compatibility)
   static async generateVideoPrompts(postContent, platform, brandData, userId = 'default') {
     try {
       // Get user's prompt history
@@ -211,25 +266,75 @@ class VideoService {
         console.log(`📝 Post Content: ${creativeDirection.substring(0, 80)}...`);
       }
       
-      // STEP 2: Art Director creative interpretation
+      // STEP 2: Enhanced Grok Copywriter creative interpretation
       let videoPrompt;
+      let postCopy = '';
+      let isGrokEnhanced = false;
+      
       if (editedText && editedText.trim()) {
-        // User wants specific creative direction
-        console.log(`🎨 Art Director: User-directed creative: "${editedText}"`);
-        videoPrompt = this.artDirectorInterpretation(strategicIntent, editedText, platform);
+        // User wants specific creative direction - use Grok copywriter
+        console.log(`✍️ Grok Copywriter: User-directed creative: "${editedText}"`);
+        try {
+          const grokResult = await this.grokCopywriterInterpretation(strategicIntent, editedText, platform);
+          if (grokResult && grokResult.videoPrompt) {
+            videoPrompt = grokResult.videoPrompt;
+            postCopy = grokResult.postCopy || editedText;
+            isGrokEnhanced = true;
+          } else {
+            videoPrompt = this.artDirectorInterpretation(strategicIntent, editedText, platform);
+            postCopy = editedText;
+          }
+        } catch (error) {
+          console.log('🔄 Grok fallback - using Art Director');
+          videoPrompt = this.artDirectorInterpretation(strategicIntent, editedText, platform);
+          postCopy = editedText;
+        }
       } else if (prompt && typeof prompt === 'object' && prompt.content) {
-        // AI-generated strategic prompt - interpret creatively
-        console.log(`🎨 Art Director: Interpreting AI strategic prompt`);
-        videoPrompt = this.artDirectorInterpretation(strategicIntent, prompt.content, platform);
+        // AI-generated strategic prompt - use Grok copywriter enhancement
+        console.log(`✍️ Grok Copywriter: Interpreting AI strategic prompt`);
+        try {
+          const grokResult = await this.grokCopywriterInterpretation(strategicIntent, prompt.content, platform);
+          if (grokResult && grokResult.videoPrompt) {
+            videoPrompt = grokResult.videoPrompt;
+            postCopy = grokResult.postCopy || prompt.content;
+            isGrokEnhanced = true;
+          } else {
+            videoPrompt = this.artDirectorInterpretation(strategicIntent, prompt.content, platform);
+            postCopy = prompt.content;
+          }
+        } catch (error) {
+          console.log('🔄 Grok fallback - using Art Director');
+          videoPrompt = this.artDirectorInterpretation(strategicIntent, prompt.content, platform);
+          postCopy = prompt.content;
+        }
       } else if (typeof prompt === 'string') {
-        // Basic prompt - add strategic context
-        console.log(`🎨 Art Director: Basic prompt enhancement`);
-        videoPrompt = this.artDirectorInterpretation(strategicIntent, prompt, platform);
+        // Basic prompt - add Grok copywriter enhancement
+        console.log(`✍️ Grok Copywriter: Basic prompt enhancement`);
+        try {
+          const grokResult = await this.grokCopywriterInterpretation(strategicIntent, prompt, platform);
+          if (grokResult && grokResult.videoPrompt) {
+            videoPrompt = grokResult.videoPrompt;
+            postCopy = grokResult.postCopy || prompt;
+            isGrokEnhanced = true;
+          } else {
+            videoPrompt = this.artDirectorInterpretation(strategicIntent, prompt, platform);
+            postCopy = prompt;
+          }
+        } catch (error) {
+          console.log('🔄 Grok fallback - using Art Director');
+          videoPrompt = this.artDirectorInterpretation(strategicIntent, prompt, platform);
+          postCopy = prompt;
+        }
       } else {
-        throw new Error('No creative brief provided to art director');
+        throw new Error('No creative brief provided to Grok copywriter or art director');
       }
       
-      console.log('🎬 Art Director Final Script:', videoPrompt.substring(0, 120) + '...');
+      if (isGrokEnhanced) {
+        console.log('✍️ Grok Copywriter Enhanced Script:', videoPrompt.substring(0, 120) + '...');
+        console.log('📝 Witty Post Copy:', postCopy.substring(0, 60) + '...');
+      } else {
+        console.log('🎬 Art Director Final Script:', videoPrompt.substring(0, 120) + '...');
+      }
       
       // Platform-specific video requirements
       const platformSettings = {
@@ -432,7 +537,12 @@ class VideoService {
         strategicIntent: strategicIntent,
         visualTheme: selectedTheme,
         renderTime: renderTime,
-        message: `✅ Art Director: Custom ${selectedTheme} video generated with brand purpose through cinematic strategy!`
+        message: `✅ ${isGrokEnhanced ? 'Grok Copywriter enhanced' : 'Art Director'}: Custom ${selectedTheme} video generated with ${isGrokEnhanced ? 'witty copywriting and' : ''} brand purpose through cinematic strategy!`,
+        // Grok Copywriter enhancements
+        grokEnhanced: isGrokEnhanced,
+        postCopy: postCopy,
+        editable: true,
+        wittyStyle: isGrokEnhanced
       };
       
     } catch (error) {
@@ -457,14 +567,107 @@ class VideoService {
         platformCompliant: true,
         customGenerated: true,
         emergency: true,
-        message: '✅ Emergency Art Director video generated successfully'
+        message: '✅ Emergency Art Director video generated successfully',
+        // Emergency fallback - no Grok enhancements
+        grokEnhanced: false,
+        postCopy: 'Emergency Queensland business video content',
+        editable: true,
+        wittyStyle: false
       };
     }
   }
 
-  // NEW: Art Director creative interpretation method
-  static artDirectorInterpretation(brandPurpose, creativeDirection, platform) {
-    console.log(`🎨 Art Director thinking... Brand: "${brandPurpose?.substring(0, 50)}..." + Creative: "${creativeDirection?.substring(0, 50)}..."`);
+  // ENHANCED: Grok Copywriter for witty, engaging video content
+  static async grokCopywriterInterpretation(brandPurpose, creativeDirection, platform) {
+    console.log(`✍️ Grok Copywriter crafting witty, engaging video content... Brand: "${brandPurpose?.substring(0, 50)}..." + Creative: "${creativeDirection?.substring(0, 50)}..."`);
+    
+    try {
+      // Use Grok AI for witty, engaging copywriting
+      const grokPrompt = `Hey Grok! Time to channel your inner creative director and craft some absolutely brilliant video copywriting! 🎬
+
+Here's the brief:
+🎯 Brand Purpose: ${brandPurpose}
+📝 Creative Direction: ${creativeDirection}
+📱 Platform: ${platform}
+🎪 Queensland SME Focus: Make it authentic to Queensland business culture
+
+Your mission: Create witty, engaging postCopy that's:
+✨ Clever and memorable (but appropriate for business)
+🎭 Platform-optimized (respect character limits and style)
+🇦🇺 Queensland-authentic (local voice and values)
+⚡ Engaging and shareable
+🎬 Perfect for video content narrative
+
+Generate 3 video copywriting options:
+1. WITTY & CLEVER: Playful but professional approach
+2. ENGAGING & DIRECT: Straight-talking with personality  
+3. STRATEGIC & CHARMING: Business-focused with Queensland charm
+
+Make each option editable: true and respect platform limits:
+- Instagram: 400 chars max
+- LinkedIn: 1300 chars max  
+- X: 280 chars max
+- YouTube: 600 chars max
+- Facebook: 2000 chars max
+
+Show your witty copywriting genius!`;
+
+      const aiClient = new (await import('openai')).default({
+        apiKey: process.env.OPENAI_API_KEY || 'grok-2024',
+        baseURL: 'https://api.x.ai/v1'
+      });
+
+      const response = await aiClient.chat.completions.create({
+        model: "grok-beta",
+        messages: [{ role: "user", content: grokPrompt }],
+        response_format: { type: "json_object" },
+      });
+
+      const grokCopywriting = JSON.parse(response.choices[0].message.content || "{}");
+      
+      // Return Grok's witty copywriting with video integration
+      return this.artDirectorVideoIntegration(grokCopywriting, brandPurpose, platform);
+      
+    } catch (error) {
+      console.log('🔄 Grok copywriter fallback - AI unavailable, using witty fallback templates');
+      return this.wittyFallbackCopywriting(brandPurpose, creativeDirection, platform);
+    }
+  }
+
+  // FALLBACK: Witty copywriting templates when Grok unavailable
+  static wittyFallbackCopywriting(brandPurpose, creativeDirection, platform) {
+    // Queensland-authentic witty templates
+    const wittyTemplates = {
+      instagram: [
+        "Fair dinkum, Queensland business owners! Time to stop being the best-kept secret in your industry 🎬",
+        "G'day! Your business deserves more than crickets on social media. Let's fix that! 📱",
+        "Queensland SMEs: Ready to go from invisible to irresistible? We've got the secret sauce! ✨"
+      ],
+      linkedin: [
+        "Fellow Queensland business leaders: If your social media was a cricket match, would it be the Ashes or a rainy day washout? Time to step up to the crease with content that actually converts. Professional. Strategic. Unmistakably Queensland.",
+        "Queensland SME owners: Your expertise deserves better than tumbleweeds on LinkedIn. Let's create content that positions you as the industry leader you already are - just with better visibility.",
+        "Attention Queensland professionals: Stop letting your competition steal the spotlight while you're busy being brilliant behind the scenes. It's time for strategic social media that works as hard as you do."
+      ],
+      youtube: [
+        "Queensland business owners, this one's for you! Tired of being the industry's best-kept secret? Time to transform your social media from background noise into your business's most powerful marketing asset. Professional, strategic, and unmistakably Queensland. Let's make some noise! 🎬",
+        "G'day Queensland SMEs! Your business expertise is top-notch, but your social media presence? Let's be honest - it needs work. Time to change that with content that's as strategic as it is engaging. Queensland business, Queensland values, global results.",
+        "Queensland entrepreneurs: If your social media strategy was a business plan, would you fund it? Time for content that drives real results, builds authentic connections, and positions you as the industry leader you are. Professional social media automation that actually works."
+      ]
+    };
+
+    const platformTemplate = wittyTemplates[platform.toLowerCase()] || wittyTemplates.instagram;
+    const selectedTemplate = platformTemplate[Math.floor(Math.random() * platformTemplate.length)];
+    
+    return this.artDirectorVideoIntegration({ 
+      witty: selectedTemplate,
+      engaging: selectedTemplate.replace('Fair dinkum', 'Hey').replace('G\'day', 'Hello'),
+      strategic: selectedTemplate.replace(/[!🎬📱✨]/g, '.')
+    }, brandPurpose, platform);
+  }
+
+  // VIDEO INTEGRATION: Combine copywriting with visual direction
+  static artDirectorVideoIntegration(copywriting, brandPurpose, platform) {
+    console.log(`🎬 Integrating Grok copywriting with video direction...`);
     
     // Professional cinematic visual themes based on brand personality
     let visualTheme = 'neon cityscapes with floating business elements'; // Default

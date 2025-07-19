@@ -10271,7 +10271,8 @@ export function addNotificationEndpoints(app: any) {
         brandName: brandData?.brandName 
       });
       
-      const result = await VideoService.generateVideoPrompts(postContent, platform, brandData, authenticatedUserId);
+      // Enhanced with Grok copywriter for witty, engaging content
+      const result = await VideoService.generateVideoPromptsWithGrokCopywriter(postContent, platform, brandData, authenticatedUserId);
       
       console.log('Video prompt generation result:', result.success ? 'SUCCESS' : 'FAILED', 
         result.userHistory ? `(Generated: ${result.userHistory.totalGenerated}, Animals: ${result.userHistory.uniqueAnimals})` : '');
@@ -10352,30 +10353,58 @@ export function addNotificationEndpoints(app: any) {
     }
   });
 
-  // Approve video for a post (combines video + text into single unit)
+  // Approve video for a post (combines video + text into single unit) with Grok copywriter support
   app.post('/api/video/approve', async (req: any, res) => {
     try {
       const { userId, postId, videoData } = req.body;
       
-      // Update post with approved video data
-      const updatedPost = await storage.updatePost(postId, {
+      // Check if video has Grok copywriter enhancements
+      const hasGrokEnhancements = videoData?.grokEnhanced && videoData?.postCopy;
+      
+      // Update post with approved video data and Grok copywriter content
+      const updateData = {
         hasVideo: true,
         videoApproved: true,
         videoData: videoData,
         approvedAt: new Date(),
         status: 'approved' // Mark entire post as approved
-      });
+      };
       
-      console.log(`✅ Video approved for post ${postId} - combined with text content`);
+      // If Grok copywriter enhanced, update post content with editable copy
+      if (hasGrokEnhancements) {
+        updateData.content = videoData.postCopy;
+        updateData.grokEnhanced = true;
+        updateData.editable = true;
+        updateData.wittyStyle = videoData.wittyStyle || false;
+        console.log(`✍️ Updating post ${postId} with Grok copywriter content: "${videoData.postCopy.substring(0, 60)}..."`);
+      }
       
-      res.json({
+      const updatedPost = await storage.updatePost(postId, updateData);
+      
+      // Backend cache invalidation trigger for Grok enhanced posts
+      const response = {
         success: true,
         postId: postId,
         combinedContent: true,
         status: 'approved',
-        message: 'Video and text combined into approved post',
-        videoData: videoData
-      });
+        message: hasGrokEnhancements ? 'Video and Grok copywriter text combined into approved post' : 'Video and text combined into approved post',
+        videoData: videoData,
+        grokEnhanced: hasGrokEnhancements,
+        postCopy: hasGrokEnhancements ? videoData.postCopy : undefined,
+        editable: hasGrokEnhancements ? true : undefined
+      };
+      
+      // Signal cache invalidation for Grok enhanced content
+      if (hasGrokEnhancements) {
+        response.cacheInvalidationRequired = true;
+        response.queryToInvalidate = ['posts'];
+        response.reason = 'Post updated with Grok copywriter enhanced content';
+        console.log('✅ Grok copywriter post approved - signaling cache invalidation required');
+      }
+      
+      console.log(`✅ Video approved for post ${postId} - combined with${hasGrokEnhancements ? ' Grok enhanced' : ''} text content`);
+      
+      res.json(response);
     } catch (error) {
       console.error('Video approval failed:', error);
       res.status(500).json({ 
