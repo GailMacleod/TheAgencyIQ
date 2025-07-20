@@ -214,30 +214,30 @@ class VideoService {
     const selectedLighting = lightingMoods[Math.floor(Math.random() * lightingMoods.length)];
     const selectedElement = qldElements[Math.floor(Math.random() * qldElements.length)];
     
-    // Generate three anime-inspired single-character prompts
+    // Generate three anime-inspired single-character prompts - OPTIMIZED FOR SEEDANCE
     const animePrompts = [
       {
         id: 1,
-        title: "Anime Queensland Hero",
-        prompt: `${spec.ratio} anime-inspired ${selectedCharacter.character}, alone at ${selectedLighting.type}, ${selectedCharacter.activity}; as they triumph, the scene ${selectedLighting.visual}, ${selectedElement}, and a ${selectedCharacter.personality} spreads across their face—visual warmth, clever solution, true local legend vibe, all captured in dreamy sunlit hues—no text, single character focus, proper lighting drives loyalty.`,
-        postCopy: this.generateQldCharacterCopy(postContent, platform, selectedCharacter.character),
-        style: "anime-qld-hero",
+        title: "Magical Barista Sunrise",
+        prompt: `${spec.ratio} anime-inspired single Queenslander character—like a barefoot barista in a surf club hoodie—opens shop at sunrise; as golden light streams in dramatically, the first coffee brewed sends glowing steam swirling into a playful, magical wallaby that hops around the empty cafe, sparking cheeky smiles and a warm local buzz—joyous, welcoming, visually rich, with warm sunlight and subtle beach breeze effects, no text.`,
+        postCopy: this.generateQldCharacterCopy(postContent, platform, 'Brisbane barista'),
+        style: "magical-barista-sunrise",
         editable: true
       },
       {
         id: 2,
-        title: "Local Legend Moment", 
-        prompt: `${spec.ratio} anime-style Queensland tradie, alone at golden hour, fixes a squeaky gate with MacGyver-like flair; as he triumphs, the backyard floods with magical sunlight and native birds swirling around him in slow-motion, celebratory BBQ smoke rises in the distance, and a knowing grin spreads on his face—visual warmth, clever solution, true local legend vibe, all captured in dreamy, sunlit hues—no text.`,
-        postCopy: this.generateQldCharacterCopy(postContent, platform, 'local-legend'),
-        style: "local-legend-anime",
+        title: "Queensland Tradie Legend", 
+        prompt: `${spec.ratio} anime-style single Queensland tradie character in work boots and singlet, alone at golden afternoon light, fixes broken fence with one clever twist of the wrist; as he succeeds, the backyard floods with magical golden glow and a cheeky kookaburra lands on his shoulder laughing approval, while BBQ smoke rises in warm celebration—pure local legend energy, community pride lighting, heartwarming triumph, no text.`,
+        postCopy: this.generateQldCharacterCopy(postContent, platform, 'Queensland tradie'),
+        style: "tradie-legend-golden",
         editable: true
       },
       {
         id: 3,
-        title: "Queensland Magic Story",
-        prompt: `${spec.ratio} anime-influenced Queensland character (your choice), alone in frame, engaging in one clever activity showing local ingenuity; victorious moment with signature Queensland lighting (golden hour/storm purple/dawn gold), native elements adding magical touch, character's expression capturing local pride—warm visual storytelling, single focus, lighting drives emotional loyalty—no text, clean narrative, avoid confusing activities.`,
-        postCopy: this.getCustomPostCopyTemplate(platform),
-        style: "custom-qld-magic",
+        title: "Beach Lifeguard Hero",
+        prompt: `${spec.ratio} anime-inspired single Gold Coast lifeguard character, alone on empty beach at vibrant sunrise, spots one surfer in trouble and springs into heroic action; as rescue succeeds, dramatic storm clouds part revealing golden rays of triumph while grateful seagulls circle overhead in slow-motion celebration—wish-fulfillment heroism, dramatic lighting transformation, Queensland coastal pride, visually uncluttered, no text.`,
+        postCopy: this.generateQldCharacterCopy(postContent, platform, 'Gold Coast lifeguard'),
+        style: "lifeguard-beach-hero",
         editable: true
       }
     ];
