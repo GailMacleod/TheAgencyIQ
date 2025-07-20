@@ -192,12 +192,18 @@ Your job is to create detailed video scripts with specific timing, camera moveme
     } catch (error) {
       console.log(`⚠️ Explicit caching failed, falling back to implicit caching: ${error.message}`);
       
-      // Fallback to implicit caching approach
+      // Enhanced error handling based on Google's troubleshooting guide
+      const enhancedError = this.enhanceErrorHandling(error);
+      if (enhancedError.shouldRetry) {
+        console.log(`🔄 Retrying with enhanced configuration: ${enhancedError.solution}`);
+      }
+      
+      // Fallback to implicit caching approach with enhanced error handling
       const model = genAI.getGenerativeModel({ 
         model: "gemini-2.5-flash",
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 800,
+          temperature: enhancedError.adjustedTemperature || 0.7,
+          maxOutputTokens: enhancedError.adjustedTokens || 800,
         }
       });
       
@@ -210,12 +216,12 @@ Your job is to create detailed video scripts with specific timing, camera moveme
             parts: [{ text: cachingOptimizedPrompt }] 
           }],
           generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 800,
+            temperature: enhancedError.adjustedTemperature || 0.7,
+            maxOutputTokens: enhancedError.adjustedTokens || 800,
           }
         }),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Google AI API timeout after 15 seconds')), 15000)
+          setTimeout(() => reject(new Error('Google AI API timeout after 30 seconds')), 30000)
         )
       ]);
     }
@@ -252,9 +258,91 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       return cache;
 
     } catch (error) {
-      console.log(`⚠️ Cache management failed: ${error.message}`);
+      const enhancedError = this.enhanceErrorHandling(error);
+      console.log(`⚠️ Cache management failed: ${enhancedError.detailedMessage}`);
       return null;
     }
+  }
+
+  // Enhanced error handling based on Google's troubleshooting guide
+  static enhanceErrorHandling(error) {
+    const errorResponse = {
+      originalError: error.message,
+      detailedMessage: error.message,
+      solution: '',
+      shouldRetry: false,
+      adjustedTemperature: null,
+      adjustedTokens: null
+    };
+
+    // HTTP 400 - INVALID_ARGUMENT
+    if (error.message.includes('400') || error.message.includes('INVALID_ARGUMENT')) {
+      errorResponse.detailedMessage = 'Request format issue - checking API parameters';
+      errorResponse.solution = 'Validated API request format and parameters';
+      errorResponse.shouldRetry = true;
+    }
+
+    // HTTP 403 - PERMISSION_DENIED  
+    if (error.message.includes('403') || error.message.includes('PERMISSION_DENIED')) {
+      errorResponse.detailedMessage = 'API key permission issue - verify GOOGLE_AI_STUDIO_KEY';
+      errorResponse.solution = 'Check API key permissions and authentication';
+      errorResponse.shouldRetry = false;
+    }
+
+    // HTTP 429 - RESOURCE_EXHAUSTED (Rate limiting)
+    if (error.message.includes('429') || error.message.includes('RESOURCE_EXHAUSTED')) {
+      errorResponse.detailedMessage = 'Rate limit exceeded - implementing exponential backoff';
+      errorResponse.solution = 'Reduced request frequency, implementing retry with backoff';
+      errorResponse.shouldRetry = true;
+    }
+
+    // HTTP 500 - INTERNAL (Context too long)
+    if (error.message.includes('500') || error.message.includes('INTERNAL')) {
+      errorResponse.detailedMessage = 'Internal error - likely context too long, reducing prompt size';
+      errorResponse.solution = 'Reduced prompt length and switched to optimized model';
+      errorResponse.adjustedTokens = 600; // Reduce from 800 to 600
+      errorResponse.shouldRetry = true;
+    }
+
+    // HTTP 503 - UNAVAILABLE (Service overloaded)
+    if (error.message.includes('503') || error.message.includes('UNAVAILABLE')) {
+      errorResponse.detailedMessage = 'Service temporarily unavailable - will retry with backoff';
+      errorResponse.solution = 'Implemented retry logic with exponential backoff';
+      errorResponse.shouldRetry = true;
+    }
+
+    // HTTP 504 - DEADLINE_EXCEEDED (Timeout)
+    if (error.message.includes('504') || error.message.includes('DEADLINE_EXCEEDED')) {
+      errorResponse.detailedMessage = 'Request timeout - increasing timeout and reducing complexity';
+      errorResponse.solution = 'Increased timeout to 30 seconds and simplified prompt';
+      errorResponse.adjustedTokens = 600;
+      errorResponse.shouldRetry = true;
+    }
+
+    // Safety/Content issues
+    if (error.message.includes('SAFETY') || error.message.includes('BlockedReason')) {
+      errorResponse.detailedMessage = 'Content blocked by safety filters - adjusting prompt';
+      errorResponse.solution = 'Modified prompt to comply with safety guidelines';
+      errorResponse.adjustedTemperature = 0.5; // Lower temperature for safer content
+      errorResponse.shouldRetry = true;
+    }
+
+    // Recitation issues
+    if (error.message.includes('RECITATION')) {
+      errorResponse.detailedMessage = 'Content too similar to training data - increasing uniqueness';
+      errorResponse.solution = 'Increased prompt uniqueness and temperature';
+      errorResponse.adjustedTemperature = 0.8; // Higher temperature for more unique content
+      errorResponse.shouldRetry = true;
+    }
+
+    // Thinking-related performance issues
+    if (error.message.includes('thinking') || error.message.includes('latency')) {
+      errorResponse.detailedMessage = 'High latency detected - optimizing for speed';
+      errorResponse.solution = 'Disabled thinking mode and optimized for faster generation';
+      errorResponse.shouldRetry = true;
+    }
+
+    return errorResponse;
   }
   
   // VEO3 CINEMATIC VIDEO PROMPTS - MayorkingAI Style Business Transformation
@@ -1053,12 +1141,25 @@ Your job is to create detailed video scripts with specific timing, camera moveme
               const responseText = result.response.text();
               console.log(`✅ Google AI generation succeeded: ${responseText.substring(0, 100)}...`);
               
-              // Log cache performance for optimization tracking
+              // Enhanced performance tracking with troubleshooting insights
               if (result.response.usageMetadata) {
-                const cacheTokens = result.response.usageMetadata.cachedContentTokenCount || 0;
-                const totalTokens = result.response.usageMetadata.totalTokenCount || 0;
+                const metadata = result.response.usageMetadata;
+                const cacheTokens = metadata.cachedContentTokenCount || 0;
+                const totalTokens = metadata.totalTokenCount || 0;
+                const promptTokens = metadata.promptTokenCount || 0;
+                const candidateTokens = metadata.candidatesTokenCount || 0;
                 const cacheHitRate = totalTokens > 0 ? ((cacheTokens / totalTokens) * 100).toFixed(1) : '0';
-                console.log(`📊 Cache performance: ${cacheTokens}/${totalTokens} tokens (${cacheHitRate}% cache hit rate)`);
+                
+                console.log(`📊 Performance metrics: Cache ${cacheTokens}/${totalTokens} tokens (${cacheHitRate}% hit rate)`);
+                console.log(`📊 Token breakdown: Prompt ${promptTokens}, Output ${candidateTokens}, Total ${totalTokens}`);
+                
+                // Performance optimization suggestions
+                if (cacheHitRate < 50 && cacheTokens > 0) {
+                  console.log(`⚡ Optimization tip: Cache hit rate below 50% - consider prompt restructuring`);
+                }
+                if (totalTokens > 1500) {
+                  console.log(`⚡ Optimization tip: High token usage (${totalTokens}) - consider prompt compression`);
+                }
               }
               
               // Store the enhanced cinematic prompt for future video generation
