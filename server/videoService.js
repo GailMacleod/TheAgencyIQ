@@ -364,7 +364,7 @@ class VideoService {
         id: 1,
         title: "High-Speed Transformation Epic",
         prompt: `High-speed camera tracking a Queensland business owner's hands as they activate automation systems, ${selectedLighting.visual}, close-up on determined eyes reflecting transformation success. Camera pulls back revealing ${selectedElement} transforming from chaos to flowing precision. ${selectedScenario.dramaticTension} - ${selectedScenario.visualMetaphor}. Thrilling, cinematic, photorealistic. 8-second duration.`,
-        postCopy: this.generateCinematicCopy(postContent, platform, selectedScenario.scenario),
+        postCopy: this.generateMayorkingCopy(postContent, platform, selectedScenario.scenario),
         style: "high-speed-transformation",
         editable: true
       },
@@ -372,7 +372,7 @@ class VideoService {
         id: 2,
         title: "Wide Push-in Business Genesis", 
         prompt: `Wide push-in from lone figure silhouetted against modern business environment, sparks cascading like falling stars as innovation meets precision. Camera slowly rises from ground level revealing Queensland SME empire being born from breakthrough moment. ${selectedScenario.dramaticTension} with dramatic lighting effects. Professional triumph, photorealistic, cinematic. 8-second duration.`,
-        postCopy: this.generateCinematicCopy(postContent, platform, selectedScenario.scenario),
+        postCopy: this.generateMayorkingCopy(postContent, platform, selectedScenario.scenario),
         style: "wide-push-business-genesis",
         editable: true
       },
@@ -380,7 +380,7 @@ class VideoService {
         id: 3,
         title: "Close-up Intensity Breakthrough",
         prompt: `Close-up on weathered hands gripping smartphone as business systems activate one by one, screen glowing like portal. Eyes burning with determination as ${selectedScenario.visualMetaphor} unfolds. ${selectedElement} visible in background as Queensland professional transforms invisible potential into visible success. Dramatic close-up, emotional intensity, photorealistic. 8-second duration.`,
-        postCopy: this.generateCinematicCopy(postContent, platform, selectedScenario.scenario),
+        postCopy: this.generateMayorkingCopy(postContent, platform, selectedScenario.scenario),
         style: "close-up-breakthrough",
         editable: true
       }
@@ -390,8 +390,8 @@ class VideoService {
     return cinematicPrompts;
   }
 
-  // Generate cinematic business transformation copy  
-  static generateCinematicCopy(originalContent, platform, scenarioType) {
+  // Generate MayorkingAI copy for different business scenarios  
+  static generateMayorkingCopy(originalContent, platform, scenarioType) {
     const platformLimits = {
       instagram: 400,
       linkedin: 1300,
@@ -426,8 +426,10 @@ class VideoService {
       }
     };
     
-    const characterTemplates = characterStyles[characterType] || characterStyles['local-legend'];
-    return characterTemplates[platform] || originalContent;
+    const style = cinematicStyles[scenario.title] || cinematicStyles['Queensland SME Discovery Moment'];
+    const platformCopy = style[platform] || style.instagram;
+    
+    return platformCopy.substring(0, charLimit);
   }
 
   // Generate companion-style copy for different themes
