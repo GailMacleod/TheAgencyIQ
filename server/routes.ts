@@ -37,6 +37,7 @@ import { directTokenGenerator } from './services/DirectTokenGenerator';
 import { quotaManager } from './services/QuotaManager';
 import { checkVideoQuota, checkAPIQuota, checkContentQuota } from './middleware/quotaEnforcement';
 import { postingQueue } from './services/PostingQueue';
+import { CustomerOnboardingOAuth } from './services/CustomerOnboardingOAuth';
 
 // Extended session types
 declare module 'express-session' {
@@ -9592,7 +9593,214 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Webhook endpoint moved to server/index.ts to prevent conflicts
+  // CUSTOMER ONBOARDING OAUTH ENDPOINTS - Bulletproof secure onboarding with token management
+  
+  // Initiate OAuth flow for customer onboarding
+  app.get("/api/onboard/oauth/:provider", requireAuth, async (req: any, res) => {
+    try {
+      const { provider } = req.params;
+      const userId = req.session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      console.log(`🔐 Initiating OAuth onboarding for ${provider} (User: ${userId})`);
+
+      const authUrlData = CustomerOnboardingOAuth.generateAuthUrl(provider, userId);
+      if (!authUrlData) {
+        return res.status(400).json({ error: "Unsupported OAuth provider" });
+      }
+
+      // Store state in session to prevent CSRF
+      req.session.oauthState = authUrlData.state;
+
+      res.json({
+        success: true,
+        authUrl: authUrlData.url,
+        provider: provider,
+        state: authUrlData.state,
+        message: `Redirecting to ${provider} for secure business data extraction`
+      });
+
+    } catch (error: any) {
+      console.error('OAuth initiation error:', error);
+      res.status(500).json({ error: 'Failed to initiate OAuth flow', details: error.message });
+    }
+  });
+
+  // OAuth callback endpoint for customer onboarding
+  app.get("/api/auth/callback/:provider", async (req, res) => {
+    try {
+      const { provider } = req.params;
+      const { code, state, error } = req.query as any;
+      
+      console.log(`🔐 OAuth callback for ${provider}: code=${!!code}, state=${!!state}, error=${error}`);
+
+      if (error) {
+        console.error(`❌ OAuth error for ${provider}:`, error);
+        return res.redirect(`/onboarding?error=${encodeURIComponent(error)}`);
+      }
+
+      if (!code || !state) {
+        return res.redirect('/onboarding?error=missing_authorization_code');
+      }
+
+      // Exchange code for tokens
+      const tokenResult = await CustomerOnboardingOAuth.exchangeCodeForToken(provider, code, state);
+      
+      if (!tokenResult.success) {
+        console.error(`❌ Token exchange failed for ${provider}:`, tokenResult.error);
+        return res.redirect(`/onboarding?error=${encodeURIComponent(tokenResult.error || 'token_exchange_failed')}`);
+      }
+
+      const { tokens, userId } = tokenResult;
+      if (!tokens || !userId) {
+        return res.redirect('/onboarding?error=invalid_token_response');
+      }
+
+      // Extract customer business data from OAuth provider
+      const dataResult = await CustomerOnboardingOAuth.extractCustomerData(provider, tokens);
+      
+      if (!dataResult.success) {
+        console.error(`❌ Data extraction failed for ${provider}:`, dataResult.error);
+        return res.redirect(`/onboarding?error=${encodeURIComponent(dataResult.error || 'data_extraction_failed')}`);
+      }
+
+      const { customerData } = dataResult;
+      if (!customerData) {
+        return res.redirect('/onboarding?error=no_customer_data');
+      }
+
+      // Store customer data securely
+      const storeResult = await CustomerOnboardingOAuth.storeCustomerData(userId, customerData, tokens);
+      
+      if (!storeResult.success) {
+        console.error(`❌ Data storage failed for ${provider}:`, storeResult.error);
+        return res.redirect(`/onboarding?error=${encodeURIComponent(storeResult.error || 'storage_failed')}`);
+      }
+
+      console.log(`✅ OAuth onboarding completed for ${provider} (User: ${userId})`);
+      console.log(`📊 Business: ${customerData.businessName}, Industry: ${customerData.industry}`);
+      console.log(`🎯 JTBD: ${customerData.jtbd}`);
+
+      // Redirect to onboarding success with extracted data
+      const successParams = new URLSearchParams({
+        success: 'oauth_complete',
+        provider: provider,
+        business: customerData.businessName,
+        industry: customerData.industry,
+        source: 'oauth'
+      });
+
+      res.redirect(`/onboarding?${successParams.toString()}`);
+
+    } catch (error: any) {
+      console.error(`❌ OAuth callback error for ${provider}:`, error);
+      res.redirect(`/onboarding?error=${encodeURIComponent('callback_processing_failed')}`);
+    }
+  });
+
+  // Refresh OAuth tokens to prevent session expiry
+  app.post("/api/onboard/refresh-tokens", requireAuth, async (req: any, res) => {
+    try {
+      const { provider } = req.body;
+      const userId = req.session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      console.log(`🔄 Refreshing OAuth tokens for ${provider} (User: ${userId})`);
+
+      const refreshResult = await CustomerOnboardingOAuth.refreshTokens(userId, provider);
+      
+      if (!refreshResult.success) {
+        return res.status(400).json({ 
+          error: "Token refresh failed", 
+          details: refreshResult.error 
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "OAuth tokens refreshed successfully",
+        expiresAt: refreshResult.tokens?.expiresAt
+      });
+
+    } catch (error: any) {
+      console.error('Token refresh error:', error);
+      res.status(500).json({ error: 'Failed to refresh tokens', details: error.message });
+    }
+  });
+
+  // Validate customer onboarding data
+  app.post("/api/onboard/validate", requireAuth, async (req: any, res) => {
+    try {
+      const customerData = req.body;
+      
+      console.log(`🔍 Validating customer onboarding data`);
+
+      const validation = CustomerOnboardingOAuth.validateCustomerData(customerData);
+      
+      if (!validation.valid) {
+        return res.status(400).json({
+          success: false,
+          errors: validation.errors,
+          message: "Customer data validation failed"
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Customer data validation passed",
+        validatedFields: Object.keys(customerData).length
+      });
+
+    } catch (error: any) {
+      console.error('Customer data validation error:', error);
+      res.status(500).json({ error: 'Validation failed', details: error.message });
+    }
+  });
+
+  // Get available OAuth providers for onboarding
+  app.get("/api/onboard/providers", requireAuth, async (req: any, res) => {
+    try {
+      const providers = [
+        {
+          name: 'google',
+          displayName: 'Google My Business',
+          description: 'Extract business information from Google My Business',
+          icon: 'google',
+          dataTypes: ['business_name', 'industry', 'location', 'contact']
+        },
+        {
+          name: 'facebook',
+          displayName: 'Facebook Business',
+          description: 'Import business page information from Facebook',
+          icon: 'facebook',
+          dataTypes: ['page_info', 'category', 'about', 'mission']
+        },
+        {
+          name: 'linkedin',
+          displayName: 'LinkedIn Company',
+          description: 'Connect your professional LinkedIn profile and company',
+          icon: 'linkedin',
+          dataTypes: ['profile', 'company', 'industry', 'headline']
+        }
+      ];
+
+      res.json({
+        success: true,
+        providers,
+        message: "Available OAuth providers for secure onboarding"
+      });
+
+    } catch (error: any) {
+      console.error('Get providers error:', error);
+      res.status(500).json({ error: 'Failed to get providers' });
+    }
+  });
 
   // OAuth Routes for Real Platform Connections
   
