@@ -122,7 +122,7 @@ export default function Splash() {
                 <h1 className="text-xl sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-[#3250fa] px-2 font-extrabold">
                   Set & Forget
                 </h1>
-                <h2 className="mobile-heading sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-[#3250fa] to-[#00f0ff] bg-clip-text text-transparent px-2 text-center text-[44px]">
+                <h2 className="mobile-heading sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-[#3250fa] to-[#00f0ff] bg-clip-text text-transparent px-2 text-center text-[52px]">
                   Social Media for small businesses
                 </h2>
                 <p className="text-sm sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto px-4 sm:px-0">Complete waterfall workflow to drive small businesses' online social presence.</p>
