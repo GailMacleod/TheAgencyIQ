@@ -36,6 +36,7 @@ import { UnifiedOAuthService } from './services/UnifiedOAuthService';
 import { directTokenGenerator } from './services/DirectTokenGenerator';
 import { quotaManager } from './services/QuotaManager';
 import { checkVideoQuota, checkAPIQuota, checkContentQuota } from './middleware/quotaEnforcement';
+import { postingQueue } from './services/PostingQueue';
 
 // Extended session types
 declare module 'express-session' {
@@ -9477,6 +9478,117 @@ Continue building your Value Proposition Canvas systematically.`;
     } catch (error: any) {
       console.error('Direct publish error:', error);
       res.status(500).json({ message: 'Direct publish failed' });
+    }
+  });
+
+  // POSTING QUEUE ENDPOINTS - Prevent burst posting and handle API rate limits
+  
+  // Queue posts for delayed publishing to prevent account bans
+  app.post("/api/publish-queue", requireAuth, async (req: any, res) => {
+    try {
+      const { action } = req.body;
+      const userId = req.session?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      if (action === 'queue_all_approved') {
+        // Get all approved posts and add to queue with delays
+        const posts = await storage.getPostsByUser(userId);
+        const approvedPosts = posts.filter(post => post.status === 'approved');
+        
+        if (approvedPosts.length === 0) {
+          return res.json({
+            success: true,
+            message: "No approved posts to queue",
+            queued: 0
+          });
+        }
+
+        // Limit to max 3 posts per subscription to prevent platform overload
+        const limitedPosts = approvedPosts.slice(0, 3);
+        
+        // Prepare posts for queue
+        const queuePosts = limitedPosts.map(post => ({
+          postId: post.id,
+          platform: post.platform,
+          content: post.content,
+          userId: userId
+        }));
+
+        console.log(`📋 Queuing ${queuePosts.length} posts with 2s delays (max 3 per subscription)`);
+        const queueIds = await postingQueue.addBatchToQueue(queuePosts);
+
+        return res.json({
+          success: true,
+          message: `Successfully queued ${queuePosts.length} posts with staggered delays`,
+          queued: queuePosts.length,
+          queueIds: queueIds,
+          delayBetweenPosts: '2 seconds',
+          maxConcurrent: 3
+        });
+      }
+
+      res.status(400).json({ error: 'Invalid action. Use queue_all_approved' });
+    } catch (error: any) {
+      console.error('Queue publish error:', error);
+      res.status(500).json({ error: 'Failed to queue posts', details: error.message });
+    }
+  });
+
+  // Admin queue monitoring endpoints
+  app.get("/api/admin/queue-status", requireAuth, async (req: any, res) => {
+    try {
+      const queueStatus = postingQueue.getQueueStatus();
+      res.json({
+        success: true,
+        queue: queueStatus
+      });
+    } catch (error: any) {
+      console.error('Queue status error:', error);
+      res.status(500).json({ error: 'Failed to get queue status' });
+    }
+  });
+
+  app.get("/api/admin/queue-details", requireAuth, async (req: any, res) => {
+    try {
+      const queueDetails = postingQueue.getQueueDetails();
+      res.json({
+        success: true,
+        queue: queueDetails
+      });
+    } catch (error: any) {
+      console.error('Queue details error:', error);
+      res.status(500).json({ error: 'Failed to get queue details' });
+    }
+  });
+
+  app.post("/api/admin/queue-clear-failed", requireAuth, async (req: any, res) => {
+    try {
+      const clearedCount = postingQueue.clearFailedPosts();
+      res.json({
+        success: true,
+        message: `Cleared ${clearedCount} failed posts from queue`,
+        clearedCount
+      });
+    } catch (error: any) {
+      console.error('Clear failed posts error:', error);
+      res.status(500).json({ error: 'Failed to clear failed posts' });
+    }
+  });
+
+  app.post("/api/admin/queue-emergency-stop", requireAuth, async (req: any, res) => {
+    try {
+      const clearedCount = postingQueue.emergencyStop();
+      res.json({
+        success: true,
+        message: `Emergency stop: Cleared ${clearedCount} pending posts`,
+        clearedCount
+      });
+    } catch (error: any) {
+      console.error('Emergency stop error:', error);
+      res.status(500).json({ error: 'Failed to emergency stop queue' });
     }
   });
 
