@@ -177,8 +177,8 @@ html, body {
     line-height: 2.5 !important; /* Massive open leading */
   }
   
-  h2 {
-    font-size: 18px !important; /* Readable mobile size */
+  h2, .text-lg, .mobile-heading {
+    font-size: 18px !important; /* Force override Tailwind */
     line-height: 2.2 !important; /* Proper spacing without overlap */
     padding: 1.5rem 0 !important; /* Reasonable padding */
     margin: 1rem 0 !important; /* Reasonable margin */
