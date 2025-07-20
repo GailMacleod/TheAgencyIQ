@@ -13,6 +13,7 @@ import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
 import BrandSync from "@/components/Schedule";
 import CMOStrategy from "@/components/CMOStrategy";
+import { VideoPostCard } from "@/components/VideoPostCardSimple";
 
 interface Post {
   id: number;

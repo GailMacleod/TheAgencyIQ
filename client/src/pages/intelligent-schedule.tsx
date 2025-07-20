@@ -16,7 +16,7 @@ import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
 import { MetaPixelTracker } from "@/lib/meta-pixel";
 import AutoPostingEnforcer from "@/components/auto-posting-enforcer";
-import { VideoPostCard } from "@/components/VideoPostCard";
+import VideoPostCardSimple from "@/components/VideoPostCardSimple";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 import { TokenStatusBanner } from "@/components/TokenStatusBanner";
 
@@ -824,7 +824,7 @@ function IntelligentSchedule() {
               // List View with Video Generation
               <div className="grid gap-6">
                 {postsArray.length > 0 ? postsArray.map((post: Post) => (
-                  <VideoPostCard
+                  <VideoPostCardSimple
                     key={post.id}
                     post={post}
                     onVideoApproved={handleVideoApproved}

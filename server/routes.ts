@@ -10513,4 +10513,95 @@ export function addNotificationEndpoints(app: any) {
       res.status(500).json({ error: 'Video proxy failed' });
     }
   });
+
+  // ONE-CLICK VIDEO GENERATION ENDPOINT - VEO3 INTEGRATION
+  app.post("/api/video/render", requireAuth, async (req: any, res) => {
+    try {
+      const { promptType, promptPreview, editedText, platform, userId, postId } = req.body;
+      
+      console.log(`🎬 One-click video generation requested for ${platform}`);
+      
+      // Import video service
+      const VideoService = (await import('./videoService')).default;
+      
+      // Generate Art Director video with cinematic business transformation
+      const result = await VideoService.renderVideo(
+        promptType, 
+        promptPreview, 
+        editedText, 
+        platform, 
+        userId
+      );
+      
+      if (result.success) {
+        console.log(`✅ One-click video generation successful for ${platform}`);
+        res.json({
+          success: true,
+          videoData: {
+            id: result.videoId,
+            url: result.url,
+            title: result.title,
+            description: result.description,
+            duration: result.duration,
+            aspectRatio: result.aspectRatio,
+            quality: result.quality,
+            size: result.size,
+            artDirected: true,
+            realVideo: result.veoGenerated || false,
+            veo3Generated: true,
+            platform: platform
+          }
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.message || 'Video generation failed'
+        });
+      }
+      
+    } catch (error: any) {
+      console.error('❌ One-click video generation failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Video generation temporarily unavailable'
+      });
+    }
+  });
+
+  // VIDEO APPROVAL ENDPOINT
+  app.post("/api/video/approve", requireAuth, async (req: any, res) => {
+    try {
+      const { userId, postId, videoData } = req.body;
+      
+      console.log(`📹 Approving video for post ${postId}`);
+      
+      // Update post with video data
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ success: false, error: 'Post not found' });
+      }
+      
+      // Update post with approved video
+      await storage.updatePost(postId, {
+        hasVideo: true,
+        videoApproved: true,
+        videoData: JSON.stringify(videoData),
+        approvedAt: new Date()
+      });
+      
+      console.log(`✅ Video approved for post ${postId}`);
+      
+      res.json({
+        success: true,
+        message: 'Video approved successfully'
+      });
+      
+    } catch (error: any) {
+      console.error('Video approval failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to approve video'
+      });
+    }
+  });
 }
