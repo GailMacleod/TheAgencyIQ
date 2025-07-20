@@ -1328,7 +1328,7 @@ export default function BrandPurpose() {
             {/* Contact Details */}
             <div>
               <Label className="text-sm font-medium text-gray-700">Contact Details</Label>
-              <div className="mt-3 space-y-4">
+              <div className="mt-3 space-y-4 contact-details">
                 <div>
                   <Label htmlFor="email" className="text-sm text-gray-600">Email</Label>
                   <Input
@@ -1337,7 +1337,8 @@ export default function BrandPurpose() {
                     {...form.register('contactDetails.email')}
                     placeholder="info@queenslandartisans.com"
                     className="mt-1"
-                    autoComplete="email"
+                    autoComplete="off"
+                    name="brand-contact-email"
                   />
                   {form.formState.errors.contactDetails?.email && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.contactDetails.email.message}</p>

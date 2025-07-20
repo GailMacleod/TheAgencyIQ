@@ -176,6 +176,28 @@ html, body {
     font-size: 1.2rem !important; /* 19.2px as requested */
     line-height: 1.4 !important; /* Tighter line height to prevent excessive spacing */
     padding: 2rem 1rem !important; /* Increased padding for deeper box */
+  }
+  
+  /* Fix mobile email field duplication issues */
+  input[type="email"] {
+    position: relative;
+    z-index: 100 !important;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  
+  /* Prevent browser autocomplete dropdown positioning issues */
+  .contact-details input {
+    autocomplete: off !important;
+  }
+  
+  /* Ensure form fields have proper mobile spacing */
+  .space-y-4 > div {
+    margin-bottom: 1rem;
+  }
+  
+  /* Mobile H2 optimization continued */
+  h2.mobile-optimized {
     margin: 1rem 0 !important; /* Reasonable margin */
     min-height: 100px !important; /* Minimum height for deeper box */
   }
