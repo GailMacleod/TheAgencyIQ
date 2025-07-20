@@ -232,7 +232,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
   static async getOrCreateVideoCache(genAI, systemInstruction, brandPurpose, userId = 'default') {
     try {
       // Create user-specific cache identifier for better session isolation
-      const sanitizedBrandPurpose = brandPurpose ? brandPurpose.slice(0, 15).replace(/[^a-zA-Z0-9]/g, '-') : 'default';
+      const sanitizedBrandPurpose = brandPurpose && typeof brandPurpose === 'string' ? brandPurpose.slice(0, 15).replace(/[^a-zA-Z0-9]/g, '-') : 'default';
       const cacheDisplayName = `video-gen-u${userId}-${sanitizedBrandPurpose}-${Date.now().toString().slice(-6)}`;
       
       // Implement cache compression strategy for high-volume users
@@ -1188,17 +1188,20 @@ Your job is to create detailed video scripts with specific timing, camera moveme
           if (process.env.GOOGLE_AI_STUDIO_KEY) {
             console.log(`🚀 Calling Veo3 API for cinematic video generation...`);
             
+            // Initialize Google AI client properly
+            const googleAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_KEY);
+            
             // Content compliance check
-            const complianceCheck = this.checkContentCompliance(prompt);
+            const complianceCheck = VideoService.checkContentCompliance(prompt);
             if (!complianceCheck.safe) {
               throw new Error(`Content compliance issue: ${complianceCheck.reason}`);
             }
             
             // Enhanced MayorkingAI-style prompt for Veo3
-            cinematicPrompt = this.enhancePromptForVeo3(prompt);
+            cinematicPrompt = VideoService.enhancePromptForVeo3(prompt);
             
             // Use explicit caching for maximum cost savings and performance
-            const result = await this.generateWithExplicitCaching(cinematicPrompt, brandPurpose, genAI);
+            const result = await VideoService.generateWithExplicitCaching(cinematicPrompt, strategicIntent, googleAI);
             
             if (result && result.response) {
               // Google AI returned response with cinematic direction
@@ -1213,7 +1216,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
                 originalPrompt: (prompt || 'Auto-generated prompt').substring(0, 200),
                 enhancedPrompt: cinematicPrompt.substring(0, 500),
                 generatedResponse: responseText.substring(0, 1000),
-                brandPurpose: (brandPurpose && typeof brandPurpose === 'string' ? brandPurpose : 'Professional business growth and automation'),
+                brandPurpose: strategicIntent || 'Professional business growth and automation',
                 visualTheme: visualTheme || 'cinematic business transformation',
                 strategicIntent: strategicIntent || 'Professional business growth and automation'
               };
@@ -1283,7 +1286,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
             originalPrompt: (prompt || 'Auto-generated prompt').substring(0, 200),
             enhancedPrompt: cinematicPrompt.substring(0, 500),
             generatedResponse: `FALLBACK MODE: ${apiError.message}`,
-            brandPurpose: 'Professional business growth and automation',
+            brandPurpose: strategicIntent || 'Professional business growth and automation',
             visualTheme: visualTheme || 'cinematic business transformation',
             strategicIntent: strategicIntent || 'Professional business growth and automation',
             fallbackMode: true,
@@ -1318,7 +1321,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
           originalPrompt: (prompt || 'Auto-generated prompt').substring(0, 200),
           enhancedPrompt: cinematicPrompt.substring(0, 500),
           generatedResponse: `ART DIRECTOR MODE: ${visualTheme} with ${strategicIntent}`,
-          brandPurpose: 'Professional business growth and automation',
+          brandPurpose: strategicIntent || 'Professional business growth and automation',
           visualTheme: visualTheme || 'cinematic business transformation',
           strategicIntent: strategicIntent || 'Professional business growth and automation',
           artDirectorMode: true,
