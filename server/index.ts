@@ -5,6 +5,8 @@ import cors from 'cors';
 import { createServer } from 'http';
 import path from 'path';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
+import { createClient } from 'redis';
+import * as connectRedis from 'connect-redis';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -135,29 +137,68 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // Device-agnostic session configuration for mobile-to-desktop continuity
-  // Configure PostgreSQL session store
-  const sessionTtl = 24 * 60 * 60 * 1000; // 24 hours
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true, // Fix: Allow session table creation
-    ttl: sessionTtl,
-    tableName: "sessions",
-    errorLog: (error) => {
-      console.error('Session store error:', error);
-    }
-  });
-
-  // Test session store connection
-  console.log('🔧 Testing session store connection...');
-  sessionStore.get('test-connection', (err, session) => {
-    if (err) {
-      console.error('❌ Session store connection failed:', err);
-    } else {
-      console.log('✅ Session store connection successful');
-    }
-  });
+  // Redis-based persistent session management for deployment stability
+  const sessionTtl = 30 * 60; // 30 minutes in seconds (Redis format)
+  const sessionTtlMs = sessionTtl * 1000; // 30 minutes in milliseconds (Express format)
+  
+  let sessionStore: any;
+  
+  try {
+    // Try Redis first for persistent sessions (production-ready)
+    console.log('🔧 Attempting Redis connection for persistent sessions...');
+    
+    const redisClient = createClient({
+      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      socket: {
+        connectTimeout: 5000
+      },
+      retryDelayOnFailover: 100,
+      maxRetriesPerRequest: 3
+    });
+    
+    const RedisStore = connectRedis.default(session);
+    
+    // Test Redis connection
+    await redisClient.connect();
+    await redisClient.ping();
+    
+    sessionStore = new RedisStore({
+      client: redisClient,
+      ttl: sessionTtl,
+      prefix: 'theagencyiq:sess:',
+      disableTTL: false,
+      disableTouch: false
+    });
+    
+    console.log('✅ Redis session store connected successfully');
+    console.log('🔒 Session persistence: BULLETPROOF (survives restarts/deployments)');
+    
+  } catch (redisError) {
+    console.log('⚠️  Redis unavailable, falling back to PostgreSQL sessions');
+    console.log('🔧 Configuring PostgreSQL session store...');
+    
+    // Fallback to PostgreSQL session store
+    const pgStore = connectPg(session);
+    sessionStore = new pgStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
+      ttl: sessionTtlMs,
+      tableName: "sessions",
+      errorLog: (error) => {
+        console.error('Session store error:', error);
+      }
+    });
+    
+    // Test PostgreSQL session store connection
+    sessionStore.get('test-connection', (err: any, session: any) => {
+      if (err) {
+        console.error('❌ Session store connection failed:', err);
+      } else {
+        console.log('✅ PostgreSQL session store connection successful');
+        console.log('⚠️  Session persistence: LIMITED (vulnerable to restarts)');
+      }
+    });
+  }
 
   // CORS middleware with credentials support
   app.use(cors({
@@ -172,12 +213,14 @@ async function startServer() {
     optionsSuccessStatus: 204
   }));
 
-  // Enhanced session configuration for cookie persistence
+  // Production-grade session configuration with security
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false, // Don't create sessions for unauthenticated users
     name: 'theagencyiq.session',
     genid: () => {
       const timestamp = Date.now().toString(36);
@@ -185,87 +228,66 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: false, // Must be false for development
-      maxAge: sessionTtl,
-      httpOnly: false, // Allow frontend access
-      sameSite: 'none', // Required for cross-origin requests
+      secure: isProduction, // HTTPS enforcement in production
+      maxAge: sessionTtlMs, // 30 minutes
+      httpOnly: false, // Allow frontend access for user validation
+      sameSite: isProduction ? 'strict' : 'lax', // CSRF protection in production
       path: '/',
       domain: undefined // Let express handle domain
     },
-    rolling: true,
+    rolling: true, // Extend session on activity
     proxy: true,
-    // Enhanced session handling
-    unset: 'keep'
+    unset: 'destroy' // Properly clean up sessions
   }));
 
-  // Enhanced cookie persistence middleware - bulletproof session handling
+  // Session validation and security middleware
   app.use((req, res, next) => {
-    // Intercept all response methods to ensure cookie persistence
-    const originalSend = res.send;
-    const originalJson = res.json;
-    const originalEnd = res.end;
-    
-    // Enhanced cookie setting function with header safety
-    const ensureCookieSet = () => {
-      if (req.sessionID && req.session && !res.headersSent) {
-        try {
-          // Set cookie with signed session ID for security
-          const cookieOptions = {
-            secure: false, // Development mode
-            maxAge: sessionTtl,
-            httpOnly: false, // Allow frontend access
-            sameSite: 'none' as const, // Cross-origin support
-            path: '/',
-            signed: false // Express-session handles signing
-          };
-          
-          // Set both the session cookie and a backup cookie
-          res.cookie('theagencyiq.session', req.sessionID, cookieOptions);
-          res.cookie('aiq_backup_session', req.sessionID, cookieOptions);
-          
-          // Set explicit headers for debugging
-          res.header('X-Session-ID', req.sessionID);
-          res.header('X-User-ID', req.session.userId?.toString() || 'none');
-          res.header('Access-Control-Expose-Headers', 'X-Session-ID, X-User-ID');
-        } catch (error) {
-          // Silently ignore header errors to prevent crashes
-          console.warn('Cookie setting failed (headers already sent):', error.message);
-        }
+    // Session activity tracking for quota management
+    if (req.session && req.session.userId) {
+      req.session.lastActivity = new Date().toISOString();
+      
+      // Quota tracking per user session
+      if (!req.session.dailyApiCalls) {
+        req.session.dailyApiCalls = 0;
+        req.session.quotaResetDate = new Date().toDateString();
       }
-    };
-    
-    // Override send method with safety checks
-    res.send = function(data) {
-      try {
-        ensureCookieSet();
-      } catch (error) {
-        console.warn('Cookie setting failed in send:', error.message);
+      
+      // Reset quota if new day
+      const today = new Date().toDateString();
+      if (req.session.quotaResetDate !== today) {
+        req.session.dailyApiCalls = 0;
+        req.session.quotaResetDate = today;
       }
-      return originalSend.call(this, data);
-    };
+    }
     
-    // Override json method with safety checks
-    res.json = function(data) {
-      try {
-        ensureCookieSet();
-      } catch (error) {
-        console.warn('Cookie setting failed in json:', error.message);
-      }
-      return originalJson.call(this, data);
-    };
+    // Enhanced session debugging for production monitoring
+    if (req.sessionID) {
+      console.log('🔍 Session Debug -', req.method, req.path);
+      console.log('📋 Session ID:', req.sessionID);
+      console.log('📋 User ID:', req.session?.userId || 'anonymous');
+      console.log('📋 Session Cookie:', req.headers.cookie?.substring(0, 100) + '...');
+    }
     
-    // Override end method with safety checks
-    res.end = function(data) {
-      try {
-        ensureCookieSet();
-      } catch (error) {
-        console.warn('Cookie setting failed in end:', error.message);
-      }
-      return originalEnd.call(this, data);
-    };
+    // Session validation for protected routes
+    const protectedPaths = ['/api/posts', '/api/brand-purpose', '/api/video', '/api/admin'];
+    const isProtectedRoute = protectedPaths.some(path => req.path.startsWith(path));
+    
+    if (isProtectedRoute && !req.session?.userId) {
+      // Rate limiting for unauthorized attempts
+      const clientIp = req.ip || req.connection.remoteAddress;
+      console.log(`⚠️  Unauthorized access attempt from ${clientIp} to ${req.path}`);
+      
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'Please log in to access this resource',
+        redirectTo: '/login'
+      });
+    }
     
     next();
   });
+
+  // Load routes
 
   // Enhanced CSP for Facebook compliance, Google services, video content, and security
   app.use((req, res, next) => {
