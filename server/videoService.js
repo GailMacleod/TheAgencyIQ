@@ -131,9 +131,9 @@ class VideoService {
     return alternativeTemplates[platform] || originalContent;
   }
 
-  // ENHANCED: Generate fucking awesome scroll-stopping video prompts
+  // NEW EXPERIMENT: Anime-Inspired Queensland Character Video Prompts 
   static generateAwesomeVideoPrompts(postContent, platform, brandData) {
-    console.log(`🎬 Creating scroll-stopping, fucking awesome prompts for ${platform}...`);
+    console.log(`🎌 Creating anime-inspired Queensland character videos for ${platform}...`);
     
     // Platform specifications with aspect ratios
     const platformSpecs = {
@@ -146,58 +146,144 @@ class VideoService {
     
     const spec = platformSpecs[platform] || platformSpecs.instagram;
     
-    // Queensland local events integration (Curated Plate example)
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1;
-    const currentDay = currentDate.getDate();
-    
-    let localEventContext = '';
-    if (currentMonth >= 7 && currentMonth <= 8) {
-      localEventContext = 'Curated Plate festival energy (July 25 - Aug 3) ';
-    } else {
-      localEventContext = 'Queensland business boom season ';
-    }
-    
-    // Strategyzer invisibility-to-beacon transformation themes
-    const heroicJourneyThemes = [
-      'invisible → beacon transformation',
-      'hidden gem → market leader journey', 
-      'quiet achiever → industry voice',
-      'behind-scenes → spotlight success',
-      'unnoticed → unmissable evolution'
+    // Queensland character archetypes - SINGLE CHARACTER FOCUS
+    const qldCharacters = [
+      {
+        character: "Queensland tradie", 
+        personality: "MacGyver-like problem solver with knowing grin",
+        activity: "fixes a squeaky gate with ingenious flair"
+      },
+      {
+        character: "Brisbane barista",
+        personality: "coffee artisan with legendary precision", 
+        activity: "creates the perfect flat white with magical touch"
+      },
+      {
+        character: "Gold Coast lifeguard",
+        personality: "quiet hero with beach wisdom",
+        activity: "saves the day with quick-thinking solution"
+      },
+      {
+        character: "Sunshine Coast artist", 
+        personality: "creative soul with local charm",
+        activity: "transforms blank canvas into masterpiece"
+      },
+      {
+        character: "Cairns tour guide",
+        personality: "adventure expert with tropical energy", 
+        activity: "reveals hidden local treasure with enthusiasm"
+      }
     ];
     
-    const selectedTheme = heroicJourneyThemes[Math.floor(Math.random() * heroicJourneyThemes.length)];
+    // Queensland lighting moods that drive emotional loyalty
+    const lightingMoods = [
+      {
+        type: "golden hour magic",
+        visual: "backyard floods with magical sunlight, dreamy sunlit hues",
+        emotion: "optimism, triumph, local legend vibes"
+      },
+      {
+        type: "stormy purple drama",
+        visual: "dramatic storm lighting with electric purple highlights", 
+        emotion: "high-stakes determination, breakthrough moments"
+      },
+      {
+        type: "dawn gold optimism",
+        visual: "sunrise rays breaking through morning mist",
+        emotion: "new beginnings, fresh energy, hope"
+      },
+      {
+        type: "twilight neon glow",
+        visual: "urban twilight with neon blues and warm oranges",
+        emotion: "modern innovation, city energy, sophistication"
+      }
+    ];
     
-    // Generate three fucking awesome prompts
-    const awesomePrompts = [
+    // Queensland authentic elements for local connection
+    const qldElements = [
+      "native birds swirling in slow-motion",
+      "BBQ smoke rising in distance", 
+      "jacaranda petals floating gently",
+      "palm tree shadows dancing",
+      "kookaburra laughing approval",
+      "ocean breeze rustling leaves"
+    ];
+    
+    // Randomly select elements for variety
+    const selectedCharacter = qldCharacters[Math.floor(Math.random() * qldCharacters.length)];
+    const selectedLighting = lightingMoods[Math.floor(Math.random() * lightingMoods.length)];
+    const selectedElement = qldElements[Math.floor(Math.random() * qldElements.length)];
+    
+    // Generate three anime-inspired single-character prompts
+    const animePrompts = [
       {
         id: 1,
-        title: "Companion-Style Hero Journey",
-        prompt: `${spec.ratio} ${spec.style} video: Queensland SME hero's journey from ${selectedTheme}. ${localEventContext}vibes with witty animations, bold electric colors (neon blues, vibrant oranges, power purples). Modern humor via storytelling questions like "Ever feel invisible in your market?" Quick cuts every 1-2 seconds, dynamic camera moves (zoom-ins, smooth pans), warm dramatic lighting with golden hour feels. Uplifting aspirational soundtrack. Character: confident business owner conquering challenges. Companion-style fun energy - supportive, witty, empowering. NO boring stock footage - custom scenes only. Make it scroll-stopping awesome that screams "watch me!"`,
-        postCopy: this.generateCompanionStyleCopy(postContent, platform, 'hero-journey'),
-        style: "companion-hero",
+        title: "Anime Queensland Hero",
+        prompt: `${spec.ratio} anime-inspired ${selectedCharacter.character}, alone at ${selectedLighting.type}, ${selectedCharacter.activity}; as they triumph, the scene ${selectedLighting.visual}, ${selectedElement}, and a ${selectedCharacter.personality} spreads across their face—visual warmth, clever solution, true local legend vibe, all captured in dreamy sunlit hues—no text, single character focus, proper lighting drives loyalty.`,
+        postCopy: this.generateQldCharacterCopy(postContent, platform, selectedCharacter.character),
+        style: "anime-qld-hero",
         editable: true
       },
       {
-        id: 2, 
-        title: "Strategyzer Beacon Transformation",
-        prompt: `${spec.ratio} ${spec.style} video: Strategyzer-inspired transformation showing business going from invisible to beacon presence. ${localEventContext}energy with playful animations of beacon lights, radar sweeps, signal waves. Bold modern colors (electric cyan, power red, victory gold). Witty storytelling: "Your business is a lighthouse - time to turn on the light!" Quick dynamic cuts, swooshing camera movements, warm cinematic lighting. Upbeat companion-style soundtrack. Show metaphorical beacon activation sequence. Fun, supportive vibes with humor. Zero stock footage - all custom creative scenes. Fucking awesome scroll-stopping content that demands attention!`,
-        postCopy: this.generateCompanionStyleCopy(postContent, platform, 'beacon-transformation'),
-        style: "strategyzer-beacon",
+        id: 2,
+        title: "Local Legend Moment", 
+        prompt: `${spec.ratio} anime-style Queensland tradie, alone at golden hour, fixes a squeaky gate with MacGyver-like flair; as he triumphs, the backyard floods with magical sunlight and native birds swirling around him in slow-motion, celebratory BBQ smoke rises in the distance, and a knowing grin spreads on his face—visual warmth, clever solution, true local legend vibe, all captured in dreamy, sunlit hues—no text.`,
+        postCopy: this.generateQldCharacterCopy(postContent, platform, 'local-legend'),
+        style: "local-legend-anime",
         editable: true
       },
       {
         id: 3,
-        title: "Local Event Power Surge", 
-        prompt: `${spec.ratio} ${spec.style} video: ${localEventContext}powered business surge story. Witty animations of Queensland map, event excitement, business growth arrows. Bold festival colors (sunset orange, celebration purple, energy yellow). Modern humor questions: "Ready to ride the ${localEventContext}wave?" Ultra-quick cuts (1 second max), dynamic camera spins and zooms, warm golden lighting with celebration vibes. Aspirational upbeat music. Show business catching the local event momentum. Companion-style supportive energy with witty charm. Custom visuals only - no boring stock. Create scroll-stopping, fucking awesome content that makes viewers stop and watch!`,
-        postCopy: this.generateCompanionStyleCopy(postContent, platform, 'local-event'),
-        style: "local-event-power",
+        title: "Queensland Magic Story",
+        prompt: `${spec.ratio} anime-influenced Queensland character (your choice), alone in frame, engaging in one clever activity showing local ingenuity; victorious moment with signature Queensland lighting (golden hour/storm purple/dawn gold), native elements adding magical touch, character's expression capturing local pride—warm visual storytelling, single focus, lighting drives emotional loyalty—no text, clean narrative, avoid confusing activities.`,
+        postCopy: this.getCustomPostCopyTemplate(platform),
+        style: "custom-qld-magic",
         editable: true
       }
     ];
     
-    return awesomePrompts;
+    console.log(`🎌 Created ${animePrompts.length} anime-inspired Queensland character prompts with single focus!`);
+    return animePrompts;
+  }
+
+  // Generate Queensland character-focused copy
+  static generateQldCharacterCopy(originalContent, platform, characterType) {
+    const platformLimits = {
+      instagram: 400,
+      linkedin: 1300,
+      x: 280, 
+      youtube: 600,
+      facebook: 2000
+    };
+    
+    const charLimit = platformLimits[platform] || 500;
+    
+    const characterStyles = {
+      'Queensland tradie': {
+        instagram: `Problem-solving legend in action! ${originalContent.substring(0, 200)} When Queensland tradies get creative, magic happens! #QLDTradie #ProblemSolver`,
+        linkedin: `Queensland business ingenuity at its finest: ${originalContent} Every challenge is just another opportunity for creative problem-solving. This is how local legends are made - one clever solution at a time.`,
+        x: `QLD tradie magic: ${originalContent.substring(0, 150)} Pure problem-solving genius! #QLD`,
+        youtube: `Watch a Queensland tradie turn an ordinary problem into an extraordinary solution! ${originalContent} This is the kind of local ingenuity that built Queensland - practical, clever, and absolutely brilliant!`,
+        facebook: `Queensland tradies doing what they do best - solving problems with pure genius! ${originalContent} Every backyard hero has a story like this. Share yours below! #QLDTradies`
+      },
+      'Brisbane barista': {
+        instagram: `Coffee artistry meets Queensland magic! ${originalContent.substring(0, 200)} When passion meets precision, legends are born! #BrisbaneBarista #CoffeeArt`,
+        linkedin: `Brisbane coffee culture excellence: ${originalContent} Precision, passion, and perfectionism create experiences that build loyal communities. This is how service businesses become local institutions.`,
+        x: `Brisbane coffee legend: ${originalContent.substring(0, 150)} Perfection in every cup! #Brisbane`,
+        youtube: `The art of the perfect Brisbane flat white! ${originalContent} Watch how dedication to craft creates moments of pure magic. This is why Brisbane coffee culture is legendary!`,
+        facebook: `Brisbane baristas creating coffee magic every single day! ${originalContent} Tag your favorite Brisbane café below - let's celebrate our coffee legends! #BrisbaneCoffee`
+      },
+      'local-legend': {
+        instagram: `Local legends aren't born - they're made through moments like this! ${originalContent.substring(0, 200)} Queensland spirit in action! #LocalLegend #QLD`,
+        linkedin: `Queensland business philosophy: ${originalContent} Local legends understand that extraordinary service comes from ordinary moments elevated by genuine care and creative solutions.`,
+        x: `Local legend status: ${originalContent.substring(0, 150)} Queensland pride! #QLD`,
+        youtube: `This is how local legends are made in Queensland! ${originalContent} Every small business owner has the potential for moments like this - when ordinary becomes extraordinary!`,
+        facebook: `Queensland local legends in action! ${originalContent} Every community has heroes like this - share your favorite local legend story below! #QLDLegends`
+      }
+    };
+    
+    const characterTemplates = characterStyles[characterType] || characterStyles['local-legend'];
+    return characterTemplates[platform] || originalContent;
   }
 
   // Generate companion-style copy for different themes
