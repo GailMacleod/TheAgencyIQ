@@ -174,9 +174,10 @@ html, body {
   /* Heading size reductions - H1 unchanged per request */
   h2, .text-lg, .mobile-heading {
     font-size: 1.2rem !important; /* 19.2px as requested */
-    line-height: 2.2 !important; /* Proper spacing without overlap */
-    padding: 1.5rem 0 !important; /* Reasonable padding */
+    line-height: 1.4 !important; /* Tighter line height to prevent excessive spacing */
+    padding: 2rem 1rem !important; /* Increased padding for deeper box */
     margin: 1rem 0 !important; /* Reasonable margin */
+    min-height: 100px !important; /* Minimum height for deeper box */
   }
   
   h3 {
@@ -190,13 +191,12 @@ html, body {
     min-height: 300px !important;
   }
   
-  /* Mobile heading container with better spacing */
+  /* Specific mobile heading styling for deeper box */
   .mobile-heading {
-    padding: 2rem 1rem !important;
-    min-height: 120px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    padding: 3rem 1.5rem !important; /* More padding for deeper box */
+    min-height: 140px !important; /* Taller minimum height */
+    display: block !important; /* Keep as block for proper text flow */
+    box-sizing: border-box !important; /* Include padding in height calculation */
   }
   
   /* Hero section mobile spacing */
