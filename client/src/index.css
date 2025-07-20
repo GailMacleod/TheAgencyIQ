@@ -171,20 +171,27 @@ html, body {
 
 /* Comprehensive mobile optimization for tablets and phones */
 @media (max-width: 768px) {
-  /* Heading size reductions */
+  /* Heading size reductions with massive line spacing */
   h1 {
     font-size: 1.5rem !important; /* 24px */
-    line-height: 1.8 !important; /* Much more open leading */
+    line-height: 2.5 !important; /* Massive open leading */
   }
   
   h2 {
     font-size: 1.2rem !important; /* 19.2px */
-    line-height: 1.8 !important; /* Much more open leading */
+    line-height: 2.8 !important; /* Extremely open leading */
+    padding: 1rem 0 !important; /* Extra box padding */
   }
   
   h3 {
     font-size: 1rem !important; /* 16px */
-    line-height: 1.6 !important; /* Open leading */
+    line-height: 2.0 !important; /* Very open leading */
+  }
+  
+  /* Mobile text containers need more space */
+  .hero-text-container {
+    padding: 2rem 1rem !important;
+    min-height: 200px !important;
   }
   
   /* Hero section mobile spacing */
