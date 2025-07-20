@@ -255,6 +255,198 @@ html, body {
     padding: 0.5rem 0 !important;
     display: block !important;
   }
+  
+  /* COMPREHENSIVE APP-WIDE MOBILE OPTIMIZATIONS */
+  
+  /* Calendar and schedule pages */
+  .calendar-container, .schedule-container {
+    padding: 0.5rem !important;
+    gap: 1rem !important;
+  }
+  
+  .calendar-grid {
+    grid-template-columns: repeat(1, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  
+  .calendar-day {
+    min-height: 60px !important;
+    padding: 0.5rem !important;
+    font-size: 0.875rem !important;
+  }
+  
+  /* Post cards and content */
+  .post-card, .card {
+    margin: 0.5rem 0 !important;
+    padding: 1rem !important;
+  }
+  
+  .post-content {
+    font-size: 0.875rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Platform connection cards */
+  .platform-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .platform-card {
+    padding: 1rem !important;
+    min-height: 80px !important;
+  }
+  
+  .platform-icon {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+  
+  /* Brand purpose form */
+  .brand-form-container {
+    padding: 1rem !important;
+    gap: 1rem !important;
+  }
+  
+  .form-section {
+    margin-bottom: 1.5rem !important;
+  }
+  
+  .form-input, .form-textarea {
+    padding: 12px !important;
+    font-size: 16px !important; /* Prevent iOS zoom */
+    border-radius: 8px !important;
+  }
+  
+  .form-label {
+    font-size: 0.875rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  /* Analytics dashboard */
+  .analytics-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .metric-card {
+    padding: 1rem !important;
+    min-height: 100px !important;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem !important;
+  }
+  
+  .metric-label {
+    font-size: 0.75rem !important;
+  }
+  
+  /* Charts and graphs */
+  .chart-container {
+    height: 200px !important;
+    margin: 1rem 0 !important;
+  }
+  
+  .chart-legend {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  
+  /* Navigation improvements */
+  .nav-container {
+    padding: 0 1rem !important;
+  }
+  
+  .nav-item {
+    padding: 12px 16px !important;
+    font-size: 0.875rem !important;
+  }
+  
+  .back-button {
+    margin: 1rem !important;
+    padding: 12px 20px !important;
+  }
+  
+  /* Modal and dialog optimizations */
+  .modal-content, .dialog-content {
+    max-width: calc(100vw - 2rem) !important;
+    max-height: calc(100vh - 2rem) !important;
+    margin: 1rem !important;
+    padding: 1rem !important;
+  }
+  
+  .modal-header {
+    padding: 1rem !important;
+    font-size: 1rem !important;
+  }
+  
+  .modal-footer {
+    padding: 1rem !important;
+    gap: 0.5rem !important;
+    flex-direction: column-reverse !important;
+  }
+  
+  /* Progress bars and indicators */
+  .progress-container {
+    height: 8px !important;
+    margin: 1rem 0 !important;
+  }
+  
+  .badge, .status-badge {
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
+  }
+  
+  /* Touch-friendly interactive elements */
+  .clickable, .touch-target {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    padding: 8px !important;
+  }
+  
+  /* Table responsiveness */
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  .table {
+    min-width: 600px !important;
+  }
+  
+  .table-cell {
+    padding: 8px !important;
+    font-size: 0.875rem !important;
+  }
+  
+  /* Image and media responsiveness */
+  .image-container, .media-container {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  
+  .avatar, .profile-image {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+  
+  /* Video and media players */
+  .video-container {
+    aspect-ratio: 16/9 !important;
+    width: 100% !important;
+    margin: 1rem 0 !important;
+  }
+  
+  /* Sidebar and drawer optimizations */
+  .sidebar, .drawer {
+    width: 100vw !important;
+    max-width: none !important;
+  }
+  
+  .sidebar-content {
+    padding: 1rem !important;
+  }
 }
 
 @layer base {
