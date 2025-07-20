@@ -119,7 +119,7 @@ export default function Splash() {
                     BETA
                   </div>
                 </div>
-                <h1 className="text-xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-[#3250fa] px-2">
+                <h1 className="text-xl sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-[#3250fa] px-2 font-extrabold">
                   Set & Forget
                 </h1>
                 <h2 className="mobile-heading sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-[#3250fa] to-[#00f0ff] bg-clip-text text-transparent px-2 text-center text-[44px]">
