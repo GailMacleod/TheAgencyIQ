@@ -7237,6 +7237,63 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
+  // ADMIN: Video prompts monitoring endpoint
+  app.get("/api/admin/video-prompts", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      // Security check - only allow admin users
+      if (!user || user.email !== 'gailm@macleodglba.com.au') {
+        return res.status(403).json({ message: "Unauthorized - admin access required" });
+      }
+
+      console.log(`🎬 Admin accessing video prompts monitoring - User ${userId}`);
+      
+      // Get video prompt logs from global storage
+      const videoPromptLog = global.videoPromptLog || [];
+      
+      // Enhanced analytics
+      const totalPrompts = videoPromptLog.length;
+      const last24Hours = videoPromptLog.filter(p => 
+        new Date(p.timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+      ).length;
+      
+      const platformBreakdown = videoPromptLog.reduce((acc, p) => {
+        acc[p.platform] = (acc[p.platform] || 0) + 1;
+        return acc;
+      }, {});
+      
+      const averageTokens = videoPromptLog
+        .filter(p => p.performance?.totalTokens)
+        .reduce((sum, p) => sum + parseInt(p.performance.totalTokens), 0) / 
+        Math.max(1, videoPromptLog.filter(p => p.performance?.totalTokens).length);
+
+      const averageCacheHit = videoPromptLog
+        .filter(p => p.performance?.cacheHitRate)
+        .reduce((sum, p) => sum + parseFloat(p.performance.cacheHitRate.replace('%', '')), 0) / 
+        Math.max(1, videoPromptLog.filter(p => p.performance?.cacheHitRate).length);
+
+      res.json({
+        summary: {
+          totalPrompts,
+          last24Hours,
+          platformBreakdown,
+          performance: {
+            averageTokenUsage: Math.round(averageTokens) || 0,
+            averageCacheHitRate: `${Math.round(averageCacheHit) || 0}%`
+          }
+        },
+        prompts: videoPromptLog.slice(0, 20), // Last 20 prompts
+        status: "monitoring_active"
+      });
+
+    } catch (error: any) {
+      console.error('Video prompts monitoring error:', error);
+      res.status(500).json({ message: "Failed to fetch video prompt data" });
+    }
+  });
+
   // ADMIN: Bulk cancel all active subscriptions (emergency cleanup)
   app.post("/api/admin/bulk-cancel-subscriptions", requireAuth, async (req: any, res) => {
     try {

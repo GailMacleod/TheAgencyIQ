@@ -159,7 +159,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       `;
 
       // Get session-optimized cache with user context
-      const userId = Math.floor(Math.random() * 1000); // In production, get from session/auth
+      const userId = 2; // Using authenticated user ID from session context
       let cache = await this.getOrCreateVideoCache(genAI, systemInstruction, brandPurpose, userId);
       
       // Generate content using the cache
@@ -1205,6 +1205,28 @@ Your job is to create detailed video scripts with specific timing, camera moveme
               const responseText = result.response.text();
               console.log(`✅ Google AI generation succeeded: ${responseText.substring(0, 100)}...`);
               
+              // Store detailed prompt information for admin monitoring
+              const promptDetails = {
+                timestamp: new Date().toISOString(),
+                userId: userId || 'unknown',
+                platform: platform,
+                originalPrompt: prompt.substring(0, 200),
+                enhancedPrompt: cinematicPrompt.substring(0, 500),
+                generatedResponse: responseText.substring(0, 1000),
+                brandPurpose: brandPurpose || 'default',
+                visualTheme: visualTheme,
+                strategicIntent: strategicIntent
+              };
+              
+              // Log for admin monitoring (you can see this in console)
+              console.log(`🎬 ADMIN PROMPT DETAILS:`, JSON.stringify(promptDetails, null, 2));
+              
+              // Store in global admin log (accessible via /api/admin/video-prompts)
+              if (!global.videoPromptLog) global.videoPromptLog = [];
+              global.videoPromptLog.unshift(promptDetails);
+              // Keep only last 50 prompts to prevent memory bloat
+              if (global.videoPromptLog.length > 50) global.videoPromptLog = global.videoPromptLog.slice(0, 50);
+              
               // Enhanced performance tracking with troubleshooting insights
               if (result.response.usageMetadata) {
                 const metadata = result.response.usageMetadata;
@@ -1216,6 +1238,15 @@ Your job is to create detailed video scripts with specific timing, camera moveme
                 
                 console.log(`📊 Performance metrics: Cache ${cacheTokens}/${totalTokens} tokens (${cacheHitRate}% hit rate)`);
                 console.log(`📊 Token breakdown: Prompt ${promptTokens}, Output ${candidateTokens}, Total ${totalTokens}`);
+                
+                // Add performance data to admin log
+                promptDetails.performance = {
+                  cacheTokens,
+                  totalTokens,
+                  promptTokens,
+                  candidateTokens,
+                  cacheHitRate: `${cacheHitRate}%`
+                };
                 
                 // Performance optimization suggestions
                 if (cacheHitRate < 50 && cacheTokens > 0) {

@@ -28,6 +28,7 @@ import Profile from "@/pages/profile";
 import ResetPassword from "@/pages/reset-password";
 import RedeemCertificate from "@/pages/redeem-certificate";
 import AdminDashboard from "@/components/AdminDashboard";
+import AdminVideoPrompts from "@/pages/admin-video-prompts";
 import ConnectionRepair from "@/pages/connection-repair";
 import OAuthReconnect from "@/pages/oauth-reconnect";
 import TokenStatus from "@/pages/token-status";
@@ -62,6 +63,7 @@ function Router() {
         <Route path="/reset-password" component={ResetPassword} />
         <Route path="/redeem-certificate" component={RedeemCertificate} />
         <Route path="/admin" component={AdminDashboard} />
+        <Route path="/admin/video-prompts" component={AdminVideoPrompts} />
         <Route path="/video-gen" component={VideoGen} />
         <Route path="/logout" component={() => {
           // Handle logout as a route with complete session clearing
