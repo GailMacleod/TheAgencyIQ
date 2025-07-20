@@ -179,8 +179,9 @@ html, body {
   
   h2 {
     font-size: 1.2rem !important; /* 19.2px */
-    line-height: 2.8 !important; /* Extremely open leading */
-    padding: 1rem 0 !important; /* Extra box padding */
+    line-height: 4.5 !important; /* Massive spacing to prevent overlap */
+    padding: 3rem 0 !important; /* Huge box padding */
+    margin: 2rem 0 !important; /* Extra margin spacing */
   }
   
   h3 {
