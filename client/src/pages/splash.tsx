@@ -122,7 +122,7 @@ export default function Splash() {
                 <h1 className="text-xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-[#3250fa] px-2">
                   Set & forget
                 </h1>
-                <h2 className="hero-text-container text-lg sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-[#3250fa] to-[#00f0ff] bg-clip-text text-transparent px-2" style={{ lineHeight: '4.5', paddingTop: '2rem', paddingBottom: '2rem' }}>
+                <h2 className="text-lg sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-[#3250fa] to-[#00f0ff] bg-clip-text text-transparent px-2">
                   Social media for small businesses
                 </h2>
                 <p className="text-sm sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto px-4 sm:px-0">Complete waterfall workflow to drive small businesses' online social presence.</p>

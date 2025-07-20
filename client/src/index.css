@@ -178,10 +178,10 @@ html, body {
   }
   
   h2 {
-    font-size: 12px !important; /* 12px only */
-    line-height: 4.5 !important; /* Massive spacing to prevent overlap */
-    padding: 3rem 0 !important; /* Huge box padding */
-    margin: 2rem 0 !important; /* Extra margin spacing */
+    font-size: 18px !important; /* Readable mobile size */
+    line-height: 2.2 !important; /* Proper spacing without overlap */
+    padding: 1.5rem 0 !important; /* Reasonable padding */
+    margin: 1rem 0 !important; /* Reasonable margin */
   }
   
   h3 {
