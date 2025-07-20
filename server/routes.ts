@@ -38,6 +38,7 @@ import { quotaManager } from './services/QuotaManager';
 import { checkVideoQuota, checkAPIQuota, checkContentQuota } from './middleware/quotaEnforcement';
 import { postingQueue } from './services/PostingQueue';
 import { CustomerOnboardingOAuth } from './services/CustomerOnboardingOAuth';
+import { PipelineOrchestrator } from './services/PipelineOrchestrator';
 
 // Extended session types
 declare module 'express-session' {
@@ -9763,42 +9764,134 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Get available OAuth providers for onboarding
-  app.get("/api/onboard/providers", requireAuth, async (req: any, res) => {
+  // BULLETPROOF PIPELINE ORCHESTRATION ENDPOINTS - Prevents data loss and session failures
+  
+  // Initialize pipeline with session caching
+  app.post("/api/pipeline/initialize", requireAuth, async (req: any, res) => {
     try {
-      const providers = [
-        {
-          name: 'google',
-          displayName: 'Google My Business',
-          description: 'Extract business information from Google My Business',
-          icon: 'google',
-          dataTypes: ['business_name', 'industry', 'location', 'contact']
-        },
-        {
-          name: 'facebook',
-          displayName: 'Facebook Business',
-          description: 'Import business page information from Facebook',
-          icon: 'facebook',
-          dataTypes: ['page_info', 'category', 'about', 'mission']
-        },
-        {
-          name: 'linkedin',
-          displayName: 'LinkedIn Company',
-          description: 'Connect your professional LinkedIn profile and company',
-          icon: 'linkedin',
-          dataTypes: ['profile', 'company', 'industry', 'headline']
-        }
-      ];
+      const userId = req.session?.userId?.toString();
+      const sessionId = req.sessionID;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      console.log(`🚀 Initializing bulletproof pipeline for user ${userId}`);
+
+      const state = await PipelineOrchestrator.initializePipeline(userId, sessionId);
 
       res.json({
         success: true,
-        providers,
-        message: "Available OAuth providers for secure onboarding"
+        stage: state.stage,
+        progress: state.progress,
+        quotaSnapshot: state.quotaSnapshot,
+        message: "Pipeline initialized with session caching"
       });
 
     } catch (error: any) {
-      console.error('Get providers error:', error);
-      res.status(500).json({ error: 'Failed to get providers' });
+      console.error('Pipeline initialization error:', error);
+      res.status(500).json({ error: 'Failed to initialize pipeline', details: error.message });
+    }
+  });
+
+  // Process onboarding with comprehensive validation
+  app.post("/api/pipeline/onboarding", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId?.toString();
+      const sessionId = req.sessionID;
+      const onboardingData = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      console.log(`🔍 Processing onboarding with validation for user ${userId}`);
+
+      const result = await PipelineOrchestrator.processOnboarding(userId, sessionId, onboardingData);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          errors: result.errors,
+          message: "Onboarding validation failed"
+        });
+      }
+
+      res.json({
+        success: true,
+        stage: result.state?.stage,
+        progress: result.state?.progress,
+        message: "Onboarding data validated and cached successfully"
+      });
+
+    } catch (error: any) {
+      console.error('Onboarding processing error:', error);
+      res.status(500).json({ error: 'Failed to process onboarding', details: error.message });
+    }
+  });
+
+  // Complete pipeline with post creation
+  app.post("/api/pipeline/complete", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId?.toString();
+      const sessionId = req.sessionID;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      console.log(`🏁 Completing pipeline for user ${userId}`);
+
+      const result = await PipelineOrchestrator.completePipeline(userId, sessionId);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          errors: result.errors,
+          message: "Pipeline completion failed"
+        });
+      }
+
+      res.json({
+        success: true,
+        stage: result.state?.stage,
+        progress: result.state?.progress,
+        postsCreated: result.state?.data?.postResults?.postsCreated || 0,
+        message: "Pipeline completed successfully"
+      });
+
+    } catch (error: any) {
+      console.error('Pipeline completion error:', error);
+      res.status(500).json({ error: 'Failed to complete pipeline', details: error.message });
+    }
+  });
+
+  // Get pipeline recovery recommendations
+  app.get("/api/pipeline/recovery/:sessionId?", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId?.toString();
+      const sessionId = req.params.sessionId || req.sessionID;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      console.log(`🔄 Getting recovery recommendations for user ${userId}`);
+
+      const recovery = await PipelineOrchestrator.getRecoveryRecommendations(userId, sessionId);
+
+      res.json({
+        success: true,
+        canRecover: recovery.canRecover,
+        stage: recovery.stage,
+        progress: recovery.progress,
+        recommendations: recovery.recommendations,
+        message: recovery.canRecover ? "Recovery options available" : "Pipeline restart required"
+      });
+
+    } catch (error: any) {
+      console.error('Recovery recommendations error:', error);
+      res.status(500).json({ error: 'Failed to get recovery recommendations' });
     }
   });
 
