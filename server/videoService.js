@@ -871,11 +871,23 @@ class VideoService {
             // Enhanced MayorkingAI-style prompt for Veo3
             cinematicPrompt = this.enhancePromptForVeo3(prompt);
             
-            const model = genAI.getGenerativeModel({ model: VEO3_VIDEO_MODEL });
+            const model = genAI.getGenerativeModel({ 
+              model: VEO3_VIDEO_MODEL,
+              generationConfig: {
+                maxOutputTokens: 1000,
+                temperature: 0.7,
+              }
+            });
             
-            const result = await model.generateContent([{
-              text: cinematicPrompt
-            }]);
+            // Add timeout wrapper for API call
+            const result = await Promise.race([
+              model.generateContent([{
+                text: cinematicPrompt
+              }]),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Google AI API timeout after 30 seconds')), 30000)
+              )
+            ]);
             
             if (result && result.response && result.response.text) {
               // Google AI returned text response (not actual video for now)
@@ -890,7 +902,12 @@ class VideoService {
           }
         } catch (apiError) {
           generationError = apiError.message;
-          console.log(`⚠️ Veo3 API call failed: ${apiError.message}`);
+          console.log(`⚠️ Google AI API call failed: ${apiError.message}`);
+          
+          if (apiError.message.includes('timeout')) {
+            console.log(`⏰ API timeout - This is normal for complex video generation requests`);
+          }
+          
           console.log(`🎨 Falling back to Art Director preview mode`);
         }
         
