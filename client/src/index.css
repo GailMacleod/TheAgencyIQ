@@ -171,21 +171,16 @@ html, body {
 
 /* Comprehensive mobile optimization for tablets and phones */
 @media (max-width: 768px) {
-  /* Heading size reductions with massive line spacing */
-  h1 {
-    font-size: 1.5rem !important; /* 24px */
-    line-height: 2.5 !important; /* Massive open leading */
-  }
-  
+  /* Heading size reductions - H1 unchanged per request */
   h2, .text-lg, .mobile-heading {
-    font-size: 18px !important; /* Force override Tailwind */
+    font-size: 1.2rem !important; /* 19.2px as requested */
     line-height: 2.2 !important; /* Proper spacing without overlap */
     padding: 1.5rem 0 !important; /* Reasonable padding */
     margin: 1rem 0 !important; /* Reasonable margin */
   }
   
   h3 {
-    font-size: 1rem !important; /* 16px */
+    font-size: 1rem !important; /* 16px as requested */
     line-height: 2.0 !important; /* Very open leading */
   }
   
@@ -226,8 +221,8 @@ html, body {
     gap: 1rem !important;
   }
   
-  /* Full-width buttons with larger padding */
-  .mobile-button {
+  /* Full-width buttons with 15px padding as requested */
+  .mobile-button, button, .btn, [role="button"] {
     width: 100% !important;
     padding: 15px !important;
     font-size: 1rem !important;
