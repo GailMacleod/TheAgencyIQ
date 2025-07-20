@@ -191,12 +191,12 @@ html, body {
     min-height: 300px !important;
   }
   
-  /* Specific mobile heading styling for the H2 element with deeper box */
+  /* Specific mobile heading styling for the H2 element with much deeper box */
   h2.mobile-heading {
     font-size: 1.2rem !important; /* Override the text-[44px] class on mobile */
     line-height: 1.4 !important; /* Proper line height */
-    padding: 4rem 2rem !important; /* Much deeper box - 64px top/bottom */
-    min-height: 160px !important; /* Guaranteed deep height */
+    padding: 6rem 2rem !important; /* Much deeper box - 96px top/bottom */
+    min-height: 240px !important; /* Much taller guaranteed height */
     display: block !important; /* Block display for proper text flow */
     box-sizing: border-box !important; /* Include padding in height */
     margin: 2rem 0 !important; /* More margin for spacing */
