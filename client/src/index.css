@@ -178,7 +178,7 @@ html, body {
   }
   
   h2 {
-    font-size: 1.2rem !important; /* 19.2px */
+    font-size: 12px !important; /* 12px only */
     line-height: 4.5 !important; /* Massive spacing to prevent overlap */
     padding: 3rem 0 !important; /* Huge box padding */
     margin: 2rem 0 !important; /* Extra margin spacing */
