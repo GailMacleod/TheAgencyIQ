@@ -997,7 +997,7 @@ class VideoService {
       
       // Emergency fallback with authentic Art Director generation
       const emergencyTheme = 'professional corporate environments';
-      const emergencyVideo = await this.generateVeo3Video('Emergency business transformation: Queensland SME growth through professional automation systems. Dramatic office scenes with business success visualization.', platform);
+      const emergencyVideo = await generateArtDirectorVideo(emergencyTheme, 'Emergency business transformation', 'Queensland SME growth through professional automation systems. Dramatic office scenes with business success visualization.', platform);
       
       return {
         success: true,
@@ -1578,11 +1578,15 @@ async function generateArtDirectorVideo(visualTheme, strategicIntent, creativeDi
     // Create cinematic business transformation prompt
     const cinematicPrompt = `${visualTheme} - ${strategicIntent}: ${creativeDirection}. High-speed tracking shot reveals Queensland SME transformation. Wide push-in on moments of business realization. Close-up emotional intensity as success unfolds. Dramatic lighting with professional business context. Photorealistic cinematic quality. 8 seconds of pure business inspiration.`;
     
-    // Try to generate with Veo3 API
+    // Try to generate with Veo3 API if available
     let veoVideoUrl = null;
     if (process.env.GOOGLE_AI_STUDIO_KEY) {
       try {
+        // Import Google Generative AI at runtime
+        const { GoogleGenerativeAI } = await import('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_KEY);
         const model = genAI.getGenerativeModel({ model: 'veo-3.0-generate-preview' });
+        
         const result = await model.generateContent({
           prompt: cinematicPrompt,
           duration: 8, // Veo3 supports 8-second videos
