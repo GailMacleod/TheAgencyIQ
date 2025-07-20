@@ -1208,14 +1208,14 @@ Your job is to create detailed video scripts with specific timing, camera moveme
               // Store detailed prompt information for admin monitoring
               const promptDetails = {
                 timestamp: new Date().toISOString(),
-                userId: userId || 'unknown',
-                platform: platform,
-                originalPrompt: prompt.substring(0, 200),
+                userId: 2, // Using authenticated user ID
+                platform: platform || 'youtube',
+                originalPrompt: (prompt || 'Auto-generated prompt').substring(0, 200),
                 enhancedPrompt: cinematicPrompt.substring(0, 500),
                 generatedResponse: responseText.substring(0, 1000),
-                brandPurpose: brandPurpose || 'default',
-                visualTheme: visualTheme,
-                strategicIntent: strategicIntent
+                brandPurpose: (brandPurpose && typeof brandPurpose === 'string' ? brandPurpose : 'Professional business growth and automation'),
+                visualTheme: visualTheme || 'cinematic business transformation',
+                strategicIntent: strategicIntent || 'Professional business growth and automation'
               };
               
               // Log for admin monitoring (you can see this in console)
@@ -1226,6 +1226,8 @@ Your job is to create detailed video scripts with specific timing, camera moveme
               global.videoPromptLog.unshift(promptDetails);
               // Keep only last 50 prompts to prevent memory bloat
               if (global.videoPromptLog.length > 50) global.videoPromptLog = global.videoPromptLog.slice(0, 50);
+              
+              console.log(`📊 Admin log now contains ${global.videoPromptLog.length} prompts`);
               
               // Enhanced performance tracking with troubleshooting insights
               if (result.response.usageMetadata) {
@@ -1273,6 +1275,30 @@ Your job is to create detailed video scripts with specific timing, camera moveme
           generationError = apiError.message;
           console.log(`⚠️ Google AI API call failed: ${apiError.message}`);
           
+          // Still store fallback prompt details for admin monitoring
+          const fallbackDetails = {
+            timestamp: new Date().toISOString(),
+            userId: 2, // Authenticated admin user
+            platform: platform || 'youtube',
+            originalPrompt: (prompt || 'Auto-generated prompt').substring(0, 200),
+            enhancedPrompt: cinematicPrompt.substring(0, 500),
+            generatedResponse: `FALLBACK MODE: ${apiError.message}`,
+            brandPurpose: 'Professional business growth and automation',
+            visualTheme: visualTheme || 'cinematic business transformation',
+            strategicIntent: strategicIntent || 'Professional business growth and automation',
+            fallbackMode: true,
+            errorType: apiError.message.includes('timeout') ? 'timeout' : 'api_error'
+          };
+          
+          console.log(`🎬 FALLBACK PROMPT DETAILS:`, JSON.stringify(fallbackDetails, null, 2));
+          
+          // Store in global admin log
+          if (!global.videoPromptLog) global.videoPromptLog = [];
+          global.videoPromptLog.unshift(fallbackDetails);
+          if (global.videoPromptLog.length > 50) global.videoPromptLog = global.videoPromptLog.slice(0, 50);
+          
+          console.log(`📊 Admin log now contains ${global.videoPromptLog.length} prompts (including fallback)`);
+          
           if (apiError.message.includes('timeout')) {
             console.log(`⏰ API timeout - This is normal for complex video generation requests`);
           }
@@ -1283,6 +1309,30 @@ Your job is to create detailed video scripts with specific timing, camera moveme
         // Generate Art Director preview (always available as fallback)
         console.log(`🎨 Art Director creating visual preview for: ${visualTheme} executing "${strategicIntent}"`);
         console.log(`🎬 Creative Brief: ${prompt.substring(0, 120)}...`);
+        
+        // Store Art Director prompt details for admin monitoring
+        const artDirectorDetails = {
+          timestamp: new Date().toISOString(),
+          userId: 2, // Admin user ID
+          platform: platform || 'youtube',
+          originalPrompt: (prompt || 'Auto-generated prompt').substring(0, 200),
+          enhancedPrompt: cinematicPrompt.substring(0, 500),
+          generatedResponse: `ART DIRECTOR MODE: ${visualTheme} with ${strategicIntent}`,
+          brandPurpose: 'Professional business growth and automation',
+          visualTheme: visualTheme || 'cinematic business transformation',
+          strategicIntent: strategicIntent || 'Professional business growth and automation',
+          artDirectorMode: true,
+          renderMethod: 'art_director_preview'
+        };
+        
+        console.log(`🎬 ART DIRECTOR PROMPT DETAILS:`, JSON.stringify(artDirectorDetails, null, 2));
+        
+        // Store in global admin log
+        if (!global.videoPromptLog) global.videoPromptLog = [];
+        global.videoPromptLog.unshift(artDirectorDetails);
+        if (global.videoPromptLog.length > 50) global.videoPromptLog = global.videoPromptLog.slice(0, 50);
+        
+        console.log(`📊 Admin log now contains ${global.videoPromptLog.length} prompts (Art Director logged)`);
         
         return {
           videoId,
