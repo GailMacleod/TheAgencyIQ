@@ -507,13 +507,13 @@ class VideoService {
     }
     
     const awesomeCustomTemplates = {
-      instagram: `${spec.ratio} ${spec.style} video: [Your unique Queensland business story]. Infuse companion-style fun with witty animations, bold electric colors (your brand colors + neon accents). Modern humor via questions like "[Your engaging question?]" ${localEventContext}vibes. Quick cuts every 1-2 seconds, dynamic moves (zoom-ins, pans), warm dramatic lighting. Uplifting soundtrack. Show your heroic SME journey from invisible to beacon. NO boring stock - custom scenes only. Make it fucking awesome and scroll-stopping!`,
+      instagram: `${spec.ratio} ${spec.style} video: [Your unique Queensland business story]. Infuse companion-style fun with witty animations, bold electric colors (your brand colors + neon accents). Modern humor via questions like "[Your engaging question?]" ${localEventContext}vibes. Quick cuts every 1-2 seconds, dynamic moves (zoom-ins, pans), warm dramatic lighting. Uplifting soundtrack. Show your heroic SME journey from invisible to beacon. NO boring stock - custom scenes only. Make it awesome and scroll-stopping!`,
       
       linkedin: `${spec.ratio} ${spec.style} video: [Your professional transformation story]. Companion-style supportive energy with sophisticated animations, bold business colors (power blues, success golds). Witty professional storytelling: "[Your industry insight?]" ${localEventContext}momentum. Quick dynamic cuts, smooth camera movements, warm cinematic lighting. Aspirational soundtrack. Demonstrate your Strategyzer invisibility-to-beacon journey. Zero stock footage - all custom professional scenes. Create scroll-stopping content that demands attention!`,
       
-      youtube: `${spec.ratio} ${spec.style} video: [Your educational/entertaining business content]. Companion-style fun energy with engaging animations, vibrant colors matching your brand. Modern humor and storytelling: "[Your hook question?]" ${localEventContext}celebration vibes. Ultra-quick cuts (1-2 seconds), dynamic camera work, golden hour lighting. Upbeat music. Show your unique approach to solving Queensland business challenges. Custom visuals only - no stock. Make it fucking awesome that makes viewers stop scrolling!`,
+      youtube: `${spec.ratio} ${spec.style} video: [Your educational/entertaining business content]. Companion-style fun energy with engaging animations, vibrant colors matching your brand. Modern humor and storytelling: "[Your hook question?]" ${localEventContext}celebration vibes. Ultra-quick cuts (1-2 seconds), dynamic camera work, golden hour lighting. Upbeat music. Show your unique approach to solving Queensland business challenges. Custom visuals only - no stock. Make it awesome that makes viewers stop scrolling!`,
       
-      x: `${spec.ratio} ${spec.style} video: [Your punchy business message]. Companion-style wit with rapid animations, bold contrast colors. Quick humor: "[Your Twitter-style question?]" ${localEventContext}energy. Lightning-fast cuts (1 second max), dynamic movements, dramatic lighting. High-energy soundtrack. Demonstrate your business advantage in seconds. Custom scenes only. Create scroll-stopping, fucking awesome content!`,
+      x: `${spec.ratio} ${spec.style} video: [Your punchy business message]. Companion-style wit with rapid animations, bold contrast colors. Quick humor: "[Your social-style question?]" ${localEventContext}energy. Lightning-fast cuts (1 second max), dynamic movements, dramatic lighting. High-energy soundtrack. Demonstrate your business advantage in seconds. Custom scenes only. Create scroll-stopping, awesome content!`,
       
       facebook: `${spec.ratio} ${spec.style} video: [Your community connection story]. Companion-style warmth with playful animations, welcoming colors (warm oranges, friendly blues). Conversational humor: "[Your community question?]" ${localEventContext}local pride. Quick engaging cuts, smooth movements, golden lighting. Feel-good music. Show your Queensland business serving the community. No stock footage - authentic custom scenes. Make it scroll-stopping awesome that builds connection!`
     };
@@ -847,7 +847,7 @@ class VideoService {
         const spec = videoSpecs[platform] || videoSpecs.YouTube;
         const videoId = `artdirected_${visualTheme.replace(/\s+/g, '_')}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        // HERO CHARACTER BUSINESS PROMPT - Inspired by viral TikTok/Instagram success patterns
+        // HERO CHARACTER BUSINESS PROMPT - Inspired by viral social media success patterns
         const heroCharacterPrompt = VideoService.createHeroCharacterBusinessPrompt(strategicIntent, creativeDirection, platform, visualTheme);
         const prompt = heroCharacterPrompt;
         
@@ -1035,7 +1035,7 @@ class VideoService {
     
     // Platform Adaptations - Tailor visuals fluidly for platform-native engagement
     const platformSpecs = {
-      'Instagram': '9:16 vertical TikTok-energy bursts',
+      'Instagram': '9:16 vertical short-form energy bursts',
       'YouTube': '16:9 horizontal cinematic flows', 
       'Facebook': '1:1 square social vibes',
       'LinkedIn': '1:1 professional polish',
