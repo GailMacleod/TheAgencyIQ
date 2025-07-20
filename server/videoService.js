@@ -131,6 +131,131 @@ ${cinematicPrompt}
 
     return commonVideoDirectionPrefix.trim();
   }
+
+  // Explicit caching for video generation - guaranteed cost savings
+  static async generateWithExplicitCaching(cinematicPrompt, brandPurpose, genAI) {
+    try {
+      // Create cached content with MayorkingAI framework as system instruction
+      const systemInstruction = `
+You are a world-class cinematic video director specializing in Queensland business transformations using MayorkingAI techniques.
+
+CORE CINEMATIC FRAMEWORK:
+- High-speed tracking shots with dynamic camera movement
+- Wide push-in reveals building dramatic tension
+- Close-up emotional intensity capturing transformation moments
+- Professional cinematography with dramatic lighting
+- 8-second duration with precise timing breakdowns
+- Photorealistic quality with cinematic color grading
+- Queensland business context with professional environments
+
+TECHNICAL SPECIFICATIONS:
+- Duration: Exactly 8 seconds
+- Aspect Ratio: 16:9 (1920x1080) 
+- Quality: High-definition cinematic
+- Style: Epic business transformation
+- Compliance: No harmful content, no celebrity likenesses, copyright-safe visuals
+
+Your job is to create detailed video scripts with specific timing, camera movements, and Queensland business context.
+      `;
+
+      // Check if we have an existing cache
+      let cache = await this.getOrCreateVideoCache(genAI, systemInstruction, brandPurpose);
+      
+      // Generate content using the cache
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 800,
+        }
+      });
+
+      const result = await Promise.race([
+        model.generateContent({
+          contents: [{ 
+            role: "user", 
+            parts: [{ text: cinematicPrompt }] 
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 800,
+            cachedContent: cache?.name
+          }
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Google AI API timeout after 15 seconds')), 15000)
+        )
+      ]);
+
+      return result;
+
+    } catch (error) {
+      console.log(`⚠️ Explicit caching failed, falling back to implicit caching: ${error.message}`);
+      
+      // Fallback to implicit caching approach
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 800,
+        }
+      });
+      
+      const cachingOptimizedPrompt = this.optimizeForImplicitCaching(cinematicPrompt, brandPurpose);
+      
+      return await Promise.race([
+        model.generateContent({
+          contents: [{ 
+            role: "user", 
+            parts: [{ text: cachingOptimizedPrompt }] 
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 800,
+          }
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Google AI API timeout after 15 seconds')), 15000)
+        )
+      ]);
+    }
+  }
+
+  // Get or create cached content for video generation
+  static async getOrCreateVideoCache(genAI, systemInstruction, brandPurpose) {
+    try {
+      const cacheDisplayName = `video-generation-mayorkingai-${brandPurpose ? brandPurpose.slice(0, 20).replace(/\s/g, '-') : 'default'}`;
+      
+      // Try to find existing cache
+      const caches = await genAI.caches?.list() || [];
+      const existingCache = caches.find(cache => cache.display_name === cacheDisplayName);
+      
+      if (existingCache && new Date(existingCache.expire_time) > new Date()) {
+        console.log(`📋 Using existing video generation cache: ${existingCache.name}`);
+        return existingCache;
+      }
+
+      // Create new cache with 1 hour TTL
+      console.log(`🔄 Creating new video generation cache...`);
+      const cache = await genAI.caches?.create({
+        model: 'gemini-2.5-flash',
+        display_name: cacheDisplayName,
+        system_instruction: systemInstruction,
+        contents: [{
+          role: "user",
+          parts: [{ text: "Ready to create cinematic business transformation videos using MayorkingAI techniques." }]
+        }],
+        ttl: "3600s" // 1 hour
+      });
+
+      console.log(`✅ Created new video generation cache: ${cache?.name}`);
+      return cache;
+
+    } catch (error) {
+      console.log(`⚠️ Cache management failed: ${error.message}`);
+      return null;
+    }
+  }
   
   // VEO3 CINEMATIC VIDEO PROMPTS - MayorkingAI Style Business Transformation
   static generateCinematicVideoPrompts(postContent, platform, brandData) {
@@ -920,33 +1045,8 @@ ${cinematicPrompt}
             // Enhanced MayorkingAI-style prompt for Veo3
             cinematicPrompt = this.enhancePromptForVeo3(prompt);
             
-            // Use the new Google AI client format with thinking disabled for faster generation
-            const model = genAI.getGenerativeModel({ 
-              model: "gemini-2.5-flash",
-              generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 800,
-              }
-            });
-            
-            // Optimize for implicit caching by putting large common content at beginning
-            const cachingOptimizedPrompt = this.optimizeForImplicitCaching(cinematicPrompt, brandPurpose);
-            
-            const result = await Promise.race([
-              model.generateContent({
-                contents: [{ 
-                  role: "user", 
-                  parts: [{ text: cachingOptimizedPrompt }] 
-                }],
-                generationConfig: {
-                  temperature: 0.7,
-                  maxOutputTokens: 800,
-                }
-              }),
-              new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Google AI API timeout after 15 seconds')), 15000)
-              )
-            ]);
+            // Use explicit caching for maximum cost savings and performance
+            const result = await this.generateWithExplicitCaching(cinematicPrompt, brandPurpose, genAI);
             
             if (result && result.response) {
               // Google AI returned response with cinematic direction
