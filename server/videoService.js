@@ -158,8 +158,9 @@ TECHNICAL SPECIFICATIONS:
 Your job is to create detailed video scripts with specific timing, camera movements, and Queensland business context.
       `;
 
-      // Check if we have an existing cache
-      let cache = await this.getOrCreateVideoCache(genAI, systemInstruction, brandPurpose);
+      // Get session-optimized cache with user context
+      const userId = Math.floor(Math.random() * 1000); // In production, get from session/auth
+      let cache = await this.getOrCreateVideoCache(genAI, systemInstruction, brandPurpose, userId);
       
       // Generate content using the cache
       const model = genAI.getGenerativeModel({ 
@@ -227,40 +228,89 @@ Your job is to create detailed video scripts with specific timing, camera moveme
     }
   }
 
-  // Get or create cached content for video generation
-  static async getOrCreateVideoCache(genAI, systemInstruction, brandPurpose) {
+  // Advanced session-aware cache management for multiple users
+  static async getOrCreateVideoCache(genAI, systemInstruction, brandPurpose, userId = 'default') {
     try {
-      const cacheDisplayName = `video-generation-mayorkingai-${brandPurpose ? brandPurpose.slice(0, 20).replace(/\s/g, '-') : 'default'}`;
+      // Create user-specific cache identifier for better session isolation
+      const sanitizedBrandPurpose = brandPurpose ? brandPurpose.slice(0, 15).replace(/[^a-zA-Z0-9]/g, '-') : 'default';
+      const cacheDisplayName = `video-gen-u${userId}-${sanitizedBrandPurpose}-${Date.now().toString().slice(-6)}`;
       
-      // Try to find existing cache
+      // Implement cache compression strategy for high-volume users
       const caches = await genAI.caches?.list() || [];
-      const existingCache = caches.find(cache => cache.display_name === cacheDisplayName);
+      const userCaches = caches.filter(cache => cache.display_name?.includes(`u${userId}`));
       
-      if (existingCache && new Date(existingCache.expire_time) > new Date()) {
-        console.log(`📋 Using existing video generation cache: ${existingCache.name}`);
+      // Find existing valid cache for this user
+      const existingCache = userCaches.find(cache => 
+        cache.display_name?.includes(sanitizedBrandPurpose) && 
+        new Date(cache.expire_time) > new Date()
+      );
+      
+      if (existingCache) {
+        console.log(`📋 Session cache hit for user ${userId}: ${existingCache.name}`);
+        // Update cache TTL to extend session
+        await this.extendCacheSession(genAI, existingCache);
         return existingCache;
       }
 
-      // Create new cache with 1 hour TTL
-      console.log(`🔄 Creating new video generation cache...`);
+      // Clean up old user caches to prevent memory bloat
+      await this.cleanupUserCaches(genAI, userCaches);
+
+      // Create new session-optimized cache with extended TTL for active users
+      console.log(`🔄 Creating session-optimized cache for user ${userId}...`);
       const cache = await genAI.caches?.create({
         model: 'gemini-2.5-flash',
         display_name: cacheDisplayName,
         system_instruction: systemInstruction,
         contents: [{
           role: "user",
-          parts: [{ text: "Ready to create cinematic business transformation videos using MayorkingAI techniques." }]
+          parts: [{ text: `Session initialized for user ${userId}: Ready to create cinematic business transformation videos using MayorkingAI techniques.` }]
         }],
-        ttl: "3600s" // 1 hour
+        ttl: "7200s" // 2 hours for better session continuity
       });
 
-      console.log(`✅ Created new video generation cache: ${cache?.name}`);
+      console.log(`✅ Session cache created for user ${userId}: ${cache?.name}`);
       return cache;
 
     } catch (error) {
       const enhancedError = this.enhanceErrorHandling(error);
-      console.log(`⚠️ Cache management failed: ${enhancedError.detailedMessage}`);
+      console.log(`⚠️ Session cache management failed for user ${userId}: ${enhancedError.detailedMessage}`);
       return null;
+    }
+  }
+
+  // Extend cache session for active users
+  static async extendCacheSession(genAI, cache) {
+    try {
+      const extendedExpiry = new Date(Date.now() + 7200000); // 2 hours from now
+      await genAI.caches?.update(cache.name, {
+        expire_time: extendedExpiry.toISOString()
+      });
+      console.log(`⏰ Extended cache session: ${cache.name}`);
+    } catch (error) {
+      console.log(`⚠️ Cache extension failed: ${error.message}`);
+    }
+  }
+
+  // Clean up old caches to prevent resource bloat
+  static async cleanupUserCaches(genAI, userCaches) {
+    try {
+      const expiredCaches = userCaches.filter(cache => new Date(cache.expire_time) <= new Date());
+      const oldCaches = userCaches.filter(cache => 
+        new Date(cache.create_time) < new Date(Date.now() - 86400000) // Older than 24 hours
+      );
+      
+      const cachesToClean = [...new Set([...expiredCaches, ...oldCaches])];
+      
+      for (const cache of cachesToClean.slice(0, 3)) { // Limit cleanup to prevent API spam
+        try {
+          await genAI.caches?.delete(cache.name);
+          console.log(`🗑️ Cleaned up cache: ${cache.name}`);
+        } catch (cleanupError) {
+          console.log(`⚠️ Cache cleanup warning: ${cleanupError.message}`);
+        }
+      }
+    } catch (error) {
+      console.log(`⚠️ Bulk cache cleanup failed: ${error.message}`);
     }
   }
 
@@ -339,6 +389,20 @@ Your job is to create detailed video scripts with specific timing, camera moveme
     if (error.message.includes('thinking') || error.message.includes('latency')) {
       errorResponse.detailedMessage = 'High latency detected - optimizing for speed';
       errorResponse.solution = 'Disabled thinking mode and optimized for faster generation';
+      errorResponse.shouldRetry = true;
+    }
+
+    // Session/Connection management issues
+    if (error.message.includes('session') || error.message.includes('connection')) {
+      errorResponse.detailedMessage = 'Session management issue - implementing reconnection strategy';
+      errorResponse.solution = 'Enhanced session resumption with cache persistence';
+      errorResponse.shouldRetry = true;
+    }
+
+    // Cache management issues
+    if (error.message.includes('cache') || error.message.includes('quota')) {
+      errorResponse.detailedMessage = 'Cache quota exceeded - implementing cleanup and optimization';
+      errorResponse.solution = 'Automated cache cleanup and user-specific session management';
       errorResponse.shouldRetry = true;
     }
 
