@@ -171,8 +171,8 @@ html, body {
 
 /* Comprehensive mobile optimization for tablets and phones */
 @media (max-width: 768px) {
-  /* Heading size reductions - H1 unchanged per request */
-  h2, .text-lg, .mobile-heading {
+  /* H2 heading size reductions - targeting specific H2 elements */
+  h2 {
     font-size: 1.2rem !important; /* 19.2px as requested */
     line-height: 1.4 !important; /* Tighter line height to prevent excessive spacing */
     padding: 2rem 1rem !important; /* Increased padding for deeper box */
@@ -191,12 +191,15 @@ html, body {
     min-height: 300px !important;
   }
   
-  /* Specific mobile heading styling for deeper box */
-  .mobile-heading {
-    padding: 3rem 1.5rem !important; /* More padding for deeper box */
-    min-height: 140px !important; /* Taller minimum height */
-    display: block !important; /* Keep as block for proper text flow */
-    box-sizing: border-box !important; /* Include padding in height calculation */
+  /* Specific mobile heading styling for the H2 element with deeper box */
+  h2.mobile-heading {
+    font-size: 1.2rem !important; /* Override the text-[44px] class on mobile */
+    line-height: 1.4 !important; /* Proper line height */
+    padding: 4rem 2rem !important; /* Much deeper box - 64px top/bottom */
+    min-height: 160px !important; /* Guaranteed deep height */
+    display: block !important; /* Block display for proper text flow */
+    box-sizing: border-box !important; /* Include padding in height */
+    margin: 2rem 0 !important; /* More margin for spacing */
   }
   
   /* Hero section mobile spacing */
