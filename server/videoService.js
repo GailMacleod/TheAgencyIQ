@@ -87,6 +87,50 @@ CONSTRAINTS:
     
     return enhancedPrompt;
   }
+
+  // Optimize prompts for Gemini 2.5 implicit caching
+  static optimizeForImplicitCaching(cinematicPrompt, brandPurpose) {
+    // Put large, common content at the beginning for better cache hits
+    const commonVideoDirectionPrefix = `
+CINEMATIC VIDEO PRODUCTION SYSTEM - MAYORKINGAI FRAMEWORK
+========================================================
+
+STANDARD CINEMATIC TECHNIQUES (COMMON PREFIX FOR CACHING):
+- High-speed tracking shots with dynamic camera movement
+- Wide push-in reveals building dramatic tension
+- Close-up emotional intensity capturing transformation moments
+- Professional cinematography with dramatic lighting
+- 16:9 widescreen format optimized for business content
+- 8-second duration with precise timing breakdowns
+- Photorealistic quality with cinematic color grading
+- Queensland business context with professional environments
+
+TECHNICAL SPECIFICATIONS:
+- Duration: Exactly 8 seconds
+- Aspect Ratio: 16:9 (1920x1080)
+- Quality: High-definition cinematic
+- Style: Epic business transformation
+- Compliance: No harmful content, no celebrity likenesses, copyright-safe visuals
+
+MAYORKINGAI VISUAL STORYTELLING ELEMENTS:
+- Dramatic business transformation narratives
+- Professional workspace cinematography  
+- Dynamic visual metaphors for growth and success
+- Cinematic lighting emphasizing key moments
+- Quick cuts every 1-2 seconds for engagement
+- Strategic use of wide shots and close-ups
+- Professional Queensland business environments
+
+BRAND CONTEXT: ${brandPurpose || 'Professional business growth and automation'}
+
+========================================================
+SPECIFIC VIDEO REQUEST:
+
+${cinematicPrompt}
+    `;
+
+    return commonVideoDirectionPrefix.trim();
+  }
   
   // VEO3 CINEMATIC VIDEO PROMPTS - MayorkingAI Style Business Transformation
   static generateCinematicVideoPrompts(postContent, platform, brandData) {
@@ -885,11 +929,14 @@ CONSTRAINTS:
               }
             });
             
+            // Optimize for implicit caching by putting large common content at beginning
+            const cachingOptimizedPrompt = this.optimizeForImplicitCaching(cinematicPrompt, brandPurpose);
+            
             const result = await Promise.race([
               model.generateContent({
                 contents: [{ 
                   role: "user", 
-                  parts: [{ text: cinematicPrompt }] 
+                  parts: [{ text: cachingOptimizedPrompt }] 
                 }],
                 generationConfig: {
                   temperature: 0.7,
@@ -905,6 +952,14 @@ CONSTRAINTS:
               // Google AI returned response with cinematic direction
               const responseText = result.response.text();
               console.log(`✅ Google AI generation succeeded: ${responseText.substring(0, 100)}...`);
+              
+              // Log cache performance for optimization tracking
+              if (result.response.usageMetadata) {
+                const cacheTokens = result.response.usageMetadata.cachedContentTokenCount || 0;
+                const totalTokens = result.response.usageMetadata.totalTokenCount || 0;
+                const cacheHitRate = totalTokens > 0 ? ((cacheTokens / totalTokens) * 100).toFixed(1) : '0';
+                console.log(`📊 Cache performance: ${cacheTokens}/${totalTokens} tokens (${cacheHitRate}% cache hit rate)`);
+              }
               
               // Store the enhanced cinematic prompt for future video generation
               cinematicPrompt = responseText;
