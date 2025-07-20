@@ -34,6 +34,8 @@ import { linkedinTokenValidator } from './linkedin-token-validator';
 import { DirectPublishService } from './services/DirectPublishService';
 import { UnifiedOAuthService } from './services/UnifiedOAuthService';
 import { directTokenGenerator } from './services/DirectTokenGenerator';
+import { quotaManager } from './services/QuotaManager';
+import { checkVideoQuota, checkAPIQuota, checkContentQuota } from './middleware/quotaEnforcement';
 
 // Extended session types
 declare module 'express-session' {
@@ -5980,6 +5982,20 @@ Continue building your Value Proposition Canvas systematically.`;
     try {
       const { platforms } = req.body;
       
+      // PERSISTENT QUOTA CHECK: Verify user can generate content
+      const user = await storage.getUser(req.session.userId);
+      const subscriptionTier = user?.subscriptionPlan === 'free' ? 'free' : 
+                             user?.subscriptionPlan === 'enterprise' ? 'enterprise' : 'professional';
+      
+      const quotaCheck = await quotaManager.canGenerateContent(req.session.userId, subscriptionTier);
+      if (!quotaCheck.allowed) {
+        return res.status(429).json({ 
+          message: quotaCheck.message,
+          quotaExceeded: true,
+          quota: quotaCheck.quota
+        });
+      }
+      
       // QUOTA ENFORCEMENT: Check remaining posts before generation
       const quotaStatus = await PostQuotaService.getQuotaStatus(req.session.userId);
       if (!quotaStatus) {
@@ -6118,6 +6134,9 @@ Continue building your Value Proposition Canvas systematically.`;
         totalPosts: maxPostsToGenerate // Generate only remaining quota amount
       };
 
+      // Record content generation usage BEFORE generation
+      await quotaManager.recordContentGeneration(req.session.userId, subscriptionTier);
+      
       // Generate brand analysis
       const analysis = await analyzeBrandPurpose(contentParams);
       console.log(`Brand analysis completed. JTBD Score: ${analysis.jtbdScore}/100`);
@@ -10032,6 +10051,135 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   const httpServer = createServer(app);
+  // ADMIN QUOTA MONITORING ENDPOINTS
+  
+  // Admin endpoint for quota usage statistics
+  app.get("/api/admin/quota-stats", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId || userId !== 2) { // Admin only (User ID 2)
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const stats = await quotaManager.getUsageStats();
+      res.json({
+        success: true,
+        stats,
+        message: "Quota statistics retrieved successfully"
+      });
+    } catch (error: any) {
+      console.error('❌ Admin quota stats error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to retrieve quota statistics" 
+      });
+    }
+  });
+
+  // Admin endpoint for individual user quota status
+  app.get("/api/admin/user-quota/:userId", async (req, res) => {
+    try {
+      const adminUserId = req.session.userId;
+      if (!adminUserId || adminUserId !== 2) { // Admin only
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const targetUserId = parseInt(req.params.userId);
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const user = await storage.getUser(targetUserId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const subscriptionTier = user.subscriptionPlan === 'free' ? 'free' : 
+                             user.subscriptionPlan === 'enterprise' ? 'enterprise' : 'professional';
+      
+      const quota = await quotaManager.getUserQuota(targetUserId, subscriptionTier);
+      
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          subscriptionPlan: user.subscriptionPlan
+        },
+        quota,
+        message: `Quota information for user ${targetUserId}`
+      });
+    } catch (error: any) {
+      console.error('❌ Admin user quota error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to retrieve user quota" 
+      });
+    }
+  });
+
+  // Admin endpoint for emergency quota reset
+  app.post("/api/admin/reset-quota/:userId", async (req, res) => {
+    try {
+      const adminUserId = req.session.userId;
+      if (!adminUserId || adminUserId !== 2) { // Admin only
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const targetUserId = parseInt(req.params.userId);
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const success = await quotaManager.resetUserQuota(targetUserId);
+      
+      if (success) {
+        res.json({
+          success: true,
+          message: `Quota reset successfully for user ${targetUserId}`
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: `Failed to reset quota for user ${targetUserId}`
+        });
+      }
+    } catch (error: any) {
+      console.error('❌ Admin quota reset error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to reset quota" 
+      });
+    }
+  });
+
+  // Admin endpoint for quota cleanup maintenance
+  app.post("/api/admin/cleanup-quotas", async (req, res) => {
+    try {
+      const adminUserId = req.session.userId;
+      if (!adminUserId || adminUserId !== 2) { // Admin only
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { daysOld } = req.body;
+      const cleanupDays = daysOld && !isNaN(daysOld) ? parseInt(daysOld) : 30;
+      
+      const cleanedCount = await quotaManager.cleanupOldQuotas(cleanupDays);
+      
+      res.json({
+        success: true,
+        cleanedCount,
+        message: `Cleaned up ${cleanedCount} quota records older than ${cleanupDays} days`
+      });
+    } catch (error: any) {
+      console.error('❌ Admin quota cleanup error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to cleanup quotas" 
+      });
+    }
+  });
+
   return httpServer;
 }
 
@@ -10333,7 +10481,7 @@ export function addNotificationEndpoints(app: any) {
 
   // VIDEO GENERATION API ENDPOINTS - WORKING VERSION
   // Generate video prompts for post content
-  app.post('/api/video/generate-prompts', async (req: any, res) => {
+  app.post('/api/video/generate-prompts', checkAPIQuota, async (req: any, res) => {
     try {
       console.log('=== VIDEO PROMPT GENERATION STARTED ===');
       const { postContent, platform, userId } = req.body;
@@ -10381,7 +10529,7 @@ export function addNotificationEndpoints(app: any) {
   });
 
   // ART DIRECTOR: Professional cinematic video generation
-  app.post('/api/video/render', async (req: any, res) => {
+  app.post('/api/video/render', checkVideoQuota, async (req: any, res) => {
     try {
       console.log('=== ART DIRECTOR VIDEO CREATION REQUEST ===');
       const { prompt, editedText, platform, userId, postId } = req.body;
@@ -10572,7 +10720,7 @@ export function addNotificationEndpoints(app: any) {
   });
 
   // ONE-CLICK VIDEO GENERATION ENDPOINT - VEO3 INTEGRATION
-  app.post("/api/video/render", requireAuth, async (req: any, res) => {
+  app.post("/api/video/render", requireAuth, checkVideoQuota, async (req: any, res) => {
     try {
       const { promptType, promptPreview, editedText, platform, userId, postId } = req.body;
       

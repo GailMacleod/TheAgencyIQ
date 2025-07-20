@@ -2143,6 +2143,11 @@
   resolved "https://registry.yarnpkg.com/@redis/time-series/-/time-series-5.6.0.tgz#b8b56ec59a2d29ebc2471d5b6213d12df5581028"
   integrity sha512-tXABmN1vu4aTNL3WI4Iolpvx/5jgil2Bs31ozvKblT+jkUoRkk8ykmYo9Pv/Mp7Gk6/Qkr/2rMgVminrt/4BBQ==
 
+"@replit/database@^3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@replit/database/-/database-3.0.1.tgz#7848d22b38b7b48adadb678d2d16b8d3964e8387"
+  integrity sha512-uCmuttqjhI+unsEtXLVm28FTkdX4m815r+INkXJsIFAvHIw3+h5mJv6X/xf3YOy2jjrZVPppsjNRqFeWEQFYQw==
+
 "@replit/vite-plugin-cartographer@^0.2.7":
   version "0.2.7"
   resolved "https://registry.yarnpkg.com/@replit/vite-plugin-cartographer/-/vite-plugin-cartographer-0.2.7.tgz#5ced027e31fbeb52a1dca969d328157f0aca980d"
