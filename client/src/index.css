@@ -191,15 +191,18 @@ html, body {
     min-height: 300px !important;
   }
   
-  /* Specific mobile heading styling for the H2 element with much deeper box */
+  /* Specific mobile heading styling for the H2 element with dynamic height */
   h2.mobile-heading {
-    font-size: 1.2rem !important; /* Override the text-[44px] class on mobile */
-    line-height: 1.4 !important; /* Proper line height */
-    padding: 6rem 2rem !important; /* Much deeper box - 96px top/bottom */
-    min-height: 240px !important; /* Much taller guaranteed height */
+    font-size: 1.4rem !important; /* Larger readable size */
+    line-height: 1.3 !important; /* Tighter line height for better text flow */
+    padding: 2rem 1rem !important; /* Reasonable padding */
+    min-height: auto !important; /* Let content determine height */
+    height: auto !important; /* Dynamic height based on content */
     display: block !important; /* Block display for proper text flow */
     box-sizing: border-box !important; /* Include padding in height */
-    margin: 2rem 0 !important; /* More margin for spacing */
+    margin: 1rem 0 !important; /* Reasonable margin */
+    word-wrap: break-word !important; /* Break long words if needed */
+    hyphens: auto !important; /* Auto hyphenation for better line breaks */
   }
   
   /* Hero section mobile spacing */
