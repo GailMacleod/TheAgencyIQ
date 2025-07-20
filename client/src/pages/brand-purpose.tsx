@@ -1338,7 +1338,6 @@ export default function BrandPurpose() {
                     placeholder="info@queenslandartisans.com"
                     className="mt-1"
                     autoComplete="off"
-                    name="brand-contact-email"
                   />
                   {form.formState.errors.contactDetails?.email && (
                     <p className="text-sm text-red-600 mt-1">{form.formState.errors.contactDetails.email.message}</p>

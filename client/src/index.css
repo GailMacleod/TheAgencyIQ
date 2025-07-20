@@ -188,7 +188,9 @@ html, body {
   
   /* Prevent browser autocomplete dropdown positioning issues */
   .contact-details input {
-    autocomplete: off !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    background: white !important;
   }
   
   /* Ensure form fields have proper mobile spacing */
