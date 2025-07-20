@@ -167,22 +167,75 @@ html, body {
   .wizard-header-mobile {
     padding: 0.75rem;
   }
-  
-  /* Force smaller text sizes on mobile for splash page */
+}
+
+/* Comprehensive mobile optimization for tablets and phones */
+@media (max-width: 768px) {
+  /* Heading size reductions */
   h1 {
-    font-size: 1.25rem !important; /* Force text-xl */
-    line-height: 1.2 !important;
+    font-size: 1.5rem !important; /* 24px */
+    line-height: 1.3 !important;
   }
   
   h2 {
-    font-size: 1.125rem !important; /* Force text-lg */
-    line-height: 1.2 !important;
+    font-size: 1.2rem !important; /* 19.2px */
+    line-height: 1.3 !important;
   }
   
-  /* Ensure proper mobile spacing */
+  h3 {
+    font-size: 1rem !important; /* 16px */
+    line-height: 1.3 !important;
+  }
+  
+  /* Hero section mobile spacing */
   .hero-gradient {
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;
+  }
+  
+  /* Stack pricing plans vertically */
+  .pricing-container {
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+  
+  .pricing-container > div {
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid #e5e7eb;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 1rem;
+  }
+  
+  .pricing-container > div:last-child {
+    border-bottom: none;
+  }
+  
+  /* Stack feature steps vertically */
+  .features-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  /* Full-width buttons with larger padding */
+  .mobile-button {
+    width: 100% !important;
+    padding: 15px !important;
+    font-size: 1rem !important;
+    min-height: 50px !important;
+  }
+  
+  /* Footer link spacing */
+  .footer-links {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    text-align: center !important;
+  }
+  
+  .footer-links a {
+    padding: 0.5rem 0 !important;
+    display: block !important;
   }
 }
 

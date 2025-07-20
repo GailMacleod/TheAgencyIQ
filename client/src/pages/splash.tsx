@@ -164,7 +164,7 @@ export default function Splash() {
             <Link href="/subscription">
               <Button 
                 size="lg" 
-                className="relative overflow-hidden text-white px-6 py-3 sm:px-8 sm:py-4 text-lg sm:text-xl font-black tracking-wider
+                className="mobile-button relative overflow-hidden text-white px-6 py-3 sm:px-8 sm:py-4 text-lg sm:text-xl font-black tracking-wider
                           transition-all duration-300 ease-in-out
                           hover:scale-105 hover:shadow-2xl
                           transform-gpu will-change-transform
@@ -180,7 +180,7 @@ export default function Splash() {
             
             {/* Subscription Options */}
             <div className="mt-3 sm:mt-4 bg-white rounded-lg border border-gray-200 p-3 sm:p-4 max-w-2xl mx-auto text-[#6b7280]">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 text-center">
+              <div className="pricing-container flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 text-center">
                 <div className="flex-1">
                   <h4 className="text-xs sm:text-sm font-semibold mb-1 text-gray-900">Starter</h4>
                   <p className="text-xs text-[#3b5cff] font-medium mb-1">$19.99/month</p>
@@ -213,7 +213,7 @@ export default function Splash() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="features-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#3250fa]/30 hover:scale-105">
               <div className="flex justify-center mb-4">
                 <AnimatedIcon icon={Target} colorScheme="blue" size="md" />
@@ -340,7 +340,7 @@ export default function Splash() {
               </div>
             </div>
             
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-sm text-muted-foreground">
+            <div className="footer-links flex flex-col sm:flex-row justify-center items-center gap-4 text-sm text-muted-foreground">
               <a href="https://app.theagencyiq.ai/terms" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
                 Terms of Service
               </a>
