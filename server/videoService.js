@@ -59,28 +59,33 @@ class VideoService {
   
   // Enhanced prompt formatting for Veo3 cinematic generation
   static enhancePromptForVeo3(originalPrompt) {
-    // Add Veo3-specific cinematic enhancements
-    const cinematicEnhancers = [
-      "Professional cinematography",
-      "Dynamic camera movements",
-      "Dramatic lighting effects",
-      "High production value",
-      "16:9 widescreen format",
-      "8-second duration optimized"
-    ];
+    // Use few-shot prompting with clear examples following Google's best practices
+    const enhancedPrompt = `
+You are a world-class cinematic video director creating 8-second business transformation videos. Follow these proven examples:
+
+EXAMPLE 1:
+Business Context: "Tech startup discovers automation"
+Video Script: "8-second sequence: Wide shot cluttered desk with papers (0-2s), zoom to founder's stressed face at computer (2-3s), close-up automation interface appearing (3-4s), wide push-in as workflows organize chaos (4-6s), final shot founder smiling with clean workspace (6-8s). 16:9 cinematic, dramatic lighting."
+
+EXAMPLE 2: 
+Business Context: "Professional builds authority"
+Video Script: "8-second transformation: Opens with consultant invisible in crowd (0-1s), tracks to laptop showing expertise content (1-3s), dynamic social engagement montage (3-5s), wide reveal presenting to audience (5-7s), close-up confident authority (7-8s). High-speed tracking, photorealistic."
+
+Now create for:
+Business Context: "${originalPrompt}"
+
+Video Script: [Provide detailed 8-second breakdown with specific timing, camera movements, and MayorkingAI-style visual progression. Must be 16:9 format with high-speed tracking, wide push-in reveals, close-up intensity, dramatic lighting, suitable for Queensland business context.]
+
+CONSTRAINTS:
+- Exactly 8 seconds duration
+- 16:9 aspect ratio only  
+- MayorkingAI cinematic techniques
+- Professional Queensland business appropriate
+- No celebrities or copyrighted content
+- Photorealistic quality with dramatic lighting
+    `;
     
-    // Ensure MayorkingAI dramatic elements
-    const mayorkingEnhancements = [
-      "High-speed tracking shots",
-      "Wide push-in reveals", 
-      "Close-up emotional intensity",
-      "Cinematic color grading",
-      "Photorealistic quality",
-      "Thrilling visual storytelling"
-    ];
-    
-    // Combine with original prompt
-    return `${originalPrompt}. ${cinematicEnhancers.join(', ')}. ${mayorkingEnhancements.join(', ')}. Ensure professional Queensland business context with epic visual metaphors.`;
+    return enhancedPrompt;
   }
   
   // VEO3 CINEMATIC VIDEO PROMPTS - MayorkingAI Style Business Transformation
