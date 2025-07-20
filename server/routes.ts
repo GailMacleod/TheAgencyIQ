@@ -1534,19 +1534,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get latest generated Seedance video for preview testing
-  app.get('/api/video/latest-seedance', (req, res) => {
+  // Get latest generated Veo3 video for preview testing
+  app.get('/api/video/latest-veo3', (req, res) => {
     try {
-      if (global.latestSeedanceVideo) {
-        console.log(`📹 Serving latest Seedance video: ${global.latestSeedanceVideo.url}`);
+      if (global.latestVeo3Video) {
+        console.log(`📹 Serving latest Veo3 video: ${global.latestVeo3Video.url}`);
         res.json({
           success: true,
-          video: global.latestSeedanceVideo
+          video: global.latestVeo3Video
         });
       } else {
         res.json({
           success: false,
-          message: 'No Seedance video available yet'
+          message: 'No Veo3 video available yet'
         });
       }
     } catch (error) {

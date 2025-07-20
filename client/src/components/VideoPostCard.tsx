@@ -701,7 +701,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                         {currentPhase && (
                           <p className="text-sm text-blue-600 font-medium">{currentPhase}</p>
                         )}
-                        <p className="text-xs text-gray-500 mt-1">Creating epic Queensland business transformation video</p>
+                        <p className="text-xs text-gray-500 mt-1">Creating cinematic business transformation video</p>
                       </div>
                       
                       <div className="space-y-2">
@@ -730,7 +730,7 @@ export function VideoPostCard({ post, onVideoApproved, brandData, userId }: Vide
                           <Button
                             onClick={async () => {
                               try {
-                                const response = await fetch('/api/video/latest-seedance');
+                                const response = await fetch('/api/video/latest-veo3');
                                 const data = await response.json();
                                 
                                 if (data.success && data.video?.url) {

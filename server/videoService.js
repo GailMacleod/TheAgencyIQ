@@ -1,25 +1,170 @@
 /**
- * VIDEO GENERATION SERVICE - SEEDANCE 1.0 INTEGRATION
+ * VIDEO GENERATION SERVICE - VEO3 INTEGRATION
  * Handles AI video generation, prompt creation, and platform posting
  */
 
 import axios from 'axios';
-import Replicate from 'replicate';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 // PostQuotaService will be imported dynamically when needed
 
-// Seedance API configuration - Official Replicate Integration
-const REPLICATE_API_BASE = 'https://api.replicate.com/v1';
-const SEEDANCE_MODEL = 'bytedance/seedance-1-lite';
+// Veo3 API configuration - Google AI Studio Integration
+const VEO3_MODEL = 'gemini-2.0-flash-exp';
+const VEO3_VIDEO_MODEL = 'veo-3.0-generate-preview';
 
-// Initialize Replicate client
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
+// Initialize Google AI client
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_KEY);
+
+// Content filtering patterns for compliance
+const COMPLIANCE_FILTERS = {
+  harmful: /\b(violence|hate|racist|toxic|harmful|weapon|blood|kill|murder|death|suicide)\b/gi,
+  celebrity: /\b(celebrity|famous|actor|actress|singer|politician|public figure)\b/gi,
+  copyright: /\b(disney|marvel|pokemon|nintendo|sony|microsoft|apple|google|facebook|twitter|instagram|tiktok|youtube)\b/gi
+};
 
 // VideoService class for managing video generation and prompts
 class VideoService {
   // User prompt history storage (in-memory for session variety)
   static userPromptHistory = new Map();
+  
+  // VEO3 HELPER FUNCTIONS
+  
+  // Content compliance checker for Veo3
+  static checkContentCompliance(prompt) {
+    const violations = [];
+    
+    // Check for harmful content
+    const harmfulMatches = prompt.match(COMPLIANCE_FILTERS.harmful);
+    if (harmfulMatches) {
+      violations.push(`Harmful content detected: ${harmfulMatches.join(', ')}`);
+    }
+    
+    // Check for celebrity references
+    const celebrityMatches = prompt.match(COMPLIANCE_FILTERS.celebrity);
+    if (celebrityMatches) {
+      violations.push(`Celebrity references detected: ${celebrityMatches.join(', ')}`);
+    }
+    
+    // Check for copyright issues
+    const copyrightMatches = prompt.match(COMPLIANCE_FILTERS.copyright);
+    if (copyrightMatches) {
+      violations.push(`Copyright material detected: ${copyrightMatches.join(', ')}`);
+    }
+    
+    return {
+      safe: violations.length === 0,
+      violations,
+      reason: violations.join('; ')
+    };
+  }
+  
+  // Enhanced prompt formatting for Veo3 cinematic generation
+  static enhancePromptForVeo3(originalPrompt) {
+    // Add Veo3-specific cinematic enhancements
+    const cinematicEnhancers = [
+      "Professional cinematography",
+      "Dynamic camera movements",
+      "Dramatic lighting effects",
+      "High production value",
+      "16:9 widescreen format",
+      "8-second duration optimized"
+    ];
+    
+    // Ensure MayorkingAI dramatic elements
+    const mayorkingEnhancements = [
+      "High-speed tracking shots",
+      "Wide push-in reveals", 
+      "Close-up emotional intensity",
+      "Cinematic color grading",
+      "Photorealistic quality",
+      "Thrilling visual storytelling"
+    ];
+    
+    // Combine with original prompt
+    return `${originalPrompt}. ${cinematicEnhancers.join(', ')}. ${mayorkingEnhancements.join(', ')}. Ensure professional Queensland business context with epic visual metaphors.`;
+  }
+  
+  // VEO3 CINEMATIC VIDEO PROMPTS - MayorkingAI Style Business Transformation
+  static generateCinematicVideoPrompts(postContent, platform, brandData) {
+    const brandPurpose = brandData?.corePurpose || 'Professional business growth';
+    
+    // Three business transformation archetypes for Veo3
+    const cinematicScenarios = [
+      {
+        id: 1,
+        title: "Queensland SME Discovery Moment",
+        description: "From chaos to breakthrough",
+        prompt: `Wide establishing shot of a Queensland business owner surrounded by overwhelming paperwork and multiple screens. Cut to close-up of their face as realization dawns. High-speed tracking shot as automated systems activate around them. Wide push-in revealing organized digital workspace. Dramatic lighting shift from harsh fluorescent to warm golden hour. Close-up intensity: relief and determination. Professional cinematography, dynamic camera movements, dramatic lighting effects. Content context: ${postContent.substring(0, 100)}`,
+        style: "discovery-transformation",
+        mayorkingElements: "High-speed tracking, wide push-in, close-up emotional intensity"
+      },
+      {
+        id: 2, 
+        title: "Professional Authority Emergence",
+        description: "Invisible to industry leader",
+        prompt: `Close-up of hands typing on laptop in dimly lit room. Cut to wide shot revealing empty conference room. High-speed tracking through business districts as phone notifications multiply. Wide push-in to packed auditorium with spotlight on our expert presenting. Close-up intensity of audience faces showing engagement. Dramatic lighting effects highlighting professional transformation. Cinematic color grading, photorealistic quality. Content context: ${postContent.substring(0, 100)}`,
+        style: "authority-emergence",
+        mayorkingElements: "Close-up intensity, dramatic lighting, wide push-in reveals"
+      },
+      {
+        id: 3,
+        title: "Digital Transformation Triumph", 
+        description: "Traditional to cutting-edge",
+        prompt: `Establishing shot of traditional Queensland shopfront. High-speed tracking through time-lapse of digital integration. Wide push-in revealing modern tech-enabled business operations. Close-up intensity of satisfied customers and team members. Dramatic lighting shift from ordinary to extraordinary. Thrilling visual storytelling of business evolution. Professional cinematography with epic scale. Content context: ${postContent.substring(0, 100)}`,
+        style: "digital-triumph",
+        mayorkingElements: "Thrilling visual storytelling, dramatic lighting, high-speed tracking"
+      }
+    ];
+    
+    // Generate cinematic copy for each scenario
+    const scenarios = cinematicScenarios.map(scenario => ({
+      ...scenario,
+      postCopy: this.generateCinematicCopy(scenario, platform, brandPurpose, postContent)
+    }));
+    
+    return scenarios;
+  }
+  
+  // Generate cinematic copy for each business transformation archetype
+  static generateCinematicCopy(scenario, platform, brandPurpose, postContent) {
+    const platformLimits = {
+      instagram: 300,
+      linkedin: 1300,
+      x: 280,
+      youtube: 600,
+      facebook: 1500
+    };
+    
+    const charLimit = platformLimits[platform] || 500;
+    
+    const cinematicStyles = {
+      'Queensland SME Discovery Moment': {
+        instagram: `From chaos to breakthrough! ${postContent.substring(0, 200)} Watch this Queensland entrepreneur discover the automation that changed everything! #QLDBusiness #Breakthrough`,
+        linkedin: `Business transformation in action: ${postContent} This is what happens when Queensland SMEs discover the right systems. From overwhelmed to optimized - the entrepreneurial journey captured in real-time.`,
+        x: `QLD entrepreneur breakthrough: ${postContent.substring(0, 150)} Chaos to precision in 8 seconds! #QLDSuccess`,
+        youtube: `Witness the moment everything changed! ${postContent} This Queensland business owner just discovered the automation breakthrough that transformed their entire operation!`,
+        facebook: `Epic business transformation alert! ${postContent} Every Queensland entrepreneur has this moment - when chaos becomes clarity. Share your breakthrough story below! #QLDEntrepreneurs`
+      },
+      'Professional Authority Emergence': {
+        instagram: `Invisible to industry leader! ${postContent.substring(0, 200)} This is how Queensland experts transform expertise into magnetic presence! #AuthorityBuilder #QLDProfessional`,
+        linkedin: `Professional transformation story: ${postContent} Watch as expertise transforms into magnetic industry authority. This is how Queensland professionals become the go-to experts in their field.`,
+        x: `From invisible to industry leader: ${postContent.substring(0, 150)} Authority emerges! #QLDExpert`,
+        youtube: `The moment an expert becomes an authority! ${postContent} See how this Queensland professional transformed from invisible to industry leader through strategic positioning!`,
+        facebook: `Authority transformation happening here! ${postContent} Every expert has this breakthrough moment - when knowledge becomes magnetic presence. What's your expertise story? #QLDAuthority`
+      },
+      'Digital Transformation Triumph': {
+        instagram: `Traditional to cutting-edge! ${postContent.substring(0, 200)} Queensland businesses embracing digital transformation with dramatic results! #DigitalTransformation #QLD`,
+        linkedin: `Digital evolution success story: ${postContent} This Queensland business made the leap from traditional to cutting-edge operations. The results speak for themselves.`,
+        x: `Digital transformation triumph: ${postContent.substring(0, 150)} Future-ready business! #QLDTech`,
+        youtube: `Amazing digital transformation! ${postContent} Watch how this Queensland business evolved from traditional operations to cutting-edge digital excellence!`,
+        facebook: `Digital transformation inspiration! ${postContent} Traditional Queensland businesses are making the leap to digital excellence. What's your transformation story? #QLDDigital`
+      }
+    };
+    
+    const style = cinematicStyles[scenario.title] || cinematicStyles['Queensland SME Discovery Moment'];
+    const platformCopy = style[platform] || style.instagram;
+    
+    return platformCopy.substring(0, charLimit);
+  }
   
   // ENHANCED: Grok Copywriter Video Prompt Generation
   static async generateVideoPromptsWithGrokCopywriter(postContent, platform, brandData, userId = 'default') {
@@ -43,8 +188,8 @@ class VideoService {
       // Create traditional prompts as fallback/additional options
       const traditionalPrompts = await this.createDistinctVideoStyles(postContent, platform, brandData, userHistory);
       
-      // Generate fucking awesome scroll-stopping prompts
-      const awesomePrompts = this.generateAwesomeVideoPrompts(postContent, platform, brandData);
+      // Generate cinematic MayorkingAI-style prompts
+      const awesomePrompts = this.generateCinematicVideoPrompts(postContent, platform, brandData);
       
       // Create THREE distinct options: two auto-generated + one custom
       const threeOptions = [
@@ -131,123 +276,122 @@ class VideoService {
     return alternativeTemplates[platform] || originalContent;
   }
 
-  // NEW EXPERIMENT: Anime-Inspired Queensland Character Video Prompts 
-  static generateAwesomeVideoPrompts(postContent, platform, brandData) {
-    console.log(`🎌 Creating anime-inspired Queensland character videos for ${platform}...`);
+  // VEO3 MAYORKINGAI-STYLE CINEMATIC PROMPTS
+  static generateCinematicVideoPrompts(postContent, platform, brandData) {
+    console.log(`🎬 Creating MayorkingAI-style cinematic prompts for ${platform}...`);
     
-    // Platform specifications with aspect ratios
+    // Veo3 Platform specifications (16:9 ONLY, 8-second duration)
     const platformSpecs = {
-      instagram: { ratio: '9:16', style: 'vertical mobile-first', duration: '5-10s' },
-      youtube: { ratio: '16:9', style: 'horizontal cinematic', duration: '10s' },
-      facebook: { ratio: '1:1', style: 'square social', duration: '5-10s' },
-      linkedin: { ratio: '1:1', style: 'professional square', duration: '5-10s' },
-      x: { ratio: '16:9', style: 'horizontal dynamic', duration: '5-8s' }
+      instagram: { ratio: '16:9', style: 'cinematic horizontal', duration: '8s', note: 'Coming Soon - 9:16 support' },
+      youtube: { ratio: '16:9', style: 'cinematic horizontal', duration: '8s' },
+      facebook: { ratio: '16:9', style: 'cinematic horizontal', duration: '8s' },
+      linkedin: { ratio: '16:9', style: 'cinematic horizontal', duration: '8s' },
+      x: { ratio: '16:9', style: 'cinematic horizontal', duration: '8s' }
     };
     
-    const spec = platformSpecs[platform] || platformSpecs.instagram;
+    const spec = platformSpecs[platform] || platformSpecs.youtube;
     
-    // Queensland character archetypes - SINGLE CHARACTER FOCUS
-    const qldCharacters = [
+    // MayorkingAI-Style Business Transformation Archetypes
+    const cinematicScenarios = [
       {
-        character: "Queensland tradie", 
-        personality: "MacGyver-like problem solver with knowing grin",
-        activity: "fixes a squeaky gate with ingenious flair"
+        scenario: "Queensland SME Discovery Moment",
+        dramaticTension: "Stressed entrepreneur discovers automation breakthrough",
+        visualMetaphor: "Chaos organizing into flowing precision"
       },
       {
-        character: "Brisbane barista",
-        personality: "coffee artisan with legendary precision", 
-        activity: "creates the perfect flat white with magical touch"
+        scenario: "Professional Authority Emergence", 
+        dramaticTension: "Expert transforms invisibility into magnetic presence",
+        visualMetaphor: "Lighthouse beam cutting through market fog"
       },
       {
-        character: "Gold Coast lifeguard",
-        personality: "quiet hero with beach wisdom",
-        activity: "saves the day with quick-thinking solution"
+        scenario: "Digital Transformation Triumph",
+        dramaticTension: "Traditional business owner embraces future confidently",
+        visualMetaphor: "Bridge spanning from old-school to digital paradise"
       },
       {
-        character: "Sunshine Coast artist", 
-        personality: "creative soul with local charm",
-        activity: "transforms blank canvas into masterpiece"
+        scenario: "Market Breakthrough Moment",
+        dramaticTension: "Unknown player becomes industry beacon overnight",
+        visualMetaphor: "Spotlight illuminating stage where once stood in shadows"
       },
       {
-        character: "Cairns tour guide",
-        personality: "adventure expert with tropical energy", 
-        activity: "reveals hidden local treasure with enthusiasm"
+        scenario: "Customer Loyalty Revolution",
+        dramaticTension: "Single transaction transforms into referral empire",
+        visualMetaphor: "Ripples expanding across business landscape"
       }
     ];
     
-    // Queensland lighting moods that drive emotional loyalty
-    const lightingMoods = [
+    // MayorkingAI Dramatic Lighting Techniques
+    const cinematicLighting = [
       {
-        type: "golden hour magic",
-        visual: "backyard floods with magical sunlight, dreamy sunlit hues",
-        emotion: "optimism, triumph, local legend vibes"
+        type: "High-speed tracking golden explosion",
+        visual: "golden light piercing through transformation moment, sparks cascading like falling stars",
+        emotion: "thrilling breakthrough, epic revelation"
       },
       {
-        type: "stormy purple drama",
-        visual: "dramatic storm lighting with electric purple highlights", 
-        emotion: "high-stakes determination, breakthrough moments"
+        type: "Wide push-in dramatic emergence",
+        visual: "camera pulls back revealing empire being born from single moment, dramatic low-angle shot rising",
+        emotion: "scope of transformation, destiny unfolding"
       },
       {
-        type: "dawn gold optimism",
-        visual: "sunrise rays breaking through morning mist",
-        emotion: "new beginnings, fresh energy, hope"
+        type: "Close-up intensity with burning determination",
+        visual: "eyes burning with determination as systems activate, screen glowing like portal",
+        emotion: "personal stakes, emotional intensity"
       },
       {
-        type: "twilight neon glow",
-        visual: "urban twilight with neon blues and warm oranges",
-        emotion: "modern innovation, city energy, sophistication"
+        type: "Storm transformation with electric energy",
+        visual: "chaos transforms to order, lightning illuminating weathered hands crafting precision",
+        emotion: "mastery over chaos, professional triumph"
       }
     ];
     
-    // Queensland authentic elements for local connection
-    const qldElements = [
-      "native birds swirling in slow-motion",
-      "BBQ smoke rising in distance", 
-      "jacaranda petals floating gently",
-      "palm tree shadows dancing",
-      "kookaburra laughing approval",
-      "ocean breeze rustling leaves"
+    // Queensland Business Context Elements (for metaphorical depth)
+    const qldBusinessElements = [
+      "modern Queensland office with harbor views",
+      "Brisbane workshop transforming chaos to order", 
+      "Gold Coast conference room with strategic precision",
+      "Sunshine Coast creative space with innovation energy",
+      "Cairns business hub with tropical professionalism"
     ];
     
     // Randomly select elements for variety
-    const selectedCharacter = qldCharacters[Math.floor(Math.random() * qldCharacters.length)];
-    const selectedLighting = lightingMoods[Math.floor(Math.random() * lightingMoods.length)];
-    const selectedElement = qldElements[Math.floor(Math.random() * qldElements.length)];
+    const selectedScenario = cinematicScenarios[Math.floor(Math.random() * cinematicScenarios.length)];
+    const selectedLighting = cinematicLighting[Math.floor(Math.random() * cinematicLighting.length)];
+    const selectedElement = qldBusinessElements[Math.floor(Math.random() * qldBusinessElements.length)];
     
-    // Generate three anime-inspired single-character prompts - OPTIMIZED FOR SEEDANCE
-    const animePrompts = [
+    // Generate MayorkingAI-style cinematic prompts - VEO3 OPTIMIZED
+    const cinematicPrompts = [
       {
         id: 1,
-        title: "Magical Barista Sunrise",
-        prompt: `${spec.ratio} anime-inspired single Queenslander character—like a barefoot barista in a surf club hoodie—opens shop at sunrise; as golden light streams in dramatically, the first coffee brewed sends glowing steam swirling into a playful, magical wallaby that hops around the empty cafe, sparking cheeky smiles and a warm local buzz—joyous, welcoming, visually rich, with warm sunlight and subtle beach breeze effects, no text.`,
-        postCopy: this.generateQldCharacterCopy(postContent, platform, 'Brisbane barista'),
-        style: "magical-barista-sunrise",
+        title: "High-Speed Transformation Epic",
+        prompt: `High-speed camera tracking a Queensland business owner's hands as they activate automation systems, ${selectedLighting.visual}, close-up on determined eyes reflecting transformation success. Camera pulls back revealing ${selectedElement} transforming from chaos to flowing precision. ${selectedScenario.dramaticTension} - ${selectedScenario.visualMetaphor}. Thrilling, cinematic, photorealistic. 8-second duration.`,
+        postCopy: this.generateCinematicCopy(postContent, platform, selectedScenario.scenario),
+        style: "high-speed-transformation",
         editable: true
       },
       {
         id: 2,
-        title: "Queensland Tradie Legend", 
-        prompt: `${spec.ratio} anime-style single Queensland tradie character in work boots and singlet, alone at golden afternoon light, fixes broken fence with one clever twist of the wrist; as he succeeds, the backyard floods with magical golden glow and a cheeky kookaburra lands on his shoulder laughing approval, while BBQ smoke rises in warm celebration—pure local legend energy, community pride lighting, heartwarming triumph, no text.`,
-        postCopy: this.generateQldCharacterCopy(postContent, platform, 'Queensland tradie'),
-        style: "tradie-legend-golden",
+        title: "Wide Push-in Business Genesis", 
+        prompt: `Wide push-in from lone figure silhouetted against modern business environment, sparks cascading like falling stars as innovation meets precision. Camera slowly rises from ground level revealing Queensland SME empire being born from breakthrough moment. ${selectedScenario.dramaticTension} with dramatic lighting effects. Professional triumph, photorealistic, cinematic. 8-second duration.`,
+        postCopy: this.generateCinematicCopy(postContent, platform, selectedScenario.scenario),
+        style: "wide-push-business-genesis",
         editable: true
       },
       {
         id: 3,
-        title: "Beach Lifeguard Hero",
-        prompt: `${spec.ratio} anime-inspired single Gold Coast lifeguard character, alone on empty beach at vibrant sunrise, spots one surfer in trouble and springs into heroic action; as rescue succeeds, dramatic storm clouds part revealing golden rays of triumph while grateful seagulls circle overhead in slow-motion celebration—wish-fulfillment heroism, dramatic lighting transformation, Queensland coastal pride, visually uncluttered, no text.`,
-        postCopy: this.generateQldCharacterCopy(postContent, platform, 'Gold Coast lifeguard'),
-        style: "lifeguard-beach-hero",
+        title: "Close-up Intensity Breakthrough",
+        prompt: `Close-up on weathered hands gripping smartphone as business systems activate one by one, screen glowing like portal. Eyes burning with determination as ${selectedScenario.visualMetaphor} unfolds. ${selectedElement} visible in background as Queensland professional transforms invisible potential into visible success. Dramatic close-up, emotional intensity, photorealistic. 8-second duration.`,
+        postCopy: this.generateCinematicCopy(postContent, platform, selectedScenario.scenario),
+        style: "close-up-breakthrough",
         editable: true
       }
     ];
     
-    console.log(`🎌 Created ${animePrompts.length} anime-inspired Queensland character prompts with single focus!`);
-    return animePrompts;
+    console.log(`🎬 Created ${cinematicPrompts.length} MayorkingAI-style cinematic prompts for Veo3!`);
+    return cinematicPrompts;
   }
 
-  // Generate Queensland character-focused copy
-  static generateQldCharacterCopy(originalContent, platform, characterType) {
+  // Generate cinematic business transformation copy  
+  static generateCinematicCopy(originalContent, platform, scenarioType) {
     const platformLimits = {
       instagram: 400,
       linkedin: 1300,
@@ -258,16 +402,16 @@ class VideoService {
     
     const charLimit = platformLimits[platform] || 500;
     
-    const characterStyles = {
-      'Queensland tradie': {
-        instagram: `Problem-solving legend in action! ${originalContent.substring(0, 200)} When Queensland tradies get creative, magic happens! #QLDTradie #ProblemSolver`,
-        linkedin: `Queensland business ingenuity at its finest: ${originalContent} Every challenge is just another opportunity for creative problem-solving. This is how local legends are made - one clever solution at a time.`,
-        x: `QLD tradie magic: ${originalContent.substring(0, 150)} Pure problem-solving genius! #QLD`,
-        youtube: `Watch a Queensland tradie turn an ordinary problem into an extraordinary solution! ${originalContent} This is the kind of local ingenuity that built Queensland - practical, clever, and absolutely brilliant!`,
-        facebook: `Queensland tradies doing what they do best - solving problems with pure genius! ${originalContent} Every backyard hero has a story like this. Share yours below! #QLDTradies`
+    const cinematicStyles = {
+      'Queensland SME Discovery Moment': {
+        instagram: `From chaos to breakthrough! ${originalContent.substring(0, 200)} Watch this Queensland entrepreneur discover the automation that changed everything! #QLDBusiness #Breakthrough`,
+        linkedin: `Business transformation in action: ${originalContent} This is what happens when Queensland SMEs discover the right systems. From overwhelmed to optimized - the entrepreneurial journey captured in real-time.`,
+        x: `QLD entrepreneur breakthrough: ${originalContent.substring(0, 150)} Chaos to precision in 8 seconds! #QLDSuccess`,
+        youtube: `Witness the moment everything changed! ${originalContent} This Queensland business owner just discovered the automation breakthrough that transformed their entire operation!`,
+        facebook: `Epic business transformation alert! ${originalContent} Every Queensland entrepreneur has this moment - when chaos becomes clarity. Share your breakthrough story below! #QLDEntrepreneurs`
       },
-      'Brisbane barista': {
-        instagram: `Coffee artistry meets Queensland magic! ${originalContent.substring(0, 200)} When passion meets precision, legends are born! #BrisbaneBarista #CoffeeArt`,
+      'Professional Authority Emergence': {
+        instagram: `Invisible to industry leader! ${originalContent.substring(0, 200)} This is how Queensland experts transform expertise into magnetic presence! #AuthorityBuilder #QLDProfessional`,
         linkedin: `Brisbane coffee culture excellence: ${originalContent} Precision, passion, and perfectionism create experiences that build loyal communities. This is how service businesses become local institutions.`,
         x: `Brisbane coffee legend: ${originalContent.substring(0, 150)} Perfection in every cup! #Brisbane`,
         youtube: `The art of the perfect Brisbane flat white! ${originalContent} Watch how dedication to craft creates moments of pure magic. This is why Brisbane coffee culture is legendary!`,
@@ -707,62 +851,46 @@ class VideoService {
         
         console.log(`🎬 Art Director generating custom ${visualTheme} video: ${prompt.substring(0, 100)}...`);
         
-        // REAL SEEDANCE API INTEGRATION - Generate actual video
-        let seedanceVideoUrl = null;
+        // VEO3 API INTEGRATION - Generate cinematic video
+        let veoVideoUrl = null;
         let generationError = null;
         
         try {
-          if (process.env.REPLICATE_API_TOKEN) {
-            console.log(`🚀 Calling Replicate Seedance API for real video generation...`);
+          if (process.env.GOOGLE_AI_STUDIO_KEY) {
+            console.log(`🚀 Calling Veo3 API for cinematic video generation...`);
             
-            const prediction = await replicate.predictions.create({
-              model: SEEDANCE_MODEL,
-              input: {
-                prompt: prompt,
-                duration: 10, // Changed from 15 to 10 (valid values: 5, 10)
-                resolution: "480p",
-                aspect_ratio: spec.ratio,
-                fps: 24
-              },
-              webhook: `${process.env.BASE_URL || 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'}/api/seedance-webhook`,
-              webhook_events_filter: ["completed"]
+            // Content compliance check
+            const complianceCheck = this.checkContentCompliance(prompt);
+            if (!complianceCheck.safe) {
+              throw new Error(`Content compliance issue: ${complianceCheck.reason}`);
+            }
+            
+            // Enhanced MayorkingAI-style prompt for Veo3
+            const cinematicPrompt = this.enhancePromptForVeo3(prompt);
+            
+            const model = genAI.getGenerativeModel({ model: VEO3_VIDEO_MODEL });
+            
+            const result = await model.generateContent({
+              prompt: cinematicPrompt,
+              duration: 8, // Veo3 supports 8-second videos
+              aspectRatio: "16:9", // Veo3 only supports 16:9
+              quality: "high"
             });
             
-            console.log('Replicate prediction created:', prediction);
-            
-            // For real-time generation, we can poll for completion
-            if (prediction.id) {
-              console.log(`⏳ Prediction ${prediction.id} started, polling for completion...`);
-              
-              // Poll for completion (simplified version)
-              let attempts = 0;
-              const maxAttempts = 30; // 30 seconds max wait
-              
-              while (attempts < maxAttempts) {
-                const status = await replicate.predictions.get(prediction.id);
-                console.log(`Attempt ${attempts + 1}: Status ${status.status}`);
-                
-                if (status.status === 'succeeded' && status.output) {
-                  seedanceVideoUrl = status.output;
-                  console.log(`✅ Seedance generation succeeded: ${seedanceVideoUrl.substring(0, 50)}...`);
-                  break;
-                } else if (status.status === 'failed') {
-                  console.log(`❌ Seedance generation failed:`, status.error);
-                  break;
-                }
-                
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-                attempts++;
-              }
-              
-              if (attempts >= maxAttempts) {
-                console.log(`⏰ Seedance generation timeout after ${maxAttempts} seconds`);
+            if (result.response && result.response.candidates) {
+              const videoData = result.response.candidates[0];
+              if (videoData && videoData.content) {
+                veoVideoUrl = videoData.content.parts[0].videoUrl || videoData.content.parts[0].fileData?.fileUri;
+                console.log(`✅ Veo3 generation succeeded: ${veoVideoUrl ? veoVideoUrl.substring(0, 50) + '...' : 'Video generated'}`);
               }
             }
+            
+          } else {
+            console.log(`⚠️ GOOGLE_AI_STUDIO_KEY not configured - running in preview mode`);
           }
         } catch (apiError) {
           generationError = apiError.message;
-          console.log(`⚠️ Seedance API call failed: ${apiError.message}`);
+          console.log(`⚠️ Veo3 API call failed: ${apiError.message}`);
           console.log(`🎨 Falling back to Art Director preview mode`);
         }
         
@@ -772,21 +900,21 @@ class VideoService {
         
         return {
           videoId,
-          url: seedanceVideoUrl || `art-director-preview://${videoId}`, // Real Seedance URL or preview
-          seedanceUrl: seedanceVideoUrl || `https://seedance.delivery/art-director/${videoId}.mp4`, // Real or future URL
-          title: `Art Director: ${visualTheme.charAt(0).toUpperCase() + visualTheme.slice(1)} ${strategicIntent.split(' ').slice(0, 3).join(' ')}`,
-          description: `Custom Art Director interpretation: ${visualTheme} executing brand purpose "${strategicIntent}"`,
-          artDirectorBrief: prompt,
-          prompt,
+          url: veoVideoUrl || `veo3-preview://${videoId}`, // Real Veo3 URL or preview
+          veoVideoUrl: veoVideoUrl || `https://veo3.delivery/cinematic/${videoId}.mp4`, // Real or future URL
+          title: `Veo3 Cinematic: ${visualTheme.charAt(0).toUpperCase() + visualTheme.slice(1)} ${strategicIntent.split(' ').slice(0, 3).join(' ')}`,
+          description: `MayorkingAI-style cinematic interpretation: ${visualTheme} executing brand purpose "${strategicIntent}"`,
+          cinematicBrief: cinematicPrompt,
+          prompt: cinematicPrompt,
           visualTheme,
-          width: spec.width,
-          height: spec.height,
-          aspectRatio: spec.ratio,
-          duration: 10,
+          width: 1920, // Veo3 16:9 fixed
+          height: 1080, // Veo3 16:9 fixed
+          aspectRatio: "16:9", // Veo3 only supports 16:9
+          duration: 8, // Veo3 8-second videos
           customGenerated: true,
-          artDirectorPreview: !seedanceVideoUrl, // False if real video generated
-          previewMode: !seedanceVideoUrl, // False if real video available
-          seedanceGenerated: !!seedanceVideoUrl, // True if real API call succeeded
+          artDirectorPreview: !veoVideoUrl, // False if real video generated
+          previewMode: !veoVideoUrl, // False if real video available
+          veoGenerated: !!veoVideoUrl, // True if real API call succeeded
           generationError: generationError // Include any API errors for debugging
         };
       };
