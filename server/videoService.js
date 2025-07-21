@@ -7,6 +7,16 @@ import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 // PostQuotaService will be imported dynamically when needed
 
+// Import posting queue for auto-posting integration
+let postingQueue;
+async function getPostingQueue() {
+  if (!postingQueue) {
+    const { postingQueue: pq } = await import('./services/PostingQueue.js');
+    postingQueue = pq;
+  }
+  return postingQueue;
+}
+
 // Veo3 API configuration - Google AI Studio Integration
 const VEO3_MODEL = 'gemini-1.5-flash'; // Using stable model that works
 const VEO3_VIDEO_MODEL = 'gemini-1.5-flash';

@@ -10919,66 +10919,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
-  // Approve video for a post (combines video + text into single unit) with Grok copywriter support
-  app.post('/api/video/approve', async (req: any, res) => {
-    try {
-      const { userId, postId, videoData } = req.body;
-      
-      // Check if video has Grok copywriter enhancements
-      const hasGrokEnhancements = videoData?.grokEnhanced && videoData?.postCopy;
-      
-      // Update post with approved video data and Grok copywriter content
-      const updateData = {
-        hasVideo: true,
-        videoApproved: true,
-        videoData: videoData,
-        approvedAt: new Date(),
-        status: 'approved' // Mark entire post as approved
-      };
-      
-      // If Grok copywriter enhanced, update post content with editable copy
-      if (hasGrokEnhancements) {
-        updateData.content = videoData.postCopy;
-        updateData.grokEnhanced = true;
-        updateData.editable = true;
-        updateData.wittyStyle = videoData.wittyStyle || false;
-        console.log(`✍️ Updating post ${postId} with Grok copywriter content: "${videoData.postCopy.substring(0, 60)}..."`);
-      }
-      
-      const updatedPost = await storage.updatePost(postId, updateData);
-      
-      // Backend cache invalidation trigger for Grok enhanced posts
-      const response = {
-        success: true,
-        postId: postId,
-        combinedContent: true,
-        status: 'approved',
-        message: hasGrokEnhancements ? 'Video and Grok copywriter text combined into approved post' : 'Video and text combined into approved post',
-        videoData: videoData,
-        grokEnhanced: hasGrokEnhancements,
-        postCopy: hasGrokEnhancements ? videoData.postCopy : undefined,
-        editable: hasGrokEnhancements ? true : undefined
-      };
-      
-      // Signal cache invalidation for Grok enhanced content
-      if (hasGrokEnhancements) {
-        response.cacheInvalidationRequired = true;
-        response.queryToInvalidate = ['posts'];
-        response.reason = 'Post updated with Grok copywriter enhanced content';
-        console.log('✅ Grok copywriter post approved - signaling cache invalidation required');
-      }
-      
-      console.log(`✅ Video approved for post ${postId} - combined with${hasGrokEnhancements ? ' Grok enhanced' : ''} text content`);
-      
-      res.json(response);
-    } catch (error) {
-      console.error('Video approval failed:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Video approval failed' 
-      });
-    }
-  });
+  // DUPLICATE ENDPOINT REMOVED - Using secure authenticated version below
 
   // Publish approved post (with video + text) to platforms
   app.post('/api/post/publish-approved', async (req: any, res) => {
@@ -11098,33 +11039,99 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
-  // VIDEO APPROVAL ENDPOINT
+  // VIDEO APPROVAL ENDPOINT WITH AUTO-POSTING INTEGRATION
   app.post("/api/video/approve", requireAuth, async (req: any, res) => {
     try {
       const { userId, postId, videoData } = req.body;
+      const sessionUserId = req.session.userId!;
       
-      console.log(`📹 Approving video for post ${postId}`);
+      console.log(`📹 Approving video for post ${postId} with auto-posting integration`);
       
-      // Update post with video data
+      // Get current post data
       const post = await storage.getPost(postId);
       if (!post) {
         return res.status(404).json({ success: false, error: 'Post not found' });
       }
+
+      // Check if video has Grok copywriter enhancements
+      const hasGrokEnhancements = videoData?.grokEnhanced && videoData?.postCopy;
       
-      // Update post with approved video
-      await storage.updatePost(postId, {
+      // Update post with approved video and prepare for auto-posting
+      const updateData: any = {
         hasVideo: true,
         videoApproved: true,
         videoData: JSON.stringify(videoData),
-        approvedAt: new Date()
-      });
+        approvedAt: new Date(),
+        status: 'approved' // Mark entire post as approved for auto-posting
+      };
       
-      console.log(`✅ Video approved for post ${postId}`);
+      // If Grok copywriter enhanced, update post content with editable copy
+      if (hasGrokEnhancements) {
+        updateData.content = videoData.postCopy;
+        updateData.grokEnhanced = true;
+        updateData.editable = true;
+        updateData.wittyStyle = videoData.wittyStyle || false;
+        console.log(`✍️ Updating post ${postId} with Grok copywriter content: "${videoData.postCopy.substring(0, 60)}..."`);
+      }
+
+      await storage.updatePost(postId, updateData);
       
-      res.json({
-        success: true,
-        message: 'Video approved successfully'
-      });
+      // AUTO-POSTING INTEGRATION: Add to posting queue with throttling
+      try {
+        console.log(`🚀 Adding post ${postId} to auto-posting queue for platform: ${post.platform}`);
+        
+        // Use final content for posting (Grok enhanced content if available, otherwise original)
+        const contentToPost = hasGrokEnhancements ? videoData.postCopy : post.content;
+        
+        // Add to posting queue with 2-second delay for throttling
+        const queueId = await postingQueue.addToQueue(
+          postId,
+          post.platform,
+          contentToPost,
+          sessionUserId,
+          2000 // 2 second delay to prevent burst posting
+        );
+        
+        console.log(`📋 Post ${postId} queued for auto-posting with ID: ${queueId}`);
+        
+        // Response with auto-posting confirmation
+        const response = {
+          success: true,
+          postId: postId,
+          message: hasGrokEnhancements ? 'Video and Grok copywriter content approved - queued for auto-posting' : 'Video approved - queued for auto-posting',
+          videoData: videoData,
+          autoPosting: {
+            enabled: true,
+            queueId: queueId,
+            platform: post.platform,
+            scheduledDelay: 2000,
+            status: 'queued'
+          },
+          grokEnhanced: hasGrokEnhancements,
+          postCopy: hasGrokEnhancements ? videoData.postCopy : undefined,
+          editable: hasGrokEnhancements ? true : undefined
+        };
+        
+        console.log(`✅ Video approved for post ${postId} - queued for auto-posting to ${post.platform}`);
+        res.json(response);
+        
+      } catch (queueError: any) {
+        console.error(`❌ Failed to add post ${postId} to posting queue:`, queueError);
+        
+        // Still return success for video approval, but note auto-posting failed
+        res.json({
+          success: true,
+          postId: postId,
+          message: 'Video approved successfully, but auto-posting queue failed',
+          videoData: videoData,
+          autoPosting: {
+            enabled: false,
+            error: queueError.message,
+            status: 'failed'
+          },
+          grokEnhanced: hasGrokEnhancements
+        });
+      }
       
     } catch (error: any) {
       console.error('Video approval failed:', error);

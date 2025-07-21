@@ -6,6 +6,7 @@
 import { storage } from '../storage';
 import { DirectPublishService } from './DirectPublishService';
 import { TwitterAPI } from './TwitterAPI';
+import { UnifiedOAuthService } from './UnifiedOAuthService';
 
 interface QueuedPost {
   id: string;
@@ -147,19 +148,26 @@ class PostingQueueService {
           }
         } else {
           // Fallback to DirectPublishService if Twitter API not available
-          publishResult = await DirectPublishService.publishToSinglePlatform(
-            queuedPost.platform,
-            post,
-            queuedPost.userId
-          );
+          const validConnections = await UnifiedOAuthService.validateAndRefreshTokens(queuedPost.userId);
+          const connection = validConnections.find(c => c.platform === queuedPost.platform);
+          
+          if (!connection) {
+            throw new Error(`No active connection found for ${queuedPost.platform}`);
+          }
+          
+          publishResult = await DirectPublishService.publishSinglePost(post, connection);
         }
       } else {
         // Use DirectPublishService for other platforms
-        publishResult = await DirectPublishService.publishToSinglePlatform(
-          queuedPost.platform,
-          post,
-          queuedPost.userId
-        );
+        // Get valid connection for the platform
+        const validConnections = await UnifiedOAuthService.validateAndRefreshTokens(queuedPost.userId);
+        const connection = validConnections.find(c => c.platform === queuedPost.platform);
+        
+        if (!connection) {
+          throw new Error(`No active connection found for ${queuedPost.platform}`);
+        }
+        
+        publishResult = await DirectPublishService.publishSinglePost(post, connection);
       }
 
       if (publishResult.success) {
@@ -193,7 +201,7 @@ class PostingQueueService {
         // Update post status in database
         await storage.updatePost(queuedPost.postId, {
           status: 'failed',
-          lastError: error.message
+          errorLog: error.message
         });
         
         // Log to admin dashboard (could be enhanced with database logging)
