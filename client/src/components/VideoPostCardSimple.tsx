@@ -240,17 +240,54 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
           )}
         </div>
         
-        {/* Simple Progress Display for One-Click Generation */}
+        {/* Enhanced Video Generation Progress Indicator */}
         {isRendering && (
-          <div className="mt-4 space-y-2">
-            <Progress value={renderingProgress} className="w-full" />
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>{renderingProgress}% complete</span>
-              <span>{renderingTime}s elapsed</span>
+          <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-indigo-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-indigo-700">Generating Veo3 Video</span>
+              </div>
+              <span className="text-xs font-mono bg-indigo-100 px-2 py-1 rounded text-indigo-600">
+                {renderingTime}s
+              </span>
             </div>
+            
+            <Progress value={renderingProgress} className="w-full mb-3 h-2" />
+            
+            <div className="flex justify-between items-center text-xs mb-2">
+              <span className="text-gray-600">{renderingProgress}% complete</span>
+              <span className="text-indigo-600 font-medium">
+                ETA: {Math.max(0, Math.round(25 - renderingTime))}s
+              </span>
+            </div>
+            
             {currentPhase && (
-              <p className="text-xs text-purple-600 text-center">{currentPhase}</p>
+              <div className="flex items-center gap-2 p-2 bg-white rounded border border-indigo-100">
+                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                <p className="text-xs text-purple-700 font-medium">{currentPhase}</p>
+              </div>
             )}
+            
+            {/* Generation Steps Indicator */}
+            <div className="mt-3 flex justify-between text-xs">
+              <div className={`flex items-center gap-1 ${renderingProgress > 20 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${renderingProgress > 20 ? 'bg-green-400' : 'bg-gray-300'}`}></div>
+                <span>JTBD Analysis</span>
+              </div>
+              <div className={`flex items-center gap-1 ${renderingProgress > 40 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${renderingProgress > 40 ? 'bg-green-400' : 'bg-gray-300'}`}></div>
+                <span>Grok Enhancement</span>
+              </div>
+              <div className={`flex items-center gap-1 ${renderingProgress > 60 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${renderingProgress > 60 ? 'bg-green-400' : 'bg-gray-300'}`}></div>
+                <span>Cinematic Build</span>
+              </div>
+              <div className={`flex items-center gap-1 ${renderingProgress > 85 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${renderingProgress > 85 ? 'bg-green-400' : 'bg-gray-300'}`}></div>
+                <span>Veo3 Render</span>
+              </div>
+            </div>
           </div>
         )}
         
