@@ -183,7 +183,7 @@ export default function BrandPurpose() {
       console.log('Triggering Grok API waterfall content generation...');
       setIsGeneratingGuidance(true);
       
-      // Generate strategic guidance based on Strategyzer methodology
+      // Generate strategic guidance using AI analysis
       guidanceMutation.mutate({
         brandName,
         productsServices,
@@ -284,7 +284,7 @@ export default function BrandPurpose() {
     }
   };
 
-  // Strategyzer-powered autofill for remaining fields
+  // AI-powered autofill for remaining fields
   const [aiSuggestions, setAiSuggestions] = useState<{
     audience?: string;
     jobToBeDone?: string;
@@ -295,7 +295,7 @@ export default function BrandPurpose() {
   // Generate smart field suggestions when guidance is received
   useEffect(() => {
     if (guidance && showGuidance && brandName && productsServices && corePurpose) {
-      // Extract AI-powered suggestions from Strategyzer analysis
+      // Extract AI-powered suggestions from your little helper analysis
       const generateSmartSuggestions = () => {
         const suggestions: any = {};
         
@@ -308,7 +308,7 @@ export default function BrandPurpose() {
           }
         }
 
-        // Job-to-be-Done suggestions using Strategyzer framework
+        // Job-to-be-Done suggestions using AI analysis
         if (!form.getValues('jobToBeDone') || form.getValues('jobToBeDone').length < 20) {
           suggestions.jobToBeDone = "Functional: Maintain consistent professional marketing presence. Emotional: Feel confident about business visibility and growth. Social: Be seen as a credible, established business in the community";
         }
@@ -334,7 +334,7 @@ export default function BrandPurpose() {
   const applySuggestion = (field: string, suggestion: string) => {
     form.setValue(field as any, suggestion);
     toast({
-      title: "Strategyzer Suggestion Applied",
+      title: "AI Suggestion Applied",
       description: `AI-generated content added to ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`,
     });
   };
@@ -783,7 +783,7 @@ export default function BrandPurpose() {
               )}
             </div>
 
-            {/* Supercharged Strategyzer Analysis Display */}
+            {/* AI Analysis Display */}
             {(showGuidance || isGeneratingGuidance) && (
               <Card className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 border-indigo-200 shadow-lg">
                 <CardContent className="p-6">
@@ -804,7 +804,7 @@ export default function BrandPurpose() {
                         <div className="flex items-center space-x-2">
                           <h3 className="text-lg font-bold text-indigo-900 flex items-center">
                             <Lightbulb className="w-5 h-5 mr-2 text-amber-500" />
-                            Strategyzer Analysis
+                            AI Analysis
                           </h3>
                           <div className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
                             Value Proposition Canvas
@@ -849,7 +849,7 @@ export default function BrandPurpose() {
                         <div className="bg-white/60 rounded-lg p-4 border border-indigo-100">
                           <div className="prose prose-sm max-w-none">
                             <div 
-                              className="text-sm leading-relaxed text-gray-800 strategyzer-content"
+                              className="text-sm leading-relaxed text-gray-800 ai-content"
                               dangerouslySetInnerHTML={{
                                 __html: guidance
                                   .replace(/## (.+)/g, '<h3 class="text-lg font-bold text-indigo-900 mt-4 mb-2 flex items-center"><span class="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>$1</h3>')
@@ -1381,6 +1381,6 @@ export default function BrandPurpose() {
   );
 }
 
-// Enhanced Grok autofill with visible feedback and Strategyzer methodology
+// Enhanced Grok autofill with visible feedback and AI methodology
 // GROK AUTOFILL FUNCTION REMOVED TO PREVENT INFINITE API LOOPS
 

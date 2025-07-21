@@ -21,7 +21,7 @@ export default function AITest() {
     {
       step: 1,
       title: "Analyzing Brand Purpose & Goals",
-      content: "Reviewing your Strategyzer-based brand purpose to understand core messaging, target audience, and business objectives...",
+      content: "Your little helper is reviewing your brand purpose to understand core messaging, target audience, and business objectives...",
       duration: 2000
     },
     {

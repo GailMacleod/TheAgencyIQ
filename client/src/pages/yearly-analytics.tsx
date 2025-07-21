@@ -391,7 +391,7 @@ export default function YearlyAnalytics() {
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="text-lg font-medium lowercase">brand purpose goal alignment</CardTitle>
-              <p className="text-sm text-gray-600">measuring progress against strategyzer-defined objectives</p>
+              <p className="text-sm text-gray-600">measuring progress against AI-defined objectives</p>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

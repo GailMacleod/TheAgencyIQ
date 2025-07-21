@@ -431,7 +431,7 @@ function IntelligentSchedule() {
     }
   };
 
-  // Generate strategic content using waterfall strategyzer methodology
+  // Generate strategic content using AI-powered methodology
   const generateIntelligentSchedule = async () => {
     if (!brandPurpose) {
       toast({
@@ -448,7 +448,7 @@ function IntelligentSchedule() {
     try {
       toast({
         title: "Strategic Content Generation in Progress",
-        description: "Implementing waterfall strategyzer methodology with Value Proposition Canvas...",
+        description: "Your little helper is creating strategic content with AI-powered analysis...",
       });
 
       // Use strategic content generation with quota reset
@@ -487,7 +487,7 @@ function IntelligentSchedule() {
             'urgency-conversion': 0.2
           },
           suggestions: [
-            'Waterfall Strategyzer methodology implemented',
+            'AI methodology implemented',
             'Value Proposition Canvas integrated',
             'Queensland market data optimized',
             '30-day cycle optimization active'
@@ -498,7 +498,7 @@ function IntelligentSchedule() {
         
         toast({
           title: "Strategic Content Generated Successfully",
-          description: `Created ${strategicData.savedCount} strategic posts using waterfall strategyzer methodology with Value Proposition Canvas integration`,
+          description: `Your little helper created ${strategicData.savedCount} strategic posts using AI-powered analysis and Value Proposition insights`,
         });
 
         // Comprehensive cache invalidation and refresh
