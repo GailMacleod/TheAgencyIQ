@@ -10875,7 +10875,12 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         strategicIntent: result.strategicIntent?.substring(0, 50)
       });
       
-      res.json(result);
+      // SURGICAL FIX: Wrap video data in videoData property as expected by frontend
+      res.json({
+        success: result.success,
+        videoData: result,
+        message: result.message || 'Video generation complete'
+      });
     } catch (error) {
       console.error('Art Director video creation failed:', error);
       console.error('Error details:', error.stack);
