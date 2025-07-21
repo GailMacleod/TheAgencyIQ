@@ -191,7 +191,7 @@ function IntelligentSchedule() {
   // Handle approve post button click
   const handleApprovePost = async (postId: number) => {
     try {
-      setApprovingPosts(prev => new Set([...prev, postId]));
+      setApprovingPosts(prev => new Set(Array.from(prev).concat([postId])));
       
       const response = await fetch('/api/approve-post', {
         method: 'POST',
@@ -214,7 +214,7 @@ function IntelligentSchedule() {
         });
 
         queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-        setApprovedPosts(prev => new Set([...prev, postId]));
+        setApprovedPosts(prev => new Set(Array.from(prev).concat([postId])));
       } else {
         throw new Error('Failed to approve post');
       }
@@ -272,7 +272,7 @@ function IntelligentSchedule() {
   useEffect(() => {
     if (user && !userLoading && !subscriptionLoading) {
       // If user exists but has no subscription plan or it's empty/default
-      if (!user.subscriptionPlan || user.subscriptionPlan === '' || user.subscriptionPlan === 'none') {
+      if (!user || !(user as any).subscriptionPlan || (user as any).subscriptionPlan === '' || (user as any).subscriptionPlan === 'none') {
         console.log('User has no active subscription, redirecting to subscription selection');
         setLocation('/subscription');
         return;
@@ -859,15 +859,53 @@ function IntelligentSchedule() {
             ) : (
               // List View with Video Generation
               <div className="grid gap-6">
-                {postsArray.length > 0 ? postsArray.map((post: Post) => (
+                {postsArray.length > 0 ? postsArray.map((post: any) => (
                   <VideoPostCardSimple
                     key={post.id}
-                    post={post}
-                    onVideoApproved={handleVideoApproved}
-                    userId={user?.id?.toString() || '2'}
+                    post={{
+                      id: post.id.toString(),
+                      platform: post.platform,
+                      content: post.content,
+                      status: post.status,
+                      scheduledFor: post.scheduledFor,
+                      publishedAt: post.publishedAt,
+                      errorLog: post.errorLog,
+                      aiRecommendation: post.aiRecommendation,
+                      aiScore: post.aiScore,
+                      localEvent: post.localEvent,
+                      strategicTheme: post.strategicTheme,
+                      businessCanvasPhase: post.businessCanvasPhase,
+                      engagementOptimisation: post.engagementOptimisation,
+                      analytics: post.analytics,
+                      hasVideo: post.hasVideo,
+                      videoApproved: post.videoApproved,
+                      videoData: post.videoData,
+                      approvedAt: post.approvedAt
+                    }}
+                    onVideoApproved={() => {}}
+                    userId={user ? (user as any).id?.toString() || '2' : '2'}
                     onPostUpdate={() => refetchPosts()}
-                    onEditPost={handleEditPost}
-                    onApprovePost={handleApprovePost}
+                    onEditPost={(convertedPost) => handleEditPost({
+                      id: parseInt(convertedPost.id),
+                      platform: convertedPost.platform,
+                      content: convertedPost.content,
+                      status: convertedPost.status,
+                      scheduledFor: convertedPost.scheduledFor,
+                      publishedAt: convertedPost.publishedAt,
+                      errorLog: convertedPost.errorLog,
+                      aiRecommendation: convertedPost.aiRecommendation,
+                      aiScore: convertedPost.aiScore,
+                      localEvent: convertedPost.localEvent,
+                      strategicTheme: convertedPost.strategicTheme,
+                      businessCanvasPhase: convertedPost.businessCanvasPhase,
+                      engagementOptimisation: convertedPost.engagementOptimisation,
+                      analytics: convertedPost.analytics,
+                      hasVideo: convertedPost.hasVideo,
+                      videoApproved: convertedPost.videoApproved,
+                      videoData: convertedPost.videoData,
+                      approvedAt: convertedPost.approvedAt
+                    })}
+                    onApprovePost={(postId) => handleApprovePost(parseInt(postId) || 0)}
                   />
                 )) : (
                   <div className="text-center p-8">

@@ -1662,8 +1662,27 @@ Share this with another Queensland business owner who needs to see this! 🤝
       generationTime: 1000,
       note: 'Enhanced fallback with Queensland business context'
     };
+  }
+
+  // RENDER VIDEO METHOD WITH VEO3 INTEGRATION
+  static async renderVideo(prompt, platform = 'instagram', strategicIntent = 'Queensland business transformation', brandPurpose = null) {
+    console.log(`🎬 Enhanced VEO3 video generation requested for ${platform}`);
+    
+    let videoPrompt, postCopy, isGrokEnhanced = false;
+    
+    try {
+      // Retrieve brand purpose data if not provided
+      if (!brandPurpose && typeof storage !== 'undefined') {
+        try {
+          const userId = 2; // Current user ID
+          brandPurpose = await storage.getBrandPurposeByUser(userId);
+          console.log('✅ Retrieved brand purpose for VEO3:', brandPurpose?.corePurpose);
+        } catch (error) {
+          console.log('⚠️ Brand purpose unavailable, using fallback');
         }
-      } else if (prompt && typeof prompt === 'object' && (prompt.content || prompt.prompt)) {
+      }
+
+      if (prompt && typeof prompt === 'object' && (prompt.content || prompt.prompt)) {
         // AI-generated strategic prompt - use Grok copywriter enhancement
         const promptText = prompt.prompt || prompt.content;
         console.log(`✍️ Grok Copywriter: Interpreting AI strategic prompt`);

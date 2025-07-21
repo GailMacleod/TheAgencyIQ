@@ -114,7 +114,7 @@ interface VideoPostCardProps {
   onVideoApproved: (postId: string, videoData: VideoData) => void;
   onPostUpdate?: () => void;
   onEditPost?: (post: Post) => void;
-  onApprovePost?: (postId: number) => void;
+  onApprovePost?: (postId: string) => void;
 }
 
 function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEditPost, onApprovePost }: VideoPostCardProps) {
@@ -502,7 +502,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
               <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
                 {videoSrc || videoData.videoUrl || videoData.url || videoData.veoVideoUrl ? (
                   <VideoPlayerWithFallback 
-                    videoUrl={videoSrc || videoData.videoUrl || videoData.url || videoData.veoVideoUrl}
+                    videoUrl={videoSrc || videoData.videoUrl || videoData.url || videoData.veoVideoUrl || ''}
                     thumbnail={videoData.thumbnail}
                     title={videoData.title}
                     onError={(errorMsg) => {
