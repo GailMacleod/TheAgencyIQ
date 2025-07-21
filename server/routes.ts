@@ -11249,38 +11249,77 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         console.log('⚠️ Using fallback brand purpose for VEO3');
       }
       
-      // Import enhanced video service
+      // Import enhanced video service and VEO 2.0 service
       const VideoService = (await import('./videoService')).default;
+      const VeoService = (await import('./veoService')).default;
       
-      // Generate VEO3 video with JTBD integration
-      const result = await VideoService.renderVideo(
-        promptType || promptPreview, 
-        editedText, 
-        platform, 
-        brandPurpose,
-        promptPreview
-      );
+      // Try VEO 2.0 first, fallback to enhanced video service
+      let result;
+      try {
+        const veoService = new VeoService();
+        const enhancedPrompt = veoService.enhancePromptForVeo2(
+          promptType || promptPreview || editedText, 
+          { businessType: brandPurpose?.businessType, location: 'Queensland' }
+        );
+        
+        const veoResult = await veoService.generateVideo(enhancedPrompt, {
+          aspectRatio: '16:9',
+          durationSeconds: 8,
+          platform: platform
+        });
+        
+        if (veoResult.success) {
+          result = {
+            success: true,
+            videoId: veoResult.videoId,
+            url: veoResult.videoUrl,
+            videoUrl: veoResult.videoUrl,
+            title: `VEO 2.0 Generated - ${platform.toUpperCase()}`,
+            description: `Professional video generated with VEO 2.0 for ${brandPurpose?.brandName || 'Queensland Business'}`,
+            duration: veoResult.duration,
+            aspectRatio: veoResult.aspectRatio,
+            quality: veoResult.resolution,
+            veo2Generated: true,
+            platform: platform,
+            generationTime: veoResult.generationTime,
+            message: 'VEO 2.0 video generated successfully'
+          };
+        } else {
+          throw new Error('VEO 2.0 generation failed, using fallback');
+        }
+      } catch (veoError) {
+        console.log('⚠️ VEO 2.0 failed, using enhanced fallback:', veoError.message);
+        // Fallback to existing video service
+        result = await VideoService.renderVideo(
+          promptType || promptPreview, 
+          editedText, 
+          platform, 
+          brandPurpose,
+          promptPreview
+        );
+      }
       
       if (result.success) {
-        console.log(`✅ VEO3 video generation successful for ${platform}`);
+        console.log(`✅ VEO 2.0 video generation successful for ${platform}`);
         res.json({
           success: true,
           videoData: result,
           videoUrl: result.url || result.videoUrl,
-          message: 'VEO3 video generated successfully'
+          message: result.message || 'VEO 2.0 video generated successfully',
+          veo2Generated: result.veo2Generated
         });
       } else {
         res.status(500).json({
           success: false,
-          error: result.message || 'VEO3 video generation failed'
+          error: result.message || 'VEO 2.0 video generation failed'
         });
       }
       
     } catch (error: any) {
-      console.error('❌ VEO3 video generation failed:', error);
+      console.error('❌ VEO 2.0 video generation failed:', error);
       res.status(500).json({
         success: false,
-        error: 'VEO3 video generation temporarily unavailable',
+        error: 'VEO 2.0 video generation temporarily unavailable',
         details: error.message
       });
     }

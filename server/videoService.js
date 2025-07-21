@@ -1718,7 +1718,8 @@ Share this with another Queensland business owner who needs to see this! 🤝
 
   // RENDER VIDEO METHOD WITH VEO3 INTEGRATION
   static async renderVideo(prompt, platform = 'instagram', strategicIntent = 'Queensland business transformation', brandPurpose = null) {
-    console.log(`🎬 Enhanced VEO3 video generation requested for ${platform}`);
+    const startTime = Date.now(); // Fix critical startTime issue
+    console.log(`🎬 Enhanced VEO 2.0 video generation requested for ${platform}`);
     
     let videoPrompt, postCopy, isGrokEnhanced = false;
     
@@ -1782,14 +1783,14 @@ Share this with another Queensland business owner who needs to see this! 🤝
         console.log('🎬 Art Director Final Script:', videoPrompt.substring(0, 120) + '...');
       }
       
-      // VEO3 Platform-specific video requirements (VEO3 constraint: 16:9 only, 8 seconds only)
+      // VEO 2.0 Platform-specific video requirements (VEO 2.0 constraint: 16:9 only, 8 seconds only)
       const platformSettings = {
         'Instagram': { 
           resolution: '1080p', 
-          aspectRatio: '16:9', // VEO3 limitation: no 9:16 support
-          maxDuration: 8, // VEO3 fixed duration
+          aspectRatio: '16:9', // VEO 2.0 limitation: no 9:16 support
+          maxDuration: 8, // VEO 2.0 fixed duration
           maxSize: '100MB',
-          note: 'VEO3 generates 16:9 videos for all platforms'
+          note: 'VEO 2.0 generates 16:9 videos for all platforms'
         },
         'YouTube': { 
           resolution: '1080p', 
@@ -2075,7 +2076,7 @@ Share this with another Queensland business owner who needs to see this! 🤝
       
       console.log(`🎬 Art Director Visual Theme Decision: "${originalPrompt.substring(0, 30)}..." → ${selectedTheme}`);
       
-      const renderTime = Math.floor((Date.now() - startTime) / 1000);
+      const renderTime = Math.floor((Date.now() - (startTime || Date.now())) / 1000);
       
       // Generate authentic Art Director video using the local function
       const generatedVideo = await generateArtDirectorVideo(selectedTheme, strategicIntent, creativeDirection, platform);

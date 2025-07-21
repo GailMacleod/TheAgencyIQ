@@ -34,12 +34,12 @@ function VideoPlayerWithFallback({ videoUrl, thumbnail, title, onError }: { vide
           <div className="w-16 h-16 mx-auto mb-3 bg-purple-600 rounded-full flex items-center justify-center">
             <VideoIcon className="w-8 h-8" />
           </div>
-          <p className="text-lg font-semibold mb-1">Video Generated</p>
-          <p className="text-sm opacity-80">Preview processing complete</p>
+          <p className="text-lg font-semibold mb-1">VEO 2.0 Generated</p>
+          <p className="text-sm opacity-80">Video ready for preview</p>
           <div className="mt-3 flex justify-center gap-2">
-            <span className="px-2 py-1 bg-purple-600 rounded text-xs">16:9</span>
-            <span className="px-2 py-1 bg-purple-600 rounded text-xs">8s</span>
-            <span className="px-2 py-1 bg-purple-600 rounded text-xs">1080p</span>
+            <span className="px-2 py-1 bg-blue-600 rounded text-xs">16:9</span>
+            <span className="px-2 py-1 bg-blue-600 rounded text-xs">8s</span>
+            <span className="px-2 py-1 bg-blue-600 rounded text-xs">720p</span>
           </div>
           {isInvalidUrl && (
             <p className="text-xs opacity-60 mt-2">Backend processing successful</p>
@@ -462,13 +462,13 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
           )}
         </div>
         
-        {/* VEO3 Video Preview Card with URL Validation and Error Recovery */}
+        {/* VEO 2.0 Video Preview Card with URL Validation and Error Recovery */}
         {hasGeneratedVideo && videoData && (
           <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg">
             <div className="flex items-center justify-between mb-3">
-              <Badge className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1">
+              <Badge className={`px-3 py-1 text-white ${videoData.veo2Generated ? 'bg-gradient-to-r from-blue-600 to-indigo-600' : 'bg-gradient-to-r from-purple-600 to-indigo-600'}`}>
                 <VideoIcon className="w-4 h-4 mr-2" />
-                Veo3 Cinematic Ready
+                {videoData.veo2Generated ? 'VEO 2.0 Ready' : 'Video Ready'}
               </Badge>
               <div className="flex gap-2">
                 <Button
@@ -491,7 +491,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
               </div>
             </div>
             
-            {/* VEO3 Video Preview with URL Validation and Error Recovery */}
+            {/* VEO 2.0 Video Preview with URL Validation and Error Recovery */}
             <div className="mb-3">
               <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
                 {videoSrc || videoData.videoUrl || videoData.url || videoData.veoVideoUrl ? (
