@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { VideoIcon, LoaderIcon, CheckIcon, XIcon } from 'lucide-react';
 
 interface VideoData {
-  id: string;
+  videoId: string;
   url: string;
   title: string;
   description: string;
@@ -15,8 +15,16 @@ interface VideoData {
   aspectRatio: string;
   quality: string;
   size: string;
-  artDirected: boolean;
-  realVideo: boolean;
+  format: string;
+  artDirected?: boolean;
+  veoGenerated?: boolean;
+  artDirectorPreview?: boolean;
+  strategicIntent?: string;
+  visualTheme?: string;
+  veoVideoUrl?: string;
+  thumbnail?: string;
+  width?: number;
+  height?: number;
 }
 
 interface Post {
@@ -66,8 +74,8 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
 
     // Smooth progress tracking
     const startTime = Date.now();
-    let progressInterval;
-    let phaseInterval;
+    let progressInterval: NodeJS.Timeout | null = null;
+    let phaseInterval: NodeJS.Timeout | null = null;
 
     const startProgress = () => {
       progressInterval = setInterval(() => {
