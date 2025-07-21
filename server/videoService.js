@@ -62,75 +62,107 @@ class VideoService {
     const brandName = brandData?.brandName || '[Company Name]';
     const brandUrl = brandData?.website || '[URL]';
     
-    // Research-integrated prompt with JTBD separation, Queensland psychology, and sound alignment
+    // COMPREHENSIVE RESEARCH-INTEGRATED PROMPT TRAINING WITH VEO3 NATIVE SYNC
     const enhancedPrompt = `
-You are a world-class cinematic video director creating 8-second Queensland business transformation videos with native audio sync and brand integration. Follow research-based JTBD frameworks and Queensland consumer psychology:
+You are a world-class cinematic video director creating 8-second Queensland business transformation videos with Veo3 native audio sync and comprehensive brand integration. Follow advanced research-based frameworks and proven engagement techniques:
 
-RESEARCH FOUNDATION (Strategyn/HBR JTBD vs Campaigns):
-- JTBD focused on emotional needs (separate from tactical campaigns)
-- Queensland consumers value emotional retention/community over price
-- Local slang increases SMB engagement by 25%+ ("fair dinkum", "no worries", "crook as Rookwood")
-- Origin rivalry hooks and community pride drive viral engagement
+COMPREHENSIVE RESEARCH FOUNDATION:
+- STRATEGYN/HBR JTBD FRAMEWORKS: Separate emotional needs from tactical campaigns (e.g., IKEA's "easy assembly" JTBD separate from ads)
+- UQ.EDU.AU/KPMG QUEENSLAND PSYCHOLOGY: QLD consumers value emotional retention/community over price (25%+ engagement lift via local ties)
+- NATIVE AUDIO INTEGRATION: Veo3 audio sync for dialogue/effects/music/voiceover (e.g., "with orchestral music and voiceover saying 'fair dinkum'—sync to action")
+- CULTURAL PSYCHOLOGY: Local slang "crook as Rookwood" for pains, sports like Origin for rivalry hooks, "no worries" boosting SMB campaigns
+- CALENDAR ALIGNMENT: Local happenings like Ekka/State of Origin for event-driven content timing
 
-EXAMPLE 1 (JTBD Separation + Sound + Brand + CTA):
+BEST PRACTICES - SPECIFIC/DENSE STRUCTURES:
+Example Dense Structure: "Cinematic 8s: QLD owner sighs in heat (pain: grind like losing Origin), bites for fair dinkum Paris escape (JTBD: emotional transport separate from campaign), achieving joy (gain: Maroons win vibe). Align to local event: Ekka vibes. Sound: Orchestral swell with voiceover 'realise your escape at ${brandName} – visit ${brandUrl}!'. Modern: Drone push-in, watercolor fade. Include ${brandName} logo overlay."
+
+EXAMPLE 1 (JTBD Separation + Sound + Brand + CTA + Dense Structure):
 Business Context: "Queensland bakery owner struggles with heat stress"
 JTBD: "Whisk QLDer from heat grind to Paris escape (emotional transport, not campaign tactic)"
-Video Script: "8-second cinematic sequence: QLD owner sighs in oppressive heat, sweat on brow (pain: grind like losing Origin) (0-2s), close-up bite into product with eyes closing in bliss (2-4s), dreamy fade to Parisian café ambiance (JTBD: emotional escape) (4-6s), wide push-in owner smiling with confidence overlay '${brandName}' logo (6-8s). 
-SOUND: Orchestral swell with Aussie voiceover 'Fair dinkum escape at ${brandName} – visit ${brandUrl}!' synced to bite action.
-BRAND: Logo overlay at (6s), company name in voiceover.
-CTA: 'Visit ${brandUrl}' in voiceover and text overlay."
+Video Script: "Generate: Cinematic 8s QLD bakery owner sighs in oppressive heat, sweat on brow (pain: grind like losing Origin) (0-2s), close-up bite into product with eyes closing in bliss, sync dialogue to bite with crunch effects (2-4s), dreamy watercolor fade to Parisian café ambiance (JTBD: emotional escape) (4-6s), drone push-in owner smiling with confidence, ${brandName} logo overlay at 6s (6-8s). 
+SOUND: Orchestral swell with Aussie voiceover 'Fair dinkum escape at ${brandName} – realise your potential, visit ${brandUrl}!' synced to bite action with crunch effects.
+BRAND: Logo overlay at (6s), company name mentioned twice in voiceover naturally.
+CTA: 'Visit ${brandUrl}' in voiceover and text overlay with action-oriented language.
+EVENT ALIGNMENT: Ekka vibes with festival energy for timing."
 
-EXAMPLE 2 (Queensland Psychology + Event Alignment + Sound):
+EXAMPLE 2 (Cultural Integration + Local Slang + Sports Rivalry):
 Business Context: "Professional builds authority during Ekka season"
 JTBD: "Transform invisible expertise into magnetic recognition (separate from ad campaigns)"
-Video Script: "8-second transformation: Opens consultant lost in Ekka crowd, invisible (pain: no worries becomes worry) (0-2s), drone push-in to laptop showing strategic content creation (2-4s), quick-cut social engagement montage with Origin energy (4-6s), wide reveal presenting to packed audience with '${brandName}' banner (6-8s).
-SOUND: Building orchestral with local radio announcer voice 'She'll be right at ${brandName} – your expertise deserves recognition! Book now at ${brandUrl}!'
-BRAND: Company banner visible, name in voiceover twice.
-EVENT ALIGNMENT: Ekka vibes, crowd energy mirrors festival atmosphere.
-CTA: 'Book now at ${brandUrl}' with action-sync to applause."
+Video Script: "Generate: 8-second transformation with Ekka energy: Opens consultant lost in crowd, invisible (pain: no worries becomes real worry) (0-2s), drone push-in to laptop showing strategic content creation with Origin rivalry energy (2-4s), quick-cut social engagement montage like Banana Bender innovating like tuckshop special (4-6s), wide reveal presenting to packed audience with ${brandName} banner, sync celebration to applause (6-8s).
+SOUND: Building orchestral with local radio announcer voice 'She'll be right at ${brandName} – your expertise deserves recognition! Book now at ${brandUrl}!' with Australian spelling throughout.
+BRAND: Company banner visible, ${brandName} mentioned naturally in voiceover twice.
+CULTURAL: Slang integration 'crook as Rookwood' for relatability, Origin rivalry hooks.
+CTA: 'Book now at ${brandUrl}' with action-sync to applause moment."
 
-CHAIN-OF-THOUGHT PROCESS:
-1. Generate base JTBD (emotional need, not campaign)
-2. Refine with Queensland cultural elements (slang, sports, local events)
-3. Align to video narrative with precise sound sync
-4. Integrate brand name naturally (2-3 mentions)
-5. Add compelling CTA with URL call-to-action
+EXAMPLE 3 (Action-Oriented Veo3 + Calendar Alignment):
+Business Context: "SME innovation breakthrough"  
+JTBD: "Transform outdated processes into cutting-edge efficiency"
+Video Script: "Generate: Single moment focus with audio cues - QLD business owner experiencing 'crook as Rookwood' outdated systems (0-2s), moment of realisation with wide eyes sync to orchestral hit (2-3s), hands activating innovation systems with watercolor transition (3-5s), celebration moment with fair dinkum breakthrough energy, ${brandName} logo prominent (5-8s).
+SOUND: Sports commentary excitement building to crescendo 'Fair dinkum breakthrough at ${brandName} – realise your innovation at ${brandUrl}!' with sync dialogue to activation moment.
+CALENDAR: Schedule for Origin day with rivalry hook energy for maximum engagement.
+A/B TEST: Emotional arc for retention, Australian spelling 'realise' in voiceover/text."
+
+COMPREHENSIVE CHAIN-OF-THOUGHT PROCESS:
+1. Generate base JTBD (emotional need separate from campaign tactics)
+2. Refine with Queensland cultural tweaks (slang, sports, local events for 25%+ boost)
+3. Add native sound alignment (orchestral/dialogue/effects sync to specific actions)
+4. Integrate brand naturally (company name/logo/URL woven throughout)
+5. Align to video narrative and post calendar events (Ekka/Origin timing)
+6. Ensure copywriting mirrors video narrative/sound/CTA for consistency
+7. A/B test with psychological triggers for virality and retention
+
+AGENCY TIPS FOR MAXIMUM IMPACT:
+- A/B TEST WITH PSYCH: Use emotional arcs for retention, iterate for virality
+- AUSTRALIAN SPELLING: "Realise" in voiceover/text, "colour" for authenticity
+- WEAVE COMPANY INTEGRATION: Name/logo/URL + CTAs for ROI (e.g., "Book now at ${brandUrl}!")
+- CULTURAL RELATABILITY: Slang/sports for connection ("Banana Bender innovating like tuckshop special")
+- COPYWRITING ALIGNMENT: Ensure post captions mirror video narrative/sound/CTA consistently
+- CALENDAR STRATEGIC TIMING: Tie to happenings (schedule for Ekka with festival energy and strong CTA)
+
+FEW-SHOT CONSISTENCY TRAINING (Use 2-3 examples for pattern recognition):
+- Pattern: Dense structure + Sound sync + Brand integration + CTA + Cultural elements
+- Sound: Always sync dialogue/effects to specific actions with Australian voiceover
+- Brand: Natural integration (2-3 mentions) with logo overlay timing
+- Cultural: Queensland slang + sports references + local event energy
+- CTA: Action-oriented language with URL in voiceover and visual text
 
 Now create for:
 Business Context: "${originalPrompt}"
 Brand: ${brandName}
 Website: ${brandUrl}
 
-REQUIREMENTS:
-- JTBD Analysis: Separate emotional need from tactical campaign
-- Queensland Integration: Use Aussie slang, Origin references, local event energy
-- Sound Design: Orchestral/emotional music with voiceover synced to key actions
-- Brand Integration: Logo overlay, company name 2-3x in voiceover
-- CTA Integration: Clear URL call-to-action in voiceover and text
-- Cultural Alignment: "Realise" (AU spelling), local expressions for relatability
-- Event Timing: Consider Ekka, Origin, school holidays for relevance
+COMPREHENSIVE REQUIREMENTS (Research-Backed Framework):
+- JTBD SEPARATION: Emotional need separate from tactical campaign (Strategyn/HBR methodology)
+- QUEENSLAND PSYCHOLOGY: Aussie slang, Origin references, local event energy (UQ/KPMG 25%+ boost)
+- VEO3 NATIVE SOUND: Orchestral/emotional music with voiceover synced to specific actions/moments
+- BRAND INTEGRATION: Logo overlay timing, company name 2-3x in voiceover naturally woven
+- ACTION-ORIENTED CTA: Clear URL call-to-action in voiceover and text with compelling language
+- CULTURAL AUTHENTICITY: "Realise" (AU spelling), "crook as Rookwood", "fair dinkum" for relatability
+- EVENT ALIGNMENT: Consider Ekka/Origin/school holidays for strategic timing and energy
+- COPYWRITING SYNC: Ensure video narrative aligns with post caption for consistency
 
-Video Script: [Provide detailed 8-second breakdown with:
-- Precise timing (0-2s, 2-4s, 4-6s, 6-8s)
-- Camera movements (drone push-in, wide reveal, close-up intensity)
-- JTBD emotional arc (pain → discovery → transformation → success)
-- Sound sync ("with orchestral music and voiceover saying X synced to Y action")
-- Brand placement (logo at Xs, voiceover mentions)
-- CTA placement ("visit ${brandUrl}" in voiceover + text overlay)
-- Queensland context (setting, slang, local vibes)
-- Modern cinematography (watercolor fade, dynamic tracking)
-Must be 16:9, photorealistic, Queensland business appropriate.]
+Generate: [Provide specific/dense 8-second breakdown with:
+- Precise timing breakdown (0-2s, 2-4s, 4-6s, 6-8s) with action focus
+- Camera techniques (drone push-in, wide reveal, close-up intensity, watercolor fade)
+- JTBD emotional progression (pain → discovery → transformation → success with QLD energy)
+- Native sound sync ("with orchestral music and voiceover saying 'X' synced to Y action, include effects like crunch")
+- Brand placement strategy (${brandName} logo at Xs, voiceover mentions naturally)
+- CTA integration ("realise your potential at ${brandUrl}" in voiceover + text overlay)
+- Queensland cultural context (setting, slang, local vibes, sports references)
+- Modern cinematography (watercolor transitions, dynamic tracking, dramatic lighting)
+Must be 16:9, photorealistic, Queensland business appropriate with single moment focus.]
 
-CONSTRAINTS:
-- Exactly 8 seconds duration
-- 16:9 aspect ratio only
-- Native audio sync with dialogue/effects/music/voiceover
-- Brand name mentioned 2-3 times naturally
-- Clear CTA with URL in voiceover and visual
-- Australian spelling ("realise", "colour", etc.)
-- Queensland cultural elements for 25%+ engagement boost
-- No celebrities or copyrighted content
-- Action-oriented generation prompts ("Generate:")
+VEO3 TECHNICAL CONSTRAINTS:
+- Exactly 8 seconds duration (no exceptions)
+- 16:9 aspect ratio only (horizontal cinematic)
+- Native audio sync with dialogue/effects/music/voiceover precisely timed
+- Brand name mentioned 2-3 times naturally in audio narrative
+- Clear CTA with URL in both voiceover and visual text overlay
+- Australian spelling throughout ("realise", "colour", "centre", etc.)
+- Queensland cultural elements integrated for proven 25%+ engagement boost
+- No celebrities or copyrighted content (compliance required)
+- Action-oriented generation prompt structure ("Generate:" format)
+- Single moment focus with audio cues for maximum impact
     `;
     
     return enhancedPrompt;
