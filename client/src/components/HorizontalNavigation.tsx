@@ -107,18 +107,8 @@ export default function HorizontalNavigation() {
       return;
     }
 
-    // Check additional requirements
-    if (item.requiresBrandPurpose && !brandPurposeCompleted) {
-      setLocation("/brand-purpose");
-      return;
-    }
-
-    if (item.requiresPlatformConnection && !platformsConnected) {
-      setLocation("/platform-connections");
-      return;
-    }
-
-    // All checks passed, navigate to the route
+    // For subscribers, allow access to all steps directly
+    // The individual pages will handle any missing prerequisites with helpful messaging
     setLocation(item.route);
   };
 
