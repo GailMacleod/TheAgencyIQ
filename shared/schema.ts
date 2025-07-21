@@ -51,7 +51,10 @@ export const postSchedule = pgTable("post_schedule", {
   // Grok Copywriter enhancements for video content
   grokEnhanced: boolean("grok_enhanced").default(false),
   editable: boolean("editable").default(false),
-  wittyStyle: boolean("witty_style").default(false)
+  wittyStyle: boolean("witty_style").default(false),
+  // Edit tracking for UI state management
+  edited: boolean("edited").default(false),
+  editedAt: timestamp("edited_at")
 });
 
 // Post ledger for 30-day rolling quota tracking
@@ -87,6 +90,9 @@ export const posts = pgTable("posts", {
   strategicTheme: text("strategic_theme"), // Media planner strategic reason
   businessCanvasPhase: text("business_canvas_phase"), // Event alignment
   engagementOptimization: text("engagement_optimization"), // ROI potential
+  // Edit tracking for UI state management
+  edited: boolean("edited").default(false),
+  editedAt: timestamp("edited_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -44,6 +44,9 @@ interface Post {
   videoApproved?: boolean;
   videoData?: any;
   approvedAt?: string;
+  // Edit tracking fields
+  edited?: boolean;
+  editedAt?: string;
 }
 
 interface User {
@@ -142,7 +145,7 @@ function IntelligentSchedule() {
     }
   };
 
-  // Edit post content mutation
+  // Edit post content mutation with edited state tracking
   const editPostMutation = useMutation({
     mutationFn: async ({ postId, content }: { postId: number; content: string }) => {
       const response = await fetch(`/api/posts/${postId}`, {
@@ -151,7 +154,11 @@ function IntelligentSchedule() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ 
+          content,
+          edited: true,
+          editedAt: new Date().toISOString()
+        })
       });
       
       if (!response.ok) {

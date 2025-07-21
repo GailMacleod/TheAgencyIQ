@@ -106,6 +106,8 @@ interface Post {
   hasVideo?: boolean;
   videoApproved?: boolean;
   videoData?: VideoData;
+  edited?: boolean;
+  editedAt?: string;
 }
 
 interface VideoPostCardProps {
@@ -333,13 +335,9 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
             <Badge variant={post.status === 'approved' ? 'default' : 'secondary'}>
               {post.status}
             </Badge>
-            {isVideoSupported ? (
-              <Badge variant="outline" className="bg-purple-50 text-purple-700">
-                🎬 Veo3 Ready
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="bg-gray-50 text-gray-600">
-                📝 Text Only
+            {isVideoSupported && (
+              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                Veo3 Ready
               </Badge>
             )}
           </div>
@@ -349,13 +347,9 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
           {post.content}
         </CardDescription>
         
-        {isVideoSupported ? (
-          <div className="mt-2 text-xs font-medium text-purple-600">
-            🎬 Veo3 Video Generation Available
-          </div>
-        ) : (
-          <div className="mt-2 text-xs font-medium text-gray-500">
-            📝 Text-only post ({post.platform} doesn't support video content)
+        {isVideoSupported && (
+          <div className="mt-2 text-xs text-purple-600">
+            Video generation available
           </div>
         )}
       </CardHeader>
@@ -393,11 +387,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
             </Button>
           )}
           
-          {!isVideoSupported && (
-            <div className="text-xs text-gray-500 italic">
-              Video generation available for YouTube, Facebook, and X posts only
-            </div>
-          )}
+
         </div>
         
         {/* Subtle Modern Progress Indicator */}
@@ -443,26 +433,30 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
           </div>
         )}
 
-        {/* Post Actions - Edit and Approve */}
-        <div className="mt-4 flex gap-2 justify-end">
+        {/* Modern Post Actions - Clean Edit and Approve */}
+        <div className="mt-6 flex gap-3 justify-end">
           {onEditPost && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => onEditPost(post)}
-              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              className={`transition-all duration-300 ${
+                post.edited 
+                  ? "text-blue-600 border-blue-400 bg-blue-50 hover:bg-blue-100 hover:border-blue-500" 
+                  : "text-gray-500 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400"
+              }`}
             >
-              <Edit className="w-4 h-4 mr-1" />
-              Edit
+              <Edit className="w-4 h-4 mr-2" />
+              {post.edited ? "Edited" : "Edit"}
             </Button>
           )}
           {onApprovePost && post.status !== 'approved' && (
             <Button
               onClick={() => onApprovePost(parseInt(post.id))}
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 shadow-sm hover:shadow-md transition-all duration-200"
             >
-              <CheckIcon className="w-4 h-4 mr-1" />
+              <CheckIcon className="w-4 h-4 mr-2" />
               Approve & Queue
             </Button>
           )}

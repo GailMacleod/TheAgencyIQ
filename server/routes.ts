@@ -3602,7 +3602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/posts/:postId", requireAuth, async (req: any, res) => {
     try {
       const { postId } = req.params;
-      const { content } = req.body;
+      const { content, edited, editedAt } = req.body;
       const userId = req.session.userId;
 
       if (!postId || !content) {
@@ -3615,9 +3615,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Post not found or unauthorized" });
       }
 
-      // Update post content
+      // Update post content with edited state tracking
       const updatedPost = await storage.updatePost(parseInt(postId), { 
         content: content.trim(),
+        edited: edited || true,
+        editedAt: editedAt || new Date().toISOString(),
         updatedAt: new Date()
       });
 
