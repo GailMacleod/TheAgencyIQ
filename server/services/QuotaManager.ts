@@ -299,5 +299,8 @@ class QuotaManager {
   }
 }
 
-export const quotaManager = new QuotaManager();
+// Export QuotaManager class
 export default QuotaManager;
+
+// Export singleton instance
+export const quotaManager = new QuotaManager();

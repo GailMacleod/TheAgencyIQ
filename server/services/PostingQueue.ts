@@ -324,7 +324,10 @@ class PostingQueueService {
     this.queue = this.queue.filter(p => p.status !== 'pending');
     this.processing = false;
     
-    console.log(`🚨 Emergency stop: Cleared ${clearedCount} pending posts from queue`);
+    // Stop the queue processor
+    this.stopQueueProcessor();
+    
+    console.log(`🚨 EMERGENCY STOP: Cleared ${clearedCount} pending posts from queue`);
     return clearedCount;
   }
 }

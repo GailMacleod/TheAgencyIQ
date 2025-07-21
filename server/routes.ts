@@ -39,6 +39,9 @@ import { checkVideoQuota, checkAPIQuota, checkContentQuota } from './middleware/
 import { postingQueue } from './services/PostingQueue';
 import { CustomerOnboardingOAuth } from './services/CustomerOnboardingOAuth';
 import { PipelineOrchestrator } from './services/PipelineOrchestrator';
+import { EnhancedCancellationHandler } from './services/EnhancedCancellationHandler';
+import PipelineIntegrationFix from './services/PipelineIntegrationFix';
+import SessionCacheManager from './services/SessionCacheManager';
 
 // Extended session types
 declare module 'express-session' {
@@ -7091,170 +7094,49 @@ Continue building your Value Proposition Canvas systematically.`;
   app.post("/api/cancel-subscription", requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId!;
-      const user = await storage.getUser(userId);
       
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      console.log(`🔴 Starting comprehensive subscription cancellation for user ${userId} (${user.email})`);
+      // Import Enhanced Cancellation Handler
+      const { EnhancedCancellationHandler } = await import('./services/EnhancedCancellationHandler');
+      const cancellationHandler = new EnhancedCancellationHandler(stripe);
       
-      // Step 1: IMMEDIATE STRIPE CANCELLATION - Cancel ALL subscriptions for this customer
-      let stripeSubscriptionId = null;
-      const allCancelledSubscriptions = [];
+      console.log(`🔴 ENHANCED CANCELLATION INITIATED for user ${userId}`);
       
-      if (stripe) {
-        try {
-          // First, cancel the user's primary subscription if it exists
-          if (user.stripeSubscriptionId) {
-            try {
-              const subscription = await stripe.subscriptions.cancel(user.stripeSubscriptionId, {
-                prorate: false,  // No prorating - immediate cancellation
-                invoice_now: false  // Don't create final invoice
-              });
-              stripeSubscriptionId = subscription.id;
-              allCancelledSubscriptions.push(subscription.id);
-              console.log(`✅ Primary Stripe subscription cancelled immediately: ${stripeSubscriptionId}`);
-            } catch (primaryError) {
-              console.error('Primary subscription cancellation failed:', primaryError);
-            }
-          }
-          
-          // Step 2: Find and cancel ALL subscriptions for this customer
-          if (user.stripeCustomerId) {
-            try {
-              const subscriptions = await stripe.subscriptions.list({
-                customer: user.stripeCustomerId,
-                status: 'active'
-              });
-              
-              for (const sub of subscriptions.data) {
-                if (sub.id !== user.stripeSubscriptionId) { // Don't cancel the same one twice
-                  try {
-                    const cancelledSub = await stripe.subscriptions.cancel(sub.id, {
-                      prorate: false,  // No prorating - immediate cancellation
-                      invoice_now: false  // Don't create final invoice
-                    });
-                    allCancelledSubscriptions.push(cancelledSub.id);
-                    console.log(`✅ Additional Stripe subscription cancelled: ${cancelledSub.id}`);
-                  } catch (subError) {
-                    console.error(`Failed to cancel subscription ${sub.id}:`, subError);
-                  }
-                }
-              }
-            } catch (listError) {
-              console.error('Failed to list customer subscriptions:', listError);
-            }
-          }
-          
-          // Step 3: Cancel any subscriptions by customer email lookup
-          if (user.email) {
-            try {
-              const customers = await stripe.customers.list({
-                email: user.email,
-                limit: 100
-              });
-              
-              for (const customer of customers.data) {
-                if (customer.id !== user.stripeCustomerId) { // Check other customers with same email
-                  const subscriptions = await stripe.subscriptions.list({
-                    customer: customer.id,
-                    status: 'active'
-                  });
-                  
-                  for (const sub of subscriptions.data) {
-                    try {
-                      const cancelledSub = await stripe.subscriptions.cancel(sub.id, {
-                        prorate: false,  // No prorating - immediate cancellation
-                        invoice_now: false  // Don't create final invoice
-                      });
-                      allCancelledSubscriptions.push(cancelledSub.id);
-                      console.log(`✅ Email-matched subscription cancelled: ${cancelledSub.id}`);
-                    } catch (subError) {
-                      console.error(`Failed to cancel email-matched subscription ${sub.id}:`, subError);
-                    }
-                  }
-                }
-              }
-            } catch (emailError) {
-              console.error('Failed to find customers by email:', emailError);
-            }
-          }
-          
-          console.log(`🔴 TOTAL STRIPE SUBSCRIPTIONS CANCELLED: ${allCancelledSubscriptions.length}`);
-          
-        } catch (overallError) {
-          console.error('Overall Stripe cancellation failed:', overallError);
-          // Continue with cleanup even if Stripe fails
-        }
-      }
-
-      // Step 2: Comprehensive data cleanup using DataCleanupService
-      let cleanupResults;
-      try {
-        cleanupResults = await DataCleanupService.performCompleteDataCleanup(userId, user.email);
-      } catch (cleanupError) {
-        console.error('Primary cleanup failed, attempting emergency cleanup:', cleanupError);
-        
-        // Fall back to emergency cleanup if primary fails
-        try {
-          cleanupResults = await DataCleanupService.emergencyDataCleanup(userId, user.email);
-          cleanupResults.method = 'emergency';
-          cleanupResults.errors = [`Primary cleanup failed: ${cleanupError.message}`];
-        } catch (emergencyError) {
-          console.error('Emergency cleanup also failed:', emergencyError);
-          throw new Error(`Both primary and emergency cleanup failed: ${emergencyError.message}`);
-        }
-      }
-
-      // Step 4: Update user subscription status
-      await storage.updateUser(userId, {
-        subscriptionPlan: "cancelled",
-        stripeSubscriptionId: null,
-        remainingPosts: 0,
-        totalPosts: 0,
-        subscriptionActive: false
+      // Use Enhanced Cancellation Handler with full integration
+      const result = await cancellationHandler.handleSubscriptionCancellation(userId, req);
+      
+      console.log(`🔴 ENHANCED CANCELLATION COMPLETE:`, {
+        userId,
+        cancelled: result.cancelled.length,
+        oauthRevoked: result.oauthRevoked,
+        quotaReset: result.quotaReset,
+        autoPostStopped: result.autoPostStopped,
+        sessionsDestroyed: result.sessionsDestroyed,
+        errors: result.errors.length
       });
 
-      // Step 5: Log comprehensive cancellation summary
-      const cancellationSummary = {
-        userId,
-        userEmail: user.email,
-        stripeSubscriptionId,
-        allCancelledSubscriptions,
-        totalSubscriptionsCancelled: allCancelledSubscriptions.length,
-        immediateTermination: true,
-        noBillingCycles: true,
-        cleanupResults,
-        timestamp: new Date().toISOString()
-      };
-      
-      console.log(`🔴 SUBSCRIPTION CANCELLATION COMPLETE:`, cancellationSummary);
-
       res.json({ 
-        message: "Subscription cancelled successfully",
+        message: "Subscription cancelled successfully with enhanced integration",
         summary: {
-          stripeSubscriptionId,
-          allCancelledSubscriptions,
-          totalSubscriptionsCancelled: allCancelledSubscriptions.length,
+          stripeSubscriptionsCancelled: result.cancelled,
+          totalSubscriptionsCancelled: result.cancelled.length,
+          oauthTokensRevoked: result.oauthRevoked,
+          quotaSystemReset: result.quotaReset,
+          autoPostingStopped: result.autoPostStopped,
+          sessionDestroyed: result.sessionsDestroyed,
+          dataCleanupComplete: result.cleanup ? true : false,
+          cleanupResults: result.cleanup,
+          errors: result.errors,
+          enhancedIntegration: true,
           immediateTermination: true,
-          noBillingCycles: true,
-          platformConnectionsRevoked: cleanupResults.platformConnectionsRevoked,
-          platforms: cleanupResults.oauthTokensRevoked?.map(c => c.platform) || [],
-          postsDeleted: cleanupResults.postsDeleted,
-          schedulesDeleted: cleanupResults.schedulesDeleted,
-          brandPurposeDeleted: cleanupResults.brandPurposeDeleted,
-          dataCleanupComplete: true,
-          cleanupMethod: cleanupResults.method || 'standard',
-          errors: cleanupResults.errors || []
+          pipelineIntegrationFixed: true
         }
       });
     } catch (error: any) {
-      console.error("Error during comprehensive subscription cancellation:", error);
+      console.error("Enhanced cancellation error:", error);
       res.status(500).json({ 
-        message: "Failed to cancel subscription completely",
+        message: "Enhanced cancellation failed",
         error: error.message,
-        partialCleanup: true
+        fallbackRequired: true
       });
     }
   });
@@ -10593,8 +10475,7 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  return httpServer;
-}
+
 
 // Platform Analytics Functions
 async function fetchFacebookAnalytics(accessToken: string) {
@@ -10795,10 +10676,9 @@ async function fetchYouTubeAnalytics(accessToken: string) {
   }
 }
 
-// NOTIFICATION ENDPOINTS
+  // NOTIFICATION ENDPOINTS
 
-// Notify expired posts endpoint for failed posts
-export function addNotificationEndpoints(app: any) {
+  // Notify expired posts endpoint for failed posts
   app.post('/api/notify-expired', async (req: any, res: any) => {
     try {
       const { userId, postIds, message } = req.body;
@@ -11222,4 +11102,176 @@ export function addNotificationEndpoints(app: any) {
       });
     }
   });
+
+  // ========================================
+  // PIPELINE INTEGRATION FIX ENDPOINTS
+  // ========================================
+
+  // Initialize comprehensive pipeline
+  app.post('/api/pipeline/initialize', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId!;
+      const sessionId = req.sessionID;
+      
+      // Initialize session cache manager
+      const sessionManager = new SessionCacheManager({
+        sessionSecret: process.env.SESSION_SECRET!,
+        isProduction: process.env.NODE_ENV === 'production'
+      });
+      
+      const pipelineIntegrationFix = new PipelineIntegrationFix(sessionManager);
+      const pipelineState = await pipelineIntegrationFix.initializePipeline(userId, sessionId);
+      
+      console.log(`🚀 Pipeline initialized for user ${userId}`);
+      
+      res.json({
+        success: true,
+        pipelineState,
+        message: 'Pipeline initialized with session caching'
+      });
+    } catch (error: any) {
+      console.error('❌ Pipeline initialization failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Pipeline initialization failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Execute onboarding step with OAuth integration
+  app.post('/api/pipeline/onboarding', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { provider } = req.body;
+      
+      const sessionManager = new SessionCacheManager({
+        sessionSecret: process.env.SESSION_SECRET!,
+        isProduction: process.env.NODE_ENV === 'production'
+      });
+      
+      const pipelineIntegrationFix = new PipelineIntegrationFix(sessionManager);
+      const pipelineState = await pipelineIntegrationFix.executeOnboardingStep(userId, provider);
+      
+      console.log(`✅ Onboarding step completed for user ${userId}`);
+      
+      res.json({
+        success: true,
+        pipelineState,
+        currentStep: pipelineState.currentStep,
+        message: 'Onboarding step completed'
+      });
+    } catch (error: any) {
+      console.error('❌ Onboarding step failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Onboarding step failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Complete full pipeline execution
+  app.post('/api/pipeline/complete', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { brandPurposeData, generationOptions } = req.body;
+      
+      const sessionManager = new SessionCacheManager({
+        sessionSecret: process.env.SESSION_SECRET!,
+        isProduction: process.env.NODE_ENV === 'production'
+      });
+      
+      const pipelineIntegrationFix = new PipelineIntegrationFix(sessionManager);
+      
+      // Execute all remaining pipeline steps
+      let pipelineState = await pipelineIntegrationFix.executeBrandPurposeStep(userId, brandPurposeData);
+      pipelineState = await pipelineIntegrationFix.executeContentEngineStep(userId);
+      pipelineState = await pipelineIntegrationFix.executeContentGenerationStep(userId, generationOptions);
+      pipelineState = await pipelineIntegrationFix.executeAutoPostingStep(userId);
+      
+      console.log(`🎯 Complete pipeline executed for user ${userId}`);
+      
+      res.json({
+        success: true,
+        pipelineState,
+        completed: true,
+        message: 'Complete pipeline executed successfully'
+      });
+    } catch (error: any) {
+      console.error('❌ Pipeline completion failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Pipeline completion failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Recover interrupted pipeline
+  app.get('/api/pipeline/recovery/:userId', requireAuth, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      const sessionManager = new SessionCacheManager({
+        sessionSecret: process.env.SESSION_SECRET!,
+        isProduction: process.env.NODE_ENV === 'production'
+      });
+      
+      const pipelineIntegrationFix = new PipelineIntegrationFix(sessionManager);
+      const recoveredState = await pipelineIntegrationFix.recoverPipeline(userId);
+      
+      if (recoveredState) {
+        console.log(`🔄 Pipeline recovery successful for user ${userId}`);
+        res.json({
+          success: true,
+          recoveredState,
+          recommendations: recoveredState.recoveryRecommendations,
+          message: 'Pipeline state recovered'
+        });
+      } else {
+        res.json({
+          success: false,
+          message: 'No pipeline state found to recover'
+        });
+      }
+    } catch (error: any) {
+      console.error('❌ Pipeline recovery failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Pipeline recovery failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Enhanced session cache health check
+  app.get('/api/session/health', requireAuth, async (req: any, res) => {
+    try {
+      const sessionManager = new SessionCacheManager({
+        sessionSecret: process.env.SESSION_SECRET!,
+        isProduction: process.env.NODE_ENV === 'production'
+      });
+      
+      const healthStatus = await sessionManager.healthCheck();
+      
+      res.json({
+        success: true,
+        health: healthStatus,
+        sessionId: req.sessionID,
+        userId: req.session.userId,
+        message: 'Session health check completed'
+      });
+    } catch (error: any) {
+      console.error('❌ Session health check failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Session health check failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Return the existing HTTP server instance
+  return httpServer;
 }
