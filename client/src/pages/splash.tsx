@@ -241,8 +241,8 @@ export default function Splash() {
               <div className="flex justify-center mb-4">
                 <AnimatedIcon icon={Calendar} colorScheme="purple" size="md" />
               </div>
-              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Schedule Posts</h4>
-              <p className="text-sm text-[#3250fa] font-medium">Post when active</p>
+              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Auto Schedule Posts</h4>
+              <p className="text-sm text-[#3250fa] font-medium">Aligned with local events</p>
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#00f0ff]/30 hover:scale-105">
