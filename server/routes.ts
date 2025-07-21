@@ -189,6 +189,15 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize infrastructure services
+  const { redisSessionManager } = await import('./services/RedisSessionManager.js');
+  const { PostingQueue } = await import('./services/posting_queue.js');
+  await redisSessionManager.initialize();
+  
+  // Add session persistence middleware
+  const { RedisSessionManager } = await import('./services/RedisSessionManager.js');
+  app.use(RedisSessionManager.createSessionMiddleware());
+  
   // Serve generated videos
   app.use('/videos', express.static(path.join(process.cwd(), 'public/videos')));
   
@@ -11318,6 +11327,74 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       });
     }
   });
+
+  // Infrastructure monitoring endpoints for production stability  
+  app.get('/api/admin/quota-status/:userId', requireAuth, async (req, res) => {
+    try {
+      const { QuotaManager } = await import('./services/QuotaManager.js');
+      const status = await QuotaManager.getQuotaStatus(parseInt(req.params.userId));
+      res.json(status);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/admin/posting-queue', requireAuth, async (req, res) => {
+    try {
+      const { PostingQueue } = await import('./services/posting_queue.js');
+      const status = PostingQueue.getQueueStatus();
+      res.json(status);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/admin/queue/stop', requireAuth, async (req, res) => {
+    try {
+      const { PostingQueue } = await import('./services/posting_queue.js');
+      PostingQueue.stopProcessing();
+      res.json({ message: 'Queue processing stopped' });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/admin/session-health/:userId', requireAuth, async (req, res) => {
+    try {
+      const { redisSessionManager } = await import('./services/RedisSessionManager.js');
+      const userId = parseInt(req.params.userId);
+      
+      const sessionHealth = {
+        userId: userId,
+        redisConnected: redisSessionManager.isConnected,
+        lastActivity: new Date().toISOString()
+      };
+
+      res.json(sessionHealth);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/admin/oauth-status/:userId', requireAuth, async (req, res) => {
+    try {
+      const { OAuthRefreshManager } = await import('./services/OAuthRefreshManager.js');
+      const userId = parseInt(req.params.userId);
+      
+      const platforms = ['facebook', 'instagram', 'linkedin', 'x'];
+      const tokenStatus = {};
+      
+      for (const platform of platforms) {
+        tokenStatus[platform] = await OAuthRefreshManager.refreshTokenIfNeeded(userId, platform);
+      }
+
+      res.json({ userId, tokenStatus, checkedAt: new Date().toISOString() });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  console.log('📊 Infrastructure monitoring endpoints registered');
 
   // Return the existing HTTP server instance
   return httpServer;

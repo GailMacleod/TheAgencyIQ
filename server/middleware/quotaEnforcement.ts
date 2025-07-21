@@ -4,7 +4,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { quotaManager } from '../services/QuotaManager';
+import { QuotaManager } from '../services/QuotaManager';
 import { storage } from '../storage';
 
 interface QuotaRequest extends Request {
@@ -33,20 +33,19 @@ export const checkAPIQuota = async (req: QuotaRequest, res: Response, next: Next
                            user?.subscriptionPlan === 'enterprise' ? 'enterprise' : 'professional';
 
     // Check if user can make API call
-    const quotaCheck = await quotaManager.canMakeAPICall(userId, subscriptionTier);
+    const quotaCheck = await QuotaManager.canMakeApiCall(userId);
     
     if (!quotaCheck.allowed) {
-      console.log(`🚫 API quota exceeded for user ${userId}: ${quotaCheck.message}`);
+      console.log(`🚫 API quota exceeded for user ${userId}: ${quotaCheck.reason}`);
       return res.status(429).json({
-        message: quotaCheck.message,
+        message: quotaCheck.reason,
         quotaExceeded: true,
-        quota: quotaCheck.quota,
         upgradeRequired: subscriptionTier === 'free'
       });
     }
 
     // Record the API call
-    await quotaManager.recordAPICall(userId, subscriptionTier);
+    await QuotaManager.incrementApiUsage(userId);
     console.log(`✅ API call recorded for user ${userId} (${subscriptionTier})`);
     
     next();
@@ -76,20 +75,19 @@ export const checkVideoQuota = async (req: QuotaRequest, res: Response, next: Ne
                            user?.subscriptionPlan === 'enterprise' ? 'enterprise' : 'professional';
 
     // Check if user can generate video
-    const quotaCheck = await quotaManager.canGenerateVideo(userId, subscriptionTier);
+    const quotaCheck = await QuotaManager.canGenerateVideo(userId);
     
     if (!quotaCheck.allowed) {
-      console.log(`🎬 Video quota exceeded for user ${userId}: ${quotaCheck.message}`);
+      console.log(`🎬 Video quota exceeded for user ${userId}: ${quotaCheck.reason}`);
       return res.status(429).json({
-        message: quotaCheck.message,
+        message: quotaCheck.reason,
         quotaExceeded: true,
-        quota: quotaCheck.quota,
         upgradeRequired: subscriptionTier === 'free'
       });
     }
 
     // Record the video generation (done here to prevent bypass)
-    await quotaManager.recordVideoGeneration(userId, subscriptionTier);
+    await QuotaManager.incrementVideoUsage(userId);
     console.log(`🎬 Video generation recorded for user ${userId} (${subscriptionTier})`);
     
     next();
@@ -118,15 +116,14 @@ export const checkContentQuota = async (req: QuotaRequest, res: Response, next: 
     const subscriptionTier = user?.subscriptionPlan === 'free' ? 'free' : 
                            user?.subscriptionPlan === 'enterprise' ? 'enterprise' : 'professional';
 
-    // Check if user can generate content
-    const quotaCheck = await quotaManager.canGenerateContent(userId, subscriptionTier);
+    // Check if user can generate content (using API call quota for content)
+    const quotaCheck = await QuotaManager.canMakeApiCall(userId);
     
     if (!quotaCheck.allowed) {
-      console.log(`📝 Content quota exceeded for user ${userId}: ${quotaCheck.message}`);
+      console.log(`📝 Content quota exceeded for user ${userId}: ${quotaCheck.reason}`);
       return res.status(429).json({
-        message: quotaCheck.message,
+        message: quotaCheck.reason,
         quotaExceeded: true,
-        quota: quotaCheck.quota,
         upgradeRequired: subscriptionTier === 'free'
       });
     }
@@ -151,7 +148,7 @@ export const getQuotaStatus = async (userId: number) => {
     const subscriptionTier = user?.subscriptionPlan === 'free' ? 'free' : 
                            user?.subscriptionPlan === 'enterprise' ? 'enterprise' : 'professional';
 
-    const quota = await quotaManager.getUserQuota(userId, subscriptionTier);
+    const quota = await QuotaManager.getQuotaStatus(userId);
     
     return {
       success: true,

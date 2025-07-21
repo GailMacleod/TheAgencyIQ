@@ -2293,16 +2293,57 @@ Show your witty copywriting genius!`;
     };
   }
 
-  // Your exact Veo3 implementation from the code fix
+  // Your exact Veo3 implementation with integrated infrastructure fixes
   static async generateWithVeo3(prompt, options = {}) {
+    const { QuotaManager } = await import('./services/QuotaManager.js');
+    const { redisSessionManager } = await import('./services/RedisSessionManager.js');
+    const { PipelineValidator } = await import('./services/PipelineValidator.js');
+    const { OAuthRefreshManager } = await import('./services/OAuthRefreshManager.js');
+    
     try {
+      console.log('🎬 VEO3 PROPER GENERATION: Starting with infrastructure checks...');
+      
+      // 1. PRE-CHECK: Quota validation to prevent exceeding limits
+      if (options.userId) {
+        const quotaCheck = await QuotaManager.canGenerateVideo(options.userId);
+        if (!quotaCheck.allowed) {
+          throw new Error(`Quota exceeded: ${quotaCheck.reason}`);
+        }
+        console.log('✅ Quota check passed');
+      }
+
+      // 2. VALIDATION: Pipeline validation to prevent junk input
+      const promptValidation = PipelineValidator.validateVideoPrompt(prompt);
+      if (!promptValidation.isValid) {
+        throw new Error(`Prompt validation failed: ${promptValidation.errors.join(', ')}`);
+      }
+      console.log('✅ Prompt validation passed');
+
+      // 3. OAUTH REFRESH: Prevent mid-gen token drops  
+      if (options.userId && options.platform) {
+        await OAuthRefreshManager.refreshTokenIfNeeded(options.userId, options.platform);
+        console.log('✅ OAuth tokens refreshed');
+      }
+
+      // 4. GENERATION STATE SAVE: Auto-save state to prevent mid-gen drops
+      const generationId = `veo3_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      if (options.userId) {
+        await redisSessionManager.saveGenerationState(options.userId, generationId, {
+          prompt: prompt.substring(0, 200),
+          platform: options.platform,
+          aspectRatio: options.aspectRatio,
+          status: 'started',
+          startTime: new Date().toISOString()
+        });
+        console.log('💾 Generation state saved');
+      }
+
       // Import GoogleGenAI exactly as specified
       const { GoogleGenerativeAI } = require('@google/generative-ai');
       const fs = require('fs');
       const path = require('path');
       
-      console.log('🎬 VEO3 PROPER GENERATION: Starting...');
-      console.log('🎥 Prompt:', prompt.substring(0, 100) + '...');
+      console.log('🎥 Prompt (validated):', prompt.substring(0, 100) + '...');
       
       if (!process.env.GOOGLE_AI_STUDIO_KEY) {
         throw new Error('GOOGLE_AI_STUDIO_KEY not configured');
@@ -2353,16 +2394,76 @@ Show your witty copywriting genius!`;
       fs.writeFileSync(videoPath, buffer);
       
       console.log(`💾 Video saved: ${videoPath}`);
-      
-      return { 
+
+      // 5. INCREMENT QUOTA: Track usage after successful generation
+      if (options.userId) {
+        await QuotaManager.incrementVideoUsage(options.userId);
+        console.log('📈 Video quota incremented');
+      }
+
+      // 6. UPDATE GENERATION STATE: Mark as completed
+      if (options.userId) {
+        await redisSessionManager.saveGenerationState(options.userId, generationId, {
+          prompt: prompt.substring(0, 200),
+          platform: options.platform,
+          status: 'completed',
+          videoUrl: `/videos/${videoFilename}`,
+          completedAt: new Date().toISOString()
+        });
+        console.log('✅ Generation state updated to completed');
+      }
+
+      const result = { 
         success: true, 
         videoUrl: `/videos/${videoFilename}`,
         videoId: videoFilename,
-        response: `Veo3 generated: ${prompt.substring(0, 100)}...`
+        response: `Veo3 generated: ${prompt.substring(0, 100)}...`,
+        generationId: generationId
       };
+
+      // 7. AUTO-POSTING: Add to posting queue with retries
+      if (options.userId && options.postId) {
+        const { PostingQueue } = await import('./services/posting_queue.js');
+        await PostingQueue.addVideoPost(
+          options.userId,
+          options.postId,
+          result,
+          options.platform,
+          prompt.substring(0, 200),
+          options.scheduledFor
+        );
+        console.log('📋 Video added to posting queue');
+      }
+
+      return result;
       
     } catch (e) {
       console.error('❌ Veo3 fail:', e);
+
+      // 8. ERROR HANDLING: Update generation state and handle retries
+      if (options.userId && generationId) {
+        await redisSessionManager.saveGenerationState(options.userId, generationId, {
+          prompt: prompt.substring(0, 200),
+          platform: options.platform,
+          status: 'failed',
+          error: e.message,
+          failedAt: new Date().toISOString()
+        });
+      }
+
+      // 9. RETRY LOGIC: Handle timeouts with exponential backoff
+      if (e.message.includes('timeout') && !options.isRetry) {
+        console.log('⏱️ Timeout detected, attempting retry with backoff...');
+        try {
+          return await PipelineValidator.retryWithBackoff(
+            () => this.generateWithVeo3(prompt, { ...options, isRetry: true }),
+            2, // Max 2 retries for timeouts
+            5000 // 5 second base delay
+          );
+        } catch (retryError) {
+          console.error('❌ Retry failed:', retryError.message);
+        }
+      }
       
       // Fallback to text generation when Veo3 unavailable
       try {

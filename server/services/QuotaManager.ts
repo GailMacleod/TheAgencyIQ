@@ -1,306 +1,169 @@
-/**
- * PERSISTENT QUOTA MANAGEMENT SYSTEM
- * Prevents resource abuse and ensures fair usage across all subscribers
- */
+import { db } from '../db';
+import { users } from '../../shared/schema';
+import { eq } from 'drizzle-orm';
 
-import Database from '@replit/database';
-
-interface UserQuota {
-  userId: number;
-  dailyAPICalls: number;
-  dailyVideoGens: number;
-  dailyContentGens: number;
-  lastResetDate: string;
-  subscriptionTier: 'free' | 'professional' | 'enterprise';
-  quotaLimits: {
-    dailyAPILimit: number;
-    dailyVideoLimit: number;
-    dailyContentLimit: number;
+export class QuotaManager {
+  private static quotaLimits = {
+    free: { videos: 1, apiCalls: 5, posts: 5 },
+    starter: { videos: 5, apiCalls: 50, posts: 20 },
+    growth: { videos: 15, apiCalls: 150, posts: 50 },
+    professional: { videos: 50, apiCalls: 500, posts: 100 }
   };
-}
 
-interface QuotaLimits {
-  free: {
-    dailyAPILimit: 5;
-    dailyVideoLimit: 1;
-    dailyContentLimit: 2;
-  };
-  professional: {
-    dailyAPILimit: 100;
-    dailyVideoLimit: 10;
-    dailyContentLimit: 20;
-  };
-  enterprise: {
-    dailyAPILimit: 500;
-    dailyVideoLimit: 50;
-    dailyContentLimit: 100;
-  };
-}
-
-class QuotaManager {
-  private db: Database;
-  private quotaLimits: QuotaLimits;
-
-  constructor() {
-    this.db = new Database();
-    this.quotaLimits = {
-      free: {
-        dailyAPILimit: 5,
-        dailyVideoLimit: 1,
-        dailyContentLimit: 2
-      },
-      professional: {
-        dailyAPILimit: 100,
-        dailyVideoLimit: 10,
-        dailyContentLimit: 20
-      },
-      enterprise: {
-        dailyAPILimit: 500,
-        dailyVideoLimit: 50,
-        dailyContentLimit: 100
-      }
-    };
-  }
-
-  /**
-   * Get or create user quota record
-   */
-  async getUserQuota(userId: number, subscriptionTier: 'free' | 'professional' | 'enterprise' = 'professional'): Promise<UserQuota> {
-    const quotaKey = `quota:${userId}`;
-    const today = new Date().toDateString();
-    
+  // Pre-check video generation quota
+  static async canGenerateVideo(userId: number): Promise<{ allowed: boolean; reason?: string }> {
     try {
-      let quota = await this.db.get(quotaKey) as UserQuota;
+      console.log(`🔍 Checking video quota for user ${userId}...`);
+
+      // Get user subscription
+      const [user] = await db.select().from(users).where(eq(users.id, userId.toString()));
+      if (!user) {
+        return { allowed: false, reason: 'User not found' };
+      }
+
+      const plan = user.subscriptionPlan || 'free';
+      const limits = this.quotaLimits[plan as keyof typeof this.quotaLimits] || this.quotaLimits.free;
+
+      // Check current usage from Replit database
+      const Database = require('@replit/database');
+      const quotaDb = new Database();
       
-      // Create new quota if doesn't exist
-      if (!quota) {
-        quota = {
-          userId,
-          dailyAPICalls: 0,
-          dailyVideoGens: 0,
-          dailyContentGens: 0,
-          lastResetDate: today,
-          subscriptionTier,
-          quotaLimits: this.quotaLimits[subscriptionTier]
+      const today = new Date().toISOString().split('T')[0];
+      const quotaKey = `quota:${userId}:${today}`;
+      
+      let usage = await quotaDb.get(quotaKey) || { videos: 0, apiCalls: 0, posts: 0 };
+
+      console.log(`📊 Current usage for ${plan} plan:`, usage);
+      console.log(`📊 Plan limits:`, limits);
+
+      if (usage.videos >= limits.videos) {
+        return { 
+          allowed: false, 
+          reason: `Video quota exceeded (${usage.videos}/${limits.videos}) for ${plan} plan` 
         };
-        await this.db.set(quotaKey, quota);
-        console.log(`✅ Created new quota for user ${userId} (${subscriptionTier})`);
-        return quota;
       }
 
-      // Reset daily counts if new day
-      if (quota.lastResetDate !== today) {
-        quota.dailyAPICalls = 0;
-        quota.dailyVideoGens = 0;
-        quota.dailyContentGens = 0;
-        quota.lastResetDate = today;
-        quota.subscriptionTier = subscriptionTier; // Update subscription tier
-        quota.quotaLimits = this.quotaLimits[subscriptionTier];
-        
-        await this.db.set(quotaKey, quota);
-        console.log(`🔄 Reset daily quota for user ${userId} (${subscriptionTier})`);
-      }
+      console.log(`✅ Video generation allowed: ${usage.videos + 1}/${limits.videos}`);
+      return { allowed: true };
 
-      return quota;
     } catch (error) {
-      console.error(`❌ Failed to get quota for user ${userId}:`, error);
-      // Return safe default quota on error
-      return {
-        userId,
-        dailyAPICalls: 0,
-        dailyVideoGens: 0,
-        dailyContentGens: 0,
-        lastResetDate: today,
-        subscriptionTier,
-        quotaLimits: this.quotaLimits[subscriptionTier]
-      };
+      console.error('❌ Quota check failed:', error);
+      return { allowed: false, reason: 'Quota check failed' };
     }
   }
 
-  /**
-   * Check if user can perform API call
-   */
-  async canMakeAPICall(userId: number, subscriptionTier: 'free' | 'professional' | 'enterprise' = 'professional'): Promise<{ allowed: boolean; quota: UserQuota; message?: string }> {
-    const quota = await this.getUserQuota(userId, subscriptionTier);
-    
-    if (quota.dailyAPICalls >= quota.quotaLimits.dailyAPILimit) {
-      return {
-        allowed: false,
-        quota,
-        message: `Daily API limit reached (${quota.dailyAPICalls}/${quota.quotaLimits.dailyAPILimit}). Upgrade to increase limits.`
-      };
-    }
-
-    return { allowed: true, quota };
-  }
-
-  /**
-   * Check if user can generate video
-   */
-  async canGenerateVideo(userId: number, subscriptionTier: 'free' | 'professional' | 'enterprise' = 'professional'): Promise<{ allowed: boolean; quota: UserQuota; message?: string }> {
-    const quota = await this.getUserQuota(userId, subscriptionTier);
-    
-    if (quota.dailyVideoGens >= quota.quotaLimits.dailyVideoLimit) {
-      return {
-        allowed: false,
-        quota,
-        message: `Daily video generation limit reached (${quota.dailyVideoGens}/${quota.quotaLimits.dailyVideoLimit}). Try again tomorrow.`
-      };
-    }
-
-    return { allowed: true, quota };
-  }
-
-  /**
-   * Check if user can generate content
-   */
-  async canGenerateContent(userId: number, subscriptionTier: 'free' | 'professional' | 'enterprise' = 'professional'): Promise<{ allowed: boolean; quota: UserQuota; message?: string }> {
-    const quota = await this.getUserQuota(userId, subscriptionTier);
-    
-    if (quota.dailyContentGens >= quota.quotaLimits.dailyContentLimit) {
-      return {
-        allowed: false,
-        quota,
-        message: `Daily content generation limit reached (${quota.dailyContentGens}/${quota.quotaLimits.dailyContentLimit}). Upgrade for more.`
-      };
-    }
-
-    return { allowed: true, quota };
-  }
-
-  /**
-   * Record API call usage
-   */
-  async recordAPICall(userId: number, subscriptionTier: 'free' | 'professional' | 'enterprise' = 'professional'): Promise<UserQuota> {
-    const quota = await this.getUserQuota(userId, subscriptionTier);
-    quota.dailyAPICalls += 1;
-    
-    const quotaKey = `quota:${userId}`;
-    await this.db.set(quotaKey, quota);
-    
-    console.log(`📊 API call recorded for user ${userId}: ${quota.dailyAPICalls}/${quota.quotaLimits.dailyAPILimit}`);
-    
-    // Add throttling for burst protection
-    if (quota.dailyAPICalls > quota.quotaLimits.dailyAPILimit * 0.8) {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second throttle
-      console.log(`⚡ Throttling user ${userId} - approaching limit`);
-    }
-    
-    return quota;
-  }
-
-  /**
-   * Record video generation usage
-   */
-  async recordVideoGeneration(userId: number, subscriptionTier: 'free' | 'professional' | 'enterprise' = 'professional'): Promise<UserQuota> {
-    const quota = await this.getUserQuota(userId, subscriptionTier);
-    quota.dailyVideoGens += 1;
-    
-    const quotaKey = `quota:${userId}`;
-    await this.db.set(quotaKey, quota);
-    
-    console.log(`🎬 Video generation recorded for user ${userId}: ${quota.dailyVideoGens}/${quota.quotaLimits.dailyVideoLimit}`);
-    return quota;
-  }
-
-  /**
-   * Record content generation usage
-   */
-  async recordContentGeneration(userId: number, subscriptionTier: 'free' | 'professional' | 'enterprise' = 'professional'): Promise<UserQuota> {
-    const quota = await this.getUserQuota(userId, subscriptionTier);
-    quota.dailyContentGens += 1;
-    
-    const quotaKey = `quota:${userId}`;
-    await this.db.set(quotaKey, quota);
-    
-    console.log(`📝 Content generation recorded for user ${userId}: ${quota.dailyContentGens}/${quota.quotaLimits.dailyContentLimit}`);
-    return quota;
-  }
-
-  /**
-   * Get usage statistics for admin monitoring
-   */
-  async getUsageStats(): Promise<{ totalUsers: number; activeToday: number; quotaStats: any }> {
+  // Increment video usage after successful generation
+  static async incrementVideoUsage(userId: number): Promise<void> {
     try {
-      const allKeys = await this.db.list();
-      const quotaKeys = allKeys.filter((key: string) => key.startsWith('quota:'));
+      const Database = require('@replit/database');
+      const quotaDb = new Database();
       
-      const today = new Date().toDateString();
-      let activeToday = 0;
-      const quotaStats = {
-        free: { users: 0, totalAPICalls: 0, totalVideoGens: 0 },
-        professional: { users: 0, totalAPICalls: 0, totalVideoGens: 0 },
-        enterprise: { users: 0, totalAPICalls: 0, totalVideoGens: 0 }
-      };
+      const today = new Date().toISOString().split('T')[0];
+      const quotaKey = `quota:${userId}:${today}`;
+      
+      let usage = await quotaDb.get(quotaKey) || { videos: 0, apiCalls: 0, posts: 0 };
+      usage.videos += 1;
+      usage.lastUpdated = new Date().toISOString();
 
-      for (const key of quotaKeys) {
-        const quota = await this.db.get(key) as UserQuota;
-        if (quota && quota.lastResetDate === today) {
-          activeToday++;
-          quotaStats[quota.subscriptionTier].users++;
-          quotaStats[quota.subscriptionTier].totalAPICalls += quota.dailyAPICalls;
-          quotaStats[quota.subscriptionTier].totalVideoGens += quota.dailyVideoGens;
-        }
+      await quotaDb.set(quotaKey, usage, { EX: 86400 }); // 24 hour expiry
+      console.log(`📈 Video usage incremented for user ${userId}: ${usage.videos}`);
+
+    } catch (error) {
+      console.error('❌ Failed to increment video usage:', error);
+    }
+  }
+
+  // Pre-check API calls quota
+  static async canMakeApiCall(userId: number): Promise<{ allowed: boolean; reason?: string }> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, userId.toString()));
+      if (!user) {
+        return { allowed: false, reason: 'User not found' };
       }
+
+      const plan = user.subscriptionPlan || 'free';
+      const limits = this.quotaLimits[plan as keyof typeof this.quotaLimits] || this.quotaLimits.free;
+
+      const Database = require('@replit/database');
+      const quotaDb = new Database();
+      
+      const today = new Date().toISOString().split('T')[0];
+      const quotaKey = `quota:${userId}:${today}`;
+      
+      let usage = await quotaDb.get(quotaKey) || { videos: 0, apiCalls: 0, posts: 0 };
+
+      if (usage.apiCalls >= limits.apiCalls) {
+        return { 
+          allowed: false, 
+          reason: `API quota exceeded (${usage.apiCalls}/${limits.apiCalls}) for ${plan} plan` 
+        };
+      }
+
+      return { allowed: true };
+
+    } catch (error) {
+      console.error('❌ API quota check failed:', error);
+      return { allowed: false, reason: 'API quota check failed' };
+    }
+  }
+
+  // Increment API usage
+  static async incrementApiUsage(userId: number): Promise<void> {
+    try {
+      const Database = require('@replit/database');
+      const quotaDb = new Database();
+      
+      const today = new Date().toISOString().split('T')[0];
+      const quotaKey = `quota:${userId}:${today}`;
+      
+      let usage = await quotaDb.get(quotaKey) || { videos: 0, apiCalls: 0, posts: 0 };
+      usage.apiCalls += 1;
+      usage.lastUpdated = new Date().toISOString();
+
+      await quotaDb.set(quotaKey, usage, { EX: 86400 });
+      console.log(`📈 API usage incremented for user ${userId}: ${usage.apiCalls}`);
+
+    } catch (error) {
+      console.error('❌ Failed to increment API usage:', error);
+    }
+  }
+
+  // Get current quota status
+  static async getQuotaStatus(userId: number): Promise<any> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, userId.toString()));
+      if (!user) {
+        return null;
+      }
+
+      const plan = user.subscriptionPlan || 'free';
+      const limits = this.quotaLimits[plan as keyof typeof this.quotaLimits] || this.quotaLimits.free;
+
+      const Database = require('@replit/database');
+      const quotaDb = new Database();
+      
+      const today = new Date().toISOString().split('T')[0];
+      const quotaKey = `quota:${userId}:${today}`;
+      
+      let usage = await quotaDb.get(quotaKey) || { videos: 0, apiCalls: 0, posts: 0 };
 
       return {
-        totalUsers: quotaKeys.length,
-        activeToday,
-        quotaStats
-      };
-    } catch (error) {
-      console.error('❌ Failed to get usage stats:', error);
-      return { totalUsers: 0, activeToday: 0, quotaStats: {} };
-    }
-  }
-
-  /**
-   * Emergency quota reset for admin use
-   */
-  async resetUserQuota(userId: number): Promise<boolean> {
-    try {
-      const quotaKey = `quota:${userId}`;
-      await this.db.delete(quotaKey);
-      console.log(`🔥 Emergency quota reset for user ${userId}`);
-      return true;
-    } catch (error) {
-      console.error(`❌ Failed to reset quota for user ${userId}:`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Bulk quota cleanup for maintenance
-   */
-  async cleanupOldQuotas(daysOld: number = 30): Promise<number> {
-    try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-      const cutoffString = cutoffDate.toDateString();
-
-      const allKeys = await this.db.list();
-      const quotaKeys = allKeys.filter((key: string) => key.startsWith('quota:'));
-      
-      let cleanedCount = 0;
-      for (const key of quotaKeys) {
-        const quota = await this.db.get(key) as UserQuota;
-        if (quota && quota.lastResetDate < cutoffString) {
-          await this.db.delete(key);
-          cleanedCount++;
+        plan,
+        limits,
+        usage,
+        remaining: {
+          videos: Math.max(0, limits.videos - usage.videos),
+          apiCalls: Math.max(0, limits.apiCalls - usage.apiCalls),
+          posts: Math.max(0, limits.posts - usage.posts)
         }
-      }
+      };
 
-      console.log(`🧹 Cleaned up ${cleanedCount} old quota records`);
-      return cleanedCount;
     } catch (error) {
-      console.error('❌ Failed to cleanup old quotas:', error);
-      return 0;
+      console.error('❌ Failed to get quota status:', error);
+      return null;
     }
   }
 }
 
-// Export QuotaManager class
-export default QuotaManager;
-
-// Export singleton instance
-export const quotaManager = new QuotaManager();
+// Export singleton instance for middleware compatibility
+export const quotaManager = QuotaManager;
