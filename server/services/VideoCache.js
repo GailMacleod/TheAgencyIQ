@@ -20,15 +20,23 @@ class VideoCache {
         password: process.env.REDIS_PASSWORD,
         retryDelayOnFailover: 100,
         lazyConnect: true,
-        maxRetriesPerRequest: 3,
-        connectTimeout: 5000,
-        commandTimeout: 5000
+        maxRetriesPerRequest: 1,
+        connectTimeout: 2000,
+        commandTimeout: 2000,
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: null
+      });
+
+      // Suppress Redis connection error events
+      this.redis.on('error', () => {
+        // Silently handle Redis errors - fallback to memory cache
+        this.redis = null;
       });
 
       await this.redis.connect();
       console.log('✅ Redis connected for VEO 2.0 video caching');
     } catch (error) {
-      console.log('⚠️ Redis unavailable, using in-memory cache fallback:', error.message);
+      console.log('📦 Using in-memory cache (Redis unavailable)');
       this.redis = null;
     }
   }

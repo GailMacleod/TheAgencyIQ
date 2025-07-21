@@ -370,25 +370,32 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
           </div>
           
           {canGenerateVideo && !post.hasVideo && !post.videoApproved && isVideoSupported && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={generateVideoOneClick}
-              disabled={isRendering || hasGeneratedVideo}
-              aria-label="Generate cinematic video for this post"
-            >
-              {isRendering ? (
-                <>
-                  <LoaderIcon className="w-4 h-4 mr-2 animate-spin" />
-                  Creating Video... ({renderingTime}s)
-                </>
-              ) : (
-                <>
-                  <VideoIcon className="w-4 h-4 mr-2" />
-                  Generate Video
-                </>
+            <div className="flex flex-col items-end gap-2">
+              <Button
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium shadow-sm"
+                size="sm"
+                onClick={generateVideoOneClick}
+                disabled={isRendering || hasGeneratedVideo}
+                aria-label="Generate cinematic video for this post"
+              >
+                {isRendering ? (
+                  <>
+                    <LoaderIcon className="w-4 h-4 mr-2 animate-spin" />
+                    Creating... ({renderingTime}s)
+                  </>
+                ) : (
+                  <>
+                    <VideoIcon className="w-4 h-4 mr-2" />
+                    Generate Video
+                  </>
+                )}
+              </Button>
+              {!isRendering && (
+                <div className="text-xs text-purple-600 font-medium">
+                  VEO 2.0 Ready
+                </div>
               )}
-            </Button>
+            </div>
           )}
           
 
@@ -495,47 +502,50 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
               </div>
             </div>
             
-            {/* VEO 2.0 Video Preview with URL Validation and Error Recovery */}
+            {/* VEO 2.0 Video Preview with URL Validation and Play Button */}
             <div className="mb-3">
-              <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+              <div className="relative w-full bg-gradient-to-br from-gray-900 to-black rounded-lg overflow-hidden border" style={{ aspectRatio: '16/9' }}>
                 {videoSrc || videoData.videoUrl || videoData.url || videoData.veoVideoUrl ? (
-                  <VideoPlayerWithFallback 
-                    videoUrl={videoSrc || videoData.videoUrl || videoData.url || videoData.veoVideoUrl || ''}
-                    thumbnail={videoData.thumbnail}
-                    title={videoData.title}
-                    onError={(errorMsg) => {
-                      console.log('🎥 Video player error:', errorMsg);
-                      setError(`Video playback error: ${errorMsg}`);
-                    }}
-                  />
-                ) : previewText ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900 text-white">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 mx-auto mb-3 bg-purple-600 rounded-full flex items-center justify-center">
-                        <VideoIcon className="w-8 h-8" />
-                      </div>
-                      <p className="text-lg font-semibold mb-1">Preview Mode</p>
-                      <p className="text-sm opacity-80">{previewText.substring(0, 100)}...</p>
-                      <div className="mt-3 flex justify-center gap-2">
-                        <span className="px-2 py-1 bg-amber-600 rounded text-xs">Text Preview</span>
-                        <span className="px-2 py-1 bg-purple-600 rounded text-xs">16:9</span>
-                        <span className="px-2 py-1 bg-purple-600 rounded text-xs">8s</span>
+                  <div className="relative w-full h-full group">
+                    <video 
+                      className="w-full h-full object-cover"
+                      poster={videoData.thumbnail}
+                      controls
+                      preload="metadata"
+                      style={{ backgroundColor: '#000' }}
+                    >
+                      <source src={videoSrc || videoData.videoUrl || videoData.url || videoData.veoVideoUrl} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                    
+                    {/* Play Button Overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                      <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-6 h-6 text-white">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
                       </div>
                     </div>
                   </div>
+                ) : previewText ? (
+                  <div className="w-full h-full bg-gradient-to-br from-purple-900 to-indigo-900 flex items-center justify-center p-4">
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <VideoIcon className="w-6 h-6 text-white" />
+                      </div>
+                      <p className="text-white text-sm font-medium">Preview Mode</p>
+                      <p className="text-white/80 text-xs">{previewText.substring(0, 100)}...</p>
+                    </div>
+                  </div>
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900 text-white">
-                    <div className="text-center p-6">
-                      <div className="w-16 h-16 mx-auto mb-3 bg-purple-600 rounded-full flex items-center justify-center">
-                        <VideoIcon className="w-8 h-8" />
+                  <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                    <div className="text-center space-y-2">
+                      <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto">
+                        <VideoIcon className="w-6 h-6 text-white/60" />
                       </div>
-                      <p className="text-lg font-semibold mb-1">Cinematic Preview</p>
-                      <p className="text-sm opacity-80">{videoData.visualTheme || 'Veo3 Generated'}</p>
-                      <div className="mt-3 flex justify-center gap-2">
-                        <span className="px-2 py-1 bg-purple-600 rounded text-xs">16:9</span>
-                        <span className="px-2 py-1 bg-purple-600 rounded text-xs">8s</span>
-                        <span className="px-2 py-1 bg-purple-600 rounded text-xs">1080p</span>
-                      </div>
+                      <p className="text-white/60 text-sm">Video Loading...</p>
                     </div>
                   </div>
                 )}
