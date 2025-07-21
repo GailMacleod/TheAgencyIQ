@@ -5865,7 +5865,7 @@ Continue building your Value Proposition Canvas systematically.`;
         userId: userId,
         platform: post.platform,
         content: post.content,
-        status: 'approved', // Start as approved for immediate publishing capability
+        status: 'draft', // Start as draft, user can approve later
         scheduledFor: new Date(post.scheduledFor),
         hashtags: [],
         videoUrl: null,
@@ -5994,7 +5994,7 @@ Continue building your Value Proposition Canvas systematically.`;
           userId: userId,
           platform: platform,
           content: content,
-          status: 'approved' as const, // Start as approved for immediate publishing capability
+          status: 'draft' as const, // Start as draft, user can approve later
           scheduledFor: new Date(Date.now() + (i * 24 * 60 * 60 * 1000)), // Spread over days
           hashtags: [],
           videoUrl: null,
@@ -11027,12 +11027,34 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       // Get authenticated user for prompt variety tracking
       const authenticatedUserId = req.session?.userId || userId;
 
-      // Use fallback brand data for video generation
-      const brandData = {
+      // Retrieve actual brand purpose data for JTBD integration
+      let brandData = {
         brandName: 'The AgencyIQ',
         corePurpose: 'Professional business visibility',
         audience: 'Queensland SMEs'
       };
+
+      // Get real brand purpose data from database for JTBD framework
+      try {
+        const brandPurposeRecord = await storage.getBrandPurposeByUser(authenticatedUserId);
+        if (brandPurposeRecord) {
+          brandData = {
+            brandName: brandPurposeRecord.brandName || 'The AgencyIQ',
+            corePurpose: brandPurposeRecord.corePurpose || 'Professional business visibility',
+            audience: brandPurposeRecord.audience || 'Queensland SMEs',
+            jobToBeDone: brandPurposeRecord.jobToBeDone,
+            motivations: brandPurposeRecord.motivations,
+            painPoints: brandPurposeRecord.painPoints,
+            goals: brandPurposeRecord.goals
+          };
+          console.log(`✅ Retrieved brand purpose for video generation: ${brandData.brandName} - ${brandData.corePurpose}`);
+        } else {
+          console.log('⚠️ No brand purpose found, using fallback data for video generation');
+        }
+      } catch (error) {
+        console.error('Brand purpose retrieval error:', error);
+        console.log('⚠️ Using fallback brand data due to database error');
+      }
       
       const VideoService = (await import('./videoService.js')).default;
       
@@ -11074,7 +11096,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         postId 
       });
       
-      // Art Director brand purpose configuration (fallback for database connectivity issues)
+      // Get actual brand purpose data for JTBD integration
       let brandPurpose = {
         corePurpose: 'Professional business growth and automation',
         audience: 'Queensland SMEs', 
@@ -11082,7 +11104,28 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       };
       let postContent = '';
       
-      console.log('🎯 Using fallback brand purpose for Art Director interpretation');
+      // Retrieve real brand purpose data from database for JTBD framework
+      try {
+        const authenticatedUserId = req.session?.userId || userId;
+        const brandPurposeRecord = await storage.getBrandPurposeByUser(authenticatedUserId);
+        if (brandPurposeRecord) {
+          brandPurpose = {
+            corePurpose: brandPurposeRecord.corePurpose || 'Professional business growth and automation',
+            audience: brandPurposeRecord.audience || 'Queensland SMEs',
+            brandName: brandPurposeRecord.brandName || 'TheAgencyIQ Client',
+            jobToBeDone: brandPurposeRecord.jobToBeDone,
+            motivations: brandPurposeRecord.motivations,
+            painPoints: brandPurposeRecord.painPoints,
+            goals: brandPurposeRecord.goals
+          };
+          console.log(`✅ Retrieved brand purpose for Art Director: ${brandPurpose.brandName} - ${brandPurpose.corePurpose}`);
+        } else {
+          console.log('⚠️ No brand purpose found, using fallback data for Art Director');
+        }
+      } catch (error) {
+        console.error('Brand purpose retrieval error:', error);
+        console.log('⚠️ Using fallback brand purpose due to database error');
+      }
       console.log('📝 Using prompt content for creative direction');
       
       // Use prompt content as post content for Art Director
