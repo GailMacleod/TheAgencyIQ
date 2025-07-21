@@ -56,7 +56,6 @@ export default function Splash() {
           }`}
         />
       </div>
-
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border/40">
         <div className="container-atomiq">
@@ -227,7 +226,7 @@ export default function Splash() {
                 <AnimatedIcon icon={Users} colorScheme="pink" size="md" />
               </div>
               <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Connect Accounts</h4>
-              <p className="text-sm text-[#ff538f] font-medium">Post everywhere automatically</p>
+              <p className="text-sm text-[#ff538f] font-medium"> From concept to post every month.</p>
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#00f0ff]/30 hover:scale-105">
