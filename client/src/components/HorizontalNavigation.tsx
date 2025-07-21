@@ -168,71 +168,51 @@ export default function HorizontalNavigation() {
         </div>
 
         {/* Horizontal Navigation Bar */}
-        <div className="flex flex-wrap justify-center items-center gap-6 max-w-4xl mx-auto">
+        <div className="flex flex-wrap justify-center items-center gap-4 md:gap-8 max-w-4xl mx-auto">
           {NAV_ITEMS.map((item, index) => {
             const IconComponent = item.icon;
             const iconState = getIconState(item);
             
             return (
               <div key={item.id} className="flex items-center">
-                {/* Navigation Item */}
+                {/* Navigation Item - Compact Design */}
                 <button
                   onClick={() => handleNavClick(item)}
                   className={cn(
-                    "group flex flex-col items-center p-6 rounded-xl transition-all duration-300 hover:scale-105",
-                    "bg-white border-2 text-center min-w-[120px]",
-                    iconState === "next" && "border-[#00f0ff] shadow-lg",
+                    "group flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:scale-105",
+                    "bg-white border text-center min-w-[80px]",
+                    iconState === "next" && "border-[#3250fa] shadow-md animate-pulse",
                     iconState === "available" && "border-[#3250fa] hover:border-[#3250fa]/70",
                     iconState === "disabled" && "border-gray-200 opacity-60 cursor-not-allowed"
                   )}
                   disabled={iconState === "disabled"}
                 >
-                  {/* Icon with state-based styling */}
-                  <div className={cn(
-                    "flex justify-center mb-3 transition-all duration-300",
-                    iconState === "next" && "animate-pulse"
-                  )}>
+                  {/* Icon */}
+                  <div className="flex justify-center mb-2">
                     <IconComponent className={cn(
-                      "w-8 h-8 transition-colors",
-                      iconState === "next" && "text-[#00f0ff]",
+                      "w-6 h-6 transition-colors",
+                      iconState === "next" && "text-[#3250fa]",
                       iconState === "available" && "text-[#3250fa]",
                       iconState === "disabled" && "text-gray-400"
                     )} />
                   </div>
                   
-                  {/* Label */}
-                  <h4 className={cn(
-                    "text-sm font-semibold mb-1",
-                    iconState === "next" && "text-[#00f0ff]",
+                  {/* Label Only */}
+                  <span className={cn(
+                    "text-xs font-medium",
+                    iconState === "next" && "text-[#3250fa]",
                     iconState === "available" && "text-[#3250fa]",
                     iconState === "disabled" && "text-gray-400"
                   )}>
                     {item.label}
-                  </h4>
-                  
-                  {/* Description */}
-                  <p className={cn(
-                    "text-xs",
-                    iconState === "next" && "text-[#00f0ff]/80",
-                    iconState === "available" && "text-[#3250fa]/80",
-                    iconState === "disabled" && "text-gray-400"
-                  )}>
-                    {item.description}
-                  </p>
-
-                  {/* Next Step Indicator */}
-                  {iconState === "next" && (
-                    <div className="mt-2 px-2 py-1 bg-[#00f0ff]/10 rounded-full">
-                      <span className="text-xs font-medium text-[#00f0ff]">Next Step</span>
-                    </div>
-                  )}
+                  </span>
                 </button>
 
                 {/* Arrow between items (except last) */}
                 {index < NAV_ITEMS.length - 1 && (
-                  <div className="hidden sm:block mx-2">
+                  <div className="hidden md:block mx-2">
                     <svg 
-                      className="w-6 h-6 text-gray-300" 
+                      className="w-4 h-4 text-gray-300" 
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"
