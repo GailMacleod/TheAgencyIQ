@@ -269,19 +269,19 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
           </div>
         )}
         
-        {/* Simple Video Display */}
+        {/* VEO3 Video Preview Card with Correct Proportions */}
         {hasGeneratedVideo && videoData && (
-          <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <Badge className="bg-purple-600 text-white">
-                <VideoIcon className="w-3 h-3 mr-1" />
-                Veo3 Video Ready
+          <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <Badge className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1">
+                <VideoIcon className="w-4 h-4 mr-2" />
+                Veo3 Cinematic Ready
               </Badge>
               <div className="flex gap-2">
                 <Button
                   onClick={approveVideo}
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 text-white font-medium"
                 >
                   <CheckIcon className="w-4 h-4 mr-1" />
                   Approve
@@ -290,14 +290,92 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
                   onClick={deleteVideo}
                   variant="outline"
                   size="sm"
+                  className="border-red-200 text-red-600 hover:bg-red-50"
                 >
                   <XIcon className="w-4 h-4 mr-1" />
                   Delete
                 </Button>
               </div>
             </div>
-            <p className="text-xs text-purple-600">{videoData.title}</p>
-            <p className="text-xs text-purple-500">{videoData.description}</p>
+            
+            {/* VEO3 Video Preview with 16:9 Aspect Ratio */}
+            <div className="mb-3">
+              <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                {videoData.url || videoData.veoVideoUrl ? (
+                  <video 
+                    className="w-full h-full object-cover"
+                    controls
+                    poster={videoData.thumbnail || undefined}
+                    preload="metadata"
+                  >
+                    <source src={videoData.url || videoData.veoVideoUrl} type="video/mp4" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white">
+                      <div className="text-center">
+                        <VideoIcon className="w-16 h-16 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm opacity-75">Video preview loading...</p>
+                      </div>
+                    </div>
+                  </video>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900 text-white">
+                    <div className="text-center p-6">
+                      <div className="w-16 h-16 mx-auto mb-3 bg-purple-600 rounded-full flex items-center justify-center">
+                        <VideoIcon className="w-8 h-8" />
+                      </div>
+                      <p className="text-lg font-semibold mb-1">Cinematic Preview</p>
+                      <p className="text-sm opacity-80">{videoData.visualTheme}</p>
+                      <div className="mt-3 flex justify-center gap-2">
+                        <span className="px-2 py-1 bg-purple-600 rounded text-xs">16:9</span>
+                        <span className="px-2 py-1 bg-purple-600 rounded text-xs">8s</span>
+                        <span className="px-2 py-1 bg-purple-600 rounded text-xs">1080p</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Video Details with VEO3 Specs */}
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-900 text-sm leading-tight">{videoData.title}</h4>
+              <p className="text-xs text-gray-600 leading-relaxed">{videoData.description}</p>
+              
+              {/* VEO3 Technical Specifications */}
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-purple-100">
+                <div className="flex items-center gap-1 text-xs text-purple-600">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                  <span>Resolution: {videoData.width || 1920}×{videoData.height || 1080}</span>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-purple-600">
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
+                  <span>Duration: {videoData.duration || 8}s</span>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-purple-600">
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
+                  <span>Format: MP4</span>
+                </div>
+                {videoData.artDirectorPreview && (
+                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                    <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                    <span>Preview Mode</span>
+                  </div>
+                )}
+                {videoData.veoGenerated && (
+                  <div className="flex items-center gap-1 text-xs text-green-600">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span>Veo3 Generated</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Strategic Intent Display */}
+              {videoData.strategicIntent && (
+                <div className="mt-2 p-2 bg-white rounded border border-purple-100">
+                  <p className="text-xs text-gray-500 mb-1">Strategic Intent:</p>
+                  <p className="text-xs font-medium text-purple-800">{videoData.strategicIntent}</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
