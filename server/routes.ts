@@ -11272,6 +11272,46 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
+  // Cleanup endpoint to remove Strategic Post IDs from existing posts
+  app.post('/api/cleanup-strategic-post-ids', requireAuth, async (req: any, res) => {
+    try {
+      console.log('🧹 Starting Strategic Post ID cleanup...');
+      
+      const userId = req.session.userId;
+      
+      // Get all posts for the user that contain Strategic Post IDs
+      const postsWithIds = await db.select()
+        .from(posts)
+        .where(eq(posts.userId, userId));
+      
+      console.log(`📊 Found ${postsWithIds.length} total posts`);
+      
+      // Simple direct SQL update to remove Strategic Post IDs
+      const updateResult = await db.execute(sql`
+        UPDATE posts 
+        SET content = REGEXP_REPLACE(content, '\\s*\\[Strategic Post #[0-9]+ for [a-z]+ - [0-9]+-[a-z0-9]+\\]', '', 'g')
+        WHERE user_id = ${userId}
+        AND content LIKE '%[Strategic Post%'
+      `);
+      
+      console.log(`🎉 Cleanup complete! Updated ${updateResult.rowCount || 0} posts using direct SQL`);
+      
+      res.json({
+        success: true,
+        message: `Cleaned Strategic Post IDs from all posts`,
+        totalPosts: postsWithIds.length,
+        updatedPosts: updateResult.rowCount || 0
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Cleanup failed:', error.message);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // Return the existing HTTP server instance
   return httpServer;
 }
