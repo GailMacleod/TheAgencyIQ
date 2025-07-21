@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+// GoogleGenerativeAI will be dynamically imported to avoid ESM conflicts
 // PostQuotaService will be imported dynamically when needed
 
 // Import posting queue for auto-posting integration
@@ -21,17 +21,28 @@ async function getPostingQueue() {
 const VEO3_MODEL = 'gemini-1.5-flash'; // Using stable model that works
 const VEO3_VIDEO_MODEL = 'gemini-1.5-flash';
 
-// Initialize Google AI client with error checking
+// Dynamic Google AI client initialization for ESM compatibility
 let genAI;
-try {
-  if (!process.env.GOOGLE_AI_STUDIO_KEY) {
-    console.error('❌ GOOGLE_AI_STUDIO_KEY not found in environment');
-    throw new Error('Google AI Studio API key is required');
+let GoogleGenerativeAI;
+
+async function initializeGoogleAI() {
+  try {
+    if (!process.env.GOOGLE_AI_STUDIO_KEY) {
+      console.error('❌ GOOGLE_AI_STUDIO_KEY not found in environment');
+      throw new Error('Google AI Studio API key is required');
+    }
+    
+    // Dynamic import for ESM compatibility in type: "module" projects
+    const googleAiModule = await import('@google/generative-ai');
+    GoogleGenerativeAI = googleAiModule.GoogleGenerativeAI;
+    
+    genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_KEY);
+    console.log('✅ Google AI client initialized successfully with dynamic import');
+    return genAI;
+  } catch (error) {
+    console.error('❌ Failed to initialize Google AI client:', error.message);
+    throw error;
   }
-  genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_KEY);
-  console.log('✅ Google AI client initialized successfully');
-} catch (error) {
-  console.error('❌ Failed to initialize Google AI client:', error.message);
 }
 
 // Content filtering patterns for compliance
@@ -464,6 +475,172 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       }
     } catch (error) {
       console.log(`⚠️ Bulk cache cleanup failed: ${error.message}`);
+    }
+  }
+
+  // VEO3 VIDEO GENERATION METHOD - Proper Veo3 Integration
+  static async generateVeo3VideoContent(prompt, options = {}) {
+    try {
+      console.log('🎥 VEO3 VIDEO GENERATION: Starting actual video generation...');
+      
+      // Dynamic import for ESM compatibility
+      if (!genAI) {
+        await initializeGoogleAI();
+      }
+      
+      // Veo3 video generation parameters
+      const videoParams = {
+        prompt: prompt,
+        aspectRatio: options.aspectRatio || '16:9',
+        duration: options.duration || 8,
+        quality: 'high',
+        model: 'veo-3.0-generate-preview'
+      };
+      
+      console.log(`🎬 Veo3 Parameters: ${JSON.stringify(videoParams, null, 2)}`);
+      
+      // Generate video using Veo3 API (async with polling)
+      const videoGeneration = await genAI.models.generateVideos({
+        model: 'veo-3.0-generate-preview',
+        prompt: prompt,
+        videoLength: videoParams.duration,
+        aspectRatio: videoParams.aspectRatio
+      });
+      
+      console.log('🔄 Veo3 generation started, initiating polling...');
+      
+      // Poll for completion with exponential backoff
+      let pollAttempts = 0;
+      const maxPolls = 30; // 5 minutes max
+      let pollInterval = 10000; // Start with 10 seconds
+      
+      while (pollAttempts < maxPolls) {
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        pollAttempts++;
+        
+        console.log(`🔍 Polling attempt ${pollAttempts}/${maxPolls} (${pollInterval/1000}s interval)`);
+        
+        try {
+          const status = await videoGeneration.getStatus();
+          console.log(`📊 Veo3 Status: ${status.state}`);
+          
+          if (status.state === 'COMPLETED') {
+            // Download video from GCS
+            console.log('✅ Veo3 generation complete, downloading video...');
+            const videoUrl = await this.downloadVeo3Video(status.videoUri, options.userId);
+            
+            return {
+              success: true,
+              videoUrl: videoUrl,
+              status: 'completed',
+              promptUsed: prompt,
+              generationTime: pollAttempts * pollInterval,
+              gcsUri: status.videoUri
+            };
+          } else if (status.state === 'FAILED') {
+            throw new Error(`Veo3 generation failed: ${status.error}`);
+          }
+          
+          // Exponential backoff: increase interval up to 30 seconds
+          if (pollInterval < 30000) {
+            pollInterval = Math.min(pollInterval * 1.2, 30000);
+          }
+          
+        } catch (pollError) {
+          console.log(`⚠️ Poll error: ${pollError.message}`);
+          if (pollAttempts >= maxPolls - 3) {
+            throw pollError; // Fail on last few attempts
+          }
+        }
+      }
+      
+      // Timeout reached
+      console.log('⏰ Veo3 generation timeout, using preview mode');
+      return {
+        success: false,
+        error: 'timeout',
+        status: 'timeout',
+        promptUsed: prompt,
+        message: 'Video generation in progress, preview mode activated'
+      };
+      
+    } catch (error) {
+      console.error('❌ Veo3 video generation failed:', error.message);
+      
+      // Categorize errors for better handling
+      let errorType = 'general_error';
+      if (error.message.includes('timeout')) errorType = 'timeout';
+      else if (error.message.includes('quota')) errorType = 'quota_exceeded';
+      else if (error.message.includes('safety')) errorType = 'content_safety';
+      
+      return {
+        success: false,
+        error: errorType,
+        status: 'failed',
+        promptUsed: prompt,
+        message: error.message
+      };
+    }
+  }
+  
+  // Download Veo3 video from Google Cloud Storage
+  static async downloadVeo3Video(gcsUri, userId = 2) {
+    try {
+      console.log(`📥 Downloading Veo3 video from GCS: ${gcsUri}`);
+      
+      // Create videos directory if it doesn't exist
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      const videosDir = path.join(process.cwd(), 'public', 'videos');
+      if (!fs.existsSync(videosDir)) {
+        fs.mkdirSync(videosDir, { recursive: true });
+      }
+      
+      // Generate unique filename
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substr(2, 9);
+      const filename = `veo3_${userId}_${timestamp}_${randomId}.mp4`;
+      const localPath = path.join(videosDir, filename);
+      
+      // Download video using axios
+      const response = await axios({
+        method: 'GET',
+        url: gcsUri,
+        responseType: 'stream'
+      });
+      
+      // Save to local storage
+      const writer = fs.createWriteStream(localPath);
+      response.data.pipe(writer);
+      
+      await new Promise((resolve, reject) => {
+        writer.on('finish', resolve);
+        writer.on('error', reject);
+      });
+      
+      const publicUrl = `/videos/${filename}`;
+      console.log(`✅ Veo3 video downloaded: ${publicUrl}`);
+      
+      // Cache video metadata in Replit database
+      const Database = await import('@replit/database');
+      const db = new Database.default();
+      
+      await db.set(`veo3_video_${userId}_${timestamp}`, {
+        url: publicUrl,
+        gcsUri: gcsUri,
+        filename: filename,
+        createdAt: new Date().toISOString(),
+        userId: userId,
+        cached: true,
+        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() // 48 hours
+      });
+      
+      return publicUrl;
+      
+    } catch (error) {
+      console.error('❌ Video download failed:', error.message);
+      throw new Error(`Failed to download Veo3 video: ${error.message}`);
     }
   }
 
@@ -1457,8 +1634,11 @@ Share this with another Queensland business owner who needs to see this! 🤝
           if (process.env.GOOGLE_AI_STUDIO_KEY) {
             console.log(`🚀 Calling Veo3 API for cinematic video generation...`);
             
-            // Initialize Google AI client properly
-            const googleAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_KEY);
+            // Initialize Google AI client with dynamic import for ESM compatibility
+            if (!genAI) {
+              await initializeGoogleAI();
+            }
+            const googleAI = genAI;
             
             // Content compliance check
             const complianceCheck = VideoService.checkContentCompliance(prompt);
@@ -1473,13 +1653,19 @@ Share this with another Queensland business owner who needs to see this! 🤝
             console.log('🚀 Initializing Gemini model...');
             const model = googleAI.getGenerativeModel({ model: VEO3_MODEL }); // Using working gemini-1.5-flash
             
-            console.log('📝 Generating video content with Google AI...');
-            const result = await model.generateContent(cinematicPrompt);
+            console.log('🎬 Generating actual Veo3 video content...');
             
-            if (result && result.response) {
-              // Google AI returned response with cinematic direction
-              const responseText = result.response.text();
-              console.log(`✅ Google AI generation succeeded: ${responseText.substring(0, 100)}...`);
+            // Use proper Veo3 video generation instead of text generation
+            const veo3VideoResult = await VideoService.generateVeo3VideoContent(cinematicPrompt, {
+              platform,
+              aspectRatio: platform === 'instagram' ? '9:16' : '16:9',
+              duration: 8,
+              userId: 2
+            });
+            
+            if (veo3VideoResult && veo3VideoResult.success) {
+              console.log(`✅ Veo3 video generation succeeded: ${veo3VideoResult.status}`);
+              const responseText = veo3VideoResult.promptUsed || cinematicPrompt;
               
               // Store detailed prompt information for admin monitoring
               const promptDetails = {
@@ -1538,20 +1724,12 @@ Share this with another Queensland business owner who needs to see this! 🤝
               // Store the enhanced cinematic prompt for future video generation
               cinematicPrompt = responseText;
               
-              // Use new Veo3 integration method instead of mock URL
-              const veo3Result = await VideoService.generateWithVeo3(cinematicPrompt, {
-                platform,
-                aspectRatio: platform === 'instagram' ? '9:16' : '16:9',
-                duration: 8,
-                userId: 2,
-                postId: videoId
-              });
-              
-              if (veo3Result.success && veo3Result.videoUrl) {
-                veoVideoUrl = veo3Result.videoUrl;
+              // Extract video URL from Veo3 result
+              if (veo3VideoResult.videoUrl) {
+                veoVideoUrl = veo3VideoResult.videoUrl;
                 console.log('✅ Veo3 video generated:', veoVideoUrl);
               } else {
-                console.log('⚠️ Veo3 generation failed, using preview mode');
+                console.log('⚠️ Veo3 generation in progress, using preview mode');
                 veoVideoUrl = null; // Will trigger preview mode
               }
               

@@ -11574,5 +11574,13 @@ async function fetchYouTubeAnalytics(accessToken: string) {
   console.log('📊 Infrastructure monitoring endpoints registered');
 
   // Return the existing HTTP server instance
+  // Serve Veo3 generated videos with proper headers
+  app.use('/videos', express.static('public/videos', {
+    setHeaders: (res, path) => {
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Accept-Ranges', 'bytes');
+    }
+  }));
+
   return httpServer;
 }
