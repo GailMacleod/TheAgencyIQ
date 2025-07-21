@@ -206,7 +206,7 @@ export default function HorizontalNavigation() {
                 {index < NAV_ITEMS.length - 1 && (
                   <div className="hidden md:block mx-2">
                     <svg 
-                      className="w-4 h-4 text-gray-300" 
+                      className="w-4 h-4 text-[#3250fa]" 
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"
