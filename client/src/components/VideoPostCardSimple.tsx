@@ -7,11 +7,11 @@ import { useToast } from '@/hooks/use-toast';
 import { VideoIcon, LoaderIcon, CheckIcon, XIcon } from 'lucide-react';
 
 // Video Player Component with URL Validation and Error Recovery
-function VideoPlayerWithFallback({ videoUrl, thumbnail, title, onError }) {
+function VideoPlayerWithFallback({ videoUrl, thumbnail, title, onError }: { videoUrl: string; thumbnail?: string; title?: string; onError?: (msg: string) => void }) {
   const [videoError, setVideoError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const handleVideoError = (e) => {
+  const handleVideoError = (e: any) => {
     console.log('🎥 Video load error for URL:', videoUrl);
     setVideoError(true);
     setIsLoading(false);
@@ -122,6 +122,8 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [hasGeneratedVideo, setHasGeneratedVideo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
   const { toast } = useToast();
 
   const canGenerateVideo = Boolean(userId);
@@ -198,18 +200,35 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
 
       const data = await response.json();
       
-      if (data.success && data.videoData) {
+      // Apply your exact code fix for handling response
+      if (data.videoUrl) {
+        setVideoSrc(data.videoUrl);
         setRenderingProgress(100);
         setCurrentPhase('Complete');
-        setVideoData(data.videoData);
+        setVideoData(data);
         setHasGeneratedVideo(true);
         
         toast({
           title: "Video Ready",
-          description: `Cinematic ${post.platform} video generated`
+          description: `Veo3 ${post.platform} video generated`
         });
         
-        // Clean completion
+        setTimeout(() => {
+          setIsRendering(false);
+        }, 1000);
+      } else if (data.response || data.textDescription) { 
+        // Fallback to text description if no URL
+        setPreviewText(data.response || data.textDescription);
+        setRenderingProgress(100);
+        setCurrentPhase('Preview Mode');
+        setVideoData(data);
+        setHasGeneratedVideo(true);
+        
+        toast({
+          title: "Preview Mode",
+          description: "Video generation unavailable - showing text preview"
+        });
+        
         setTimeout(() => {
           setIsRendering(false);
         }, 1000);
@@ -422,9 +441,9 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
             {/* VEO3 Video Preview with URL Validation and Error Recovery */}
             <div className="mb-3">
               <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                {videoData.url || videoData.veoVideoUrl ? (
+                {videoSrc || videoData.videoUrl || videoData.url || videoData.veoVideoUrl ? (
                   <VideoPlayerWithFallback 
-                    videoUrl={videoData.url || videoData.veoVideoUrl}
+                    videoUrl={videoSrc || videoData.videoUrl || videoData.url || videoData.veoVideoUrl}
                     thumbnail={videoData.thumbnail}
                     title={videoData.title}
                     onError={(errorMsg) => {
@@ -432,6 +451,21 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
                       setError(`Video playback error: ${errorMsg}`);
                     }}
                   />
+                ) : previewText ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900 text-white">
+                    <div className="text-center p-6">
+                      <div className="w-16 h-16 mx-auto mb-3 bg-purple-600 rounded-full flex items-center justify-center">
+                        <VideoIcon className="w-8 h-8" />
+                      </div>
+                      <p className="text-lg font-semibold mb-1">Preview Mode</p>
+                      <p className="text-sm opacity-80">{previewText.substring(0, 100)}...</p>
+                      <div className="mt-3 flex justify-center gap-2">
+                        <span className="px-2 py-1 bg-amber-600 rounded text-xs">Text Preview</span>
+                        <span className="px-2 py-1 bg-purple-600 rounded text-xs">16:9</span>
+                        <span className="px-2 py-1 bg-purple-600 rounded text-xs">8s</span>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900 text-white">
                     <div className="text-center p-6">
@@ -439,7 +473,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
                         <VideoIcon className="w-8 h-8" />
                       </div>
                       <p className="text-lg font-semibold mb-1">Cinematic Preview</p>
-                      <p className="text-sm opacity-80">{videoData.visualTheme}</p>
+                      <p className="text-sm opacity-80">{videoData.visualTheme || 'Veo3 Generated'}</p>
                       <div className="mt-3 flex justify-center gap-2">
                         <span className="px-2 py-1 bg-purple-600 rounded text-xs">16:9</span>
                         <span className="px-2 py-1 bg-purple-600 rounded text-xs">8s</span>
