@@ -335,7 +335,7 @@ Return JSON with:
         const post: StrategicPost = {
           id: strategicPosts.length + 1,
           platform,
-          content: `${templates[templateIndex]} [Strategic Post #${strategicPosts.length + 1} for ${platform} - ${Date.now()}-${Math.random().toString(36).substr(2, 9)}]`, // Globally unique content
+          content: templates[templateIndex], // Clean content without backend IDs
           scheduledFor: scheduledDate.toISOString(),
           strategicTheme: 'invisible-business-problem',
           businessCanvasPhase: this.getBusinessCanvasPhase(j),
