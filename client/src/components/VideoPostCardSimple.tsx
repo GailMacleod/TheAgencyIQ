@@ -126,7 +126,10 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
   const [previewText, setPreviewText] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const canGenerateVideo = Boolean(userId);
+  // CRITICAL: Video generation only available for platforms that support video content
+  const videoSupportedPlatforms = ['youtube', 'facebook', 'x'];
+  const isVideoSupported = videoSupportedPlatforms.includes(post.platform.toLowerCase());
+  const canGenerateVideo = Boolean(userId) && isVideoSupported;
 
   // Modern video generation with subtle progress
   const generateVideoOneClick = async () => {
@@ -312,9 +315,15 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
             <Badge variant={post.status === 'approved' ? 'default' : 'secondary'}>
               {post.status}
             </Badge>
-            <Badge variant="outline" className="bg-purple-50 text-purple-700">
-              🎬 Veo3 Ready
-            </Badge>
+            {isVideoSupported ? (
+              <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                🎬 Veo3 Ready
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-gray-50 text-gray-600">
+                📝 Text Only
+              </Badge>
+            )}
           </div>
         </div>
         
@@ -322,9 +331,15 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
           {post.content}
         </CardDescription>
         
-        <div className="mt-2 text-xs font-medium text-purple-600">
-          Cinematic Video Generation Available
-        </div>
+        {isVideoSupported ? (
+          <div className="mt-2 text-xs font-medium text-purple-600">
+            🎬 Veo3 Video Generation Available
+          </div>
+        ) : (
+          <div className="mt-2 text-xs font-medium text-gray-500">
+            📝 Text-only post ({post.platform} doesn't support video content)
+          </div>
+        )}
       </CardHeader>
       
       <CardContent>
@@ -338,7 +353,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
             )}
           </div>
           
-          {canGenerateVideo && !post.hasVideo && !post.videoApproved && (
+          {canGenerateVideo && !post.hasVideo && !post.videoApproved && isVideoSupported && (
             <Button
               variant="outline"
               size="sm"
@@ -358,6 +373,12 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
                 </>
               )}
             </Button>
+          )}
+          
+          {!isVideoSupported && (
+            <div className="text-xs text-gray-500 italic">
+              Video generation available for YouTube, Facebook, and X posts only
+            </div>
           )}
         </div>
         

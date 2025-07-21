@@ -71,10 +71,11 @@ export const checkVideoQuota = async (req: QuotaRequest, res: Response, next: Ne
 
     // Get user subscription tier
     const user = await storage.getUser(userId);
-    const subscriptionTier = user?.subscriptionPlan === 'free' ? 'free' : 
-                           user?.subscriptionPlan === 'enterprise' ? 'enterprise' : 'professional';
+    const subscriptionTier = user?.subscriptionPlan || 'free';
 
-    // Check if user can generate video
+    console.log(`🎬 Video quota check for user ${userId} with ${subscriptionTier} plan`);
+
+    // Check quota for all users including professional (52 video limit)
     const quotaCheck = await QuotaManager.canGenerateVideo(userId);
     
     if (!quotaCheck.allowed) {
@@ -92,7 +93,7 @@ export const checkVideoQuota = async (req: QuotaRequest, res: Response, next: Ne
     
     next();
   } catch (error) {
-    console.error('❌ Video quota enforcement error:', error);
+    console.error('❌ Video quota enforcement error, allowing request:', error);
     // Don't block request on quota system failure, but log it
     next();
   }
