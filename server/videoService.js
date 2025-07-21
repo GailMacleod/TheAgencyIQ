@@ -17,9 +17,9 @@ async function getPostingQueue() {
   return postingQueue;
 }
 
-// Veo3 API configuration - Google AI Studio Integration
-const VEO3_MODEL = 'gemini-1.5-flash'; // Using stable model that works
-const VEO3_VIDEO_MODEL = 'gemini-1.5-flash';
+// VEO 2.0 API configuration - Google AI Studio Integration
+const VEO2_MODEL = 'veo-2.0-generate-001'; // Updated to VEO 2.0 as requested
+const VEO2_VIDEO_MODEL = 'veo-2.0-generate-001';
 
 // Dynamic Google AI client initialization for ESM compatibility
 let genAI;
@@ -328,7 +328,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       
       // Generate content using the cache
       const model = genAI.getGenerativeModel({ 
-        model: VEO3_MODEL, // Using working gemini-1.5-flash
+        model: VEO2_MODEL, // Using VEO 2.0 generate model
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 800,
@@ -365,7 +365,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       
       // Fallback to implicit caching approach with enhanced error handling
       const model = genAI.getGenerativeModel({ 
-        model: VEO3_MODEL, // Using working gemini-1.5-flash
+        model: VEO2_MODEL, // Using VEO 2.0 generate model
         generationConfig: {
           temperature: enhancedError.adjustedTemperature || 0.7,
           maxOutputTokens: enhancedError.adjustedTokens || 800,
@@ -422,7 +422,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       // Create new session-optimized cache with extended TTL for active users
       console.log(`🔄 Creating session-optimized cache for user ${userId}...`);
       const cache = await genAI.caches?.create({
-        model: VEO3_MODEL, // Using working gemini-1.5-flash
+        model: VEO2_MODEL, // Using VEO 2.0 generate model
         display_name: cacheDisplayName,
         system_instruction: systemInstruction,
         contents: [{
@@ -493,7 +493,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
         prompt: prompt,
         aspectRatio: '16:9', // VEO3 only supports 16:9
         duration: 8, // VEO3 fixed at 8 seconds
-        model: 'veo-3.0-generate-preview', // Proper VEO3 model
+        model: 'veo-2.0-generate-001', // VEO 2.0 model as requested
         generateAudio: true // VEO3 supports audio generation
       };
       

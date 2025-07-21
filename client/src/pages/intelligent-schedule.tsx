@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play, Eye, ThumbsUp, X, Sparkles, Brain, Target, Users, MapPin, Edit3, Save } from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle, RotateCcw, Play, Eye, ThumbsUp, X, Sparkles, Brain, Target, Users, MapPin, Edit3, Save, Video as VideoIcon } from "lucide-react";
 import CalendarCard from "@/components/calendar-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -930,14 +930,14 @@ function IntelligentSchedule() {
                   <VideoIcon className="h-5 w-5 text-blue-600 mt-0.5" />
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800">VEO3 Video Generation Information</h3>
+                  <h3 className="text-sm font-medium text-blue-800">VEO 2.0 Video Generation Information</h3>
                   <div className="mt-2 text-sm text-blue-700">
-                    <p className="mb-2">VEO3 video generation is available for YouTube, Facebook, LinkedIn, and X posts with these specifications:</p>
+                    <p className="mb-2">VEO 2.0 video generation is available for YouTube, Facebook, LinkedIn, and X posts with these specifications:</p>
                     <ul className="list-disc pl-5 space-y-1">
                       <li><strong>Aspect Ratio:</strong> 16:9 only (1920×1080)</li>
                       <li><strong>Duration:</strong> Fixed 8 seconds</li>
                       <li><strong>Quality:</strong> 1080p professional cinematic</li>
-                      <li><strong>Instagram:</strong> Currently not supported due to VEO3's 16:9 limitation vs Instagram's 9:16 requirement</li>
+                      <li><strong>Instagram:</strong> Currently not supported due to VEO 2.0's 16:9 limitation vs Instagram's 9:16 requirement</li>
                     </ul>
                   </div>
                 </div>
