@@ -192,7 +192,7 @@ export default function HorizontalNavigation() {
                       "w-6 h-6 transition-colors",
                       iconState === "next" && "text-[#00f0ff]",
                       iconState === "completed" && "text-[#3250fa]",
-                      iconState === "available" && "text-gray-500",
+                      iconState === "available" && "text-[#3250fa]",
                       iconState === "disabled" && "text-gray-400"
                     )} />
                   </div>
@@ -202,7 +202,7 @@ export default function HorizontalNavigation() {
                     "text-xs font-medium",
                     iconState === "next" && "text-[#00f0ff]",
                     iconState === "completed" && "text-[#3250fa]",
-                    iconState === "available" && "text-gray-500",
+                    iconState === "available" && "text-[#3250fa]",
                     iconState === "disabled" && "text-gray-400"
                   )}>
                     {item.label}
