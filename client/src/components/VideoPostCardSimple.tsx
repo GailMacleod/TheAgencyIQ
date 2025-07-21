@@ -138,19 +138,19 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
       return;
     }
 
-    console.log('🎬 Starting video generation for post:', post.id);
-    console.log('🔄 Setting isRendering to true - progress indicator should show');
+    // Backend debugging only - no frontend display
+    console.log('🎬 Video generation started', {
+      postId: post.id,
+      platform: post.platform,
+      userId,
+      timestamp: new Date().toISOString()
+    });
     
     setIsRendering(true);
     setError(null);
     setRenderingProgress(0);
     setRenderingTime(0);
     setCurrentPhase('Initializing');
-    
-    // Force a re-render to ensure progress indicator shows immediately
-    setTimeout(() => {
-      console.log('🔄 Progress check - isRendering:', true, 'renderingTime:', 0);
-    }, 100);
 
     // Smooth progress tracking
     const startTime = Date.now();
@@ -170,13 +170,28 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
         });
       }, 250);
 
-      // Subtle phase updates
+      // Subtle phase updates with backend logging
       phaseInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        if (elapsed < 5) setCurrentPhase('Analyzing brand context');
-        else if (elapsed < 10) setCurrentPhase('Grok enhancement');
-        else if (elapsed < 15) setCurrentPhase('Building cinematic sequence');
-        else setCurrentPhase('Veo3 rendering');
+        let phase = '';
+        if (elapsed < 5) {
+          phase = 'Analyzing brand context';
+        } else if (elapsed < 10) {
+          phase = 'Grok enhancement';
+        } else if (elapsed < 15) {
+          phase = 'Building cinematic sequence';
+        } else {
+          phase = 'Veo3 rendering';
+        }
+        setCurrentPhase(phase);
+        
+        // Backend debugging only
+        console.log('🎯 Video generation progress', {
+          postId: post.id,
+          phase,
+          elapsed,
+          progress: Math.min(90, (elapsed / 20) * 100)
+        });
       }, 2000);
     };
 
@@ -408,12 +423,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
           </div>
         )}
         
-        {/* Debug: Always show progress indicator state for testing */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-            Debug: isRendering={isRendering.toString()}, time={renderingTime}s, progress={renderingProgress}%
-          </div>
-        )}
+
         
         {/* Simple Error Display */}
         {error && (

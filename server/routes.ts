@@ -11058,18 +11058,31 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       
       const VideoService = (await import('./videoService.js')).default;
       
-      console.log('Generating varied video prompts for:', { 
+      // Enhanced backend logging for debugging (no frontend display)
+      console.log('🎬 Video prompt generation started:', { 
         userId: authenticatedUserId,
         postContent: postContent.substring(0, 50), 
         platform, 
-        brandName: brandData?.brandName 
+        brandName: brandData?.brandName,
+        hasJTBD: !!brandData?.jobToBeDone,
+        timestamp: new Date().toISOString()
       });
       
       // Enhanced with Grok copywriter for witty, engaging content
       const result = await VideoService.generateVideoPromptsWithGrokCopywriter(postContent, platform, brandData, authenticatedUserId);
       
-      console.log('Video prompt generation result:', result.success ? 'SUCCESS' : 'FAILED', 
-        result.userHistory ? `(Generated: ${result.userHistory.totalGenerated}, Animals: ${result.userHistory.uniqueAnimals})` : '');
+      // Enhanced backend result logging
+      console.log('🎯 Video prompt generation completed:', {
+        success: result.success,
+        userId: authenticatedUserId,
+        platform,
+        userHistory: result.userHistory ? {
+          totalGenerated: result.userHistory.totalGenerated,
+          uniqueAnimals: result.userHistory.uniqueAnimals
+        } : null,
+        brandIntegration: !!brandData?.jobToBeDone,
+        timestamp: new Date().toISOString()
+      });
       res.json(result);
     } catch (error) {
       console.error('Video prompt generation failed:', error);
@@ -11147,10 +11160,15 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       // Art Director creates professional cinematic video
       const result = await VideoService.renderVideo(prompt, editedText, platform, brandPurpose, postContent);
       
-      console.log('🎬 Art Director result:', { 
+      // Enhanced backend Art Director logging
+      console.log('🎥 Art Director video generation completed:', { 
         success: result.success, 
         videoId: result.videoId,
         artDirected: result.artDirected,
+        platform,
+        userId,
+        brandIntegration: !!brandPurpose?.jobToBeDone,
+        timestamp: new Date().toISOString(),
         brandPurposeDriven: result.brandPurposeDriven,
         animalType: result.animalType,
         strategicIntent: result.strategicIntent?.substring(0, 50)
