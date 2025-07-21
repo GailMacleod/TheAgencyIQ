@@ -882,7 +882,7 @@ export default function BrandPurpose() {
                     className="h-7 px-2 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
                   >
                     <Bot className="w-3 h-3 mr-1" />
-                    Apply Strategyzer Suggestion
+                    Apply AI Suggestion
                   </Button>
                 )}
               </div>
@@ -899,7 +899,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs font-medium text-purple-900 mb-1">AI tip:</p>
                       <p className="text-xs text-purple-800">Define your customer segment - demographics, behaviors, and needs they share</p>
                     </div>
                   </div>
@@ -910,7 +910,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-xs font-medium text-indigo-900 mb-1">Strategyzer Recommendation:</p>
+                      <p className="text-xs font-medium text-indigo-900 mb-1">AI Recommendation:</p>
                       <p className="text-xs text-indigo-800">{aiSuggestions.audience}</p>
                     </div>
                   </div>
@@ -934,7 +934,7 @@ export default function BrandPurpose() {
             {/* Job to Be Done */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="jobToBeDone" className="text-sm font-medium text-gray-700">What job does your brand do for customers?</Label>
+                <Label htmlFor="jobToBeDone" className="text-sm font-medium text-gray-700">JTBD (Job to be done): What job does your brand do for customers?</Label>
                 {aiSuggestions.jobToBeDone && (
                   <Button
                     type="button"
@@ -944,7 +944,7 @@ export default function BrandPurpose() {
                     className="h-7 px-2 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
                   >
                     <Bot className="w-3 h-3 mr-1" />
-                    Apply Strategyzer Suggestion
+                    Apply AI Suggestion
                   </Button>
                 )}
               </div>
@@ -961,7 +961,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs font-medium text-purple-900 mb-1">AI tip:</p>
                       <p className="text-xs text-purple-800">Customer job-to-be-done - what functional, emotional, or social job do customers hire you for?</p>
                     </div>
                   </div>
@@ -972,7 +972,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-xs font-medium text-indigo-900 mb-1">Strategyzer Jobs-to-be-Done Framework:</p>
+                      <p className="text-xs font-medium text-indigo-900 mb-1">JTBD Framework Analysis:</p>
                       <p className="text-xs text-indigo-800">{aiSuggestions.jobToBeDone}</p>
                     </div>
                   </div>
@@ -1006,7 +1006,7 @@ export default function BrandPurpose() {
                     className="h-7 px-2 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
                   >
                     <Bot className="w-3 h-3 mr-1" />
-                    Apply Strategyzer Suggestion
+                    Apply AI Suggestion
                   </Button>
                 )}
               </div>
@@ -1023,7 +1023,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs font-medium text-purple-900 mb-1">AI tip:</p>
                       <p className="text-xs text-purple-800">Customer gains - what benefits, outcomes, and characteristics your customers want</p>
                     </div>
                   </div>
@@ -1034,7 +1034,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-xs font-medium text-indigo-900 mb-1">Strategyzer Customer Gains Analysis:</p>
+                      <p className="text-xs font-medium text-indigo-900 mb-1">Customer Gains Analysis:</p>
                       <p className="text-xs text-indigo-800">{aiSuggestions.motivations}</p>
                     </div>
                   </div>
@@ -1068,7 +1068,7 @@ export default function BrandPurpose() {
                     className="h-7 px-2 text-xs bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
                   >
                     <Bot className="w-3 h-3 mr-1" />
-                    Apply Strategyzer Suggestion
+                    Apply AI Suggestion
                   </Button>
                 )}
               </div>
@@ -1085,7 +1085,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs font-medium text-purple-900 mb-1">AI tip:</p>
                       <p className="text-xs text-purple-800">Customer pains - frustrations, obstacles, and risks your customers experience</p>
                     </div>
                   </div>
@@ -1096,7 +1096,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-xs font-medium text-indigo-900 mb-1">Strategyzer Customer Pains Mapping:</p>
+                      <p className="text-xs font-medium text-indigo-900 mb-1">Customer Pains Analysis:</p>
                       <p className="text-xs text-indigo-800">{aiSuggestions.painPoints}</p>
                     </div>
                   </div>
