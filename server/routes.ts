@@ -11306,7 +11306,15 @@ async function fetchYouTubeAnalytics(accessToken: string) {
           videoData: result,
           videoUrl: result.url || result.videoUrl,
           message: result.message || 'VEO 2.0 video generated successfully',
-          veo2Generated: result.veo2Generated
+          veo2Generated: result.veo2Generated,
+          // Enhanced JTBD Copywriting flags
+          grokEnhanced: result.grokEnhanced || false,
+          editable: result.editable || false,
+          wittyStyle: result.wittyStyle || false,
+          postCopy: result.postCopy || null,
+          enhancedCopy: result.enhancedCopy || null,
+          jtbdIntegrated: result.jtbdIntegrated || false,
+          brandPurposeDriven: result.brandPurposeDriven || false
         });
       } else {
         res.status(500).json({
