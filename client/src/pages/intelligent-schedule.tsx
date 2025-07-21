@@ -124,7 +124,7 @@ function IntelligentSchedule() {
   const queryClient = useQueryClient();
 
   // Video handling
-  const handleVideoApproved = async (postId: number, videoData: any) => {
+  const handleVideoApproved = async (postId: string, videoData: any) => {
     try {
       // Just refresh the posts query - the video approval is already handled by the backend
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
@@ -596,6 +596,8 @@ function IntelligentSchedule() {
     }
   };
 
+
+
   // Platform icons
   const getPlatformIcon = (platform: string) => {
     const iconClass = "w-4 h-4";
@@ -828,8 +830,8 @@ function IntelligentSchedule() {
                     key={post.id}
                     post={post}
                     onVideoApproved={handleVideoApproved}
-                    brandData={brandPurpose}
-                    userId={user?.id || 0}
+                    userId={user?.id?.toString() || '2'}
+                    onPostUpdate={() => refetchPosts()}
                   />
                 )) : (
                   <div className="text-center p-8">
