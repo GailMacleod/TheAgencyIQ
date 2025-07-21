@@ -478,94 +478,145 @@ Your job is to create detailed video scripts with specific timing, camera moveme
     }
   }
 
-  // ENHANCED VEO3 VIDEO GENERATION - ACTUAL VIDEO CREATION
+  // AUTHENTIC VEO3 VIDEO GENERATION - REAL VIDEO CREATION WITH ASYNC POLLING
   static async generateVeo3VideoContent(prompt, options = {}) {
     try {
-      console.log('🎥 VEO3 VIDEO GENERATION: Starting enhanced video creation...');
+      console.log('🎥 VEO3 VIDEO GENERATION: Starting authentic video creation with proper async polling...');
       
       // Dynamic import for ESM compatibility
       if (!genAI) {
         await initializeGoogleAI();
       }
       
-      // Enhanced Veo3 video generation with proper async handling
-      const videoParams = {
+      // VEO3 Technical Constraints (from documentation)
+      const veo3Params = {
         prompt: prompt,
-        aspectRatio: options.aspectRatio || '16:9',
-        duration: options.duration || 8,
-        quality: 'high',
-        model: 'gemini-2.5-flash'
+        aspectRatio: '16:9', // VEO3 only supports 16:9
+        duration: 8, // VEO3 fixed at 8 seconds
+        model: 'veo-3.0-generate-preview', // Proper VEO3 model
+        generateAudio: true // VEO3 supports audio generation
       };
       
-      console.log(`🎬 Enhanced Veo3 Parameters: ${JSON.stringify(videoParams, null, 2)}`);
+      console.log(`🎬 VEO3 Parameters: ${JSON.stringify(veo3Params, null, 2)}`);
       
-      // Create enhanced cinematic prompt for Veo3
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
-        systemInstruction: `You are an enhanced Veo3 video generation system. Create detailed cinematic video sequences with:
-        1. Specific camera movements and angles
-        2. Audio synchronization elements
-        3. Queensland business context integration
-        4. Professional visual quality specifications
-        5. Brand integration opportunities`
-      });
+      try {
+        // STEP 1: Generate video using proper VEO3 API (not generateContent)
+        console.log('🚀 Calling VEO3 generate_videos API...');
+        
+        const operation = await genAI.models.generate_videos({
+          model: veo3Params.model,
+          prompt: veo3Params.prompt,
+          config: {
+            aspectRatio: veo3Params.aspectRatio,
+            durationSeconds: veo3Params.duration,
+            generateAudio: veo3Params.generateAudio,
+            personGeneration: "allow_adult", // Allow adults only
+            enhancePrompt: true, // Use Gemini to enhance prompts
+            resolution: "1080p"
+          }
+        });
 
-      // Generate enhanced video content with JTBD integration
-      const enhancedPrompt = `
-Create a professional cinematic video sequence:
+        console.log(`🔄 VEO3 operation started: ${operation.name}`);
+        
+        // STEP 2: Poll until operation is complete (async polling)
+        let pollingAttempts = 0;
+        const maxPollingAttempts = 30; // 10 minutes max (20s intervals)
+        
+        console.log('⏳ Polling for video completion...');
+        while (!operation.done && pollingAttempts < maxPollingAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 20000)); // 20s intervals as per documentation
+          
+          try {
+            const updatedOperation = await genAI.operations.get(operation);
+            operation.done = updatedOperation.done;
+            operation.result = updatedOperation.result;
+            
+            pollingAttempts++;
+            console.log(`🔄 Polling attempt ${pollingAttempts}/${maxPollingAttempts} - Status: ${operation.done ? 'Complete' : 'Processing'}`);
+            
+            if (operation.done) {
+              console.log('✅ VEO3 video generation completed!');
+              break;
+            }
+          } catch (pollError) {
+            console.error(`⚠️ Polling error attempt ${pollingAttempts}:`, pollError.message);
+            pollingAttempts++;
+          }
+        }
+        
+        if (!operation.done) {
+          throw new Error('VEO3 video generation timeout - exceeded maximum polling time');
+        }
+        
+        // STEP 3: Download video from GCS URI
+        if (operation.result && operation.result.generated_videos && operation.result.generated_videos.length > 0) {
+          const generatedVideo = operation.result.generated_videos[0];
+          const gcsUri = generatedVideo.video.gcsUri || generatedVideo.gcsUri;
+          
+          console.log(`📥 Downloading video from GCS: ${gcsUri}`);
+          
+          // Download and save video locally
+          const localVideoUrl = await this.downloadVeo3Video(gcsUri, options.userId || 2);
+          
+          // Create video metadata
+          const videoId = `veo3_authentic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          return {
+            success: true,
+            videoUrl: localVideoUrl,
+            videoId: videoId,
+            status: 'completed',
+            promptUsed: prompt,
+            description: prompt,
+            generationTime: pollingAttempts * 20000, // Actual generation time
+            aspectRatio: veo3Params.aspectRatio,
+            duration: veo3Params.duration,
+            quality: '1080p',
+            veo3Generated: true,
+            realVideo: true,
+            gcsUri: gcsUri,
+            pollingAttempts: pollingAttempts,
+            note: 'Authentic VEO3 video with proper async polling and GCS download'
+          };
+        } else {
+          throw new Error('VEO3 operation completed but no videos generated');
+        }
+        
+      } catch (veo3Error) {
+        console.error('❌ VEO3 API error:', veo3Error.message);
+        
+        // If VEO3 fails, create text description as fallback
+        console.log('🔄 VEO3 failed, generating fallback description...');
+        
+        const model = genAI.getGenerativeModel({ 
+          model: "gemini-2.5-flash"
+        });
 
-PROMPT: ${prompt}
-FORMAT: ${videoParams.aspectRatio} aspect ratio
-DURATION: ${videoParams.duration} seconds
-QUALITY: Professional cinematic quality
+        const fallbackPrompt = `Create a detailed 8-second video description for: ${prompt}
+        
+Format: 16:9 aspect ratio, professional cinematic quality
+Duration: 8 seconds exactly
+Include: Camera movements, lighting, and Queensland business context`;
 
-REQUIREMENTS:
-- Include specific camera movements (tracking, push-in, wide shots)
-- Add audio synchronization points
-- Integrate Queensland business context naturally
-- Professional lighting and composition
-- Brand integration opportunities
-
-STRUCTURE:
-0-2s: Opening visual hook
-2-4s: Problem/challenge presentation  
-4-6s: Solution/transformation moment
-6-8s: Result/call-to-action with brand
-
-Generate detailed video description ready for production.`;
-
-      console.log('🔄 Enhanced Veo3 generation started...');
-      
-      const videoGeneration = await model.generateContent(enhancedPrompt);
-      const response = await videoGeneration.response;
-      const videoDescription = response.text();
-      
-      console.log('✅ Enhanced video description generated successfully');
-      console.log(`📝 Description preview: ${videoDescription.substring(0, 200)}...`);
-      
-      // Create enhanced video metadata
-      const videoId = `veo3_enhanced_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const videoUrl = `/videos/${videoId}.mp4`;
-      
-      // Return enhanced video generation result
-      return {
-        success: true,
-        videoUrl: videoUrl,
-        videoId: videoId,
-        status: 'completed',
-        promptUsed: prompt,
-        description: videoDescription,
-        generationTime: 3000,
-        aspectRatio: videoParams.aspectRatio,
-        duration: videoParams.duration,
-        quality: 'professional',
-        veo3Generated: true,
-        enhanced: true,
-        note: 'Enhanced Veo3 video description with cinematic structure'
-      };
+        const textResponse = await model.generateContent(fallbackPrompt);
+        const videoDescription = textResponse.response.text();
+        
+        const videoId = `veo3_fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        return {
+          success: false,
+          videoId: videoId,
+          status: 'fallback',
+          promptUsed: prompt,
+          description: videoDescription,
+          error: veo3Error.message,
+          fallbackMode: true,
+          note: 'VEO3 failed - text description provided'
+        };
+      }
       
     } catch (error) {
-      console.error('❌ Enhanced Veo3 generation failed:', error.message);
+      console.error('❌ VEO3 generation system error:', error.message);
       
       // Enhanced error categorization
       let errorType = 'general_error';
@@ -580,7 +631,7 @@ Generate detailed video description ready for production.`;
         status: 'failed',
         promptUsed: prompt,
         message: error.message,
-        enhanced: false
+        veo3Attempted: true
       };
     }
   }
@@ -1514,10 +1565,11 @@ Share this with another Queensland business owner who needs to see this! 🤝
       try {
         console.log('🚀 Calling enhanced VEO3 generation...');
         const videoResult = await this.generateVeo3VideoContent(veo3Prompt, {
-          aspectRatio: platform === 'instagram' ? '9:16' : '16:9',
-          duration: 8,
+          aspectRatio: '16:9', // VEO3 only supports 16:9 aspect ratio
+          duration: 8, // VEO3 fixed at 8 seconds
           quality: 'professional',
-          brandContext: brandPurpose
+          brandContext: brandPurpose,
+          platform: platform
         });
         
         if (videoResult.success) {
@@ -1544,7 +1596,7 @@ Share this with another Queensland business owner who needs to see this! 🤝
             duration: videoResult.duration || 8,
             aspectRatio: videoResult.aspectRatio || '16:9',
             quality: 'professional',
-            size: videoResult.aspectRatio === '9:16' ? '1080x1920' : '1920x1080',
+            size: '1920x1080', // VEO3 only supports 16:9 (1920x1080)
             artDirected: true,
             veoGenerated: true,
             veo3Generated: true,
@@ -1730,36 +1782,37 @@ Share this with another Queensland business owner who needs to see this! 🤝
         console.log('🎬 Art Director Final Script:', videoPrompt.substring(0, 120) + '...');
       }
       
-      // Platform-specific video requirements
+      // VEO3 Platform-specific video requirements (VEO3 constraint: 16:9 only, 8 seconds only)
       const platformSettings = {
         'Instagram': { 
           resolution: '1080p', 
-          aspectRatio: '9:16', 
-          maxDuration: 60, 
-          maxSize: '100MB'
+          aspectRatio: '16:9', // VEO3 limitation: no 9:16 support
+          maxDuration: 8, // VEO3 fixed duration
+          maxSize: '100MB',
+          note: 'VEO3 generates 16:9 videos for all platforms'
         },
         'YouTube': { 
           resolution: '1080p', 
           aspectRatio: '16:9', 
-          maxDuration: 900,
+          maxDuration: 8, // VEO3 fixed duration
           maxSize: '256MB'
         },
         'Facebook': { 
           resolution: '1080p', 
-          aspectRatio: '1:1', 
-          maxDuration: 240,
+          aspectRatio: '16:9', // VEO3 limitation: no 1:1 support
+          maxDuration: 8, // VEO3 fixed duration
           maxSize: '10GB'
         },
         'LinkedIn': { 
           resolution: '1080p', 
-          aspectRatio: '1:1', 
-          maxDuration: 600,
+          aspectRatio: '16:9', // VEO3 limitation: no 1:1 support
+          maxDuration: 8, // VEO3 fixed duration
           maxSize: '5GB'
         },
         'X': { 
           resolution: '1080p', 
           aspectRatio: '16:9', 
-          maxDuration: 140,
+          maxDuration: 8, // VEO3 fixed duration
           maxSize: '512MB'
         }
       };
@@ -1768,11 +1821,12 @@ Share this with another Queensland business owner who needs to see this! 🤝
       
       // AUTHENTIC ART DIRECTOR VIDEO GENERATION - Creates real custom content
       const generateArtDirectorVideo = async (visualTheme, strategicIntent, creativeDirection, platform) => {
+        // VEO3 Technical Constraints: 16:9 only, 8 seconds only, 1920x1080 resolution
         const videoSpecs = {
-          Instagram: { width: 1080, height: 1920, ratio: '9:16' },
+          Instagram: { width: 1920, height: 1080, ratio: '16:9' }, // VEO3 limitation
           YouTube: { width: 1920, height: 1080, ratio: '16:9' },
-          Facebook: { width: 1080, height: 1080, ratio: '1:1' },
-          LinkedIn: { width: 1080, height: 1080, ratio: '1:1' },
+          Facebook: { width: 1920, height: 1080, ratio: '16:9' }, // VEO3 limitation
+          LinkedIn: { width: 1920, height: 1080, ratio: '16:9' }, // VEO3 limitation
           X: { width: 1920, height: 1080, ratio: '16:9' }
         };
         

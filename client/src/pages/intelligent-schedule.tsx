@@ -912,7 +912,7 @@ function IntelligentSchedule() {
                       videoData: convertedPost.videoData,
                       approvedAt: convertedPost.approvedAt
                     })}
-                    onApprovePost={(postId) => handleApprovePost(parseInt(postId) || 0)}
+                    onApprovePost={(postId) => handleApprovePost(postId)}
                   />
                 )) : (
                   <div className="text-center p-8">
@@ -922,6 +922,27 @@ function IntelligentSchedule() {
                 )}
               </div>
             )}
+            
+            {/* VEO3 Platform Constraints Information */}
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <VideoIcon className="h-5 w-5 text-blue-600 mt-0.5" />
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">VEO3 Video Generation Information</h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <p className="mb-2">VEO3 video generation is available for YouTube, Facebook, LinkedIn, and X posts with these specifications:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li><strong>Aspect Ratio:</strong> 16:9 only (1920×1080)</li>
+                      <li><strong>Duration:</strong> Fixed 8 seconds</li>
+                      <li><strong>Quality:</strong> 1080p professional cinematic</li>
+                      <li><strong>Instagram:</strong> Currently not supported due to VEO3's 16:9 limitation vs Instagram's 9:16 requirement</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

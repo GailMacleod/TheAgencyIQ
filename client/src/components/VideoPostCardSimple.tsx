@@ -452,7 +452,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
           )}
           {onApprovePost && post.status !== 'approved' && (
             <Button
-              onClick={() => onApprovePost(parseInt(post.id))}
+              onClick={() => onApprovePost(post.id)}
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 shadow-sm hover:shadow-md transition-all duration-200"
             >
