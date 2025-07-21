@@ -10,6 +10,7 @@ import GrokWidget from "@/components/grok-widget";
 import UserMenu from "@/components/user-menu";
 import agencyLogoPath from "@assets/agency_logo_1024x1024 (2)_1752385824604.png";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
+import HorizontalNavigation from "@/components/HorizontalNavigation";
 
 export default function Splash() {
   const [location] = useLocation();
@@ -201,68 +202,8 @@ export default function Splash() {
           </div>
         </div>
       </section>
-      {/* Features Section */}
-      <section id="features" className="py-8 sm:py-16 bg-white">
-        <div className="container-atomiq">
-          <div className="text-center space-y-2 sm:space-y-4 mb-8 sm:mb-12 px-4 sm:px-0">
-            
-            <h3 className="text-2xl sm:text-4xl md:text-5xl font-bold text-[#3b5cff]">6 Simple Steps </h3>
-            <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto">
-              Our AI-powered platform handles your entire social media workflow with modern technology and intelligent automation
-            </p>
-          </div>
-
-          <div className="features-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#3250fa]/30 hover:scale-105">
-              <div className="flex justify-center mb-4">
-                <AnimatedIcon icon={Target} colorScheme="blue" size="md" />
-              </div>
-              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Define Brand</h4>
-              <p className="text-sm text-[#3250fa] font-medium">Resonate with customers</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#ff538f]/30 hover:scale-105">
-              <div className="flex justify-center mb-4">
-                <AnimatedIcon icon={Users} colorScheme="pink" size="md" />
-              </div>
-              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Connect Accounts</h4>
-              <p className="text-sm text-[#ff538f] font-medium"> Post to your social accounts.</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#00f0ff]/30 hover:scale-105">
-              <div className="flex justify-center mb-4">
-                <AnimatedIcon icon={Zap} colorScheme="cyan" size="md" />
-              </div>
-              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Generate Content</h4>
-              <p className="text-sm text-[#00f0ff] font-medium">Auto copywriting and video generation</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#3250fa]/30 hover:scale-105">
-              <div className="flex justify-center mb-4">
-                <AnimatedIcon icon={Calendar} colorScheme="purple" size="md" />
-              </div>
-              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Auto Schedule Posts</h4>
-              <p className="text-sm text-[#3250fa] font-medium">Aligned with local events</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#00f0ff]/30 hover:scale-105">
-              <div className="flex justify-center mb-4">
-                <AnimatedIcon icon={BarChart3} colorScheme="cyan" size="md" />
-              </div>
-              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Track Analytics</h4>
-              <p className="text-sm text-[#00f0ff] font-medium">See what works</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#ff538f]/30 hover:scale-105">
-              <div className="flex justify-center mb-4">
-                <AnimatedIcon icon={Sparkles} colorScheme="gradient" size="md" />
-              </div>
-              <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Monitor Strategy</h4>
-              <p className="text-sm text-[#ff538f] font-medium">Stay ahead</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Horizontal Navigation Section */}
+      <HorizontalNavigation />
       {/* Footer */}
       <footer className="bg-card border-t">
         <div className="container-atomiq py-16">
