@@ -40,16 +40,7 @@ const NAV_ITEMS: NavItem[] = [
     description: "Connect Accounts",
     requiresSubscription: true,
   },
-  {
-    id: "publish",
-    label: "Publish",
-    icon: Send,
-    route: "/schedule", // Same as schedule but focused on publishing
-    description: "Publish Posts",
-    requiresSubscription: true,
-    requiresBrandPurpose: true,
-    requiresPlatformConnection: true,
-  },
+
   {
     id: "analytics",
     label: "Analytics",
