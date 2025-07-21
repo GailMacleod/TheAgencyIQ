@@ -1991,8 +1991,8 @@ Share this with another Queensland business owner who needs to see this! 🤝
       
       // Professional visual theme selection based on ORIGINAL prompt content
       let originalPrompt = '';
-      if (editedText && editedText.trim()) {
-        originalPrompt = editedText.toLowerCase();
+      if (typeof prompt === 'string' && prompt.trim()) {
+        originalPrompt = prompt.toLowerCase();
       } else if (prompt && typeof prompt === 'object' && prompt.content) {
         originalPrompt = prompt.content.toLowerCase();
       } else if (typeof prompt === 'string') {
