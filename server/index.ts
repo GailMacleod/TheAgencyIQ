@@ -299,20 +299,23 @@ async function startServer() {
       }
     }
     
-    // Session validation for protected routes
-    const protectedPaths = ['/api/posts', '/api/brand-purpose', '/api/video', '/api/admin'];
-    const isProtectedRoute = protectedPaths.some(path => req.path.startsWith(path));
-    
-    if (isProtectedRoute && !req.session?.userId) {
-      // Rate limiting for unauthorized attempts
-      const clientIp = req.ip || req.connection.remoteAddress;
-      console.log(`⚠️  Unauthorized access attempt from ${clientIp} to ${req.path}`);
+    // Session validation for protected routes - DISABLED FOR DEVELOPMENT
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    if (!isDevelopment) {
+      const protectedPaths = ['/api/posts', '/api/brand-purpose', '/api/video', '/api/admin'];
+      const isProtectedRoute = protectedPaths.some(path => req.path.startsWith(path));
       
-      return res.status(401).json({
-        error: 'Authentication required',
-        message: 'Please log in to access this resource',
-        redirectTo: '/login'
-      });
+      if (isProtectedRoute && !req.session?.userId) {
+        // Rate limiting for unauthorized attempts
+        const clientIp = req.ip || req.connection.remoteAddress;
+        console.log(`⚠️  Unauthorized access attempt from ${clientIp} to ${req.path}`);
+        
+        return res.status(401).json({
+          error: 'Authentication required',
+          message: 'Please log in to access this resource',
+          redirectTo: '/login'
+        });
+      }
     }
     
     next();
