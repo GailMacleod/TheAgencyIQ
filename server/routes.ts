@@ -2498,6 +2498,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Quota status endpoint - Fix for unhooked quota leaks (404 errors)
+  app.get('/api/quota-status', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      const quotaInfo = await quotaManager.getUserQuota(userId);
+      res.json(quotaInfo);
+    } catch (error: any) {
+      console.error('Quota status error:', error);
+      res.status(500).json({ error: 'Failed to get quota status' });
+    }
+  });
+
   // OAuth token refresh endpoint for automatic token validation and refresh
   app.post("/api/oauth/refresh/:platform", async (req, res) => {
     try {
