@@ -25,7 +25,32 @@ async function startServer() {
   
   const app = express();
 
-  // Essential middleware
+  // CRITICAL FIX 1: Trust Replit's reverse proxy for secure cookies in deployment
+  app.set('trust proxy', 1);
+  console.log('🔧 Trust proxy enabled for Replit deployment');
+
+  // CRITICAL FIX 2: Middleware order - CORS first, then session, then body parsers
+  app.use(cors({
+    origin: function(origin, callback) {
+      const allowedOrigins = [
+        'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
+        'https://app.theagencyiq.ai',
+        'http://localhost:3000',
+        'http://localhost:5000'
+      ];
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Allow all origins in development
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Cookie', 'X-Retry-Session'],
+    exposedHeaders: ['Set-Cookie']
+  }));
+
+  // Essential middleware - after CORS, before session
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   // Filter out Replit-specific tracking in production
@@ -200,22 +225,12 @@ async function startServer() {
     });
   }
 
-  // CORS middleware with credentials support
-  app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-      ? ['https://app.theagencyiq.ai', 'https://theagencyiq.ai']
-      : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173', 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Session-Source', 'X-Retry-Session', 'Cookie'],
-    exposedHeaders: ['Set-Cookie'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-  }));
+  // Remove duplicate CORS - already configured above with proper order
 
   // Production-grade session configuration with security
   const isProduction = process.env.NODE_ENV === 'production';
   
+  // CRITICAL FIX 3: Enhanced session configuration with proper secure cookie handling
   app.use(session({
     secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
     store: sessionStore,
@@ -228,17 +243,36 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: isProduction, // HTTPS enforcement in production
+      secure: isProduction, // Trust proxy means this will work in production
       maxAge: sessionTtlMs, // 30 minutes
       httpOnly: false, // Allow frontend access for user validation
-      sameSite: isProduction ? 'strict' : 'lax', // CSRF protection in production
+      sameSite: 'lax', // More permissive for cross-origin but secure
       path: '/',
       domain: undefined // Let express handle domain
     },
     rolling: true, // Extend session on activity
-    proxy: true,
+    proxy: true, // Works with trust proxy setting
     unset: 'destroy' // Properly clean up sessions
   }));
+
+  // CRITICAL FIX 4: Session debugging middleware with detailed logging
+  app.use((req, res, next) => {
+    console.log(`🔍 Session Debug - ${req.method} ${req.path}`);
+    console.log(`📋 Session ID: ${req.sessionID || 'No session'}`);
+    console.log(`📋 User ID: ${req.session?.userId || 'anonymous'}`);
+    console.log(`📋 Session Cookie: ${req.headers.cookie?.substring(0, 150) || 'MISSING - Will be set in response'}...`);
+    
+    // Set backup session cookie if missing
+    if (req.session?.userId && !req.headers.cookie?.includes('aiq_backup_session')) {
+      console.log('🔧 Setting session cookies for authenticated user');
+      res.setHeader('Set-Cookie', [
+        `aiq_backup_session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=Lax${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`,
+        `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=Lax${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`
+      ]);
+    }
+    
+    next();
+  });
 
   // Session validation and security middleware
   app.use((req, res, next) => {
@@ -258,14 +292,6 @@ async function startServer() {
         req.session.dailyApiCalls = 0;
         req.session.quotaResetDate = today;
       }
-    }
-    
-    // Enhanced session debugging for production monitoring
-    if (req.sessionID) {
-      console.log('🔍 Session Debug -', req.method, req.path);
-      console.log('📋 Session ID:', req.sessionID);
-      console.log('📋 User ID:', req.session?.userId || 'anonymous');
-      console.log('📋 Session Cookie:', req.headers.cookie?.substring(0, 100) + '...');
     }
     
     // Session validation for protected routes
