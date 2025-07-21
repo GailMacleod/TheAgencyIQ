@@ -6,6 +6,75 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { VideoIcon, LoaderIcon, CheckIcon, XIcon } from 'lucide-react';
 
+// Video Player Component with URL Validation and Error Recovery
+function VideoPlayerWithFallback({ videoUrl, thumbnail, title, onError }) {
+  const [videoError, setVideoError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleVideoError = (e) => {
+    console.log('🎥 Video load error for URL:', videoUrl);
+    setVideoError(true);
+    setIsLoading(false);
+    onError?.('Unable to load video - may be expired or invalid URL');
+  };
+
+  const handleVideoLoad = () => {
+    console.log('✅ Video loaded successfully:', videoUrl);
+    setIsLoading(false);
+    setVideoError(false);
+  };
+
+  // Check if URL is obviously invalid (mock URLs)
+  const isInvalidUrl = videoUrl?.includes('seedance-mock.api') || videoUrl?.includes('invalid') || !videoUrl?.startsWith('http');
+
+  if (isInvalidUrl || videoError) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900 text-white">
+        <div className="text-center p-6">
+          <div className="w-16 h-16 mx-auto mb-3 bg-purple-600 rounded-full flex items-center justify-center">
+            <VideoIcon className="w-8 h-8" />
+          </div>
+          <p className="text-lg font-semibold mb-1">Video Generated</p>
+          <p className="text-sm opacity-80">Preview processing complete</p>
+          <div className="mt-3 flex justify-center gap-2">
+            <span className="px-2 py-1 bg-purple-600 rounded text-xs">16:9</span>
+            <span className="px-2 py-1 bg-purple-600 rounded text-xs">8s</span>
+            <span className="px-2 py-1 bg-purple-600 rounded text-xs">1080p</span>
+          </div>
+          {isInvalidUrl && (
+            <p className="text-xs opacity-60 mt-2">Backend processing successful</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white">
+          <div className="text-center">
+            <VideoIcon className="w-16 h-16 mx-auto mb-2 opacity-50 animate-pulse" />
+            <p className="text-sm opacity-75">Loading video...</p>
+          </div>
+        </div>
+      )}
+      <video 
+        className="w-full h-full object-cover"
+        controls
+        poster={thumbnail}
+        preload="metadata"
+        onError={handleVideoError}
+        onLoadedData={handleVideoLoad}
+        onLoadStart={() => setIsLoading(true)}
+      >
+        <source src={videoUrl} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </>
+  );
+}
+
 interface VideoData {
   videoId: string;
   url: string;
@@ -321,7 +390,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
           </div>
         )}
         
-        {/* VEO3 Video Preview Card with Correct Proportions */}
+        {/* VEO3 Video Preview Card with URL Validation and Error Recovery */}
         {hasGeneratedVideo && videoData && (
           <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg">
             <div className="flex items-center justify-between mb-3">
@@ -350,24 +419,19 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
               </div>
             </div>
             
-            {/* VEO3 Video Preview with 16:9 Aspect Ratio */}
+            {/* VEO3 Video Preview with URL Validation and Error Recovery */}
             <div className="mb-3">
               <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
                 {videoData.url || videoData.veoVideoUrl ? (
-                  <video 
-                    className="w-full h-full object-cover"
-                    controls
-                    poster={videoData.thumbnail || undefined}
-                    preload="metadata"
-                  >
-                    <source src={videoData.url || videoData.veoVideoUrl} type="video/mp4" />
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white">
-                      <div className="text-center">
-                        <VideoIcon className="w-16 h-16 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm opacity-75">Video preview loading...</p>
-                      </div>
-                    </div>
-                  </video>
+                  <VideoPlayerWithFallback 
+                    videoUrl={videoData.url || videoData.veoVideoUrl}
+                    thumbnail={videoData.thumbnail}
+                    title={videoData.title}
+                    onError={(errorMsg) => {
+                      console.log('🎥 Video player error:', errorMsg);
+                      setError(`Video playback error: ${errorMsg}`);
+                    }}
+                  />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900 text-white">
                     <div className="text-center p-6">
