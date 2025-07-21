@@ -88,6 +88,7 @@ interface VideoData {
   format: string;
   artDirected?: boolean;
   veoGenerated?: boolean;
+  veo2Generated?: boolean;
   artDirectorPreview?: boolean;
   strategicIntent?: string;
   visualTheme?: string;
@@ -95,6 +96,9 @@ interface VideoData {
   thumbnail?: string;
   width?: number;
   height?: number;
+  fromCache?: boolean;
+  cacheAge?: number;
+  generationTime?: number;
 }
 
 interface Post {
@@ -588,3 +592,53 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
 
 // Default export for the simplified video post card component
 export default VideoPostCardSimple;
+
+// Mobile responsiveness CSS for video preview components
+const mobileStyles = `
+  /* Mobile responsiveness for video preview cards */
+  @media (max-width: 768px) {
+    .video-preview-card {
+      flex-direction: column;
+      padding: 12px;
+    }
+    
+    .video-preview-card .video-container {
+      width: 100%;
+      max-height: 200px;
+      margin-bottom: 12px;
+    }
+    
+    .video-preview-card .video-actions {
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .video-preview-card .video-actions button {
+      width: 100%;
+      min-height: 44px;
+    }
+    
+    .video-preview-card .platform-badge {
+      font-size: 12px;
+      padding: 4px 8px;
+    }
+    
+    .video-preview-card .video-specs {
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    
+    .video-preview-card .video-specs span {
+      font-size: 10px;
+      padding: 2px 6px;
+    }
+  }
+`;
+
+// Inject mobile styles if not already present
+if (typeof document !== 'undefined' && !document.getElementById('video-mobile-styles')) {
+  const styleSheet = document.createElement('style');
+  styleSheet.id = 'video-mobile-styles';
+  styleSheet.textContent = mobileStyles;
+  document.head.appendChild(styleSheet);
+}
