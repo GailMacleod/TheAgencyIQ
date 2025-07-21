@@ -8,11 +8,21 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // PostQuotaService will be imported dynamically when needed
 
 // Veo3 API configuration - Google AI Studio Integration
-const VEO3_MODEL = 'gemini-2.0-flash-exp';
-const VEO3_VIDEO_MODEL = 'gemini-2.0-flash-exp';
+const VEO3_MODEL = 'gemini-1.5-flash'; // Using stable model that works
+const VEO3_VIDEO_MODEL = 'gemini-1.5-flash';
 
-// Initialize Google AI client
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_KEY);
+// Initialize Google AI client with error checking
+let genAI;
+try {
+  if (!process.env.GOOGLE_AI_STUDIO_KEY) {
+    console.error('❌ GOOGLE_AI_STUDIO_KEY not found in environment');
+    throw new Error('Google AI Studio API key is required');
+  }
+  genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_KEY);
+  console.log('✅ Google AI client initialized successfully');
+} catch (error) {
+  console.error('❌ Failed to initialize Google AI client:', error.message);
+}
 
 // Content filtering patterns for compliance
 const COMPLIANCE_FILTERS = {
@@ -297,7 +307,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       
       // Generate content using the cache
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: VEO3_MODEL, // Using working gemini-1.5-flash
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 800,
@@ -334,7 +344,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       
       // Fallback to implicit caching approach with enhanced error handling
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: VEO3_MODEL, // Using working gemini-1.5-flash
         generationConfig: {
           temperature: enhancedError.adjustedTemperature || 0.7,
           maxOutputTokens: enhancedError.adjustedTokens || 800,
@@ -391,7 +401,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       // Create new session-optimized cache with extended TTL for active users
       console.log(`🔄 Creating session-optimized cache for user ${userId}...`);
       const cache = await genAI.caches?.create({
-        model: 'gemini-2.5-flash',
+        model: VEO3_MODEL, // Using working gemini-1.5-flash
         display_name: cacheDisplayName,
         system_instruction: systemInstruction,
         contents: [{
@@ -1449,8 +1459,12 @@ Share this with another Queensland business owner who needs to see this! 🤝
             // Enhanced MayorkingAI-style prompt for Veo3
             cinematicPrompt = VideoService.enhancePromptForVeo3(prompt);
             
-            // Use explicit caching for maximum cost savings and performance
-            const result = await VideoService.generateWithExplicitCaching(cinematicPrompt, strategicIntent, googleAI);
+            // Use working Google AI model with proper error handling
+            console.log('🚀 Initializing Gemini model...');
+            const model = googleAI.getGenerativeModel({ model: VEO3_MODEL }); // Using working gemini-1.5-flash
+            
+            console.log('📝 Generating video content with Google AI...');
+            const result = await model.generateContent(cinematicPrompt);
             
             if (result && result.response) {
               // Google AI returned response with cinematic direction
