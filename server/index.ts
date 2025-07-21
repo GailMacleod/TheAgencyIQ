@@ -2,6 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import path from 'path';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
@@ -51,6 +52,7 @@ async function startServer() {
   }));
 
   // Essential middleware - after CORS, before session
+  app.use(cookieParser()); // PRECISION FIX: Add cookie parser for req.cookies
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   // Filter out Replit-specific tracking in production
@@ -243,10 +245,10 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: isProduction, // Trust proxy means this will work in production
+      secure: true, // PRECISION FIX: Required for sameSite none and Replit HTTPS
       maxAge: sessionTtlMs, // 30 minutes
       httpOnly: false, // Allow frontend access for user validation
-      sameSite: 'lax', // More permissive for cross-origin but secure
+      sameSite: 'none', // PRECISION FIX: Allow cross-origin cookies in Replit
       path: '/',
       domain: undefined // Let express handle domain
     },
@@ -261,6 +263,9 @@ async function startServer() {
     console.log(`📋 Session ID: ${req.sessionID || 'No session'}`);
     console.log(`📋 User ID: ${req.session?.userId || 'anonymous'}`);
     console.log(`📋 Session Cookie: ${req.headers.cookie?.substring(0, 150) || 'MISSING - Will be set in response'}...`);
+    
+    // PRECISION FIX: Add detailed cookie debugging as requested
+    console.log('Cookie:', req.cookies);
     
     // Set backup session cookie if missing
     if (req.session?.userId && !req.headers.cookie?.includes('aiq_backup_session')) {
