@@ -352,7 +352,7 @@ export default function Splash() {
                 Security Policy
               </a>
               <span className="hidden sm:block">•</span>
-              <span className="text-green-600 font-medium">Contact Support - support@theagencyiq.ai</span>
+              <span className="text-green-600 font-medium">Contact Support - support@theagencyiq.ai (your little helper will need your email address as well)</span>
             </div>
             <p className="text-muted-foreground">
               &copy; 2024 Macleodglba trading as The AgencyIQ. All rights reserved.
