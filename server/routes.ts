@@ -11101,14 +11101,17 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         console.log('🔧 Session saved for video generation');
       }
       
-      const { postContent, platform, userId } = req.body;
+      const { postContent, strategicIntent, platform, userId } = req.body;
       
-      if (!postContent || !platform) {
+      if ((!postContent && !strategicIntent) || !platform) {
         return res.status(400).json({ 
           success: false, 
-          error: 'Missing postContent or platform' 
+          error: 'Missing postContent/strategicIntent or platform' 
         });
       }
+      
+      // Use strategicIntent as fallback content if postContent not provided
+      const contentForGeneration = postContent || strategicIntent || 'Queensland business video content';
 
       // Get authenticated user for prompt variety tracking
       const authenticatedUserId = req.session?.userId || userId;
@@ -11147,7 +11150,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       // Enhanced backend logging for debugging (no frontend display)
       console.log('🎬 Video prompt generation started:', { 
         userId: authenticatedUserId,
-        postContent: postContent.substring(0, 50), 
+        postContent: contentForGeneration ? contentForGeneration.substring(0, 50) : 'N/A', 
         platform, 
         brandName: brandData?.brandName,
         hasJTBD: !!brandData?.jobToBeDone,
@@ -11155,7 +11158,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       });
       
       // Enhanced with Grok copywriter for witty, engaging content
-      const result = await VideoService.generateVideoPromptsWithGrokCopywriter(postContent, platform, brandData, authenticatedUserId);
+      const result = await VideoService.generateVideoPromptsWithGrokCopywriter(contentForGeneration, platform, brandData, authenticatedUserId);
       
       // Enhanced backend result logging
       console.log('🎯 Video prompt generation completed:', {
@@ -11310,66 +11313,6 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       res.status(500).json({ 
         success: false, 
         error: 'Publishing failed' 
-      });
-    }
-  });
-
-  // ENHANCED VIDEO GENERATION ENDPOINT - VEO3 INTEGRATION
-  app.post("/api/video/render", requireAuth, async (req: any, res) => {
-    try {
-      const { prompt, editedText, platform, brandPurpose } = req.body;
-      const userId = req.session.userId;
-      
-      console.log(`🎬 Enhanced VEO3 video generation requested for ${platform}`);
-      
-      // Import video service
-      const VideoService = (await import('./videoService')).default;
-      
-      // Generate enhanced VEO3 video with brand integration
-      const result = await VideoService.renderVideo(
-        prompt, 
-        editedText, 
-        platform, 
-        brandPurpose, 
-        req.body.postContent
-      );
-      
-      if (result.success) {
-        console.log(`✅ Enhanced VEO3 video generation successful for ${platform}`);
-        res.json({
-          success: true,
-          videoData: {
-            id: result.videoId,
-            url: result.url || result.videoUrl,
-            videoUrl: result.videoUrl,
-            title: result.title,
-            description: result.description,
-            duration: result.duration,
-            aspectRatio: result.aspectRatio,
-            quality: result.quality,
-            size: result.size,
-            veo3Generated: result.veo3Generated,
-            enhanced: result.enhanced,
-            realVideo: result.realVideo,
-            strategicIntent: result.strategicIntent,
-            postCopy: result.postCopy,
-            platform: platform,
-            generationTime: result.generationTime,
-            note: result.note
-          }
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          error: result.message || 'VEO3 video generation failed'
-        });
-      }
-      
-    } catch (error: any) {
-      console.error('❌ Enhanced VEO3 video generation failed:', error);
-      res.status(500).json({
-        success: false,
-        error: 'VEO3 video generation temporarily unavailable'
       });
     }
   });

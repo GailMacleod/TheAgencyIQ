@@ -30,7 +30,7 @@ export class QuotaManager {
 
       // Check current usage from Replit database
       try {
-        const Database = require('@replit/database');
+        const { Database } = await import('@replit/database');
         const quotaDb = new Database();
         
         const today = new Date().toISOString().split('T')[0];
@@ -66,7 +66,7 @@ export class QuotaManager {
   // Increment video usage after successful generation
   static async incrementVideoUsage(userId: number): Promise<void> {
     try {
-      const Database = require('@replit/database');
+      const { Database } = await import('@replit/database');
       const quotaDb = new Database();
       
       const today = new Date().toISOString().split('T')[0];
@@ -95,7 +95,7 @@ export class QuotaManager {
       const plan = user.subscriptionPlan || 'free';
       const limits = this.quotaLimits[plan as keyof typeof this.quotaLimits] || this.quotaLimits.free;
 
-      const Database = require('@replit/database');
+      const { Database } = await import('@replit/database');
       const quotaDb = new Database();
       
       const today = new Date().toISOString().split('T')[0];
@@ -121,7 +121,7 @@ export class QuotaManager {
   // Increment API usage
   static async incrementApiUsage(userId: number): Promise<void> {
     try {
-      const Database = require('@replit/database');
+      const { Database } = await import('@replit/database');
       const quotaDb = new Database();
       
       const today = new Date().toISOString().split('T')[0];
@@ -150,7 +150,7 @@ export class QuotaManager {
       const plan = user.subscriptionPlan || 'free';
       const limits = this.quotaLimits[plan as keyof typeof this.quotaLimits] || this.quotaLimits.free;
 
-      const Database = require('@replit/database');
+      const { Database } = await import('@replit/database');
       const quotaDb = new Database();
       
       const today = new Date().toISOString().split('T')[0];

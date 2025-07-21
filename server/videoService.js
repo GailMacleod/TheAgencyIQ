@@ -2023,7 +2023,7 @@ Share this with another Queensland business owner who needs to see this! 🤝
       
       const renderTime = Math.floor((Date.now() - startTime) / 1000);
       
-      // Generate authentic Art Director video
+      // Generate authentic Art Director video using the local function
       const generatedVideo = await generateArtDirectorVideo(selectedTheme, strategicIntent, creativeDirection, platform);
       
       console.log(`🎬 ✅ Art Director Production Complete: Custom ${selectedTheme} video in ${renderTime}s`);
@@ -2063,32 +2063,9 @@ Share this with another Queensland business owner who needs to see this! 🤝
     } catch (error) {
       console.error('🎬 Primary professional video generation error:', error);
       
-      // Emergency fallback with authentic Art Director generation
-      const emergencyTheme = 'professional corporate environments';
-      const emergencyVideo = await generateArtDirectorVideo(emergencyTheme, 'Emergency business transformation', 'Queensland SME growth through professional automation systems. Dramatic office scenes with business success visualization.', platform);
-      
-      return {
-        success: true,
-        videoId: emergencyVideo.videoId,
-        url: emergencyVideo.url,
-        title: emergencyVideo.title,
-        description: emergencyVideo.description,
-        duration: 10, // 10 seconds exactly
-        quality: '1080p',
-        format: 'mp4',
-        aspectRatio: emergencyVideo.aspectRatio,
-        size: '1.2MB',
-        platform: platform,
-        platformCompliant: true,
-        customGenerated: true,
-        emergency: true,
-        message: '✅ Emergency Art Director video generated successfully',
-        // Emergency fallback - no Grok enhancements
-        grokEnhanced: false,
-        postCopy: 'Emergency Queensland business video content',
-        editable: true,
-        wittyStyle: false
-      };
+      // Emergency fallback with enhanced generation
+      console.log('🔄 Using emergency fallback for video generation');
+      return await this.generateEnhancedFallback('professional business transformation', platform, brandPurpose);
     }
   }
 
