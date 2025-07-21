@@ -57,32 +57,80 @@ class VideoService {
     };
   }
   
-  // Enhanced prompt formatting for Veo3 cinematic generation
-  static enhancePromptForVeo3(originalPrompt) {
-    // Use few-shot prompting with clear examples following Google's best practices
+  // ENHANCED: Research-Integrated Veo3 Prompt Training with Sound/Brand/CTA
+  static enhancePromptForVeo3(originalPrompt, brandData = {}) {
+    const brandName = brandData?.brandName || '[Company Name]';
+    const brandUrl = brandData?.website || '[URL]';
+    
+    // Research-integrated prompt with JTBD separation, Queensland psychology, and sound alignment
     const enhancedPrompt = `
-You are a world-class cinematic video director creating 8-second business transformation videos. Follow these proven examples:
+You are a world-class cinematic video director creating 8-second Queensland business transformation videos with native audio sync and brand integration. Follow research-based JTBD frameworks and Queensland consumer psychology:
 
-EXAMPLE 1:
-Business Context: "Tech startup discovers automation"
-Video Script: "8-second sequence: Wide shot cluttered desk with papers (0-2s), zoom to founder's stressed face at computer (2-3s), close-up automation interface appearing (3-4s), wide push-in as workflows organize chaos (4-6s), final shot founder smiling with clean workspace (6-8s). 16:9 cinematic, dramatic lighting."
+RESEARCH FOUNDATION (Strategyn/HBR JTBD vs Campaigns):
+- JTBD focused on emotional needs (separate from tactical campaigns)
+- Queensland consumers value emotional retention/community over price
+- Local slang increases SMB engagement by 25%+ ("fair dinkum", "no worries", "crook as Rookwood")
+- Origin rivalry hooks and community pride drive viral engagement
 
-EXAMPLE 2: 
-Business Context: "Professional builds authority"
-Video Script: "8-second transformation: Opens with consultant invisible in crowd (0-1s), tracks to laptop showing expertise content (1-3s), dynamic social engagement montage (3-5s), wide reveal presenting to audience (5-7s), close-up confident authority (7-8s). High-speed tracking, photorealistic."
+EXAMPLE 1 (JTBD Separation + Sound + Brand + CTA):
+Business Context: "Queensland bakery owner struggles with heat stress"
+JTBD: "Whisk QLDer from heat grind to Paris escape (emotional transport, not campaign tactic)"
+Video Script: "8-second cinematic sequence: QLD owner sighs in oppressive heat, sweat on brow (pain: grind like losing Origin) (0-2s), close-up bite into product with eyes closing in bliss (2-4s), dreamy fade to Parisian café ambiance (JTBD: emotional escape) (4-6s), wide push-in owner smiling with confidence overlay '${brandName}' logo (6-8s). 
+SOUND: Orchestral swell with Aussie voiceover 'Fair dinkum escape at ${brandName} – visit ${brandUrl}!' synced to bite action.
+BRAND: Logo overlay at (6s), company name in voiceover.
+CTA: 'Visit ${brandUrl}' in voiceover and text overlay."
+
+EXAMPLE 2 (Queensland Psychology + Event Alignment + Sound):
+Business Context: "Professional builds authority during Ekka season"
+JTBD: "Transform invisible expertise into magnetic recognition (separate from ad campaigns)"
+Video Script: "8-second transformation: Opens consultant lost in Ekka crowd, invisible (pain: no worries becomes worry) (0-2s), drone push-in to laptop showing strategic content creation (2-4s), quick-cut social engagement montage with Origin energy (4-6s), wide reveal presenting to packed audience with '${brandName}' banner (6-8s).
+SOUND: Building orchestral with local radio announcer voice 'She'll be right at ${brandName} – your expertise deserves recognition! Book now at ${brandUrl}!'
+BRAND: Company banner visible, name in voiceover twice.
+EVENT ALIGNMENT: Ekka vibes, crowd energy mirrors festival atmosphere.
+CTA: 'Book now at ${brandUrl}' with action-sync to applause."
+
+CHAIN-OF-THOUGHT PROCESS:
+1. Generate base JTBD (emotional need, not campaign)
+2. Refine with Queensland cultural elements (slang, sports, local events)
+3. Align to video narrative with precise sound sync
+4. Integrate brand name naturally (2-3 mentions)
+5. Add compelling CTA with URL call-to-action
 
 Now create for:
 Business Context: "${originalPrompt}"
+Brand: ${brandName}
+Website: ${brandUrl}
 
-Video Script: [Provide detailed 8-second breakdown with specific timing, camera movements, and MayorkingAI-style visual progression. Must be 16:9 format with high-speed tracking, wide push-in reveals, close-up intensity, dramatic lighting, suitable for Queensland business context.]
+REQUIREMENTS:
+- JTBD Analysis: Separate emotional need from tactical campaign
+- Queensland Integration: Use Aussie slang, Origin references, local event energy
+- Sound Design: Orchestral/emotional music with voiceover synced to key actions
+- Brand Integration: Logo overlay, company name 2-3x in voiceover
+- CTA Integration: Clear URL call-to-action in voiceover and text
+- Cultural Alignment: "Realise" (AU spelling), local expressions for relatability
+- Event Timing: Consider Ekka, Origin, school holidays for relevance
+
+Video Script: [Provide detailed 8-second breakdown with:
+- Precise timing (0-2s, 2-4s, 4-6s, 6-8s)
+- Camera movements (drone push-in, wide reveal, close-up intensity)
+- JTBD emotional arc (pain → discovery → transformation → success)
+- Sound sync ("with orchestral music and voiceover saying X synced to Y action")
+- Brand placement (logo at Xs, voiceover mentions)
+- CTA placement ("visit ${brandUrl}" in voiceover + text overlay)
+- Queensland context (setting, slang, local vibes)
+- Modern cinematography (watercolor fade, dynamic tracking)
+Must be 16:9, photorealistic, Queensland business appropriate.]
 
 CONSTRAINTS:
 - Exactly 8 seconds duration
-- 16:9 aspect ratio only  
-- MayorkingAI cinematic techniques
-- Professional Queensland business appropriate
+- 16:9 aspect ratio only
+- Native audio sync with dialogue/effects/music/voiceover
+- Brand name mentioned 2-3 times naturally
+- Clear CTA with URL in voiceover and visual
+- Australian spelling ("realise", "colour", etc.)
+- Queensland cultural elements for 25%+ engagement boost
 - No celebrities or copyrighted content
-- Photorealistic quality with dramatic lighting
+- Action-oriented generation prompts ("Generate:")
     `;
     
     return enhancedPrompt;
@@ -602,11 +650,14 @@ Your job is to create detailed video scripts with specific timing, camera moveme
     return alternativeTemplates[platform] || originalContent;
   }
 
-  // VEO3 MAYORKINGAI-STYLE CINEMATIC PROMPTS
+  // ENHANCED: Research-Integrated MayorkingAI Cinematic Prompts with Sound/Brand/CTA
   static generateCinematicVideoPrompts(postContent, platform, brandData) {
-    console.log(`🎬 Creating MayorkingAI-style cinematic prompts for ${platform}...`);
+    console.log(`🎬 Creating research-enhanced MayorkingAI cinematic prompts for ${platform}...`);
     
-    // Veo3 Platform specifications (16:9 ONLY, 8-second duration)
+    const brandName = brandData?.brandName || '[Company Name]';
+    const brandUrl = brandData?.website || '[URL]';
+    
+    // Veo3 Platform specifications (16:9 ONLY, 8-second duration) 
     const platformSpecs = {
       instagram: { ratio: '16:9', style: 'cinematic horizontal', duration: '8s', note: 'Coming Soon - 9:16 support' },
       youtube: { ratio: '16:9', style: 'cinematic horizontal', duration: '8s' },
@@ -615,105 +666,191 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       x: { ratio: '16:9', style: 'cinematic horizontal', duration: '8s' }
     };
     
-    const spec = platformSpecs[platform] || platformSpecs.youtube;
-    
-    // MayorkingAI-Style Business Transformation Archetypes
-    const cinematicScenarios = [
+    // RESEARCH-BASED: Queensland JTBD Transformation Archetypes (Strategyn/HBR separation)
+    const jtbdScenarios = [
       {
-        scenario: "Queensland SME Discovery Moment",
-        dramaticTension: "Stressed entrepreneur discovers automation breakthrough",
-        visualMetaphor: "Chaos organizing into flowing precision"
+        scenario: "Queensland Heat Escape Arc",
+        jtbdNeed: "Transport from grind to blissful relief (emotional, not campaign)",
+        painPoint: "Sweltering like losing Origin on home ground", 
+        gainOutcome: "Cool confidence like Maroons victory celebration",
+        qldSlang: "fair dinkum relief",
+        eventAlignment: "Ekka vibes with festival energy"
       },
       {
-        scenario: "Professional Authority Emergence", 
-        dramaticTension: "Expert transforms invisibility into magnetic presence",
-        visualMetaphor: "Lighthouse beam cutting through market fog"
+        scenario: "Invisible to Beacon Authority Arc", 
+        jtbdNeed: "Transform hidden expertise into magnetic recognition",
+        painPoint: "No worries becomes real worry about visibility",
+        gainOutcome: "Industry lighthouse cutting through market fog",
+        qldSlang: "she'll be right mate",
+        eventAlignment: "Origin rivalry energy for competitive edge"
       },
       {
-        scenario: "Digital Transformation Triumph",
-        dramaticTension: "Traditional business owner embraces future confidently",
-        visualMetaphor: "Bridge spanning from old-school to digital paradise"
+        scenario: "Tuckshop Innovation Arc",
+        jtbdNeed: "Elevate simple solutions to sophisticated systems",
+        painPoint: "Crook as Rookwood with outdated processes",
+        gainOutcome: "Banana Bender brilliance that works",
+        qldSlang: "bonzer breakthrough",
+        eventAlignment: "School holidays family business focus"
       },
       {
-        scenario: "Market Breakthrough Moment",
-        dramaticTension: "Unknown player becomes industry beacon overnight",
-        visualMetaphor: "Spotlight illuminating stage where once stood in shadows"
-      },
-      {
-        scenario: "Customer Loyalty Revolution",
-        dramaticTension: "Single transaction transforms into referral empire",
-        visualMetaphor: "Ripples expanding across business landscape"
+        scenario: "Sunrise Coast Breakthrough Arc",
+        jtbdNeed: "Dawn revelation transforming overnight success",
+        painPoint: "Lost in twilight of market confusion",
+        gainOutcome: "Golden hour opportunity illumination",
+        qldSlang: "beauty mate, absolute beauty",
+        eventAlignment: "Tourism season optimism"
       }
     ];
-    
-    // MayorkingAI Dramatic Lighting Techniques
-    const cinematicLighting = [
+
+    // SOUND DESIGN: Research-based audio elements for 25%+ engagement boost
+    const audioElements = [
       {
-        type: "High-speed tracking golden explosion",
-        visual: "golden light piercing through transformation moment, sparks cascading like falling stars",
-        emotion: "thrilling breakthrough, epic revelation"
+        type: "Orchestral Swell with Aussie Voiceover",
+        pattern: "Building orchestral music with authentic Queensland voiceover",
+        sync: "synced to key transformation moment",
+        cta: "realise your potential at ${brandName} – visit ${brandUrl}!"
       },
       {
-        type: "Wide push-in dramatic emergence",
-        visual: "camera pulls back revealing empire being born from single moment, dramatic low-angle shot rising",
-        emotion: "scope of transformation, destiny unfolding"
+        type: "Local Radio Energy with Action Sync", 
+        pattern: "Upbeat radio announcer style with community energy",
+        sync: "timed to visual breakthrough point",
+        cta: "book now at ${brandName} – fair dinkum results at ${brandUrl}!"
       },
       {
-        type: "Close-up intensity with burning determination",
-        visual: "eyes burning with determination as systems activate, screen glowing like portal",
-        emotion: "personal stakes, emotional intensity"
-      },
-      {
-        type: "Storm transformation with electric energy",
-        visual: "chaos transforms to order, lightning illuminating weathered hands crafting precision",
-        emotion: "mastery over chaos, professional triumph"
+        type: "Emotional Build with Origin Commentary Style",
+        pattern: "Sports commentary excitement building to crescendo",
+        sync: "matched to visual intensity peaks",
+        cta: "join the winners at ${brandName} – visit ${brandUrl} today!"
       }
     ];
-    
-    // Queensland Business Context Elements (for metaphorical depth)
-    const qldBusinessElements = [
-      "modern Queensland office with harbor views",
-      "Brisbane workshop transforming chaos to order", 
-      "Gold Coast conference room with strategic precision",
-      "Sunshine Coast creative space with innovation energy",
-      "Cairns business hub with tropical professionalism"
+
+    // Queensland Cultural Integration (UQ/KPMG research: community/emotional retention)
+    const culturalElements = [
+      "Brisbane riverfront office with city skyline",
+      "Gold Coast high-rise with ocean confidence", 
+      "Sunshine Coast innovation hub with natural light",
+      "Cairns tropical business environment",
+      "Toowoomba regional enterprise with community focus"
     ];
     
-    // Randomly select elements for variety
-    const selectedScenario = cinematicScenarios[Math.floor(Math.random() * cinematicScenarios.length)];
-    const selectedLighting = cinematicLighting[Math.floor(Math.random() * cinematicLighting.length)];
-    const selectedElement = qldBusinessElements[Math.floor(Math.random() * qldBusinessElements.length)];
+    // Randomly select research-based elements for variety and A/B testing
+    const selectedJTBD = jtbdScenarios[Math.floor(Math.random() * jtbdScenarios.length)];
+    const selectedAudio = audioElements[Math.floor(Math.random() * audioElements.length)];
+    const selectedSetting = culturalElements[Math.floor(Math.random() * culturalElements.length)];
     
-    // Generate MayorkingAI-style cinematic prompts - VEO3 OPTIMIZED
+    // Generate research-enhanced cinematic prompts with sound/brand/CTA integration
     const cinematicPrompts = [
       {
         id: 1,
-        title: "High-Speed Transformation Epic",
-        prompt: `High-speed camera tracking a Queensland business owner's hands as they activate automation systems, ${selectedLighting.visual}, close-up on determined eyes reflecting transformation success. Camera pulls back revealing ${selectedElement} transforming from chaos to flowing precision. ${selectedScenario.dramaticTension} - ${selectedScenario.visualMetaphor}. Thrilling, cinematic, photorealistic. 8-second duration.`,
-        postCopy: this.generateMayorkingCopy(postContent, platform, selectedScenario.scenario),
-        style: "high-speed-transformation",
-        editable: true
+        title: "JTBD High-Speed Transformation",
+        prompt: `Generate: 8-second cinematic sequence in ${selectedSetting}: QLD business owner experiencing ${selectedJTBD.painPoint} (0-2s), high-speed tracking camera captures moment of realisation with eyes widening (2-3s), drone push-in as ${selectedJTBD.jtbdNeed} unfolds with watercolor fade transition (3-5s), wide reveal showing ${selectedJTBD.gainOutcome} with ${brandName} logo overlay (5-6s), close-up confident smile with text "Visit ${brandUrl}" (6-8s). SOUND: ${selectedAudio.pattern} with voiceover "${selectedJTBD.qldSlang} - ${selectedAudio.cta}" ${selectedAudio.sync}. Modern cinematography, photorealistic, dramatic lighting. Include company logo and URL CTA.`,
+        postCopy: this.generateResearchEnhancedCopy(postContent, platform, selectedJTBD, brandName, brandUrl),
+        style: "jtbd-high-speed-transformation",
+        editable: true,
+        audioSync: true,
+        brandIntegrated: true,
+        ctaIncluded: true
       },
       {
         id: 2,
-        title: "Wide Push-in Business Genesis", 
-        prompt: `Wide push-in from lone figure silhouetted against modern business environment, sparks cascading like falling stars as innovation meets precision. Camera slowly rises from ground level revealing Queensland SME empire being born from breakthrough moment. ${selectedScenario.dramaticTension} with dramatic lighting effects. Professional triumph, photorealistic, cinematic. 8-second duration.`,
-        postCopy: this.generateMayorkingCopy(postContent, platform, selectedScenario.scenario),
-        style: "wide-push-business-genesis",
-        editable: true
+        title: "Queensland Community Connection Arc", 
+        prompt: `Generate: 8-second transformation with ${selectedJTBD.eventAlignment}: Opens with isolated figure in ${selectedSetting} feeling ${selectedJTBD.painPoint} (0-2s), wide push-in camera movement revealing community connections forming around ${brandName} (2-4s), dynamic montage of ${selectedJTBD.jtbdNeed} being fulfilled with Origin energy (4-6s), final shot community celebration with ${brandName} banner and ${brandUrl} text overlay (6-8s). SOUND: ${selectedAudio.pattern} with community voice saying "She'll be right at ${brandName} - realise your dreams at ${brandUrl}!" synced to celebration moment. Include logo placement and URL CTA with Australian spelling.`,
+        postCopy: this.generateResearchEnhancedCopy(postContent, platform, selectedJTBD, brandName, brandUrl),
+        style: "community-connection-arc",
+        editable: true,
+        audioSync: true,
+        brandIntegrated: true,
+        ctaIncluded: true
       },
       {
         id: 3,
-        title: "Close-up Intensity Breakthrough",
-        prompt: `Close-up on weathered hands gripping smartphone as business systems activate one by one, screen glowing like portal. Eyes burning with determination as ${selectedScenario.visualMetaphor} unfolds. ${selectedElement} visible in background as Queensland professional transforms invisible potential into visible success. Dramatic close-up, emotional intensity, photorealistic. 8-second duration.`,
-        postCopy: this.generateMayorkingCopy(postContent, platform, selectedScenario.scenario),
-        style: "close-up-breakthrough",
-        editable: true
+        title: "Cultural Breakthrough with Sound Sync",
+        prompt: `Generate: 8-second close-up intensity sequence: Weathered hands gripping device as ${selectedJTBD.painPoint} shows on screen (pain: crook as losing at home) (0-2s), extreme close-up eyes burning with determination as breakthrough interface appears (2-4s), pull back revealing ${selectedSetting} transformation with ${selectedJTBD.jtbdNeed} manifesting (4-6s), wide shot success celebration with ${brandName} logo prominently displayed and "Visit ${brandUrl}" call-to-action (6-8s). SOUND: Building orchestral with authentic Aussie voiceover "Fair dinkum mate, ${selectedJTBD.qldSlang} at ${brandName} - visit ${brandUrl} now!" precisely synced to moment of breakthrough. Include brand mentions, logo overlay, and action-oriented CTA.`,
+        postCopy: this.generateResearchEnhancedCopy(postContent, platform, selectedJTBD, brandName, brandUrl),
+        style: "cultural-breakthrough-sync",
+        editable: true,
+        audioSync: true,
+        brandIntegrated: true,
+        ctaIncluded: true
       }
     ];
     
-    console.log(`🎬 Created ${cinematicPrompts.length} MayorkingAI-style cinematic prompts for Veo3!`);
+    console.log(`🎬 Created ${cinematicPrompts.length} research-enhanced MayorkingAI prompts with sound/brand/CTA integration!`);
     return cinematicPrompts;
+  }
+
+  // ENHANCED: Research-based copy generation with JTBD separation and Queensland psychology
+  static generateResearchEnhancedCopy(originalContent, platform, jtbdData, brandName, brandUrl) {
+    const platformLimits = {
+      instagram: 400,
+      linkedin: 1300,
+      x: 280,
+      youtube: 600,
+      facebook: 2000
+    };
+    
+    const charLimit = platformLimits[platform] || 500;
+    
+    // Research-based copywriting templates aligned with video narrative
+    const enhancedCopyTemplates = {
+      instagram: `${jtbdData.qldSlang.charAt(0).toUpperCase() + jtbdData.qldSlang.slice(1)}! 🎬 ${originalContent.substring(0, 150)} 
+
+This Queensland business transformation captures that exact moment when ${jtbdData.jtbdNeed}. No more ${jtbdData.painPoint} - just ${jtbdData.gainOutcome}!
+
+Ready to realise your potential? Visit ${brandUrl} 
+
+#QLD #${jtbdData.eventAlignment.replace(/\s+/g, '')} #Transformation`,
+
+      linkedin: `Professional transformation in action: ${originalContent}
+
+This 8-second video demonstrates the precise moment when Queensland businesses experience their breakthrough - the transition from ${jtbdData.painPoint} to ${jtbdData.gainOutcome}.
+
+Research shows Queensland consumers value emotional retention and community connection over price competition. This transformation represents exactly that shift - addressing the core ${jtbdData.jtbdNeed} that drives sustainable business growth.
+
+Key insight: ${jtbdData.qldSlang} - authentic Queensland business success comes from understanding the emotional job your service performs, separate from traditional marketing campaigns.
+
+Ready to realise your business transformation? Connect with ${brandName} at ${brandUrl}
+
+#QLDBusinessSuccess #ProfessionalGrowth #BusinessTransformation`,
+
+      x: `${jtbdData.qldSlang}! Queensland businesses transforming ${jtbdData.painPoint} → ${jtbdData.gainOutcome}. 
+
+Real results at ${brandName}. Visit ${brandUrl} #QLDSuccess`,
+
+      youtube: `The moment everything changed for this Queensland business! 🎬
+
+${originalContent}
+
+This 8-second transformation captures the exact breakthrough moment - when ${jtbdData.jtbdNeed} becomes reality. From ${jtbdData.painPoint} to ${jtbdData.gainOutcome} with authentic Queensland business energy.
+
+${jtbdData.qldSlang} - this is how Queensland SMEs realise their potential!
+
+Ready for your transformation? Visit ${brandName} at ${brandUrl}
+
+👍 Like if you recognise this breakthrough moment
+🔔 Subscribe for more Queensland business success stories
+💬 Comment with your own transformation story
+
+#Queensland #BusinessTransformation #${jtbdData.eventAlignment.replace(/\s+/g, '')}`,
+
+      facebook: `Fair dinkum business transformation happening right here! 🎬
+
+${originalContent}
+
+This video captures that exact moment Queensland business owners know so well - when you realise ${jtbdData.jtbdNeed} and everything changes. No more ${jtbdData.painPoint}, just ${jtbdData.gainOutcome}.
+
+The research is clear: Queensland consumers connect with emotional stories and community authenticity. This transformation embodies exactly that - real business breakthrough with genuine local energy.
+
+${jtbdData.qldSlang} - this is how Queensland businesses realise their true potential!
+
+Want to experience your own transformation moment? Visit ${brandName} at ${brandUrl}
+
+Share this with another Queensland business owner who needs to see this! 🤝
+
+#QLDBusiness #Transformation #${jtbdData.eventAlignment.replace(/\s+/g, '')} #RealResults`
+    };
+    
+    return (enhancedCopyTemplates[platform] || enhancedCopyTemplates.instagram).substring(0, charLimit);
   }
 
   // Generate MayorkingAI copy for different business scenarios  
