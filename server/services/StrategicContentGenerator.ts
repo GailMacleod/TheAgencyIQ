@@ -8,7 +8,7 @@ import { storage } from '../storage';
 import { db } from '../db';
 import { posts } from '../../shared/schema';
 import { eq, and } from 'drizzle-orm';
-import { analyzeCMOStrategy, generateJobsToBeDoneAnalysis, createBrandDominationStrategy } from '../cmo-strategy';
+import { analyseCMOStrategy, generateJobsToBeDoneAnalysis, createBrandDominationStrategy } from '../cmo-strategy';
 import { generateContentCalendar } from '../grok';
 import OpenAI from 'openai';
 import { createHash } from 'crypto';
@@ -164,7 +164,7 @@ Focus on event-driven opportunities and optimal engagement windows for Queenslan
       response_format: { type: "json_object" }
     });
 
-    const plannerResult = JSON.parse(response.choices[0].message.content);
+    const plannerResult = JSON.parse(response.choices[0].message.content || '{}');
     return plannerResult.calendar || plannerResult.entries || [];
   }
 
@@ -245,7 +245,7 @@ Return JSON with:
         response_format: { type: "json_object" }
       });
 
-      const copyResult = JSON.parse(copyResponse.choices[0].message.content);
+      const copyResult = JSON.parse(copyResponse.choices[0].message.content || '{}');
       
       // Create proper date with time for scheduling
       const scheduledDate = new Date(entry.date);
@@ -275,11 +275,11 @@ Return JSON with:
       facebook: "Facebook: 400-1500 characters, community-focused tone with anime-influenced storytelling, encourage comments/shares, use engaging questions, Queensland local references, transform ordinary moments into epic celebrations, 'fair dinkum' authentic voice",
       instagram: "Instagram: 300-400 characters max, visual storytelling with transformation energy, relevant hashtags (#QueenslandSME #BusinessVisibility), strong call-to-action, anime-style wish-fulfillment narrative, local event alignment",
       linkedin: "LinkedIn: 700-1000 characters, professional B2B tone with heroic business journey narrative, industry insights told through transformation stories, thought leadership with Queensland cultural pride, networking focus using community celebration energy",
-      x: "X: 200-280 characters max, conversational and witty with anime transformation hooks, trending topics, hashtags, encourage retweets and engagement, bite-sized epic moments, Queensland slang integration",
+      x: "X: 200-280 characters max, conversational and witty with anime transformation hooks, trending topics, CRITICAL: X PLATFORM STRICT RULES: Maximum 280 characters, hashtags (#) COMPLETELY PROHIBITED (will be rejected), ONLY @ mentions allowed, clean engaging content without promotional tones or emojis, encourage retweets and engagement, bite-sized epic moments, Queensland slang integration",
       youtube: "YouTube: 500-600 characters, educational preview format with anime-influenced storytelling, encourage subscriptions, video content teasers that promise transformation journeys, Queensland community celebration vibes"
     };
     
-    return guidelines[platform] || "General: Engaging, authentic, conversion-focused content with Queensland context, anime-influenced transformation storytelling, step-by-step emotional journey from struggle to heroic success";
+    return guidelines[platform as keyof typeof guidelines] || "General: Engaging, authentic, conversion-focused content with Queensland context, anime-influenced transformation storytelling, step-by-step emotional journey from struggle to heroic success";
   }
 
   /**
@@ -307,8 +307,8 @@ Return JSON with:
         `The challenge facing Queensland SMEs today isn't just competition—it's invisibility. In a digital landscape where presence equals profit, many excellent businesses remain unseen, struggling to maintain consistent visibility while managing day-to-day operations.\n\nAt TheAgencyIQ, we've identified this critical gap: the difference between businesses that thrive and those that merely survive often comes down to strategic, consistent visibility. Our always-on beacon approach provides what enterprise brands have enjoyed for decades—presence, polish, and power—but scaled appropriately for growing SMEs.\n\nOur methodology focuses on validation, not just visibility. We understand that Queensland business owners need more than sporadic social media posts; they need a systematic approach to market presence that works even during their busiest periods.\n\nThe result? Businesses that show up professionally, strategically, and automatically, creating the kind of consistent market presence that drives sustainable growth.\n\nIf you're ready to transform your business visibility and stop being Queensland's best-kept secret, let's discuss how TheAgencyIQ can become your strategic visibility partner.\n\n#BusinessStrategy #QueenslandBusiness #MarketPresence #SMEGrowth`
       ],
       x: [
-        `Your Queensland SME is invisible. Silence is killing your growth.\n\nYou need what big brands have: presence, polish, power - without the army.\n\nTheAgencyIQ = your always-on beacon.\nNot just visibility, but VALIDATION.\n\nShow up professionally. Strategically. Automatically.\n\nStop being invisible. Start being seen.\n\n#QueenslandSMEs #StopBeingInvisible`,
-        `Queensland SME truth bomb:\n\nBeing the best-kept secret is killing your business.\n\nWhile you're busy delivering excellence, competitors with inferior products are stealing your market share through consistent visibility.\n\nTheAgencyIQ fixes this.\n\nPresence. Polish. Power.\nWithout the hassle.\n\n#VisibilityWins #QueenslandBusiness`
+        `Your Queensland SME is invisible. Silence is killing your growth.\n\nYou need what big brands have: presence, polish, power - without the army.\n\nTheAgencyIQ = your always-on beacon.\nNot just visibility, but VALIDATION.\n\nShow up professionally. Strategically. Automatically.\n\nStop being invisible. Start being seen.\n\n@TheAgencyIQ helps Queensland SMEs`,
+        `Queensland SME truth bomb:\n\nBeing the best-kept secret is killing your business.\n\nWhile you're busy delivering excellence, competitors with inferior products are stealing your market share through consistent visibility.\n\nTheAgencyIQ fixes this.\n\nPresence. Polish. Power.\nWithout the hassle.\n\n@TheAgencyIQ transforms visibility`
       ],
       youtube: [
         `Are you a Queensland SME feeling invisible? This video explains how silence is literally killing your business growth and what successful businesses do differently. Discover TheAgencyIQ's always-on beacon approach that gives you the presence, polish, and power of big brands without needing an entire marketing team. Learn how to show up professionally, strategically, and automatically - even when you're too busy to manage it yourself. Don't let your business stay invisible any longer. Click to learn more about transforming your visibility. #QueenslandBusiness #SMEGrowth #DigitalPresence`,
@@ -339,7 +339,7 @@ Return JSON with:
           scheduledFor: scheduledDate.toISOString(),
           strategicTheme: 'invisible-business-problem',
           businessCanvasPhase: this.getBusinessCanvasPhase(j),
-          engagementOptimisation: 'visibility-transformation',
+          engagementOptimization: 'visibility-transformation',
           conversionFocus: 'Stop Being Invisible',
           audienceSegment: this.getAudienceSegment(platform)
         };
@@ -627,9 +627,12 @@ Return JSON with:
       
       // Fallback Value Proposition Canvas based on TheAgencyIQ brand purpose
       return {
-        customerJobs: 'Growing Queensland businesses efficiently without manual marketing overhead',
-        painPoints: 'Time-consuming manual marketing, inconsistent presence, technical complexity, poor ROI',
-        gainCreators: 'Automated professional content, strategic positioning, measurable results, constant visibility'
+        customerJobs: ['Growing Queensland businesses efficiently without manual marketing overhead'],
+        painPoints: ['Time-consuming manual marketing', 'inconsistent presence', 'technical complexity', 'poor ROI'],
+        gainCreators: ['Automated professional content', 'strategic positioning', 'measurable results', 'constant visibility'],
+        products: ['Social media automation platform'],
+        painRelievers: ['Eliminates manual content creation', 'Ensures consistent online presence'],
+        valuePropositions: ['Always-on beacon for Queensland SMEs']
       };
     }
   }
@@ -913,7 +916,7 @@ Return JSON with:
         and(
           eq(posts.userId, userId),
           // Archive old test posts that are not recent drafts
-          posts.createdAt ? posts.createdAt < thirtyDaysAgo : false
+          posts.createdAt
         )
       );
     
