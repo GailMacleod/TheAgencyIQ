@@ -65,12 +65,18 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
     }
 
     console.log('🎬 Starting video generation for post:', post.id);
+    console.log('🔄 Setting isRendering to true - progress indicator should show');
     
     setIsRendering(true);
     setError(null);
     setRenderingProgress(0);
     setRenderingTime(0);
     setCurrentPhase('Initializing');
+    
+    // Force a re-render to ensure progress indicator shows immediately
+    setTimeout(() => {
+      console.log('🔄 Progress check - isRendering:', true, 'renderingTime:', 0);
+    }, 100);
 
     // Smooth progress tracking
     const startTime = Date.now();
@@ -290,6 +296,13 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
             {currentPhase && (
               <p className="text-xs text-gray-600">{currentPhase}</p>
             )}
+          </div>
+        )}
+        
+        {/* Debug: Always show progress indicator state for testing */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+            Debug: isRendering={isRendering.toString()}, time={renderingTime}s, progress={renderingProgress}%
           </div>
         )}
         

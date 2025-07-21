@@ -13,7 +13,7 @@ import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
 import BrandSync from "@/components/Schedule";
 import CMOStrategy from "@/components/CMOStrategy";
-import { VideoPostCard } from "@/components/VideoPostCardSimple";
+import VideoPostCardSimple from "@/components/VideoPostCardSimple";
 
 interface Post {
   id: number;
@@ -735,156 +735,28 @@ export default function Schedule() {
             <div className="max-h-screen overflow-y-auto space-y-4 pr-2">
               {filteredPosts.length > 0 ? (
                 filteredPosts.map((post: Post) => (
-                  <Card key={post.id} className="overflow-hidden">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      {getPlatformIcon(post.platform)}
-                      <span className="font-medium text-gray-900 capitalize">{post.platform}</span>
-                      <Badge variant={post.status === 'published' ? 'default' : post.status === 'approved' ? 'secondary' : 'outline'}>
-                        {post.status}
-                      </Badge>
-                      <span className="text-sm text-gray-500">
-                        {format(new Date(post.scheduledFor), 'MMM d, h:mm a')}
-                      </span>
-                    </div>
-                    <div className="flex space-x-2">
-                      {post.status !== 'published' && (
-                        <Button
-                          onClick={() => setEditingPost({ id: post.id, content: post.content })}
-                          variant="outline"
-                          size="sm"
-                          className="text-xs"
-                        >
-                          Edit Content
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Display actual Grok-generated marketing content */}
-                  <div className="bg-gray-50 border rounded-lg p-4 mb-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">
-                        Grok AI Generated Content
-                      </span>
-                      <Badge variant="outline" className="text-xs">
-                        {post.platform}
-                      </Badge>
-                    </div>
-                    <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">
-                      {post.content || `Post ${post.id} - Generated for professional plan (Quota: 52)`}
-                    </p>
-                  </div>
-                  
-                  {post.aiRecommendation && (
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
-                      <p className="text-purple-800 text-sm">{post.aiRecommendation}</p>
-                    </div>
-                  )}
-                  
-                  {/* Editable content for main schedule */}
-                  {editingPost?.id === post.id ? (
-                    <div className="mb-4 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-                      <label className="block text-sm font-medium text-blue-800 mb-2">
-                        Edit your post content:
-                      </label>
-                      <textarea
-                        value={editingPost.content || ''}
-                        onChange={(e) => setEditingPost({...editingPost, content: e.target.value})}
-                        className="w-full p-3 border-2 border-blue-300 rounded-lg text-gray-800 resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                        rows={6}
-                        autoFocus
-                        placeholder="Enter your post content here..."
-                      />
-                      <div className="flex justify-between items-center mt-3">
-                        <span className="text-sm text-gray-500">
-                          Characters: {(editingPost.content || '').length}
-                        </span>
-                        <div className="flex space-x-3">
-                          <Button
-                            onClick={() => saveEditedPost(post.id, editingPost.content || '')}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6"
-                            disabled={!editingPost.content?.trim()}
-                          >
-                            Save Changes
-                          </Button>
-                          <Button
-                            onClick={() => setEditingPost(null)}
-                            variant="outline"
-                            className="border-gray-300 hover:bg-gray-50"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex space-x-3">
-                      <Button
-                        onClick={() => {
-                          console.log('Edit button clicked for post:', post.id, post.content);
-                          setEditingPost({id: post.id, content: post.content});
-                        }}
-                        variant="outline"
-                        className="bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-700 font-medium"
-                        size="sm"
-                      >
-                        ✏️ Edit Content
-                      </Button>
-                      
-                      {post.status !== 'approved' && !approvedPosts.has(post.id) ? (
-                        <>
-                          <Button
-                            onClick={() => approvePost(post.id, false)}
-                            className="approve-button bg-green-600 hover:bg-green-700 text-white lowercase"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            approve & schedule
-                          </Button>
-                          <Button
-                            onClick={() => approvePost(post.id, true)}
-                            className="approve-button bg-blue-600 hover:bg-blue-700 text-white lowercase"
-                          >
-                            <Play className="w-4 h-4 mr-2" />
-                            publish now
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          onClick={() => publishPost(post.id, post.platform)}
-                          className="approve-button bg-blue-600 hover:bg-blue-700 text-white lowercase"
-                        >
-                          <Play className="w-4 h-4 mr-2" />
-                          publish now
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-                  </Card>
+                  <VideoPostCardSimple 
+                    key={post.id} 
+                    post={post} 
+                    userId={user?.id} 
+                    onVideoApproved={() => refetchPosts()}
+                    onPostUpdate={() => refetchPosts()}
+                  />
                 ))
               ) : (
-                <div className="text-center py-8 bg-white rounded-lg border">
-                  <p className="text-gray-500 mb-4">
-                    {listFilter === 'all' ? 'No posts found. Create your first post to get started.' :
-                     listFilter === 'draft' ? 'No draft posts found.' :
-                     listFilter === 'approved' ? 'No approved posts found.' :
-                     'No published posts found.'}
-                  </p>
+                <div className="text-center py-12 text-gray-500">
+                  <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg mb-4">No posts found for this filter</p>
                   {listFilter === 'all' && (
-                    <Button
-                      onClick={() => window.location.href = '/brand-purpose'}
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      Create Posts
-                    </Button>
+                    <p className="text-sm text-gray-400">Generate posts using the CMO Brand Domination Strategy above</p>
                   )}
                 </div>
               )}
             </div>
           </div>
         )}
+
+
 
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-4 mb-8">
