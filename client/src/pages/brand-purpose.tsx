@@ -520,7 +520,7 @@ export default function BrandPurpose() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md p-8">
-              <h2 className="text-2xl font-normal text-center mb-8 bg-[#2563eb] text-[#ffffff]" style={{ color: '#333333' }}>
+              <h2 className="text-2xl font-normal text-center mb-8 bg-[#2563eb] text-[#ffffff]">
                 {isExistingData ? 'update your brand purpose' : 'Create your brand purpose'}
               </h2>
           
@@ -613,7 +613,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs font-medium text-purple-900 mb-1">your little helper:</p>
                       <p className="text-xs text-purple-800">Your brand name should connect to your value proposition and target customer segment. Strong names communicate what you do and who you serve.</p>
                     </div>
                   </div>
@@ -675,7 +675,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs font-medium text-purple-900 mb-1">your little helper:</p>
                       <p className="text-xs text-purple-800">Define your value proposition - what specific gain do you create or pain do you relieve? Include pricing and packages for clarity.</p>
                     </div>
                   </div>
@@ -737,7 +737,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">Grok Strategyzer tip:</p>
+                      <p className="text-xs font-medium text-purple-900 mb-1">your little helper:</p>
                       <p className="text-xs text-purple-800">Your core purpose defines your mission - focus on the customer jobs you help complete. Strong purposes connect emotionally to customer outcomes.</p>
                     </div>
                   </div>
@@ -899,7 +899,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">AI tip:</p>
+                      <p className="text-xs font-medium text-purple-900 mb-1">your little helper:</p>
                       <p className="text-xs text-purple-800">Define your customer segment - demographics, behaviors, and needs they share</p>
                     </div>
                   </div>
@@ -961,7 +961,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">AI tip:</p>
+                      <p className="text-xs font-medium text-purple-900 mb-1">your little helper:</p>
                       <p className="text-xs text-purple-800">Customer job-to-be-done - what functional, emotional, or social job do customers hire you for?</p>
                     </div>
                   </div>
@@ -1023,7 +1023,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">AI tip:</p>
+                      <p className="text-xs font-medium text-purple-900 mb-1">your little helper:</p>
                       <p className="text-xs text-purple-800">Customer gains - what benefits, outcomes, and characteristics your customers want</p>
                     </div>
                   </div>
@@ -1085,7 +1085,7 @@ export default function BrandPurpose() {
                   <div className="flex items-start space-x-2">
                     <Bot className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-purple-900 mb-1">AI tip:</p>
+                      <p className="text-xs font-medium text-purple-900 mb-1">your little helper:</p>
                       <p className="text-xs text-purple-800">Customer pains - frustrations, obstacles, and risks your customers experience</p>
                     </div>
                   </div>
@@ -1122,7 +1122,7 @@ export default function BrandPurpose() {
               <Label className="text-sm font-medium text-gray-700">What are your specific goals with measurable targets?</Label>
               <div className="text-xs text-purple-600 mt-1 mb-3 flex items-center">
                 <div className="w-4 h-4 rounded-full mr-1" style={{ backgroundColor: '#915fd7' }}></div>
-                Grok Strategyzer tip: Your value proposition must align with customer jobs, pains, and gains. Select measurable goals.
+                your little helper: Your value proposition must align with customer jobs, pains, and gains. Select measurable goals.
               </div>
               <div className="mt-3 space-y-4">
                 <div className="flex items-start space-x-3">
