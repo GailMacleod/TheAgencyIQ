@@ -57,21 +57,56 @@ class VideoService {
     };
   }
   
-  // ENHANCED: Research-Integrated Veo3 Prompt Training with Sound/Brand/CTA
+  // ENHANCED: Queensland Creative Director Training with Anime-Influenced Viral Prompts
   static enhancePromptForVeo3(originalPrompt, brandData = {}) {
     const brandName = brandData?.brandName || '[Company Name]';
     const brandUrl = brandData?.website || '[URL]';
     
-    // COMPREHENSIVE RESEARCH-INTEGRATED PROMPT TRAINING WITH VEO3 NATIVE SYNC
+    // COMPREHENSIVE QUEENSLAND CREATIVE DIRECTOR TRAINING WITH ANIME-INFLUENCED VIRAL APPROACH
     const enhancedPrompt = `
-You are a world-class cinematic video director creating 8-second Queensland business transformation videos with Veo3 native audio sync and comprehensive brand integration. Follow advanced research-based frameworks and proven engagement techniques:
+You are a senior advertising agency creative director specializing in highly creative, immersive, animated video prompts tailored for adult Queensland audiences. Create anime-influenced, viral-ready short-form videos that tap into Queensland culture, wit, and iconic lifestyle moments.
 
-COMPREHENSIVE RESEARCH FOUNDATION:
-- STRATEGYN/HBR JTBD FRAMEWORKS: Separate emotional needs from tactical campaigns (e.g., IKEA's "easy assembly" JTBD separate from ads)
-- UQ.EDU.AU/KPMG QUEENSLAND PSYCHOLOGY: QLD consumers value emotional retention/community over price (25%+ engagement lift via local ties)
-- NATIVE AUDIO INTEGRATION: Veo3 audio sync for dialogue/effects/music/voiceover (e.g., "with orchestral music and voiceover saying 'fair dinkum'—sync to action")
-- CULTURAL PSYCHOLOGY: Local slang "crook as Rookwood" for pains, sports like Origin for rivalry hooks, "no worries" boosting SMB campaigns
-- CALENDAR ALIGNMENT: Local happenings like Ekka/State of Origin for event-driven content timing
+QUEENSLAND CREATIVE DIRECTOR FRAMEWORK:
+- DEEP CULTURAL KNOWLEDGE: Queensland culture, idioms, modern slang, events, lifestyle pride (BBQ, sport, beaches, national events)
+- ANIME-INFLUENCED STYLE: Never literal scenes - explode with wish-fulfillment, fantasy, heightened visually dynamic animated scenarios
+- VIRAL STORYTELLING: Focus on relatability, humour, emotional engagement - never show dull digital tasks or people on computers
+- AUTHENTIC REGIONAL LANGUAGE: Queensland slang, clever memorable expressions, visual storytelling with local calendar events
+- CREATIVE ANALYSIS: Step-by-step reasoning (JTBD analysis, cultural triggers, creative vision) before crafting final prompt
+
+STEP-BY-STEP REASONING APPROACH:
+1. JTBD ANALYSIS: What emotional job is the audience hiring this content to do?
+2. CULTURAL TRIGGER IDENTIFICATION: Which Queensland cultural elements will resonate most?
+3. ANIME-INFLUENCED TRANSFORMATION: How can we turn ordinary moments into extraordinary animated sequences?
+4. VIRAL POTENTIAL ASSESSMENT: What makes this shareable and memorable?
+5. LOCAL EVENT ALIGNMENT: How does this connect to Queensland calendar events?
+6. CREATIVE VISION SYNTHESIS: Bringing all elements together for maximum impact
+
+QUEENSLAND CULTURAL TRIGGERS:
+- LOCAL EVENTS: The Matildas, cricket/NRL, BBQ season, State of Origin, Ekka, summer storms, backyard culture
+- AUTHENTIC SLANG: "fair dinkum", "no worries", "get amongst it", "chuck a snag", "crook as Rookwood", stubbies and thongs
+- LIFESTYLE MOMENTS: Sun-drenched backyards, storm clouds, sausage sizzles, mates in green and gold, tiki torches
+- HEROIC TRANSFORMATION: Suburban Queenslanders morphing into anime-style heroes, mundane tasks becoming epic adventures
+
+ANIME-INFLUENCED CREATIVE APPROACH:
+- Transform ordinary Queensland moments into extraordinary anime-style transformations
+- Use explosive visual metaphors (sausages turning into soccer balls, mowers blazing across backyards)
+- Show superhero-style transformations of everyday Queenslanders
+- Include dynamic elements: sparks, confetti, dramatic lighting, storm clouds parting in respect
+- Focus on wish-fulfillment and fantasy rather than literal interpretations
+
+VIRAL ENGAGEMENT ELEMENTS:
+- Tap Queensland pride points and emotional desires
+- Use humor and relatability over instruction
+- Create memorable, shareable moments
+- Connect to relevant local events and seasonal triggers
+- Show emotional transformation and community unity
+
+RESEARCH FOUNDATION:
+- STRATEGYN/HBR JTBD FRAMEWORKS: Separate emotional needs from tactical campaigns (IKEA "easy assembly" separation)
+- UQ.EDU.AU/KPMG QUEENSLAND PSYCHOLOGY: QLD consumers value emotional retention/community over price (25%+ engagement boost)
+- NATIVE AUDIO INTEGRATION: Veo3 audio sync for dialogue/effects/music/voiceover ("with orchestral music and voiceover saying 'fair dinkum'")
+- CULTURAL PSYCHOLOGY: Local slang boosting campaigns, Origin rivalry hooks for viral engagement
+- CALENDAR ALIGNMENT: Ekka/State of Origin timing for event-driven momentum
 
 BEST PRACTICES - SPECIFIC/DENSE STRUCTURES:
 Example Dense Structure: "Cinematic 8s: QLD owner sighs in heat (pain: grind like losing Origin), bites for fair dinkum Paris escape (JTBD: emotional transport separate from campaign), achieving joy (gain: Maroons win vibe). Align to local event: Ekka vibes. Sound: Orchestral swell with voiceover 'realise your escape at ${brandName} – visit ${brandUrl}!'. Modern: Drone push-in, watercolor fade. Include ${brandName} logo overlay."
@@ -493,38 +528,65 @@ Your job is to create detailed video scripts with specific timing, camera moveme
   static generateCinematicVideoPrompts(postContent, platform, brandData) {
     const brandPurpose = brandData?.corePurpose || 'Professional business growth';
     
-    // Three business transformation archetypes for Veo3
-    const cinematicScenarios = [
+    // QUEENSLAND CREATIVE DIRECTOR APPROACH: Anime-influenced viral video prompts
+    // Step-by-step reasoning analysis before crafting final prompts
+    
+    // Three anime-influenced Queensland business transformation scenarios with step-by-step reasoning
+    const animeInfluencedScenarios = [
       {
         id: 1,
-        title: "Queensland SME Discovery Moment",
-        description: "From chaos to breakthrough",
-        prompt: `Wide establishing shot of a Queensland business owner surrounded by overwhelming paperwork and multiple screens. Cut to close-up of their face as realization dawns. High-speed tracking shot as automated systems activate around them. Wide push-in revealing organized digital workspace. Dramatic lighting shift from harsh fluorescent to warm golden hour. Close-up intensity: relief and determination. Professional cinematography, dynamic camera movements, dramatic lighting effects. Content context: ${postContent.substring(0, 100)}`,
-        style: "discovery-transformation",
-        mayorkingElements: "High-speed tracking, wide push-in, close-up emotional intensity"
+        title: "Queensland Heat Hero Transformation",
+        description: "From sweltering chaos to cool confidence",
+        stepByStepReasoning: {
+          jtbdAnalysis: "The job to be done is transforming overwhelming business heat/stress into cool, controlled confidence - helping busy Queensland SMEs feel empowered rather than overwhelmed.",
+          culturalTriggers: "Queensland summer heat, BBQ season, and the desire for relief - using authentic slang like 'fair dinkum relief' and 'crook as Rookwood'. Taps into universal Queensland experience of battling the heat.",
+          animeTransformation: "Ordinary sweating business owner morphs into cool superhero through magical transformation sequence - sweat becomes stardust, chaos becomes order, stress becomes strength.",
+          viralPotential: "Relatable Queensland struggle (heat + work stress) + satisfying transformation + anime-style wish fulfillment = highly shareable content that makes viewers feel seen and inspired.",
+          eventAlignment: "Perfect for Ekka season when Queensland heat is at its peak and businesses are pushing through summer challenges.",
+          creativeVisionSynthesis: "Combine Queensland summer struggles with anime transformation magic to create aspirational content that shows business success as achievable heroic journey."
+        },
+        prompt: `Animated Queensland business owner in stubbies and polo shirt, sweating over laptop in sun-drenched backyard office, suddenly anime-style transformation sequence begins - sweat drops become sparkling stars, laptop screen explodes into holographic success metrics floating in air, owner morphs into confident business superhero with cape made of invoices, BBQ sizzle sounds sync to success notifications, mates cheer from background deck chairs, storm clouds part revealing golden success rays, no text overlays, pure anime transformation energy`,
+        style: "anime-hero-transformation",
+        qldElements: "stubbies, backyard office, BBQ sounds, mates cheering, storm clouds"
       },
       {
         id: 2, 
-        title: "Professional Authority Emergence",
-        description: "Invisible to industry leader",
-        prompt: `Close-up of hands typing on laptop in dimly lit room. Cut to wide shot revealing empty conference room. High-speed tracking through business districts as phone notifications multiply. Wide push-in to packed auditorium with spotlight on our expert presenting. Close-up intensity of audience faces showing engagement. Dramatic lighting effects highlighting professional transformation. Cinematic color grading, photorealistic quality. Content context: ${postContent.substring(0, 100)}`,
-        style: "authority-emergence",
-        mayorkingElements: "Close-up intensity, dramatic lighting, wide push-in reveals"
+        title: "Matildas Victory Business Celebration",
+        description: "Team success inspiring business triumph",
+        stepByStepReasoning: {
+          jtbdAnalysis: "Transform individual business struggle into community celebration and team victory - helping Queensland business owners feel part of something bigger than themselves.",
+          culturalTriggers: "Matildas World Cup energy, green and gold pride, 'get amongst it' celebration mentality. Taps into Queensland's love of supporting our teams and celebrating together.",
+          animeTransformation: "Mundane business meeting explodes into epic sports stadium celebration - ordinary office workers become championship athletes, boring documents become victory symbols.",
+          viralPotential: "Combines Queensland sports pride + business success + anime-style celebration = content that makes viewers want to share their own victories and feel part of the winning team.",
+          eventAlignment: "Perfect for Origin season, Matildas matches, or any major Queensland sporting events when community pride is at its peak.",
+          creativeVisionSynthesis: "Merge Queensland sporting culture with business achievement to show that business success deserves the same celebration energy as sporting victories."
+        },
+        prompt: `Animated Queensland business team in boring conference room suddenly transforms anime-style into Matildas celebration - chairs become stadium seats, spreadsheets morph into green and gold soccer balls bouncing through air, team members burst into Matildas uniforms, conference table becomes victory podium with fireworks, sausage sizzle sounds and crowd roar audio sync, office walls explode outward revealing packed stadium, pure Aussie pride energy with animated confetti and dancing mascots, no text overlays`,
+        style: "matildas-victory-transformation", 
+        qldElements: "green and gold, stadium energy, sausage sizzle sounds, Aussie pride"
       },
       {
         id: 3,
-        title: "Digital Transformation Triumph", 
-        description: "Traditional to cutting-edge",
-        prompt: `Establishing shot of traditional Queensland shopfront. High-speed tracking through time-lapse of digital integration. Wide push-in revealing modern tech-enabled business operations. Close-up intensity of satisfied customers and team members. Dramatic lighting shift from ordinary to extraordinary. Thrilling visual storytelling of business evolution. Professional cinematography with epic scale. Content context: ${postContent.substring(0, 100)}`,
-        style: "digital-triumph",
-        mayorkingElements: "Thrilling visual storytelling, dramatic lighting, high-speed tracking"
+        title: "Backyard Mower Business Superhero",
+        description: "Mundane lawn care becomes epic business mastery",
+        stepByStepReasoning: {
+          jtbdAnalysis: "Elevate routine business maintenance into heroic mastery and neighbourhood respect - helping Queensland SMEs see their daily grind as meaningful heroic work deserving of recognition.",
+          culturalTriggers: "Queensland summer lawn mowing ritual, never-ending backyard battles, tiki torch evening pride. Every Queenslander knows the satisfaction of a well-maintained backyard and neighbourhood respect.",
+          animeTransformation: "Ordinary suburban lawn mowing becomes epic superhero origin story - old mower becomes magical weapon, grass clippings become success confetti, humble backyard becomes arena of triumph.",
+          viralPotential: "Universal Queensland experience (mowing the lawn) + anime superhero fantasy + neighbourhood pride = content that makes every Queensland homeowner feel like their effort matters and is heroic.",
+          eventAlignment: "Perfect for summer months when lawn maintenance is constant, or during neighbourhood pride events and community celebrations.",
+          creativeVisionSynthesis: "Transform the most mundane Queensland suburban ritual into an epic anime superhero moment, showing that every small business owner is already a hero in their community."
+        },
+        prompt: `Animated Queenslander in thongs and singlet pushing old mower across wild backyard transforms anime-style into caped business automation hero - mower roars and shoots emerald sparks, grass explodes into floating dollar bills and success metrics, storm clouds swirl then pause in respect, mates emerge from houses cheering, tiki torches ignite around property boundary, hero strikes victory pose as golden sunset bathes scene, orchestral swell with Aussie voiceover saying 'fair dinkum results mate', no text overlays, pure Queensland suburban glory`,
+        style: "suburban-hero-transformation",
+        qldElements: "thongs and singlet, mower sounds, tiki torches, mates cheering, fair dinkum"
       }
     ];
     
-    // Generate cinematic copy for each scenario
-    const scenarios = cinematicScenarios.map(scenario => ({
+    // Generate anime-influenced cinematic copy for each scenario
+    const scenarios = animeInfluencedScenarios.map(scenario => ({
       ...scenario,
-      postCopy: this.generateCinematicCopy(scenario, platform, brandPurpose, postContent)
+      postCopy: this.generateQueenslandAnimeCopy(scenario, platform, brandPurpose, postContent)
     }));
     
     return scenarios;

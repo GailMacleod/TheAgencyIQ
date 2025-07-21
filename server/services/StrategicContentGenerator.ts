@@ -169,17 +169,23 @@ Focus on event-driven opportunities and optimal engagement windows for Queenslan
   }
 
   /**
-   * STAGE 2: GROK AS EXPERT COPYWRITER
-   * Creates tailored content for each planned calendar entry
+   * STAGE 2: GROK AS EXPERT COPYWRITER WITH QUEENSLAND CREATIVE DIRECTOR TRAINING
+   * Creates tailored content for each planned calendar entry using anime-influenced viral prompts
    */
   private static async createExpertCopywritingContent(mediaCalendar: MediaPlanEntry[], params: StrategicContentParams): Promise<StrategicPost[]> {
     const strategicPosts: StrategicPost[] = [];
     
-    // Process each calendar entry with expert copywriting
+    // Process each calendar entry with Queensland creative director enhanced copywriting
     for (let i = 0; i < mediaCalendar.length; i++) {
       const entry = mediaCalendar[i];
       
-      const copywriterPrompt = `You are an expert copywriter creating witty, engaging content for TheAgencyIQ targeting Queensland SME owners.
+      const copywriterPrompt = `You are an expert copywriter with Queensland creative director training, creating witty, engaging content for TheAgencyIQ targeting Queensland SME owners using anime-influenced viral storytelling techniques.
+
+QUEENSLAND CREATIVE DIRECTOR TRAINING FRAMEWORK:
+- STEP-BY-STEP REASONING: Analyze JTBD → Identify cultural triggers → Apply anime transformation → Assess viral potential → Align with events → Synthesize creative vision
+- ANIME-INFLUENCED STYLE: Transform ordinary business moments into extraordinary, wish-fulfillment scenarios
+- VIRAL STORYTELLING: Focus on relatability, humour, emotional engagement - never boring business-speak
+- AUTHENTIC QUEENSLAND VOICE: Use local slang, cultural references, and community pride
 
 STRATEGIC CALENDAR ENTRY FROM MEDIA PLANNER:
 - Platform: ${entry.platform}
@@ -193,6 +199,14 @@ THEAGENCYIQ BRAND CONTEXT:
 - Core Problem: "You're invisible, and silence is killing your growth"
 - Solution: "Always-on beacon that gives you presence, polish, and power without the army"
 - Target: Busy Queensland SME owners who need professional visibility but lack time
+
+STEP-BY-STEP REASONING PROCESS:
+1. JTBD ANALYSIS: What emotional job is this content hired to do?
+2. CULTURAL TRIGGERS: Which Queensland elements will resonate most?
+3. ANIME TRANSFORMATION: How can we make this moment feel epic and aspirational?
+4. VIRAL POTENTIAL: What makes this shareable and memorable?
+5. EVENT ALIGNMENT: How does this connect to Queensland calendar events?
+6. CREATIVE SYNTHESIS: Bring all elements together for maximum impact
 
 PLATFORM REQUIREMENTS:
 ${this.getPlatformContentGuidelines(entry.platform)}
@@ -254,18 +268,18 @@ Return JSON with:
   }
 
   /**
-   * Platform-specific content guidelines for expert copywriter
+   * Platform-specific content guidelines for expert copywriter with Queensland creative director training
    */
   private static getPlatformContentGuidelines(platform: string): string {
     const guidelines = {
-      facebook: "Facebook: 400-1500 characters, community-focused tone, encourage comments/shares, use engaging questions, Queensland local references",
-      instagram: "Instagram: 300-400 characters max, visual storytelling, relevant hashtags (#QueenslandSME #BusinessVisibility), strong call-to-action",
-      linkedin: "LinkedIn: 700-1000 characters, professional B2B tone, industry insights, thought leadership, networking focus",
-      x: "X: 200-280 characters max, conversational and witty, trending topics, hashtags, encourage retweets and engagement",
-      youtube: "YouTube: 500-600 characters, educational preview format, encourage subscriptions, video content teasers"
+      facebook: "Facebook: 400-1500 characters, community-focused tone with anime-influenced storytelling, encourage comments/shares, use engaging questions, Queensland local references, transform ordinary moments into epic celebrations, 'fair dinkum' authentic voice",
+      instagram: "Instagram: 300-400 characters max, visual storytelling with transformation energy, relevant hashtags (#QueenslandSME #BusinessVisibility), strong call-to-action, anime-style wish-fulfillment narrative, local event alignment",
+      linkedin: "LinkedIn: 700-1000 characters, professional B2B tone with heroic business journey narrative, industry insights told through transformation stories, thought leadership with Queensland cultural pride, networking focus using community celebration energy",
+      x: "X: 200-280 characters max, conversational and witty with anime transformation hooks, trending topics, hashtags, encourage retweets and engagement, bite-sized epic moments, Queensland slang integration",
+      youtube: "YouTube: 500-600 characters, educational preview format with anime-influenced storytelling, encourage subscriptions, video content teasers that promise transformation journeys, Queensland community celebration vibes"
     };
     
-    return guidelines[platform] || "General: Engaging, authentic, conversion-focused content with Queensland context";
+    return guidelines[platform] || "General: Engaging, authentic, conversion-focused content with Queensland context, anime-influenced transformation storytelling, step-by-step emotional journey from struggle to heroic success";
   }
 
   /**
