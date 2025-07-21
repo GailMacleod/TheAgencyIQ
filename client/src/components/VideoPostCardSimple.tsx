@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { VideoIcon, LoaderIcon, CheckIcon, XIcon } from 'lucide-react';
+import { VideoIcon, LoaderIcon, CheckIcon, XIcon, Edit } from 'lucide-react';
 
 // Video Player Component with URL Validation and Error Recovery
 function VideoPlayerWithFallback({ videoUrl, thumbnail, title, onError }: { videoUrl: string; thumbnail?: string; title?: string; onError?: (msg: string) => void }) {
@@ -112,9 +112,11 @@ interface VideoPostCardProps {
   userId?: string;
   onVideoApproved: (postId: string, videoData: VideoData) => void;
   onPostUpdate?: () => void;
+  onEditPost?: (post: Post) => void;
+  onApprovePost?: (postId: number) => void;
 }
 
-function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: VideoPostCardProps) {
+function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEditPost, onApprovePost }: VideoPostCardProps) {
   const [isRendering, setIsRendering] = useState(false);
   const [renderingProgress, setRenderingProgress] = useState(0);
   const [renderingTime, setRenderingTime] = useState(0);
@@ -439,6 +441,31 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
             </Button>
           </div>
         )}
+
+        {/* Post Actions - Edit and Approve */}
+        <div className="mt-4 flex gap-2 justify-end">
+          {onEditPost && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEditPost(post)}
+              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+            >
+              <Edit className="w-4 h-4 mr-1" />
+              Edit
+            </Button>
+          )}
+          {onApprovePost && post.status !== 'approved' && (
+            <Button
+              onClick={() => onApprovePost(parseInt(post.id))}
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <CheckIcon className="w-4 h-4 mr-1" />
+              Approve & Queue
+            </Button>
+          )}
+        </div>
         
         {/* VEO3 Video Preview Card with URL Validation and Error Recovery */}
         {hasGeneratedVideo && videoData && (

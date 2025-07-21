@@ -3525,7 +3525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Approve individual post for scheduling
+  // Approve individual post for scheduling and add to publish queue
   app.post("/api/approve-post", requireAuth, async (req: any, res) => {
     try {
       const { postId } = req.body;
@@ -3535,20 +3535,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Post ID is required" });
       }
 
+      // Get the post details before approval
+      const post = await storage.getPost(postId);
+      if (!post || post.userId !== userId) {
+        return res.status(404).json({ message: "Post not found or unauthorized" });
+      }
+
       // Update post status to approved
       const updatedPost = await storage.updatePost(postId, { 
-        status: 'approved'
+        status: 'approved',
+        approvedAt: new Date().toISOString()
       });
 
       if (!updatedPost) {
         return res.status(404).json({ message: "Post not found" });
       }
 
-      console.log(`Post ${postId} approved by user ${userId}`);
-      res.json({ success: true, post: updatedPost });
+      // Add post to publish queue for scheduled publishing
+      try {
+        const { PostingQueue } = await import('./services/PostingQueue');
+        
+        // Add to queue with proper scheduling based on post's scheduledFor date
+        const queueResult = await PostingQueue.addToQueue({
+          postId: post.id,
+          userId: userId,
+          platform: post.platform,
+          content: post.content,
+          scheduledFor: post.scheduledFor,
+          priority: 'normal'
+        });
+
+        console.log(`🎯 Post ${postId} approved and added to publish queue:`, {
+          postId,
+          platform: post.platform,
+          scheduledFor: post.scheduledFor,
+          queueId: queueResult.queueId
+        });
+
+        res.json({ 
+          success: true, 
+          post: updatedPost,
+          queued: true,
+          queueId: queueResult.queueId,
+          scheduledFor: post.scheduledFor,
+          message: `Post approved and queued for ${post.platform} publishing`
+        });
+
+      } catch (queueError) {
+        console.error('Error adding to publish queue:', queueError);
+        // Post is still approved even if queue fails
+        res.json({ 
+          success: true, 
+          post: updatedPost,
+          queued: false,
+          warning: 'Post approved but failed to add to publish queue'
+        });
+      }
+
     } catch (error) {
       console.error('Error approving post:', error);
       res.status(500).json({ message: "Failed to approve post" });
+    }
+  });
+
+  // Edit post content
+  app.put("/api/posts/:postId", requireAuth, async (req: any, res) => {
+    try {
+      const { postId } = req.params;
+      const { content } = req.body;
+      const userId = req.session.userId;
+
+      if (!postId || !content) {
+        return res.status(400).json({ message: "Post ID and content are required" });
+      }
+
+      // Verify post belongs to user
+      const existingPost = await storage.getPost(parseInt(postId));
+      if (!existingPost || existingPost.userId !== userId) {
+        return res.status(404).json({ message: "Post not found or unauthorized" });
+      }
+
+      // Update post content
+      const updatedPost = await storage.updatePost(parseInt(postId), { 
+        content: content.trim(),
+        updatedAt: new Date()
+      });
+
+      if (!updatedPost) {
+        return res.status(404).json({ message: "Failed to update post" });
+      }
+
+      console.log(`📝 Post ${postId} content updated by user ${userId}`);
+      res.json({ 
+        success: true, 
+        post: updatedPost,
+        message: "Post content updated successfully"
+      });
+
+    } catch (error) {
+      console.error('Error updating post:', error);
+      res.status(500).json({ message: "Failed to update post" });
     }
   });
 

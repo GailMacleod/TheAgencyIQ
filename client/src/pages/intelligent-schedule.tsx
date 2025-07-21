@@ -145,7 +145,19 @@ function IntelligentSchedule() {
   // Edit post content mutation
   const editPostMutation = useMutation({
     mutationFn: async ({ postId, content }: { postId: number; content: string }) => {
-      const response = await apiRequest("PUT", `/api/posts/${postId}`, { content });
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: "PUT",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ content })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update post');
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -158,7 +170,8 @@ function IntelligentSchedule() {
         description: "Post content has been successfully updated.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Edit error:', error);
       toast({
         title: "Update Failed",
         description: "Failed to update post content. Please try again.",
@@ -173,6 +186,52 @@ function IntelligentSchedule() {
     setEditingPost({ id: post.id, content: post.content });
     setEditContent(post.content);
     setIsEditModalOpen(true);
+  };
+
+  // Handle approve post button click
+  const handleApprovePost = async (postId: number) => {
+    try {
+      setApprovingPosts(prev => new Set([...prev, postId]));
+      
+      const response = await fetch('/api/approve-post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ postId })
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        
+        toast({
+          title: "Post Approved & Queued",
+          description: responseData.queued 
+            ? `Post added to publish queue for scheduled posting`
+            : `Post approved but queue failed`,
+          variant: responseData.queued ? "default" : "destructive"
+        });
+
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+        setApprovedPosts(prev => new Set([...prev, postId]));
+      } else {
+        throw new Error('Failed to approve post');
+      }
+    } catch (error) {
+      console.error('Approve error:', error);
+      toast({
+        title: "Approval Failed",
+        description: "Failed to approve post. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setApprovingPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
+    }
   };
 
   // Save edited content
@@ -408,9 +467,14 @@ function IntelligentSchedule() {
         });
         setShowSuccessModal(true);
         
+        const responseData = await response.json();
+        
         toast({
-          title: "Post Approved Successfully",
-          description: `${post.platform} post scheduled for publishing`,
+          title: "Post Approved & Queued",
+          description: responseData.queued 
+            ? `${post.platform} post added to publish queue for ${format(new Date(post.scheduledFor), 'MMM d, h:mm a')}`
+            : `${post.platform} post approved but queue failed`,
+          variant: responseData.queued ? "default" : "destructive"
         });
       } else {
         throw new Error('Failed to approve post');
@@ -802,6 +866,8 @@ function IntelligentSchedule() {
                     onVideoApproved={handleVideoApproved}
                     userId={user?.id?.toString() || '2'}
                     onPostUpdate={() => refetchPosts()}
+                    onEditPost={handleEditPost}
+                    onApprovePost={handleApprovePost}
                   />
                 )) : (
                   <div className="text-center p-8">
@@ -870,6 +936,51 @@ function IntelligentSchedule() {
       </div>
       
       <MasterFooter />
+
+      {/* Edit Post Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Post Content</DialogTitle>
+            <DialogDescription>
+              Edit your post content below. Changes will be saved to the draft.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="min-h-[200px] resize-none"
+              placeholder="Edit your post content..."
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditModalOpen(false)}
+                disabled={editPostMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={saveEditedContent}
+                disabled={editPostMutation.isPending || !editContent.trim()}
+              >
+                {editPostMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

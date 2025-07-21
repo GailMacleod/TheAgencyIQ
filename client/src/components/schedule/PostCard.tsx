@@ -202,11 +202,20 @@ export function PostCard({
             <div className="flex gap-2 pt-2">
               <Button
                 size="sm"
+                variant="outline"
+                onClick={() => onEditStart?.(post.id)}
+                className="h-8"
+              >
+                <Edit3 className="w-4 h-4 mr-1" />
+                Edit
+              </Button>
+              <Button
+                size="sm"
                 onClick={() => onApprove?.(post.id)}
                 className="flex-1 h-8"
               >
                 <ThumbsUp className="w-4 h-4 mr-1" />
-                Approve
+                Approve & Queue
               </Button>
               <Button
                 size="sm"
