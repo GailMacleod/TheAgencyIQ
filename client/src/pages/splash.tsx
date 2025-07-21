@@ -210,7 +210,7 @@ export default function Splash() {
         <div className="container-atomiq py-8">
           <div className="text-center">
             {/* Security & Compliance Trust Badges - Elegant Compact */}
-            <div className="flex flex-wrap justify-center items-center gap-4 py-3">
+            <div className="flex flex-wrap justify-center items-center gap-4 py-3 mb-8">
               {/* SSL Secured */}
               <div className="flex flex-col items-center space-y-1">
                 <div className="w-12 h-14 bg-gradient-to-b from-[#3b5cff] to-[#2a4bd8] rounded-t-full rounded-b-md shadow-sm flex items-center justify-center">
