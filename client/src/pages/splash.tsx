@@ -234,7 +234,7 @@ export default function Splash() {
                 <AnimatedIcon icon={Zap} colorScheme="cyan" size="md" />
               </div>
               <h4 className="text-lg font-semibold mb-2 text-muted-foreground">Generate Content</h4>
-              <p className="text-sm text-[#00f0ff] font-medium">Create viral brand stories</p>
+              <p className="text-sm text-[#00f0ff] font-medium">Auto copywriting and video generation</p>
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-6 text-center transition-all duration-300 hover:shadow-lg hover:border-[#3250fa]/30 hover:scale-105">
