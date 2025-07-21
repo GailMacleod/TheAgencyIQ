@@ -11180,30 +11180,51 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
-  // ART DIRECTOR: Professional cinematic video generation
-  app.post('/api/video/render', requireAuth, async (req: any, res) => {
+  // PROXY video content for CORS compatibility
+  app.post('/api/video/proxy', async (req, res) => {
     try {
-      console.log('=== ART DIRECTOR VIDEO CREATION REQUEST ===');
-      const { prompt, editedText, platform, userId, postId } = req.body;
+      const { videoUrl } = req.body;
       
-      console.log('Art Director briefing:', { 
-        promptType: typeof prompt,
-        promptPreview: typeof prompt === 'string' ? prompt.substring(0, 100) : prompt?.content?.substring(0, 100),
-        editedText: editedText ? editedText.substring(0, 100) : 'none',
-        platform,
-        userId,
-        postId 
+      if (!videoUrl) {
+        return res.status(400).json({ error: 'Video URL required' });
+      }
+
+      // Set CORS headers
+      res.set({
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'video/mp4'
       });
+
+      // Stream the video directly
+      const axios = (await import('axios')).default;
+      const response = await axios.get(videoUrl, {
+        responseType: 'stream',
+        timeout: 30000
+      });
+
+      response.data.pipe(res);
+    } catch (error) {
+      console.error('Video proxy failed:', error);
+      res.status(500).json({ error: 'Video proxy failed' });
+    }
+  });
+
+  // ENHANCED VIDEO RENDER ENDPOINT - VEO3 INTEGRATION
+  app.post("/api/video/render", requireAuth, checkVideoQuota, async (req: any, res) => {
+    try {
+      const { promptType, promptPreview, editedText, platform, userId, postId } = req.body;
       
-      // Get actual brand purpose data for JTBD integration
+      console.log(`🎬 Enhanced VEO3 video generation requested for ${platform}`);
+      
+      // Get brand purpose data for JTBD integration
       let brandPurpose = {
         corePurpose: 'Professional business growth and automation',
         audience: 'Queensland SMEs', 
         brandName: 'TheAgencyIQ Client'
       };
-      let postContent = '';
       
-      // Retrieve real brand purpose data from database for JTBD framework
       try {
         const authenticatedUserId = req.session?.userId || userId;
         const brandPurposeRecord = await storage.getBrandPurposeByUser(authenticatedUserId);
@@ -11217,67 +11238,48 @@ async function fetchYouTubeAnalytics(accessToken: string) {
             painPoints: brandPurposeRecord.painPoints,
             goals: brandPurposeRecord.goals
           };
-          console.log(`✅ Retrieved brand purpose for Art Director: ${brandPurpose.brandName} - ${brandPurpose.corePurpose}`);
-        } else {
-          console.log('⚠️ No brand purpose found, using fallback data for Art Director');
+          console.log(`✅ Retrieved brand purpose for VEO3: ${brandPurpose.brandName} - ${brandPurpose.corePurpose}`);
         }
       } catch (error) {
-        console.error('Brand purpose retrieval error:', error);
-        console.log('⚠️ Using fallback brand purpose due to database error');
+        console.log('⚠️ Using fallback brand purpose for VEO3');
       }
-      console.log('📝 Using prompt content for creative direction');
       
-      // Use prompt content as post content for Art Director
-      postContent = typeof prompt === 'string' ? prompt : prompt?.content || editedText || 'Queensland business strategy';
-
+      // Import enhanced video service
+      const VideoService = (await import('./videoService')).default;
       
-      // Import Art Director VideoService
-      const VideoService = (await import('./videoService.js')).default;
+      // Generate VEO3 video with JTBD integration
+      const result = await VideoService.renderVideo(
+        promptType || promptPreview, 
+        editedText, 
+        platform, 
+        brandPurpose,
+        promptPreview
+      );
       
-      // Validate video generation limits
-      const validation = VideoService.validateVideoLimits(userId, postId);
-      if (!validation.canGenerate) {
-        return res.status(400).json({
+      if (result.success) {
+        console.log(`✅ VEO3 video generation successful for ${platform}`);
+        res.json({
+          success: true,
+          videoData: result,
+          videoUrl: result.url || result.videoUrl,
+          message: 'VEO3 video generated successfully'
+        });
+      } else {
+        res.status(500).json({
           success: false,
-          error: validation.reason
+          error: result.message || 'VEO3 video generation failed'
         });
       }
       
-      // Art Director creates professional cinematic video
-      const result = await VideoService.renderVideo(prompt, editedText, platform, brandPurpose, postContent);
-      
-      // Enhanced backend Art Director logging
-      console.log('🎥 Art Director video generation completed:', { 
-        success: result.success, 
-        videoId: result.videoId,
-        artDirected: result.artDirected,
-        platform,
-        userId,
-        brandIntegration: !!brandPurpose?.jobToBeDone,
-        timestamp: new Date().toISOString(),
-        brandPurposeDriven: result.brandPurposeDriven,
-        animalType: result.animalType,
-        strategicIntent: result.strategicIntent?.substring(0, 50)
-      });
-      
-      // SURGICAL FIX: Wrap video data in videoData property as expected by frontend
-      res.json({
-        success: result.success,
-        videoData: result,
-        message: result.message || 'Video generation complete'
-      });
-    } catch (error) {
-      console.error('Art Director video creation failed:', error);
-      console.error('Error details:', error.stack);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Art Director video creation failed: ' + error.message,
-        fallback: true 
+    } catch (error: any) {
+      console.error('❌ VEO3 video generation failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'VEO3 video generation temporarily unavailable',
+        details: error.message
       });
     }
   });
-
-  // DUPLICATE ENDPOINT REMOVED - Using secure authenticated version below
 
   // Publish approved post (with video + text) to platforms
   app.post('/api/post/publish-approved', async (req: any, res) => {
@@ -11312,87 +11314,62 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
-  // Proxy video content for CORS compatibility
-  app.post('/api/video/proxy', async (req, res) => {
+  // ENHANCED VIDEO GENERATION ENDPOINT - VEO3 INTEGRATION
+  app.post("/api/video/render", requireAuth, async (req: any, res) => {
     try {
-      const { videoUrl } = req.body;
+      const { prompt, editedText, platform, brandPurpose } = req.body;
+      const userId = req.session.userId;
       
-      if (!videoUrl) {
-        return res.status(400).json({ error: 'Video URL required' });
-      }
-
-      // Set CORS headers
-      res.set({
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Content-Type': 'video/mp4'
-      });
-
-      // Stream the video directly
-      const axios = (await import('axios')).default;
-      const response = await axios.get(videoUrl, {
-        responseType: 'stream',
-        timeout: 30000
-      });
-
-      response.data.pipe(res);
-    } catch (error) {
-      console.error('Video proxy failed:', error);
-      res.status(500).json({ error: 'Video proxy failed' });
-    }
-  });
-
-  // ONE-CLICK VIDEO GENERATION ENDPOINT - VEO3 INTEGRATION
-  app.post("/api/video/render", requireAuth, checkVideoQuota, async (req: any, res) => {
-    try {
-      const { promptType, promptPreview, editedText, platform, userId, postId } = req.body;
-      
-      console.log(`🎬 One-click video generation requested for ${platform}`);
+      console.log(`🎬 Enhanced VEO3 video generation requested for ${platform}`);
       
       // Import video service
       const VideoService = (await import('./videoService')).default;
       
-      // Generate Art Director video with cinematic business transformation
+      // Generate enhanced VEO3 video with brand integration
       const result = await VideoService.renderVideo(
-        promptType, 
-        promptPreview, 
+        prompt, 
         editedText, 
         platform, 
-        userId
+        brandPurpose, 
+        req.body.postContent
       );
       
       if (result.success) {
-        console.log(`✅ One-click video generation successful for ${platform}`);
+        console.log(`✅ Enhanced VEO3 video generation successful for ${platform}`);
         res.json({
           success: true,
           videoData: {
             id: result.videoId,
-            url: result.url,
+            url: result.url || result.videoUrl,
+            videoUrl: result.videoUrl,
             title: result.title,
             description: result.description,
             duration: result.duration,
             aspectRatio: result.aspectRatio,
             quality: result.quality,
             size: result.size,
-            artDirected: true,
-            realVideo: result.veoGenerated || false,
-            veo3Generated: true,
-            platform: platform
+            veo3Generated: result.veo3Generated,
+            enhanced: result.enhanced,
+            realVideo: result.realVideo,
+            strategicIntent: result.strategicIntent,
+            postCopy: result.postCopy,
+            platform: platform,
+            generationTime: result.generationTime,
+            note: result.note
           }
         });
       } else {
         res.status(500).json({
           success: false,
-          error: result.message || 'Video generation failed'
+          error: result.message || 'VEO3 video generation failed'
         });
       }
       
     } catch (error: any) {
-      console.error('❌ One-click video generation failed:', error);
+      console.error('❌ Enhanced VEO3 video generation failed:', error);
       res.status(500).json({
         success: false,
-        error: 'Video generation temporarily unavailable'
+        error: 'VEO3 video generation temporarily unavailable'
       });
     }
   });
@@ -11403,379 +11380,91 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       const { userId, postId, videoData } = req.body;
       const sessionUserId = req.session.userId!;
       
-      console.log(`📹 Approving video for post ${postId} with auto-posting integration`);
+      console.log(`🎯 Video approval requested - Post ID: ${postId}, User: ${sessionUserId}`);
       
-      // Get current post data
+      // Validate user authorization
+      if (userId && userId !== sessionUserId) {
+        return res.status(403).json({
+          success: false,
+          error: 'Unauthorized access to post'
+        });
+      }
+      
+      // Get the post from database
       const post = await storage.getPost(postId);
       if (!post) {
-        return res.status(404).json({ success: false, error: 'Post not found' });
-      }
-
-      // Check if video has Grok copywriter enhancements
-      const hasGrokEnhancements = videoData?.grokEnhanced && videoData?.postCopy;
-      
-      // Update post with approved video and prepare for auto-posting
-      const updateData: any = {
-        hasVideo: true,
-        videoApproved: true,
-        videoData: JSON.stringify(videoData),
-        approvedAt: new Date(),
-        status: 'approved' // Mark entire post as approved for auto-posting
-      };
-      
-      // If Grok copywriter enhanced, update post content with editable copy
-      if (hasGrokEnhancements) {
-        updateData.content = videoData.postCopy;
-        updateData.grokEnhanced = true;
-        updateData.editable = true;
-        updateData.wittyStyle = videoData.wittyStyle || false;
-        console.log(`✍️ Updating post ${postId} with Grok copywriter content: "${videoData.postCopy.substring(0, 60)}..."`);
-      }
-
-      await storage.updatePost(postId, updateData);
-      
-      // AUTO-POSTING INTEGRATION: Add to posting queue with throttling
-      try {
-        console.log(`🚀 Adding post ${postId} to auto-posting queue for platform: ${post.platform}`);
-        
-        // Use final content for posting (Grok enhanced content if available, otherwise original)
-        const contentToPost = hasGrokEnhancements ? videoData.postCopy : post.content;
-        
-        // Add to posting queue with 2-second delay for throttling
-        const queueId = await postingQueue.addToQueue(
-          postId,
-          post.platform,
-          contentToPost,
-          sessionUserId,
-          2000 // 2 second delay to prevent burst posting
-        );
-        
-        console.log(`📋 Post ${postId} queued for auto-posting with ID: ${queueId}`);
-        
-        // Response with auto-posting confirmation
-        const response = {
-          success: true,
-          postId: postId,
-          message: hasGrokEnhancements ? 'Video and Grok copywriter content approved - queued for auto-posting' : 'Video approved - queued for auto-posting',
-          videoData: videoData,
-          autoPosting: {
-            enabled: true,
-            queueId: queueId,
-            platform: post.platform,
-            scheduledDelay: 2000,
-            status: 'queued'
-          },
-          grokEnhanced: hasGrokEnhancements,
-          postCopy: hasGrokEnhancements ? videoData.postCopy : undefined,
-          editable: hasGrokEnhancements ? true : undefined
-        };
-        
-        console.log(`✅ Video approved for post ${postId} - queued for auto-posting to ${post.platform}`);
-        res.json(response);
-        
-      } catch (queueError: any) {
-        console.error(`❌ Failed to add post ${postId} to posting queue:`, queueError);
-        
-        // Still return success for video approval, but note auto-posting failed
-        res.json({
-          success: true,
-          postId: postId,
-          message: 'Video approved successfully, but auto-posting queue failed',
-          videoData: videoData,
-          autoPosting: {
-            enabled: false,
-            error: queueError.message,
-            status: 'failed'
-          },
-          grokEnhanced: hasGrokEnhancements
+        return res.status(404).json({
+          success: false,
+          error: 'Post not found'
         });
       }
       
-    } catch (error: any) {
-      console.error('Video approval failed:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to approve video'
-      });
-    }
-  });
-
-  // ========================================
-  // PIPELINE INTEGRATION FIX ENDPOINTS
-  // ========================================
-
-  // Initialize comprehensive pipeline
-  app.post('/api/pipeline/initialize', requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId!;
-      const sessionId = req.sessionID;
-      
-      // Initialize session cache manager
-      const sessionManager = new SessionCacheManager({
-        sessionSecret: process.env.SESSION_SECRET!,
-        isProduction: process.env.NODE_ENV === 'production'
+      // Update post with video approval
+      const updatedPost = await storage.updatePost(postId, {
+        status: 'approved',
+        videoData: videoData,
+        approvedAt: new Date().toISOString()
       });
       
-      const pipelineIntegrationFix = new PipelineIntegrationFix(sessionManager);
-      const pipelineState = await pipelineIntegrationFix.initializePipeline(userId, sessionId);
-      
-      console.log(`🚀 Pipeline initialized for user ${userId}`);
+      console.log(`✅ Video approved successfully - Post ID: ${postId}`);
       
       res.json({
         success: true,
-        pipelineState,
-        message: 'Pipeline initialized with session caching'
+        message: 'Video approved successfully',
+        post: updatedPost,
+        videoData: videoData
       });
+      
     } catch (error: any) {
-      console.error('❌ Pipeline initialization failed:', error);
+      console.error('❌ Video approval failed:', error);
       res.status(500).json({
         success: false,
-        error: 'Pipeline initialization failed',
-        details: error.message
+        error: 'Video approval temporarily unavailable'
       });
     }
   });
 
-  // Execute onboarding step with OAuth integration
-  app.post('/api/pipeline/onboarding', requireAuth, async (req: any, res) => {
+  // VIDEO PROXY ENDPOINT FOR SERVING GENERATED VIDEOS
+  app.get('/videos/:videoId', async (req, res) => {
     try {
-      const userId = req.session.userId!;
-      const { provider } = req.body;
+      const { videoId } = req.params;
+      console.log(`📺 Video request: ${videoId}`);
       
-      const sessionManager = new SessionCacheManager({
-        sessionSecret: process.env.SESSION_SECRET!,
-        isProduction: process.env.NODE_ENV === 'production'
-      });
+      // Check for video metadata file
+      const fs = await import('fs');
+      const path = await import('path');
       
-      const pipelineIntegrationFix = new PipelineIntegrationFix(sessionManager);
-      const pipelineState = await pipelineIntegrationFix.executeOnboardingStep(userId, provider);
+      const videosDir = path.join(process.cwd(), 'public', 'videos');
+      const metaPath = path.join(videosDir, `${videoId}.meta`);
       
-      console.log(`✅ Onboarding step completed for user ${userId}`);
-      
-      res.json({
-        success: true,
-        pipelineState,
-        currentStep: pipelineState.currentStep,
-        message: 'Onboarding step completed'
-      });
-    } catch (error: any) {
-      console.error('❌ Onboarding step failed:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Onboarding step failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Complete full pipeline execution
-  app.post('/api/pipeline/complete', requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId!;
-      const { brandPurposeData, generationOptions } = req.body;
-      
-      const sessionManager = new SessionCacheManager({
-        sessionSecret: process.env.SESSION_SECRET!,
-        isProduction: process.env.NODE_ENV === 'production'
-      });
-      
-      const pipelineIntegrationFix = new PipelineIntegrationFix(sessionManager);
-      
-      // Execute all remaining pipeline steps
-      let pipelineState = await pipelineIntegrationFix.executeBrandPurposeStep(userId, brandPurposeData);
-      pipelineState = await pipelineIntegrationFix.executeContentEngineStep(userId);
-      pipelineState = await pipelineIntegrationFix.executeContentGenerationStep(userId, generationOptions);
-      pipelineState = await pipelineIntegrationFix.executeAutoPostingStep(userId);
-      
-      console.log(`🎯 Complete pipeline executed for user ${userId}`);
-      
-      res.json({
-        success: true,
-        pipelineState,
-        completed: true,
-        message: 'Complete pipeline executed successfully'
-      });
-    } catch (error: any) {
-      console.error('❌ Pipeline completion failed:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Pipeline completion failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Recover interrupted pipeline
-  app.get('/api/pipeline/recovery/:userId', requireAuth, async (req: any, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      
-      const sessionManager = new SessionCacheManager({
-        sessionSecret: process.env.SESSION_SECRET!,
-        isProduction: process.env.NODE_ENV === 'production'
-      });
-      
-      const pipelineIntegrationFix = new PipelineIntegrationFix(sessionManager);
-      const recoveredState = await pipelineIntegrationFix.recoverPipeline(userId);
-      
-      if (recoveredState) {
-        console.log(`🔄 Pipeline recovery successful for user ${userId}`);
+      if (fs.existsSync(metaPath)) {
+        const metadata = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+        console.log(`✅ Video metadata found: ${metadata.type}`);
+        
+        // Return video metadata as JSON for now (placeholder system)
+        res.setHeader('Content-Type', 'application/json');
         res.json({
           success: true,
-          recoveredState,
-          recommendations: recoveredState.recoveryRecommendations,
-          message: 'Pipeline state recovered'
+          videoId: videoId,
+          metadata: metadata,
+          note: 'VEO3 video placeholder - actual video implementation in progress'
         });
       } else {
-        res.json({
+        console.log(`❌ Video not found: ${videoId}`);
+        res.status(404).json({
           success: false,
-          message: 'No pipeline state found to recover'
+          error: 'Video not found'
         });
       }
-    } catch (error: any) {
-      console.error('❌ Pipeline recovery failed:', error);
+      
+    } catch (error) {
+      console.error('Video proxy error:', error);
       res.status(500).json({
         success: false,
-        error: 'Pipeline recovery failed',
-        details: error.message
+        error: 'Video proxy failed'
       });
     }
   });
-
-  // Enhanced session cache health check
-  app.get('/api/session/health', requireAuth, async (req: any, res) => {
-    try {
-      const sessionManager = new SessionCacheManager({
-        sessionSecret: process.env.SESSION_SECRET!,
-        isProduction: process.env.NODE_ENV === 'production'
-      });
-      
-      const healthStatus = await sessionManager.healthCheck();
-      
-      res.json({
-        success: true,
-        health: healthStatus,
-        sessionId: req.sessionID,
-        userId: req.session.userId,
-        message: 'Session health check completed'
-      });
-    } catch (error: any) {
-      console.error('❌ Session health check failed:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Session health check failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Cleanup endpoint to remove Strategic Post IDs from existing posts
-  app.post('/api/cleanup-strategic-post-ids', requireAuth, async (req: any, res) => {
-    try {
-      console.log('🧹 Starting Strategic Post ID cleanup...');
-      
-      const userId = req.session.userId;
-      
-      // Get all posts for the user that contain Strategic Post IDs
-      const postsWithIds = await db.select()
-        .from(posts)
-        .where(eq(posts.userId, userId));
-      
-      console.log(`📊 Found ${postsWithIds.length} total posts`);
-      
-      // Simple direct SQL update to remove Strategic Post IDs
-      const updateResult = await db.execute(sql`
-        UPDATE posts 
-        SET content = REGEXP_REPLACE(content, '\\s*\\[Strategic Post #[0-9]+ for [a-z]+ - [0-9]+-[a-z0-9]+\\]', '', 'g')
-        WHERE user_id = ${userId}
-        AND content LIKE '%[Strategic Post%'
-      `);
-      
-      console.log(`🎉 Cleanup complete! Updated ${updateResult.rowCount || 0} posts using direct SQL`);
-      
-      res.json({
-        success: true,
-        message: `Cleaned Strategic Post IDs from all posts`,
-        totalPosts: postsWithIds.length,
-        updatedPosts: updateResult.rowCount || 0
-      });
-      
-    } catch (error: any) {
-      console.error('❌ Cleanup failed:', error.message);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-
-  // Infrastructure monitoring endpoints for production stability  
-  app.get('/api/admin/quota-status/:userId', requireAuth, async (req, res) => {
-    try {
-      const { QuotaManager } = await import('./services/QuotaManager.js');
-      const status = await QuotaManager.getQuotaStatus(parseInt(req.params.userId));
-      res.json(status);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get('/api/admin/posting-queue', requireAuth, async (req, res) => {
-    try {
-      const { PostingQueue } = await import('./services/posting_queue.js');
-      const status = PostingQueue.getQueueStatus();
-      res.json(status);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post('/api/admin/queue/stop', requireAuth, async (req, res) => {
-    try {
-      const { PostingQueue } = await import('./services/posting_queue.js');
-      PostingQueue.stopProcessing();
-      res.json({ message: 'Queue processing stopped' });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get('/api/admin/session-health/:userId', requireAuth, async (req, res) => {
-    try {
-      const { redisSessionManager } = await import('./services/RedisSessionManager.js');
-      const userId = parseInt(req.params.userId);
-      
-      const sessionHealth = {
-        userId: userId,
-        redisConnected: redisSessionManager.isConnected,
-        lastActivity: new Date().toISOString()
-      };
-
-      res.json(sessionHealth);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get('/api/admin/oauth-status/:userId', requireAuth, async (req, res) => {
-    try {
-      const { OAuthRefreshManager } = await import('./services/OAuthRefreshManager.js');
-      const userId = parseInt(req.params.userId);
-      
-      const platforms = ['facebook', 'instagram', 'linkedin', 'x'];
-      const tokenStatus = {};
-      
-      for (const platform of platforms) {
-        tokenStatus[platform] = await OAuthRefreshManager.refreshTokenIfNeeded(userId, platform);
-      }
-
-      res.json({ userId, tokenStatus, checkedAt: new Date().toISOString() });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  console.log('📊 Infrastructure monitoring endpoints registered');
 
   // Return the existing HTTP server instance
   // Serve Veo3 generated videos with proper headers

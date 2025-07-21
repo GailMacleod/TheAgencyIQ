@@ -78,6 +78,7 @@ function VideoPlayerWithFallback({ videoUrl, thumbnail, title, onError }: { vide
 interface VideoData {
   videoId: string;
   url: string;
+  videoUrl?: string;
   title: string;
   description: string;
   duration: number;
