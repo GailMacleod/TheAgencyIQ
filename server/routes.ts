@@ -189,6 +189,8 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Serve generated videos
+  app.use('/videos', express.static(path.join(__dirname, '../public/videos')));
   
   // Add JSON middleware
   app.use(express.json({ limit: '10mb' }));

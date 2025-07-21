@@ -2296,62 +2296,178 @@ Show your witty copywriting genius!`;
   // Generate actual video with Google Veo3 API
   static async generateWithVeo3(prompt, options = {}) {
     try {
-      console.log('🎬 Starting Veo3 video generation with prompt:', prompt.substring(0, 100) + '...');
+      console.log('🎬 PROPER VEO3 ASYNC: Starting actual video generation...');
+      console.log('🎥 Prompt:', prompt.substring(0, 100) + '...');
+      console.log('⚙️ Options:', JSON.stringify(options));
       
-      if (!genAI) {
-        throw new Error('Google AI client not initialized');
+      if (!process.env.GOOGLE_AI_STUDIO_KEY) {
+        throw new Error('GOOGLE_AI_STUDIO_KEY not configured');
       }
-
-      const model = genAI.getGenerativeModel({ model: VEO3_VIDEO_MODEL });
       
-      // Veo3 video generation request
-      const request = {
-        contents: [{
-          role: 'user',
-          parts: [{
-            text: `Generate an 8-second cinematic video based on this prompt: ${prompt}. 
-                   Platform: ${options.platform || 'youtube'}
-                   Aspect Ratio: ${options.aspectRatio || '16:9'}
-                   Style: Professional, cinematic, Queensland business focused
-                   Format: MP4, high quality`
-          }]
-        }],
-        generationConfig: {
-          maxOutputTokens: 1000,
-          temperature: 0.7,
+      // Initialize Google AI for video generation (not text generation)
+      const { GoogleGenerativeAI } = await import('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_KEY);
+      
+      // Content compliance check
+      const complianceCheck = VideoService.checkContentCompliance(prompt);
+      if (!complianceCheck.safe) {
+        throw new Error(`Content compliance issue: ${complianceCheck.reason}`);
+      }
+      
+      console.log('🎥 Initiating async video generation operation...');
+      
+      // STEP 1: Start video generation operation (proper Veo3 API)
+      let operation;
+      try {
+        operation = await genAI.models.generateVideos({
+          model: "veo-3.0-generate-preview",
+          prompt: prompt,
+          config: {
+            personGeneration: "allow_all",
+            aspectRatio: options.aspectRatio || "16:9",
+            duration: options.duration || 8
+          }
+        });
+        console.log(`📋 Video operation started: ${operation.name}`);
+      } catch (apiError) {
+        // Fallback to text generation for development
+        console.log('⚠️ Veo3 API not available, using text generation fallback...');
+        const model = genAI.getGenerativeModel({ model: VEO3_MODEL });
+        const result = await model.generateContent(`Create video description: ${prompt}`);
+        
+        return {
+          success: false,
+          fallback: true,
+          textDescription: result.response.text(),
+          error: 'Veo3 video API not available - using preview mode',
+          previewMode: true
+        };
+      }
+      
+      // STEP 2: Poll for completion with exponential backoff
+      let pollCount = 0;
+      const maxPolls = 30; // 5 minutes max
+      let currentOperation = operation;
+      
+      while (!currentOperation.done && pollCount < maxPolls) {
+        const pollDelay = Math.min(10000 + (pollCount * 2000), 30000); // 10s to 30s
+        console.log(`⏱️ Polling ${pollCount + 1}/${maxPolls}, waiting ${pollDelay/1000}s...`);
+        
+        await new Promise(resolve => setTimeout(resolve, pollDelay));
+        
+        try {
+          currentOperation = await genAI.operations.getVideosOperation({ 
+            operation: currentOperation.name 
+          });
+          console.log(`📊 Status: ${currentOperation.done ? 'COMPLETE' : 'IN_PROGRESS'}`);
+        } catch (pollError) {
+          console.log(`⚠️ Polling error: ${pollError.message}`);
+          break;
         }
-      };
-
-      const result = await model.generateContent(request);
-      const response = await result.response;
-      const videoResponse = response.text();
+        
+        pollCount++;
+      }
       
-      console.log('✅ Veo3 video generation successful');
+      // STEP 3: Handle completion or timeout
+      if (!currentOperation.done) {
+        throw new Error(`Video generation timeout after ${maxPolls} polls`);
+      }
       
-      // For now, return a structured response indicating video generation succeeded
-      // In production, this would contain the actual video URL from Google's response
+      if (currentOperation.error) {
+        throw new Error(`Video generation failed: ${currentOperation.error.message}`);
+      }
+      
+      // STEP 4: Extract and download video
+      const generatedVideos = currentOperation.response?.generatedVideos;
+      if (!generatedVideos || generatedVideos.length === 0) {
+        throw new Error('No videos generated in response');
+      }
+      
+      const gcsUri = generatedVideos[0]?.video?.gcsUri;
+      if (!gcsUri) {
+        throw new Error('No GCS URI found in generated video');
+      }
+      
+      console.log(`✅ Video generated at: ${gcsUri}`);
+      
+      // STEP 5: Download and store locally
       const videoId = `veo3_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Ensure videos directory exists
+      const videosDir = path.join(__dirname, '../public/videos');
+      if (!fs.existsSync(videosDir)) {
+        fs.mkdirSync(videosDir, { recursive: true });
+      }
+      
+      // Download video from GCS
+      console.log(`📥 Downloading from GCS...`);
+      const response = await fetch(gcsUri);
+      if (!response.ok) {
+        throw new Error(`Failed to download: ${response.statusText}`);
+      }
+      
+      const videoBuffer = await response.arrayBuffer();
+      const localVideoPath = path.join(videosDir, `${videoId}.mp4`);
+      
+      fs.writeFileSync(localVideoPath, Buffer.from(videoBuffer));
+      console.log(`💾 Video saved: ${localVideoPath}`);
+      
+      // STEP 6: Cache for 48 hours
+      const publicVideoUrl = `/videos/${videoId}.mp4`;
+      try {
+        const Database = require('@replit/database');
+        const db = new Database();
+        await db.set(`video_cache_${videoId}`, {
+          url: publicVideoUrl,
+          gcsUri: gcsUri,
+          prompt: prompt.substring(0, 200),
+          timestamp: new Date().toISOString(),
+          userId: options.userId,
+          platform: options.platform
+        }, { EX: 172800 }); // 48 hours
+        console.log(`🗄️ Video cached: ${videoId}`);
+      } catch (cacheError) {
+        console.log('⚠️ Caching failed:', cacheError.message);
+      }
       
       return {
         success: true,
-        videoId,
-        videoUrl: `https://storage.googleapis.com/veo3-videos/${videoId}.mp4`, // Mock URL structure for testing
-        response: videoResponse,
+        videoUrl: publicVideoUrl,
+        gcsUri: gcsUri,
+        videoId: videoId,
+        response: `Veo3 generated: ${prompt.substring(0, 100)}...`,
         metadata: {
           platform: options.platform,
           aspectRatio: options.aspectRatio,
-          duration: 8,
+          duration: options.duration || 8,
+          generationTime: pollCount * 15,
           quality: 'HD',
           format: 'MP4'
         }
       };
-
+      
     } catch (error) {
-      console.error('❌ Veo3 video generation failed:', error);
+      console.error('❌ Veo3 generation failed:', error.message);
+      
+      // Enhanced error categorization
+      let fallbackReason = 'general_error';
+      if (error.message.includes('timeout')) {
+        fallbackReason = 'generation_timeout';
+      } else if (error.message.includes('quota') || error.message.includes('limit')) {
+        fallbackReason = 'quota_exceeded';
+      } else if (error.message.includes('compliance') || error.message.includes('safety')) {
+        fallbackReason = 'content_safety';
+      }
+      
       return {
         success: false,
         error: error.message,
-        fallback: true
+        fallback: true,
+        fallbackReason: fallbackReason,
+        textDescription: `Preview mode: ${prompt.substring(0, 200)}...`,
+        previewMode: true
       };
     }
   }
