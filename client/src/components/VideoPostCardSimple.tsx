@@ -49,46 +49,62 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
 
   const canGenerateVideo = Boolean(userId);
 
-  // One-click video generation function
+  // Modern video generation with subtle progress
   const generateVideoOneClick = async () => {
     if (!userId) {
       setError('User authentication required');
       return;
     }
 
-    try {
-      setIsRendering(true);
-      setError(null);
-      setRenderingProgress(0);
-      setRenderingTime(0);
-      setCurrentPhase('Initializing Veo3 Generation...');
+    console.log('🎬 Starting video generation for post:', post.id);
+    
+    setIsRendering(true);
+    setError(null);
+    setRenderingProgress(0);
+    setRenderingTime(0);
+    setCurrentPhase('Initializing');
 
-      // Progress timer
-      const startTime = Date.now();
-      const progressTimer = setInterval(() => {
+    // Smooth progress tracking
+    const startTime = Date.now();
+    let progressInterval;
+    let phaseInterval;
+
+    const startProgress = () => {
+      progressInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         setRenderingTime(elapsed);
-        setRenderingProgress(prev => Math.min(prev + 2, 95));
-      }, 500);
-
-      // Phase updates
-      const phaseTimer = setInterval(() => {
-        setCurrentPhase(prev => {
-          if (prev.includes('Initializing')) return 'Creating Cinematic Business Scenario';
-          if (prev.includes('Cinematic')) return 'Applying MayorkingAI Techniques';
-          if (prev.includes('MayorkingAI')) return 'Generating Veo3 Video';
-          if (prev.includes('Generating')) return 'Finalizing Video Content';
-          if (prev.includes('Finalizing')) return 'Video Generation Complete';
-          return prev;
+        
+        // Smooth exponential progress curve
+        const targetProgress = Math.min(90, (elapsed / 20) * 100);
+        setRenderingProgress(prev => {
+          const diff = targetProgress - prev;
+          return prev + (diff * 0.2); // Smooth interpolation
         });
-      }, 3000);
+      }, 250);
 
-      // Direct one-click generation without prompt selection
+      // Subtle phase updates
+      phaseInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        if (elapsed < 5) setCurrentPhase('Analyzing brand context');
+        else if (elapsed < 10) setCurrentPhase('Grok enhancement');
+        else if (elapsed < 15) setCurrentPhase('Building cinematic sequence');
+        else setCurrentPhase('Veo3 rendering');
+      }, 2000);
+    };
+
+    const stopProgress = () => {
+      if (progressInterval) clearInterval(progressInterval);
+      if (phaseInterval) clearInterval(phaseInterval);
+    };
+
+    try {
+      startProgress();
+
       const response = await fetch('/api/video/render', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          promptType: 'cinematic-auto', // Auto-select best cinematic prompt
+          promptType: 'cinematic-auto',
           promptPreview: post.content,
           editedText: 'none',
           platform: post.platform,
@@ -98,28 +114,31 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
       });
 
       const data = await response.json();
-
-      clearInterval(progressTimer);
-      clearInterval(phaseTimer);
-
+      
       if (data.success && data.videoData) {
         setRenderingProgress(100);
-        setCurrentPhase('✅ Veo3 Video Generation Complete!');
+        setCurrentPhase('Complete');
         setVideoData(data.videoData);
         setHasGeneratedVideo(true);
         
         toast({
-          title: "Video Generated Successfully!",
-          description: `Cinematic ${post.platform} video ready for approval`
+          title: "Video Ready",
+          description: `Cinematic ${post.platform} video generated`
         });
+        
+        // Clean completion
+        setTimeout(() => {
+          setIsRendering(false);
+        }, 1000);
       } else {
-        setError(data.error || 'Video generation failed');
+        throw new Error(data.error || 'Generation failed');
       }
     } catch (error) {
-      console.error('One-click video generation failed:', error);
-      setError('Video generation temporarily unavailable');
-    } finally {
+      console.error('Video generation error:', error);
+      setError('Generation failed - try again');
       setIsRendering(false);
+    } finally {
+      stopProgress();
     }
   };
 
@@ -240,54 +259,29 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate }: Vi
           )}
         </div>
         
-        {/* Enhanced Video Generation Progress Indicator */}
+        {/* Subtle Modern Progress Indicator */}
         {isRendering && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg">
-            <div className="flex items-center justify-between mb-3">
+          <div className="mt-3 p-3 bg-gray-50/80 backdrop-blur-sm border border-gray-200/50 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-indigo-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-indigo-700">Generating Veo3 Video</span>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-gray-700 font-medium">Generating</span>
               </div>
-              <span className="text-xs font-mono bg-indigo-100 px-2 py-1 rounded text-indigo-600">
+              <span className="text-xs text-gray-500 font-mono">
                 {renderingTime}s
               </span>
             </div>
             
-            <Progress value={renderingProgress} className="w-full mb-3 h-2" />
-            
-            <div className="flex justify-between items-center text-xs mb-2">
-              <span className="text-gray-600">{renderingProgress}% complete</span>
-              <span className="text-indigo-600 font-medium">
-                ETA: {Math.max(0, Math.round(25 - renderingTime))}s
-              </span>
+            <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${renderingProgress}%` }}
+              ></div>
             </div>
             
             {currentPhase && (
-              <div className="flex items-center gap-2 p-2 bg-white rounded border border-indigo-100">
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
-                <p className="text-xs text-purple-700 font-medium">{currentPhase}</p>
-              </div>
+              <p className="text-xs text-gray-600">{currentPhase}</p>
             )}
-            
-            {/* Generation Steps Indicator */}
-            <div className="mt-3 flex justify-between text-xs">
-              <div className={`flex items-center gap-1 ${renderingProgress > 20 ? 'text-green-600' : 'text-gray-400'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${renderingProgress > 20 ? 'bg-green-400' : 'bg-gray-300'}`}></div>
-                <span>JTBD Analysis</span>
-              </div>
-              <div className={`flex items-center gap-1 ${renderingProgress > 40 ? 'text-green-600' : 'text-gray-400'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${renderingProgress > 40 ? 'bg-green-400' : 'bg-gray-300'}`}></div>
-                <span>Grok Enhancement</span>
-              </div>
-              <div className={`flex items-center gap-1 ${renderingProgress > 60 ? 'text-green-600' : 'text-gray-400'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${renderingProgress > 60 ? 'bg-green-400' : 'bg-gray-300'}`}></div>
-                <span>Cinematic Build</span>
-              </div>
-              <div className={`flex items-center gap-1 ${renderingProgress > 85 ? 'text-green-600' : 'text-gray-400'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${renderingProgress > 85 ? 'bg-green-400' : 'bg-gray-300'}`}></div>
-                <span>Veo3 Render</span>
-              </div>
-            </div>
           </div>
         )}
         
