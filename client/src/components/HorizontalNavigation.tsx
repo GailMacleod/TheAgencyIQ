@@ -138,20 +138,13 @@ export default function HorizontalNavigation() {
       return "next";
     }
 
-    // If requirements not met, show disabled
+    // Only disable if subscription is required and not active
     if (item.requiresSubscription && !hasActiveSubscription) {
       return "disabled";
     }
 
-    if (item.requiresBrandPurpose && !brandPurposeCompleted) {
-      return "disabled";
-    }
-
-    if (item.requiresPlatformConnection && !platformsConnected) {
-      return "disabled";
-    }
-
-    // Otherwise, show as available
+    // For subscribers, show all steps as available (they can access them all)
+    // The navigation logic will redirect them to prerequisites if needed
     return "available";
   };
 
