@@ -666,7 +666,7 @@ export default function OnboardingWizard() {
                 )}
                 <div className="w-2 h-2 bg-blue-500 rounded-full mr-1 sm:mr-2 shrink-0"></div>
                 <CardTitle className="text-xs sm:text-sm lg:text-base font-semibold text-muted-foreground truncate">
-                  {isMinimized ? "TheAgencyIQ Guide" : currentWizardStep?.title}
+                  {isMinimized ? "Your little helper" : currentWizardStep?.title}
                 </CardTitle>
                 {isMinimized && (
                   <div className="ml-2 text-xs text-gray-400 hidden sm:inline">
