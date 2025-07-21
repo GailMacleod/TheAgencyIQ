@@ -179,12 +179,10 @@ export default function HorizontalNavigation() {
                 <button
                   onClick={() => handleNavClick(item)}
                   className={cn(
-                    "group flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:scale-105",
-                    "bg-white border text-center min-w-[80px]",
-                    iconState === "next" && "border-[#00f0ff] shadow-md animate-slow-pulse",
-                    iconState === "completed" && "border-[#3250fa]",
-                    iconState === "available" && "border-gray-300 hover:border-gray-400",
-                    iconState === "disabled" && "border-gray-200 opacity-60 cursor-not-allowed"
+                    "group flex flex-col items-center p-3 transition-all duration-300 hover:scale-105",
+                    "text-center min-w-[80px]",
+                    iconState === "next" && "animate-slow-pulse",
+                    iconState === "disabled" && "opacity-60 cursor-not-allowed"
                   )}
                   disabled={iconState === "disabled"}
                 >
@@ -234,40 +232,7 @@ export default function HorizontalNavigation() {
           })}
         </div>
 
-        {/* Progress Indicator */}
-        <div className="mt-8 text-center">
-          <div className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-100 rounded-full">
-            <div className={cn(
-              "w-2 h-2 rounded-full",
-              hasActiveSubscription ? "bg-green-500" : "bg-gray-300"
-            )} />
-            <span className="text-sm text-gray-600">
-              {hasActiveSubscription ? "Subscribed" : "Subscribe to continue"}
-            </span>
-            
-            {hasActiveSubscription && (
-              <>
-                <div className="w-1 h-1 bg-gray-400 rounded-full" />
-                <div className={cn(
-                  "w-2 h-2 rounded-full",
-                  brandPurposeCompleted ? "bg-green-500" : "bg-gray-300"
-                )} />
-                <span className="text-sm text-gray-600">
-                  {brandPurposeCompleted ? "Brand Defined" : "Define Brand"}
-                </span>
-                
-                <div className="w-1 h-1 bg-gray-400 rounded-full" />
-                <div className={cn(
-                  "w-2 h-2 rounded-full",
-                  platformsConnected ? "bg-green-500" : "bg-gray-300"
-                )} />
-                <span className="text-sm text-gray-600">
-                  {platformsConnected ? "Platforms Connected" : "Connect Platforms"}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
+
       </div>
     </section>
   );
