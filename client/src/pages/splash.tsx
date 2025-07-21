@@ -265,19 +265,19 @@ export default function Splash() {
             </div>
             
             <div className="footer-links flex flex-col sm:flex-row justify-center items-center gap-4 text-sm text-muted-foreground">
-              <a href="https://app.theagencyiq.ai/terms" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+              <a href="https://app.theagencyiq.ai/terms" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors text-[12px]">
                 Terms of Service
               </a>
               <span className="hidden sm:block">•</span>
-              <a href="https://app.theagencyiq.ai/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+              <a href="https://app.theagencyiq.ai/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors text-[12px]">
                 Privacy Policy
               </a>
               <span className="hidden sm:block">•</span>
-              <a href="https://app.theagencyiq.ai/security" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+              <a href="https://app.theagencyiq.ai/security" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors text-[12px]">
                 Security Policy
               </a>
               <span className="hidden sm:block">•</span>
-              <span className="text-green-600 font-medium">Contact Support - support@theagencyiq.ai (your little helper will need your email address as well)</span>
+              <span className="text-green-600 font-medium text-[12px]">Contact Support - support@theagencyiq.ai (your little helper will need your email address as well)</span>
             </div>
             <p className="text-muted-foreground">
               &copy; 2024 Macleodglba trading as The AgencyIQ. All rights reserved.
