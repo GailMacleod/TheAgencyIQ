@@ -827,7 +827,7 @@ function IntelligentSchedule() {
             <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-900 mb-2">No AI Content Generated Yet</h3>
             <p className="text-gray-500 mb-6 max-w-md mx-auto">
-              Generate your intelligent content schedule using xAI analysis of your brand purpose and audience insights.
+              Analyse your brand purpose, audience insights, to create intelligent, strategic content
             </p>
             {brandPurpose ? (
               <Button
