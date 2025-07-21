@@ -251,7 +251,7 @@ export default function OnboardingWizard() {
       '/video-gen': 'Create video content here, then define your brand purpose.',
       '/brand-purpose': 'Define your brand purpose here, then connect your platforms.',
       '/connect-platforms': 'Connect your social media accounts here, then monitor analytics.',
-      '/analytics': 'Monitor your performance here and optimize your strategy.',
+      '/analytics': 'Monitor your performance here and optimise your strategy.',
       '/subscription': 'Manage your subscription and upgrade for more features.'
     };
     
@@ -546,13 +546,13 @@ export default function OnboardingWizard() {
     {
       id: 3,
       title: "Monitor Performance",
-      description: "Track analytics and optimize your strategy",
+      description: "Track analytics and optimise your strategy",
       icon: <BarChart3 className="w-4 h-4" />,
       actionText: "View Analytics",
       route: "/analytics",
       tips: [
         "Monitor engagement across all platforms",
-        "Use insights to optimize content strategy"
+        "Use insights to optimise content strategy"
       ],
       content: (
         <div className="space-y-4">

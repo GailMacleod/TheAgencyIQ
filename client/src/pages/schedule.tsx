@@ -627,7 +627,7 @@ export default function Schedule() {
             Your 30-Day Social Media Schedule
           </h1>
           <p className="text-gray-600">
-            AI has analyzed Queensland events and optimal posting times to create your personalized content calendar
+            AI has analysed Queensland events and optimal posting times to create your personalised content calendar
           </p>
           
           {/* Auto-post entire schedule button */}

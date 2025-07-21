@@ -228,11 +228,11 @@ export class AIContentOptimizer {
         
         Determine optimal posting times considering:
         - Queensland timezone (AEST/AEDT)
-        - Small business audience behavior
+        - Small business audience behaviour
         - Platform-specific engagement patterns
-        - Workday vs weekend optimization
+        - Workday vs weekend optimisation
         
-        Return JSON with bestTimes array, timezone, and dayOptimization object.
+        Return JSON with bestTimes array, timezone, and dayOptimisation object.
       `;
 
       const response = await openai.chat.completions.create({

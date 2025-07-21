@@ -89,7 +89,7 @@ export default function AdminVideoPrompts() {
           <CardContent>
             <div className="text-2xl font-bold">{summary?.performance?.averageCacheHitRate || '0%'}</div>
             <p className="text-xs text-muted-foreground">
-              cost optimization
+              cost optimisation
             </p>
           </CardContent>
         </Card>

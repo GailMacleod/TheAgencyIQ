@@ -1,4 +1,4 @@
-// Queensland and Australian local calendar events for content optimization
+// Queensland and Australian local calendar events for content optimisation
 export interface LocalEvent {
   date: string;
   name: string;

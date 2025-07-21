@@ -87,7 +87,7 @@ export default function Subscription() {
   const handleSelectPlan = (planId: string) => {
     setShowSignupForm(planId);
     
-    // Track plan selection for conversion optimization
+    // Track plan selection for conversion optimisation
     const plan = plans.find(p => p.id === planId);
     if (plan) {
       MetaPixelTracker.trackConversionFunnel('subscription_plan_selected', {

@@ -96,7 +96,7 @@ export default function YearlyAnalytics() {
         quarterly_view: selectedQuarter
       });
       
-      // Track goal achievement rates for business optimization
+      // Track goal achievement rates for business optimisation
       if (yearlyAnalytics.brandPurposeAlignment) {
         const avgGoalAchievement = (
           yearlyAnalytics.brandPurposeAlignment.growthGoal.percentage +
@@ -467,7 +467,7 @@ export default function YearlyAnalytics() {
               <div className="flex items-start space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <Users className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-blue-800 lowercase">optimize reach strategies</h4>
+                  <h4 className="font-medium text-blue-800 lowercase">optimise reach strategies</h4>
                   <p className="text-sm text-blue-700">
                     Leverage Queensland-specific content during peak engagement periods
                   </p>

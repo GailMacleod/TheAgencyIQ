@@ -269,7 +269,7 @@ export default function AIDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  AI-powered SEO optimization specifically designed for Queensland small businesses, 
+                  AI-powered SEO optimisation specifically designed for Queensland small businesses, 
                   including local keywords, trending hashtags, and meta tags for maximum visibility.
                 </div>
 

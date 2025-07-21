@@ -172,7 +172,7 @@ export class MetaPixelTracker {
     return values[tier as keyof typeof values] || 0;
   }
 
-  // Advanced tracking for conversion optimization
+  // Advanced tracking for conversion optimisation
   static trackConversionFunnel(step: string, data?: Record<string, any>): void {
     this.trackCustomEvent('FunnelStep', {
       funnel_step: step,

@@ -10,7 +10,7 @@ interface ScheduledPost {
   status: string;
   strategicTheme?: string;
   businessCanvasPhase?: string;
-  engagementOptimization?: string;
+  engagementOptimisation?: string;
 }
 
 interface CalendarCardProps {
@@ -174,9 +174,9 @@ export default function CalendarCard({ date, posts, events = [] }: CalendarCardP
                                 <strong>Business Phase:</strong> {post.businessCanvasPhase}
                               </div>
                             )}
-                            {post.engagementOptimization && (
+                            {post.engagementOptimisation && (
                               <div className="text-xs text-purple-600">
-                                <strong>ROI Potential:</strong> {post.engagementOptimization}
+                                <strong>ROI Potential:</strong> {post.engagementOptimisation}
                               </div>
                             )}
                           </div>

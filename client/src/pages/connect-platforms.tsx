@@ -118,7 +118,7 @@ export default function ConnectPlatforms() {
         const totalConnections = data.length;
         
         if (validConnections === totalConnections && totalConnections > 0) {
-          console.log(`🚀 All ${totalConnections} platforms connected and optimized`);
+          console.log(`🚀 All ${totalConnections} platforms connected and optimised`);
         } else if (validConnections > 0) {
           console.log(`⚡ ${validConnections}/${totalConnections} platforms ready for publishing`);
         }

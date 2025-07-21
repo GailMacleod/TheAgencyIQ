@@ -34,7 +34,7 @@ export default function Splash() {
     }
   }, [location]);
 
-  // Trigger animated reveal on page load - optimized for faster loading
+  // Trigger animated reveal on page load - optimised for faster loading
   useEffect(() => {
     // Start animation immediately for returning customers
     setRevealAnimation(true);

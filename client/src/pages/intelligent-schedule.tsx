@@ -33,7 +33,7 @@ interface Post {
   localEvent?: string;
   strategicTheme?: string;
   businessCanvasPhase?: string;
-  engagementOptimization?: string;
+  engagementOptimisation?: string;
   analytics?: {
     reach: number;
     engagement: number;
@@ -287,7 +287,7 @@ function IntelligentSchedule() {
   // Type-safe posts array
   const postsArray: Post[] = Array.isArray(posts) ? posts : [];
 
-  // Fetch Queensland events for calendar optimization
+  // Fetch Queensland events for calendar optimisation
   useEffect(() => {
     const fetchQueenslandEvents = async () => {
       try {
@@ -490,7 +490,7 @@ function IntelligentSchedule() {
             'AI methodology implemented',
             'Value Proposition Canvas integrated',
             'Queensland market data optimized',
-            '30-day cycle optimization active'
+            '30-day cycle optimisation active'
           ]
         });
         
@@ -661,7 +661,7 @@ function IntelligentSchedule() {
             <Sparkles className="w-8 h-8 text-yellow-500 ml-3" />
           </div>
           <p className="text-gray-600 text-lg mb-6">
-            xAI analyzes your brand purpose, audience insights, and Queensland market data to create intelligent, strategic content
+            xAI analyses your brand purpose, audience insights, and Queensland market data to create intelligent, strategic content
           </p>
 
           {/* OAuth Token Status Banner */}

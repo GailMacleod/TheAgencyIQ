@@ -19,7 +19,7 @@ export default function AIWidget() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hi! I\'m your strategic AI assistant with comprehensive knowledge of TheAgencyIQ platform and deep expertise in Queensland SME success.\n\nI can provide expert guidance on:\n• Complete platform functionality & features\n• Strategic planning & brand positioning\n• Content creation & social media strategy\n• Platform optimization (Facebook, Instagram, LinkedIn, X, YouTube)\n• Subscription management & billing\n• Analytics & performance monitoring\n• Technical troubleshooting & support\n• Business growth & customer acquisition\n• Local Queensland market insights\n\nI understand how every feature works together - from brand purpose setup to multi-platform publishing. What specific question can I help you with?',
+      content: 'Hi! I\'m your strategic AI assistant with comprehensive knowledge of TheAgencyIQ platform and deep expertise in Queensland SME success.\n\nI can provide expert guidance on:\n• Complete platform functionality & features\n• Strategic planning & brand positioning\n• Content creation & social media strategy\n• Platform optimisation (Facebook, Instagram, LinkedIn, X, YouTube)\n• Subscription management & billing\n• Analytics & performance monitoring\n• Technical troubleshooting & support\n• Business growth & customer acquisition\n• Local Queensland market insights\n\nI understand how every feature works together - from brand purpose setup to multi-platform publishing. What specific question can I help you with?',
       timestamp: new Date(),
     },
   ]);

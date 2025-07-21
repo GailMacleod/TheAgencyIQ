@@ -33,7 +33,7 @@ export default function AITest() {
     {
       step: 3,
       title: "Queensland Event Integration", 
-      content: "Cross-referencing local Queensland events, school holidays, and seasonal opportunities to optimize posting timing...",
+      content: "Cross-referencing local Queensland events, school holidays, and seasonal opportunities to optimise posting timing...",
       duration: 2500
     },
     {
@@ -129,7 +129,7 @@ export default function AITest() {
             AI Content Generation Workflow
           </h1>
           <p className="text-gray-600 text-sm">
-            Watch AI analyze your brand purpose and create strategic social media content
+            Watch AI analyse your brand purpose and create strategic social media content
           </p>
           
           <Button
