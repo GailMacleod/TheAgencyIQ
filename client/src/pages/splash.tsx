@@ -125,7 +125,7 @@ export default function Splash() {
                 <h2 className="mobile-heading sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-[#3250fa] to-[#00f0ff] bg-clip-text text-transparent px-2 text-center text-[52px]">
                   Social Media for small businesses
                 </h2>
-                <p className="text-sm sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto px-4 sm:px-0">Complete waterfall workflow to drive small businesses' online social presence.</p>
+                <p className="sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4 sm:px-0 text-[16px]">At its core, AgencyIQ is a first-principle powerhouse app designed to supercharge small businesses (especially Queensland SMBs) with automated social media marketing that actually drives revenue, without you lifting a finger beyond initial setup.</p>
               </div>
               
               {/* Platform logos for education */}
