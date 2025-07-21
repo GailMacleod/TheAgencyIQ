@@ -181,8 +181,9 @@ export default function HorizontalNavigation() {
                   className={cn(
                     "group flex flex-col items-center p-3 rounded-lg transition-all duration-300 hover:scale-105",
                     "bg-white border text-center min-w-[80px]",
-                    iconState === "next" && "border-[#3250fa] shadow-md animate-pulse",
-                    iconState === "available" && "border-[#3250fa] hover:border-[#3250fa]/70",
+                    iconState === "next" && "border-[#00f0ff] shadow-md animate-slow-pulse",
+                    iconState === "completed" && "border-[#3250fa]",
+                    iconState === "available" && "border-gray-300 hover:border-gray-400",
                     iconState === "disabled" && "border-gray-200 opacity-60 cursor-not-allowed"
                   )}
                   disabled={iconState === "disabled"}
@@ -191,8 +192,9 @@ export default function HorizontalNavigation() {
                   <div className="flex justify-center mb-2">
                     <IconComponent className={cn(
                       "w-6 h-6 transition-colors",
-                      iconState === "next" && "text-[#3250fa]",
-                      iconState === "available" && "text-[#3250fa]",
+                      iconState === "next" && "text-[#00f0ff]",
+                      iconState === "completed" && "text-[#3250fa]",
+                      iconState === "available" && "text-gray-500",
                       iconState === "disabled" && "text-gray-400"
                     )} />
                   </div>
@@ -200,8 +202,9 @@ export default function HorizontalNavigation() {
                   {/* Label Only */}
                   <span className={cn(
                     "text-xs font-medium",
-                    iconState === "next" && "text-[#3250fa]",
-                    iconState === "available" && "text-[#3250fa]",
+                    iconState === "next" && "text-[#00f0ff]",
+                    iconState === "completed" && "text-[#3250fa]",
+                    iconState === "available" && "text-gray-500",
                     iconState === "disabled" && "text-gray-400"
                   )}>
                     {item.label}
