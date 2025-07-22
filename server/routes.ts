@@ -11720,11 +11720,35 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       
       console.log(`✅ Video approved successfully - Post ID: ${postId}`);
       
+      // AUTO-PUBLISH: Add to posting queue with auto-scheduling
+      let autoPublishResult = null;
+      try {
+        const PostingQueue = (await import('./PostingQueue')).default;
+        const postingQueue = new PostingQueue();
+        
+        // Add approved video to posting queue for immediate/scheduled publishing
+        autoPublishResult = await postingQueue.addPost({
+          postId: postId,
+          userId: sessionUserId,
+          content: updatedPost.content,
+          platforms: [updatedPost.platform],
+          videoData: videoData,
+          scheduledFor: new Date(Date.now() + 2000), // Schedule 2 seconds from now
+          priority: 'high',
+          autoApproved: true
+        });
+        
+        console.log(`🚀 AUTO-PUBLISH: Added post ${postId} to publishing queue:`, autoPublishResult);
+      } catch (publishError) {
+        console.log(`⚠️ Auto-publish failed, video still approved:`, publishError.message);
+      }
+      
       res.json({
         success: true,
-        message: 'Video approved successfully',
+        message: 'Video approved and queued for publishing',
         post: updatedPost,
-        videoData: videoData
+        videoData: videoData,
+        autoPublish: autoPublishResult
       });
       
     } catch (error: any) {
