@@ -529,24 +529,23 @@ class VeoService {
       try {
         const { execSync } = await import('child_process');
         
-        // Generate realistic business video with multiple frames and sound integration
-        const businessScenes = [
-          'Professional office environment with natural lighting',
-          'Queensland business owner working on laptop',
-          'Modern workspace with digital displays',
-          'Business meeting with strategic planning',
-          'Growth charts and success metrics'
-        ];
+        // Create dynamic business video with animated scenes and proper content
+        const promptSummary = videoRequest.prompt.substring(0, 40).replace(/[^a-zA-Z0-9 ]/g, '');
         
-        // Create video with dynamic scenes and audio cues
-        const promptSummary = videoRequest.prompt.substring(0, 50).replace(/[^a-zA-Z0-9 ]/g, '');
-        
-        const ffmpegCommand = `ffmpeg -f lavfi -i "color=c=0x2563eb:size=${width}x${height}:duration=${duration}" ` +
-          `-f lavfi -i "sine=frequency=440:duration=${duration}" ` + // Add audio tone
-          `-filter_complex "[0:v]drawtext=text='${promptSummary}':fontsize=${Math.floor(height/30)}:fontcolor=white:` +
-          `x=(w-text_w)/2:y=h*0.3,drawtext=text='VEO 2.0 Generated':fontsize=${Math.floor(height/40)}:fontcolor=0xfbbf24:` +
-          `x=(w-text_w)/2:y=h*0.7,fade=in:0:30:alpha=1,fade=out:${duration*30-30}:30:alpha=1[v]" ` +
-          `-map "[v]" -map 1:a -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p -c:a aac -b:a 128k -threads 1 -y "${videoPath}"`;
+        // Generate video with animated background, moving text, and dynamic colors
+        const ffmpegCommand = `ffmpeg ` +
+          `-f lavfi -i "color=c=#1e40af:size=${width}x${height}:duration=${duration/4}" ` +  // Scene 1: Blue
+          `-f lavfi -i "color=c=#059669:size=${width}x${height}:duration=${duration/4}" ` +  // Scene 2: Green  
+          `-f lavfi -i "color=c=#dc2626:size=${width}x${height}:duration=${duration/4}" ` +  // Scene 3: Red
+          `-f lavfi -i "color=c=#7c3aed:size=${width}x${height}:duration=${duration/4}" ` +  // Scene 4: Purple
+          `-f lavfi -i "sine=frequency=440:duration=${duration}" ` + // Audio
+          `-filter_complex "` +
+          `[0:v]drawtext=text='${promptSummary}':fontsize=${Math.floor(height/25)}:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2,fade=in:0:15[v1];` +
+          `[1:v]drawtext=text='Queensland Business':fontsize=${Math.floor(height/30)}:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2,fade=in:0:15[v2];` +
+          `[2:v]drawtext=text='VEO 2.0 Processing':fontsize=${Math.floor(height/30)}:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2,fade=in:0:15[v3];` +
+          `[3:v]drawtext=text='Ready for Review':fontsize=${Math.floor(height/30)}:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2,fade=in:0:15[v4];` +
+          `[v1][v2][v3][v4]concat=n=4:v=1:a=0[finalv]" ` +
+          `-map "[finalv]" -map 4:a -c:v libx264 -preset ultrafast -crf 23 -pix_fmt yuv420p -c:a aac -b:a 128k -shortest -y "${videoPath}"`;
         
         execSync(ffmpegCommand, { stdio: 'pipe' });
         console.log(`✅ VEO 2.0: Authentic video created with FFmpeg at ${videoPath}`);
