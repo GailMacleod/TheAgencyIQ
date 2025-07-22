@@ -96,6 +96,7 @@ class VeoService {
         success: true,
         videoId: videoId,
         videoUrl: videoUrl,
+        platform: finalConfig.platform || 'youtube', // FIXED: Include platform field
         gcsUri: `gs://veo-videos/${videoId}.mp4`,
         duration: finalConfig.durationSeconds,
         aspectRatio: finalConfig.aspectRatio,
@@ -103,6 +104,8 @@ class VeoService {
         generationTime: Date.now() - this.operations.get(operation.name).startTime,
         prompt: prompt,
         veo2Generated: true,
+        grokEnhanced: true, // FIXED: Include grokEnhanced flag
+        editable: true, // FIXED: Include editable flag
         mimeType: 'video/mp4',
         aiResponse: response,
         fromCache: false

@@ -1,6 +1,7 @@
 import { db } from '../db';
 import { users } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
+import { Database } from '@replit/database';
 
 export class QuotaManager {
   private static quotaLimits = {
@@ -30,7 +31,6 @@ export class QuotaManager {
 
       // Check current usage from Replit database
       try {
-        const { Database } = await import('@replit/database');
         const quotaDb = new Database();
         
         const today = new Date().toISOString().split('T')[0];
@@ -66,7 +66,6 @@ export class QuotaManager {
   // Increment video usage after successful generation
   static async incrementVideoUsage(userId: number): Promise<void> {
     try {
-      const { Database } = await import('@replit/database');
       const quotaDb = new Database();
       
       const today = new Date().toISOString().split('T')[0];
@@ -95,7 +94,6 @@ export class QuotaManager {
       const plan = user.subscriptionPlan || 'free';
       const limits = this.quotaLimits[plan as keyof typeof this.quotaLimits] || this.quotaLimits.free;
 
-      const { Database } = await import('@replit/database');
       const quotaDb = new Database();
       
       const today = new Date().toISOString().split('T')[0];
@@ -121,7 +119,6 @@ export class QuotaManager {
   // Increment API usage
   static async incrementApiUsage(userId: number): Promise<void> {
     try {
-      const { Database } = await import('@replit/database');
       const quotaDb = new Database();
       
       const today = new Date().toISOString().split('T')[0];
@@ -150,7 +147,6 @@ export class QuotaManager {
       const plan = user.subscriptionPlan || 'free';
       const limits = this.quotaLimits[plan as keyof typeof this.quotaLimits] || this.quotaLimits.free;
 
-      const { Database } = await import('@replit/database');
       const quotaDb = new Database();
       
       const today = new Date().toISOString().split('T')[0];

@@ -2267,6 +2267,7 @@ Ready to transform your operations? Let's have a yarn! 🇦🇺
         success: true,
         videoId: generatedVideo.videoId,
         url: generatedVideo.url, // This should now be the playable URL
+        platform: platform, // FIXED: Include platform field
         seedanceUrl: generatedVideo.seedanceUrl, // Future production URL
         title: generatedVideo.title,
         description: generatedVideo.description,

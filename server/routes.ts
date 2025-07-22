@@ -11303,8 +11303,10 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         console.log(`✅ VEO 2.0 video generation successful for ${platform}`);
         res.json({
           success: true,
+          videoId: result.videoId,
           videoData: result,
           videoUrl: result.url || result.videoUrl,
+          platform: result.platform || platform, // FIXED: Ensure platform field is always included
           message: result.message || 'VEO 2.0 video generated successfully',
           veo2Generated: result.veo2Generated,
           // Enhanced JTBD Copywriting flags
