@@ -35,7 +35,12 @@ export function LazyVideoPreview({
   // Auto-load video when component mounts with gcsUri
   useEffect(() => {
     const loadVideo = async () => {
-      if (!gcsUri || isLoaded || isLoading) return;
+      console.log(`🔍 LazyVideoPreview mounted - videoId: ${videoId}, gcsUri: ${gcsUri}, isLoaded: ${isLoaded}, isLoading: ${isLoading}`);
+      
+      if (!gcsUri || isLoaded || isLoading) {
+        console.log(`⏭️ Skipping auto-load - no gcsUri (${!gcsUri}) or already loaded (${isLoaded}) or loading (${isLoading})`);
+        return;
+      }
 
       setIsLoading(true);
       setError(null);
@@ -55,11 +60,12 @@ export function LazyVideoPreview({
         }
 
         const data = await response.json();
+        console.log(`📡 Video serve response:`, data);
         setVideoUrl(data.servingUrl);
         setIsLoaded(true);
         onLoad?.();
         
-        console.log(`✅ Video auto-loaded: ${videoId}`);
+        console.log(`✅ Video auto-loaded: ${videoId} with URL: ${data.servingUrl}`);
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Failed to load video';
         setError(errorMsg);

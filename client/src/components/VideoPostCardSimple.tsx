@@ -594,34 +594,34 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
               </div>
             </div>
             
-            {/* Memory-Optimized Lazy Video Preview */}
+            {/* Direct Video Preview - Simple and Working */}
             <div className="mb-3">
-              <LazyVideoPreview
-                videoId={videoData.videoId}
-                gcsUri={videoData.gcsUri || videoData.videoUrl || videoData.url || videoData.veoVideoUrl}
-                metadata={{
-                  duration: videoData.duration || 8,
-                  aspectRatio: videoData.aspectRatio || '16:9',
-                  quality: videoData.quality || '720p',
-                  format: 'mp4'
-                }}
-                onLoad={() => {
-                  console.log('✅ Video loaded via lazy loading');
-                  toast({
-                    title: 'Video Loaded',
-                    description: 'Video preview is ready',
-                    duration: 2000
-                  });
-                }}
-                onError={(error) => {
-                  console.error('❌ Lazy video load error:', error);
-                  toast({
-                    title: 'Video Loading Failed',
-                    description: error,
-                    variant: 'destructive'
-                  });
-                }}
-              />
+              <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                <video
+                  src={`/videos/generated/${videoData.videoId}.mp4`}
+                  controls
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                  onLoadedData={() => {
+                    console.log(`✅ Video ready: ${videoData.videoId}`);
+                    toast({
+                      title: 'Video Ready',
+                      description: 'Video preview loaded successfully',
+                      duration: 2000
+                    });
+                  }}
+                  onError={(e) => {
+                    console.error(`❌ Video load error for ${videoData.videoId}:`, e);
+                    toast({
+                      title: 'Video Error',
+                      description: 'Failed to load video preview',
+                      variant: 'destructive'
+                    });
+                  }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
             </div>
             
             {/* Video Details with VEO3 Specs */}
