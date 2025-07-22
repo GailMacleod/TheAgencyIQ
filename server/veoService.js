@@ -390,13 +390,15 @@ class VeoService {
           message: 'VEO 2.0 video generation completed (timing simulation)'
         };
       } else {
-        // Return progress update
+        // Return progress update with elapsed time for timer display
         return {
           success: true,
           completed: false,
           status: 'processing',
           progress: Math.round(progress),
           phase: phase,
+          elapsed: Math.round(elapsed / 1000), // Add elapsed time in seconds for timer
+          generationTime: elapsed, // Add elapsed time in milliseconds
           estimatedTimeRemaining: Math.max(0, Math.round((estimatedDuration - elapsed) / 1000)),
           platform: operation.platform,
           message: `VEO 2.0 processing: ${Math.round(progress)}% complete`

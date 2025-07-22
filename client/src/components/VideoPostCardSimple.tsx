@@ -277,11 +277,16 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
               
               stopProgress();
             } else {
-              // Update progress
+              // Update progress and timing from server
               if (statusData.progress) {
                 setRenderingProgress(statusData.progress);
               }
-              if (statusData.status) {
+              if (statusData.elapsed) {
+                setRenderingTime(statusData.elapsed); // Use server's elapsed time
+              }
+              if (statusData.phase) {
+                setCurrentPhase(statusData.phase);
+              } else if (statusData.status) {
                 setCurrentPhase(`VEO 2.0 ${statusData.status} - ${statusData.estimatedTimeRemaining}s remaining...`);
               }
               
