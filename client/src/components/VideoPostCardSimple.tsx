@@ -164,7 +164,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
     // Smooth progress tracking
     const startTime = Date.now();
     let progressInterval: NodeJS.Timeout | null = null;
-    let phaseInterval: NodeJS.Timeout | null = null;
+    let phaseTimeouts: NodeJS.Timeout[] = [];
 
     const startProgress = () => {
       progressInterval = setInterval(() => {
@@ -180,8 +180,6 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
       }, 250);
 
       // SURGICAL FIX: Slow text stages with setTimeout(2000) per phase
-      let phaseTimeouts: NodeJS.Timeout[] = [];
-      
       // Phase 1: Analyzing (0-2s)
       phaseTimeouts.push(setTimeout(() => {
         setCurrentPhase('Analyzing brand context');
