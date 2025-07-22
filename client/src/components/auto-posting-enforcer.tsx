@@ -86,7 +86,7 @@ export default function AutoPostingEnforcer() {
           <span>30-Day Auto-Publishing Enforcer</span>
         </CardTitle>
         <p className="text-sm text-gray-600">
-          Ensures all approved posts are successfully published within your 30-day subscription period
+          This action over rides the calendar Schedule for a power burst
         </p>
       </CardHeader>
       
