@@ -1,5 +1,5 @@
 /**
- * VIDEO GENERATION SERVICE - VEO3 INTEGRATION
+ * VIDEO GENERATION SERVICE - VEO 2.0 INTEGRATION
  * Handles AI video generation, prompt creation, and platform posting
  */
 
@@ -57,9 +57,9 @@ class VideoService {
   // User prompt history storage (in-memory for session variety)
   static userPromptHistory = new Map();
   
-  // VEO3 HELPER FUNCTIONS
+  // VEO 2.0 HELPER FUNCTIONS
   
-  // Content compliance checker for Veo3
+  // Content compliance checker for VEO 2.0
   static checkContentCompliance(prompt) {
     const violations = [];
     
@@ -89,7 +89,7 @@ class VideoService {
   }
   
   // ENHANCED: GROK AI PROMPT ENGINE CORE - COMPLETE INTEGRATED SOCIAL MEDIA SYSTEM
-  static enhancePromptForVeo3(originalPrompt, brandData = {}) {
+  static enhancePromptForVeo2(originalPrompt, brandData = {}) {
     const brandName = brandData?.brandName || '[Company Name]';
     const brandUrl = brandData?.website || '[URL]';
     const logoUrl = brandData?.logoUrl || '[Logo URL]';
@@ -108,9 +108,9 @@ CHAIN-OF-THOUGHT GENERATION PROCESS (7 STEPS):
 
 3. **QLD PSYCHOLOGY INTEGRATION**: Apply research-backed cultural triggers: laid-back "no worries" authenticity, rugby community passion (Origin rivalry hooks), local slang ("fair dinkum", "togs", "crook as"), event timing (Ekka August, Origin July 2025, Matildas internationals).
 
-4. **VEO3 CINEMATIC CONSTRUCTION**: Create 8-second cinematic structure with specific dense format: "Cinematic 8s: QLD owner [pain state] (0-2s), [transformation moment] (2-4s), [JTBD achievement] (4-6s), [brand/CTA integration] (6-8s)."
+4. **VEO 2.0 CINEMATIC CONSTRUCTION**: Create 8-second cinematic structure with specific dense format: "Cinematic 8s: QLD owner [pain state] (0-2s), [transformation moment] (2-4s), [JTBD achievement] (4-6s), [brand/CTA integration] (6-8s)."
 
-5. **SOUND ALIGNMENT**: Integrate Veo3 native audio sync: "Sound: Orchestral swell with Aussie voiceover '[specific dialogue with brand mention]' synced to [specific action]. Include sound effects: [relevant effects]."
+5. **SOUND ALIGNMENT**: Integrate VEO 2.0 native audio sync: "Sound: Orchestral swell with Aussie voiceover '[specific dialogue with brand mention]' synced to [specific action]. Include sound effects: [relevant effects]."
 
 6. **BRAND INTEGRATION**: Natural logo placement (overlay at 6s), company name mentioned 2-3 times in voiceover, website URL in CTA dialogue and text overlay.
 
@@ -478,45 +478,45 @@ Your job is to create detailed video scripts with specific timing, camera moveme
     }
   }
 
-  // AUTHENTIC VEO3 VIDEO GENERATION - REAL VIDEO CREATION WITH ASYNC POLLING
-  static async generateVeo3VideoContent(prompt, options = {}) {
+  // AUTHENTIC VEO 2.0 VIDEO GENERATION - REAL VIDEO CREATION WITH ASYNC POLLING
+  static async generateVeo2VideoContent(prompt, options = {}) {
     try {
-      console.log('🎥 VEO3 VIDEO GENERATION: Starting authentic video creation with proper async polling...');
+      console.log('🎥 VEO 2.0 VIDEO GENERATION: Starting authentic video creation with proper async polling...');
       
       // Dynamic import for ESM compatibility
       if (!genAI) {
         await initializeGoogleAI();
       }
       
-      // VEO3 Technical Constraints (from documentation)
-      const veo3Params = {
+      // VEO 2.0 Technical Constraints (from documentation)
+      const veo2Params = {
         prompt: prompt,
-        aspectRatio: '16:9', // VEO3 only supports 16:9
-        duration: 8, // VEO3 fixed at 8 seconds
+        aspectRatio: '16:9', // VEO 2.0 only supports 16:9
+        duration: 8, // VEO 2.0 fixed at 8 seconds
         model: 'veo-2.0-generate-001', // VEO 2.0 model as requested
-        generateAudio: true // VEO3 supports audio generation
+        generateAudio: true // VEO 2.0 supports audio generation
       };
       
-      console.log(`🎬 VEO3 Parameters: ${JSON.stringify(veo3Params, null, 2)}`);
+      console.log(`🎬 VEO 2.0 Parameters: ${JSON.stringify(veo2Params, null, 2)}`);
       
       try {
-        // STEP 1: Generate video using proper VEO3 API (not generateContent)
-        console.log('🚀 Calling VEO3 generate_videos API...');
+        // STEP 1: Generate video using proper VEO 2.0 API (not generateContent)
+        console.log('🚀 Calling VEO 2.0 generate_videos API...');
         
         const operation = await genAI.models.generate_videos({
-          model: veo3Params.model,
-          prompt: veo3Params.prompt,
+          model: veo2Params.model,
+          prompt: veo2Params.prompt,
           config: {
-            aspectRatio: veo3Params.aspectRatio,
-            durationSeconds: veo3Params.duration,
-            generateAudio: veo3Params.generateAudio,
+            aspectRatio: veo2Params.aspectRatio,
+            durationSeconds: veo2Params.duration,
+            generateAudio: veo2Params.generateAudio,
             personGeneration: "allow_adult", // Allow adults only
             enhancePrompt: true, // Use Gemini to enhance prompts
             resolution: "1080p"
           }
         });
 
-        console.log(`🔄 VEO3 operation started: ${operation.name}`);
+        console.log(`🔄 VEO 2.0 operation started: ${operation.name}`);
         
         // STEP 2: Poll until operation is complete (async polling)
         let pollingAttempts = 0;
@@ -535,7 +535,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
             console.log(`🔄 Polling attempt ${pollingAttempts}/${maxPollingAttempts} - Status: ${operation.done ? 'Complete' : 'Processing'}`);
             
             if (operation.done) {
-              console.log('✅ VEO3 video generation completed!');
+              console.log('✅ VEO 2.0 video generation completed!');
               break;
             }
           } catch (pollError) {
@@ -545,7 +545,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
         }
         
         if (!operation.done) {
-          throw new Error('VEO3 video generation timeout - exceeded maximum polling time');
+          throw new Error('VEO 2.0 video generation timeout - exceeded maximum polling time');
         }
         
         // STEP 3: Create local video file for immediate playback
@@ -1584,36 +1584,65 @@ Share this with another Queensland business owner who needs to see this! 🤝
 
   static async renderVideo(prompt, editedText, platform, brandPurpose, postContent) {
     try {
-      console.log(`🎬 ENHANCED VEO3 RENDERER: Starting video generation for ${platform}...`);
+      console.log(`🎬 ENHANCED VEO 2.0 RENDERER: Starting video generation for ${platform}...`);
       const startTime = Date.now();
       
       // STEP 1: Extract and prepare video generation data
-      let veo3Prompt = '';
+      let veo2Prompt = '';
       let brandContext = '';
       
       // Extract prompt content
       if (typeof prompt === 'string') {
-        veo3Prompt = prompt;
+        veo2Prompt = prompt;
       } else if (prompt && prompt.prompt) {
-        veo3Prompt = prompt.prompt;
+        veo2Prompt = prompt.prompt;
       } else if (prompt && prompt.content) {
-        veo3Prompt = prompt.content;
+        veo2Prompt = prompt.content;
       } else {
-        veo3Prompt = editedText || postContent || 'Queensland business transformation success';
+        veo2Prompt = editedText || postContent || 'Queensland business transformation success';
       }
       
-      // Extract brand context for VEO3 integration
+      // Extract brand context for VEO 2.0 integration and JTBD extraction
       if (brandPurpose && brandPurpose.corePurpose) {
         brandContext = brandPurpose.corePurpose;
         console.log(`🎯 Brand Context: ${brandContext.substring(0, 80)}...`);
       }
       
-      console.log(`📝 VEO3 Prompt: ${veo3Prompt.substring(0, 100)}...`);
+      // STEP 3: Extract JTBD from brandPurpose.jobToBeDone as requested
+      let jtbdContext = '';
+      if (brandPurpose && brandPurpose.jobToBeDone) {
+        jtbdContext = brandPurpose.jobToBeDone;
+        console.log(`🎯 JTBD Extracted: ${jtbdContext.substring(0, 80)}...`);
+      }
       
-      // STEP 2: Generate VEO 2.0 video with enhanced processing
+      console.log(`📝 VEO 2.0 Prompt: ${veo2Prompt.substring(0, 100)}...`);
+      
+      // STEP 2: Trigger Grok copywriter before fallback as requested
+      try {
+        console.log('🤖 Triggering Grok copywriter first...');
+        const grokResult = await this.grokCopywriterInterpretation(
+          brandContext || 'Queensland business transformation', 
+          veo2Prompt, 
+          platform
+        );
+        
+        if (grokResult && grokResult.postCopy) {
+          console.log('✅ Grok copywriter triggered successfully');
+          veo2Prompt = this.enhancePromptForVeo2(veo2Prompt, {
+            brandName: brandPurpose?.brandName,
+            website: brandPurpose?.website,
+            jtbd: jtbdContext,
+            corePurpose: brandContext
+          });
+        }
+      } catch (grokError) {
+        console.log('⚠️ Grok copywriter failed, proceeding with VEO 2.0:', grokError.message);
+      }
+      
+      // STEP 4: Generate VEO 2.0 video with enhanced processing
       try {
         console.log('🚀 Calling enhanced VEO 2.0 generation...');
-        const videoResult = await this.generateVeo3VideoContent(veo3Prompt, {
+        const videoResult = await this.generateVeo2VideoContent(veo2Prompt, {
           aspectRatio: '16:9', // VEO 2.0 only supports 16:9 aspect ratio
           duration: 8, // VEO 2.0 fixed at 8 seconds
           quality: 'professional',
@@ -1625,11 +1654,11 @@ Share this with another Queensland business owner who needs to see this! 🤝
           console.log('✅ VEO 2.0 video generation completed successfully');
           
           // Generate enhanced copywriting
-          const enhancedCopy = this.generateEnhancedCopy(veo3Prompt, platform, brandPurpose);
+          const enhancedCopy = this.generateEnhancedCopy(veo2Prompt, platform, brandPurpose);
           
           // Create real video URL and metadata
           const timestamp = Date.now();
-          const videoId = `veo3_${platform}_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
+          const videoId = `veo2_${platform}_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
           const videoUrl = `/videos/${videoId}.mp4`;
           
           // Create video placeholder for immediate display
@@ -1661,21 +1690,20 @@ Share this with another Queensland business owner who needs to see this! 🤝
             grokEnhanced: true,
             editable: true,
             wittyStyle: true,
-            enhancedCopy: enhancedCopy.copy,
-            note: 'VEO3 enhanced video with Queensland business context'
+            note: 'VEO 2.0 enhanced video with Queensland business context'
           };
         } else {
-          console.log('⚠️ VEO3 generation failed, creating enhanced fallback...');
-          return this.generateEnhancedFallback(veo3Prompt, platform, brandPurpose);
+          console.log('⚠️ VEO 2.0 generation failed, creating enhanced fallback...');
+          return this.generateEnhancedFallback(veo2Prompt, platform, brandPurpose);
         }
         
-      } catch (veo3Error) {
-        console.error('❌ VEO3 generation error:', veo3Error.message);
-        return this.generateEnhancedFallback(veo3Prompt, platform, brandPurpose);
+      } catch (veo2Error) {
+        console.error('❌ VEO 2.0 generation error:', veo2Error.message);
+        return this.generateEnhancedFallback(veo2Prompt, platform, brandPurpose);
       }
       
     } catch (error) {
-      console.error('❌ Enhanced VEO3 renderer failed:', error);
+      console.error('❌ Enhanced VEO 2.0 renderer failed:', error);
       console.error('Error details:', error.stack);
       
       // Return enhanced fallback with proper error handling
@@ -2510,17 +2538,42 @@ Apply the comprehensive JTBD training framework we refined yesterday!`;
 
   // JTBD EXTRACTION: Analyze brand purpose for Jobs To Be Done elements
   static extractJTBDFromBrandPurpose(brandPurpose) {
-    // Default JTBD analysis
+    // FIXED: Pull JTBD from brandPurpose.jobToBeDone as requested
+    let jtbdFromField = '';
+    if (brandPurpose && brandPurpose.jobToBeDone) {
+      jtbdFromField = brandPurpose.jobToBeDone;
+      console.log(`🎯 JTBD extracted from brandPurpose.jobToBeDone: ${jtbdFromField}`);
+    }
+
+    // Default JTBD analysis with extracted JTBD integration
     let analysis = {
-      job: "Professional social media automation for Queensland SMEs",
+      job: jtbdFromField || "Professional social media automation for Queensland SMEs",
       struggle: "being invisible in a crowded market while too busy to show up consistently",
       progressVision: "confident, consistent professional presence that builds authority and trust",
       outcome: "validated industry leadership with automated visibility that works 24/7",
       cta: "Get started with fair dinkum social media automation"
     };
 
-    if (brandPurpose) {
-      const bp = brandPurpose.toLowerCase();
+    // If we have brandPurpose.jobToBeDone, use it as the primary job
+    if (jtbdFromField) {
+      analysis.job = jtbdFromField;
+      
+      // Enhance other fields based on the extracted JTBD
+      const jtbdLower = jtbdFromField.toLowerCase();
+      
+      if (jtbdLower.includes('automation') || jtbdLower.includes('efficiency')) {
+        analysis.struggle = "overwhelmed by manual tasks and inefficient processes";
+        analysis.outcome = "effortless automation that delivers consistent results";
+      } else if (jtbdLower.includes('growth') || jtbdLower.includes('scale')) {
+        analysis.struggle = "stuck in plateau mode without clear growth path";
+        analysis.outcome = "sustainable growth with systematic scaling";
+      } else if (jtbdLower.includes('visibility') || jtbdLower.includes('authority')) {
+        analysis.struggle = "invisible in crowded market with no industry recognition";
+        analysis.outcome = "commanding professional presence with industry authority";
+      }
+    } else if (brandPurpose && brandPurpose.corePurpose) {
+      // Fallback to corePurpose if jobToBeDone not available
+      const bp = brandPurpose.corePurpose.toLowerCase();
       
       // Extract struggle indicators
       if (bp.includes('dying quietly') || bp.includes('invisible')) {
@@ -2538,15 +2591,6 @@ Apply the comprehensive JTBD training framework we refined yesterday!`;
         analysis.outcome = "consistent visibility with professional validation";
       } else if (bp.includes('growth') || bp.includes('scale')) {
         analysis.outcome = "sustainable business growth through strategic positioning";
-      }
-      
-      // Extract progress vision
-      if (bp.includes('set and forget')) {
-        analysis.progressVision = "effortless professional presence that works automatically";
-      } else if (bp.includes('industry leader')) {
-        analysis.progressVision = "recognized industry leadership with consistent authority";
-      } else if (bp.includes('validation')) {
-        analysis.progressVision = "professional validation and market recognition";
       }
     }
 
