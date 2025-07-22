@@ -777,8 +777,9 @@ function IntelligentSchedule() {
               <Button
                 onClick={generateIntelligentSchedule}
                 disabled={!brandPurpose || isGeneratingSchedule}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg animate-pulse"
                 size="lg"
+                style={{ animationDuration: '3s' }}
               >
                 {isGeneratingSchedule ? (
                   <>
@@ -787,7 +788,6 @@ function IntelligentSchedule() {
                   </>
                 ) : (
                   <>
-                    <Brain className="w-5 h-5 mr-2" />
                     Generate Strategic Content
                   </>
                 )}
