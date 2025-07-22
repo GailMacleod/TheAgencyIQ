@@ -390,16 +390,11 @@ class VeoService {
       const aspectRatio = videoRequest.config.aspectRatio || '16:9';
       const [width, height] = aspectRatio === '16:9' ? [1920, 1080] : [1080, 1920];
       
-      // Generate authentic video with business content visualization
+      // Memory-efficient video generation with reduced complexity
       const ffmpegCommand = `ffmpeg -f lavfi -i "color=c=0x1e40af:size=${width}x${height}:duration=${duration}" ` +
-        `-f lavfi -i "color=c=0x3b82f6:size=${Math.floor(width*0.8)}x${Math.floor(height*0.8)}:duration=${duration}" ` +
-        `-filter_complex "[0][1]overlay=(W-w)/2:(H-h)/2:enable='between(t,1,${duration-1})',` +
-        `drawtext=text='VEO 2.0 Generated Video':fontsize=${Math.floor(height/20)}:fontcolor=white:` +
-        `x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t,0,2)',` +
-        `drawtext=text='Queensland Business Content':fontsize=${Math.floor(height/30)}:fontcolor=white:` +
-        `x=(w-text_w)/2:y=(h-text_h)/2+${Math.floor(height/10)}:enable='between(t,2,${duration})',` +
-        `fade=in:0:30,fade=out:${duration*30-30}:30" ` +
-        `-c:v libx264 -preset fast -crf 23 -pix_fmt yuv420p -y "${videoPath}"`;
+        `-filter_complex "drawtext=text='VEO 2.0':fontsize=${Math.floor(height/25)}:fontcolor=white:` +
+        `x=(w-text_w)/2:y=(h-text_h)/2,fade=in:0:15,fade=out:${duration*30-15}:15" ` +
+        `-c:v libx264 -preset ultrafast -crf 28 -pix_fmt yuv420p -threads 1 -y "${videoPath}"`;
       
       try {
         execSync(ffmpegCommand, { stdio: 'pipe' });
@@ -478,27 +473,28 @@ class VeoService {
   }
 
   /**
-   * Poll VEO operation until completion
+   * Memory-efficient VEO operation polling
    * @param {Object} operation - Initial operation
    * @returns {Promise<Object>} - Completed operation
    */
   async pollVeoOperation(operation) {
-    const maxPollingTime = 5 * 60 * 1000; // 5 minutes
-    const pollInterval = 5000; // 5 seconds
+    const maxPollingTime = 2 * 60 * 1000; // Reduced to 2 minutes
+    const pollInterval = 10000; // Increased to 10 seconds
     const startTime = Date.now();
     
-    let currentOp = operation;
+    let currentOp = { ...operation }; // Shallow copy to reduce memory
     let attempts = 0;
+    const maxAttempts = 12; // Reduced max attempts
     
-    while (!currentOp.done && (Date.now() - startTime) < maxPollingTime) {
+    while (!currentOp.done && (Date.now() - startTime) < maxPollingTime && attempts < maxAttempts) {
       attempts++;
-      console.log(`🔄 VEO 2.0: Polling attempt ${attempts} for operation ${currentOp.name}`);
       
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       
       try {
-        // Get operation status from Google AI
-        currentOp = await this.genAI.operations.get({ name: currentOp.name });
+        // Get operation status with minimal data transfer
+        const opStatus = await this.genAI.operations.get({ name: currentOp.name });
+        currentOp = { name: opStatus.name, done: opStatus.done, response: opStatus.response };
         
         if (currentOp.done) {
           console.log(`✅ VEO 2.0: Operation completed after ${attempts} attempts`);
@@ -506,15 +502,14 @@ class VeoService {
         }
         
       } catch (pollError) {
-        console.error(`⚠️ VEO 2.0: Polling error:`, pollError);
-        if (attempts >= 10) {
+        if (attempts >= 6) { // Reduced retry attempts
           throw new Error(`Polling failed after ${attempts} attempts`);
         }
       }
     }
     
     if (!currentOp.done) {
-      throw new Error('VEO 2.0 operation timed out after 5 minutes');
+      throw new Error('VEO 2.0 operation timed out');
     }
     
     return currentOp;

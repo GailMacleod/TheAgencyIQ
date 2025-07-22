@@ -171,12 +171,9 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         setRenderingTime(elapsed);
         
-        // Smooth exponential progress curve
-        const targetProgress = Math.min(90, (elapsed / 20) * 100);
-        setRenderingProgress(prev => {
-          const diff = targetProgress - prev;
-          return prev + (diff * 0.2); // Smooth interpolation
-        });
+        // Memory-efficient progress curve
+        const targetProgress = Math.min(90, (elapsed / 15) * 100);
+        setRenderingProgress(targetProgress);
       }, 250);
 
       // SURGICAL FIX: Slow text stages with setTimeout(2000) per phase

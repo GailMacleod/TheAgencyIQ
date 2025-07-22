@@ -9,7 +9,10 @@ class VideoCache {
   constructor() {
     this.redis = null;
     this.fallbackCache = new Map(); // In-memory fallback
+    this.maxFallbackSize = 10; // Reduced memory footprint
     this.initRedis();
+    // Memory cleanup every 15 minutes
+    this.cleanupInterval = setInterval(() => this.cleanupMemory(), 15 * 60 * 1000);
   }
 
   async initRedis() {
@@ -42,12 +45,12 @@ class VideoCache {
   }
 
   /**
-   * Cache video generation response with CDN optimization
+   * Memory-efficient video caching
    * @param {string} promptHash - Hash of video prompt for caching key
    * @param {Object} videoData - VEO 2.0 response data
-   * @param {number} ttl - Time to live in seconds (default 48 hours)
+   * @param {number} ttl - Time to live in seconds (reduced to 6 hours)
    */
-  async cacheVideo(promptHash, videoData, ttl = 48 * 60 * 60) {
+  async cacheVideo(promptHash, videoData, ttl = 6 * 60 * 60) {
     const cacheKey = `veo2:video:${promptHash}`;
     const cacheData = {
       ...videoData,
@@ -60,12 +63,17 @@ class VideoCache {
         await this.redis.setex(cacheKey, ttl, JSON.stringify(cacheData));
         console.log(`📦 VEO 2.0 video cached with Redis: ${cacheKey}`);
       } else {
-        // Fallback to memory cache
+        // Memory-conscious fallback cache
+        if (this.fallbackCache.size >= this.maxFallbackSize) {
+          // Remove oldest entry to prevent memory bloat
+          const firstKey = this.fallbackCache.keys().next().value;
+          this.fallbackCache.delete(firstKey);
+        }
         this.fallbackCache.set(cacheKey, {
-          data: cacheData,
+          data: { videoUrl: cacheData.videoUrl, videoId: cacheData.videoId },
           expiry: Date.now() + (ttl * 1000)
         });
-        console.log(`📦 VEO 2.0 video cached in memory: ${cacheKey}`);
+        console.log(`📦 Video cached in memory (${this.fallbackCache.size}/${this.maxFallbackSize})`);
       }
     } catch (error) {
       console.error('❌ Video caching error:', error.message);
