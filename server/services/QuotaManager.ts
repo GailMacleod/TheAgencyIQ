@@ -1,7 +1,8 @@
 import { db } from '../db';
 import { users } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
-import { Database } from '@replit/database';
+// Import Database as default export from @replit/database
+import Database from '@replit/database';
 
 export class QuotaManager {
   private static quotaLimits = {
