@@ -4,12 +4,19 @@
  */
 import OptimizedVideoManager from './services/OptimizedVideoManager.js';
 
+// Singleton pattern to ensure operations persist across instances
+let sharedOperations = new Map();
+let sharedVideoManager = null;
+
 class VeoService {
   constructor() {
     this.VEO2_MODEL = 'veo-2.0-generate-001';
-    this.operations = new Map(); // Track async operations
+    this.operations = sharedOperations; // Use shared operations map
     this.quotaManager = null;
-    this.videoManager = new OptimizedVideoManager();
+    if (!sharedVideoManager) {
+      sharedVideoManager = new OptimizedVideoManager();
+    }
+    this.videoManager = sharedVideoManager;
     
     // Initialize Google AI for fallback scenarios
     this.initializeGoogleAI();
@@ -270,15 +277,26 @@ class VeoService {
    */
   async getOperationStatus(operationId) {
     try {
+      console.log(`🔍 VEO 2.0 DEBUG: Checking operation status for ${operationId}`);
+      console.log(`🔍 VEO 2.0 DEBUG: Total operations in memory: ${this.operations.size}`);
+      console.log(`🔍 VEO 2.0 DEBUG: Operation IDs: ${Array.from(this.operations.keys()).join(', ')}`);
+      
       const operation = this.operations.get(operationId);
       
       if (!operation) {
+        console.log(`❌ VEO 2.0 DEBUG: Operation ${operationId} not found`);
         return {
           success: false,
           error: 'Operation not found',
           operationId: operationId
         };
       }
+      
+      console.log(`✅ VEO 2.0 DEBUG: Operation found:`, {
+        status: operation.status,
+        startTime: operation.startTime,
+        elapsed: Date.now() - operation.startTime
+      });
 
       const elapsed = Date.now() - operation.startTime;
       const estimatedDuration = operation.estimatedCompletion - operation.startTime;
