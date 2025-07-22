@@ -167,39 +167,49 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
     let phaseTimeouts: NodeJS.Timeout[] = [];
 
     const startProgress = () => {
+      setCurrentPhase('Submitting to Google VEO 2.0 API...');
+      setRenderingProgress(5);
+      
       progressInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         setRenderingTime(elapsed);
         
-        // Memory-efficient progress curve
-        const targetProgress = Math.min(90, (elapsed / 15) * 100);
+        // Authentic VEO 2.0 timing: 11s minimum to 6 minutes maximum
+        // Progress should never reach 100% until actual completion
+        let targetProgress;
+        if (elapsed < 15) {
+          targetProgress = 5 + (elapsed / 15) * 15; // 5% to 20% in first 15s
+        } else if (elapsed < 60) {
+          targetProgress = 20 + ((elapsed - 15) / 45) * 30; // 20% to 50% in next 45s
+        } else if (elapsed < 180) {
+          targetProgress = 50 + ((elapsed - 60) / 120) * 30; // 50% to 80% in next 2min
+        } else {
+          targetProgress = Math.min(95, 80 + ((elapsed - 180) / 180) * 15); // 80% to 95% max
+        }
+        
         setRenderingProgress(targetProgress);
-      }, 250);
+      }, 1000);
 
-      // SURGICAL FIX: Slow text stages with setTimeout(2000) per phase
-      // Phase 1: Analyzing (0-2s)
+      // Authentic VEO 2.0 phase progression based on real API timing
       phaseTimeouts.push(setTimeout(() => {
-        setCurrentPhase('Analyzing brand context');
-        console.log('🎯 Phase 1: Analyzing brand context');
-      }, 0));
-      
-      // Phase 2: Grok enhancement (2-4s)
-      phaseTimeouts.push(setTimeout(() => {
-        setCurrentPhase('Grok enhancement');
-        console.log('🎯 Phase 2: Grok enhancement');
+        setCurrentPhase('VEO 2.0 API request submitted - processing initiated...');
+        console.log('🎯 Phase 1: VEO 2.0 API request submitted');
       }, 2000));
       
-      // Phase 3: Building sequence (4-6s)
       phaseTimeouts.push(setTimeout(() => {
-        setCurrentPhase('Building cinematic sequence');
-        console.log('🎯 Phase 3: Building cinematic sequence');
-      }, 4000));
+        setCurrentPhase('VEO 2.0 neural processing - generating video frames...');
+        console.log('🎯 Phase 2: VEO 2.0 neural processing');
+      }, 15000)); // 15 seconds
       
-      // Phase 4: VEO 2.0 rendering (6s+)
       phaseTimeouts.push(setTimeout(() => {
-        setCurrentPhase('VEO 2.0 rendering');
-        console.log('🎯 Phase 4: VEO 2.0 rendering');
-      }, 6000));
+        setCurrentPhase('VEO 2.0 rendering - assembling 8-second video...');
+        console.log('🎯 Phase 3: VEO 2.0 rendering video');
+      }, 45000)); // 45 seconds
+      
+      phaseTimeouts.push(setTimeout(() => {
+        setCurrentPhase('VEO 2.0 finalizing - this can take up to 6 minutes total...');
+        console.log('🎯 Phase 4: VEO 2.0 finalizing');
+      }, 90000)); // 90 seconds
     };
 
     const stopProgress = () => {
@@ -227,11 +237,69 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
       
       // DEBUG: Log complete response structure
       console.log('🎬 Complete video generation response:', data);
-      console.log('🎬 Video URL found:', data.videoUrl);
-      console.log('🎬 Video data nested:', data.videoData);
+      console.log('🎬 Is async operation:', data.isAsync);
+      console.log('🎬 Operation ID:', data.operationId);
       
-      // Apply your exact code fix for handling response
-      if (data.videoUrl) {
+      // Handle async VEO 2.0 operations
+      if (data.isAsync && data.operationId) {
+        console.log('🎬 Starting async VEO 2.0 polling...');
+        setCurrentPhase('VEO 2.0 generation initiated - polling for updates...');
+        
+        // Start polling for operation status
+        const pollOperation = async () => {
+          try {
+            const statusResponse = await fetch(`/api/video/operation/${data.operationId}`);
+            const statusData = await statusResponse.json();
+            
+            console.log('🔍 Operation status:', statusData);
+            
+            if (statusData.completed) {
+              if (statusData.failed) {
+                setError(statusData.error || 'VEO 2.0 generation failed');
+                setCurrentPhase('Generation failed');
+                setRenderingProgress(0);
+              } else {
+                // Success - display video
+                setVideoSrc(statusData.videoUrl);
+                setVideoData(statusData);
+                setHasGeneratedVideo(true);
+                setCurrentPhase('VEO 2.0 generation completed!');
+                setRenderingProgress(100);
+                
+                console.log('✅ VEO 2.0 video generation completed:', statusData.videoUrl);
+                
+                toast({
+                  title: "Video Generated",
+                  description: `VEO 2.0 video ready in ${Math.floor(statusData.generationTime / 1000)}s`,
+                  variant: "default",
+                });
+              }
+              
+              stopProgress();
+            } else {
+              // Update progress
+              if (statusData.progress) {
+                setRenderingProgress(statusData.progress);
+              }
+              if (statusData.status) {
+                setCurrentPhase(`VEO 2.0 ${statusData.status} - ${statusData.estimatedTimeRemaining}s remaining...`);
+              }
+              
+              // Continue polling
+              setTimeout(pollOperation, 5000); // Poll every 5 seconds
+            }
+          } catch (pollError) {
+            console.error('🔍 Polling error:', pollError);
+            setError('Connection lost during generation');
+            stopProgress();
+          }
+        };
+        
+        // Start first poll after 2 seconds
+        setTimeout(pollOperation, 2000);
+        
+      } else if (data.videoUrl) {
+        // Immediate response (cached or fallback)
         setVideoSrc(data.videoUrl);
         setRenderingProgress(100);
         setCurrentPhase('Complete');
@@ -404,28 +472,40 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
 
         </div>
         
-        {/* Subtle Modern Progress Indicator */}
+        {/* Authentic VEO 2.0 Progress Indicator */}
         {isRendering && (
-          <div className="mt-3 p-3 bg-gray-50/80 backdrop-blur-sm border border-gray-200/50 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
+          <div className="mt-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-gray-700 font-medium">Generating</span>
+                <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-purple-800 font-semibold">VEO 2.0 Generation</span>
               </div>
-              <span className="text-xs text-gray-500 font-mono">
-                {renderingTime}s
-              </span>
+              <div className="text-right">
+                <span className="text-sm font-mono text-purple-700">
+                  {Math.floor(renderingTime / 60)}:{(renderingTime % 60).toString().padStart(2, '0')}
+                </span>
+                <div className="text-xs text-purple-600">
+                  {renderingTime < 11 ? 'Minimum 11s' : renderingTime > 360 ? 'Max 6min' : 'Processing...'}
+                </div>
+              </div>
             </div>
             
-            <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
+            <div className="w-full bg-purple-100 rounded-full h-2 mb-3">
               <div 
-                className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all duration-500 ease-out"
+                className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all duration-1000 ease-out"
                 style={{ width: `${renderingProgress}%` }}
               ></div>
             </div>
             
             {currentPhase && (
-              <p className="text-xs text-gray-600">{currentPhase}</p>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-purple-800">{currentPhase}</p>
+                {renderingTime > 60 && (
+                  <p className="text-xs text-purple-600">
+                    VEO 2.0 is creating high-quality video content. Please wait...
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}

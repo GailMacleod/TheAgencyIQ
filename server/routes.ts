@@ -11301,23 +11301,43 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       
       if (result.success) {
         console.log(`✅ VEO 2.0 video generation successful for ${platform}`);
-        res.json({
-          success: true,
-          videoId: result.videoId,
-          videoData: result,
-          videoUrl: result.url || result.videoUrl,
-          platform: result.platform || platform, // FIXED: Ensure platform field is always included
-          message: result.message || 'VEO 2.0 video generated successfully',
-          veo2Generated: result.veo2Generated,
-          // Enhanced JTBD Copywriting flags
-          grokEnhanced: result.grokEnhanced || false,
-          editable: result.editable || false,
-          wittyStyle: result.wittyStyle || false,
-          postCopy: result.postCopy || null,
-          enhancedCopy: result.enhancedCopy || null,
-          jtbdIntegrated: result.jtbdIntegrated || false,
-          brandPurposeDriven: result.brandPurposeDriven || false
-        });
+        
+        // Check if this is an async operation (VEO 2.0 actual generation)
+        if (result.operationId && !result.videoUrl) {
+          // Return operation tracking for authentic VEO 2.0 generation
+          res.json({
+            success: true,
+            isAsync: true,
+            operationId: result.operationId,
+            operationName: result.operationName,
+            estimatedTime: '11s to 6 minutes',
+            status: 'processing',
+            platform: platform,
+            message: 'VEO 2.0 generation initiated - use operation ID to check status',
+            pollEndpoint: `/api/video/operation/${result.operationId}`,
+            pollInterval: 5000 // Poll every 5 seconds
+          });
+        } else {
+          // Return completed video (either immediate fallback or cached)
+          res.json({
+            success: true,
+            videoId: result.videoId,
+            videoData: result,
+            videoUrl: result.url || result.videoUrl,
+            platform: result.platform || platform,
+            message: result.message || 'VEO 2.0 video generated successfully',
+            veo2Generated: result.veo2Generated,
+            fromCache: result.fromCache || false,
+            // Enhanced JTBD Copywriting flags
+            grokEnhanced: result.grokEnhanced || false,
+            editable: result.editable || false,
+            wittyStyle: result.wittyStyle || false,
+            postCopy: result.postCopy || null,
+            enhancedCopy: result.enhancedCopy || null,
+            jtbdIntegrated: result.jtbdIntegrated || false,
+            brandPurposeDriven: result.brandPurposeDriven || false
+          });
+        }
       } else {
         res.status(500).json({
           success: false,
@@ -11330,6 +11350,64 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       res.status(500).json({
         success: false,
         error: 'VEO 2.0 video generation temporarily unavailable',
+        details: error.message
+      });
+    }
+  });
+
+  // VEO 2.0 OPERATION STATUS ENDPOINT - For checking async generation progress
+  app.get('/api/video/operation/:operationId', requireAuth, async (req: any, res) => {
+    try {
+      const { operationId } = req.params;
+      
+      console.log(`🔍 Checking VEO 2.0 operation status: ${operationId}`);
+      
+      // Import VeoService to check operation status
+      const VeoService = (await import('./veoService')).default;
+      const veoService = new VeoService();
+      
+      const operationStatus = await veoService.getOperationStatus(operationId);
+      
+      if (operationStatus.completed) {
+        // Operation completed - return video data
+        res.json({
+          success: true,
+          completed: true,
+          videoId: operationStatus.videoId,
+          videoUrl: operationStatus.videoUrl,
+          duration: operationStatus.duration,
+          aspectRatio: operationStatus.aspectRatio,
+          quality: operationStatus.quality,
+          generationTime: operationStatus.generationTime,
+          platform: operationStatus.platform,
+          message: 'VEO 2.0 video generation completed'
+        });
+      } else if (operationStatus.failed) {
+        // Operation failed
+        res.json({
+          success: false,
+          completed: true,
+          failed: true,
+          error: operationStatus.error,
+          message: 'VEO 2.0 generation failed'
+        });
+      } else {
+        // Still processing
+        res.json({
+          success: true,
+          completed: false,
+          progress: operationStatus.progress,
+          status: operationStatus.status,
+          estimatedTimeRemaining: operationStatus.estimatedTimeRemaining,
+          message: 'VEO 2.0 generation in progress...'
+        });
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Operation status check failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to check operation status',
         details: error.message
       });
     }
