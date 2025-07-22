@@ -114,8 +114,8 @@ class VideoCache {
    * @param {Object} config - Generation configuration
    * @returns {string} - Hash for caching
    */
-  generateCacheKey(prompt, config) {
-    const crypto = require('crypto');
+  async generateCacheKey(prompt, config) {
+    const crypto = await import('crypto');
     const cacheInput = `${prompt}-${JSON.stringify(config)}`;
     return crypto.createHash('md5').update(cacheInput).digest('hex');
   }
