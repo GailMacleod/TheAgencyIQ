@@ -521,7 +521,7 @@ export default function BrandPurpose() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md p-8">
               <h2 className="text-2xl font-normal text-center mb-8 bg-[#2563eb] text-[#ffffff]">
-                {isExistingData ? 'update your brand purpose' : 'Create your brand purpose'}
+                {isExistingData ? 'Update your brand purpose' : 'Create your brand purpose'}
               </h2>
           
               <div className="space-y-4">
