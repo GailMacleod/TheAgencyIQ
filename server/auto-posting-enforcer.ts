@@ -92,12 +92,19 @@ export class AutoPostingEnforcer {
       const connections = await storage.getPlatformConnectionsByUser(userId);
       const platforms = ['facebook', 'instagram', 'linkedin', 'youtube', 'x'];
       
-      // Process each approved post with platform publishing
-      for (const post of postsToPublish) {
+      // Process each approved post with RATE LIMITING and platform publishing
+      for (let i = 0; i < postsToPublish.length; i++) {
+        const post = postsToPublish[i];
         result.postsProcessed++;
         
         try {
-          console.log(`Auto-posting enforcer: Publishing post ${post.id} to ${post.platform}`);
+          console.log(`Auto-posting enforcer: Publishing post ${post.id} to ${post.platform} (${i + 1}/${postsToPublish.length})`);
+          
+          // RATE LIMITING: 2-second delay between posts to prevent platform bans
+          if (i > 0) {
+            console.log(`Auto-posting enforcer: Rate limiting - waiting 2 seconds before next post...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
           
           // Find platform connection
           const connection = connections.find(conn => conn.platform === post.platform);
