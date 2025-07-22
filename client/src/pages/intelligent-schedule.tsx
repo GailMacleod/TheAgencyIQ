@@ -726,7 +726,7 @@ function IntelligentSchedule() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <h1 className="text-4xl font-bold text-gray-900">
-              AI-Powered Content Schedule
+              Auto Powered Content Schedule
             </h1>
           </div>
           <p className="text-gray-600 text-lg mb-6">
