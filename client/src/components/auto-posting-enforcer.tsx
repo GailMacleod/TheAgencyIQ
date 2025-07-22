@@ -96,7 +96,7 @@ export default function AutoPostingEnforcer() {
           <div>
             <h3 className="font-medium text-gray-900">Enforce Auto-Publishing</h3>
             <p className="text-sm text-gray-500">
-              Process all pending posts and repair connections automatically
+              Process all pending posts
             </p>
           </div>
           <Button
