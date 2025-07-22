@@ -818,7 +818,7 @@ function IntelligentSchedule() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                Your AI-Generated Content ({postsArray.length} posts)
+                ({postsArray.length} posts)
               </h2>
               
               {/* View Toggle */}
