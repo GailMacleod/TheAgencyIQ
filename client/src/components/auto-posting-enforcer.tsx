@@ -243,7 +243,7 @@ export default function AutoPostingEnforcer() {
           <h5 className="font-medium text-blue-900 mb-2">How It Works</h5>
           <ul className="text-sm text-blue-800 space-y-1">
             <li>• All approved posts are sent to publication</li>
-            <li>• Uses bulletproof publishing to ensure 99.9% success rate</li>
+            <li>• Over rides you calendar schedule</li>
             <li>• Only deducts quota for successfully published posts</li>
             <li>• Processes posts scheduled for the current time or earlier</li>
             <li>• Operates within your 30-day subscription period</li>
