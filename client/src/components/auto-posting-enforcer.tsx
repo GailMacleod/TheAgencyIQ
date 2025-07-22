@@ -83,7 +83,7 @@ export default function AutoPostingEnforcer() {
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Shield className="w-5 h-5 text-blue-600" />
-          <span>30-Day Auto-Publishing Enforcer</span>
+          <span>Impatient?</span>
         </CardTitle>
         <p className="text-sm text-gray-600">
           This action over rides the calendar Schedule for a power burst
