@@ -25,8 +25,13 @@ function VideoPlayerWithFallback({ videoUrl, thumbnail, title, onError }: { vide
     setVideoError(false);
   };
 
-  // Check if URL is obviously invalid (mock URLs)
-  const isInvalidUrl = videoUrl?.includes('seedance-mock.api') || videoUrl?.includes('invalid') || !videoUrl?.startsWith('http');
+  // Check if URL needs to be converted to absolute URL
+  const absoluteVideoUrl = videoUrl?.startsWith('/') 
+    ? `${window.location.protocol}//${window.location.host}${videoUrl}`
+    : videoUrl;
+
+  // Check if URL is obviously invalid (mock URLs) 
+  const isInvalidUrl = videoUrl?.includes('seedance-mock.api') || videoUrl?.includes('invalid');
 
   if (isInvalidUrl || videoError) {
     return (
@@ -69,7 +74,7 @@ function VideoPlayerWithFallback({ videoUrl, thumbnail, title, onError }: { vide
         onLoadedData={handleVideoLoad}
         onLoadStart={() => setIsLoading(true)}
       >
-        <source src={videoUrl} type="video/mp4" />
+        <source src={absoluteVideoUrl} type="video/mp4" />
         Your browser does not support the video tag.
       </video>
     </>
