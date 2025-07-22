@@ -179,34 +179,37 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
         });
       }, 250);
 
-      // Subtle phase updates with backend logging
-      phaseInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        let phase = '';
-        if (elapsed < 5) {
-          phase = 'Analyzing brand context';
-        } else if (elapsed < 10) {
-          phase = 'Grok enhancement';
-        } else if (elapsed < 15) {
-          phase = 'Building cinematic sequence';
-        } else {
-          phase = 'Veo3 rendering';
-        }
-        setCurrentPhase(phase);
-        
-        // Backend debugging only
-        console.log('🎯 Video generation progress', {
-          postId: post.id,
-          phase,
-          elapsed,
-          progress: Math.min(90, (elapsed / 20) * 100)
-        });
-      }, 2000);
+      // SURGICAL FIX: Slow text stages with setTimeout(2000) per phase
+      let phaseTimeouts: NodeJS.Timeout[] = [];
+      
+      // Phase 1: Analyzing (0-2s)
+      phaseTimeouts.push(setTimeout(() => {
+        setCurrentPhase('Analyzing brand context');
+        console.log('🎯 Phase 1: Analyzing brand context');
+      }, 0));
+      
+      // Phase 2: Grok enhancement (2-4s)
+      phaseTimeouts.push(setTimeout(() => {
+        setCurrentPhase('Grok enhancement');
+        console.log('🎯 Phase 2: Grok enhancement');
+      }, 2000));
+      
+      // Phase 3: Building sequence (4-6s)
+      phaseTimeouts.push(setTimeout(() => {
+        setCurrentPhase('Building cinematic sequence');
+        console.log('🎯 Phase 3: Building cinematic sequence');
+      }, 4000));
+      
+      // Phase 4: VEO 2.0 rendering (6s+)
+      phaseTimeouts.push(setTimeout(() => {
+        setCurrentPhase('VEO 2.0 rendering');
+        console.log('🎯 Phase 4: VEO 2.0 rendering');
+      }, 6000));
     };
 
     const stopProgress = () => {
       if (progressInterval) clearInterval(progressInterval);
-      if (phaseInterval) clearInterval(phaseInterval);
+      phaseTimeouts.forEach(timeout => clearTimeout(timeout));
     };
 
     try {
