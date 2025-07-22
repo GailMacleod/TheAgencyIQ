@@ -244,7 +244,6 @@ export default function AutoPostingEnforcer() {
           <ul className="text-sm text-blue-800 space-y-1">
             <li>• All approved posts are sent to publication</li>
             <li>• Over rides you calendar schedule</li>
-            <li>• Processes posts scheduled for the current time or earlier</li>
             <li>• Operates within your 30-day subscription period</li>
           </ul>
         </div>
