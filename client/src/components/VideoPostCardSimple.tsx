@@ -225,6 +225,11 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
 
       const data = await response.json();
       
+      // DEBUG: Log complete response structure
+      console.log('🎬 Complete video generation response:', data);
+      console.log('🎬 Video URL found:', data.videoUrl);
+      console.log('🎬 Video data nested:', data.videoData);
+      
       // Apply your exact code fix for handling response
       if (data.videoUrl) {
         setVideoSrc(data.videoUrl);
