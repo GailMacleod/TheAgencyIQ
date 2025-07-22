@@ -11466,6 +11466,106 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
+  // MEMORY-OPTIMIZED VIDEO SERVING ENDPOINTS
+  
+  // Lazy video serving endpoint - uses GCS URIs and temp files
+  app.post('/api/video/serve/:videoId', requireAuth, async (req: any, res) => {
+    try {
+      const { videoId } = req.params;
+      const { gcsUri } = req.body;
+      
+      console.log(`🎬 Serving video on-demand: ${videoId}`);
+      
+      // Import VeoService to get video manager
+      const VeoService = (await import('./veoService')).default;
+      const veoService = new VeoService();
+      
+      const servingUrl = await veoService.videoManager.getServingUrl(gcsUri, videoId);
+      
+      res.json({
+        success: true,
+        servingUrl: servingUrl,
+        lazy: true,
+        memoryOptimized: true
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Video serving failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to serve video'
+      });
+    }
+  });
+
+  // Temp video file serving
+  app.get('/temp-video/:videoId', (req, res) => {
+    const { videoId } = req.params;
+    const tempPath = path.join(process.cwd(), 'temp', `${videoId}.mp4`);
+    
+    // Stream video file with proper headers
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'no-cache'); // No caching for temp files
+    
+    res.sendFile(tempPath, (err) => {
+      if (err) {
+        console.error(`❌ Temp video serving failed: ${err.message}`);
+        res.status(404).json({ error: 'Video not found' });
+      }
+    });
+  });
+
+  // Video cleanup endpoint for post-publish cleanup
+  app.post('/api/video/cleanup/:videoId', requireAuth, async (req: any, res) => {
+    try {
+      const { videoId } = req.params;
+      
+      console.log(`🧹 Cleaning up video: ${videoId}`);
+      
+      // Import VeoService to get video manager
+      const VeoService = (await import('./veoService')).default;
+      const veoService = new VeoService();
+      
+      veoService.videoManager.clearPostPublishCache(videoId);
+      
+      res.json({
+        success: true,
+        message: 'Video cleanup completed'
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Video cleanup failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to cleanup video'
+      });
+    }
+  });
+
+  // Memory usage report endpoint
+  app.get('/api/video/memory-report', requireAuth, async (req: any, res) => {
+    try {
+      // Import VeoService to get video manager
+      const VeoService = (await import('./veoService')).default;
+      const veoService = new VeoService();
+      
+      const report = veoService.videoManager.getMemoryReport();
+      
+      res.json({
+        success: true,
+        report: report
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Memory report failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate memory report'
+      });
+    }
+  });
+
   // Publish approved post (with video + text) to platforms
   app.post('/api/post/publish-approved', async (req: any, res) => {
     try {

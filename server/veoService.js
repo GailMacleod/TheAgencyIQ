@@ -2,11 +2,14 @@
  * Authentic VEO 2.0 Service using official Vertex AI documentation
  * Implements predictLongRunning endpoint with fetchPredictOperation polling
  */
+import OptimizedVideoManager from './services/OptimizedVideoManager.js';
+
 class VeoService {
   constructor() {
     this.VEO2_MODEL = 'veo-2.0-generate-001';
     this.operations = new Map(); // Track async operations
     this.quotaManager = null;
+    this.videoManager = new OptimizedVideoManager();
     
     // Initialize Google AI for fallback scenarios
     this.initializeGoogleAI();

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { VideoIcon, LoaderIcon, CheckIcon, XIcon, Edit } from 'lucide-react';
+import LazyVideoPreview from './LazyVideoPreview';
 
 // Video Player Component with URL Validation and Error Recovery
 function VideoPlayerWithFallback({ videoUrl, thumbnail, title, onError }: { videoUrl: string; thumbnail?: string; title?: string; onError?: (msg: string) => void }) {
@@ -79,6 +80,7 @@ interface VideoData {
   videoId: string;
   url: string;
   videoUrl?: string;
+  gcsUri?: string; // ADD: GCS URI for lazy loading memory optimization
   title: string;
   description: string;
   duration: number;
@@ -99,6 +101,8 @@ interface VideoData {
   fromCache?: boolean;
   cacheAge?: number;
   generationTime?: number;
+  lazy?: boolean; // ADD: Lazy loading flag
+  memoryOptimized?: boolean; // ADD: Memory optimization flag
 }
 
 interface Post {
@@ -590,54 +594,34 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
               </div>
             </div>
             
-            {/* VEO 2.0 Video Preview with URL Validation and Play Button */}
+            {/* Memory-Optimized Lazy Video Preview */}
             <div className="mb-3">
-              <div className="relative w-full bg-gradient-to-br from-gray-900 to-black rounded-lg overflow-hidden border" style={{ aspectRatio: '16/9' }}>
-                {videoSrc || videoData.videoUrl || videoData.url || videoData.veoVideoUrl ? (
-                  <div className="relative w-full h-full group">
-                    <video 
-                      className="w-full h-full object-cover"
-                      poster={videoData.thumbnail}
-                      controls
-                      preload="metadata"
-                      style={{ backgroundColor: '#000' }}
-                    >
-                      <source src={videoSrc || videoData.videoUrl || videoData.url || videoData.veoVideoUrl} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                    
-                    {/* Play Button Overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-                      <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <div className="w-6 h-6 text-white">
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : previewText ? (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-900 to-indigo-900 flex items-center justify-center p-4">
-                    <div className="text-center space-y-2">
-                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <VideoIcon className="w-6 h-6 text-white" />
-                      </div>
-                      <p className="text-white text-sm font-medium">Preview Mode</p>
-                      <p className="text-white/80 text-xs">{previewText.substring(0, 100)}...</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                    <div className="text-center space-y-2">
-                      <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto">
-                        <VideoIcon className="w-6 h-6 text-white/60" />
-                      </div>
-                      <p className="text-white/60 text-sm">Video Loading...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <LazyVideoPreview
+                videoId={videoData.videoId}
+                gcsUri={videoData.gcsUri || videoData.videoUrl || videoData.url || videoData.veoVideoUrl}
+                metadata={{
+                  duration: videoData.duration || 8,
+                  aspectRatio: videoData.aspectRatio || '16:9',
+                  quality: videoData.quality || '720p',
+                  format: 'mp4'
+                }}
+                onLoad={() => {
+                  console.log('✅ Video loaded via lazy loading');
+                  toast({
+                    title: 'Video Loaded',
+                    description: 'Video preview is ready',
+                    duration: 2000
+                  });
+                }}
+                onError={(error) => {
+                  console.error('❌ Lazy video load error:', error);
+                  toast({
+                    title: 'Video Loading Failed',
+                    description: error,
+                    variant: 'destructive'
+                  });
+                }}
+              />
             </div>
             
             {/* Video Details with VEO3 Specs */}
