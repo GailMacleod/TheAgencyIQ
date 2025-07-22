@@ -571,7 +571,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
             <div className="flex items-center justify-between mb-3">
               <Badge className={`px-3 py-1 text-white ${videoData.veo2Generated ? 'bg-gradient-to-r from-blue-600 to-indigo-600' : 'bg-gradient-to-r from-purple-600 to-indigo-600'}`}>
                 <VideoIcon className="w-4 h-4 mr-2" />
-                {videoData.veo2Generated ? 'VEO 2.0 Ready' : 'Video Ready'}
+                {videoData.grokEnhanced ? 'Grok + VEO 2.0' : videoData.veo2Generated ? 'VEO 2.0 Ready' : 'Video Ready'}
               </Badge>
               <div className="flex gap-2">
                 <Button

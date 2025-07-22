@@ -11253,17 +11253,29 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       const VideoService = (await import('./videoService')).default;
       const VeoService = (await import('./veoService')).default;
       
-      // SURGICAL FIX: Force VEO 2.0 async operations without fallback
+      // FIRST PRINCIPLES FIX: Grok → VEO 2.0 proper workflow
       let result;
       try {
+        console.log(`✍️ STEP 1: Grok enhancement starting for ${platform}`);
+        
+        // STEP 1: Get Grok-enhanced prompts first
+        const grokResult = await VideoService.generateVideoPromptsWithGrokCopywriter(
+          promptPreview || editedText || 'Professional Queensland business content',
+          platform,
+          brandPurpose,
+          req.session?.userId || userId
+        );
+        
+        console.log(`✅ STEP 1 COMPLETE: Grok enhanced prompts generated`);
+        console.log(`🎯 STEP 2: VEO 2.0 generation starting with Grok-enhanced prompt`);
+        
+        // STEP 2: Pass Grok-enhanced prompt to VEO 2.0
         const veoService = new VeoService();
+        const enhancedPrompt = grokResult.prompts?.[0]?.prompt || grokResult.enhancedCopy || promptPreview;
         
-        // Simplified prompt for VEO 2.0 generation
-        const veoPrompt = promptType || promptPreview || editedText || 'Create a professional business video for Queensland SME';
+        console.log(`🎬 VEO 2.0: Using Grok-enhanced prompt for ${platform}`);
         
-        console.log(`🎯 VEO 2.0: Forcing authentic async generation for ${platform}`);
-        
-        const veoResult = await veoService.generateVideo(veoPrompt, {
+        const veoResult = await veoService.generateVideo(enhancedPrompt, {
           aspectRatio: platform === 'instagram' ? '9:16' : '16:9',
           durationSeconds: 8,
           platform: platform
@@ -11272,8 +11284,14 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         // CRITICAL: Always use VEO result, even if it reports error but provides async operation
         if (veoResult.isAsync && veoResult.operationId) {
           // VEO 2.0 async operation initiated successfully
-          result = veoResult;
-          console.log(`✅ VEO 2.0: Async operation ${veoResult.operationId} initiated for ${platform}`);
+          result = {
+            ...veoResult,
+            grokEnhanced: true,
+            enhancedPrompt: enhancedPrompt,
+            originalPrompt: promptPreview || editedText,
+            grokResult: grokResult
+          };
+          console.log(`✅ WORKFLOW COMPLETE: Grok → VEO 2.0 async operation ${veoResult.operationId} initiated for ${platform}`);
         } else if (veoResult.success) {
           // Immediate VEO 2.0 result (cached)
           result = {
@@ -11281,15 +11299,18 @@ async function fetchYouTubeAnalytics(accessToken: string) {
             videoId: veoResult.videoId,
             url: veoResult.videoUrl,
             videoUrl: veoResult.videoUrl,
-            title: `VEO 2.0 Generated - ${platform.toUpperCase()}`,
-            description: `Professional video generated with VEO 2.0 for ${brandPurpose?.brandName || 'Queensland Business'}`,
+            title: `Grok + VEO 2.0 Generated - ${platform.toUpperCase()}`,
+            description: `Professional video generated with Grok enhancement + VEO 2.0 for ${brandPurpose?.brandName || 'Queensland Business'}`,
             duration: veoResult.duration,
             aspectRatio: veoResult.aspectRatio,
             quality: veoResult.resolution,
             veo2Generated: true,
+            grokEnhanced: true,
             platform: platform,
             generationTime: veoResult.generationTime,
-            message: 'VEO 2.0 video generated successfully'
+            enhancedPrompt: enhancedPrompt,
+            originalPrompt: promptPreview || editedText,
+            message: 'Grok + VEO 2.0 video generated successfully'
           };
         } else {
           // Force async operation even if VEO service reports failure
