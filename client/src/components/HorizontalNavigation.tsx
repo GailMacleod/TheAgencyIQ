@@ -137,7 +137,7 @@ export default function HorizontalNavigation() {
             Your Workflow
           </h3>
           <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto font-normal">
-            AI-powered social media automation in 4 simple steps
+            Social Media automation in 4 simple steps
           </p>
         </div>
 
