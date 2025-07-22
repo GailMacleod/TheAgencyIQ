@@ -32,9 +32,50 @@ export function LazyVideoPreview({
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Lazy load video when user clicks play
+  // Auto-load video when component mounts with gcsUri
+  useEffect(() => {
+    const loadVideo = async () => {
+      if (!gcsUri || isLoaded || isLoading) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        console.log(`🔄 Auto-loading video: ${videoId} with gcsUri: ${gcsUri}`);
+        
+        // Request optimized serving URL from backend
+        const response = await fetch(`/api/video/serve/${videoId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gcsUri })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load video: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setVideoUrl(data.servingUrl);
+        setIsLoaded(true);
+        onLoad?.();
+        
+        console.log(`✅ Video auto-loaded: ${videoId}`);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to load video';
+        setError(errorMsg);
+        onError?.(errorMsg);
+        console.error(`❌ Video auto-loading failed: ${errorMsg}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadVideo();
+  }, [gcsUri, videoId]);
+
+  // Lazy load video when user clicks play OR auto-load on mount
   const handleLoadVideo = async () => {
-    if (isLoaded || isLoading || !gcsUri) return;
+    if (isLoaded || isLoading) return;
 
     setIsLoading(true);
     setError(null);
