@@ -11255,30 +11255,54 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       
       // FIRST PRINCIPLES FIX: Grok → VEO 2.0 proper workflow
       let result;
+      let grokResult;
+      let enhancedPrompt;
+      
       try {
+        console.log(`🚀 SURGICAL DEBUG: Starting Grok → VEO 2.0 workflow for ${platform}`);
         console.log(`✍️ STEP 1: Grok enhancement starting for ${platform}`);
         
         // STEP 1: Get Grok-enhanced prompts first
-        const grokResult = await VideoService.generateVideoPromptsWithGrokCopywriter(
-          promptPreview || editedText || 'Professional Queensland business content',
-          platform,
-          brandPurpose,
-          req.session?.userId || userId
-        );
+        try {
+          grokResult = await VideoService.generateVideoPromptsWithGrokCopywriter(
+            promptPreview || editedText || 'Professional Queensland business content',
+            platform,
+            brandPurpose,
+            req.session?.userId || userId
+          );
+          
+          console.log(`✅ STEP 1 COMPLETE: Grok enhanced prompts generated`);
+          console.log(`🔍 GROK RESULT:`, JSON.stringify(grokResult, null, 2));
+          
+          // Extract enhanced prompt with fallback
+          enhancedPrompt = grokResult?.prompts?.[0]?.prompt || 
+                          grokResult?.enhancedCopy || 
+                          grokResult?.cinematicPrompt ||
+                          promptPreview || 
+                          'Professional Queensland business transformation video with cinematic quality';
+          
+          console.log(`🎬 ENHANCED PROMPT: ${enhancedPrompt}`);
+          
+        } catch (grokError) {
+          console.error(`❌ GROK STEP FAILED:`, grokError);
+          // Still use enhanced prompt for VEO
+          enhancedPrompt = `Professional Queensland business content: ${promptPreview || editedText}`;
+        }
         
-        console.log(`✅ STEP 1 COMPLETE: Grok enhanced prompts generated`);
         console.log(`🎯 STEP 2: VEO 2.0 generation starting with Grok-enhanced prompt`);
         
         // STEP 2: Pass Grok-enhanced prompt to VEO 2.0
         const veoService = new VeoService();
-        const enhancedPrompt = grokResult.prompts?.[0]?.prompt || grokResult.enhancedCopy || promptPreview;
         
         console.log(`🎬 VEO 2.0: Using Grok-enhanced prompt for ${platform}`);
         
         const veoResult = await veoService.generateVideo(enhancedPrompt, {
           aspectRatio: platform === 'instagram' ? '9:16' : '16:9',
           durationSeconds: 8,
-          platform: platform
+          platform: platform,
+          withSound: true, // Include sound as specified
+          grokEnhanced: true,
+          jtbdFramework: brandPurpose?.jobToBeDone || 'Queensland business growth'
         });
         
         // CRITICAL: Always use VEO result, even if it reports error but provides async operation
