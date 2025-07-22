@@ -11442,14 +11442,17 @@ async function fetchYouTubeAnalytics(accessToken: string) {
           message: 'VEO 2.0 generation failed'
         });
       } else {
-        // Still processing
+        // Still processing - pass through all timing data
         res.json({
           success: true,
           completed: false,
           progress: operationStatus.progress,
+          elapsed: operationStatus.elapsed, // ADD: elapsed time for timer
+          phase: operationStatus.phase, // ADD: current phase
           status: operationStatus.status,
           estimatedTimeRemaining: operationStatus.estimatedTimeRemaining,
-          message: 'VEO 2.0 generation in progress...'
+          generationTime: operationStatus.generationTime, // ADD: generation time
+          message: operationStatus.message || 'VEO 2.0 generation in progress...'
         });
       }
       
