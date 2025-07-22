@@ -934,7 +934,7 @@ export default function BrandPurpose() {
             {/* Job to Be Done */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="jobToBeDone" className="text-sm font-black text-gray-700">JTBD (Job to be done): What job does your brand do for customers?</Label>
+                <Label htmlFor="jobToBeDone" className="peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm text-gray-700 font-black">NB: What is the Job to be done (JTBD) for your customers?</Label>
                 {aiSuggestions.jobToBeDone && (
                   <Button
                     type="button"

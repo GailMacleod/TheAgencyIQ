@@ -725,11 +725,9 @@ function IntelligentSchedule() {
         {/* AI Intelligence Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <Brain className="w-8 h-8 text-purple-600 mr-3" />
             <h1 className="text-4xl font-bold text-gray-900">
               AI-Powered Content Schedule
             </h1>
-            <Sparkles className="w-8 h-8 text-yellow-500 ml-3" />
           </div>
           <p className="text-gray-600 text-lg mb-6">
             xAI analyses your brand purpose, audience insights, and Queensland market data to create intelligent, strategic content
