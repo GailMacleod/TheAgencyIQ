@@ -11507,9 +11507,16 @@ async function fetchYouTubeAnalytics(accessToken: string) {
   app.post('/api/video/serve/:videoId', requireAuth, async (req: any, res) => {
     try {
       const { videoId } = req.params;
-      const { gcsUri } = req.body;
+      let { gcsUri } = req.body;
       
       console.log(`🎬 Serving video on-demand: ${videoId}`);
+      console.log(`🔍 Request body gcsUri: ${gcsUri}`);
+      
+      // If no gcsUri in request body, construct default path
+      if (!gcsUri) {
+        gcsUri = `/videos/generated/${videoId}.mp4`;
+        console.log(`⚠️ No gcsUri in request, using default: ${gcsUri}`);
+      }
       
       // Import VeoService to get video manager
       const VeoService = (await import('./veoService')).default;

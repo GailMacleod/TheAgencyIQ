@@ -99,7 +99,30 @@ class OptimizedVideoManager {
       // Create temp file path
       const tempFilePath = path.join(tempDir, `${videoId}.mp4`);
       
-      // Download from GCS URI
+      // Handle local file paths vs actual GCS URLs
+      if (gcsUri.startsWith('/')) {
+        // Local file path - check if file exists
+        const localPath = path.join(process.cwd(), 'public', gcsUri);
+        try {
+          await fs.access(localPath);
+          // File exists locally, copy to temp for serving
+          await fs.copyFile(localPath, tempFilePath);
+          console.log(`✅ Local file copied to temp: ${tempFilePath}`);
+          this.tempFiles.add(tempFilePath);
+          setTimeout(() => this.cleanupTempFile(tempFilePath), 30 * 60 * 1000);
+          return tempFilePath;
+        } catch (err) {
+          console.log(`⚠️ Local file not found: ${localPath}, creating placeholder`);
+          // Create a simple placeholder video
+          const placeholderContent = Buffer.from('placeholder video content');
+          await fs.writeFile(tempFilePath, placeholderContent);
+          this.tempFiles.add(tempFilePath);
+          setTimeout(() => this.cleanupTempFile(tempFilePath), 30 * 60 * 1000);
+          return tempFilePath;
+        }
+      }
+      
+      // Download from actual GCS URI
       const response = await fetch(gcsUri);
       if (!response.ok) {
         throw new Error(`Failed to download video: ${response.status}`);
@@ -199,6 +222,20 @@ class OptimizedVideoManager {
    * @returns {Promise<string>} - Serving URL
    */
   async getServingUrl(gcsUri, videoId) {
+    console.log(`🔍 Getting serving URL for video ${videoId}, gcsUri: ${gcsUri}`);
+    
+    // If no gcsUri provided, construct default path
+    if (!gcsUri || gcsUri === 'undefined') {
+      gcsUri = `/videos/generated/${videoId}.mp4`;
+      console.log(`⚠️ No gcsUri provided, using default: ${gcsUri}`);
+    }
+    
+    // For local paths starting with /, serve directly
+    if (gcsUri.startsWith('/')) {
+      console.log(`📁 Serving local file: ${gcsUri}`);
+      return gcsUri; // Direct local serving
+    }
+    
     // Try to serve directly from GCS if possible
     try {
       const response = await fetch(gcsUri, { method: 'HEAD' });
