@@ -730,7 +730,7 @@ function IntelligentSchedule() {
             </h1>
           </div>
           <p className="text-gray-600 text-lg mb-6">
-            xAI analyses your brand purpose, audience insights, and Queensland market data to create intelligent, strategic content
+            The AgencyIQ analyses your brand purpose, audience insights, and Queensland market data to create intelligent, strategic content
           </p>
 
           {/* OAuth Token Status Banner */}
