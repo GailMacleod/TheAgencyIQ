@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { QueryClient, DehydratedState } from '@tanstack/react-query';
+import { QueryClient, DehydratedState, Hydrate } from '@tanstack/react-query';
 
 interface SSRQueryClientOptions {
   defaultOptions?: any;
@@ -64,9 +64,15 @@ interface SSRHydrateProps {
 }
 
 export function SSRHydrate({ children, dehydratedState }: SSRHydrateProps) {
-  // In newer versions of React Query, hydration is handled automatically
-  // This component serves as a placeholder for future SSR needs
-  return children as React.ReactElement;
+  if (!dehydratedState) {
+    return children as React.ReactElement;
+  }
+
+  return (
+    <Hydrate state={dehydratedState}>
+      {children}
+    </Hydrate>
+  );
 }
 
 // Utility for server-side data prefetching
@@ -98,5 +104,15 @@ export function serializeDehydratedState(queryClient: QueryClient): string {
   } catch (error) {
     console.warn('Failed to serialize dehydrated state:', error);
     return '{}';
+  }
+}
+
+// Utility to deserialize dehydrated state for client hydration
+export function deserializeDehydratedState(serializedState: string): DehydratedState | undefined {
+  try {
+    return JSON.parse(serializedState);
+  } catch (error) {
+    console.warn('Failed to deserialize dehydrated state:', error);
+    return undefined;
   }
 }

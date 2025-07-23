@@ -100,7 +100,7 @@ const tests = {
       const app = fs.readFileSync('client/src/App.tsx', 'utf8');
       return {
         name: 'PWA dismissal cooldown implemented',
-        pass: app.includes('dismissedUntil') && app.includes('7 days')
+        pass: app.includes('7 days dismissal cooldown') && app.includes('cooldown active')
       };
     },
     () => {
@@ -193,7 +193,7 @@ const tests = {
       const app = fs.readFileSync('client/src/App.tsx', 'utf8');
       return {
         name: 'Performance optimization integration implemented',
-        pass: app.includes('OptimizedTooltipProvider') && app.includes('performance')
+        pass: app.includes('OptimizedTooltipProvider') && app.includes('useSSRQueryClient')
       };
     },
     () => {

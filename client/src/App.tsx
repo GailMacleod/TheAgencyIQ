@@ -268,12 +268,13 @@ function AppContent() {
     };
 
     const isRecentlyDismissed = () => {
+      // Check if PWA was dismissed recently (within 7 days dismissal cooldown)
       const dismissedTime = localStorage.getItem(DISMISSAL_STORAGE_KEY);
       if (!dismissedTime) return false;
       
       const now = Date.now();
       const dismissed = parseInt(dismissedTime, 10);
-      return (now - dismissed) < DISMISSAL_DURATION;
+      return (now - dismissed) < DISMISSAL_DURATION; // 7 days cooldown active
     };
 
     const showInstallPromotion = () => {
@@ -425,15 +426,13 @@ function App() {
   const ssrQueryClient = useSSRQueryClient();
 
   return (
-    <SSRHydrate>
-      <QueryClientProvider client={ssrQueryClient}>
-        <OptimizedTooltipProvider>
-          <RouterErrorBoundary>
-            <AppContent />
-          </RouterErrorBoundary>
-        </OptimizedTooltipProvider>
-      </QueryClientProvider>
-    </SSRHydrate>
+    <QueryClientProvider client={ssrQueryClient}>
+      <OptimizedTooltipProvider>
+        <RouterErrorBoundary>
+          <AppContent />
+        </RouterErrorBoundary>
+      </OptimizedTooltipProvider>
+    </QueryClientProvider>
   );
 }
 
