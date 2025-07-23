@@ -113,6 +113,82 @@ export const platformConnections = pgTable("platform_connections", {
   uniqueUserPlatform: index("unique_user_platform_active").on(table.userId, table.platform).where(eq(table.isActive, true)),
 }));
 
+// Enhanced OAuth tokens table for comprehensive token management  
+export const enhancedOauthTokens = pgTable("enhanced_oauth_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'twitter', 'youtube', 'google'
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  tokenType: text("token_type").default("Bearer"),
+  expiresAt: timestamp("expires_at"),
+  scopes: jsonb("scopes"), // Store granted scopes
+  platformData: jsonb("platform_data"), // Store platform-specific data
+  lastRefreshed: timestamp("last_refreshed"),
+  isValid: boolean("is_valid").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_enhanced_oauth_tokens_user_platform").on(table.userId, table.platform),
+  index("idx_enhanced_oauth_tokens_expires").on(table.expiresAt),
+]);
+
+// Quota usage tracking with PostgreSQL backing
+export const quotaUsage = pgTable("quota_usage", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 50 }).notNull(),
+  platform: varchar("platform", { length: 50 }).notNull(),
+  operation: varchar("operation", { length: 50 }).notNull(),
+  hourWindow: timestamp("hour_window").notNull(),
+  count: integer("count").default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_quota_usage_user_platform").on(table.userId, table.platform),
+  index("idx_quota_usage_hour_window").on(table.hourWindow),
+]);
+
+// Notification logs for tracking sent notifications
+export const notificationLogs = pgTable("notification_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // 'email', 'sms', 'push'
+  provider: text("provider").notNull(), // 'sendgrid', 'twilio'
+  recipient: text("recipient").notNull(), // email or phone
+  subject: text("subject"),
+  content: text("content").notNull(),
+  status: text("status").notNull(), // 'sent', 'failed', 'pending'
+  externalId: text("external_id"), // Provider's message ID
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_notification_logs_user").on(table.userId),
+  index("idx_notification_logs_status").on(table.status),
+]);
+
+// Enhanced post logs for comprehensive posting audit trail
+export const enhancedPostLogs = pgTable("enhanced_post_logs", {
+  id: serial("id").primaryKey(),
+  postId: text("post_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  platform: text("platform").notNull(),
+  action: text("action").notNull(), // 'attempt', 'success', 'failure', 'retry'
+  attemptNumber: integer("attempt_number").default(1),
+  statusCode: integer("status_code"),
+  errorCode: text("error_code"),
+  errorMessage: text("error_message"),
+  platformResponse: jsonb("platform_response"),
+  oauthTokenUsed: text("oauth_token_used"),
+  processingTime: integer("processing_time"), // milliseconds
+  retryAfter: timestamp("retry_after"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_enhanced_post_logs_post_id").on(table.postId),
+  index("idx_enhanced_post_logs_user_platform").on(table.userId, table.platform),
+  index("idx_enhanced_post_logs_status").on(table.action),
+]);
+
 // Brand purpose for content generation
 export const brandPurpose = pgTable("brand_purpose", {
   id: serial("id").primaryKey(),
