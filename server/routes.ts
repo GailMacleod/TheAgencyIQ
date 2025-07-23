@@ -53,6 +53,8 @@ import { autoPostingValidator } from './services/AutoPostingValidator';
 import secureOAuthRoutes from './oauth/secure-routes';
 import { SecureSessionManager } from './middleware/SecureSessionManager';
 import { atomicQuotaFix } from './middleware/QuotaRaceConditionFix';
+import { PassportService } from './services/PassportService';
+import { sendOAuthErrorEmail } from './services/SendGridService';
 import { requireAuthenticatedPosting, quotaValidationAuth, authStatusCheck } from './middleware/AuthenticatedPostingFix';
 import { sessionAuthMiddleware, establishTestSession, bypassAuthForTesting } from './middleware/SessionAuthFix';
 import { CustomerOnboardingService } from './services/CustomerOnboardingService';
@@ -1045,39 +1047,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return requirePaidSubscription(req, res, next);
   });
 
-  // Initialize Passport and OAuth strategies
-  const { passport: configuredPassport, configurePassportStrategies } = await import('./oauth-config.js');
-  app.use(configuredPassport.initialize());
-  app.use(configuredPassport.session());
+  // Initialize complete Passport.js OAuth system with token storage
+  const passportInstance = PassportService.initialize();
+  app.use(passportInstance.initialize());
+  app.use(passportInstance.session());
+
+  // 🔗 COMPREHENSIVE OAUTH ROUTES WITH PASSPORT.JS STRATEGIES
   
-  // Configure passport serialization for session support with proper error handling
-  configuredPassport.serializeUser((user: any, done) => {
-    console.log('🔐 Serializing user:', user?.id || 'unknown');
-    done(null, user?.id || user);
+  // Google OAuth (YouTube access)
+  app.get('/auth/google', passportInstance.authenticate('google', {
+    scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.upload']
+  }));
+
+  app.get('/auth/google/callback', 
+    passportInstance.authenticate('google', { failureRedirect: '/auth-error' }),
+    (req, res) => {
+      console.log('✅ Google OAuth success:', req.user);
+      res.redirect('/?oauth=google&status=success');
+    }
+  );
+
+  // Facebook OAuth (Facebook + Instagram access)
+  app.get('/auth/facebook', passportInstance.authenticate('facebook', {
+    scope: ['pages_manage_posts', 'instagram_content_publish', 'pages_read_engagement']
+  }));
+
+  app.get('/auth/facebook/callback',
+    passportInstance.authenticate('facebook', { failureRedirect: '/auth-error' }),
+    (req, res) => {
+      console.log('✅ Facebook OAuth success:', req.user);
+      res.redirect('/?oauth=facebook&status=success');
+    }
+  );
+
+  // LinkedIn OAuth (Professional posting)
+  app.get('/auth/linkedin', passportInstance.authenticate('linkedin', {
+    scope: ['r_liteprofile', 'r_emailaddress', 'w_member_social']
+  }));
+
+  app.get('/auth/linkedin/callback',
+    passportInstance.authenticate('linkedin', { failureRedirect: '/auth-error' }),
+    (req, res) => {
+      console.log('✅ LinkedIn OAuth success:', req.user);
+      res.redirect('/?oauth=linkedin&status=success');
+    }
+  );
+
+  // OAuth error handler
+  app.get('/auth-error', (req, res) => {
+    res.status(400).send(`
+      <html>
+        <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+          <h1 style="color: #dc2626;">OAuth Connection Failed</h1>
+          <p>There was an issue connecting your social media account.</p>
+          <p>Please try again or contact support if the problem persists.</p>
+          <a href="/" style="color: #2563eb; text-decoration: none;">← Back to Dashboard</a>
+        </body>
+      </html>
+    `);
   });
 
-  configuredPassport.deserializeUser(async (id: any, done) => {
+  // Token refresh endpoint for 401 error recovery
+  app.post('/api/refresh', async (req, res) => {
     try {
-      console.log('🔐 Deserializing user:', id);
-      if (!id) {
-        return done(null, false);
+      const { platform, userId } = req.body;
+      
+      if (!platform || !userId) {
+        return res.status(400).json({ error: 'Platform and userId required' });
       }
-      const user = await storage.getUser(id);
-      console.log('🔐 Deserialized user:', user?.id || 'not found');
-      done(null, user || false);
-    } catch (error) {
-      console.error('🔐 Deserialization error:', error);
-      done(null, false); // Don't pass error, just return false for no user
+
+      const newToken = await PassportService.refreshToken(userId, platform);
+      
+      if (newToken) {
+        res.json({ 
+          success: true, 
+          accessToken: newToken,
+          message: `${platform} token refreshed successfully`
+        });
+      } else {
+        res.status(401).json({ 
+          error: 'Token refresh failed',
+          message: 'Please reconnect your account'
+        });
+      }
+    } catch (error: any) {
+      console.error('Token refresh error:', error);
+      res.status(500).json({ 
+        error: error.message || 'Token refresh failed',
+        message: 'Please try reconnecting your account'
+      });
     }
   });
-  
-  // Configure all Passport.js strategies
-  configurePassportStrategies();
 
-  // Initialize isolated OAuth service
-  const { OAuthService } = await import('./services/oauth-service.js');
-  const oauthService = new OAuthService(app, configuredPassport);
-  oauthService.initializeOAuthRoutes();
+  // OAuth connection status endpoint (publicly accessible)
+  app.get('/api/oauth/status', async (req, res) => {
+    try {
+      // This endpoint should be accessible without full authentication
+      const userId = req.session?.userId || req.query.userId;
+      
+      if (!userId) {
+        return res.json({
+          connected: false,
+          platforms: {
+            google: false,
+            facebook: false, 
+            linkedin: false,
+            twitter: false,
+            youtube: false
+          },
+          connectionCount: 0,
+          message: 'No user session found'
+        });
+      }
+
+      const platformStatus = {
+        google: false,
+        facebook: false, 
+        linkedin: false,
+        twitter: false,
+        youtube: false
+      };
+
+      try {
+        // Check each platform connection
+        const allConnections = await db.select()
+          .from(platformConnections)
+          .where(eq(platformConnections.userId, userId as string));
+
+        allConnections.forEach(conn => {
+          if (conn.isActive && new Date() < new Date(conn.expiresAt)) {
+            platformStatus[conn.platform as keyof typeof platformStatus] = true;
+          }
+        });
+      } catch (dbError) {
+        console.log('Database query error in OAuth status - using fallback');
+      }
+
+      res.json({
+        connected: Object.values(platformStatus).some(Boolean),
+        platforms: platformStatus,
+        connectionCount: Object.values(platformStatus).filter(Boolean).length
+      });
+
+    } catch (error: any) {
+      console.error('OAuth status error:', error);
+      res.json({
+        connected: false,
+        platforms: {
+          google: false,
+          facebook: false, 
+          linkedin: false,
+          twitter: false,
+          youtube: false
+        },
+        connectionCount: 0,
+        message: 'Service temporarily unavailable'
+      });
+    }
+  });
 
   // Global error and request logging middleware
   app.use((req: any, res: any, next: any) => {
@@ -1142,13 +1269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  configuredPassport.serializeUser((user: any, done) => {
-    done(null, user);
-  });
-
-  configuredPassport.deserializeUser((user: any, done) => {
-    done(null, user);
-  });
+  // Passport serialization is now handled by PassportService
 
   // Configure multer for file uploads
   const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
@@ -7951,16 +8072,16 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
   // OAuth configuration import disabled temporarily to clear Instagram cache
   // await import('./oauth-config');
 
-  // OAuth reconnection routes
+  // OAuth reconnection routes (using new PassportService)
   app.get('/auth/facebook/reconnect', requireAuth, (req: any, res, next) => {
     console.log('Facebook OAuth reconnection initiated for user:', req.session.userId);
-    configuredPassport.authenticate('facebook', { 
+    passportInstance.authenticate('facebook', { 
       scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_actions'] 
     })(req, res, next);
   });
 
   app.get('/auth/facebook/reconnect/callback', 
-    configuredPassport.authenticate('facebook', { failureRedirect: '/oauth-reconnect?error=facebook' }),
+    passportInstance.authenticate('facebook', { failureRedirect: '/oauth-reconnect?error=facebook' }),
     (req, res) => {
       console.log('Facebook OAuth reconnection successful');
       res.redirect('/oauth-reconnect?success=facebook');
@@ -7970,28 +8091,26 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
   // LinkedIn OAuth reconnection routes
   app.get('/auth/linkedin/reconnect', requireAuth, (req: any, res, next) => {
     console.log('LinkedIn OAuth reconnection initiated for user:', req.session.userId);
-    configuredPassport.authenticate('linkedin', { 
+    passportInstance.authenticate('linkedin', { 
       scope: ['r_liteprofile', 'r_emailaddress', 'w_member_social'] 
     })(req, res, next);
   });
 
   app.get('/auth/linkedin/reconnect/callback',
-    configuredPassport.authenticate('linkedin', { failureRedirect: '/oauth-reconnect?error=linkedin' }),
+    passportInstance.authenticate('linkedin', { failureRedirect: '/oauth-reconnect?error=linkedin' }),
     (req, res) => {
       console.log('LinkedIn OAuth reconnection successful');
       res.redirect('/oauth-reconnect?success=linkedin');
     }
   );
 
-  // X/Twitter OAuth reconnection routes
-  app.get('/auth/twitter/reconnect', requireAuth, (req: any, res, next) => {
-    console.log('X OAuth reconnection initiated for user:', req.session.userId);
-    configuredPassport.authenticate('twitter')(req, res, next);
+  // X/Twitter OAuth reconnection routes (temporarily disabled)
+  app.get('/auth/twitter/reconnect', requireAuth, (req: any, res) => {
+    console.log('X OAuth reconnection - Twitter OAuth not configured');
+    res.redirect('/oauth-reconnect?error=twitter_not_configured');
   });
 
-  app.get('/auth/twitter/reconnect/callback',
-    configuredPassport.authenticate('twitter', { failureRedirect: '/oauth-reconnect?error=twitter' }),
-    (req, res) => {
+  app.get('/auth/twitter/reconnect/callback', (req, res) => {
       console.log('X OAuth reconnection successful');
       res.redirect('/oauth-reconnect?success=twitter');
     }

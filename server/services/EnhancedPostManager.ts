@@ -10,7 +10,7 @@ import { eq, and, sql, count, gt } from 'drizzle-orm';
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import rateLimit from 'express-rate-limit';
-import { sendEmail } from '../services/SendGridService';
+import { sendOAuthConfirmationEmail } from '../services/SendGridService';
 import twilio from 'twilio';
 
 // Environment Configuration
