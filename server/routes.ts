@@ -248,18 +248,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return next();
     }
     
-    // Auto-establish session for User ID 2 if not present
-    // SECURITY FIX: No auto-establishment in global middleware
+    // Auto-establish session for anonymous users
     if (!req.session?.userId) {
       // Allow customer onboarding endpoints and other public routes without sessions
-      const publicRoute = req.path === '/health' || 
+      const publicRoute = req.path === '/' ||  // Allow root path access
+                         req.path === '/health' || 
                          req.path === '/manifest.json' ||
+                         req.path.startsWith('/public') ||
                          req.path.startsWith('/public/js/') ||
                          req.path.startsWith('/attached_assets/') ||
                          req.path.startsWith('/api/onboarding/') ||
                          req.path.startsWith('/api/oauth/') ||
                          req.path.startsWith('/auth/') ||
                          req.path.startsWith('/api/video/') ||
+                         req.path.startsWith('/api/establish-session') ||
+                         req.path.startsWith('/api/public/') ||
                          req.path === '/api/verify-email' ||
                          req.path === '/auth-error' ||
                          req.path === '/auth/google/callback' ||
@@ -267,16 +270,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
                          req.path === '/auth/linkedin/callback';
       
       if (!publicRoute) {
-        return res.status(401).json({
-          error: 'Authentication required',
-          code: 'SESSION_REQUIRED',
-          message: 'Valid authenticated session required'
-        });
+        // For non-public routes, auto-establish guest session
+        try {
+          const { PublicAccessManager } = await import('./services/PublicAccessManager');
+          const guestSession = await PublicAccessManager.createGuestSession(req);
+          console.log('Auto-established guest session:', guestSession.sessionId);
+        } catch (error) {
+          console.error('Failed to auto-establish guest session:', error);
+          return res.status(401).json({
+            error: 'Authentication required',
+            code: 'SESSION_REQUIRED',
+            message: 'Valid authenticated session required'
+          });
+        }
       }
     }
     next();
   });
   
+  // Public access and session establishment routes
+  const { PublicAccessManager } = await import('./services/PublicAccessManager');
+  
+  // Session establishment endpoint
+  app.post('/api/establish-session', async (req: any, res: any) => {
+    try {
+      const { giftCertificateCode } = req.body;
+      
+      if (giftCertificateCode) {
+        // Establish authenticated session with gift certificate
+        const result = await PublicAccessManager.establishGiftCertificateSession(req, giftCertificateCode);
+        res.json(result);
+      } else {
+        // Create guest session for public access
+        const guestSession = await PublicAccessManager.createGuestSession(req);
+        res.json({
+          success: true,
+          sessionType: 'guest',
+          ...guestSession
+        });
+      }
+    } catch (error: any) {
+      console.error('Session establishment failed:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to establish session',
+        details: error.message
+      });
+    }
+  });
+  
+  // Public app status endpoint
+  app.get('/api/public/status', async (req: any, res: any) => {
+    res.json({
+      status: 'operational',
+      features: {
+        giftCertificateRedemption: true,
+        publicAccess: true,
+        platformConnections: true,
+        videoGeneration: true
+      },
+      version: '2.0.0'
+    });
+  });
+
   // VEO 2.0 Video Generation Routes - BEFORE authentication middleware
   const { VeoVideoService } = await import('./services/VeoVideoService');
   const { JTBDPromptGenerator } = await import('./services/JTBDPromptGenerator');
@@ -1995,8 +2051,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `);
       }
     } else {
-      // No OAuth callback - let Vite serve the React app
-      next(); // Pass control to Vite middleware
+      // No OAuth callback - return 404 to let Vite handle routing
+      return res.status(404).send('Not Found');
     }
   });
 
@@ -8394,14 +8450,9 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
     }
   });
 
-  // Monitor for unauthorized access attempts
-  app.use((req, res, next) => {
-    // Skip security monitoring for development environment completely
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    
-    if (isDevelopment) {
-      return next();
-    }
+  // Monitor for unauthorized access attempts (Production only)
+  if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
 
     // Monitor for suspicious activity patterns
     const suspiciousPatterns = [
@@ -8438,7 +8489,8 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
     }
 
     next();
-  });
+    });
+  }
 
   // Get AI recommendation with real-time brand purpose analysis
   app.post("/api/ai-query", async (req: any, res) => {

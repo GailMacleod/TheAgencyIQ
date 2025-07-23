@@ -350,6 +350,7 @@ async function startServer() {
 
   // Production-grade session configuration with security
   const isProduction = process.env.NODE_ENV === 'production';
+  const sessionTtlMs = 72 * 60 * 60 * 1000; // 72 hours
   
   // Session middleware already configured above with SessionPersistenceManager
 

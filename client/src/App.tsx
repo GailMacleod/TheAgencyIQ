@@ -71,6 +71,35 @@ function Router() {
   // Enhanced session management with retries and error handling
   const { sessionEstablished, onboardingComplete, isLoading, sessionError } = useSessionHook();
   
+  // Auto-establish session for public access
+  useEffect(() => {
+    const establishPublicSession = async () => {
+      if (!sessionEstablished && !isLoading && !sessionError) {
+        try {
+          const response = await fetch('/api/establish-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({})
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Public session established:', data);
+            // Force page reload to pick up new session
+            window.location.reload();
+          }
+        } catch (error) {
+          console.warn('Failed to establish public session:', error);
+        }
+      }
+    };
+    
+    establishPublicSession();
+  }, [sessionEstablished, isLoading, sessionError]);
+
   // Enhanced session establishment with retry logic
   useEffect(() => {
     const handleSessionEstablishment = async () => {
