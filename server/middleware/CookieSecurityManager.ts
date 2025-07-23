@@ -281,6 +281,11 @@ export class CookieSecurityManager {
   // Middleware for cookie security validation
   cookieSecurityMiddleware() {
     return (req: Request, res: Response, next: NextFunction) => {
+      // Skip cookie processing for static files to prevent MIME type interference
+      if (req.path.startsWith('/dist/') || req.path.startsWith('/assets/') || req.path === '/favicon.ico') {
+        return next();
+      }
+      
       const { cookie, source, valid } = this.extractDynamicCookie(req);
       
       // Add comprehensive security headers for cookie handling

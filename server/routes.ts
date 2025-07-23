@@ -770,11 +770,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Resilient authentication middleware with database connectivity handling
   const requireAuth = async (req: any, res: any, next: any) => {
-    console.log(`🔍 Session Debug - ${req.method} ${req.path}`);
-    console.log(`📋 Session ID: ${req.sessionID || 'NONE'}`);
-    console.log(`📋 User ID: ${req.session?.userId || 'anonymous'}`);
-    console.log(`📋 Session Cookie: ${req.headers.cookie || 'MISSING - Will be set in response...'}`);
-    console.log(`Cookie:`, req.cookies);
+    // Skip session debugging for static files
+    if (!req.path.startsWith('/dist/') && !req.path.startsWith('/assets/') && req.path !== '/favicon.ico') {
+      console.log(`🔍 Session Debug - ${req.method} ${req.path}`);
+      console.log(`📋 Session ID: ${req.sessionID || 'NONE'}`);
+      console.log(`📋 User ID: ${req.session?.userId || 'anonymous'}`);
+      console.log(`📋 Session Cookie: ${req.headers.cookie || 'MISSING - Will be set in response...'}`);
+      console.log(`Cookie:`, req.cookies);
+    }
 
     if (!req.session?.userId) {
       // SECURITY FIX: No auto-establishment in requireAuth middleware

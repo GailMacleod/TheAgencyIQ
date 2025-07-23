@@ -406,34 +406,39 @@ async function startServer() {
     next();
   });
 
-  // CRITICAL FIX 4: Session debugging middleware with detailed logging
+  // CRITICAL FIX 4: Session debugging middleware with detailed logging - SKIP static files
   app.use((req, res, next) => {
-    console.log(`🔍 Session Debug - ${req.method} ${req.path}`);
-    console.log(`📋 Session ID: ${req.sessionID || 'No session'}`);
-    console.log(`📋 User ID: ${req.session?.userId || 'anonymous'}`);
-    console.log(`📋 Session Cookie: ${req.headers.cookie?.substring(0, 150) || 'MISSING - Will be set in response'}...`);
-    
-    // PRECISION FIX: Add detailed cookie debugging as requested
-    console.log('Cookie:', req.cookies);
-    
-    // Set secure backup session cookie if missing using CookieSecurityManager
-    if (req.session?.userId && !req.headers.cookie?.includes('aiq_backup_session')) {
-      console.log('🔧 Setting secure session cookies for authenticated user');
+    // Skip session debugging for static files to prevent MIME type interference
+    if (!req.path.startsWith('/dist/') && !req.path.startsWith('/assets/') && req.path !== '/favicon.ico') {
+      console.log(`🔍 Session Debug - ${req.method} ${req.path}`);
+      console.log(`📋 Session ID: ${req.sessionID || 'No session'}`);
+      console.log(`📋 User ID: ${req.session?.userId || 'anonymous'}`);
+      console.log(`📋 Session Cookie: ${req.headers.cookie?.substring(0, 150) || 'MISSING - Will be set in response'}...`);
       
-      // Use CookieSecurityManager for secure cookie handling
-      cookieSecurityManager.setSecureCookie(res, 'aiq_backup_session', req.sessionID, {
-        maxAge: sessionTtlMs,
-        secure: isProduction,
-        httpOnly: true,
-        sameSite: 'strict'
-      });
-      
-      cookieSecurityManager.setSecureCookie(res, 'theagencyiq.session', req.sessionID, {
-        maxAge: sessionTtlMs,
-        secure: isProduction,
-        httpOnly: true,
-        sameSite: 'strict'
-      });
+      // PRECISION FIX: Add detailed cookie debugging as requested
+      console.log('Cookie:', req.cookies);
+    }
+    
+    // Set secure backup session cookie if missing using CookieSecurityManager - SKIP for static files
+    if (!req.path.startsWith('/dist/') && !req.path.startsWith('/assets/') && req.path !== '/favicon.ico') {
+      if (req.session?.userId && !req.headers.cookie?.includes('aiq_backup_session')) {
+        console.log('🔧 Setting secure session cookies for authenticated user');
+        
+        // Use CookieSecurityManager for secure cookie handling
+        cookieSecurityManager.setSecureCookie(res, 'aiq_backup_session', req.sessionID, {
+          maxAge: sessionTtlMs,
+          secure: isProduction,
+          httpOnly: true,
+          sameSite: 'strict'
+        });
+        
+        cookieSecurityManager.setSecureCookie(res, 'theagencyiq.session', req.sessionID, {
+          maxAge: sessionTtlMs,
+          secure: isProduction,
+          httpOnly: true,
+          sameSite: 'strict'
+        });
+      }
     }
     
     next();
