@@ -276,38 +276,8 @@ async function startServer() {
   console.log('✅ PostgreSQL session persistence with connect-pg-simple configured');
   console.log('🔒 Session features: persistence, touch, regeneration, Drizzle integration');
   
-  // Session establishment endpoint with security and regeneration
-  app.post('/api/establish-session', async (req, res) => {
-    try {
-      const { userId, userEmail, deviceInfo } = req.body;
-      
-      if (!userId) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'User ID required for session establishment' 
-        });
-      }
-
-      // Use session manager for secure establishment
-      await sessionManager.establishSession(req, userId, userEmail);
-      
-      console.log(`📋 Session established for user ${userId} with sessionId: ${req.sessionID}`);
-      res.json({
-        success: true,
-        sessionId: req.sessionID,
-        userId: userId,
-        userEmail: userEmail,
-        message: 'Session established successfully with regeneration'
-      });
-      
-    } catch (error) {
-      console.error('Session establishment error:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Session establishment failed: ' + (error as Error).message
-      });
-    }
-  });
+  // Session establishment endpoint is handled in routes.ts - this one is disabled to prevent conflicts
+  // app.post('/api/establish-session', async (req, res) => { ... }); // DISABLED
 
   // PWA session sync endpoint for offline support
   app.post('/api/sync-session', async (req, res) => {
