@@ -512,6 +512,45 @@ export class DatabaseStorage implements IStorage {
     return logs;
   }
 
+  // Get all gift certificates for security audit
+  async getAllGiftCertificates(): Promise<GiftCertificate[]> {
+    const certificates = await db
+      .select()
+      .from(giftCertificates)
+      .orderBy(desc(giftCertificates.createdAt));
+    return certificates;
+  }
+
+  // Enhanced security operations for gift certificates
+  async enhanceGiftCertificateSecurity(code: string, enhancements: {
+    securityHash: string;
+    lastSecurityUpdate: Date;
+    updatedBy: number;
+    securityLevel: string;
+  }): Promise<GiftCertificate> {
+    // For now, we'll add a security update log entry since the schema doesn't have these fields
+    const certificate = await this.getGiftCertificate(code);
+    if (!certificate) {
+      throw new Error(`Certificate ${code} not found`);
+    }
+
+    // Log the security enhancement
+    await this.logGiftCertificateAction({
+      certificateId: certificate.id,
+      certificateCode: code,
+      actionType: 'security_enhanced',
+      actionBy: enhancements.updatedBy,
+      actionDetails: {
+        securityHash: enhancements.securityHash,
+        securityLevel: enhancements.securityLevel,
+        enhancementTimestamp: enhancements.lastSecurityUpdate.toISOString()
+      },
+      success: true
+    });
+
+    return certificate;
+  }
+
   async getPlatformConnectionsByPlatformUserId(platformUserId: string): Promise<PlatformConnection[]> {
     return await db
       .select()
