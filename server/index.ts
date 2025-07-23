@@ -457,11 +457,20 @@ async function startServer() {
     }
   });
 
-  // Apply quota tracking middleware to protected routes
-  app.use('/api/enforce-auto-posting', quotaTracker.middleware());
-  app.use('/api/auto-post-schedule', quotaTracker.middleware());
-  app.use('/api/video', quotaTracker.middleware());
-  app.use('/api/posts', quotaTracker.middleware());
+  // Import database authentication middleware
+  const { DatabaseAuthMiddleware } = await import('./middleware/database-auth.js');
+  const dbAuth = new DatabaseAuthMiddleware();
+
+  // Apply quota tracking AND database authentication to protected routes
+  app.use('/api/enforce-auto-posting', dbAuth.requireSessionAuth(), quotaTracker.middleware());
+  app.use('/api/auto-post-schedule', dbAuth.requireSessionAuth(), quotaTracker.middleware());
+  app.use('/api/video', dbAuth.requireSessionAuth(), quotaTracker.middleware());
+  app.use('/api/posts', dbAuth.requireSessionAuth(), quotaTracker.middleware());
+  
+  // Protect all database-related endpoints with session authentication
+  app.use('/api/brand-purpose', dbAuth.requireSessionAuth());
+  app.use('/api/platform-connections', dbAuth.requireSessionAuth());
+  app.use('/api/subscription-usage', dbAuth.requireSessionAuth());
 
   // Quota status endpoint with authentication
   app.get('/api/quota-status', async (req, res) => {
@@ -475,11 +484,22 @@ async function startServer() {
         });
       }
 
+      // Validate session before quota access
+      const { sessionValidator } = await import('./utils/session-validator.js');
+      if (!sessionValidator.validateDatabaseAccess(req.sessionID, userId, 'quota-status')) {
+        return res.status(401).json({
+          success: false,
+          message: 'Session validation failed for quota access',
+          code: 'SESSION_VALIDATION_FAILED'
+        });
+      }
+
       const quotaStatus = await quotaTracker.getUserQuotaStatus(userId);
       res.json({
         success: true,
         quotaStatus,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        sessionValidated: true
       });
     } catch (error) {
       logger.error('Quota status error', { error: error.message, userId: req.session?.userId });
