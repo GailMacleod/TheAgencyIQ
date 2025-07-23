@@ -51,10 +51,20 @@ import MetaPixelTest from "@/pages/meta-pixel-test";
 import BulletproofDashboard from "@/pages/bulletproof-dashboard";
 import VideoGen from "@/pages/video-gen";
 import VideoGeneration from "@/pages/VideoGeneration";
+import PublicApp from "@/pages/PublicApp";
 
 function Router() {
   // Track page views when routes change
   useAnalytics();
+  
+  // Check if we're in public mode
+  const isPublicMode = window.location.pathname.startsWith('/public') || 
+                      localStorage.getItem('public-access') === 'true';
+  
+  // If public mode, bypass authentication and show PublicApp
+  if (isPublicMode) {
+    return <PublicApp />;
+  }
   
   // FIXED: Show OnboardingWizard conditionally based on session status
   const { sessionEstablished, onboardingComplete, isLoading } = useSessionHook();

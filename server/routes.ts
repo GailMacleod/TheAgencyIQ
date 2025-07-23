@@ -475,6 +475,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public Route - Full App Access Without Authentication
+  app.get('/public', (req: any, res: any) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>TheAgencyIQ - Public Demo</title>
+          <script type="module" crossorigin src="/dist/index.js"></script>
+          <link rel="stylesheet" crossorigin href="/dist/index.css">
+          <script>
+            // Set public access mode
+            window.__PUBLIC_MODE__ = true;
+            localStorage.setItem('demo-mode', 'true');
+            localStorage.setItem('public-access', 'true');
+          </script>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script>
+            // Initialize public mode
+            window.addEventListener('DOMContentLoaded', function() {
+              console.log('🚀 TheAgencyIQ Public Demo Mode Active');
+              console.log('✅ VEO 2.0 Video Generation Available');
+              console.log('✅ OAuth Platform Connections Available');
+              console.log('✅ Full App Functionality Enabled');
+            });
+          </script>
+        </body>
+      </html>
+    `);
+  });
+
+  // Public API endpoints for demo functionality
+  app.get('/api/public/status', (req: any, res: any) => {
+    res.json({
+      status: 'operational',
+      mode: 'public_demo',
+      features: {
+        veoVideoGeneration: true,
+        oauthConnections: true,
+        aiDashboard: true,
+        analytics: true,
+        scheduling: true,
+        brandPurpose: true
+      },
+      message: 'All features available in public demo mode'
+    });
+  });
+
   // Add subscription enforcement middleware to all routes (but OAuth routes are exempt in requirePaidSubscription logic)
   app.use(requirePaidSubscription);
   
