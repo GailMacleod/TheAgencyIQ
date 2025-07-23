@@ -6,7 +6,7 @@ import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { enhancedCookieParser } from './middleware/CookieSecurityManager';
+import { enhancedCookieParser, cookieSecurityManager } from './middleware/CookieSecurityManager';
 import { createServer } from 'http';
 import { validateEnvironment, getSecureDefaults } from './config/env-validation.js';
 import { dbManager } from './db-init.js';
@@ -56,6 +56,7 @@ async function startServer() {
       },
     },
     crossOriginEmbedderPolicy: false, // Needed for Vite dev server
+    frameguard: { action: 'deny' }, // FIXED: Set X-Frame-Options to DENY for CookieSecurityManager compatibility
   }));
 
   // Request logging with Morgan and custom logger
@@ -92,7 +93,8 @@ async function startServer() {
 
   // Essential middleware - after CORS, before session
   // Enhanced cookie parsing with security validation
-  app.use(enhancedCookieParser()); // PRECISION FIX: Add cookie parser for req.cookies
+  app.use(enhancedCookieParser(process.env.COOKIE_SECRET)); // Enhanced cookie parser with secret
+  app.use(cookieSecurityManager.cookieSecurityMiddleware()); // Cookie security validation middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   // Filter out Replit-specific tracking in production
@@ -138,7 +140,7 @@ async function startServer() {
       'unload=()'
     );
     
-    res.header('X-Frame-Options', 'SAMEORIGIN');
+    // X-Frame-Options header is set by CookieSecurityManager middleware for consistent security
     res.header('X-Content-Type-Options', 'nosniff');
     res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
     
@@ -299,7 +301,7 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: secureDefaults.SECURE_COOKIES, // Production-grade cookie security
+      secure: process.env.NODE_ENV === 'production', // FIXED: Explicit production check as requested
       httpOnly: true, // Prevent JavaScript access to prevent XSS attacks
       sameSite: 'strict', // Prevent CSRF attacks with strict same-site policy
       maxAge: sessionTtlMs, // 72 hours (3 days) for persistent PWA logins
@@ -332,13 +334,24 @@ async function startServer() {
     // PRECISION FIX: Add detailed cookie debugging as requested
     console.log('Cookie:', req.cookies);
     
-    // Set secure backup session cookie if missing
+    // Set secure backup session cookie if missing using CookieSecurityManager
     if (req.session?.userId && !req.headers.cookie?.includes('aiq_backup_session')) {
       console.log('🔧 Setting secure session cookies for authenticated user');
-      res.setHeader('Set-Cookie', [
-        `aiq_backup_session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=strict${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`,
-        `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=strict${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`
-      ]);
+      
+      // Use CookieSecurityManager for secure cookie handling
+      cookieSecurityManager.setSecureCookie(res, 'aiq_backup_session', req.sessionID, {
+        maxAge: sessionTtlMs,
+        secure: isProduction,
+        httpOnly: true,
+        sameSite: 'strict'
+      });
+      
+      cookieSecurityManager.setSecureCookie(res, 'theagencyiq.session', req.sessionID, {
+        maxAge: sessionTtlMs,
+        secure: isProduction,
+        httpOnly: true,
+        sameSite: 'strict'
+      });
     }
     
     next();

@@ -1,284 +1,314 @@
-/**
- * COOKIE SECURITY MANAGER
- * Handles secure cookie management with proper validation, expiration checks, and dynamic generation
- * Eliminates hardcoded cookies and implements real browser/env cookie handling
- */
-
-import { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
+import { Request, Response, NextFunction } from 'express';
 import winston from 'winston';
 
+// Configure logger for cookie security
 const logger = winston.createLogger({
   level: 'info',
-  format: winston.format.json(),
-  transports: [new winston.transports.Console()]
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ 
+      filename: 'logs/cookie-security.log',
+      maxsize: 5242880, // 5MB
+      maxFiles: 3
+    }),
+    new winston.transports.Console()
+  ]
 });
 
-export interface SecureCookieOptions {
-  name: string;
-  value: string;
-  maxAge?: number;
-  httpOnly?: boolean;
+interface CookieValidationResult {
+  valid: boolean;
+  errors: string[];
+  secure: boolean;
+  httpOnly: boolean;
+  sameSite: boolean;
+  expired: boolean;
+}
+
+interface SecureCookieOptions {
   secure?: boolean;
+  httpOnly?: boolean;
   sameSite?: 'strict' | 'lax' | 'none';
+  maxAge?: number;
+  expires?: Date;
   domain?: string;
   path?: string;
 }
 
 export class CookieSecurityManager {
-  
-  /**
-   * Generate secure cookie with proper flags and expiration
-   */
-  static generateSecureCookie(name: string, value: string, options: Partial<SecureCookieOptions> = {}): SecureCookieOptions {
-    const isProduction = process.env.NODE_ENV === 'production';
-    
-    return {
-      name,
-      value,
-      maxAge: options.maxAge || (7 * 24 * 60 * 60 * 1000), // 7 days default
-      httpOnly: options.httpOnly !== false, // Default true
-      secure: options.secure !== false && isProduction, // Secure in production
-      sameSite: options.sameSite || 'strict',
-      domain: options.domain,
-      path: options.path || '/'
+  private isProduction: boolean;
+  private cookieSecret: string;
+
+  constructor(cookieSecret?: string) {
+    this.isProduction = process.env.NODE_ENV === 'production';
+    this.cookieSecret = cookieSecret || process.env.COOKIE_SECRET || 'fallback-cookie-secret';
+  }
+
+  // Enhanced cookie parser with security validation
+  getEnhancedCookieParser() {
+    return cookieParser(this.cookieSecret, {
+      decode: (value: string) => {
+        try {
+          // Enhanced decoding with security validation
+          const decoded = decodeURIComponent(value);
+          
+          // Log cookie access for security monitoring
+          logger.info('Cookie accessed', {
+            length: decoded.length,
+            hasSpecialChars: /[<>'"&]/.test(decoded),
+            timestamp: new Date().toISOString()
+          });
+          
+          return decoded;
+        } catch (error) {
+          logger.error('Cookie decode error', { 
+            error: (error as Error).message,
+            value: value.substring(0, 50) + '...'
+          });
+          return value;
+        }
+      }
+    });
+  }
+
+  // Validate cookie security properties
+  validateCookieSecurity(cookieString: string): CookieValidationResult {
+    const result: CookieValidationResult = {
+      valid: true,
+      errors: [],
+      secure: false,
+      httpOnly: false,
+      sameSite: false,
+      expired: false
     };
-  }
 
-  /**
-   * Validate cookie expiration and security flags
-   */
-  static validateCookie(cookieString: string): { valid: boolean; expired: boolean; secure: boolean; errors: string[] } {
-    const errors: string[] = [];
-    let valid = true;
-    let expired = false;
-    let secure = false;
-
-    try {
-      // Parse cookie attributes
-      const parts = cookieString.split(';').map(part => part.trim());
-      const [nameValue] = parts;
-      
-      if (!nameValue || !nameValue.includes('=')) {
-        errors.push('Invalid cookie format - missing name=value');
-        valid = false;
-      }
-
-      // Check for security flags
-      const hasHttpOnly = parts.some(part => part.toLowerCase() === 'httponly');
-      const hasSecure = parts.some(part => part.toLowerCase() === 'secure');
-      const hasSameSite = parts.some(part => part.toLowerCase().startsWith('samesite='));
-      
-      if (!hasHttpOnly) {
-        errors.push('Missing HttpOnly flag - vulnerable to XSS');
-        valid = false;
-      }
-      
-      if (process.env.NODE_ENV === 'production' && !hasSecure) {
-        errors.push('Missing Secure flag in production - vulnerable to MITM');
-        valid = false;
-      }
-      
-      if (!hasSameSite) {
-        errors.push('Missing SameSite flag - vulnerable to CSRF');
-        valid = false;
-      }
-
-      secure = hasHttpOnly && hasSecure && hasSameSite;
-
-      // Check expiration
-      const expiresMatch = parts.find(part => part.toLowerCase().startsWith('expires='));
-      const maxAgeMatch = parts.find(part => part.toLowerCase().startsWith('max-age='));
-      
-      if (expiresMatch) {
-        const expiresDate = new Date(expiresMatch.split('=')[1]);
-        if (expiresDate < new Date()) {
-          expired = true;
-          valid = false;
-          errors.push('Cookie expired');
-        }
-      } else if (maxAgeMatch) {
-        const maxAge = parseInt(maxAgeMatch.split('=')[1]);
-        if (maxAge <= 0) {
-          expired = true;
-          valid = false;
-          errors.push('Cookie max-age expired');
-        }
-      }
-
-      logger.info('Cookie validation completed', {
-        valid,
-        expired,
-        secure,
-        hasHttpOnly,
-        hasSecure,
-        hasSameSite,
-        errors: errors.length
-      });
-
-      return { valid, expired, secure, errors };
-
-    } catch (error: any) {
-      errors.push(`Cookie parsing error: ${error.message}`);
-      logger.error('Cookie validation failed', {
-        error: error.message,
-        cookieString: cookieString.substring(0, 50) + '...'
-      });
-      return { valid: false, expired: false, secure: false, errors };
+    if (!cookieString) {
+      result.valid = false;
+      result.errors.push('No cookie string provided');
+      return result;
     }
+
+    // Check for security flags
+    const lowerCookie = cookieString.toLowerCase();
+    
+    result.secure = lowerCookie.includes('secure');
+    result.httpOnly = lowerCookie.includes('httponly');
+    result.sameSite = lowerCookie.includes('samesite');
+
+    // Validate production requirements
+    if (this.isProduction) {
+      if (!result.secure) {
+        result.valid = false;
+        result.errors.push('Missing Secure flag in production');
+      }
+    }
+
+    if (!result.httpOnly) {
+      result.valid = false;
+      result.errors.push('Missing HttpOnly flag');
+    }
+
+    if (!result.sameSite) {
+      result.valid = false;
+      result.errors.push('Missing SameSite flag');
+    }
+
+    // Check for expiration
+    const expiresMatch = cookieString.match(/expires=([^;]+)/i);
+    const maxAgeMatch = cookieString.match(/max-age=(\d+)/i);
+    
+    if (expiresMatch) {
+      const expiresDate = new Date(expiresMatch[1]);
+      result.expired = expiresDate < new Date();
+    } else if (maxAgeMatch) {
+      const maxAge = parseInt(maxAgeMatch[1]);
+      result.expired = maxAge <= 0;
+    }
+
+    if (result.expired) {
+      result.valid = false;
+      result.errors.push('Cookie is expired');
+    }
+
+    logger.info('Cookie validation completed', {
+      valid: result.valid,
+      errors: result.errors.length,
+      secure: result.secure,
+      httpOnly: result.httpOnly,
+      sameSite: result.sameSite,
+      expired: result.expired
+    });
+
+    return result;
   }
 
-  /**
-   * Extract cookie from various sources (browser headers, environment, session)
-   */
-  static extractDynamicCookie(req: Request): { cookie: string | null; source: string; valid: boolean } {
+  // Set secure cookie with proper rotation
+  setSecureCookie(
+    res: Response,
+    name: string,
+    value: string,
+    options: SecureCookieOptions = {}
+  ): void {
+    const defaultOptions: SecureCookieOptions = {
+      secure: this.isProduction,
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: 3 * 24 * 60 * 60 * 1000, // 3 days
+      path: '/'
+    };
+
+    const finalOptions = { ...defaultOptions, ...options };
+
+    // Build cookie string manually for complete control
+    let cookieString = `${name}=${value}`;
+    
+    if (finalOptions.path) cookieString += `; Path=${finalOptions.path}`;
+    if (finalOptions.domain) cookieString += `; Domain=${finalOptions.domain}`;
+    if (finalOptions.maxAge) cookieString += `; Max-Age=${Math.floor(finalOptions.maxAge / 1000)}`;
+    if (finalOptions.expires) cookieString += `; Expires=${finalOptions.expires.toUTCString()}`;
+    if (finalOptions.httpOnly) cookieString += '; HttpOnly';
+    if (finalOptions.secure) cookieString += '; Secure';
+    if (finalOptions.sameSite) cookieString += `; SameSite=${finalOptions.sameSite}`;
+
+    res.setHeader('Set-Cookie', cookieString);
+
+    logger.info('Secure cookie set', {
+      name,
+      valueLength: value.length,
+      options: finalOptions,
+      cookieString: cookieString.substring(0, 100) + '...'
+    });
+  }
+
+  // Rotate session cookie for security
+  rotateCookie(
+    req: Request,
+    res: Response,
+    cookieName: string,
+    newValue: string,
+    options: SecureCookieOptions = {}
+  ): void {
+    // Clear old cookie first
+    this.clearCookie(res, cookieName);
+    
+    // Set new cookie with rotation timestamp
+    const rotatedValue = `${newValue}_r${Date.now()}`;
+    this.setSecureCookie(res, cookieName, rotatedValue, options);
+
+    logger.info('Cookie rotated', {
+      cookieName,
+      rotationTimestamp: Date.now(),
+      newValueLength: rotatedValue.length
+    });
+  }
+
+  // Clear cookie securely
+  clearCookie(res: Response, name: string, options: SecureCookieOptions = {}): void {
+    const clearOptions = {
+      path: options.path || '/',
+      domain: options.domain,
+      secure: this.isProduction,
+      httpOnly: true,
+      sameSite: 'strict' as const
+    };
+
+    // Set expired date to clear cookie
+    let cookieString = `${name}=; Path=${clearOptions.path}`;
+    if (clearOptions.domain) cookieString += `; Domain=${clearOptions.domain}`;
+    cookieString += '; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    if (clearOptions.httpOnly) cookieString += '; HttpOnly';
+    if (clearOptions.secure) cookieString += '; Secure';
+    if (clearOptions.sameSite) cookieString += `; SameSite=${clearOptions.sameSite}`;
+
+    res.setHeader('Set-Cookie', cookieString);
+
+    logger.info('Cookie cleared', {
+      name,
+      cookieString: cookieString
+    });
+  }
+
+  // Extract and validate cookies from request
+  extractDynamicCookie(req: Request): { cookie: string | null, source: string, valid: boolean } {
     let cookie: string | null = null;
     let source = 'none';
     let valid = false;
 
-    try {
-      // Priority 1: Real browser cookie from headers
-      if (req.headers.cookie) {
-        const cookies = req.headers.cookie.split(';');
-        const sessionCookie = cookies.find(c => 
-          c.trim().startsWith('theagencyiq.session=') || 
-          c.trim().startsWith('aiq_backup_session=')
-        );
-        
-        if (sessionCookie) {
-          cookie = sessionCookie.trim();
-          source = 'browser_headers';
-          
-          // Validate real browser cookie
-          const validation = this.validateCookie(req.headers.cookie);
-          valid = validation.valid && !validation.expired;
-          
-          logger.info('Cookie extracted from browser headers', {
-            source,
-            valid,
-            cookieLength: cookie.length,
-            hasSecureFlags: validation.secure
-          });
-        }
-      }
-
-      // Priority 2: Environment variable for testing
-      if (!cookie && process.env.TEST_SESSION_COOKIE) {
-        cookie = process.env.TEST_SESSION_COOKIE;
-        source = 'environment';
-        
-        // Validate environment cookie
-        const validation = this.validateCookie(cookie);
-        valid = validation.valid && !validation.expired;
-        
-        logger.info('Cookie extracted from environment', {
-          source,
-          valid,
-          cookieLength: cookie.length
-        });
-      }
-
-      // Priority 3: Session-based cookie generation
-      if (!cookie && req.session?.id) {
-        const sessionId = req.session.id;
-        const secureCookie = this.generateSecureCookie('theagencyiq.session', sessionId);
-        
-        cookie = `${secureCookie.name}=${secureCookie.value}; HttpOnly; Secure; SameSite=${secureCookie.sameSite}; Max-Age=${secureCookie.maxAge}; Path=${secureCookie.path}`;
-        source = 'session_generated';
-        valid = true;
-        
-        logger.info('Cookie generated from session', {
-          source,
-          valid,
-          sessionId: sessionId.substring(0, 16) + '...'
-        });
-      }
-
-      return { cookie, source, valid };
-
-    } catch (error: any) {
-      logger.error('Dynamic cookie extraction failed', {
-        error: error.message,
-        hasHeaders: !!req.headers.cookie,
-        hasEnvCookie: !!process.env.TEST_SESSION_COOKIE,
-        hasSession: !!req.session?.id
-      });
-      return { cookie: null, source: 'error', valid: false };
-    }
-  }
-
-  /**
-   * Middleware to ensure secure cookie handling
-   */
-  static securityMiddleware() {
-    return (req: Request, res: Response, next: NextFunction) => {
-      // Extract and validate cookie
-      const { cookie, source, valid } = CookieSecurityManager.extractDynamicCookie(req);
+    // Priority 1: Browser headers
+    if (req.headers.cookie) {
+      cookie = req.headers.cookie;
+      source = 'browser_headers';
       
-      // Add cookie validation info to request
-      (req as any).cookieValidation = {
-        hasCookie: !!cookie,
+      const validation = this.validateCookieSecurity(cookie);
+      valid = validation.valid;
+      
+      logger.info('Cookie extracted from browser headers', {
         source,
         valid,
-        cookie: cookie?.substring(0, 50) + '...' // Truncated for logging
-      };
+        cookieLength: cookie.length,
+        hasSecureFlags: validation.secure && validation.httpOnly && validation.sameSite
+      });
+    }
+    // Priority 2: Environment variables  
+    else if (process.env.SESSION_COOKIE || process.env.TEST_SESSION_COOKIE) {
+      cookie = process.env.SESSION_COOKIE || process.env.TEST_SESSION_COOKIE || null;
+      source = 'environment';
+      valid = true; // Assume env cookies are valid for testing
+      
+      logger.info('Cookie extracted from environment', {
+        source,
+        valid,
+        cookieLength: cookie?.length || 0
+      });
+    }
+    // Priority 3: Session generation fallback
+    else {
+      source = 'session_generated';
+      valid = false;
+      
+      logger.info('No cookie available, session will be generated', {
+        source,
+        valid
+      });
+    }
 
-      // Log cookie security status
+    return { cookie, source, valid };
+  }
+
+  // Middleware for cookie security validation
+  cookieSecurityMiddleware() {
+    return (req: Request, res: Response, next: NextFunction) => {
+      const { cookie, source, valid } = this.extractDynamicCookie(req);
+      
+      // Add comprehensive security headers for cookie handling
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+      // Log cookie security check
       logger.info('Cookie security check', {
         method: req.method,
         path: req.path,
         cookieSource: source,
         cookieValid: valid,
-        userAgent: req.get('User-Agent')?.substring(0, 50)
+        userAgent: req.headers['user-agent']?.substring(0, 50)
       });
 
       next();
     };
   }
-
-  /**
-   * Set secure cookie on response
-   */
-  static setSecureCookie(res: Response, options: SecureCookieOptions): void {
-    const cookieString = `${options.name}=${options.value}; HttpOnly; ${options.secure ? 'Secure; ' : ''}SameSite=${options.sameSite}; Max-Age=${options.maxAge}; Path=${options.path || '/'}`;
-    
-    res.setHeader('Set-Cookie', cookieString);
-    
-    logger.info('Secure cookie set', {
-      name: options.name,
-      secure: options.secure,
-      httpOnly: options.httpOnly,
-      sameSite: options.sameSite,
-      maxAge: options.maxAge
-    });
-  }
-
-  /**
-   * Clear cookie securely
-   */
-  static clearCookie(res: Response, name: string, options: Partial<SecureCookieOptions> = {}): void {
-    const isProduction = process.env.NODE_ENV === 'production';
-    
-    const cookieString = `${name}=; HttpOnly; ${isProduction ? 'Secure; ' : ''}SameSite=strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=${options.path || '/'}`;
-    
-    res.setHeader('Set-Cookie', cookieString);
-    
-    logger.info('Cookie cleared securely', {
-      name,
-      secure: isProduction,
-      path: options.path || '/'
-    });
-  }
 }
 
-/**
- * Enhanced cookie parser middleware with security validation
- */
-export function enhancedCookieParser() {
-  return [
-    cookieParser(), // Parse cookies first
-    CookieSecurityManager.securityMiddleware() // Then validate security
-  ];
+// Export enhanced cookie parser function
+export function enhancedCookieParser(secret?: string) {
+  const manager = new CookieSecurityManager(secret);
+  return manager.getEnhancedCookieParser();
 }
 
-export default CookieSecurityManager;
+// Export singleton instance
+export const cookieSecurityManager = new CookieSecurityManager();
