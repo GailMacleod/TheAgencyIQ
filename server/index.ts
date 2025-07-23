@@ -6,6 +6,7 @@ import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { enhancedCookieParser } from './middleware/CookieSecurityManager';
 import { createServer } from 'http';
 import { validateEnvironment, getSecureDefaults } from './config/env-validation.js';
 import { dbManager } from './db-init.js';
@@ -90,7 +91,8 @@ async function startServer() {
   }));
 
   // Essential middleware - after CORS, before session
-  app.use(cookieParser()); // PRECISION FIX: Add cookie parser for req.cookies
+  // Enhanced cookie parsing with security validation
+  app.use(enhancedCookieParser()); // PRECISION FIX: Add cookie parser for req.cookies
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   // Filter out Replit-specific tracking in production
