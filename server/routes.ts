@@ -43,6 +43,9 @@ import { EnhancedCancellationHandler } from './services/EnhancedCancellationHand
 import PipelineIntegrationFix from './services/PipelineIntegrationFix';
 import SessionCacheManager from './services/SessionCacheManager';
 import TokenManager from './oauth/tokenManager.js';
+import { apiRateLimit, socialPostingRateLimit, videoGenerationRateLimit, authRateLimit, skipRateLimitForDevelopment } from './middleware/rateLimiter';
+import { QuotaTracker, checkQuotaMiddleware } from './services/QuotaTracker';
+import { registerQuotaRoutes } from './routes/quota-status';
 
 // Extended session types
 declare module 'express-session' {
@@ -193,6 +196,10 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Apply global rate limiting to all /api/* routes
+  app.use('/api', skipRateLimitForDevelopment);
+  console.log('🚀 Rate limiting configured for all API endpoints (100 req/15min)');
+
   // Initialize infrastructure services
   const { redisSessionManager } = await import('./services/RedisSessionManager.js');
   const { PostingQueue } = await import('./services/posting_queue.js');
@@ -240,6 +247,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Add subscription enforcement middleware to all routes
   app.use(requirePaidSubscription);
+  
+  // Register quota management routes
+  registerQuotaRoutes(app);
   
   // Add global error handler for debugging 500 errors
   app.use((err: any, req: any, res: any, next: any) => {
@@ -5796,11 +5806,31 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Auto-posting enforcer - Ensures posts are published within 30-day subscription
-  app.post("/api/enforce-auto-posting", requireAuth, async (req: any, res) => {
+  app.post("/api/enforce-auto-posting", requireAuth, socialPostingRateLimit, checkQuotaMiddleware('multiple', 'post'), async (req: any, res) => {
     try {
       const { AutoPostingEnforcer } = await import('./auto-posting-enforcer');
       
-      console.log(`Enforcing auto-posting for user ${req.session.userId}`);
+      console.log(`📊 Enforcing auto-posting for user ${req.session.userId} with quota protection`);
+      
+      // Check quota before proceeding with multiple posts
+      const quotaTracker = QuotaTracker.getInstance();
+      const platforms = ['facebook', 'instagram', 'linkedin', 'twitter', 'youtube'];
+      
+      // Pre-check quota across all platforms
+      for (const platform of platforms) {
+        const quotaCheck = await quotaTracker.checkQuotaBeforeCall(req.session.userId, platform, 'post');
+        if (!quotaCheck.allowed) {
+          console.log(`🚫 Auto-posting blocked: ${platform} quota exceeded (${quotaCheck.current}/${quotaCheck.limit})`);
+          return res.status(429).json({
+            success: false,
+            message: `Auto-posting blocked: ${platform} quota exceeded`,
+            platform,
+            current: quotaCheck.current,
+            limit: quotaCheck.limit,
+            retryAfter: '1 hour'
+          });
+        }
+      }
       
       const result = await AutoPostingEnforcer.enforceAutoPosting(req.session.userId);
       
@@ -5826,7 +5856,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Auto-post entire 30-day schedule with bulletproof publishing
-  app.post("/api/auto-post-schedule", requireAuth, async (req: any, res) => {
+  app.post("/api/auto-post-schedule", requireAuth, socialPostingRateLimit, checkQuotaMiddleware('multiple', 'post'), async (req: any, res) => {
     try {
       const user = await storage.getUser(req.session.userId);
       if (!user) {
@@ -11228,7 +11258,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
 
   // VIDEO GENERATION API ENDPOINTS - WORKING VERSION
   // Generate video prompts for post content
-  app.post('/api/video/generate-prompts', async (req: any, res) => {
+  app.post('/api/video/generate-prompts', checkQuotaMiddleware('multiple', 'api_call'), async (req: any, res) => {
     try {
       console.log('=== VIDEO PROMPT GENERATION STARTED ===');
       console.log(`🔍 Direct session check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
@@ -11363,7 +11393,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
   });
 
   // ENHANCED VIDEO RENDER ENDPOINT - VEO 2.0 WITH SESSION VALIDATION AND AUTO-POSTING
-  app.post("/api/video/render", requireAuth, checkVideoQuota, async (req: any, res) => {
+  app.post("/api/video/render", requireAuth, videoGenerationRateLimit, checkQuotaMiddleware('youtube', 'api_call'), checkVideoQuota, async (req: any, res) => {
     try {
       // Import session utilities for secure handling
       const sessionManager = (await import('./sessionUtils.js')).default;
