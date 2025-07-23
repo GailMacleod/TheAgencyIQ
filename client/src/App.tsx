@@ -25,6 +25,8 @@ import { useSessionManager } from "@/hooks/useSessionManager";
 import SessionLoadingSpinner from "@/components/SessionLoadingSpinner";
 import { useMobileDetection } from "@/hooks/useMobileDetection";
 import { useSessionHook } from "@/hooks/useSessionHook";
+import { toast } from "@/hooks/use-toast";
+import { makeAuthenticatedRequest, validateSession, establishSession } from "@/utils/authenticatedRequest";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
@@ -66,12 +68,68 @@ function Router() {
     return <PublicApp />;
   }
   
-  // FIXED: Show OnboardingWizard conditionally based on session status
-  const { sessionEstablished, onboardingComplete, isLoading } = useSessionHook();
+  // Enhanced session management with retries and error handling
+  const { sessionEstablished, onboardingComplete, isLoading, sessionError } = useSessionHook();
+  
+  // Enhanced session establishment with retry logic
+  useEffect(() => {
+    const handleSessionEstablishment = async () => {
+      // Only attempt if session not established and no error
+      if (!sessionEstablished && !sessionError && !isLoading) {
+        try {
+          console.log('🔄 Attempting session validation...');
+          const isValid = await validateSession();
+          
+          if (!isValid) {
+            console.log('❌ Session validation failed, attempting establishment...');
+            // Try to establish session for anonymous user
+            const established = await establishSession('anonymous', undefined);
+            
+            if (!established) {
+              toast({
+                title: "Session Error",
+                description: "Unable to establish session. Please refresh the page.",
+                variant: "destructive",
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Session establishment error:', error);
+          toast({
+            title: "Connection Error",
+            description: "Unable to connect to the server. Please check your connection.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    // Run session establishment on mount and when session state changes
+    handleSessionEstablishment();
+  }, [sessionEstablished, sessionError, isLoading]);
   
   // Show loading spinner while checking session status
   if (isLoading) {
     return <SessionLoadingSpinner />;
+  }
+  
+  // Show error state if session establishment failed
+  if (sessionError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Session Error</h2>
+          <p className="text-gray-600 mb-6">Unable to establish a session. Please try refreshing the page.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
   }
   
   // Show onboarding wizard if session not established or onboarding not complete

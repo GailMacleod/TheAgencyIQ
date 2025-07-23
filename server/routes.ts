@@ -539,6 +539,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Session validation endpoint for authenticated requests
+  app.get('/api/auth/session', async (req: any, res) => {
+    try {
+      // Import session manager
+      const { SessionPersistenceManager } = await import('./middleware/SessionPersistenceManager');
+      const { dbManager } = await import('./db-init.js');
+      const sessionManager = new SessionPersistenceManager(dbManager.getPool());
+      
+      // Validate session and get user data
+      const user = await sessionManager.validateSession(req);
+      
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Session invalid or expired' 
+        });
+      }
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName
+        },
+        sessionId: req.sessionID,
+        lastActivity: req.session.lastActivity
+      });
+      
+    } catch (error) {
+      console.error("Session validation error:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Session validation failed" 
+      });
+    }
+  });
+
   // Add subscription enforcement middleware to all routes (but OAuth routes are exempt in requirePaidSubscription logic)
   app.use(requirePaidSubscription);
   

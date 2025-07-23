@@ -254,10 +254,6 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // Enhanced persistent session management with secure cookie configuration
-  const sessionTtl = 3 * 24 * 60 * 60; // 3 days in seconds (Redis format) - 72 hours for PWA persistent logins
-  const sessionTtlMs = sessionTtl * 1000; // 3 days in milliseconds (Express format) - 72 hours
-  
   // Initialize database before session store
   await dbManager.initialize();
   
@@ -266,45 +262,21 @@ async function startServer() {
   await db.execute(createQuotaTable);
   console.log('✅ Quota tracking table ready');
 
-  // Import PostgreSQL session manager
-  const { PostgreSQLSessionManager, createSessionConfig } = await import('./middleware/SessionManager.js');
+  // Initialize comprehensive session persistence manager
+  const { SessionPersistenceManager } = await import('./middleware/SessionPersistenceManager');
+  const sessionManager = new SessionPersistenceManager(dbManager.getPool());
   
-  // Initialize PostgreSQL session store with the database pool
-  const sessionStore = new (connectPg(session))({
-    pool: dbManager.getPool(),
-    createTableIfMissing: true,
-    ttl: 3 * 24 * 60 * 60, // 3 days in seconds for PWA support
-    tableName: "sessions",
-    touchInterval: 60000, // Touch sessions every minute
-    disableTouch: false, // Enable touch for active sessions
-    pruneSessionInterval: 60 * 60 * 1000, // Prune expired sessions every hour
-    errorLog: (error: any) => {
-      console.error('PostgreSQL session store error:', error.message);
-    }
-  });
+  // Configure session middleware with PostgreSQL persistence
+  const sessionConfig = sessionManager.getSessionConfig();
+  app.use(session(sessionConfig));
   
-  // Test session store connection
-  try {
-    await new Promise((resolve, reject) => {
-      sessionStore.get('test-connection', (err: any, session: any) => {
-        if (err) {
-          console.error('❌ Session store connection test failed:', err.message);
-          reject(err);
-        } else {
-          console.log('✅ PostgreSQL session store with pool connection successful');
-          console.log('🔒 Session persistence: ENHANCED (survives restarts with touch support)');
-          resolve(true);
-        }
-      });
-    });
-  } catch (error) {
-    console.error('❌ Session store initialization failed:', error);
-  }
-
-  // Create session manager instance for future use
-  const sessionManager = new PostgreSQLSessionManager(dbManager.getPool());
+  // Add session touch middleware for active sessions
+  app.use(sessionManager.sessionTouchMiddleware());
   
-  // Session establishment endpoint with security
+  console.log('✅ PostgreSQL session persistence with connect-pg-simple configured');
+  console.log('🔒 Session features: persistence, touch, regeneration, Drizzle integration');
+  
+  // Session establishment endpoint with security and regeneration
   app.post('/api/establish-session', async (req, res) => {
     try {
       const { userId, userEmail, deviceInfo } = req.body;
@@ -316,45 +288,23 @@ async function startServer() {
         });
       }
 
-      // Initialize session if it doesn't exist
-      if (!req.session) {
-        return res.status(500).json({ 
-          success: false, 
-          error: 'Session initialization failed' 
-        });
-      }
-
-      // Set session data directly without regeneration for now (regeneration will be added later)
-      req.session.userId = userId;
-      req.session.userEmail = userEmail;
-      req.session.deviceInfo = deviceInfo;
-      req.session.establishedAt = new Date().toISOString();
-      req.session.lastActivity = Date.now();
-      req.session.sessionId = req.sessionID;
-
-      // Save session to PostgreSQL
-      req.session.save((saveErr) => {
-        if (saveErr) {
-          console.error('Session establishment failed:', saveErr);
-          return res.status(500).json({ 
-            success: false, 
-            error: 'Failed to establish session' 
-          });
-        }
-        
-        console.log(`📋 Session established for user ${userId} with sessionId: ${req.sessionID}`);
-        res.json({
-          success: true,
-          sessionId: req.sessionID,
-          userId: userId,
-          message: 'Session established successfully'
-        });
+      // Use session manager for secure establishment
+      await sessionManager.establishSession(req, userId, userEmail);
+      
+      console.log(`📋 Session established for user ${userId} with sessionId: ${req.sessionID}`);
+      res.json({
+        success: true,
+        sessionId: req.sessionID,
+        userId: userId,
+        userEmail: userEmail,
+        message: 'Session established successfully with regeneration'
       });
+      
     } catch (error) {
       console.error('Session establishment error:', error);
       res.status(500).json({ 
         success: false, 
-        error: 'Session establishment failed' 
+        error: 'Session establishment failed: ' + (error as Error).message
       });
     }
   });
@@ -401,46 +351,7 @@ async function startServer() {
   // Production-grade session configuration with security
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Enhanced session configuration with PostgreSQL store
-  app.use(session({
-    secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false, // Don't create sessions for unauthenticated users
-    name: 'theagencyiq.session',
-    genid: () => {
-      const timestamp = Date.now().toString(36);
-      const random = Math.random().toString(36).substring(2, 15);
-      return `aiq_${timestamp}_${random}`;
-    },
-    cookie: { 
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true, // Prevent JavaScript access to prevent XSS attacks
-      sameSite: 'strict', // Prevent CSRF attacks with strict same-site policy
-      maxAge: 3 * 24 * 60 * 60 * 1000, // 72 hours (3 days) for persistent PWA logins
-      path: '/',
-      domain: undefined // Let express handle domain automatically
-    },
-    rolling: true, // Extend session on activity
-    proxy: true, // Works with trust proxy setting
-    unset: 'destroy', // Properly clean up sessions
-    touch: true // Enable session touching for active sessions
-  }));
-
-  // Session touch middleware for active sessions to prevent premature expiry
-  app.use((req, res, next) => {
-    if (req.session && req.session.userId) {
-      // Touch session to extend TTL for active users
-      req.session.touch();
-      req.session.lastActivity = Date.now();
-      
-      // Add sessionID to user data for subscribers.json compatibility
-      if (!req.session.sessionId) {
-        req.session.sessionId = req.sessionID;
-      }
-    }
-    next();
-  });
+  // Session middleware already configured above with SessionPersistenceManager
 
   // CRITICAL FIX 4: Session debugging middleware with detailed logging - SKIP static files
   app.use((req, res, next) => {
