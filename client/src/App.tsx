@@ -4,12 +4,16 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 import GrokWidget from "@/components/grok-widget";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 import NotFound from "@/pages/not-found";
 import { initGA } from "./lib/analytics";
 import { useAnalytics } from "./hooks/use-analytics";
+import { sentryLogger, setupGlobalErrorHandlers } from "./lib/sentry-config";
+import { mobileDetection } from "./lib/mobile";
+import { pwaManager } from "./lib/pwa-manager";
 import { clearBrowserCache } from "./utils/cache-utils";
 import { sessionManager } from "./utils/session-manager";
 import { apiClient } from "./utils/api-client";
@@ -119,6 +123,15 @@ function Router() {
   );
   } catch (error) {
     console.error("❌ Router error:", error);
+    
+    // Log to Sentry if available
+    if (window.Sentry) {
+      window.Sentry.captureException(error, {
+        tags: { component: 'Router' },
+        extra: { location: window.location.href }
+      });
+    }
+    
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
         <h1>Navigation Error</h1>

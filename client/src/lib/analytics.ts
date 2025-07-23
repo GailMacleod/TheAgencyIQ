@@ -3,39 +3,90 @@ declare global {
   interface Window {
     dataLayer: any[];
     gtag: (...args: any[]) => void;
+    Sentry?: {
+      captureException: (error: Error) => void;
+    };
   }
 }
 
-// Initialize Google Analytics
+// Initialize Google Analytics with comprehensive error handling
 export const initGA = () => {
-  // Disable in development to avoid CORS issues
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Analytics disabled in development mode');
-    return;
+  try {
+    // Disable in development to avoid CORS issues
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Analytics disabled in development mode');
+      return;
+    }
+
+    const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+
+    if (!measurementId) {
+      console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
+      // Report missing key to Sentry if available
+      if (window.Sentry) {
+        window.Sentry.captureException(new Error('GA initialization failed: Missing VITE_GA_MEASUREMENT_ID'));
+      }
+      return;
+    }
+
+    // Validate measurement ID format
+    if (!/^G-[A-Z0-9]+$/.test(measurementId)) {
+      const error = new Error(`Invalid GA measurement ID format: ${measurementId}`);
+      console.error('GA initialization failed:', error.message);
+      if (window.Sentry) {
+        window.Sentry.captureException(error);
+      }
+      return;
+    }
+
+    // Add Google Analytics script to the head with error handling
+    const script1 = document.createElement('script');
+    script1.async = true;
+    script1.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+    script1.onerror = (error) => {
+      console.error('Failed to load GA script:', error);
+      if (window.Sentry) {
+        window.Sentry.captureException(new Error('GA script loading failed'));
+      }
+    };
+    document.head.appendChild(script1);
+
+    // Initialize gtag with error handling
+    const script2 = document.createElement('script');
+    script2.innerHTML = `
+      try {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){
+          try {
+            dataLayer.push(arguments);
+          } catch (e) {
+            console.error('gtag push error:', e);
+            if (window.Sentry) window.Sentry.captureException(e);
+          }
+        }
+        gtag('js', new Date());
+        gtag('config', '${measurementId}');
+        console.log('Google Analytics initialized successfully');
+      } catch (e) {
+        console.error('GA initialization script error:', e);
+        if (window.Sentry) window.Sentry.captureException(e);
+      }
+    `;
+    script2.onerror = (error) => {
+      console.error('GA initialization script failed:', error);
+      if (window.Sentry) {
+        window.Sentry.captureException(new Error('GA initialization script execution failed'));
+      }
+    };
+    document.head.appendChild(script2);
+
+  } catch (error) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    console.error('GA initialization failed:', errorObj);
+    if (window.Sentry) {
+      window.Sentry.captureException(errorObj);
+    }
   }
-
-  const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
-
-  if (!measurementId) {
-    console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
-    return;
-  }
-
-  // Add Google Analytics script to the head
-  const script1 = document.createElement('script');
-  script1.async = true;
-  script1.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
-  document.head.appendChild(script1);
-
-  // Initialize gtag
-  const script2 = document.createElement('script');
-  script2.innerHTML = `
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', '${measurementId}');
-  `;
-  document.head.appendChild(script2);
 };
 
 // Track page views - useful for single-page applications
