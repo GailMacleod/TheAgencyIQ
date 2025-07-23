@@ -1115,12 +1115,23 @@ async function startServer() {
     });
   });
 
-  // Serve static dist files FIRST before any middleware interference
+  // Serve static dist files FIRST with proper MIME types - BEFORE any session middleware
   app.use('/dist', express.static('dist', {
-    setHeaders: (res, path) => {
-      if (path.endsWith('.css')) {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.css')) {
         res.setHeader('Content-Type', 'text/css');
-      } else if (path.endsWith('.js')) {
+      } else if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      }
+    }
+  }));
+  
+  // Serve assets directory
+  app.use('/assets', express.static('assets', {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (filePath.endsWith('.js')) {
         res.setHeader('Content-Type', 'application/javascript');
       }
     }

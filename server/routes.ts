@@ -201,9 +201,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { PostingQueue } = await import('./services/posting_queue.js');
   await redisSessionManager.initialize();
   
-  // Add session persistence middleware AFTER static files
+  // SKIP session middleware for static files - they're handled in index.ts
+  // Add session persistence middleware for non-static routes only
   const { RedisSessionManager } = await import('./services/RedisSessionManager.js');
-  app.use(RedisSessionManager.createSessionMiddleware());
+  app.use((req, res, next) => {
+    // Skip session middleware for static files
+    if (req.path.startsWith('/dist/') || req.path.startsWith('/assets/')) {
+      return next();
+    }
+    return RedisSessionManager.createSessionMiddleware()(req, res, next);
+  });
   
   // Serve generated videos
   app.use('/videos', express.static(path.join(process.cwd(), 'public/videos')));
@@ -212,13 +219,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   
-  // Global session establishment middleware - runs on ALL requests
+  // Global session establishment middleware - runs on ALL requests EXCEPT static files
   app.use(async (req: any, res: any, next: any) => {
-    // Skip session establishment for static assets
+    // Skip ALL session processing for static assets - they're handled by Express static middleware
     if (req.path.startsWith('/public/') || 
         req.path.startsWith('/assets/') || 
         req.path.startsWith('/dist/') ||
-        req.path.startsWith('/favicon.ico')) {
+        req.path === '/favicon.ico') {
       return next();
     }
     
