@@ -498,8 +498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>TheAgencyIQ - Public Demo</title>
-          <script type="module" crossorigin src="/dist/index.js"></script>
-          <link rel="stylesheet" crossorigin href="/dist/index.css">
+          <script type="module" crossorigin src="/dist/assets/index.js"></script>
           <script>
             // Set public access mode
             window.__PUBLIC_MODE__ = true;

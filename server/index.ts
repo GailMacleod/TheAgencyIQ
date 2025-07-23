@@ -40,6 +40,42 @@ async function startServer() {
   
   const app = express();
 
+  // ABSOLUTE FIRST: Setup static file serving with proper MIME types before ANY other middleware
+  console.log('⚡ ABSOLUTE FIRST: Setting up static file middleware with proper MIME types...');
+  
+  // Serve static assets with proper MIME types - ABSOLUTE FIRST before ANY middleware
+  app.use('/dist', express.static(path.join(process.cwd(), 'dist/public'), {
+    setHeaders: (res, filePath) => {
+      // Set proper MIME types for static assets
+      if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (filePath.endsWith('.html')) {
+        res.setHeader('Content-Type', 'text/html');
+      }
+      // Add cache headers for static assets
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+    }
+  }));
+  
+  // Serve assets directory
+  app.use('/assets', express.static(path.join(process.cwd(), 'assets'), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.png') || filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+        res.setHeader('Content-Type', 'image/' + path.extname(filePath).substring(1));
+      } else if (filePath.endsWith('.svg')) {
+        res.setHeader('Content-Type', 'image/svg+xml');
+      }
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+    }
+  }));
+  
+  // Serve attached assets
+  app.use('/attached_assets', express.static('attached_assets'));
+  
+  console.log('✅ ABSOLUTE FIRST: Static file middleware with proper MIME types configured');
+
   // CRITICAL FIX 1: Trust Replit's reverse proxy for secure cookies in deployment
   app.set('trust proxy', 1);
   console.log('🔧 Trust proxy enabled for Replit deployment');
@@ -1172,6 +1208,8 @@ async function startServer() {
     next();
   });
 
+
+
   // Setup static file serving after API routes
   try {
     // Production static file serving
@@ -1179,8 +1217,6 @@ async function startServer() {
       console.log('⚡ Setting up production static files...');
       // Serve built frontend assets
       app.use(express.static(path.join(process.cwd(), 'dist/public')));
-      // Serve attached assets in production
-      app.use('/attached_assets', express.static('attached_assets'));
       
       // Root route for production
       app.get('/', (req, res) => {
