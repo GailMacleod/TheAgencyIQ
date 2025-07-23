@@ -58,8 +58,9 @@ export function useSessionManager() {
           // Get current OAuth token for Authorization header
           const oauthToken = localStorage.getItem('oauth_access_token');
           
+          const timeout = 5000; // 5-second timeout for session establishment
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000);
+          const timeoutId = setTimeout(() => controller.abort(), timeout);
           
           const response = await fetch('/api/establish-session', {
             method: 'POST',

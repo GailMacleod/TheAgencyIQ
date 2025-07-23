@@ -3,7 +3,10 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import OptimizedTooltipProvider from "@/components/OptimizedTooltipProvider";
+import RouterErrorBoundary from "@/components/RouterErrorBoundary";
+import { performSecureLogout } from "@/utils/logout-handler";
+import { useSSRQueryClient, SSRHydrate } from "@/utils/query-client-ssr";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 import GrokWidget from "@/components/grok-widget";
@@ -148,14 +151,50 @@ function AppContent() {
   const mobileState = useMobileDetection();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Initialize Google Analytics when app loads
+  // Initialize Google Analytics with comprehensive fallback error handling
   useEffect(() => {
-    // Verify required environment variable is present
-    if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
-      console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
-    } else {
-      initGA();
-    }
+    const initializeGA = async () => {
+      try {
+        // Verify required environment variable is present
+        if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
+          console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID - Analytics disabled');
+          // Set fallback analytics mode to prevent quota issues
+          window.gtag = window.gtag || function() {
+            console.debug('GA offline mode: event logged locally', arguments);
+          };
+          return;
+        }
+        
+        // Validate measurement ID format
+        const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+        if (!measurementId.match(/^G-[A-Z0-9]{10}$/)) {
+          console.warn('Invalid GA measurement ID format - Analytics disabled');
+          window.gtag = window.gtag || function() {
+            console.debug('GA offline mode: invalid ID', arguments);
+          };
+          return;
+        }
+        
+        await initGA();
+        console.log('Google Analytics initialized successfully');
+      } catch (error) {
+        console.warn('GA initialization failed, using fallback mode:', error);
+        // Provide fallback gtag function to prevent crashes
+        window.gtag = window.gtag || function() {
+          console.debug('GA fallback mode: event logged locally', arguments);
+        };
+        
+        // Report GA initialization failure to Sentry if available
+        if (window.Sentry?.captureException) {
+          window.Sentry.captureException(error, {
+            tags: { component: 'GA_initialization' },
+            extra: { measurementId: import.meta.env.VITE_GA_MEASUREMENT_ID }
+          });
+        }
+      }
+    };
+
+    initializeGA();
   }, []);
 
   // Apply mobile layout dynamically
@@ -336,22 +375,65 @@ function AppContent() {
 }
 
 function App() {
-  // Initialize Google Analytics when app loads
+  // Initialize Google Analytics with comprehensive fallback error handling  
   useEffect(() => {
-    // Verify required environment variable is present
-    if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
-      console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
-    } else {
-      initGA();
-    }
+    const initializeGA = async () => {
+      try {
+        // Verify required environment variable is present
+        if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
+          console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID - Analytics disabled');
+          // Set fallback analytics mode to prevent quota issues
+          window.gtag = window.gtag || function() {
+            console.debug('GA offline mode: event logged locally', arguments);
+          };
+          return;
+        }
+        
+        // Validate measurement ID format
+        const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+        if (!measurementId.match(/^G-[A-Z0-9]{10}$/)) {
+          console.warn('Invalid GA measurement ID format - Analytics disabled');
+          window.gtag = window.gtag || function() {
+            console.debug('GA offline mode: invalid ID', arguments);
+          };
+          return;
+        }
+        
+        await initGA();
+        console.log('Google Analytics initialized successfully');
+      } catch (error) {
+        console.warn('GA initialization failed, using fallback mode:', error);
+        // Provide fallback gtag function to prevent crashes
+        window.gtag = window.gtag || function() {
+          console.debug('GA fallback mode: event logged locally', arguments);
+        };
+        
+        // Report GA initialization failure to Sentry if available
+        if (window.Sentry?.captureException) {
+          window.Sentry.captureException(error, {
+            tags: { component: 'GA_initialization' },
+            extra: { measurementId: import.meta.env.VITE_GA_MEASUREMENT_ID }
+          });
+        }
+      }
+    };
+
+    initializeGA();
   }, []);
 
+  // Enhanced QueryClient with SSR support for future scalability
+  const ssrQueryClient = useSSRQueryClient();
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AppContent />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <SSRHydrate>
+      <QueryClientProvider client={ssrQueryClient}>
+        <OptimizedTooltipProvider>
+          <RouterErrorBoundary>
+            <AppContent />
+          </RouterErrorBoundary>
+        </OptimizedTooltipProvider>
+      </QueryClientProvider>
+    </SSRHydrate>
   );
 }
 
