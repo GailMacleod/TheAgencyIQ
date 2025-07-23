@@ -45,27 +45,25 @@ class UnifiedStateTest {
   }
 
   async establishSession() {
-    console.log('\n📡 Step 1: Establishing session...');
+    console.log('\n📡 Step 1: Establishing secure session...');
     
-    const response = await fetch(`${this.baseUrl}/api/establish-session`, {
+    const response = await fetch(`${this.baseUrl}/api/auth/establish-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // Use browser's built-in cookie handling
       body: JSON.stringify({
         email: 'gailm@macleodglba.com.au',
-        password: 'password123'
+        userId: 'authenticated_user'
       })
     });
 
     if (response.ok) {
-      const setCookie = response.headers.get('set-cookie');
-      if (setCookie) {
-        this.cookies = setCookie;
-      }
-      console.log('✅ Session established successfully');
+      // No manual cookie extraction - rely on browser's secure handling
+      console.log('✅ Secure session established successfully');
       this.testResults.push({
-        test: 'Session Establishment',
+        test: 'Secure Session Establishment',
         status: 'PASSED',
-        details: 'User authenticated successfully'
+        details: 'Backend-only session authentication successful'
       });
     } else {
       throw new Error(`Session establishment failed: ${response.status}`);

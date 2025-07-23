@@ -11,6 +11,7 @@ import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import passport from 'passport';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import { pool } from '../db';
 
 // Environment configuration
@@ -19,7 +20,7 @@ const frontendURL = isProduction
   ? 'https://app.theagencyiq.ai'
   : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
 
-// Session configuration with PostgreSQL store
+// Session configuration with PostgreSQL store and secure cookies
 const sessionConfig = {
   store: new (connectPg(session))({
     pool: pool,
@@ -30,15 +31,16 @@ const sessionConfig = {
     disableTouch: false
   }),
   secret: process.env.SESSION_SECRET!,
-  name: 'theagencyiq.session',
+  name: 'connect.sid', // Standard session name for security
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true, // Create sessions for security tracking
   rolling: true,
   cookie: {
-    secure: isProduction,
-    httpOnly: true,
-    sameSite: 'strict' as const,
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    httpOnly: true, // Prevent XSS attacks - no client-side access
+    sameSite: 'strict' as const, // Prevent CSRF attacks
     maxAge: 72 * 60 * 60 * 1000, // 72 hours in milliseconds
+    path: '/', // PWA compatibility
     domain: undefined // Let Express handle domain automatically
   },
   genid: () => {
@@ -166,6 +168,10 @@ export function configureMiddleware(app: Express): void {
   }));
   console.log(`✅ Morgan logging configured (${morganFormat})`);
 
+  // Cookie parser with security (support for signed cookies)
+  app.use(cookieParser(process.env.COOKIE_SECRET || process.env.SESSION_SECRET));
+  console.log('✅ Cookie parser with security configured');
+
   // Body parsing
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -186,11 +192,25 @@ export function configureMiddleware(app: Express): void {
   app.use(generalRateLimit);
   console.log('✅ Rate limiting configured');
 
-  // Session touch middleware for active sessions
+  // Session touch middleware with cookie rotation
   app.use((req, res, next) => {
     if (req.session && req.session.userId) {
       req.session.touch();
       req.session.lastActivity = new Date();
+      
+      // Cookie rotation on login (regenerate session ID)
+      if (req.session.shouldRotate) {
+        req.session.regenerate((err) => {
+          if (err) {
+            console.error('❌ Session rotation failed:', err);
+          } else {
+            console.log('🔄 Session rotated for security');
+            req.session.shouldRotate = false;
+          }
+          next();
+        });
+        return;
+      }
     }
     next();
   });

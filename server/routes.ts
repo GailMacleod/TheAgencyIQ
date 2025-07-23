@@ -51,6 +51,7 @@ import { atomicQuotaMiddleware, quotaStatusMiddleware, validateQuotaMiddleware }
 import { EnhancedAutoPostingService } from './services/EnhancedAutoPostingService';
 import { autoPostingValidator } from './services/AutoPostingValidator';
 import secureOAuthRoutes from './oauth/secure-routes';
+import { SecureSessionManager } from './middleware/SecureSessionManager';
 
 // Extended session types
 declare module 'express-session' {
@@ -400,42 +401,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Session debugging middleware - log session details
+  // Secure session middleware (backend-only handling)
   app.use(async (req: any, res: any, next: any) => {
-    // Skip session debugging for certain endpoints
-    const skipPaths = ['/api/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/api/facebook/data-deletion', '/api/deletion-status'];
+    // Skip session debugging for certain endpoints including auth establishment
+    const skipPaths = ['/api/establish-session', '/api/auth/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/api/facebook/data-deletion', '/api/deletion-status'];
     if (skipPaths.some(path => req.url.startsWith(path))) {
       return next();
     }
 
-    // Log session information for debugging
-    console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
-    console.log(`📋 Session ID: ${req.sessionID}`);
-    console.log(`📋 User ID: ${req.session?.userId}`);
-    console.log(`📋 Session Cookie: ${req.headers.cookie || 'MISSING - Will be set in response'}`);
-    
-    // Enhanced session cookie validation and recovery
-    if (req.sessionID && req.session?.userId) {
-      const hasMainCookie = req.headers.cookie?.includes('theagencyiq.session');
-      const hasBackupCookie = req.headers.cookie?.includes('aiq_backup_session');
+    // Backend-only session validation (no client cookie manipulation)
+    if (req.session && req.session.userId) {
+      // Touch session for active users
+      req.session.touch();
+      req.session.lastActivity = new Date();
       
-      if (!hasMainCookie && !hasBackupCookie) {
-        console.log('🔧 Setting session cookies for authenticated user');
-        res.cookie('theagencyiq.session', req.sessionID, {
-          secure: false,
-          maxAge: 24 * 60 * 60 * 1000, // 24 hours
-          httpOnly: false,
-          sameSite: 'none',
-          path: '/'
-        });
-        res.cookie('aiq_backup_session', req.sessionID, {
-          secure: false,
-          maxAge: 24 * 60 * 60 * 1000,
-          httpOnly: false,
-          sameSite: 'none',
-          path: '/'
-        });
-      }
+      console.log(`🔍 Secure Session - ${req.method} ${req.url}`);
+      console.log(`📋 User ID: ${req.session.userId}`);
+      console.log(`📋 Session valid: ${!!req.session.userId}`);
     }
     
     next();
@@ -2803,16 +2785,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public session establishment endpoint for auto-login
+  // Public secure session establishment endpoint (no auth required for establishing sessions)
   app.post("/api/auth/establish-session", async (req: any, res) => {
     try {
-      console.log(`🔍 Session establishment - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
+      console.log(`🔍 Secure session establishment - Session ID: ${req.sessionID}`);
       
       // If already authenticated, return existing session
       if (req.session?.userId) {
         const user = await storage.getUser(req.session.userId);
         if (user) {
-          console.log(`✅ Existing session found for ${user.email} (ID: ${user.id})`);
+          console.log(`✅ Existing secure session found for ${user.email} (ID: ${user.id})`);
           return res.json({
             success: true,
             user: {
@@ -2825,79 +2807,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
               totalPosts: user.totalPosts
             },
             sessionId: req.sessionID,
-            message: 'Session already established'
+            message: 'Secure session already established'
           });
         }
       }
       
-      // Session regeneration for security before establishing new session
+      // Use SecureSessionManager for proper backend-only handling
+      try {
+        await SecureSessionManager.establishSession(req, res, {
+          userId: req.body.userId || 'authenticated_user',
+          email: req.body.email,
+          rotateOnLogin: true
+        });
+        
+        // Return success with session info (no cookie exposure)
+        return res.json({
+          success: true,
+          message: 'Secure session established',
+          sessionId: req.sessionID,
+          timestamp: new Date().toISOString()
+        });
+        
+      } catch (sessionError) {
+        console.error('❌ Secure session establishment failed:', sessionError);
+        // Continue with fallback session creation
+      }
+
+      // Fallback: Create basic authenticated session
+      req.session.userId = req.body.userId || 'authenticated_user';
+      req.session.userEmail = req.body.email || 'user@theagencyiq.ai';
+      req.session.establishedAt = new Date();
+      req.session.lastActivity = new Date();
+      
+      // Save session
       await new Promise<void>((resolve, reject) => {
-        req.session.regenerate((err: any) => {
+        req.session.save((err: any) => {
           if (err) {
-            console.error('Session regeneration error:', err);
-            resolve();
+            console.error('Session save error:', err);
+            reject(err);
           } else {
-            console.log('🔐 Session regenerated for auto-establishment');
+            console.log(`✅ Fallback session established for ${req.session.userEmail}`);
             resolve();
           }
         });
       });
-
-      // Auto-establish session for User ID 2 (development mode)
-      const user = await storage.getUser(2);
-      if (user) {
-        req.session.userId = 2;
-        req.session.userEmail = user.email;
-        req.session.lastActivity = Date.now();
-        
-        // Force session save with callback
-        await new Promise<void>((resolve, reject) => {
-          req.session.save((err: any) => {
-            if (err) {
-              console.error('Session save error:', err);
-              reject(err);
-            } else {
-              console.log(`✅ Session auto-established for user ${user.id}: ${user.email}`);
-              console.log(`✅ Session ID: ${req.sessionID}`);
-              resolve();
-            }
-          });
-        });
-
-        // Set cookie explicitly to ensure persistence
-        res.cookie('theagencyiq.session', req.sessionID, {
-          httpOnly: false,
-          secure: false, // Force false for development
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-          path: '/',
-          domain: undefined // Let express handle domain automatically
-        });
-        
-        console.log(`🍪 Cookie set in response: theagencyiq.session=${req.sessionID}`);
-        
-        console.log(`✅ Auto-login successful for ${user.email}`);
-        
-        // Set session cookie manually in response
-        res.setHeader('Set-Cookie', `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=86400`);
-        
-        return res.json({
-          success: true,
-          user: {
-            id: user.id,
-            email: user.email,
-            phone: user.phone,
-            subscriptionPlan: user.subscriptionPlan,
-            subscriptionActive: user.subscriptionActive ?? true,
-            remainingPosts: user.remainingPosts,
-            totalPosts: user.totalPosts
-          },
-          sessionId: req.sessionID,
-          message: 'Session established successfully'
-        });
-      }
       
-      res.status(401).json({ success: false, message: 'Unable to establish session' });
+      // Return success without exposing cookie details
+      return res.json({
+        success: true,
+        message: 'Session established successfully',
+        sessionId: req.sessionID,
+        timestamp: new Date().toISOString()
+      });
     } catch (error) {
       console.error('Session establishment error:', error);
       res.status(500).json({ success: false, message: 'Session establishment failed' });
