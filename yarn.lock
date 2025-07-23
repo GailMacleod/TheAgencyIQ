@@ -8224,6 +8224,15 @@ passport-local@^1.0.0:
   dependencies:
     passport-strategy "1.x.x"
 
+passport-oauth1@1.x.x:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/passport-oauth1/-/passport-oauth1-1.3.0.tgz#5d57f1415c8e28e46b461a12ec1b492934f7c354"
+  integrity sha512-8T/nX4gwKTw0PjxP1xfD0QhrydQNakzeOpZ6M5Uqdgz9/a/Ag62RmJxnZQ4LkbdXGrRehQHIAHNAu11rCP46Sw==
+  dependencies:
+    oauth "0.9.x"
+    passport-strategy "1.x.x"
+    utils-merge "1.x.x"
+
 passport-oauth2@1.x.x:
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/passport-oauth2/-/passport-oauth2-1.8.0.tgz#55725771d160f09bbb191828d5e3d559eee079c8"
@@ -8235,27 +8244,18 @@ passport-oauth2@1.x.x:
     uid2 "0.0.x"
     utils-merge "1.x.x"
 
-passport-oauth@0.1.x:
-  version "0.1.15"
-  resolved "https://registry.yarnpkg.com/passport-oauth/-/passport-oauth-0.1.15.tgz#fb74e0afe84614bfa256c5fc716cc56bbfc8cec0"
-  integrity sha512-ma4W++dGNS/WKxkInG03VDqCRPD/9K/eSaqhvMLBFhpLOfycBus8+FnhcoSR6ug+NzXLjYtjGxMPBE/Gt8KqqA==
-  dependencies:
-    oauth "0.9.x"
-    passport "~0.1.1"
-    pkginfo "0.2.x"
-
 passport-strategy@1.x.x:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/passport-strategy/-/passport-strategy-1.0.0.tgz#b5539aa8fc225a3d1ad179476ddf236b440f52e4"
   integrity sha512-CB97UUvDKJde2V0KDWWB3lyf6PC3FaZP7YxZ2G8OAtn9p4HI9j9JLP9qjOGZFvyl8uwNT8qM+hGnz/n16NI7oA==
 
-passport-twitter@^0.1.5:
-  version "0.1.5"
-  resolved "https://registry.yarnpkg.com/passport-twitter/-/passport-twitter-0.1.5.tgz#d09aa2c2297d0214b6d7755bf59b392e3e03fbb2"
-  integrity sha512-nQLgJoDcahmKksyf/krsuTq3pM3QhuTkbVYoBr8SzocDmxRShbdbJbH/PxiwSo5/XnrpnIHgAjlqkfqmC7HAZg==
+passport-twitter@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/passport-twitter/-/passport-twitter-1.0.4.tgz#01a799e1f760bf2de49f2ba5fba32282f18932d7"
+  integrity sha512-qvdauqCqCJJci82mJ9hZZQ6nAv7aSHV31svL8+9H7mRlDdXCdfU6AARQrmmJu3DRmv9fvIebM7zzxR7mVufN3A==
   dependencies:
-    passport-oauth "0.1.x"
-    pkginfo "0.2.x"
+    passport-oauth1 "1.x.x"
+    xtraverse "0.1.x"
 
 passport@^0.7.0:
   version "0.7.0"
@@ -8265,14 +8265,6 @@ passport@^0.7.0:
     passport-strategy "1.x.x"
     pause "0.0.1"
     utils-merge "^1.0.1"
-
-passport@~0.1.1:
-  version "0.1.18"
-  resolved "https://registry.yarnpkg.com/passport/-/passport-0.1.18.tgz#c8264479dcb6414cadbb66752d12b37e0b6525a1"
-  integrity sha512-qteYojKG/qth7UBbbGU7aqhe5ndJs6YaUkH2B6+7FWQ0OeyYmWknzOATpMhdoSTDcLLliq9n4Fcy1mGs80iUMw==
-  dependencies:
-    pause "0.0.1"
-    pkginfo "0.2.x"
 
 path-exists@^4.0.0:
   version "4.0.0"
@@ -8446,11 +8438,6 @@ pkg-dir@^4.2.0:
   integrity sha512-HRDzbaKjC+AOWVXxAU/x54COGeIv9eb+6CkDSQoNTt4XyWoIJvuPsXizxu/Fr23EiekbtZwmh1IcIG/l/a10GQ==
   dependencies:
     find-up "^4.0.0"
-
-pkginfo@0.2.x:
-  version "0.2.3"
-  resolved "https://registry.yarnpkg.com/pkginfo/-/pkginfo-0.2.3.tgz#7239c42a5ef6c30b8f328439d9b9ff71042490f8"
-  integrity sha512-7W7wTrE/NsY8xv/DTGjwNIyNah81EQH0MWcTzrHL6pOpMocOGZc0Mbdz9aXxSrp+U0mSmkU8jrNCDCfUs3sOBg==
 
 pm2-axon-rpc@~0.7.0, pm2-axon-rpc@~0.7.1:
   version "0.7.1"
@@ -10541,10 +10528,22 @@ xmlbuilder@^13.0.2:
   resolved "https://registry.yarnpkg.com/xmlbuilder/-/xmlbuilder-13.0.2.tgz#02ae33614b6a047d1c32b5389c1fdacb2bce47a7"
   integrity sha512-Eux0i2QdDYKbdbA6AM6xE4m6ZTZr4G4xF9kahI2ukSEMCzwce2eX9WlTI5J3s+NU7hpasFsr8hWIONae7LluAQ==
 
+xmldom@0.1.x:
+  version "0.1.31"
+  resolved "https://registry.yarnpkg.com/xmldom/-/xmldom-0.1.31.tgz#b76c9a1bd9f0a9737e5a72dc37231cf38375e2ff"
+  integrity sha512-yS2uJflVQs6n+CyjHoaBmVSqIDevTAWrzMmjG1Gc7h1qQ7uVozNhEPJAwZXWyGQ/Gafo3fCwrcaokezLPupVyQ==
+
 xtend@^4.0.0, xtend@^4.0.2:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.2.tgz#bb72779f5fa465186b1f438f674fa347fdb5db54"
   integrity sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==
+
+xtraverse@0.1.x:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/xtraverse/-/xtraverse-0.1.0.tgz#b741bad018ef78d8a9d2e83ade007b3f7959c732"
+  integrity sha512-MANQdlG2hl1nQobxz1Rv8hsS1RuBS0C1N6qTOupv+9vmfrReePdxhmB2ecYjvsp4stJ80HD7erjkoF1Hd/FK9A==
+  dependencies:
+    xmldom "0.1.x"
 
 y18n@^5.0.5:
   version "5.0.8"

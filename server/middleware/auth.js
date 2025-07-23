@@ -1,6 +1,6 @@
-const { db } = require('../db.js');
-const { users, platformConnections } = require('@shared/schema');
-const { eq } = require('drizzle-orm');
+import { db } from '../db.js';
+import { users, platformConnections } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 /**
  * Authentication middleware that validates session and loads user data from database
@@ -187,7 +187,7 @@ const requireActiveSubscription = (req, res, next) => {
   next();
 };
 
-module.exports = {
+export {
   requireAuth,
   requireOAuthScope,
   optionalAuth,

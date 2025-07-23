@@ -37,6 +37,18 @@ app.use(session({
   }
 }));
 
+// Initialize Passport.js
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Setup OAuth strategies
+try {
+  setupPassport();
+  console.log('✅ Passport.js OAuth strategies initialized successfully');
+} catch (error) {
+  console.warn('⚠️ OAuth setup failed (API keys may be missing):', error.message);
+}
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
@@ -46,8 +58,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Import auth middleware
+// Import auth middleware and OAuth setup
 import { requireAuth, optionalAuth, requireActiveSubscription, requireOAuthScope } from './middleware/auth.js';
+import passport from 'passport';
+import { setupPassport } from './oauth/passport-setup.js';
+import oauthRoutes from './oauth/routes.js';
 
 // User status endpoint with real database queries and auth middleware
 app.get('/api/user-status', requireAuth, async (req, res) => {
@@ -408,6 +423,14 @@ app.post('/api/establish-session', optionalAuth, async (req, res) => {
     });
   }
 });
+
+// Mount OAuth routes
+try {
+  app.use('/', oauthRoutes);
+  console.log('✅ OAuth routes mounted successfully');
+} catch (error) {
+  console.warn('⚠️ OAuth routes mounting failed:', error.message);
+}
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../dist')));

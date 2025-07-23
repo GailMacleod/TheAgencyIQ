@@ -1,311 +1,311 @@
 /**
- * Backend OAuth Token Manager
- * Handles token refresh, revocation, and scope management
+ * OAuth Token Manager with PostgreSQL Storage and Refresh Logic
+ * Handles token storage, validation, and automatic refresh for all platforms
  */
 
-import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Strategy as FacebookStrategy } from 'passport-facebook';
-import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
+import axios from 'axios';
+import { db } from '../db.js';
+import { oauthTokens } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
 
-export class TokenManager {
-  constructor(storage) {
-    this.storage = storage;
-    this.refreshTokens = new Map(); // In-memory refresh token cache
-    this.setupStrategies();
+class OAuthTokenManager {
+  constructor() {
+    this.refreshEndpoints = {
+      facebook: 'https://graph.facebook.com/v18.0/oauth/access_token',
+      google: 'https://oauth2.googleapis.com/token',
+      linkedin: 'https://www.linkedin.com/oauth/v2/accessToken',
+      // Twitter OAuth 1.1 doesn't use refresh tokens
+    };
   }
 
   /**
-   * Setup Passport OAuth strategies
+   * Store OAuth tokens in PostgreSQL database
    */
-  setupStrategies() {
-    // Google OAuth Strategy
-    if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-      passport.use(new GoogleStrategy({
-        clientID: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: "/auth/google/callback"
-      }, this.handleOAuthCallback.bind(this, 'google')));
-    }
-
-    // Facebook OAuth Strategy  
-    if (process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET) {
-      passport.use(new FacebookStrategy({
-        clientID: process.env.FACEBOOK_CLIENT_ID,
-        clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-        callbackURL: "/auth/facebook/callback"
-      }, this.handleOAuthCallback.bind(this, 'facebook')));
-    }
-
-    // LinkedIn OAuth Strategy
-    if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
-      passport.use(new LinkedInStrategy({
-        clientID: process.env.LINKEDIN_CLIENT_ID,
-        clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-        callbackURL: "/auth/linkedin/callback",
-        scope: ['r_emailaddress', 'r_liteprofile', 'w_member_social']
-      }, this.handleOAuthCallback.bind(this, 'linkedin')));
-    }
-  }
-
-  /**
-   * Handle OAuth callback and store tokens
-   */
-  async handleOAuthCallback(provider, accessToken, refreshToken, profile, done) {
+  async storeTokens({
+    userId,
+    platform,
+    accessToken,
+    refreshToken,
+    expiresIn = 3600,
+    scopes = [],
+    platformUserId,
+    platformUsername
+  }) {
     try {
+      console.log(`💾 Storing OAuth tokens for user ${userId}, platform ${platform}`);
+
+      const expiresAt = new Date();
+      expiresAt.setSeconds(expiresAt.getSeconds() + expiresIn);
+
+      // Check if token already exists
+      const [existingToken] = await db
+        .select()
+        .from(oauthTokens)
+        .where(and(
+          eq(oauthTokens.userId, userId),
+          eq(oauthTokens.provider, platform)
+        ));
+
       const tokenData = {
+        userId,
+        provider: platform,
         accessToken,
         refreshToken,
-        expiresAt: Date.now() + (3600 * 1000), // 1 hour default
-        scope: profile.scope || [],
-        provider,
-        profileId: profile.id,
-        email: profile.emails?.[0]?.value
+        expiresAt,
+        scope: scopes,
+        profileId: platformUserId
       };
 
-      // Store token in database
-      await this.storage.storeOAuthToken(profile.id, provider, tokenData);
-      
-      // Cache refresh token
-      if (refreshToken) {
-        this.refreshTokens.set(`${provider}:${profile.id}`, refreshToken);
+      if (existingToken) {
+        console.log(`🔄 Updating existing ${platform} token for user ${userId}`);
+        await db
+          .update(oauthTokens)
+          .set({
+            ...tokenData,
+            updatedAt: new Date()
+          })
+          .where(eq(oauthTokens.id, existingToken.id));
+      } else {
+        console.log(`➕ Creating new ${platform} token for user ${userId}`);
+        await db
+          .insert(oauthTokens)
+          .values(tokenData);
       }
 
-      console.log(`✅ OAuth token stored for ${provider}:${profile.id}`);
-      return done(null, { provider, profileId: profile.id, tokenData });
+      console.log(`✅ OAuth tokens stored successfully for ${platform}`);
+      return tokenData;
     } catch (error) {
-      console.error(`❌ OAuth callback failed for ${provider}:`, error);
-      return done(error);
-    }
-  }
-
-  /**
-   * Refresh access token
-   */
-  async refreshAccessToken(userId, provider) {
-    try {
-      const storedToken = await this.storage.getOAuthToken(userId, provider);
-      
-      if (!storedToken?.refreshToken) {
-        throw new Error(`No refresh token available for ${provider}`);
-      }
-
-      let newTokenData;
-      
-      switch (provider) {
-        case 'google':
-          newTokenData = await this.refreshGoogleToken(storedToken.refreshToken);
-          break;
-        case 'facebook':
-          newTokenData = await this.refreshFacebookToken(storedToken.accessToken);
-          break;
-        case 'linkedin':
-          newTokenData = await this.refreshLinkedInToken(storedToken.refreshToken);
-          break;
-        default:
-          throw new Error(`Token refresh not implemented for ${provider}`);
-      }
-
-      // Update stored token
-      const updatedToken = {
-        ...storedToken,
-        accessToken: newTokenData.accessToken,
-        refreshToken: newTokenData.refreshToken || storedToken.refreshToken,
-        expiresAt: Date.now() + (newTokenData.expiresIn * 1000),
-        scope: newTokenData.scope || storedToken.scope
-      };
-
-      await this.storage.storeOAuthToken(userId, provider, updatedToken);
-      
-      console.log(`✅ Token refreshed for ${provider}:${userId}`);
-      return updatedToken;
-    } catch (error) {
-      console.error(`❌ Token refresh failed for ${provider}:${userId}:`, error);
+      console.error(`❌ Error storing OAuth tokens for ${platform}:`, error);
       throw error;
     }
   }
 
   /**
-   * Refresh Google OAuth token
+   * Get valid access token (refresh if necessary)
    */
-  async refreshGoogleToken(refreshToken) {
-    const response = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token'
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Google token refresh failed: ${error}`);
-    }
-
-    return await response.json();
-  }
-
-  /**
-   * Refresh Facebook OAuth token
-   */
-  async refreshFacebookToken(accessToken) {
-    const response = await fetch(`https://graph.facebook.com/oauth/access_token?` + 
-      new URLSearchParams({
-        grant_type: 'fb_exchange_token',
-        client_id: process.env.FACEBOOK_CLIENT_ID,
-        client_secret: process.env.FACEBOOK_CLIENT_SECRET,
-        fb_exchange_token: accessToken
-      })
-    );
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Facebook token refresh failed: ${error}`);
-    }
-
-    const data = await response.json();
-    return {
-      accessToken: data.access_token,
-      expiresIn: data.expires_in || 3600
-    };
-  }
-
-  /**
-   * Refresh LinkedIn OAuth token
-   */
-  async refreshLinkedInToken(refreshToken) {
-    const response = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-        client_id: process.env.LINKEDIN_CLIENT_ID,
-        client_secret: process.env.LINKEDIN_CLIENT_SECRET
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`LinkedIn token refresh failed: ${error}`);
-    }
-
-    return await response.json();
-  }
-
-  /**
-   * Revoke OAuth token
-   */
-  async revokeToken(userId, provider) {
+  async getValidToken(userId, platform) {
     try {
-      const storedToken = await this.storage.getOAuthToken(userId, provider);
-      
-      if (!storedToken) {
-        console.warn(`No token found to revoke for ${provider}:${userId}`);
-        return true;
+      console.log(`🔍 Getting valid token for user ${userId}, platform ${platform}`);
+
+      const [tokenRecord] = await db
+        .select()
+        .from(oauthTokens)
+        .where(and(
+          eq(oauthTokens.userId, userId),
+          eq(oauthTokens.provider, platform)
+        ));
+
+      if (!tokenRecord) {
+        throw new Error(`No OAuth token found for platform ${platform}`);
       }
 
-      // Revoke at provider
-      switch (provider) {
-        case 'google':
-          await this.revokeGoogleToken(storedToken.accessToken);
-          break;
+      // Check if token is expired (with 5 minute buffer)
+      const now = new Date();
+      const expiryBuffer = new Date(tokenRecord.expiresAt);
+      expiryBuffer.setMinutes(expiryBuffer.getMinutes() - 5);
+
+      if (now > expiryBuffer && tokenRecord.refreshToken) {
+        console.log(`🔄 Token expired, refreshing for ${platform}`);
+        return await this.refreshToken(userId, platform, tokenRecord);
+      }
+
+      console.log(`✅ Valid token found for ${platform}`);
+      return {
+        accessToken: tokenRecord.accessToken,
+        platform,
+        expiresAt: tokenRecord.expiresAt,
+        scopes: tokenRecord.scope
+      };
+    } catch (error) {
+      console.error(`❌ Error getting valid token for ${platform}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh expired OAuth token
+   */
+  async refreshToken(userId, platform, tokenRecord) {
+    try {
+      console.log(`🔄 Refreshing OAuth token for ${platform}`);
+
+      if (!tokenRecord.refreshToken) {
+        throw new Error(`No refresh token available for ${platform}`);
+      }
+
+      let refreshResponse;
+
+      switch (platform) {
         case 'facebook':
-          await this.revokeFacebookToken(storedToken.accessToken);
+          refreshResponse = await this.refreshFacebookToken(tokenRecord);
+          break;
+        case 'google':
+        case 'youtube':
+          refreshResponse = await this.refreshGoogleToken(tokenRecord);
           break;
         case 'linkedin':
-          // LinkedIn doesn't have a revocation endpoint
-          console.log('LinkedIn token marked for expiry');
+          refreshResponse = await this.refreshLinkedInToken(tokenRecord);
           break;
         default:
-          console.warn(`Token revocation not implemented for ${provider}`);
+          throw new Error(`Token refresh not supported for platform: ${platform}`);
       }
 
-      // Remove from storage
-      await this.storage.removeOAuthToken(userId, provider);
-      this.refreshTokens.delete(`${provider}:${userId}`);
-      
-      console.log(`✅ Token revoked for ${provider}:${userId}`);
-      return true;
+      // Update token in database
+      const expiresAt = new Date();
+      expiresAt.setSeconds(expiresAt.getSeconds() + (refreshResponse.expires_in || 3600));
+
+      await db
+        .update(oauthTokens)
+        .set({
+          accessToken: refreshResponse.access_token,
+          refreshToken: refreshResponse.refresh_token || tokenRecord.refreshToken,
+          expiresAt,
+          updatedAt: new Date()
+        })
+        .where(eq(oauthTokens.id, tokenRecord.id));
+
+      console.log(`✅ Token refreshed successfully for ${platform}`);
+      return {
+        accessToken: refreshResponse.access_token,
+        platform,
+        expiresAt,
+        scopes: tokenRecord.scope
+      };
     } catch (error) {
-      console.error(`❌ Token revocation failed for ${provider}:${userId}:`, error);
-      return false;
+      console.error(`❌ Error refreshing token for ${platform}:`, error);
+      throw error;
     }
   }
 
   /**
-   * Revoke Google token
+   * Refresh Facebook token
    */
-  async revokeGoogleToken(accessToken) {
-    const response = await fetch(`https://oauth2.googleapis.com/revoke?token=${accessToken}`, {
-      method: 'POST'
+  async refreshFacebookToken(tokenRecord) {
+    const response = await axios.post(this.refreshEndpoints.facebook, {
+      grant_type: 'fb_exchange_token',
+      client_id: process.env.FACEBOOK_APP_ID,
+      client_secret: process.env.FACEBOOK_APP_SECRET,
+      fb_exchange_token: tokenRecord.accessToken
     });
-
-    if (!response.ok) {
-      throw new Error(`Google token revocation failed: ${response.statusText}`);
-    }
+    return response.data;
   }
 
   /**
-   * Revoke Facebook token
+   * Refresh Google/YouTube token
    */
-  async revokeFacebookToken(accessToken) {
-    const response = await fetch(`https://graph.facebook.com/me/permissions?access_token=${accessToken}`, {
-      method: 'DELETE'
+  async refreshGoogleToken(tokenRecord) {
+    const response = await axios.post(this.refreshEndpoints.google, {
+      grant_type: 'refresh_token',
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      refresh_token: tokenRecord.refreshToken
     });
-
-    if (!response.ok) {
-      throw new Error(`Facebook token revocation failed: ${response.statusText}`);
-    }
+    return response.data;
   }
 
   /**
-   * Get all tokens for user
+   * Refresh LinkedIn token
    */
-  async getUserTokens(userId) {
+  async refreshLinkedInToken(tokenRecord) {
+    const response = await axios.post(this.refreshEndpoints.linkedin, {
+      grant_type: 'refresh_token',
+      refresh_token: tokenRecord.refreshToken,
+      client_id: process.env.LINKEDIN_CLIENT_ID,
+      client_secret: process.env.LINKEDIN_CLIENT_SECRET
+    });
+    return response.data;
+  }
+
+  /**
+   * Revoke OAuth token (logout)
+   */
+  async revokeToken(userId, platform) {
     try {
-      return await this.storage.getUserOAuthTokens(userId);
+      console.log(`🗑️ Revoking OAuth token for user ${userId}, platform ${platform}`);
+
+      const [tokenRecord] = await db
+        .select()
+        .from(oauthTokens)
+        .where(and(
+          eq(oauthTokens.userId, userId),
+          eq(oauthTokens.provider, platform)
+        ));
+
+      if (!tokenRecord) {
+        console.log(`⚠️ No token found to revoke for ${platform}`);
+        return;
+      }
+
+      // Revoke at provider level
+      try {
+        switch (platform) {
+          case 'facebook':
+            await axios.delete(`https://graph.facebook.com/v18.0/${tokenRecord.profileId}/permissions`, {
+              params: { access_token: tokenRecord.accessToken }
+            });
+            break;
+          case 'google':
+          case 'youtube':
+            await axios.post(`https://oauth2.googleapis.com/revoke`, {
+              token: tokenRecord.accessToken
+            });
+            break;
+          case 'linkedin':
+            await axios.post(`https://www.linkedin.com/oauth/v2/revoke`, {
+              token: tokenRecord.accessToken,
+              client_id: process.env.LINKEDIN_CLIENT_ID,
+              client_secret: process.env.LINKEDIN_CLIENT_SECRET
+            });
+            break;
+        }
+      } catch (revokeError) {
+        console.warn(`⚠️ Provider revocation failed for ${platform}, continuing with database cleanup:`, revokeError.message);
+      }
+
+      // Remove from database
+      await db
+        .delete(oauthTokens)
+        .where(eq(oauthTokens.id, tokenRecord.id));
+
+      console.log(`✅ OAuth token revoked successfully for ${platform}`);
     } catch (error) {
-      console.error(`Failed to get user tokens for ${userId}:`, error);
-      return {};
+      console.error(`❌ Error revoking token for ${platform}:`, error);
+      throw error;
     }
   }
 
   /**
-   * Check if token needs refresh
+   * Check token validity with scope verification
    */
-  tokenNeedsRefresh(token, bufferMinutes = 5) {
-    if (!token || !token.expiresAt) return true;
-    
-    const bufferMs = bufferMinutes * 60 * 1000;
-    return Date.now() + bufferMs >= token.expiresAt;
-  }
-
-  /**
-   * Get valid token with automatic refresh
-   */
-  async getValidToken(userId, provider) {
+  async validateTokenScopes(userId, platform, requiredScopes = []) {
     try {
-      const token = await this.storage.getOAuthToken(userId, provider);
+      const tokenData = await this.getValidToken(userId, platform);
       
-      if (!token) {
-        return null;
+      if (requiredScopes.length === 0) {
+        return { valid: true, scopes: tokenData.scopes };
       }
 
-      if (this.tokenNeedsRefresh(token)) {
-        console.log(`🔄 Auto-refreshing token for ${provider}:${userId}`);
-        return await this.refreshAccessToken(userId, provider);
+      const hasAllScopes = requiredScopes.every(scope => 
+        tokenData.scopes && tokenData.scopes.includes(scope)
+      );
+
+      if (!hasAllScopes) {
+        const missingScopes = requiredScopes.filter(scope => 
+          !tokenData.scopes || !tokenData.scopes.includes(scope)
+        );
+        
+        return {
+          valid: false,
+          missingScopes,
+          currentScopes: tokenData.scopes
+        };
       }
 
-      return token;
+      return { valid: true, scopes: tokenData.scopes };
     } catch (error) {
-      console.error(`Failed to get valid token for ${provider}:${userId}:`, error);
-      return null;
+      return { valid: false, error: error.message };
     }
   }
 }
 
-export default TokenManager;
+export default OAuthTokenManager;
