@@ -12222,5 +12222,9 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   }));
 
+  // Register secure post routes (replaces insecure post.js)
+  const { registerSecurePostRoutes } = await import('./routes/secure-post-routes');
+  registerSecurePostRoutes(app);
+
   return httpServer;
 }
