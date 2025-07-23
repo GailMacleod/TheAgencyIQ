@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean, jsonb, varchar, index, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean, jsonb, varchar, index } from "drizzle-orm/pg-core";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -14,23 +14,13 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// Verification codes table for onboarding
-export const verificationCodes = pgTable("verification_codes", {
-  id: serial("id").primaryKey(),
-  phone: varchar("phone", { length: 100 }).notNull(),
-  code: varchar("code", { length: 100 }).notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  verified: boolean("verified").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Users table with secure ID management for customer onboarding
+// Users table with phone as primary UID for robust data integrity
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull(), // Secure string ID from OAuth
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 15 }).notNull().unique(), // Phone number UID
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  phone: text("phone"), // Legacy field for migration
   subscriptionPlan: text("subscription_plan"), // 'starter', 'growth', 'professional'
   subscriptionStart: timestamp("subscription_start"),
   remainingPosts: integer("remaining_posts").default(0),
@@ -39,22 +29,9 @@ export const users = pgTable("users", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   subscriptionSource: text("subscription_source").default("legacy"), // 'none', 'stripe', 'certificate', 'legacy'
   subscriptionActive: boolean("subscription_active").default(true),
-  // Business info for VEO integration
-  businessName: varchar("business_name"),
-  businessType: varchar("business_type"),
-  industry: varchar("industry"),
-  location: varchar("location").default("Queensland, Australia"),
-  // Brand purpose for JTBD framework
-  brandPurpose: text("brand_purpose"),
-  targetAudience: text("target_audience"),
-  // Onboarding tracking
-  onboardingCompleted: boolean("onboarding_completed").default(false),
-  onboardingStep: text("onboarding_step").default("profile"), // 'profile', 'brand', 'oauth', 'complete'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
-
-// First quotaUsage table definition removed to prevent duplicate
 
 // Post schedule table for quota enforcement with mobile UID
 export const postSchedule = pgTable("post_schedule", {
@@ -92,58 +69,10 @@ export const postLedger = pgTable("post_ledger", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Quota tracking table for atomic operations (PostgreSQL-based)
-export const quotaUsage = pgTable("quota_usage", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id", { length: 50 }).notNull(),
-  platform: varchar("platform", { length: 50 }).notNull(),
-  operation: varchar("operation", { length: 50 }).notNull(),
-  hourWindow: timestamp("hour_window").notNull(),
-  count: integer("count").default(1),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => ({
-  uniqueConstraint: unique().on(table.userId, table.platform, table.operation, table.hourWindow),
-  userPlatformIdx: index("idx_quota_user_platform").on(table.userId, table.platform),
-  hourWindowIdx: index("idx_quota_hour_window").on(table.hourWindow),
-}));
-
-// Rate limiting store table for express-rate-limit with PostgreSQL  
-export const rateLimitStore = pgTable("rate_limit_store", {
-  id: serial("id").primaryKey(),
-  key: varchar("key", { length: 255 }).notNull(),
-  hits: integer("hits").default(1),
-  windowStart: timestamp("window_start").notNull(),
-  windowMs: integer("window_ms").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => ({
-  keyWindowIdx: index("idx_rate_limit_key_window").on(table.key, table.windowStart),
-  windowStartIdx: index("idx_rate_limit_window_start").on(table.windowStart),
-}));
-
-// Platform connections table for OAuth tokens
-export const platformConnections = pgTable("platform_connections", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id", { length: 50 }).notNull(),
-  platform: varchar("platform", { length: 50 }).notNull(), // 'facebook', 'instagram', 'linkedin', 'twitter', 'youtube'
-  accessToken: text("access_token").notNull(),
-  refreshToken: text("refresh_token"),
-  expiresAt: timestamp("expires_at"),
-  scope: text("scope"), // Comma-separated scopes
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => ({
-  userPlatformIdx: unique().on(table.userId, table.platform),
-  userIdx: index("idx_platform_user").on(table.userId),
-  platformIdx: index("idx_platform_type").on(table.platform),
-}));
-
 // Legacy posts table (keeping for backward compatibility)
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
   content: text("content").notNull(),
   status: text("status").notNull().default("draft"), // 'draft', 'approved', 'scheduled', 'published', 'failed'
@@ -167,13 +96,27 @@ export const posts = pgTable("posts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Platform connections already defined above - removing duplicate
+// Platform connections for OAuth tokens with unique constraints
+export const platformConnections = pgTable("platform_connections", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
+  platformUserId: text("platform_user_id").notNull(),
+  platformUsername: text("platform_username").notNull(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at"),
+  isActive: boolean("is_active").default(true),
+  connectedAt: timestamp("connected_at").defaultNow(),
+}, (table) => ({
+  // UNIQUE CONSTRAINT: Prevent duplicate active connections per user-platform
+  uniqueUserPlatform: index("unique_user_platform_active").on(table.userId, table.platform).where(eq(table.isActive, true)),
+}));
 
 // Brand purpose for content generation
 export const brandPurpose = pgTable("brand_purpose", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  businessName: text("business_name").notNull(), // Fixed field name
+  userId: integer("user_id").notNull().references(() => users.id),
   brandName: text("brand_name").notNull(),
   productsServices: text("products_services").notNull(),
   corePurpose: text("core_purpose").notNull(),
@@ -188,26 +131,15 @@ export const brandPurpose = pgTable("brand_purpose", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// OAuth tokens table for secure token management
-export const oauthTokens = pgTable("oauth_tokens", {
+// Verification codes for phone verification
+export const verificationCodes = pgTable("verification_codes", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  provider: text("provider").notNull(), // OAuth provider name
-  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
-  accessToken: text("access_token").notNull(),
-  refreshToken: text("refresh_token"),
-  expiresAt: timestamp("expires_at"),
-  scope: text("scope").array(), // Array of granted scopes
-  profileId: text("profile_id"), // Platform-specific user ID
-  isValid: boolean("is_valid").default(true), // Token validity status
+  phone: text("phone").notNull(),
+  code: text("code").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  verified: boolean("verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => ({
-  // Unique constraint for user-platform combination
-  uniqueUserPlatform: index("unique_user_platform_oauth").on(table.userId, table.platform),
-}));
-
-
+});
 
 export const giftCertificates = pgTable("gift_certificates", {
   id: serial("id").primaryKey(),
@@ -279,20 +211,6 @@ export const insertBrandPurposeSchema = createInsertSchema(brandPurpose).omit({
   updatedAt: true,
 });
 
-export const insertOAuthTokenSchema = createInsertSchema(oauthTokens).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-// Export types for OAuth tokens and brand purpose
-export type OAuthToken = typeof oauthTokens.$inferSelect;
-export type InsertOAuthToken = typeof oauthTokens.$inferInsert;
-export type BrandPurpose = typeof brandPurpose.$inferSelect;
-export type InsertBrandPurpose = typeof brandPurpose.$inferInsert;
-export type User = typeof users.$inferSelect;
-export type InsertUser = typeof users.$inferInsert;
-
 export const insertVerificationCodeSchema = createInsertSchema(verificationCodes).omit({
   id: true,
   createdAt: true,
@@ -323,9 +241,31 @@ export const insertPostLedgerSchema = createInsertSchema(postLedger).omit({
   updatedAt: true,
 });
 
-// Additional types
+// Types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Post = typeof posts.$inferSelect;
 export type InsertPost = z.infer<typeof insertPostSchema>;
+
+// OAuth tokens table for comprehensive token management
+export const oauthTokens = pgTable("oauth_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  provider: varchar("provider").notNull(), // google, facebook, linkedin, twitter, youtube
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at"),
+  scope: text("scope").array(),
+  profileId: varchar("profile_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("oauth_tokens_user_provider_idx").on(table.userId, table.provider),
+  index("oauth_tokens_expires_idx").on(table.expiresAt),
+]);
+
+export type OAuthToken = typeof oauthTokens.$inferSelect;
+export type InsertOAuthToken = typeof oauthTokens.$inferInsert;
 export type PostSchedule = typeof postSchedule.$inferSelect;
 export type InsertPostSchedule = z.infer<typeof insertPostScheduleSchema>;
 export type PostLedger = typeof postLedger.$inferSelect;

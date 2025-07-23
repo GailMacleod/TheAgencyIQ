@@ -4,19 +4,18 @@
  */
 
 async function establishSession() {
-  const response = await fetch('http://localhost:5000/api/auth/establish-session', {
+  const response = await fetch('http://localhost:5000/api/establish-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // Secure browser cookie handling
     body: JSON.stringify({
       email: 'gailm@macleodglba.com.au',
-      userId: 'authenticated_user'
+      password: 'password123'
     })
   });
 
   if (response.ok) {
-    // Backend-only session management - no manual cookie extraction
-    return 'secure_session_established';
+    const setCookie = response.headers.get('set-cookie');
+    return setCookie;
   } else {
     throw new Error(`Session establishment failed: ${response.status}`);
   }

@@ -1,21 +1,24 @@
-module.exports = {
+export default {
+  preset: 'ts-jest',
   testEnvironment: 'node',
+  roots: ['<rootDir>/tests'],
   testMatch: [
-    '**/tests/**/*.test.js',
-    '**/?(*.)+(spec|test).js'
+    '**/__tests__/**/*.+(ts|tsx|js)',
+    '**/*.(test|spec).+(ts|tsx|js)'
   ],
-  testTimeout: 10000,
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
+  transform: {
+    '^.+\\.(ts|tsx)$': 'ts-jest'
+  },
   collectCoverageFrom: [
-    'server/**/*.{js,ts}',
-    'shared/**/*.{js,ts}',
+    'server/**/*.{ts,tsx}',
     '!**/*.d.ts',
     '!**/node_modules/**',
-    '!**/dist/**'
+    '!**/__tests__/**'
   ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
-  verbose: true,
-  forceExit: true,
-  detectOpenHandles: true
+  moduleNameMapping: {
+    '^@/(.*)$': '<rootDir>/client/src/$1',
+    '^@shared/(.*)$': '<rootDir>/shared/$1'
+  },
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  testTimeout: 10000
 };

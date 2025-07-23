@@ -6,8 +6,6 @@ import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { enhancedCookieParser, cookieSecurityManager } from './middleware/CookieSecurityManager';
-import { oauthCookieManager } from './middleware/OAuthCookieSecurity';
 import { createServer } from 'http';
 import { validateEnvironment, getSecureDefaults } from './config/env-validation.js';
 import { dbManager } from './db-init.js';
@@ -40,42 +38,6 @@ async function startServer() {
   
   const app = express();
 
-  // ABSOLUTE FIRST: Setup static file serving with proper MIME types before ANY other middleware
-  console.log('⚡ ABSOLUTE FIRST: Setting up static file middleware with proper MIME types...');
-  
-  // Serve static assets with proper MIME types - ABSOLUTE FIRST before ANY middleware
-  app.use('/dist', express.static(path.join(process.cwd(), 'dist/public'), {
-    setHeaders: (res, filePath) => {
-      // Set proper MIME types for static assets
-      if (filePath.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
-      } else if (filePath.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css');
-      } else if (filePath.endsWith('.html')) {
-        res.setHeader('Content-Type', 'text/html');
-      }
-      // Add cache headers for static assets
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
-    }
-  }));
-  
-  // Serve assets directory
-  app.use('/assets', express.static(path.join(process.cwd(), 'assets'), {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.png') || filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
-        res.setHeader('Content-Type', 'image/' + path.extname(filePath).substring(1));
-      } else if (filePath.endsWith('.svg')) {
-        res.setHeader('Content-Type', 'image/svg+xml');
-      }
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
-    }
-  }));
-  
-  // Serve attached assets
-  app.use('/attached_assets', express.static('attached_assets'));
-  
-  console.log('✅ ABSOLUTE FIRST: Static file middleware with proper MIME types configured');
-
   // CRITICAL FIX 1: Trust Replit's reverse proxy for secure cookies in deployment
   app.set('trust proxy', 1);
   console.log('🔧 Trust proxy enabled for Replit deployment');
@@ -93,26 +55,14 @@ async function startServer() {
       },
     },
     crossOriginEmbedderPolicy: false, // Needed for Vite dev server
-    frameguard: { action: 'deny' }, // FIXED: Set X-Frame-Options to DENY for CookieSecurityManager compatibility
   }));
 
   // Request logging with Morgan and custom logger
   app.use(morgan(secureDefaults.LOG_LEVEL));
   app.use(requestLogger);
 
-  // FIXED: Comprehensive rate limiting with PostgreSQL store
-  const { comprehensiveQuotaManager } = await import('./middleware/ComprehensiveQuotaManager');
-  
-  // Apply rate limiting middleware
-  app.use('/api', comprehensiveQuotaManager.getAPIRateLimit());
-  app.use('/api/posts', comprehensiveQuotaManager.getSocialPostingRateLimit());
-  app.use('/api/video', comprehensiveQuotaManager.getVEORateLimit());
-  
-  // Sync subscribers.json with Drizzle on startup
-  await comprehensiveQuotaManager.syncSubscribersWithDrizzle();
-  
-  // Legacy rate limiter for non-API routes
-  const legacyLimiter = rateLimit({
+  // Rate limiting for all routes
+  const limiter = rateLimit({
     windowMs: secureDefaults.RATE_LIMIT_WINDOW,
     max: secureDefaults.RATE_LIMIT_MAX,
     message: {
@@ -122,6 +72,7 @@ async function startServer() {
     standardHeaders: true,
     legacyHeaders: false,
   });
+  app.use('/api', limiter);
 
   // Health check with basic rate limiting
   const healthLimiter = rateLimit({
@@ -139,10 +90,7 @@ async function startServer() {
   }));
 
   // Essential middleware - after CORS, before session
-  // Enhanced cookie parsing with security validation
-  app.use(enhancedCookieParser(process.env.COOKIE_SECRET)); // Enhanced cookie parser with secret
-  app.use(cookieSecurityManager.cookieSecurityMiddleware()); // Cookie security validation middleware
-  app.use(oauthCookieManager.oauthCookieSecurityMiddleware()); // OAuth cookie security middleware
+  app.use(cookieParser()); // PRECISION FIX: Add cookie parser for req.cookies
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   // Filter out Replit-specific tracking in production
@@ -188,7 +136,7 @@ async function startServer() {
       'unload=()'
     );
     
-    // X-Frame-Options header is set by CookieSecurityManager middleware for consistent security
+    res.header('X-Frame-Options', 'SAMEORIGIN');
     res.header('X-Content-Type-Options', 'nosniff');
     res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
     
@@ -254,6 +202,10 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
+  // Enhanced persistent session management with secure cookie configuration
+  const sessionTtl = 3 * 24 * 60 * 60; // 3 days in seconds (Redis format) - 72 hours for PWA persistent logins
+  const sessionTtlMs = sessionTtl * 1000; // 3 days in milliseconds (Express format) - 72 hours
+  
   // Initialize database before session store
   await dbManager.initialize();
   
@@ -262,101 +214,129 @@ async function startServer() {
   await db.execute(createQuotaTable);
   console.log('✅ Quota tracking table ready');
 
-  // Initialize comprehensive session persistence manager
-  const { SessionPersistenceManager } = await import('./middleware/SessionPersistenceManager');
-  const sessionManager = new SessionPersistenceManager(dbManager.getPool());
+  // PostgreSQL session store setup
+  const PgSession = connectPg(session);
   
-  // Configure session middleware with PostgreSQL persistence
-  const sessionConfig = sessionManager.getSessionConfig();
-  app.use(session(sessionConfig));
+  let sessionStore: any;
   
-  // Add session touch middleware for active sessions
-  app.use(sessionManager.sessionTouchMiddleware());
-  
-  console.log('✅ PostgreSQL session persistence with connect-pg-simple configured');
-  console.log('🔒 Session features: persistence, touch, regeneration, Drizzle integration');
-  
-  // Session establishment endpoint is handled in routes.ts - this one is disabled to prevent conflicts
-  // app.post('/api/establish-session', async (req, res) => { ... }); // DISABLED
-
-  // PWA session sync endpoint for offline support
-  app.post('/api/sync-session', async (req, res) => {
-    try {
-      const { sessionId, deviceInfo } = req.body;
-      
-      if (!req.session) {
-        return res.status(500).json({ 
-          success: false, 
-          error: 'Session not available' 
-        });
+  try {
+    // Try Redis first for persistent sessions (production-ready)
+    console.log('🔧 Attempting Redis connection for persistent sessions...');
+    
+    const redisClient = createClient({
+      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      socket: {
+        connectTimeout: 5000
+      },
+      retryDelayOnFailover: 100,
+      maxRetriesPerRequest: 3
+    });
+    
+    const RedisStore = connectRedis.default(session);
+    
+    // Test Redis connection
+    await redisClient.connect();
+    await redisClient.ping();
+    
+    sessionStore = new RedisStore({
+      client: redisClient,
+      ttl: sessionTtl,
+      prefix: 'theagencyiq:sess:',
+      disableTTL: false,
+      disableTouch: false
+    });
+    
+    console.log('✅ Redis session store connected successfully');
+    console.log('🔒 Session persistence: BULLETPROOF (survives restarts/deployments)');
+    
+  } catch (redisError) {
+    console.log('⚠️  Redis unavailable, falling back to PostgreSQL sessions');
+    console.log('🔧 Configuring PostgreSQL session store...');
+    
+    // Enhanced PostgreSQL session store with proper configuration
+    const pgStore = connectPg(session);
+    sessionStore = new pgStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
+      ttl: sessionTtl, // Use seconds for PostgreSQL TTL
+      tableName: "sessions",
+      touchInterval: 60000, // Touch sessions every minute to prevent premature expiry
+      disableTouch: false, // Enable touch for active sessions
+      pruneSessionInterval: 60 * 60 * 1000, // Prune expired sessions every hour
+      errorLog: (error) => {
+        console.error('Session store error:', error);
       }
-
-      // Update session with device info for PWA
-      if (deviceInfo) {
-        req.session.deviceInfo = deviceInfo;
-        req.session.lastSync = Date.now();
+    });
+    
+    // Test PostgreSQL session store connection
+    sessionStore.get('test-connection', (err: any, session: any) => {
+      if (err) {
+        console.error('❌ Session store connection failed:', err);
+      } else {
+        console.log('✅ PostgreSQL session store connection successful');
+        console.log('🔒 Session persistence: ENHANCED (survives restarts with touch support)');
       }
-
-      // Touch session to extend TTL
-      req.session.touch();
-
-      res.json({
-        success: true,
-        sessionId: req.sessionID,
-        message: 'Session synced successfully',
-        deviceInfo: req.session.deviceInfo,
-        lastSync: req.session.lastSync
-      });
-    } catch (error) {
-      console.error('Session sync error:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Session sync failed' 
-      });
-    }
-  });
+    });
+  }
 
   // Remove duplicate CORS - already configured above with proper order
 
   // Production-grade session configuration with security
   const isProduction = process.env.NODE_ENV === 'production';
-  const sessionTtlMs = 72 * 60 * 60 * 1000; // 72 hours
   
-  // Session middleware already configured above with SessionPersistenceManager
+  // CRITICAL FIX 3: Enhanced session configuration with proper secure cookie handling
+  app.use(session({
+    secret: secureDefaults.SESSION_SECRET,
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false, // Don't create sessions for unauthenticated users
+    name: 'theagencyiq.session',
+    genid: () => {
+      const timestamp = Date.now().toString(36);
+      const random = Math.random().toString(36).substring(2, 15);
+      return `aiq_${timestamp}_${random}`;
+    },
+    cookie: { 
+      secure: secureDefaults.SECURE_COOKIES, // Production-grade cookie security
+      httpOnly: true, // Prevent JavaScript access to prevent XSS attacks
+      sameSite: 'strict', // Prevent CSRF attacks with strict same-site policy
+      maxAge: sessionTtlMs, // 72 hours (3 days) for persistent PWA logins
+      path: '/',
+      domain: undefined // Let express handle domain automatically
+    },
+    rolling: true, // Extend session on activity
+    proxy: true, // Works with trust proxy setting
+    unset: 'destroy', // Properly clean up sessions
+    touch: true // Enable session touching for active sessions
+  }));
 
-  // CRITICAL FIX 4: Session debugging middleware with detailed logging - SKIP static files
+  // Session touch middleware for active sessions to prevent premature expiry
   app.use((req, res, next) => {
-    // Skip session debugging for static files to prevent MIME type interference
-    if (!req.path.startsWith('/dist/') && !req.path.startsWith('/assets/') && req.path !== '/favicon.ico') {
-      console.log(`🔍 Session Debug - ${req.method} ${req.path}`);
-      console.log(`📋 Session ID: ${req.sessionID || 'No session'}`);
-      console.log(`📋 User ID: ${req.session?.userId || 'anonymous'}`);
-      console.log(`📋 Session Cookie: ${req.headers.cookie?.substring(0, 150) || 'MISSING - Will be set in response'}...`);
-      
-      // PRECISION FIX: Add detailed cookie debugging as requested
-      console.log('Cookie:', req.cookies);
+    if (req.session && req.session.userId) {
+      // Touch session to extend TTL for active users
+      req.session.touch();
+      req.session.lastActivity = Date.now();
     }
+    next();
+  });
+
+  // CRITICAL FIX 4: Session debugging middleware with detailed logging
+  app.use((req, res, next) => {
+    console.log(`🔍 Session Debug - ${req.method} ${req.path}`);
+    console.log(`📋 Session ID: ${req.sessionID || 'No session'}`);
+    console.log(`📋 User ID: ${req.session?.userId || 'anonymous'}`);
+    console.log(`📋 Session Cookie: ${req.headers.cookie?.substring(0, 150) || 'MISSING - Will be set in response'}...`);
     
-    // Set secure backup session cookie if missing using CookieSecurityManager - SKIP for static files
-    if (!req.path.startsWith('/dist/') && !req.path.startsWith('/assets/') && req.path !== '/favicon.ico') {
-      if (req.session?.userId && !req.headers.cookie?.includes('aiq_backup_session')) {
-        console.log('🔧 Setting secure session cookies for authenticated user');
-        
-        // Use CookieSecurityManager for secure cookie handling
-        cookieSecurityManager.setSecureCookie(res, 'aiq_backup_session', req.sessionID, {
-          maxAge: sessionTtlMs,
-          secure: isProduction,
-          httpOnly: true,
-          sameSite: 'strict'
-        });
-        
-        cookieSecurityManager.setSecureCookie(res, 'theagencyiq.session', req.sessionID, {
-          maxAge: sessionTtlMs,
-          secure: isProduction,
-          httpOnly: true,
-          sameSite: 'strict'
-        });
-      }
+    // PRECISION FIX: Add detailed cookie debugging as requested
+    console.log('Cookie:', req.cookies);
+    
+    // Set secure backup session cookie if missing
+    if (req.session?.userId && !req.headers.cookie?.includes('aiq_backup_session')) {
+      console.log('🔧 Setting secure session cookies for authenticated user');
+      res.setHeader('Set-Cookie', [
+        `aiq_backup_session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=strict${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`,
+        `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=strict${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`
+      ]);
     }
     
     next();
@@ -531,81 +511,12 @@ async function startServer() {
     }
   });
 
-  // Import session authentication middleware
-  const { sessionAuthMiddleware } = await import('./middleware/session-auth.js');
-
-  // Enhanced session establishment endpoint with proper authentication
-  app.post('/api/establish-session', async (req, res) => {
-    try {
-      const { userId, email } = req.body;
-      
-      // Require user credentials for session establishment
-      if (!userId || !email) {
-        return res.status(400).json({
-          success: false,
-          error: 'User credentials required',
-          code: 'MISSING_CREDENTIALS',
-          message: 'userId and email are required for session establishment'
-        });
-      }
-
-      console.log('Session establishment request:', {
-        userId,
-        email,
-        sessionId: req.sessionID?.substring(0, 10) + '...'
-      });
-
-      // Check if session already exists with same user
-      if (req.session?.userId === userId) {
-        console.log(`Session already established for user ${email}`);
-        return res.json({
-          success: true,
-          sessionId: req.sessionID,
-          userId: req.session.userId,
-          email: req.session.userEmail,
-          message: 'Session already established',
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      // Regenerate session for security
-      const newSessionId = await sessionAuthMiddleware.regenerateSession(req, {
-        userId,
-        email
-      });
-
-      // Set backup session cookie
-      res.cookie('aiq_backup_session', newSessionId, {
-        httpOnly: true,
-        secure: secureDefaults.SECURE_COOKIES,
-        sameSite: 'strict',
-        maxAge: sessionTtlMs,
-        path: '/'
-      });
-
-      console.log(`✅ Session established for user ${email}`);
-
-      res.json({
-        success: true,
-        sessionId: newSessionId,
-        userId: userId,
-        email: email,
-        message: 'Session established successfully',
-        sessionRegenerated: true,
-        timestamp: new Date().toISOString()
-      });
-
-    } catch (error) {
-      console.error('❌ Session establishment failed:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: 'Session establishment failed',
-        message: error.message 
-      });
-    }
+  // Public bypass route
+  app.get('/public', (req, res) => {
+    req.session.userId = 2;
+    console.log(`React fix bypass activated at ${new Date().toISOString()}`);
+    res.redirect('/platform-connections');
   });
-
-  // Public route removed - now handled in routes.ts without authentication
 
   // OAuth connection routes
   app.get('/connect/:platform', (req, res) => {
@@ -1007,8 +918,6 @@ async function startServer() {
     }
   }));
   
-
-  
   // Serve logo.png from root path
   app.get('/logo.png', (req, res) => {
     res.sendFile(path.join(process.cwd(), 'public', 'logo.png'));
@@ -1038,37 +947,9 @@ async function startServer() {
     });
   });
 
-  // Serve static dist files FIRST with proper MIME types - BEFORE any session middleware
-  app.use('/dist', express.static('dist', {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css');
-      } else if (filePath.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
-      }
-    }
-  }));
-  
-  // Serve assets directory
-  app.use('/assets', express.static('assets', {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css');
-      } else if (filePath.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
-      }
-    }
-  }));
-
   // Register API routes FIRST before any middleware that might interfere
   try {
     console.log('📡 Loading routes...');
-    
-    // Setup OAuth routes with complete system BEFORE main routes
-    const { oauthCompleteSystem } = await import('./auth/oauth-complete-system');
-    await oauthCompleteSystem.setupRoutes(app);
-    console.log('🔗 Complete OAuth system configured with Passport.js');
-    
     const { registerRoutes } = await import('./routes');
     await registerRoutes(app);
     console.log('✅ Routes registered successfully');
@@ -1090,8 +971,6 @@ async function startServer() {
     next();
   });
 
-
-
   // Setup static file serving after API routes
   try {
     // Production static file serving
@@ -1099,6 +978,8 @@ async function startServer() {
       console.log('⚡ Setting up production static files...');
       // Serve built frontend assets
       app.use(express.static(path.join(process.cwd(), 'dist/public')));
+      // Serve attached assets in production
+      app.use('/attached_assets', express.static('attached_assets'));
       
       // Root route for production
       app.get('/', (req, res) => {

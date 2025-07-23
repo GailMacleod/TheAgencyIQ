@@ -43,23 +43,26 @@ class OAuthTokenPersistenceTest {
   }
 
   async establishSession() {
-    console.log('1️⃣ Establishing secure authenticated session...');
+    console.log('1️⃣ Establishing authenticated session...');
     
     try {
-      const response = await axios.post(`${BASE_URL}/api/auth/establish-session`, {
+      const response = await axios.post(`${BASE_URL}/api/auth/login`, {
         email: 'gailm@macleodglba.com.au',
-        userId: 'authenticated_user'
-      }, {
-        withCredentials: true // Use secure browser cookie handling
+        password: 'password123'
       });
 
       if (response.data.success) {
-        // Backend-only session management - no manual cookie extraction
-        console.log('✅ Secure session established successfully');
-        console.log('🔐 Session managed by backend securely');
-        this.sessionCookie = 'secure_backend_session'; // Placeholder for secure handling
+        // Extract session cookie
+        const cookieHeader = response.headers['set-cookie'];
+        if (cookieHeader) {
+          this.sessionCookie = cookieHeader[0].split(';')[0];
+          console.log('✅ Session established successfully');
+          console.log('🔐 Session Cookie:', this.sessionCookie);
+        } else {
+          throw new Error('No session cookie received');
+        }
       } else {
-        throw new Error('Session establishment failed');
+        throw new Error('Login failed');
       }
     } catch (error) {
       console.error('❌ Session establishment failed:', error.message);

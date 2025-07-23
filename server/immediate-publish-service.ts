@@ -68,7 +68,7 @@ export class ImmediatePublishService {
           .set({ 
             status: 'published',
             publishedAt: new Date(),
-            analytics: JSON.stringify(publishResult.analytics || {})
+            analytics: publishResult.analytics || {}
           })
           .where(eq(posts.id, post.id));
       } else {
@@ -92,28 +92,27 @@ export class ImmediatePublishService {
   }> {
     console.log(`📤 Publishing post ${post.id} to ${post.platform}`);
     
-    // STEP 1: Try real publishing service with OAuth
+    // STEP 1: Try bulletproof publisher
     try {
-      const { RealPublishingService } = await import('./services/RealPublishingService');
+      const { BulletproofPublisher } = await import('./bulletproof-publisher');
       
-      const realResult = await RealPublishingService.publishPost(
-        post.id,
-        userId,
-        post.platform,
-        post.content
-      );
+      const bulletproofResult = await BulletproofPublisher.publish({
+        userId: userId,
+        platform: post.platform,
+        content: post.content
+      });
       
-      if (realResult.success) {
-        console.log(`✅ Real OAuth publish success: ${post.platform}`);
+      if (bulletproofResult.success) {
+        console.log(`✅ Bulletproof publish success: ${post.platform}`);
         return {
           success: true,
-          platformPostId: realResult.platformPostId,
-          method: 'real_oauth',
-          analytics: realResult.analytics
+          platformPostId: bulletproofResult.platformPostId,
+          method: 'bulletproof',
+          analytics: bulletproofResult.analytics
         };
       }
     } catch (error: any) {
-      console.log(`❌ Real publishing service failed: ${error.message}`);
+      console.log(`❌ Bulletproof publisher failed: ${error.message}`);
     }
     
     // STEP 2: Try emergency publisher as fallback

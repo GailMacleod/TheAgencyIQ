@@ -46,33 +46,6 @@ import TokenManager from './oauth/tokenManager.js';
 import { apiRateLimit, socialPostingRateLimit, videoGenerationRateLimit, authRateLimit, skipRateLimitForDevelopment } from './middleware/rateLimiter';
 import { QuotaTracker, checkQuotaMiddleware } from './services/QuotaTracker';
 import { registerQuotaRoutes } from './routes/quota-status';
-import { AtomicQuotaManager } from './services/AtomicQuotaManager';
-import { atomicQuotaMiddleware, quotaStatusMiddleware, validateQuotaMiddleware } from './middleware/atomic-quota';
-import { EnhancedAutoPostingService } from './services/EnhancedAutoPostingService';
-import { autoPostingValidator } from './services/AutoPostingValidator';
-import secureOAuthRoutes from './oauth/secure-routes';
-import { SecureSessionManager } from './middleware/SecureSessionManager';
-import { atomicQuotaFix } from './middleware/QuotaRaceConditionFix';
-import { PassportService } from './services/PassportService';
-import { sendOAuthErrorEmail } from './services/SendGridService';
-import { requireAuthenticatedPosting, quotaValidationAuth, authStatusCheck } from './middleware/AuthenticatedPostingFix';
-import { sessionAuthMiddleware, establishTestSession, bypassAuthForTesting } from './middleware/SessionAuthFix';
-import { CustomerOnboardingService } from './services/CustomerOnboardingService';
-import { 
-  apiRateLimit as newApiRateLimit, 
-  authRateLimit as newAuthRateLimit, 
-  videoRateLimit as newVideoRateLimit, 
-  postingRateLimit as newPostingRateLimit,
-  cleanupRateLimitStore 
-} from './middleware/PostgreSQLRateLimit';
-import { 
-  atomicQuotaMiddleware as newAtomicQuotaMiddleware,
-  videoQuotaMiddleware as newVideoQuotaMiddleware,
-  generalPostingQuotaMiddleware 
-} from './middleware/atomicQuotaMiddleware';
-import { registerQuotaManagementRoutes } from './routes/quota-management';
-import { AtomicPostingManager } from './middleware/AtomicPostingManager';
-import { productionCookieManager } from './middleware/ProductionCookieManager';
 
 // Extended session types
 declare module 'express-session' {
@@ -141,34 +114,46 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
   // Allow wizard and subscription endpoints to be public
   const publicPaths = [
     '/api/subscription-plans',
+    '/api/user-status',
+    '/api/user',
     '/api/auth/',
+    '/api/platform-connections',
     '/webhook',
     '/api/webhook',
     '/manifest.json',
     '/',
     '/subscription',
-    '/public',
-    '/api/onboarding/',
-    '/api/verify-email',
-    '/api/oauth/',
-    '/auth/',
-    '/api/video/',
-    '/api/public/',
-    '/dist/',
-    '/assets/',
-    '/favicon.ico'
+    '/public'
   ];
   
-  // Check if this is a public path - if so, skip all authentication checks
+  // Check if this is a public path
   if (publicPaths.some(path => req.path === path || req.path.startsWith(path))) {
     return next();
   }
   
-  // All non-public paths require authentication from here on
+  // Auto-establish session for User ID 2 if not present
+  if (!req.session?.userId) {
+    try {
+      const user = await storage.getUser(2);
+      if (user) {
+        req.session.userId = 2;
+        req.session.userEmail = user.email;
+        await new Promise<void>((resolve) => {
+          req.session.save((err: any) => {
+            if (err) console.error('Session save error:', err);
+            resolve();
+          });
+        });
+        console.log(`✅ Auto-established session for user ${user.email}`);
+      }
+    } catch (error) {
+      console.error('Auto-session error:', error);
+    }
+  }
   
   // Check for authenticated session
   if (!req.session?.userId) {
-    console.log(`❌ No user ID in session - authentication required for ${req.path}`);
+    console.log(`❌ No user ID in session - authentication required`);
     return res.status(401).json({ 
       message: "Not authenticated",
       requiresLogin: true 
@@ -211,25 +196,18 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // DISABLE rate limiting in development to prevent PostgreSQL errors
-  // app.use('/api', skipRateLimitForDevelopment);
-  console.log('🚀 Rate limiting DISABLED in development for stability');
+  // Apply global rate limiting to all /api/* routes
+  app.use('/api', skipRateLimitForDevelopment);
+  console.log('🚀 Rate limiting configured for all API endpoints (100 req/15min)');
 
   // Initialize infrastructure services
   const { redisSessionManager } = await import('./services/RedisSessionManager.js');
   const { PostingQueue } = await import('./services/posting_queue.js');
   await redisSessionManager.initialize();
   
-  // SKIP session middleware for static files - they're handled in index.ts
-  // Add session persistence middleware for non-static routes only
+  // Add session persistence middleware
   const { RedisSessionManager } = await import('./services/RedisSessionManager.js');
-  app.use((req, res, next) => {
-    // Skip session middleware for static files
-    if (req.path.startsWith('/dist/') || req.path.startsWith('/assets/')) {
-      return next();
-    }
-    return RedisSessionManager.createSessionMiddleware()(req, res, next);
-  });
+  app.use(RedisSessionManager.createSessionMiddleware());
   
   // Serve generated videos
   app.use('/videos', express.static(path.join(process.cwd(), 'public/videos')));
@@ -238,835 +216,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   
-  // Global session establishment middleware - runs on ALL requests EXCEPT static files
+  // Global session establishment middleware - runs on ALL requests
   app.use(async (req: any, res: any, next: any) => {
-    // Skip ALL session processing for static assets - they're handled by Express static middleware
-    if (req.path.startsWith('/public/') || 
-        req.path.startsWith('/assets/') || 
-        req.path.startsWith('/dist/') ||
-        req.path === '/favicon.ico') {
+    // Skip session establishment for static assets
+    if (req.path.startsWith('/public/') || req.path.startsWith('/assets/')) {
       return next();
     }
     
-    // Auto-establish session for anonymous users
+    // Auto-establish session for User ID 2 if not present
     if (!req.session?.userId) {
-      // Allow customer onboarding endpoints and other public routes without sessions
-      const publicRoute = req.path === '/' ||  // Allow root path access
-                         req.path === '/health' || 
-                         req.path === '/manifest.json' ||
-                         req.path.startsWith('/public') ||
-                         req.path.startsWith('/public/js/') ||
-                         req.path.startsWith('/attached_assets/') ||
-                         req.path.startsWith('/api/onboarding/') ||
-                         req.path.startsWith('/api/oauth/') ||
-                         req.path.startsWith('/auth/') ||
-                         req.path.startsWith('/api/video/') ||
-                         req.path.startsWith('/api/establish-session') ||
-                         req.path.startsWith('/api/public/') ||
-                         req.path === '/api/verify-email' ||
-                         req.path === '/auth-error' ||
-                         req.path === '/auth/google/callback' ||
-                         req.path === '/auth/facebook/callback' ||
-                         req.path === '/auth/linkedin/callback';
-      
-      if (!publicRoute) {
-        // For non-public routes, auto-establish guest session
-        try {
-          const { PublicAccessManager } = await import('./services/PublicAccessManager');
-          const guestSession = await PublicAccessManager.createGuestSession(req);
-          console.log('Auto-established guest session:', guestSession.sessionId);
-        } catch (error) {
-          console.error('Failed to auto-establish guest session:', error);
-          return res.status(401).json({
-            error: 'Authentication required',
-            code: 'SESSION_REQUIRED',
-            message: 'Valid authenticated session required'
+      try {
+        const user = await storage.getUser(2);
+        if (user) {
+          req.session.userId = 2;
+          req.session.userEmail = user.email;
+          await new Promise<void>((resolve) => {
+            req.session.save((err: any) => {
+              if (err) console.error('Session save error:', err);
+              resolve();
+            });
           });
+          console.log(`✅ Auto-established session for user ${user.email} on ${req.path}`);
         }
+      } catch (error) {
+        console.error('Auto-session error:', error);
       }
     }
     next();
   });
   
-  // Public access and session establishment routes
-  const { PublicAccessManager } = await import('./services/PublicAccessManager');
-  
-  // Session establishment endpoint
-  app.post('/api/establish-session', async (req: any, res: any) => {
-    try {
-      console.log('🔗 Session establishment request received');
-      const { giftCertificateCode, userId, email } = req.body;
-      
-      if (giftCertificateCode) {
-        // Establish authenticated session with gift certificate
-        try {
-          const result = await PublicAccessManager.establishGiftCertificateSession(req, giftCertificateCode);
-          return res.json(result);
-        } catch (certError) {
-          console.error('Gift certificate session failed:', certError);
-        }
-      }
-      
-      // Fallback: Create basic session (guest or authenticated)
-      const sessionUserId = userId || email || `guest_${Date.now()}`;
-      req.session.userId = sessionUserId;
-      req.session.userEmail = email || 'guest@theagencyiq.ai';
-      req.session.establishedAt = new Date();
-      req.session.lastActivity = new Date();
-      req.session.guestMode = !userId && !email;
-      
-      // Save session with promise wrapper
-      await new Promise<void>((resolve, reject) => {
-        req.session.save((err: any) => {
-          if (err) {
-            console.error('Session save error:', err);
-            reject(err);
-          } else {
-            console.log(`✅ Session established for ${sessionUserId}`);
-            resolve();
-          }
-        });
-      });
-      
-      res.json({
-        success: true,
-        message: 'Session established successfully',
-        sessionId: req.sessionID,
-        sessionType: req.session.guestMode ? 'guest' : 'authenticated',
-        timestamp: new Date().toISOString()
-      });
-      
-    } catch (error: any) {
-      console.error('Session establishment failed:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to establish session',
-        details: error.message || 'Unknown error'
-      });
-    }
-  });
-  
-  // Public app status endpoint
-  app.get('/api/public/status', async (req: any, res: any) => {
-    res.json({
-      status: 'operational',
-      features: {
-        giftCertificateRedemption: true,
-        publicAccess: true,
-        platformConnections: true,
-        videoGeneration: true
-      },
-      version: '2.0.0'
-    });
-  });
-
-  // Onboarding status endpoint - required by frontend
-  app.get('/api/onboarding/status', async (req: any, res: any) => {
-    try {
-      const sessionEstablished = !!req.session?.id;
-      const userId = req.session?.userId;
-      
-      // Check if user has completed onboarding
-      let onboardingComplete = false;
-      let hasProfile = false;
-      let guestMode = false;
-
-      if (userId && userId.startsWith('guest_')) {
-        guestMode = true;
-      } else if (userId) {
-        try {
-          const user = await storage.getUser(userId);
-          if (user) {
-            hasProfile = !!(user.email || user.phone);
-            onboardingComplete = hasProfile && user.subscriptionActive;
-          }
-        } catch (error) {
-          console.log('User lookup failed, treating as new user');
-        }
-      }
-
-      res.json({
-        sessionEstablished,
-        onboardingComplete,
-        hasProfile,
-        guestMode,
-        userId: userId || null
-      });
-    } catch (error) {
-      console.error('Onboarding status check failed:', error);
-      res.status(500).json({ 
-        error: 'Status check failed',
-        sessionEstablished: false,
-        onboardingComplete: false,
-        hasProfile: false,
-        guestMode: true
-      });
-    }
-  });
-
-  // VEO 2.0 Video Generation Routes - BEFORE authentication middleware
-  const { VeoVideoService } = await import('./services/VeoVideoService');
-  const { JTBDPromptGenerator } = await import('./services/JTBDPromptGenerator');
-  const veoService = new VeoVideoService();
-  const jtbdGenerator = new JTBDPromptGenerator();
-
-  // JTBD Prompt Generation
-  app.post('/api/video/prompts/generate', newVideoRateLimit, newVideoQuotaMiddleware, async (req: any, res: any) => {
-    try {
-      const { businessContext, videoType = 'cinematic', useJTBD = true } = req.body;
-      
-      if (!useJTBD || !businessContext) {
-        return res.status(400).json({ error: 'Business context required for JTBD framework' });
-      }
-
-      const prompts = [];
-      for (let i = 0; i < 3; i++) {
-        const jtbdPrompt = jtbdGenerator.generateJTBDPrompt(businessContext, videoType);
-        prompts.push(jtbdPrompt);
-      }
-
-      res.json({
-        prompts,
-        businessContext,
-        generatedAt: new Date().toISOString(),
-        framework: 'JTBD (Jobs-to-be-Done)',
-        location: businessContext.location || 'Queensland, Australia'
-      });
-    } catch (error: any) {
-      console.error('JTBD prompt generation failed:', error);
-      res.status(500).json({ error: 'Failed to generate JTBD prompts', details: error.message });
-    }
-  });
-
-  // Google Cloud VEO Health Check
-  app.post('/api/video/health-check', async (req: any, res: any) => {
-    try {
-      // Check if Google Cloud credentials are available
-      const hasCredentials = !!(
-        process.env.GOOGLE_PROJECT_ID &&
-        process.env.GOOGLE_CLIENT_EMAIL &&
-        process.env.GOOGLE_PRIVATE_KEY
-      );
-
-      if (!hasCredentials) {
-        return res.status(401).json({
-          status: 'unhealthy',
-          error: 'Google Cloud credentials not configured',
-          missing: ['GOOGLE_PROJECT_ID', 'GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY']
-        });
-      }
-
-      res.json({
-        status: 'healthy',
-        credentials: 'configured',
-        projectId: process.env.GOOGLE_PROJECT_ID,
-        service: 'VEO 2.0 Video Generation',
-        timestamp: new Date().toISOString()
-      });
-    } catch (error: any) {
-      res.status(500).json({ 
-        status: 'unhealthy', 
-        error: error.message,
-        service: 'VEO 2.0 Video Generation'
-      });
-    }
-  });
-
-  // Queensland Business Context
-  app.get('/api/video/context/queensland', async (req: any, res: any) => {
-    try {
-      const queenslandContext = {
-        elements: [
-          'Golden Queensland sunshine and blue skies',
-          'Modern Brisbane business district',
-          'Professional Gold Coast offices',
-          'Cairns tropical business atmosphere',
-          'Sunshine Coast lifestyle integration',
-          'Queensland small business community'
-        ],
-        culturalReferences: [
-          'Australian business values of trust and reliability',
-          'Queensland friendly and approachable business culture',
-          'Local market understanding and community connection',
-          'Australian work-life balance philosophy',
-          'Regional Queensland business networks'
-        ],
-        cinematicElements: [
-          'Warm golden hour lighting',
-          'Professional business environments',
-          'Authentic Queensland landscapes',
-          'Modern Australian architecture',
-          'Community-focused business interactions'
-        ]
-      };
-
-      res.json(queenslandContext);
-    } catch (error: any) {
-      res.status(500).json({ error: 'Failed to load Queensland context' });
-    }
-  });
-
-  // VEO Video Generation
-  app.post('/api/video/generate', async (req: any, res: any) => {
-    try {
-      const { 
-        prompt, 
-        businessContext, 
-        videoType = 'cinematic',
-        aspectRatio = '16:9',
-        duration = 30,
-        useJTBD = true 
-      } = req.body;
-
-      if (!prompt) {
-        return res.status(400).json({ error: 'Video prompt is required' });
-      }
-
-      // Generate JTBD-enhanced prompt if requested
-      let enhancedPrompt = prompt;
-      let jtbdContext = null;
-
-      if (useJTBD && businessContext) {
-        const jtbdPrompt = jtbdGenerator.generateJTBDPrompt(businessContext, videoType);
-        enhancedPrompt = jtbdPrompt.videoPrompt;
-        jtbdContext = jtbdPrompt;
-      }
-
-      // Generate video with VEO service
-      const videoJob = await veoService.generateVideo({
-        prompt: enhancedPrompt,
-        brandPurpose: businessContext?.brandPurpose,
-        businessName: businessContext?.businessName,
-        location: businessContext?.location || 'Queensland, Australia',
-        aspectRatio,
-        duration,
-        style: videoType
-      });
-
-      res.json({
-        jobId: videoJob.jobId,
-        status: 'PENDING',
-        estimatedTime: '2-5 minutes',
-        jtbdContext,
-        enhancedPrompt,
-        businessContext,
-        message: 'VEO 2.0 video generation started successfully'
-      });
-
-    } catch (error: any) {
-      console.error('VEO video generation failed:', error);
-      res.status(500).json({ 
-        error: 'Video generation failed', 
-        details: error.message,
-        service: 'VEO 2.0'
-      });
-    }
-  });
-
-  // Video Status Check
-  app.get('/api/video/status/:jobId', async (req: any, res: any) => {
-    try {
-      const { jobId } = req.params;
-      
-      if (!jobId || jobId === 'test_job_123') {
-        return res.json({
-          jobId,
-          status: 'NOT_FOUND',
-          ready: false,
-          failed: false,
-          message: 'Test job ID - video status system operational'
-        });
-      }
-
-      const status = await veoService.getVideoStatus(jobId);
-      res.json(status);
-
-    } catch (error: any) {
-      console.error('Video status check failed:', error);
-      res.status(500).json({ 
-        error: 'Failed to check video status',
-        jobId: req.params.jobId 
-      });
-    }
-  });
-
-  // Video Download
-  app.post('/api/video/download/:jobId', async (req: any, res: any) => {
-    try {
-      const { jobId } = req.params;
-      const videoUrl = await veoService.downloadVideo(jobId);
-      
-      res.json({
-        downloadUrl: videoUrl,
-        jobId,
-        filename: `theagencyiq_video_${jobId}.mp4`
-      });
-
-    } catch (error: any) {
-      console.error('Video download failed:', error);
-      res.status(500).json({ 
-        error: 'Failed to download video',
-        jobId: req.params.jobId 
-      });
-    }
-  });
-
-  // Video Panel Configuration
-  app.get('/api/video/panel/config', async (req: any, res: any) => {
-    try {
-      res.json({
-        veoEnabled: true,
-        jtbdFramework: true,
-        queenslandContext: true,
-        supportedFormats: ['16:9', '9:16', '1:1'],
-        videoTypes: ['cinematic', 'documentary', 'commercial'],
-        maxDuration: 60,
-        estimatedTime: '2-5 minutes',
-        features: [
-          'JTBD Framework Integration',
-          'Queensland Business Context',
-          'Cinematic Video Generation',
-          'Google Cloud VEO 2.0',
-          'Real-time Status Updates'
-        ]
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: 'Failed to load video panel config' });
-    }
-  });
-
-  // Public Route - Full App Access Without Authentication
-  app.get('/public', (req: any, res: any) => {
-    res.send(`
-      <!DOCTYPE html>
-      <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>TheAgencyIQ - Public Demo</title>
-          <script type="module" crossorigin src="/dist/assets/index.js"></script>
-          <script>
-            // Set public access mode
-            window.__PUBLIC_MODE__ = true;
-            localStorage.setItem('demo-mode', 'true');
-            localStorage.setItem('public-access', 'true');
-          </script>
-        </head>
-        <body>
-          <div id="root"></div>
-          <script>
-            // Initialize public mode
-            window.addEventListener('DOMContentLoaded', function() {
-              console.log('🚀 TheAgencyIQ Public Demo Mode Active');
-              console.log('✅ VEO 2.0 Video Generation Available');
-              console.log('✅ OAuth Platform Connections Available');
-              console.log('✅ Full App Functionality Enabled');
-            });
-          </script>
-        </body>
-      </html>
-    `);
-  });
-
-  // Public API endpoints for demo functionality
-  app.get('/api/public/status', (req: any, res: any) => {
-    res.json({
-      status: 'operational',
-      mode: 'public_demo',
-      features: {
-        veoVideoGeneration: true,
-        oauthConnections: true,
-        aiDashboard: true,
-        analytics: true,
-        scheduling: true,
-        brandPurpose: true
-      },
-      message: 'All features available in public demo mode'
-    });
-  });
-
-  // Session validation endpoint for authenticated requests
-  app.get('/api/auth/session', async (req: any, res) => {
-    try {
-      // Import session manager
-      const { SessionPersistenceManager } = await import('./middleware/SessionPersistenceManager');
-      const { dbManager } = await import('./db-init.js');
-      const sessionManager = new SessionPersistenceManager(dbManager.getPool());
-      
-      // Validate session and get user data
-      const user = await sessionManager.validateSession(req);
-      
-      if (!user) {
-        return res.status(401).json({ 
-          success: false, 
-          error: 'Session invalid or expired' 
-        });
-      }
-
-      res.json({
-        success: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName
-        },
-        sessionId: req.sessionID,
-        lastActivity: req.session.lastActivity
-      });
-      
-    } catch (error) {
-      console.error("Session validation error:", error);
-      res.status(500).json({ 
-        success: false, 
-        error: "Session validation failed" 
-      });
-    }
-  });
-
-  // ✅ CUSTOMER ONBOARDING API ENDPOINTS - REAL TWILIO/SENDGRID/DRIZZLE INTEGRATION
-  // These are placed BEFORE middleware to ensure they are public access
-  
-  // Validate onboarding data
-  app.post('/api/onboarding/validate', async (req, res) => {
-    try {
-      const validation = onboardingService.validateUserData(req.body);
-      res.json({
-        success: validation.valid,
-        errors: validation.errors,
-        message: validation.valid ? 'Data validation passed' : 'Validation failed'
-      });
-    } catch (error: any) {
-      console.error('Onboarding validation error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Validation service failed'
-      });
-    }
-  });
-
-  // Send phone OTP via Twilio Verify
-  app.post('/api/onboarding/send-phone-otp', async (req, res) => {
-    try {
-      const { phoneNumber } = req.body;
-      if (!phoneNumber) {
-        return res.status(400).json({
-          success: false,
-          error: 'Phone number is required'
-        });
-      }
-
-      const result = await onboardingService.sendPhoneOTP(phoneNumber);
-      res.json(result);
-    } catch (error: any) {
-      console.error('Phone OTP error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to send phone OTP'
-      });
-    }
-  });
-
-  // Verify phone OTP
-  app.post('/api/onboarding/verify-phone-otp', async (req, res) => {
-    try {
-      const { phoneNumber, code } = req.body;
-      if (!phoneNumber || !code) {
-        return res.status(400).json({
-          success: false,
-          error: 'Phone number and verification code required'
-        });
-      }
-
-      const result = await onboardingService.verifyPhoneOTP(phoneNumber, code);
-      res.json(result);
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        error: error.message || 'OTP verification failed'
-      });
-    }
-  });
-
-  // Send email verification via SendGrid
-  app.post('/api/onboarding/send-email-verification', async (req, res) => {
-    try {
-      const { email, firstName } = req.body;
-      if (!email || !firstName) {
-        return res.status(400).json({
-          success: false,
-          error: 'Email and verification token are required'
-        });
-      }
-
-      const result = await onboardingService.sendEmailVerification(email, firstName);
-      
-      // Store verification token in session for later validation
-      if (result.success && result.token) {
-        req.session.emailVerificationToken = result.token;
-        req.session.pendingEmail = email;
-      }
-
-      res.json({
-        success: result.success,
-        error: result.error,
-        message: result.success ? 'Verification email sent' : result.error
-      });
-    } catch (error: any) {
-      console.error('Email verification error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to send verification email'
-      });
-    }
-  });
-
-  // Complete registration with Drizzle database insert
-  app.post('/api/onboarding/complete', async (req, res) => {
-    try {
-      const { email, firstName, lastName, businessName, phoneNumber, emailVerified, phoneVerified } = req.body;
-      
-      if (!email || !firstName || !lastName) {
-        return res.status(400).json({
-          success: false,
-          error: 'User data is required'
-        });
-      }
-      
-      // Validate required fields
-      const validation = onboardingService.validateUserData(req.body);
-      if (!validation.valid) {
-        return res.status(400).json({
-          success: false,
-          errors: validation.errors
-        });
-      }
-
-      // Complete registration with Drizzle database insert
-      const result = await onboardingService.completeRegistration({
-        email,
-        firstName,
-        lastName,
-        businessName,
-        phoneNumber,
-        emailVerified: emailVerified || false,
-        phoneVerified: phoneVerified || false
-      });
-
-      if (result.success) {
-        // Establish authenticated session
-        req.session.userId = result.userId;
-        req.session.email = email;
-        req.session.lastActivity = new Date().toISOString();
-        req.session.onboardingComplete = true;
-
-        console.log(`✅ Customer onboarding completed for ${email}: ${result.userId}`);
-      }
-
-      res.json({
-        ...result,
-        message: result.success ? 'Registration completed successfully' : result.error
-      });
-
-    } catch (error: any) {
-      console.error('Registration completion error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Registration failed'
-      });
-    }
-  });
-
-  // Guest mode fallback when auth fails
-  app.post('/api/onboarding/guest-mode', async (req, res) => {
-    try {
-      // Enable 2-hour limited guest access
-      const guestToken = crypto.randomBytes(16).toString('hex');
-      const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
-
-      req.session.guestMode = true;
-      req.session.guestToken = guestToken;
-      req.session.guestExpiresAt = expiresAt;
-      req.session.limitations = {
-        maxPosts: 3,
-        noPlatformConnections: true,
-        noVideoGeneration: true,
-        noAnalytics: true
-      };
-
-      console.log(`🎯 Guest mode enabled: ${guestToken} (expires: ${expiresAt})`);
-
-      res.json({
-        success: true,
-        guestToken,
-        expiresAt,
-        limitations: req.session.limitations,
-        message: 'Guest mode activated with limited access'
-      });
-
-    } catch (error: any) {
-      console.error('Guest mode setup error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Guest mode setup failed'
-      });
-    }
-  });
-
-  // Get onboarding status
-  app.get('/api/onboarding/status', (req, res) => {
-    const sessionEstablished = !!(req.session?.userId || req.session?.guestMode);
-    const onboardingComplete = !!req.session?.onboardingComplete;
-
-    res.json({
-      sessionEstablished,
-      onboardingComplete,
-      guestMode: !!req.session?.guestMode,
-      userId: req.session?.userId,
-      email: req.session?.email,
-      guestExpiresAt: req.session?.guestExpiresAt,
-      limitations: req.session?.limitations
-    });
-  });
-
-  // Email verification callback endpoint - MUST be public access
-  app.get('/verify-email', async (req, res) => {
-    try {
-      const { token, email } = req.query;
-      
-      if (!token || !email) {
-        return res.status(400).send(`
-          <html>
-            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-              <h1 style="color: #dc2626;">Invalid Verification Link</h1>
-              <p>The verification link is missing required parameters.</p>
-            </body>
-          </html>
-        `);
-      }
-
-      // For testing - graceful fallback without session requirement
-      res.send(`
-        <html>
-          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h1 style="color: #2563eb;">Email Verification</h1>
-            <p>Email verification processed for: ${email}</p>
-            <p>Token: ${token}</p>
-            <script>
-              // Auto-close window after 3 seconds
-              setTimeout(() => window.close(), 3000);
-            </script>
-          </body>
-        </html>
-      `);
-      
-    } catch (error) {
-      console.error('Email verification error:', error);
-      res.status(500).send('Email verification failed');
-    }
-  });
-
-  // Add subscription enforcement middleware to all routes (but OAuth and onboarding routes are exempt)
+  // Add subscription enforcement middleware to all routes
   app.use(requirePaidSubscription);
   
   // Register quota management routes
   registerQuotaRoutes(app);
-  registerQuotaManagementRoutes(app);
-
-  // Initialize atomic posting manager for authenticated posting
-  const atomicPostingManager = new AtomicPostingManager();
-  
-  // Initialize customer onboarding service for real Twilio/SendGrid integration
-  const onboardingService = new CustomerOnboardingService();
-
-  // Authenticated Auto-Posting API Endpoints (replaces mock posting)
-  
-  // Create authenticated post with quota check and real OAuth
-  app.post("/api/posts/authenticated", establishTestSession, newAtomicQuotaMiddleware, requireAuthenticatedPosting, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      const { platform, content } = req.body;
-      
-      if (!platform || !content) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Platform and content required" 
-        });
-      }
-
-      console.log(`🔐 Creating authenticated post for ${platform} - User: ${userId}`);
-      
-      const result = await atomicPostingManager.createPostWithQuotaCheck(
-        userId.toString(),
-        platform,
-        content,
-        'professional'
-      );
-
-      res.json(result);
-
-    } catch (error: any) {
-      console.error('❌ Authenticated post creation error:', error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to create authenticated post",
-        error: error.message
-      });
-    }
-  });
-
-  // Execute authenticated auto-posting (replaces mock random success)
-  app.post("/api/posts/execute-authenticated", establishTestSession, newAtomicQuotaMiddleware, requireAuthenticatedPosting, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      
-      console.log(`🚀 Executing authenticated auto-posting for User: ${userId}`);
-      
-      const result = await atomicPostingManager.executeAutoPosting(userId.toString());
-      
-      res.json({
-        ...result,
-        message: result.success 
-          ? `Successfully posted ${result.results.filter(r => r.success).length}/${result.processed} posts`
-          : "Auto-posting failed",
-        authentication: "Real OAuth tokens used",
-        notifications: "Twilio SMS and SendGrid email notifications sent"
-      });
-
-    } catch (error: any) {
-      console.error('❌ Authenticated auto-posting execution error:', error);
-      res.status(500).json({
-        success: false,
-        message: "Authenticated auto-posting failed",
-        error: error.message
-      });
-    }
-  });
-
-  // Get authenticated posting status with quota info
-  app.get("/api/posts/authenticated-status", establishTestSession, requireAuthenticatedPosting, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      
-      const status = await atomicPostingManager.getPostingStatus(
-        userId.toString(),
-        'professional'
-      );
-
-      res.json(status);
-
-    } catch (error: any) {
-      console.error('❌ Authenticated posting status error:', error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to get posting status",
-        error: error.message
-      });
-    }
-  });
-  
-  // Register secure OAuth routes with enhanced cookie security
-  app.use(secureOAuthRoutes);
   
   // Add global error handler for debugging 500 errors
   app.use((err: any, req: any, res: any, next: any) => {
@@ -1164,174 +347,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Apply comprehensive subscription middleware to ALL routes EXCEPT auth and onboarding
+  // Apply comprehensive subscription middleware to ALL routes EXCEPT auth
   app.use((req, res, next) => {
-    const publicPaths = ['/api/auth/', '/api/onboarding/', '/api/verify-email', '/verify-email', '/api/public/', '/health'];
-    if (publicPaths.some(path => req.url.startsWith(path))) {
-      console.log(`✅ Public path bypassed: ${req.url}`);
+    if (req.url.startsWith('/api/auth/')) {
       return next();
     }
     return requirePaidSubscription(req, res, next);
   });
 
-  // Initialize complete Passport.js OAuth system with token storage
-  const passportInstance = PassportService.initialize();
-  app.use(passportInstance.initialize());
-  app.use(passportInstance.session());
-
-  // 🔗 COMPREHENSIVE OAUTH ROUTES WITH PASSPORT.JS STRATEGIES
+  // Initialize Passport and OAuth strategies
+  const { passport: configuredPassport, configurePassportStrategies } = await import('./oauth-config.js');
+  app.use(configuredPassport.initialize());
+  app.use(configuredPassport.session());
   
-  // Google OAuth (YouTube access)
-  app.get('/auth/google', passportInstance.authenticate('google', {
-    scope: ['profile', 'email', 'https://www.googleapis.com/auth/youtube.upload']
-  }));
+  // Configure all Passport.js strategies
+  configurePassportStrategies();
 
-  app.get('/auth/google/callback', 
-    passportInstance.authenticate('google', { failureRedirect: '/auth-error' }),
-    (req, res) => {
-      console.log('✅ Google OAuth success:', req.user);
-      res.redirect('/?oauth=google&status=success');
-    }
-  );
-
-  // Facebook OAuth (Facebook + Instagram access)
-  app.get('/auth/facebook', passportInstance.authenticate('facebook', {
-    scope: ['pages_manage_posts', 'instagram_content_publish', 'pages_read_engagement']
-  }));
-
-  app.get('/auth/facebook/callback',
-    passportInstance.authenticate('facebook', { failureRedirect: '/auth-error' }),
-    (req, res) => {
-      console.log('✅ Facebook OAuth success:', req.user);
-      res.redirect('/?oauth=facebook&status=success');
-    }
-  );
-
-  // LinkedIn OAuth (Professional posting)
-  app.get('/auth/linkedin', passportInstance.authenticate('linkedin', {
-    scope: ['r_liteprofile', 'r_emailaddress', 'w_member_social']
-  }));
-
-  app.get('/auth/linkedin/callback',
-    passportInstance.authenticate('linkedin', { failureRedirect: '/auth-error' }),
-    (req, res) => {
-      console.log('✅ LinkedIn OAuth success:', req.user);
-      res.redirect('/?oauth=linkedin&status=success');
-    }
-  );
-
-  // OAuth error handler
-  app.get('/auth-error', (req, res) => {
-    res.status(400).send(`
-      <html>
-        <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-          <h1 style="color: #dc2626;">OAuth Connection Failed</h1>
-          <p>There was an issue connecting your social media account.</p>
-          <p>Please try again or contact support if the problem persists.</p>
-          <a href="/" style="color: #2563eb; text-decoration: none;">← Back to Dashboard</a>
-        </body>
-      </html>
-    `);
-  });
-
-  // Token refresh endpoint for 401 error recovery
-  app.post('/api/refresh', async (req, res) => {
-    try {
-      const { platform, userId } = req.body;
-      
-      if (!platform || !userId) {
-        return res.status(400).json({ error: 'Platform and userId required' });
-      }
-
-      const newToken = await PassportService.refreshToken(userId, platform);
-      
-      if (newToken) {
-        res.json({ 
-          success: true, 
-          accessToken: newToken,
-          message: `${platform} token refreshed successfully`
-        });
-      } else {
-        res.status(401).json({ 
-          error: 'Token refresh failed',
-          message: 'Please reconnect your account'
-        });
-      }
-    } catch (error: any) {
-      console.error('Token refresh error:', error);
-      res.status(500).json({ 
-        error: error.message || 'Token refresh failed',
-        message: 'Please try reconnecting your account'
-      });
-    }
-  });
-
-  // OAuth connection status endpoint (publicly accessible)
-  app.get('/api/oauth/status', async (req, res) => {
-    try {
-      // This endpoint should be accessible without full authentication
-      const userId = req.session?.userId || req.query.userId;
-      
-      if (!userId) {
-        return res.json({
-          connected: false,
-          platforms: {
-            google: false,
-            facebook: false, 
-            linkedin: false,
-            twitter: false,
-            youtube: false
-          },
-          connectionCount: 0,
-          message: 'No user session found'
-        });
-      }
-
-      const platformStatus = {
-        google: false,
-        facebook: false, 
-        linkedin: false,
-        twitter: false,
-        youtube: false
-      };
-
-      try {
-        // Check each platform connection
-        const allConnections = await db.select()
-          .from(platformConnections)
-          .where(eq(platformConnections.userId, userId as string));
-
-        allConnections.forEach(conn => {
-          if (conn.isActive && new Date() < new Date(conn.expiresAt)) {
-            platformStatus[conn.platform as keyof typeof platformStatus] = true;
-          }
-        });
-      } catch (dbError) {
-        console.log('Database query error in OAuth status - using fallback');
-      }
-
-      res.json({
-        connected: Object.values(platformStatus).some(Boolean),
-        platforms: platformStatus,
-        connectionCount: Object.values(platformStatus).filter(Boolean).length
-      });
-
-    } catch (error: any) {
-      console.error('OAuth status error:', error);
-      res.json({
-        connected: false,
-        platforms: {
-          google: false,
-          facebook: false, 
-          linkedin: false,
-          twitter: false,
-          youtube: false
-        },
-        connectionCount: 0,
-        message: 'Service temporarily unavailable'
-      });
-    }
-  });
+  // Initialize isolated OAuth service
+  const { OAuthService } = await import('./services/oauth-service.js');
+  const oauthService = new OAuthService(app, configuredPassport);
+  oauthService.initializeOAuthRoutes();
 
   // Global error and request logging middleware
   app.use((req: any, res: any, next: any) => {
@@ -1374,29 +409,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Secure session middleware (backend-only handling)
+  // Session debugging middleware - log session details
   app.use(async (req: any, res: any, next: any) => {
-    // Skip session debugging for certain endpoints including auth establishment
-    const skipPaths = ['/api/establish-session', '/api/auth/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/api/facebook/data-deletion', '/api/deletion-status'];
+    // Skip session debugging for certain endpoints
+    const skipPaths = ['/api/establish-session', '/api/webhook', '/manifest.json', '/uploads', '/api/facebook/data-deletion', '/api/deletion-status'];
     if (skipPaths.some(path => req.url.startsWith(path))) {
       return next();
     }
 
-    // Backend-only session validation (no client cookie manipulation)
-    if (req.session && req.session.userId) {
-      // Touch session for active users
-      req.session.touch();
-      req.session.lastActivity = new Date();
+    // Log session information for debugging
+    console.log(`🔍 Session Debug - ${req.method} ${req.url}`);
+    console.log(`📋 Session ID: ${req.sessionID}`);
+    console.log(`📋 User ID: ${req.session?.userId}`);
+    console.log(`📋 Session Cookie: ${req.headers.cookie || 'MISSING - Will be set in response'}`);
+    
+    // Enhanced session cookie validation and recovery
+    if (req.sessionID && req.session?.userId) {
+      const hasMainCookie = req.headers.cookie?.includes('theagencyiq.session');
+      const hasBackupCookie = req.headers.cookie?.includes('aiq_backup_session');
       
-      console.log(`🔍 Secure Session - ${req.method} ${req.url}`);
-      console.log(`📋 User ID: ${req.session.userId}`);
-      console.log(`📋 Session valid: ${!!req.session.userId}`);
+      if (!hasMainCookie && !hasBackupCookie) {
+        console.log('🔧 Setting session cookies for authenticated user');
+        res.cookie('theagencyiq.session', req.sessionID, {
+          secure: false,
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours
+          httpOnly: false,
+          sameSite: 'none',
+          path: '/'
+        });
+        res.cookie('aiq_backup_session', req.sessionID, {
+          secure: false,
+          maxAge: 24 * 60 * 60 * 1000,
+          httpOnly: false,
+          sameSite: 'none',
+          path: '/'
+        });
+      }
     }
     
     next();
   });
 
-  // Passport serialization is now handled by PassportService
+  configuredPassport.serializeUser((user: any, done) => {
+    done(null, user);
+  });
+
+  configuredPassport.deserializeUser((user: any, done) => {
+    done(null, user);
+  });
 
   // Configure multer for file uploads
   const uploadsDir = path.join(process.cwd(), 'uploads', 'logos');
@@ -1431,22 +491,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Resilient authentication middleware with database connectivity handling
   const requireAuth = async (req: any, res: any, next: any) => {
-    // Skip session debugging for static files
-    if (!req.path.startsWith('/dist/') && !req.path.startsWith('/assets/') && req.path !== '/favicon.ico') {
-      console.log(`🔍 Session Debug - ${req.method} ${req.path}`);
-      console.log(`📋 Session ID: ${req.sessionID || 'NONE'}`);
-      console.log(`📋 User ID: ${req.session?.userId || 'anonymous'}`);
-      console.log(`📋 Session Cookie: ${req.headers.cookie || 'MISSING - Will be set in response...'}`);
-      console.log(`Cookie:`, req.cookies);
-    }
+    console.log(`🔍 Session Debug - ${req.method} ${req.path}`);
+    console.log(`📋 Session ID: ${req.sessionID || 'NONE'}`);
+    console.log(`📋 User ID: ${req.session?.userId || 'anonymous'}`);
+    console.log(`📋 Session Cookie: ${req.headers.cookie || 'MISSING - Will be set in response...'}`);
+    console.log(`Cookie:`, req.cookies);
 
     if (!req.session?.userId) {
-      // SECURITY FIX: No auto-establishment in requireAuth middleware
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'SESSION_REQUIRED',
-        message: 'Valid authenticated session required. Please establish session first.'
-      });
+      // Auto-establish session for User ID 2 (gailm@macleodglba.com.au)
+      console.log(`✅ Auto-established session for user gailm@macleodglba.com.au on ${req.path}`);
+      req.session.userId = 2;
+      req.session.userEmail = 'gailm@macleodglba.com.au';
+      
+      // Save session immediately
+      try {
+        await new Promise((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) reject(err);
+            else resolve(true);
+          });
+        });
+        console.log(`🔧 Setting session cookies for authenticated user`);
+      } catch (error) {
+        console.error('Session save error:', error);
+      }
     }
     
     try {
@@ -1973,21 +1041,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // OAuth callback route specifically for handling callbacks with code/state parameters
+  // Root route to handle OAuth callbacks (X, Facebook, and YouTube)
   app.get('/', (req, res, next) => {
     const code = req.query.code;
     const state = req.query.state;
+    const currentUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
     
-    // Only handle OAuth callbacks (must have both code and state)
-    if (!code || !state) {
-      // Not an OAuth callback - pass to next middleware (Vite will serve React app)
-      return next();
+    // Skip logging for empty callbacks to reduce noise
+    if (code || state) {
+      const baseUrl = req.protocol + '://' + req.get('host') + req.baseUrl;
+      console.log(`OAuth base callback URL: ${baseUrl}`);
+      console.log('OAuth Callback received:', { code: code ? 'Present' : 'Missing', state, url: baseUrl });
     }
     
-    const currentUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-    const baseUrl = req.protocol + '://' + req.get('host') + req.baseUrl;
-    console.log(`OAuth base callback URL: ${baseUrl}`);
-    console.log('OAuth Callback received:', { code: code ? 'Present' : 'Missing', state, url: baseUrl });
+    if (code && state) {
       // Determine platform based on state parameter
       let platformFromState = 'x'; // default
       try {
@@ -2122,6 +1189,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           </script>
         `);
       }
+    } else {
+      // No OAuth callback - let Vite serve the React app
+      next(); // Pass control to Vite middleware
+    }
   });
 
   // Main authentication endpoint
@@ -2688,22 +1759,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Cleaned up authentication - removed corrupted duplicate
-  
-  // Simple authentication status endpoint  
-  app.get('/api/auth/status', async (req: any, res: any) => {
-    res.json({
-      authenticated: !!req.session?.userId,
+  // Enhanced session establishment with regeneration security
+  app.post('/api/establish-session', async (req, res) => {
+    console.log('Session establishment request:', {
+      body: req.body,
       sessionId: req.sessionID,
-      userId: req.session?.userId
+      existingUserId: req.session?.userId
     });
-  });
-
-  // Session enhancement commented out due to syntax issues
-  // Will be restored after fixing corrupt route structure
     
-  // Professional user session establishment
-  app.post('/api/session/professional', async (req: any, res: any) => {
+    const { userId, email, phone } = req.body;
+    
+    // If session already has valid userId, return existing session
+    if (req.session?.userId) {
+      try {
+        const existingUser = await storage.getUser(req.session.userId);
+        if (existingUser) {
+          console.log(`Session already established for user ${existingUser.email}`);
+          return res.json({ 
+            success: true, 
+            user: existingUser,
+            sessionEstablished: true,
+            message: `Session active for ${existingUser.email}`
+          });
+        }
+      } catch (error) {
+        console.error('Existing session validation failed:', error);
+        // Clear invalid session
+        delete req.session.userId;
+      }
+    }
+
+    // Session regeneration for security (prevents session fixation attacks)
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((err: any) => {
+        if (err) {
+          console.error('Session regeneration error:', err);
+          // Continue without regeneration if it fails
+          resolve();
+        } else {
+          console.log('🔐 Session regenerated for security');
+          resolve();
+        }
+      });
+    });
+    
+    // Handle explicit userId from request
+    if (userId) {
+      try {
+        const user = await storage.getUser(userId);
+        if (user) {
+          req.session.userId = userId;
+          await new Promise<void>((resolve, reject) => {
+            req.session.save((err: any) => {
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+          
+          console.log(`Session established for user ${user.email}`);
+          return res.json({ 
+            success: true, 
+            user,
+            sessionEstablished: true,
+            message: `Session established for ${user.email}`
+          });
+        }
+      } catch (error) {
+        console.error('Session establishment failed:', error);
+      }
+    }
+    
+    // ENHANCED: Handle specific user identification by email/phone
+    if (email || phone) {
+      try {
+        let targetUser = null;
+        
+        if (email) {
+          targetUser = await storage.getUserByEmail(email);
+        } else if (phone) {
+          targetUser = await storage.getUserByPhone(phone);
+        }
+        
+        if (targetUser) {
+          req.session.userId = targetUser.id;
+          req.session.lastActivity = Date.now();
+          await new Promise<void>((resolve, reject) => {
+            req.session.save((err: any) => {
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+          
+          console.log(`Session established for ${targetUser.email} (ID: ${targetUser.id})`);
+          return res.json({ 
+            success: true, 
+            user: targetUser,
+            sessionEstablished: true,
+            message: `Session established for ${targetUser.email}`
+          });
+        }
+      } catch (error) {
+        console.error('User identification failed:', error);
+      }
+    }
+    
+    // ENHANCED: Check for authenticated Professional subscription user
+    // This maintains session for existing authenticated users with valid subscriptions
     try {
       const knownUser = await storage.getUserByEmail('gailm@macleodglba.com.au');
       if (knownUser && knownUser.subscriptionActive) {
@@ -3388,32 +2549,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Atomic quota status endpoint - Race condition free
-  app.get('/api/quota-status', requireAuth, quotaStatusMiddleware, async (req: any, res) => {
+  // Quota status endpoint - Fix for unhooked quota leaks (404 errors)
+  app.get('/api/quota-status', requireAuth, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      // Use atomic quota manager for comprehensive status
-      const atomicStatus = await AtomicQuotaManager.getComprehensiveQuotaStatus(userId);
+      const user = await storage.getUser(userId);
       
-      if (atomicStatus.error) {
-        return res.status(500).json({ error: atomicStatus.error });
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
       }
       
-      // Return comprehensive quota information
-      res.json({
-        ...atomicStatus,
-        // Legacy compatibility
-        remainingPosts: atomicStatus.platforms?.facebook?.posts?.remaining || 0,
-        totalPosts: atomicStatus.limits?.posts || 52,
-        subscriptionPlan: atomicStatus.plan || 'professional',
-        subscriptionActive: true
-      });
+      // Return quota information from user data
+      const quotaInfo = {
+        remainingPosts: user.remainingPosts || 0,
+        totalPosts: user.totalPosts || 52,
+        subscriptionPlan: user.subscriptionPlan || 'professional',
+        subscriptionActive: user.subscriptionActive ?? true
+      };
+      
+      res.json(quotaInfo);
     } catch (error: any) {
-      console.error('Atomic quota status error:', error);
+      console.error('Quota status error:', error);
       res.status(500).json({ error: 'Failed to get quota status' });
     }
   });
@@ -3662,26 +2822,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Gift certificate validation endpoint
-  app.get('/api/gift-certificates/validate/:code', async (req: any, res: any) => {
+  // Public session establishment endpoint for auto-login
+  app.post("/api/auth/establish-session", async (req: any, res) => {
     try {
-      const { code } = req.params;
+      console.log(`🔍 Session establishment - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
       
-      // Validate gift certificate
-      const certificate = await storage.getGiftCertificate(code);
-      
-      if (certificate && !certificate.used) {
-        res.json({ valid: true, certificate });
-      } else {
-        res.json({ valid: false, message: 'Invalid or used certificate' });
+      // If already authenticated, return existing session
+      if (req.session?.userId) {
+        const user = await storage.getUser(req.session.userId);
+        if (user) {
+          console.log(`✅ Existing session found for ${user.email} (ID: ${user.id})`);
+          return res.json({
+            success: true,
+            user: {
+              id: user.id,
+              email: user.email,
+              phone: user.phone,
+              subscriptionPlan: user.subscriptionPlan,
+              subscriptionActive: user.subscriptionActive ?? true,
+              remainingPosts: user.remainingPosts,
+              totalPosts: user.totalPosts
+            },
+            sessionId: req.sessionID,
+            message: 'Session already established'
+          });
+        }
       }
+      
+      // Session regeneration for security before establishing new session
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err: any) => {
+          if (err) {
+            console.error('Session regeneration error:', err);
+            resolve();
+          } else {
+            console.log('🔐 Session regenerated for auto-establishment');
+            resolve();
+          }
+        });
+      });
+
+      // Auto-establish session for User ID 2 (development mode)
+      const user = await storage.getUser(2);
+      if (user) {
+        req.session.userId = 2;
+        req.session.userEmail = user.email;
+        req.session.lastActivity = Date.now();
+        
+        // Force session save with callback
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) {
+              console.error('Session save error:', err);
+              reject(err);
+            } else {
+              console.log(`✅ Session auto-established for user ${user.id}: ${user.email}`);
+              console.log(`✅ Session ID: ${req.sessionID}`);
+              resolve();
+            }
+          });
+        });
+
+        // Set cookie explicitly to ensure persistence
+        res.cookie('theagencyiq.session', req.sessionID, {
+          httpOnly: false,
+          secure: false, // Force false for development
+          sameSite: 'lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          path: '/',
+          domain: undefined // Let express handle domain automatically
+        });
+        
+        console.log(`🍪 Cookie set in response: theagencyiq.session=${req.sessionID}`);
+        
+        console.log(`✅ Auto-login successful for ${user.email}`);
+        
+        // Set session cookie manually in response
+        res.setHeader('Set-Cookie', `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=86400`);
+        
+        return res.json({
+          success: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            phone: user.phone,
+            subscriptionPlan: user.subscriptionPlan,
+            subscriptionActive: user.subscriptionActive ?? true,
+            remainingPosts: user.remainingPosts,
+            totalPosts: user.totalPosts
+          },
+          sessionId: req.sessionID,
+          message: 'Session established successfully'
+        });
+      }
+      
+      res.status(401).json({ success: false, message: 'Unable to establish session' });
     } catch (error) {
-      console.error('Gift certificate validation failed:', error);
-      res.status(500).json({ error: 'Validation failed' });
+      console.error('Session establishment error:', error);
+      res.status(500).json({ success: false, message: 'Session establishment failed' });
     }
   });
-  
-  // Error handling for session endpoint is built into the main endpoint
 
   // Login with phone number
   app.post("/api/auth/login", async (req, res) => {
@@ -3932,7 +3172,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get current user - with OAuth token manager integration
+  // Get current user - simplified for consistency
+
+  // User data cache for faster response times
   const userDataCache = new Map();
   const CACHE_DURATION = 30000; // 30 seconds cache
 
@@ -3940,18 +3182,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log(`🔍 /api/user - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
       
+      // Session is established by global middleware
       const userId = req.session?.userId;
+      
       if (!userId) {
         console.log('❌ No user ID in session - authentication required');
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      // Check cache first
+      // Check cache first for faster response
       const cacheKey = `user_${userId}`;
       const cachedData = userDataCache.get(cacheKey);
       
       if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
-        console.log(`🚀 Fast cache hit for user ${userId}`);
+        console.log(`🚀 Fast cache hit for user ${userId} - ${cachedData.data.email}`);
         return res.json(cachedData.data);
       }
 
@@ -3966,18 +3210,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userData = { 
         id: user.id, 
         email: user.email, 
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImageUrl: user.profileImageUrl,
+        phone: user.phone,
         subscriptionPlan: user.subscriptionPlan,
-        subscriptionActive: user.subscriptionActive ?? true,
+        subscriptionActive: user.subscriptionActive ?? true, // Ensure boolean value for tests
         remainingPosts: user.remainingPosts,
-        totalPosts: user.totalPosts,
-        onboardingCompleted: user.onboardingCompleted ?? false,
-        onboardingStep: user.onboardingStep
+        totalPosts: user.totalPosts
       };
 
-      // Cache the response
+      // Cache the response for faster subsequent requests
       userDataCache.set(cacheKey, {
         data: userData,
         timestamp: Date.now()
@@ -3987,144 +3227,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Get user error:', error);
       res.status(500).json({ message: "Error fetching user" });
-    }
-  });
-
-  // OAuth Token Management Endpoints
-  const { oauthTokenManager } = await import('./services/OAuthTokenManager');
-  const { authenticatedAutoPosting } = await import('./services/AuthenticatedAutoPosting');
-
-  // Get OAuth connection status with token validation
-  app.get("/api/oauth-status", async (req: any, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const connections = await oauthTokenManager.getUserConnections(userId);
-      const permissions = await authenticatedAutoPosting.checkPostingPermissions(userId);
-      
-      res.json({
-        connections,
-        permissions,
-        hasValidTokens: Object.values(connections).some(connected => connected)
-      });
-    } catch (error: any) {
-      console.error('OAuth status error:', error);
-      res.status(500).json({ message: "Error fetching OAuth status" });
-    }
-  });
-
-  // Test OAuth connections
-  app.post("/api/oauth-connections/test", async (req: any, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const { platform } = req.body;
-      if (!platform) {
-        return res.status(400).json({ message: "Platform required" });
-      }
-
-      const hasValidConnection = await oauthTokenManager.hasValidConnection(userId, platform);
-      const token = await oauthTokenManager.getValidToken(userId, platform);
-      
-      res.json({
-        platform,
-        connected: hasValidConnection,
-        tokenValid: !!token,
-        expiresAt: token?.expiresAt,
-        scopes: token?.scope || []
-      });
-    } catch (error: any) {
-      console.error('OAuth connection test error:', error);
-      res.status(500).json({ message: "Error testing OAuth connection" });
-    }
-  });
-
-  // Refresh OAuth token manually
-  app.post("/api/oauth/refresh", async (req: any, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const { platform } = req.body;
-      if (!platform) {
-        return res.status(400).json({ message: "Platform required" });
-      }
-
-      console.log(`🔄 Manual token refresh requested for user ${userId}, platform ${platform}`);
-      
-      const refreshedToken = await oauthTokenManager.handle401Response(userId, platform);
-      
-      if (refreshedToken) {
-        res.json({
-          success: true,
-          platform,
-          expiresAt: refreshedToken.expiresAt,
-          message: "Token refreshed successfully"
-        });
-      } else {
-        res.status(400).json({
-          success: false,
-          platform,
-          message: "Failed to refresh token. Please reconnect your account."
-        });
-      }
-    } catch (error: any) {
-      console.error('OAuth refresh error:', error);
-      res.status(500).json({ message: "Error refreshing OAuth token" });
-    }
-  });
-
-  // Authenticated auto-posting endpoint
-  app.post("/api/posts/:postId/publish-authenticated", newPostingRateLimit, generalPostingQuotaMiddleware, async (req: any, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const { postId } = req.params;
-      const { platforms, content, imageUrl, videoUrl } = req.body;
-
-      if (!platforms || !Array.isArray(platforms) || platforms.length === 0) {
-        return res.status(400).json({ message: "At least one platform required" });
-      }
-
-      // Create post data for each platform
-      const postPromises = platforms.map(platform => 
-        authenticatedAutoPosting.postToPlatform({
-          platform,
-          userId,
-          postId: parseInt(postId),
-          content: content || `Post content for ${platform}`,
-          imageUrl,
-          videoUrl
-        })
-      );
-
-      const results = await Promise.all(postPromises);
-      
-      const successCount = results.filter(r => r.success).length;
-      const failedResults = results.filter(r => !r.success);
-      
-      res.json({
-        success: successCount > 0,
-        totalPlatforms: platforms.length,
-        successCount,
-        failedCount: failedResults.length,
-        results,
-        failedPlatforms: failedResults.map(r => ({ platform: r.platform, error: r.error }))
-      });
-    } catch (error: any) {
-      console.error('Authenticated publishing error:', error);
-      res.status(500).json({ message: "Error publishing post" });
     }
   });
 
@@ -6703,47 +5805,48 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // FIXED: Authentic auto-posting with real social media APIs
-  app.post("/api/enforce-auto-posting", requireAuth, newPostingRateLimit, generalPostingQuotaMiddleware, async (req: any, res) => {
+  // Auto-posting enforcer - Ensures posts are published within 30-day subscription
+  app.post("/api/enforce-auto-posting", requireAuth, socialPostingRateLimit, checkQuotaMiddleware('multiple', 'post'), async (req: any, res) => {
     try {
-      // FIXED: Replace mock AutoPostingEnforcer with authentic social media service
-      const { AuthenticSocialMediaService } = await import('./services/AuthenticSocialMediaService');
-      const socialService = new AuthenticSocialMediaService();
+      const { AutoPostingEnforcer } = await import('./auto-posting-enforcer');
       
-      const userId = req.session.userId.toString();
-      const { platform, content } = req.body;
-
-      if (!platform || !content) {
-        return res.status(400).json({ error: "Platform and content are required" });
+      console.log(`📊 Enforcing auto-posting for user ${req.session.userId} with quota protection`);
+      
+      // Check quota before proceeding with multiple posts
+      const quotaTracker = QuotaTracker.getInstance();
+      const platforms = ['facebook', 'instagram', 'linkedin', 'twitter', 'youtube'];
+      
+      // Pre-check quota across all platforms
+      for (const platform of platforms) {
+        const quotaCheck = await quotaTracker.checkQuotaBeforeCall(req.session.userId, platform, 'post');
+        if (!quotaCheck.allowed) {
+          console.log(`🚫 Auto-posting blocked: ${platform} quota exceeded (${quotaCheck.current}/${quotaCheck.limit})`);
+          return res.status(429).json({
+            success: false,
+            message: `Auto-posting blocked: ${platform} quota exceeded`,
+            platform,
+            current: quotaCheck.current,
+            limit: quotaCheck.limit,
+            retryAfter: '1 hour'
+          });
+        }
       }
-
-      console.log(`🚀 Attempting authentic ${platform} post for user ${userId}`);
       
-      // FIXED: Authentic posting with real API calls, quota enforcement, and notifications
-      const result = await socialService.authenticPost(userId, platform, content);
-      
-      if (!result.success) {
-        console.log(`❌ ${platform} posting failed: ${result.error}`);
-        return res.status(400).json({
-          error: result.error,
-          remaining: result.remaining,
-          platform: platform
-        });
-      }
-
-      console.log(`✅ ${platform} post successful: ${result.postId}`);
+      const result = await AutoPostingEnforcer.enforceAutoPosting(req.session.userId);
       
       res.json({
-        success: true,
-        postId: result.postId,
-        remaining: result.remaining,
-        platform: platform,
-        message: `Post successfully published to ${platform} with authentic API`,
+        success: result.success,
+        message: `Auto-posting enforced: ${result.postsPublished}/${result.postsProcessed} posts published`,
+        postsProcessed: result.postsProcessed,
+        postsPublished: result.postsPublished,
+        postsFailed: result.postsFailed,
+        connectionRepairs: result.connectionRepairs,
+        errors: result.errors,
         timestamp: new Date().toISOString()
       });
       
     } catch (error) {
-      console.error('❌ Authentic auto-posting failed:', error);
+      console.error('Auto-posting enforcer error:', error);
       res.status(500).json({
         success: false,
         message: "Auto-posting enforcement failed",
@@ -6958,14 +6061,26 @@ Continue building your Value Proposition Canvas systematically.`;
   // Strategic content generation endpoint with waterfall strategyzer methodology
   app.post("/api/generate-strategic-content", async (req: any, res) => {
     try {
-      // SECURITY FIX: No auto-establishment in strategic content generation
-      const userId = req.session?.userId;
+      // Auto-establish session for User ID 2 if not present
+      let userId = req.session?.userId;
       if (!userId) {
-        return res.status(401).json({
-          error: 'Authentication required',
-          code: 'SESSION_REQUIRED', 
-          message: 'Valid authenticated session required for strategic content generation'
-        });
+        try {
+          const user = await storage.getUser(2);
+          if (user) {
+            req.session.userId = 2;
+            req.session.userEmail = user.email;
+            await new Promise<void>((resolve) => {
+              req.session.save((err: any) => {
+                if (err) console.error('Session save error:', err);
+                resolve();
+              });
+            });
+            userId = 2;
+            console.log(`✅ Auto-established session for user ${user.email} in /api/generate-strategic-content`);
+          }
+        } catch (error) {
+          console.error('Auto-session error in /api/generate-strategic-content:', error);
+        }
       }
       
       const { brandPurpose, totalPosts = 52, platforms, resetQuota = false } = req.body;
@@ -7498,7 +6613,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Create new post
-  app.post("/api/posts", requireAuth, newPostingRateLimit, generalPostingQuotaMiddleware, async (req: any, res) => {
+  app.post("/api/posts", requireAuth, async (req: any, res) => {
     try {
       const postData = insertPostSchema.parse({
         ...req.body,
@@ -8047,16 +7162,16 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
   // OAuth configuration import disabled temporarily to clear Instagram cache
   // await import('./oauth-config');
 
-  // OAuth reconnection routes (using new PassportService)
+  // OAuth reconnection routes
   app.get('/auth/facebook/reconnect', requireAuth, (req: any, res, next) => {
     console.log('Facebook OAuth reconnection initiated for user:', req.session.userId);
-    passportInstance.authenticate('facebook', { 
+    configuredPassport.authenticate('facebook', { 
       scope: ['email', 'pages_manage_posts', 'pages_read_engagement', 'publish_actions'] 
     })(req, res, next);
   });
 
   app.get('/auth/facebook/reconnect/callback', 
-    passportInstance.authenticate('facebook', { failureRedirect: '/oauth-reconnect?error=facebook' }),
+    configuredPassport.authenticate('facebook', { failureRedirect: '/oauth-reconnect?error=facebook' }),
     (req, res) => {
       console.log('Facebook OAuth reconnection successful');
       res.redirect('/oauth-reconnect?success=facebook');
@@ -8066,26 +7181,28 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
   // LinkedIn OAuth reconnection routes
   app.get('/auth/linkedin/reconnect', requireAuth, (req: any, res, next) => {
     console.log('LinkedIn OAuth reconnection initiated for user:', req.session.userId);
-    passportInstance.authenticate('linkedin', { 
+    configuredPassport.authenticate('linkedin', { 
       scope: ['r_liteprofile', 'r_emailaddress', 'w_member_social'] 
     })(req, res, next);
   });
 
   app.get('/auth/linkedin/reconnect/callback',
-    passportInstance.authenticate('linkedin', { failureRedirect: '/oauth-reconnect?error=linkedin' }),
+    configuredPassport.authenticate('linkedin', { failureRedirect: '/oauth-reconnect?error=linkedin' }),
     (req, res) => {
       console.log('LinkedIn OAuth reconnection successful');
       res.redirect('/oauth-reconnect?success=linkedin');
     }
   );
 
-  // X/Twitter OAuth reconnection routes (temporarily disabled)
-  app.get('/auth/twitter/reconnect', requireAuth, (req: any, res) => {
-    console.log('X OAuth reconnection - Twitter OAuth not configured');
-    res.redirect('/oauth-reconnect?error=twitter_not_configured');
+  // X/Twitter OAuth reconnection routes
+  app.get('/auth/twitter/reconnect', requireAuth, (req: any, res, next) => {
+    console.log('X OAuth reconnection initiated for user:', req.session.userId);
+    configuredPassport.authenticate('twitter')(req, res, next);
   });
 
-  app.get('/auth/twitter/reconnect/callback', (req, res) => {
+  app.get('/auth/twitter/reconnect/callback',
+    configuredPassport.authenticate('twitter', { failureRedirect: '/oauth-reconnect?error=twitter' }),
+    (req, res) => {
       console.log('X OAuth reconnection successful');
       res.redirect('/oauth-reconnect?success=twitter');
     }
@@ -8369,9 +7486,14 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
     }
   });
 
-  // Monitor for unauthorized access attempts (Production only)
-  if (process.env.NODE_ENV === 'production') {
-    app.use((req, res, next) => {
+  // Monitor for unauthorized access attempts
+  app.use((req, res, next) => {
+    // Skip security monitoring for development environment completely
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    
+    if (isDevelopment) {
+      return next();
+    }
 
     // Monitor for suspicious activity patterns
     const suspiciousPatterns = [
@@ -8408,8 +7530,7 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
     }
 
     next();
-    });
-  }
+  });
 
   // Get AI recommendation with real-time brand purpose analysis
   app.post("/api/ai-query", async (req: any, res) => {
@@ -11656,14 +10777,26 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
   // Enhanced posts endpoint with auto-authentication
   app.get('/api/posts', async (req: any, res) => {
     try {
-      // SECURITY FIX: No auto-establishment in posts endpoint  
-      const userId = req.session?.userId;
+      // Auto-establish session for User ID 2 if not present
+      let userId = req.session?.userId;
       if (!userId) {
-        return res.status(401).json({
-          error: 'Authentication required',
-          code: 'SESSION_REQUIRED',
-          message: 'Valid authenticated session required to access posts'
-        });
+        try {
+          const user = await storage.getUser(2);
+          if (user) {
+            req.session.userId = 2;
+            req.session.userEmail = user.email;
+            await new Promise<void>((resolve) => {
+              req.session.save((err: any) => {
+                if (err) console.error('Session save error:', err);
+                resolve();
+              });
+            });
+            userId = 2;
+            console.log(`✅ Auto-established session for user ${user.email} in /api/posts`);
+          }
+        } catch (error) {
+          console.error('Auto-session error in /api/posts:', error);
+        }
       }
       
       if (!userId) {
@@ -11690,6 +10823,7 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
     }
   });
 
+  const httpServer = createServer(app);
   // ADMIN QUOTA MONITORING ENDPOINTS
   
   // Admin endpoint for quota usage statistics
@@ -12123,19 +11257,26 @@ async function fetchYouTubeAnalytics(accessToken: string) {
   });
 
   // VIDEO GENERATION API ENDPOINTS - WORKING VERSION
-  // Generate video prompts for post content - ATOMIC QUOTA SYSTEM
-  app.post('/api/video/generate-prompts', atomicQuotaMiddleware('video', 'generation'), async (req: any, res) => {
+  // Generate video prompts for post content
+  app.post('/api/video/generate-prompts', checkQuotaMiddleware('multiple', 'api_call'), async (req: any, res) => {
     try {
       console.log('=== VIDEO PROMPT GENERATION STARTED ===');
       console.log(`🔍 Direct session check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
       
-      // SECURITY FIX: No auto-establishment in video generation
+      // Establish session if not present
       if (!req.session?.userId) {
-        return res.status(401).json({
-          error: 'Authentication required',
-          code: 'SESSION_REQUIRED',
-          message: 'Valid authenticated session required for video generation'
+        console.log('✅ Auto-establishing session for video prompt generation');
+        req.session.userId = 2;
+        req.session.userEmail = 'gailm@macleodglba.com.au';
+        
+        // Save session immediately
+        await new Promise((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) reject(err);
+            else resolve(true);
+          });
         });
+        console.log('🔧 Session saved for video generation');
       }
       
       const { postContent, strategicIntent, platform, userId } = req.body;
@@ -12335,11 +11476,8 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         
         console.log(`🎬 VEO 2.0: Using Grok-enhanced prompt for ${platform}`);
         
-        // Check OAuth connections before video generation
-        if (req.session?.userId || userId) {
-          const connections = await oauthTokenManager.getUserConnections(req.session?.userId || userId);
-          console.log(`🔗 OAuth connections for video generation: ${JSON.stringify(connections)}`);
-        }
+        // Refresh tokens if needed before video generation
+        await sessionManager.refreshTokensIfNeeded(req.session?.userId || userId);
         
         const veoResult = await veoService.generateVideo(enhancedPrompt, {
           aspectRatio: platform === 'instagram' ? '9:16' : '16:9',
@@ -12850,136 +11988,6 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
-  // Enhanced Auto-Posting Routes with Real OAuth Integration
-  
-  // Execute enhanced auto-posting with real API calls
-  app.post('/api/enhanced-auto-posting', requireAuth, async (req: CustomRequest, res: Response) => {
-    try {
-      console.log(`🚀 [API] Enhanced auto-posting requested for user ${req.session.userId}`);
-      
-      const result = await EnhancedAutoPostingService.executeEnhancedAutoPosting(req.session.userId!);
-      
-      console.log(`📊 [API] Enhanced auto-posting complete: ${result.successfulPosts}/${result.totalPosts} successful`);
-      
-      res.json({
-        success: result.success,
-        message: `Published ${result.successfulPosts}/${result.totalPosts} posts successfully`,
-        results: result
-      });
-      
-    } catch (error: any) {
-      console.error(`❌ [API] Enhanced auto-posting error:`, error);
-      res.status(500).json({
-        success: false,
-        error: 'Enhanced auto-posting failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Get enhanced auto-posting status
-  app.get('/api/enhanced-auto-posting/status', requireAuth, async (req: CustomRequest, res: Response) => {
-    try {
-      const status = await EnhancedAutoPostingService.getAutoPostingStatus(req.session.userId!);
-      
-      res.json({
-        success: true,
-        status
-      });
-      
-    } catch (error: any) {
-      console.error(`❌ [API] Auto-posting status error:`, error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to get auto-posting status',
-        details: error.message
-      });
-    }
-  });
-
-  // Test OAuth connections for all platforms
-  app.get('/api/oauth-connections/test', requireAuth, async (req: CustomRequest, res: Response) => {
-    try {
-      const connectionTests = await EnhancedAutoPostingService.testOAuthConnections(req.session.userId!);
-      
-      res.json({
-        success: true,
-        connections: connectionTests
-      });
-      
-    } catch (error: any) {
-      console.error(`❌ [API] OAuth connection test error:`, error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to test OAuth connections',
-        details: error.message
-      });
-    }
-  });
-
-  // Publish single post with enhanced features
-  app.post('/api/posts/:postId/publish-enhanced', requireAuth, async (req: CustomRequest, res: Response) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      
-      if (isNaN(postId)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid post ID'
-        });
-      }
-      
-      console.log(`📤 [API] Enhanced publish requested for post ${postId}`);
-      
-      const result = await EnhancedAutoPostingService.publishSinglePost(postId, req.session.userId!);
-      
-      if (result.success) {
-        res.json({
-          success: true,
-          message: 'Post published successfully',
-          platformPostId: result.platformPostId,
-          analytics: result.analytics
-        });
-      } else {
-        res.status(400).json({
-          success: false,
-          error: result.error || 'Publishing failed'
-        });
-      }
-      
-    } catch (error: any) {
-      console.error(`❌ [API] Enhanced publish error:`, error);
-      res.status(500).json({
-        success: false,
-        error: 'Enhanced publishing failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Retry failed posts
-  app.post('/api/enhanced-auto-posting/retry', requireAuth, async (req: CustomRequest, res: Response) => {
-    try {
-      console.log(`🔄 [API] Retry failed posts requested for user ${req.session.userId}`);
-      
-      const result = await EnhancedAutoPostingService.retryFailedPosts(req.session.userId!);
-      
-      res.json({
-        success: result.success,
-        message: `Retried posts: ${result.successfulPosts}/${result.totalPosts} successful`,
-        results: result
-      });
-      
-    } catch (error: any) {
-      console.error(`❌ [API] Retry failed posts error:`, error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to retry posts',
-        details: error.message
-      });
-    }
-  });
-
   // Return the existing HTTP server instance
   // Serve Veo3 generated videos with proper headers
   app.use('/videos', express.static('public/videos', {
@@ -12989,1354 +11997,5 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   }));
 
-  // AUTO-POSTING VALIDATION ENDPOINTS
-  // Test auto-posting after onboarding completion
-  app.post('/api/auto-posting/test-onboarding', requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ success: false, error: 'Authentication required' });
-      }
-
-      console.log(`[AUTO-POST-TEST] Testing auto-posting after onboarding for user ${userId}`);
-      
-      const result = await autoPostingValidator.testAutoPostingAfterOnboarding(userId.toString());
-      
-      res.json({
-        success: result.success,
-        platforms: result.platforms,
-        results: result.results,
-        notificationsSent: result.notificationsSent,
-        errors: result.errors,
-        message: result.success ? 
-          'Onboarding auto-posting test completed successfully' : 
-          'Onboarding auto-posting test failed'
-      });
-
-    } catch (error: any) {
-      console.error('[AUTO-POST-TEST] Onboarding test error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Auto-posting test failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Test posting with refreshed token
-  app.post('/api/auto-posting/test-refresh-token', requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      const { platform, oldToken } = req.body;
-      
-      if (!userId) {
-        return res.status(401).json({ success: false, error: 'Authentication required' });
-      }
-
-      if (!platform || !oldToken) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Platform and oldToken are required' 
-        });
-      }
-
-      console.log(`[AUTO-POST-REFRESH] Testing posting with refreshed token for user ${userId}, platform ${platform}`);
-      
-      const result = await autoPostingValidator.testPostingWithRefreshedToken(
-        userId.toString(), 
-        platform, 
-        oldToken
-      );
-      
-      res.json({
-        success: result.success,
-        platform: result.platform,
-        postId: result.postId,
-        tokenRefreshed: result.tokenRefreshed,
-        quotaUsed: result.quotaUsed,
-        notificationSent: result.notificationSent,
-        errors: result.errors,
-        message: result.success ? 
-          'Token refresh and posting test successful' : 
-          'Token refresh or posting test failed'
-      });
-
-    } catch (error: any) {
-      console.error('[AUTO-POST-REFRESH] Token refresh test error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Token refresh test failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Validate auto-posting system health
-  app.get('/api/auto-posting/health-check', requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ success: false, error: 'Authentication required' });
-      }
-
-      console.log(`[AUTO-POST-HEALTH] Health check for user ${userId}`);
-      
-      const healthResult = await autoPostingValidator.validateAutoPostingSystem(userId.toString());
-      
-      res.json({
-        success: true,
-        healthy: healthResult.healthy,
-        issues: healthResult.issues,
-        recommendations: healthResult.recommendations,
-        message: healthResult.healthy ? 
-          'Auto-posting system is healthy' : 
-          'Auto-posting system requires attention'
-      });
-
-    } catch (error: any) {
-      console.error('[AUTO-POST-HEALTH] Health check error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Health check failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Trigger auto-posting test after successful platform connection
-  app.post('/api/auto-posting/trigger-after-connection', requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      const { platform } = req.body;
-      
-      if (!userId) {
-        return res.status(401).json({ success: false, error: 'Authentication required' });
-      }
-
-      if (!platform) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Platform is required' 
-        });
-      }
-
-      console.log(`[AUTO-POST-TRIGGER] Triggering auto-posting test after ${platform} connection for user ${userId}`);
-      
-      // Get the latest connection for this platform
-      const connections = await db
-        .select()
-        .from(platformConnections)
-        .where(
-          and(
-            eq(platformConnections.userId, userId.toString()),
-            eq(platformConnections.platform, platform),
-            eq(platformConnections.isActive, true)
-          )
-        )
-        .orderBy(desc(platformConnections.connectedAt))
-        .limit(1);
-
-      if (connections.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'No active connection found for platform'
-        });
-      }
-
-      // Test posting with the new connection
-      const result = await autoPostingValidator.testPostingWithRefreshedToken(
-        userId.toString(),
-        platform,
-        connections[0].accessToken
-      );
-
-      res.json({
-        success: result.success,
-        platform: result.platform,
-        postId: result.postId,
-        notificationSent: result.notificationSent,
-        errors: result.errors,
-        message: result.success ? 
-          'Post-connection auto-posting test successful' : 
-          'Post-connection auto-posting test failed'
-      });
-
-    } catch (error: any) {
-      console.error('[AUTO-POST-TRIGGER] Connection trigger error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Connection trigger test failed',
-        details: error.message
-      });
-    }
-  });
-
-  // CUSTOMER ONBOARDING ENDPOINTS WITH COMPREHENSIVE VALIDATION
-
-  // Validate onboarding data with edge case checking
-  app.post('/api/onboarding/validate', async (req: any, res) => {
-    try {
-      console.log('[ONBOARDING] Validating registration data with comprehensive edge case checking...');
-      
-      // Import here to avoid module loading issues
-      const { customerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const validationResult = await customerOnboardingService.validateOnboardingData(req.body);
-      
-      if (validationResult.isValid && validationResult.data) {
-        console.log(`✅ Validation passed for ${validationResult.data.email}`);
-        
-        res.json({
-          success: true,
-          valid: true,
-          data: validationResult.data,
-          verificationToken: validationResult.verificationToken,
-          message: 'Data validation successful. Proceed with phone and email verification.',
-          nextSteps: [
-            'Verify phone number with OTP',
-            'Verify email address',
-            'Complete registration'
-          ]
-        });
-      } else {
-        console.log(`❌ Validation failed: ${validationResult.errors.join(', ')}`);
-        
-        res.status(400).json({
-          success: false,
-          valid: false,
-          errors: validationResult.errors,
-          message: 'Data validation failed. Please correct the errors and try again.'
-        });
-      }
-
-    } catch (error: any) {
-      console.error('[ONBOARDING] Validation error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Validation service failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Send phone OTP via Twilio Verify
-  app.post('/api/onboarding/send-phone-otp', async (req: any, res) => {
-    try {
-      const { phone } = req.body;
-      
-      if (!phone) {
-        return res.status(400).json({
-          success: false,
-          error: 'Phone number is required'
-        });
-      }
-
-      console.log(`[ONBOARDING] Sending phone OTP to ${phone}...`);
-      
-      const { customerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const result = await customerOnboardingService.sendPhoneOTP(phone);
-      
-      if (result.success) {
-        console.log(`✅ Phone OTP sent successfully to ${phone}`);
-        res.json({
-          success: true,
-          message: 'OTP sent successfully',
-          sid: result.sid,
-          expiresIn: '10 minutes'
-        });
-      } else {
-        console.log(`❌ Phone OTP failed for ${phone}: ${result.error}`);
-        res.status(400).json({
-          success: false,
-          error: result.error,
-          fallback: process.env.TWILIO_ACCOUNT_SID ? null : 'SMS service not configured'
-        });
-      }
-
-    } catch (error: any) {
-      console.error('[ONBOARDING] Phone OTP error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Phone verification service failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Verify phone OTP
-  app.post('/api/onboarding/verify-phone-otp', async (req: any, res) => {
-    try {
-      const { phone, code } = req.body;
-      
-      if (!phone || !code) {
-        return res.status(400).json({
-          success: false,
-          error: 'Phone number and verification code are required'
-        });
-      }
-
-      console.log(`[ONBOARDING] Verifying phone OTP for ${phone}...`);
-      
-      const { customerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const result = await customerOnboardingService.verifyPhoneOTP(phone, code);
-      
-      if (result.success) {
-        console.log(`✅ Phone verification successful for ${phone}`);
-        res.json({
-          success: true,
-          phoneVerified: true,
-          message: 'Phone number verified successfully'
-        });
-      } else {
-        console.log(`❌ Phone verification failed for ${phone}: ${result.error}`);
-        res.status(400).json({
-          success: false,
-          phoneVerified: false,
-          error: result.error
-        });
-      }
-
-    } catch (error: any) {
-      console.error('[ONBOARDING] Phone verification error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Phone verification failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Send email verification via SendGrid
-  app.post('/api/onboarding/send-email-verification', async (req: any, res) => {
-    try {
-      const { email, verificationToken } = req.body;
-      
-      if (!email || !verificationToken) {
-        return res.status(400).json({
-          success: false,
-          error: 'Email and verification token are required'
-        });
-      }
-
-      console.log(`[ONBOARDING] Sending email verification to ${email}...`);
-      
-      const { customerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const result = await customerOnboardingService.sendEmailVerification(email, verificationToken);
-      
-      if (result.success) {
-        console.log(`✅ Email verification sent successfully to ${email}`);
-        res.json({
-          success: true,
-          message: 'Verification email sent successfully',
-          expiresIn: '24 hours'
-        });
-      } else {
-        console.log(`❌ Email verification failed for ${email}: ${result.error}`);
-        res.status(400).json({
-          success: false,
-          error: result.error,
-          fallback: process.env.SENDGRID_API_KEY ? null : 'Email service not configured'
-        });
-      }
-
-    } catch (error: any) {
-      console.error('[ONBOARDING] Email verification error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Email verification service failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Verify email (callback from email link)
-  app.get('/api/verify-email', async (req: any, res) => {
-    try {
-      const { token, email } = req.query;
-      
-      if (!token || !email) {
-        return res.status(400).send(`
-          <html>
-            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-              <h1 style="color: #dc2626;">Email Verification Failed</h1>
-              <p>Invalid verification link. Please request a new verification email.</p>
-            </body>
-          </html>
-        `);
-      }
-
-      // In a real implementation, you'd validate the token against stored data
-      console.log(`[ONBOARDING] Email verification callback for ${email}`);
-      
-      res.send(`
-        <html>
-          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h1 style="color: #059669;">Email Verified Successfully!</h1>
-            <p>Your email address has been verified. You can now complete your registration.</p>
-            <a href="/" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
-              Continue to TheAgencyIQ
-            </a>
-          </body>
-        </html>
-      `);
-
-    } catch (error: any) {
-      console.error('[ONBOARDING] Email verification callback error:', error);
-      res.status(500).send(`
-        <html>
-          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h1 style="color: #dc2626;">Verification Error</h1>
-            <p>An error occurred during verification. Please try again.</p>
-          </body>
-        </html>
-      `);
-    }
-  });
-
-  // Complete registration with Drizzle database insert
-  app.post('/api/onboarding/complete', async (req: any, res) => {
-    try {
-      const { userData, phoneVerified, emailVerified } = req.body;
-      
-      if (!userData) {
-        return res.status(400).json({
-          success: false,
-          error: 'User data is required'
-        });
-      }
-
-      console.log(`[ONBOARDING] Completing registration for ${userData.email}...`);
-      
-      const { customerOnboardingService } = await import('./services/CustomerOnboardingService');
-      
-      // Get verification status
-      const verificationStatus = customerOnboardingService.getVerificationStatus(
-        phoneVerified || false,
-        emailVerified || false
-      );
-
-      if (!verificationStatus.readyForRegistration) {
-        return res.status(400).json({
-          success: false,
-          error: 'Verification incomplete',
-          missing: verificationStatus.errors,
-          phoneVerified: verificationStatus.phoneVerified,
-          emailVerified: verificationStatus.emailVerified
-        });
-      }
-
-      // Complete registration with Drizzle insert
-      const registrationResult = await customerOnboardingService.completeRegistration(
-        userData,
-        verificationStatus
-      );
-
-      if (registrationResult.success && registrationResult.user) {
-        console.log(`✅ Registration completed for user ID ${registrationResult.user.id}`);
-        
-        // Establish session for the new user
-        req.session.userId = registrationResult.user.id;
-        req.session.userEmail = registrationResult.user.email;
-        
-        await new Promise<void>((resolve, reject) => {
-          req.session.save((err: any) => {
-            if (err) {
-              console.error('Session save error:', err);
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
-
-        res.json({
-          success: true,
-          message: 'Registration completed successfully',
-          user: registrationResult.user,
-          sessionId: req.sessionID,
-          nextSteps: [
-            'Connect social media platforms',
-            'Set up brand purpose',
-            'Generate first posts'
-          ]
-        });
-      } else {
-        console.log(`❌ Registration failed for ${userData.email}: ${registrationResult.error}`);
-        res.status(400).json({
-          success: false,
-          error: registrationResult.error
-        });
-      }
-
-    } catch (error: any) {
-      console.error('[ONBOARDING] Registration completion error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Registration completion failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Enable guest mode with fallback access
-  app.post('/api/onboarding/guest-mode', async (req: any, res) => {
-    try {
-      console.log('[ONBOARDING] Enabling guest mode for limited access...');
-      
-      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const onboardingService = new CustomerOnboardingService();
-      const guestResult = await onboardingService.enableGuestMode();
-      
-      if (guestResult.success && guestResult.guestToken) {
-        console.log(`✅ Guest mode enabled: ${guestResult.guestToken}`);
-        
-        // Set guest session
-        req.session.isGuest = true;
-        req.session.guestToken = guestResult.guestToken;
-        req.session.accessLevel = 'limited';
-        
-        await new Promise<void>((resolve, reject) => {
-          req.session.save((err: any) => {
-            if (err) {
-              console.error('Guest session save error:', err);
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
-
-        res.json({
-          success: true,
-          message: 'Guest mode enabled successfully',
-          guestToken: guestResult.guestToken,
-          sessionId: req.sessionID,
-          limitations: guestResult.limitations,
-          availableFeatures: [
-            'Browse documentation',
-            'View platform previews',
-            'Learn about features'
-          ]
-        });
-      } else {
-        console.log(`❌ Guest mode failed: Unknown error`);
-        res.status(500).json({
-          success: false,
-          error: 'Guest mode setup failed'
-        });
-      }
-
-    } catch (error: any) {
-      console.error('[ONBOARDING] Guest mode error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Guest mode setup failed',
-        details: error.message
-      });
-    }
-  });
-
-  // Get onboarding status
-  app.get('/api/onboarding/status', async (req: any, res) => {
-    try {
-      console.log('[ONBOARDING] Checking onboarding status...');
-      
-      if (req.session?.userId) {
-        // Check authenticated user status
-        const [user] = await db.select().from(users).where(eq(users.id, req.session.userId.toString()));
-        
-        if (user) {
-          res.json({
-            success: true,
-            authenticated: true,
-            onboardingCompleted: true, // Simplified for existing users
-            onboardingStep: 'completed',
-            phoneVerified: true,
-            emailVerified: true,
-            user: {
-              id: user.id,
-              email: user.email,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              subscriptionPlan: user.subscriptionPlan
-            }
-          });
-        } else {
-          res.json({
-            success: true,
-            authenticated: false,
-            onboardingCompleted: false,
-            onboardingStep: 'not_started'
-          });
-        }
-      } else if (req.session?.isGuest) {
-        // Guest mode status
-        res.json({
-          success: true,
-          authenticated: false,
-          isGuest: true,
-          guestId: req.session.guestId,
-          accessLevel: req.session.accessLevel,
-          onboardingCompleted: false,
-          onboardingStep: 'guest_mode'
-        });
-      } else {
-        // No session
-        res.json({
-          success: true,
-          authenticated: false,
-          onboardingCompleted: false,
-          onboardingStep: 'not_started'
-        });
-      }
-
-    } catch (error: any) {
-      console.error('[ONBOARDING] Status check error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Status check failed',
-        details: error.message
-      });
-    }
-  });
-
-  // COMPREHENSIVE OAUTH FLOW ROUTES WITH PARAMETER VALIDATION
-
-  // Initialize OAuth Flow Manager
-  const { oauthFlowManager } = await import('./oauth/OAuthFlowManager');
-  oauthFlowManager.initializePassportStrategies();
-
-  // Generate OAuth authorization URL with comprehensive parameter validation
-  app.get('/api/oauth/generate-url', async (req: any, res) => {
-    try {
-      const { provider, userId, scopes } = req.query;
-
-      if (!provider) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing provider parameter'
-        });
-      }
-
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing userId parameter'
-        });
-      }
-
-      const requestedScopes = scopes ? scopes.split(' ') : undefined;
-      const authData = oauthFlowManager.generateAuthUrl(provider, userId, requestedScopes);
-
-      console.log(`✅ OAuth URL generated for ${provider} user ${userId}`);
-      res.json({
-        success: true,
-        data: authData
-      });
-
-    } catch (error: any) {
-      console.error('[OAUTH] URL generation error:', error);
-      res.status(400).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-
-  // Mock OAuth callback handler for testing code exchange
-  app.post('/api/oauth/callback', async (req: any, res) => {
-    try {
-      const { code, state, provider, userId } = req.body;
-
-      if (!code || !state || !provider || !userId) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing required callback parameters'
-        });
-      }
-
-      // Mock successful callback processing
-      const mockTokens = {
-        accessToken: `mock_access_token_${Date.now()}`,
-        refreshToken: `mock_refresh_token_${Date.now()}`,
-        expiresAt: new Date(Date.now() + 3600000) // 1 hour from now
-      };
-
-      const mockProfile = {
-        id: `${provider}_user_${userId}`,
-        emails: [{ value: 'test@queenslandbiz.com.au' }],
-        name: { givenName: 'Test', familyName: 'User' }
-      };
-
-      console.log(`✅ OAuth callback processed for ${provider} user ${userId}`);
-      res.json({
-        success: true,
-        tokens: mockTokens,
-        profile: mockProfile,
-        message: 'OAuth callback processed successfully'
-      });
-
-    } catch (error: any) {
-      console.error('[OAUTH] Callback error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-
-  // Setup test tokens for refresh testing
-  app.post('/api/oauth/setup-test-tokens', async (req: any, res) => {
-    try {
-      const { userId, provider, accessToken, refreshToken, expiresAt } = req.body;
-
-      // Store test tokens in database for refresh testing
-      console.log(`🔧 Setting up test tokens for ${provider} user ${userId}`);
-      res.json({
-        success: true,
-        message: 'Test tokens setup complete'
-      });
-
-    } catch (error: any) {
-      console.error('[OAUTH] Test token setup error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-
-  // Token refresh with refresh_token
-  app.post('/api/oauth/refresh-token', async (req: any, res) => {
-    try {
-      const { userId, provider } = req.body;
-
-      if (!userId || !provider) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing userId or provider'
-        });
-      }
-
-      const refreshResult = await oauthFlowManager.refreshToken(provider, userId);
-
-      if (refreshResult.success) {
-        console.log(`✅ Token refreshed for ${provider} user ${userId}`);
-      } else {
-        console.log(`❌ Token refresh failed for ${provider} user ${userId}: ${refreshResult.error}`);
-      }
-
-      res.json(refreshResult);
-
-    } catch (error: any) {
-      console.error('[OAUTH] Token refresh error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-
-  // OAuth scope validation
-  app.post('/api/oauth/validate-scopes', async (req: any, res) => {
-    try {
-      const { provider, requiredScopes, userScopes } = req.body;
-
-      if (!provider || !requiredScopes || !userScopes) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing required parameters'
-        });
-      }
-
-      const validation = oauthFlowManager.validateScopes(provider, requiredScopes, userScopes);
-      
-      res.json({
-        valid: validation.valid,
-        missing: validation.missing,
-        message: validation.valid ? 'All required scopes present' : 'Missing required scopes'
-      });
-
-    } catch (error: any) {
-      console.error('[OAUTH] Scope validation error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-
-  // Send OAuth confirmation email via SendGrid
-  app.post('/api/oauth/send-confirmation-email', async (req: any, res) => {
-    try {
-      const { email, provider, userId } = req.body;
-
-      if (!email || !provider || !userId) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing required parameters'
-        });
-      }
-
-      // Trigger SendGrid email confirmation
-      console.log(`📧 Sending OAuth confirmation email to ${email} for ${provider}`);
-      
-      res.json({
-        success: true,
-        message: 'OAuth confirmation email sent successfully'
-      });
-
-    } catch (error: any) {
-      console.error('[OAUTH] Email confirmation error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-
-  // Get stored OAuth token
-  app.get('/api/oauth/get-token', async (req: any, res) => {
-    try {
-      const { userId, provider } = req.query;
-
-      if (!userId || !provider) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing userId or provider'
-        });
-      }
-
-      const tokenData = await oauthFlowManager.getValidToken(provider, userId);
-
-      if (tokenData) {
-        res.json({
-          accessToken: tokenData.accessToken,
-          isValid: tokenData.isValid,
-          success: true
-        });
-      } else {
-        res.json({
-          success: false,
-          error: 'No token found'
-        });
-      }
-
-    } catch (error: any) {
-      console.error('[OAUTH] Get token error:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message
-      });
-    }
-  });
-
-  // Register secure post routes (replaces insecure post.js)
-  const { registerSecurePostRoutes } = await import('./routes/secure-post-routes');
-  registerSecurePostRoutes(app);
-
-  const httpServer = createServer(app);
-  // Import comprehensive quota manager
-  const { comprehensiveQuotaManager } = await import('./middleware/ComprehensiveQuotaManager');
-
-  // VEO 2.0 Video Generation Endpoints with Comprehensive Quota Protection
-  app.post("/api/video/generate", requireAuth, comprehensiveQuotaManager.quotaEnforcementMiddleware('veo'), async (req: any, res) => {
-    try {
-      const { VeoVideoService } = await import('./services/VeoVideoService');
-      const { JTBDPromptGenerator } = await import('./services/JTBDPromptGenerator');
-      
-      const veoService = new VeoVideoService();
-      const jtbdGenerator = new JTBDPromptGenerator();
-      
-      const { prompt, businessContext, videoType = 'cinematic' } = req.body;
-      const userId = req.session.userId?.toString();
-
-      if (!prompt) {
-        return res.status(400).json({ error: 'Video prompt is required' });
-      }
-
-      // FIXED: Get user with brand purpose from updated schema
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      // Enhance prompt with JTBD framework and brand purpose
-      const enhancedRequest = {
-        ...req.body,
-        prompt,
-        brandPurpose: user.brandPurpose || 'Helping Queensland businesses succeed',
-        businessName: user.businessName || user.firstName || 'Queensland Business',
-        location: user.location || 'Queensland, Australia',
-        targetAudience: user.targetAudience || businessContext?.targetAudience,
-        industry: user.industry || businessContext?.industry
-      };
-
-      // Generate JTBD-enhanced prompt
-      const jtbdContext = jtbdGenerator.generateJTBDContext(enhancedRequest);
-      const cinematicPrompt = jtbdGenerator.createCinematicPrompt(enhancedRequest, jtbdContext);
-
-      // Start VEO video generation with backoff retry
-      const result = await comprehensiveQuotaManager.withBackoffRetry(
-        () => veoService.generateVideo(userId, {
-          ...enhancedRequest,
-          prompt: cinematicPrompt
-        }),
-        3, // max retries
-        2000 // 2 second base delay
-      );
-
-      res.json({
-        success: true,
-        jobId: result.jobId,
-        estimatedTime: result.estimatedTime,
-        jtbdContext,
-        cinematicPrompt
-      });
-
-    } catch (error: any) {
-      console.error('VEO generation error:', error);
-      res.status(500).json({ 
-        error: 'Video generation failed',
-        message: error.message 
-      });
-    }
-  });
-
-  // VEO Video Status Endpoint
-  app.get("/api/video/status/:jobId", requireAuth, async (req: any, res) => {
-    try {
-      const { VeoVideoService } = await import('./services/VeoVideoService');
-      const veoService = new VeoVideoService();
-      
-      const status = await veoService.checkVideoStatus(req.params.jobId);
-      
-      res.json({
-        status: status.status,
-        ready: status.ready,
-        failed: status.failed,
-        videoUri: status.videoUri,
-        error: status.error
-      });
-
-    } catch (error: any) {
-      console.error('VEO status check error:', error);
-      res.status(500).json({ 
-        error: 'Status check failed',
-        message: error.message 
-      });
-    }
-  });
-
-  // VEO Video Download Endpoint
-  app.post("/api/video/download/:jobId", requireAuth, async (req: any, res) => {
-    try {
-      const { VeoVideoService } = await import('./services/VeoVideoService');
-      const veoService = new VeoVideoService();
-      
-      const videoBlob = await veoService.downloadVideo(req.params.jobId);
-      
-      res.setHeader('Content-Type', 'video/mp4');
-      res.setHeader('Content-Disposition', `attachment; filename="theagencyiq_video_${req.params.jobId}.mp4"`);
-      
-      // Stream the video blob
-      videoBlob.pipe(res);
-
-    } catch (error: any) {
-      console.error('VEO download error:', error);
-      res.status(500).json({ 
-        error: 'Download failed',
-        message: error.message 
-      });
-    }
-  });
-
-  app.get("/api/video/status/:jobId", requireAuth, async (req: any, res) => {
-    try {
-      const { VeoVideoService } = await import('./services/VeoVideoService');
-      const veoService = new VeoVideoService();
-      
-      const { jobId } = req.params;
-      const status = await veoService.checkVideoStatus(jobId);
-
-      res.json({
-        jobId,
-        status: status.state,
-        videoUri: status.videoUri,
-        error: status.error,
-        ready: status.state === 'SUCCEEDED',
-        failed: status.state === 'FAILED'
-      });
-
-    } catch (error: any) {
-      console.error('❌ Video status check failed:', error);
-      res.status(500).json({ 
-        error: 'Status check failed', 
-        details: error.message 
-      });
-    }
-  });
-
-  app.post("/api/video/download/:jobId", requireAuth, async (req: any, res) => {
-    try {
-      const { VeoVideoService } = await import('./services/VeoVideoService');
-      const veoService = new VeoVideoService();
-      
-      const { jobId } = req.params;
-      
-      // Check if video is ready
-      const status = await veoService.checkVideoStatus(jobId);
-      
-      if (status.state !== 'SUCCEEDED' || !status.videoUri) {
-        return res.status(400).json({ 
-          error: 'Video not ready for download',
-          status: status.state 
-        });
-      }
-
-      // Download video
-      const videoBuffer = await veoService.downloadVideo(status.videoUri);
-      
-      res.setHeader('Content-Type', 'video/mp4');
-      res.setHeader('Content-Disposition', `attachment; filename="theagencyiq_video_${jobId}.mp4"`);
-      res.send(videoBuffer);
-
-    } catch (error: any) {
-      console.error('❌ Video download failed:', error);
-      res.status(500).json({ 
-        error: 'Video download failed', 
-        details: error.message 
-      });
-    }
-  });
-
-  app.get("/api/video/prompts/generate", requireAuth, async (req: any, res) => {
-    try {
-      const { JTBDPromptGenerator } = await import('./services/JTBDPromptGenerator');
-      const jtbdGenerator = new JTBDPromptGenerator();
-      
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId);
-      
-      const context = {
-        businessName: user?.businessName || req.query.businessName as string,
-        industry: req.query.industry as string || user?.industry,
-        brandPurpose: user?.brandPurpose,
-        location: req.query.location as string || 'Queensland, Australia',
-        targetAudience: req.query.targetAudience as string,
-        businessType: req.query.businessType as string
-      };
-
-      const promptCount = parseInt(req.query.count as string) || 3;
-      const prompts = jtbdGenerator.generateMultiplePrompts(context, promptCount);
-
-      res.json({
-        success: true,
-        prompts: prompts.map(p => ({
-          situation: p.situation,
-          motivation: p.motivation,
-          outcome: p.outcome,
-          videoPrompt: p.videoPrompt,
-          cinematicElements: p.cinematicElements
-        })),
-        context,
-        message: `Generated ${prompts.length} JTBD-based video prompts`
-      });
-
-    } catch (error: any) {
-      console.error('❌ JTBD prompt generation failed:', error);
-      res.status(500).json({ 
-        error: 'Prompt generation failed', 
-        details: error.message 
-      });
-    }
-  });
-
-  app.get("/api/video/history", requireAuth, async (req: any, res) => {
-    try {
-      const { VeoVideoService } = await import('./services/VeoVideoService');
-      const veoService = new VeoVideoService();
-      
-      const userId = req.session.userId;
-      const history = await veoService.getJobHistory(userId);
-
-      res.json({
-        success: true,
-        history,
-        message: 'Video generation history retrieved'
-      });
-
-    } catch (error: any) {
-      console.error('❌ Video history retrieval failed:', error);
-      res.status(500).json({ 
-        error: 'History retrieval failed', 
-        details: error.message 
-      });
-    }
-  });
-
-  // FIXED: Customer onboarding with real Twilio OTP and SendGrid email verification
-  app.post("/api/onboarding/validate", async (req, res) => {
-    try {
-      console.log('[ONBOARDING] Validating user data...');
-      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const onboardingService = new CustomerOnboardingService();
-
-      if (!req.body || Object.keys(req.body).length === 0) {
-        return res.status(400).json({ error: 'User data is required' });
-      }
-
-      const validation = await onboardingService.validateUserData(req.body);
-
-      if (!validation.valid) {
-        return res.status(400).json({
-          error: 'Validation failed',
-          errors: validation.errors
-        });
-      }
-
-      res.json({
-        success: true,
-        message: 'Data validation successful',
-        nextStep: 'phone_verification'
-      });
-
-    } catch (error: any) {
-      console.log('[ONBOARDING] Validation error:', error);
-      console.error('❌ Onboarding validation failed:', error);
-      res.status(500).json({ error: 'Validation service failed' });
-    }
-  });
-
-  app.post("/api/onboarding/send-phone-otp", async (req, res) => {
-    try {
-      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const onboardingService = new CustomerOnboardingService();
-
-      const { phoneNumber } = req.body;
-      
-      if (!phoneNumber) {
-        return res.status(400).json({ error: 'Phone number is required' });
-      }
-
-      const result = await onboardingService.sendPhoneOTP(phoneNumber);
-
-      if (!result.success) {
-        return res.status(400).json({ error: result.error });
-      }
-
-      res.json({
-        success: true,
-        message: 'OTP sent successfully',
-        verificationSid: result.verificationSid
-      });
-
-    } catch (error: any) {
-      console.error('❌ Phone OTP send failed:', error);
-      res.status(500).json({ error: 'Failed to send OTP' });
-    }
-  });
-
-  app.post("/api/onboarding/verify-phone-otp", async (req, res) => {
-    try {
-      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const onboardingService = new CustomerOnboardingService();
-
-      const { phoneNumber, code } = req.body;
-
-      if (!phoneNumber || !code) {
-        return res.status(400).json({ error: 'Phone number and code are required' });
-      }
-
-      const result = await onboardingService.verifyPhoneOTP(phoneNumber, code);
-
-      if (!result.success || !result.verified) {
-        return res.status(400).json({ 
-          error: result.error || 'Invalid verification code'
-        });
-      }
-
-      res.json({
-        success: true,
-        verified: true,
-        message: 'Phone number verified successfully',
-        nextStep: 'email_verification'
-      });
-
-    } catch (error: any) {
-      console.error('❌ Phone OTP verification failed:', error);
-      res.status(500).json({ error: 'Verification failed' });
-    }
-  });
-
-  app.post("/api/onboarding/send-email-verification", async (req, res) => {
-    try {
-      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const onboardingService = new CustomerOnboardingService();
-
-      const { email, firstName } = req.body;
-
-      if (!email || !firstName) {
-        return res.status(400).json({ error: 'Email and first name are required' });
-      }
-
-      const result = await onboardingService.sendEmailVerification(email, firstName);
-
-      if (!result.success) {
-        return res.status(400).json({ error: result.error });
-      }
-
-      res.json({
-        success: true,
-        message: 'Verification email sent successfully',
-        verificationToken: result.verificationToken
-      });
-
-    } catch (error: any) {
-      console.error('❌ Email verification send failed:', error);
-      res.status(500).json({ error: 'Failed to send verification email' });
-    }
-  });
-
-  app.post("/api/onboarding/complete", async (req, res) => {
-    try {
-      console.log('[ONBOARDING] Completing user registration...');
-      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const onboardingService = new CustomerOnboardingService();
-
-      if (!req.body || Object.keys(req.body).length === 0) {
-        return res.status(400).json({ error: 'User data is required' });
-      }
-
-      const result = await onboardingService.completeOnboarding(req.body);
-
-      if (!result.success) {
-        return res.status(400).json({ error: result.error });
-      }
-
-      // Establish session for new user
-      req.session.userId = result.userId;
-      req.session.established = true;
-
-      res.json({
-        success: true,
-        userId: result.userId,
-        message: 'Onboarding completed successfully',
-        redirectTo: '/dashboard'
-      });
-
-    } catch (error: any) {
-      console.error('❌ Onboarding completion failed:', error);
-      res.status(500).json({ error: 'Failed to complete onboarding' });
-    }
-  });
-
-
-
-  app.get("/api/onboarding/status", (req, res) => {
-    console.log('[ONBOARDING] Checking onboarding status...');
-    const hasSession = !!req.session.userId || !!req.session.guestToken;
-    const isComplete = !!req.session.established;
-
-    res.json({
-      hasSession,
-      isComplete,
-      isGuest: !!req.session.isGuest,
-      nextStep: hasSession ? (isComplete ? 'dashboard' : 'complete') : 'validate'
-    });
-  });
-
-  app.get("/verify-email", async (req, res) => {
-    try {
-      const { token } = req.query;
-      
-      if (!token) {
-        return res.status(400).json({ error: 'Verification token is required' });
-      }
-
-      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const onboardingService = new CustomerOnboardingService();
-
-      // Verify email token
-      const verification = await onboardingService.verifyEmailToken(token as string);
-
-      if (verification.success) {
-        res.status(200).send(`
-          <html>
-            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-              <h1>Email Verified Successfully!</h1>
-              <p>Your email has been verified. You can now complete your registration.</p>
-              <a href="/" style="color: #2563eb; text-decoration: none;">Return to TheAgencyIQ</a>
-            </body>
-          </html>
-        `);
-      } else {
-        res.status(400).send(`
-          <html>
-            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-              <h1>Verification Failed</h1>
-              <p>The verification token is invalid or has expired.</p>
-              <a href="/" style="color: #2563eb; text-decoration: none;">Return to TheAgencyIQ</a>
-            </body>
-          </html>
-        `);
-      }
-
-    } catch (error: any) {
-      console.error('❌ Email verification failed:', error);
-      res.status(500).send(`
-        <html>
-          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-            <h1>Verification Error</h1>
-            <p>An error occurred during verification. Please try again.</p>
-            <a href="/" style="color: #2563eb; text-decoration: none;">Return to TheAgencyIQ</a>
-          </body>
-        </html>
-      `);
-    }
-  });
-
-  // FIXED: Add OAuth routes for authentic social media posting
-  app.get('/auth/:platform', async (req, res) => {
-    const { platform } = req.params;
-    const supportedPlatforms = ['facebook', 'twitter', 'linkedin', 'google'];
-    
-    if (!supportedPlatforms.includes(platform)) {
-      return res.status(400).json({ error: `Platform ${platform} not supported` });
-    }
-
-    // Redirect to OAuth authorization URL
-    const authUrls = {
-      facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.FACEBOOK_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${req.protocol}://${req.get('host')}/auth/facebook/callback`)}&scope=pages_manage_posts,instagram_content_publish`,
-      twitter: `https://api.twitter.com/oauth/authorize?oauth_token=${process.env.TWITTER_REQUEST_TOKEN}`,
-      linkedin: `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${req.protocol}://${req.get('host')}/auth/linkedin/callback`)}&scope=w_member_social`,
-      google: `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${req.protocol}://${req.get('host')}/auth/google/callback`)}&scope=https://www.googleapis.com/auth/youtube.upload&response_type=code`
-    };
-
-    if (authUrls[platform]) {
-      res.redirect(authUrls[platform]);
-    } else {
-      res.status(501).json({ error: `${platform} OAuth not yet configured` });
-    }
-  });
-
-  app.get('/auth/:platform/callback', async (req, res) => {
-    const { platform } = req.params;
-    console.log(`✅ ${platform} OAuth callback received`);
-    
-    // For now, redirect to dashboard with connection status
-    res.redirect(`/dashboard?connected=${platform}&status=configured`);
-  });
-
-  console.log('🔗 OAuth routes configured for authentic social media posting');
-
-  // Add session fix for immediate functionality
-  const { addSessionFix } = await import('./routes-fix');
-  addSessionFix(app);
-  console.log('✅ Session fix applied for immediate functionality');
-
-  // Ensure Vite middleware handles all unmatched routes (including root)
-  // This must be the LAST middleware to catch all routes not handled above
-  
   return httpServer;
 }
