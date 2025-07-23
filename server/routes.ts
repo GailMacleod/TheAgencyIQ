@@ -13023,5 +13023,201 @@ async function fetchYouTubeAnalytics(accessToken: string) {
   registerSecurePostRoutes(app);
 
   const httpServer = createServer(app);
+  // VEO 2.0 Video Generation Endpoints
+  app.post("/api/video/generate", requireAuth, async (req: any, res) => {
+    try {
+      const { VeoVideoService } = await import('./services/VeoVideoService');
+      const { JTBDPromptGenerator } = await import('./services/JTBDPromptGenerator');
+      
+      const veoService = new VeoVideoService();
+      const jtbdGenerator = new JTBDPromptGenerator();
+      
+      const { prompt, businessContext, videoType = 'cinematic' } = req.body;
+      const userId = req.session.userId;
+
+      if (!prompt) {
+        return res.status(400).json({ error: 'Video prompt is required' });
+      }
+
+      // Get user's brand purpose and business info
+      const user = await storage.getUser(userId);
+      
+      const context = {
+        businessName: user?.businessName || businessContext?.businessName,
+        industry: businessContext?.industry || user?.industry,
+        brandPurpose: user?.brandPurpose || businessContext?.brandPurpose,
+        location: businessContext?.location || 'Queensland, Australia',
+        targetAudience: businessContext?.targetAudience
+      };
+
+      // Generate JTBD-enhanced prompt if requested
+      let enhancedPrompt = prompt;
+      if (req.body.useJTBD) {
+        const jtbdPrompt = jtbdGenerator.generateJTBDPrompt(context, videoType);
+        enhancedPrompt = jtbdPrompt.videoPrompt;
+        
+        // Store JTBD context for user reference
+        res.locals.jtbdContext = {
+          situation: jtbdPrompt.situation,
+          motivation: jtbdPrompt.motivation,
+          outcome: jtbdPrompt.outcome,
+          cinematicElements: jtbdPrompt.cinematicElements
+        };
+      }
+
+      // Generate video with VEO 2.0
+      const result = await veoService.generateVideo(userId, {
+        prompt: enhancedPrompt,
+        brandPurpose: context.brandPurpose,
+        businessName: context.businessName,
+        location: context.location,
+        aspectRatio: req.body.aspectRatio || '16:9',
+        duration: req.body.duration || 30,
+        style: videoType
+      });
+
+      console.log(`🎬 VEO video generation started for ${user?.email || userId}`);
+
+      res.json({
+        success: true,
+        jobId: result.jobId,
+        estimatedTime: result.estimatedTime,
+        jtbdContext: res.locals.jtbdContext,
+        message: 'Cinematic video generation started with VEO 2.0'
+      });
+
+    } catch (error: any) {
+      console.error('❌ Video generation failed:', error);
+      res.status(500).json({ 
+        error: 'Video generation failed', 
+        details: error.message 
+      });
+    }
+  });
+
+  app.get("/api/video/status/:jobId", requireAuth, async (req: any, res) => {
+    try {
+      const { VeoVideoService } = await import('./services/VeoVideoService');
+      const veoService = new VeoVideoService();
+      
+      const { jobId } = req.params;
+      const status = await veoService.checkVideoStatus(jobId);
+
+      res.json({
+        jobId,
+        status: status.state,
+        videoUri: status.videoUri,
+        error: status.error,
+        ready: status.state === 'SUCCEEDED',
+        failed: status.state === 'FAILED'
+      });
+
+    } catch (error: any) {
+      console.error('❌ Video status check failed:', error);
+      res.status(500).json({ 
+        error: 'Status check failed', 
+        details: error.message 
+      });
+    }
+  });
+
+  app.post("/api/video/download/:jobId", requireAuth, async (req: any, res) => {
+    try {
+      const { VeoVideoService } = await import('./services/VeoVideoService');
+      const veoService = new VeoVideoService();
+      
+      const { jobId } = req.params;
+      
+      // Check if video is ready
+      const status = await veoService.checkVideoStatus(jobId);
+      
+      if (status.state !== 'SUCCEEDED' || !status.videoUri) {
+        return res.status(400).json({ 
+          error: 'Video not ready for download',
+          status: status.state 
+        });
+      }
+
+      // Download video
+      const videoBuffer = await veoService.downloadVideo(status.videoUri);
+      
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Content-Disposition', `attachment; filename="theagencyiq_video_${jobId}.mp4"`);
+      res.send(videoBuffer);
+
+    } catch (error: any) {
+      console.error('❌ Video download failed:', error);
+      res.status(500).json({ 
+        error: 'Video download failed', 
+        details: error.message 
+      });
+    }
+  });
+
+  app.get("/api/video/prompts/generate", requireAuth, async (req: any, res) => {
+    try {
+      const { JTBDPromptGenerator } = await import('./services/JTBDPromptGenerator');
+      const jtbdGenerator = new JTBDPromptGenerator();
+      
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      const context = {
+        businessName: user?.businessName || req.query.businessName as string,
+        industry: req.query.industry as string || user?.industry,
+        brandPurpose: user?.brandPurpose,
+        location: req.query.location as string || 'Queensland, Australia',
+        targetAudience: req.query.targetAudience as string,
+        businessType: req.query.businessType as string
+      };
+
+      const promptCount = parseInt(req.query.count as string) || 3;
+      const prompts = jtbdGenerator.generateMultiplePrompts(context, promptCount);
+
+      res.json({
+        success: true,
+        prompts: prompts.map(p => ({
+          situation: p.situation,
+          motivation: p.motivation,
+          outcome: p.outcome,
+          videoPrompt: p.videoPrompt,
+          cinematicElements: p.cinematicElements
+        })),
+        context,
+        message: `Generated ${prompts.length} JTBD-based video prompts`
+      });
+
+    } catch (error: any) {
+      console.error('❌ JTBD prompt generation failed:', error);
+      res.status(500).json({ 
+        error: 'Prompt generation failed', 
+        details: error.message 
+      });
+    }
+  });
+
+  app.get("/api/video/history", requireAuth, async (req: any, res) => {
+    try {
+      const { VeoVideoService } = await import('./services/VeoVideoService');
+      const veoService = new VeoVideoService();
+      
+      const userId = req.session.userId;
+      const history = await veoService.getJobHistory(userId);
+
+      res.json({
+        success: true,
+        history,
+        message: 'Video generation history retrieved'
+      });
+
+    } catch (error: any) {
+      console.error('❌ Video history retrieval failed:', error);
+      res.status(500).json({ 
+        error: 'History retrieval failed', 
+        details: error.message 
+      });
+    }
+  });
+
   return httpServer;
 }

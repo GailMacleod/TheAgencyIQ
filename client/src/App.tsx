@@ -49,6 +49,7 @@ import DataDeletionStatus from "@/pages/data-deletion-status";
 import MetaPixelTest from "@/pages/meta-pixel-test";
 import BulletproofDashboard from "@/pages/bulletproof-dashboard";
 import VideoGen from "@/pages/video-gen";
+import VideoGeneration from "@/pages/VideoGeneration";
 
 function Router() {
   // Track page views when routes change
@@ -122,6 +123,9 @@ function Router() {
       <Route path="/instagram-fix" component={InstagramFix} />
       <Route path="/data-deletion-status" component={DataDeletionStatus} />
       <Route path="/meta-pixel-test" component={MetaPixelTest} />
+      <Route path="/bulletproof-dashboard" component={BulletproofDashboard} />
+      <Route path="/video-generation" component={VideoGeneration} />
+      <Route path="/veo" component={VideoGeneration} />
       <Route component={NotFound} />
     </Switch>
   );
