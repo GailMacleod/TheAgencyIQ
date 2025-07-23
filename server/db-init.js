@@ -84,6 +84,13 @@ class DatabaseManager {
     return this.db;
   }
 
+  getPool() {
+    if (!this.isConnected || !this.pool) {
+      throw new Error('Database pool not initialized. Call initialize() first.');
+    }
+    return this.pool;
+  }
+
   async closeConnection() {
     if (this.pool) {
       try {

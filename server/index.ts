@@ -218,79 +218,144 @@ async function startServer() {
   await db.execute(createQuotaTable);
   console.log('✅ Quota tracking table ready');
 
-  // PostgreSQL session store setup
-  const PgSession = connectPg(session);
+  // Import PostgreSQL session manager
+  const { PostgreSQLSessionManager, createSessionConfig } = await import('./middleware/SessionManager.js');
   
-  let sessionStore: any;
+  // Initialize PostgreSQL session store with the database pool
+  const sessionStore = new (connectPg(session))({
+    pool: dbManager.getPool(),
+    createTableIfMissing: true,
+    ttl: 3 * 24 * 60 * 60, // 3 days in seconds for PWA support
+    tableName: "sessions",
+    touchInterval: 60000, // Touch sessions every minute
+    disableTouch: false, // Enable touch for active sessions
+    pruneSessionInterval: 60 * 60 * 1000, // Prune expired sessions every hour
+    errorLog: (error: any) => {
+      console.error('PostgreSQL session store error:', error.message);
+    }
+  });
   
+  // Test session store connection
   try {
-    // Try Redis first for persistent sessions (production-ready)
-    console.log('🔧 Attempting Redis connection for persistent sessions...');
-    
-    const redisClient = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
-      socket: {
-        connectTimeout: 5000
-      },
-      retryDelayOnFailover: 100,
-      maxRetriesPerRequest: 3
+    await new Promise((resolve, reject) => {
+      sessionStore.get('test-connection', (err: any, session: any) => {
+        if (err) {
+          console.error('❌ Session store connection test failed:', err.message);
+          reject(err);
+        } else {
+          console.log('✅ PostgreSQL session store with pool connection successful');
+          console.log('🔒 Session persistence: ENHANCED (survives restarts with touch support)');
+          resolve(true);
+        }
+      });
     });
-    
-    const RedisStore = connectRedis.default(session);
-    
-    // Test Redis connection
-    await redisClient.connect();
-    await redisClient.ping();
-    
-    sessionStore = new RedisStore({
-      client: redisClient,
-      ttl: sessionTtl,
-      prefix: 'theagencyiq:sess:',
-      disableTTL: false,
-      disableTouch: false
-    });
-    
-    console.log('✅ Redis session store connected successfully');
-    console.log('🔒 Session persistence: BULLETPROOF (survives restarts/deployments)');
-    
-  } catch (redisError) {
-    console.log('⚠️  Redis unavailable, falling back to PostgreSQL sessions');
-    console.log('🔧 Configuring PostgreSQL session store...');
-    
-    // Enhanced PostgreSQL session store with proper configuration
-    const pgStore = connectPg(session);
-    sessionStore = new pgStore({
-      conString: process.env.DATABASE_URL,
-      createTableIfMissing: true,
-      ttl: sessionTtl, // Use seconds for PostgreSQL TTL
-      tableName: "sessions",
-      touchInterval: 60000, // Touch sessions every minute to prevent premature expiry
-      disableTouch: false, // Enable touch for active sessions
-      pruneSessionInterval: 60 * 60 * 1000, // Prune expired sessions every hour
-      errorLog: (error) => {
-        console.error('Session store error:', error);
-      }
-    });
-    
-    // Test PostgreSQL session store connection
-    sessionStore.get('test-connection', (err: any, session: any) => {
-      if (err) {
-        console.error('❌ Session store connection failed:', err);
-      } else {
-        console.log('✅ PostgreSQL session store connection successful');
-        console.log('🔒 Session persistence: ENHANCED (survives restarts with touch support)');
-      }
-    });
+  } catch (error) {
+    console.error('❌ Session store initialization failed:', error);
   }
+
+  // Create session manager instance for future use
+  const sessionManager = new PostgreSQLSessionManager(dbManager.getPool());
+  
+  // Session establishment endpoint with security
+  app.post('/api/establish-session', async (req, res) => {
+    try {
+      const { userId, userEmail, deviceInfo } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'User ID required for session establishment' 
+        });
+      }
+
+      // Initialize session if it doesn't exist
+      if (!req.session) {
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Session initialization failed' 
+        });
+      }
+
+      // Set session data directly without regeneration for now (regeneration will be added later)
+      req.session.userId = userId;
+      req.session.userEmail = userEmail;
+      req.session.deviceInfo = deviceInfo;
+      req.session.establishedAt = new Date().toISOString();
+      req.session.lastActivity = Date.now();
+      req.session.sessionId = req.sessionID;
+
+      // Save session to PostgreSQL
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('Session establishment failed:', saveErr);
+          return res.status(500).json({ 
+            success: false, 
+            error: 'Failed to establish session' 
+          });
+        }
+        
+        console.log(`📋 Session established for user ${userId} with sessionId: ${req.sessionID}`);
+        res.json({
+          success: true,
+          sessionId: req.sessionID,
+          userId: userId,
+          message: 'Session established successfully'
+        });
+      });
+    } catch (error) {
+      console.error('Session establishment error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Session establishment failed' 
+      });
+    }
+  });
+
+  // PWA session sync endpoint for offline support
+  app.post('/api/sync-session', async (req, res) => {
+    try {
+      const { sessionId, deviceInfo } = req.body;
+      
+      if (!req.session) {
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Session not available' 
+        });
+      }
+
+      // Update session with device info for PWA
+      if (deviceInfo) {
+        req.session.deviceInfo = deviceInfo;
+        req.session.lastSync = Date.now();
+      }
+
+      // Touch session to extend TTL
+      req.session.touch();
+
+      res.json({
+        success: true,
+        sessionId: req.sessionID,
+        message: 'Session synced successfully',
+        deviceInfo: req.session.deviceInfo,
+        lastSync: req.session.lastSync
+      });
+    } catch (error) {
+      console.error('Session sync error:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Session sync failed' 
+      });
+    }
+  });
 
   // Remove duplicate CORS - already configured above with proper order
 
   // Production-grade session configuration with security
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // CRITICAL FIX 3: Enhanced session configuration with proper secure cookie handling
+  // Enhanced session configuration with PostgreSQL store
   app.use(session({
-    secret: secureDefaults.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET!,
     store: sessionStore,
     resave: false,
     saveUninitialized: false, // Don't create sessions for unauthenticated users
@@ -301,10 +366,10 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: process.env.NODE_ENV === 'production', // FIXED: Explicit production check as requested
+      secure: process.env.NODE_ENV === 'production',
       httpOnly: true, // Prevent JavaScript access to prevent XSS attacks
       sameSite: 'strict', // Prevent CSRF attacks with strict same-site policy
-      maxAge: sessionTtlMs, // 72 hours (3 days) for persistent PWA logins
+      maxAge: 3 * 24 * 60 * 60 * 1000, // 72 hours (3 days) for persistent PWA logins
       path: '/',
       domain: undefined // Let express handle domain automatically
     },
@@ -320,6 +385,11 @@ async function startServer() {
       // Touch session to extend TTL for active users
       req.session.touch();
       req.session.lastActivity = Date.now();
+      
+      // Add sessionID to user data for subscribers.json compatibility
+      if (!req.session.sessionId) {
+        req.session.sessionId = req.sessionID;
+      }
     }
     next();
   });
