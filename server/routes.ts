@@ -11216,10 +11216,14 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
-  // ENHANCED VIDEO RENDER ENDPOINT - VEO3 INTEGRATION
+  // ENHANCED VIDEO RENDER ENDPOINT - VEO 2.0 WITH SESSION VALIDATION AND AUTO-POSTING
   app.post("/api/video/render", requireAuth, checkVideoQuota, async (req: any, res) => {
     try {
-      const { promptType, promptPreview, editedText, platform, userId, postId } = req.body;
+      // Import session utilities for secure handling
+      const sessionManager = (await import('./sessionUtils.js')).default;
+      const migrationValidator = (await import('./drizzleMigrationValidator.js')).default;
+      
+      const { promptType, promptPreview, editedText, platform, userId, postId, autoPost } = req.body;
       
       console.log(`🎬 Enhanced VEO3 video generation requested for ${platform}`);
       
@@ -11296,13 +11300,19 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         
         console.log(`🎬 VEO 2.0: Using Grok-enhanced prompt for ${platform}`);
         
+        // Refresh tokens if needed before video generation
+        await sessionManager.refreshTokensIfNeeded(req.session?.userId || userId);
+        
         const veoResult = await veoService.generateVideo(enhancedPrompt, {
           aspectRatio: platform === 'instagram' ? '9:16' : '16:9',
           durationSeconds: 8,
           platform: platform,
           withSound: true, // Include sound as specified
           grokEnhanced: true,
-          jtbdFramework: brandPurpose?.jobToBeDone || 'Queensland business growth'
+          jtbdFramework: brandPurpose?.jobToBeDone || 'Queensland business growth',
+          userId: req.session?.userId || userId,
+          autoPost: autoPost || false,
+          postContent: enhancedPrompt
         });
         
         // CRITICAL: Always use VEO result, even if it reports error but provides async operation

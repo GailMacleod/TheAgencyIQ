@@ -545,8 +545,8 @@ class VeoService {
         
         console.log(`🎯 VEO 2.0: Extracted video segments:`, promptLines);
         
-        // CRITICAL: Use authentic VEO 2.0 API instead of basic FFmpeg fallback
-        console.log(`🎬 VEO 2.0: Attempting authentic video generation with Google AI Studio...`);
+        // CRITICAL: Use authentic VEO 2.0 API with session validation and auto-posting
+        console.log(`🎬 VEO 2.0: Attempting authentic video generation with session validation...`);
         
         // Try authentic VEO 2.0 generation using the enhanced prompt with orchestral music
         try {
@@ -563,6 +563,9 @@ class VeoService {
             console.log(`✅ VEO 2.0: Authentic cinematic video with orchestral music generated! GCS URI: ${authenticVideo.videoUri}`);
             await this.downloadAuthenticVideo(authenticVideo.videoUri, videoPath);
             console.log(`🎬 VEO 2.0: Authentic cinematic video with orchestral music successfully created at ${videoPath}`);
+            
+            // Trigger auto-posting integration if configured
+            await this.handleVideoGenerationComplete(authenticVideo.videoUri, videoRequest);
             return;
           } else if (authenticVideo && authenticVideo.authError) {
             console.log(`🔧 VEO 2.0: Vertex AI authentication not configured - falling back to enhanced cinematic generation`);
@@ -736,10 +739,11 @@ class VeoService {
   }
 
   /**
-   * Poll VEO operation until completion
+   * Poll VEO operation until completion with rate limit handling
    */
   async pollVeoOperation(authClient, operationName, maxAttempts = 30) {
     const baseUrl = 'https://us-central1-aiplatform.googleapis.com/v1/';
+    let sleep = 5000; // Initial 5 second delay
     
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
@@ -756,16 +760,74 @@ class VeoService {
         }
         
         // Wait before next poll (exponential backoff)
-        const delay = Math.min(5000 + (attempt * 2000), 30000);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise(resolve => setTimeout(resolve, sleep));
         
       } catch (pollError) {
         console.error(`⚠️ VEO 2.0: Polling error:`, pollError.message);
+        
+        // Handle 429 rate limit with exponential backoff
+        if (pollError.response?.status === 429) {
+          sleep = Math.min(60000, sleep * 2); // Max 60 seconds
+          console.log(`⏰ VEO 2.0: Rate limited, backing off for ${sleep}ms`);
+          await new Promise(resolve => setTimeout(resolve, sleep));
+          continue; // Don't count as failed attempt
+        }
+        
+        // Handle other 4xx/5xx errors with backoff
+        if (pollError.response?.status >= 400) {
+          sleep = Math.min(30000, sleep * 1.5); // Moderate backoff for errors
+          console.log(`⚠️ VEO 2.0: API error ${pollError.response.status}, backing off for ${sleep}ms`);
+        }
+        
         if (attempt === maxAttempts - 1) throw pollError;
       }
     }
     
     throw new Error('VEO 2.0 operation timed out');
+  }
+
+  /**
+   * Handle video generation completion with auto-posting integration
+   */
+  async handleVideoGenerationComplete(videoUri, videoRequest) {
+    try {
+      console.log(`🚀 VEO 2.0: Processing video completion for auto-posting...`);
+      
+      // Import session manager for auto-posting
+      const sessionManager = (await import('./sessionUtils.js')).default;
+      const migrationValidator = (await import('./drizzleMigrationValidator.js')).default;
+      
+      // Save video URI to database with error handling
+      if (videoRequest.userId) {
+        await migrationValidator.saveVideoUri(
+          videoRequest.videoId || `veo2-${Date.now()}`,
+          videoRequest.userId,
+          videoUri,
+          {
+            platform: videoRequest.platform,
+            duration: videoRequest.config?.durationSeconds || 8,
+            aspectRatio: videoRequest.config?.aspectRatio || '16:9',
+            quality: videoRequest.config?.quality || '720p'
+          }
+        );
+      }
+      
+      // Trigger auto-posting if enabled
+      if (videoRequest.autoPost && videoRequest.userId && videoRequest.postContent) {
+        const autoPostResult = await sessionManager.triggerAutoPosting(
+          videoUri,
+          videoRequest.platform,
+          videoRequest.userId,
+          videoRequest.postContent
+        );
+        
+        console.log(`📤 VEO 2.0: Auto-posting ${autoPostResult.success ? 'successful' : 'failed'}:`, autoPostResult);
+      }
+      
+    } catch (error) {
+      console.error('❌ VEO 2.0: Video completion handling failed:', error.message);
+      // Don't fail the video generation for post-processing errors
+    }
   }
 
   /**
