@@ -134,7 +134,10 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
     '/api/oauth/',
     '/auth/',
     '/api/video/',
-    '/api/public/'
+    '/api/public/',
+    '/dist/',
+    '/assets/',
+    '/favicon.ico'
   ];
   
   // Check if this is a public path - if so, skip all authentication checks
@@ -212,7 +215,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Global session establishment middleware - runs on ALL requests
   app.use(async (req: any, res: any, next: any) => {
     // Skip session establishment for static assets
-    if (req.path.startsWith('/public/') || req.path.startsWith('/assets/')) {
+    if (req.path.startsWith('/public/') || 
+        req.path.startsWith('/assets/') || 
+        req.path.startsWith('/dist/') ||
+        req.path.startsWith('/favicon.ico')) {
       return next();
     }
     
