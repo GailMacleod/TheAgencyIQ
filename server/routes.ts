@@ -50,6 +50,7 @@ import { AtomicQuotaManager } from './services/AtomicQuotaManager';
 import { atomicQuotaMiddleware, quotaStatusMiddleware, validateQuotaMiddleware } from './middleware/atomic-quota';
 import { EnhancedAutoPostingService } from './services/EnhancedAutoPostingService';
 import { autoPostingValidator } from './services/AutoPostingValidator';
+import secureOAuthRoutes from './oauth/secure-routes';
 
 // Extended session types
 declare module 'express-session' {
@@ -237,6 +238,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register quota management routes
   registerQuotaRoutes(app);
+  
+  // Register secure OAuth routes with enhanced cookie security
+  app.use(secureOAuthRoutes);
   
   // Add global error handler for debugging 500 errors
   app.use((err: any, req: any, res: any, next: any) => {

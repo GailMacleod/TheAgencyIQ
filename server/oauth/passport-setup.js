@@ -150,6 +150,38 @@ function setupPassport() {
       clientID: process.env.LINKEDIN_CLIENT_ID,
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
       callbackURL: process.env.LINKEDIN_CALLBACK_URL || '/auth/linkedin/callback',
+      scope: ['r_liteprofile', 'r_emailaddress', 'w_member_social']
+    }, async (accessToken, refreshToken, profile, done) => {
+      try {
+        console.log(`🔗 LinkedIn OAuth callback for user: ${profile.id}`);
+        
+        const user = await handleOAuthCallback({
+          platform: 'linkedin',
+          platformId: profile.id,
+          username: profile.username || profile.id,
+          email: profile.emails?.[0]?.value,
+          displayName: `${profile.name.givenName} ${profile.name.familyName}`,
+          profileImageUrl: profile.photos?.[0]?.value,
+          accessToken,
+          refreshToken,
+          scopes: ['r_liteprofile', 'r_emailaddress', 'w_member_social']
+        });
+        
+        done(null, user);
+      } catch (error) {
+        console.error('❌ LinkedIn OAuth error:', error);
+        done(error, null);
+      }
+    }));
+    console.log('✅ LinkedIn OAuth strategy configured');
+  }
+
+  // LinkedIn OAuth Strategy
+  if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
+    passport.use(new LinkedInStrategy({
+      clientID: process.env.LINKEDIN_CLIENT_ID,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+      callbackURL: process.env.LINKEDIN_CALLBACK_URL || '/auth/linkedin/callback',
       scope: ['r_liteprofile', 'r_emailaddress', 'w_member_social'],
       state: true
     }, async (accessToken, refreshToken, profile, done) => {

@@ -7,6 +7,7 @@ import connectPg from 'connect-pg-simple';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { enhancedCookieParser, cookieSecurityManager } from './middleware/CookieSecurityManager';
+import { oauthCookieManager } from './middleware/OAuthCookieSecurity';
 import { createServer } from 'http';
 import { validateEnvironment, getSecureDefaults } from './config/env-validation.js';
 import { dbManager } from './db-init.js';
@@ -95,6 +96,7 @@ async function startServer() {
   // Enhanced cookie parsing with security validation
   app.use(enhancedCookieParser(process.env.COOKIE_SECRET)); // Enhanced cookie parser with secret
   app.use(cookieSecurityManager.cookieSecurityMiddleware()); // Cookie security validation middleware
+  app.use(oauthCookieManager.oauthCookieSecurityMiddleware()); // OAuth cookie security middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   // Filter out Replit-specific tracking in production
