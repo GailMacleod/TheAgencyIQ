@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { validateEnvironment, getSecureDefaults } from './config/env-validation.js';
 import { dbManager } from './db-init.js';
+import { logger, requestLogger } from './utils/logger.js';
 import { createServer } from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -41,8 +42,9 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false, // Needed for Vite dev server
 }));
 
-// Request logging with Morgan
+// Request logging with Morgan and custom logger
 app.use(morgan(secureDefaults.LOG_LEVEL));
+app.use(requestLogger);
 
 // Rate limiting for all routes
 const limiter = rateLimit({
@@ -76,12 +78,23 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration with secure defaults
+// PostgreSQL session store configuration
+import connectPgSimple from 'connect-pg-simple';
+const PgSession = connectPgSimple(session);
+
+// Session configuration with PostgreSQL store
+const sessionStore = new PgSession({
+  conString: process.env.DATABASE_URL,
+  tableName: 'sessions',
+  createTableIfMissing: true,
+});
+
 app.use(session({
+  store: sessionStore,
   secret: secureDefaults.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  name: 'theagencyiq.session', // Custom session name
+  name: 'theagencyiq.session',
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
@@ -93,6 +106,12 @@ app.use(session({
 // Initialize Passport.js
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Apply quota tracking middleware to protected routes
+app.use('/api/enforce-auto-posting', quotaTracker.middleware());
+app.use('/api/auto-post-schedule', quotaTracker.middleware());
+app.use('/api/video/*', quotaTracker.middleware());
+app.use('/api/posts', quotaTracker.middleware());
 
 // Setup OAuth strategies
 try {
@@ -114,6 +133,7 @@ app.get('/api/health', healthLimiter, (req, res) => {
 
 // Import auth middleware and OAuth setup
 import { requireAuth, optionalAuth, requireActiveSubscription, requireOAuthScope } from './middleware/auth.js';
+import { quotaTracker, createQuotaTable } from './middleware/quota-tracker.js';
 import passport from 'passport';
 import { setupPassport } from './oauth/passport-setup.js';
 import oauthRoutes from './oauth/routes.js';
@@ -163,6 +183,25 @@ app.get('/api/user-status', requireAuth, async (req, res) => {
       success: false,
       message: 'Failed to retrieve user status',
       code: 'USER_STATUS_ERROR'
+    });
+  }
+});
+
+// Quota status endpoint
+app.get('/api/quota-status', requireAuth, async (req, res) => {
+  try {
+    const quotaStatus = await quotaTracker.getUserQuotaStatus(req.userId);
+    res.json({
+      success: true,
+      quotaStatus,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Quota status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve quota status',
+      code: 'QUOTA_STATUS_ERROR'
     });
   }
 });
@@ -488,17 +527,31 @@ try {
 
 // Enhanced error handler - secure in production
 app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err);
-  
   const isDevelopment = process.env.NODE_ENV === 'development';
+  const status = err.status || err.statusCode || 500;
   
-  // Log full error details for debugging
-  if (isDevelopment) {
-    console.error('Stack trace:', err.stack);
+  // Log error with proper categorization
+  logger.error('Server Error', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    userId: req.userId,
+    statusCode: status,
+    userAgent: req.get('User-Agent')
+  });
+  
+  // Security logging for potential attacks
+  if (status === 400 || status === 401 || status === 403) {
+    logger.security('HTTP Error', {
+      statusCode: status,
+      path: req.path,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
   }
   
   // Return appropriate error response
-  const status = err.status || err.statusCode || 500;
   const response = {
     error: true,
     message: isDevelopment ? err.message : 'Internal server error',
@@ -554,6 +607,11 @@ async function startServer() {
     // Initialize database connection
     console.log('🚀 Starting TheAgencyIQ Server...');
     await dbManager.initialize();
+    
+    // Create quota tracking table
+    const db = dbManager.getDatabase();
+    await db.execute(createQuotaTable);
+    console.log('✅ Quota tracking table ready');
     
     const server = createServer(app);
     

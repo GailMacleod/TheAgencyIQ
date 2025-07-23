@@ -1,9 +1,17 @@
 import express from 'express';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
+import { validateEnvironment, getSecureDefaults } from './config/env-validation.js';
+import { dbManager } from './db-init.js';
+import { logger, requestLogger } from './utils/logger.js';
+import { quotaTracker, createQuotaTable } from './middleware/quota-tracker.js';
+import passport from 'passport';
 import path from 'path';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
 import { createClient } from 'redis';
@@ -24,31 +32,61 @@ async function startServer() {
   // Initialize monitoring
   initializeMonitoring();
   
+  // Validate environment before starting server
+  const validatedEnv = validateEnvironment();
+  const secureDefaults = getSecureDefaults();
+  
   const app = express();
 
   // CRITICAL FIX 1: Trust Replit's reverse proxy for secure cookies in deployment
   app.set('trust proxy', 1);
   console.log('🔧 Trust proxy enabled for Replit deployment');
 
-  // CRITICAL FIX 2: Middleware order - CORS first, then session, then body parsers
-  app.use(cors({
-    origin: function(origin, callback) {
-      const allowedOrigins = [
-        'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev',
-        'https://app.theagencyiq.ai',
-        'http://localhost:3000',
-        'http://localhost:5000'
-      ];
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Allow all origins in development
-      }
+  // Security headers with Helmet
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Vite dev needs unsafe-eval
+        connectSrc: ["'self'", "https:", "wss:"],
+      },
     },
+    crossOriginEmbedderPolicy: false, // Needed for Vite dev server
+  }));
+
+  // Request logging with Morgan and custom logger
+  app.use(morgan(secureDefaults.LOG_LEVEL));
+  app.use(requestLogger);
+
+  // Rate limiting for all routes
+  const limiter = rateLimit({
+    windowMs: secureDefaults.RATE_LIMIT_WINDOW,
+    max: secureDefaults.RATE_LIMIT_MAX,
+    message: {
+      error: 'Too many requests from this IP, please try again later.',
+      retryAfter: Math.ceil(secureDefaults.RATE_LIMIT_WINDOW / 1000)
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use('/api', limiter);
+
+  // Health check with basic rate limiting
+  const healthLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10, // 10 requests per minute for health check
+    message: { error: 'Health check rate limit exceeded' }
+  });
+
+  // CORS configuration - secure in production, permissive in development
+  app.use(cors({
+    origin: secureDefaults.CORS_ORIGIN,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Cookie', 'X-Retry-Session'],
-    exposedHeaders: ['Set-Cookie']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   }));
 
   // Essential middleware - after CORS, before session
@@ -168,6 +206,17 @@ async function startServer() {
   const sessionTtl = 3 * 24 * 60 * 60; // 3 days in seconds (Redis format) - 72 hours for PWA persistent logins
   const sessionTtlMs = sessionTtl * 1000; // 3 days in milliseconds (Express format) - 72 hours
   
+  // Initialize database before session store
+  await dbManager.initialize();
+  
+  // Create quota tracking table
+  const db = dbManager.getDatabase();
+  await db.execute(createQuotaTable);
+  console.log('✅ Quota tracking table ready');
+
+  // PostgreSQL session store setup
+  const PgSession = connectPg(session);
+  
   let sessionStore: any;
   
   try {
@@ -237,7 +286,7 @@ async function startServer() {
   
   // CRITICAL FIX 3: Enhanced session configuration with proper secure cookie handling
   app.use(session({
-    secret: process.env.SESSION_SECRET || "xK7pL9mQ2vT4yR8jW6zA3cF5dH1bG9eJ",
+    secret: secureDefaults.SESSION_SECRET,
     store: sessionStore,
     resave: false,
     saveUninitialized: false, // Don't create sessions for unauthenticated users
@@ -248,7 +297,7 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: process.env.NODE_ENV === 'production', // Secure cookies in production for HTTPS
+      secure: secureDefaults.SECURE_COOKIES, // Production-grade cookie security
       httpOnly: true, // Prevent JavaScript access to prevent XSS attacks
       sameSite: 'strict', // Prevent CSRF attacks with strict same-site policy
       maxAge: sessionTtlMs, // 72 hours (3 days) for persistent PWA logins
@@ -405,6 +454,40 @@ async function startServer() {
     } catch (error) {
       console.error('Session sync error:', error);
       res.status(500).json({ success: false, error: 'Session sync failed' });
+    }
+  });
+
+  // Apply quota tracking middleware to protected routes
+  app.use('/api/enforce-auto-posting', quotaTracker.middleware());
+  app.use('/api/auto-post-schedule', quotaTracker.middleware());
+  app.use('/api/video', quotaTracker.middleware());
+  app.use('/api/posts', quotaTracker.middleware());
+
+  // Quota status endpoint with authentication
+  app.get('/api/quota-status', async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+          code: 'AUTHENTICATION_REQUIRED'
+        });
+      }
+
+      const quotaStatus = await quotaTracker.getUserQuotaStatus(userId);
+      res.json({
+        success: true,
+        quotaStatus,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      logger.error('Quota status error', { error: error.message, userId: req.session?.userId });
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve quota status',
+        code: 'QUOTA_STATUS_ERROR'
+      });
     }
   });
 
@@ -901,25 +984,49 @@ async function startServer() {
     throw error;
   }
 
-  // Global error handler for all routes
-  app.use((error: any, req: any, res: any, next: any) => {
-    console.error('🚨 Global Error Handler:', {
-      message: error.message,
-      stack: error.stack,
-      url: req.url,
+  // Enhanced error handler - secure in production
+  app.use((err: any, req: any, res: any, next: any) => {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const status = err.status || err.statusCode || 500;
+    
+    // Log error with proper categorization
+    logger.error('Server Error', {
+      message: err.message,
+      stack: err.stack,
+      path: req.path,
       method: req.method,
-      timestamp: new Date().toISOString()
+      userId: req.session?.userId,
+      statusCode: status,
+      userAgent: req.get('User-Agent')
     });
     
-    if (res.headersSent) {
-      return next(error);
+    // Security logging for potential attacks
+    if (status === 400 || status === 401 || status === 403) {
+      logger.security('HTTP Error', {
+        statusCode: status,
+        path: req.path,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
     }
     
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : error.message,
-      timestamp: new Date().toISOString()
-    });
+    if (res.headersSent) {
+      return next(err);
+    }
+    
+    // Return appropriate error response
+    const response = {
+      error: true,
+      message: isDevelopment ? err.message : 'Internal server error',
+      status
+    };
+    
+    // Only include stack trace in development
+    if (isDevelopment && err.stack) {
+      response.stack = err.stack;
+    }
+    
+    res.status(status).json(response);
   });
 
   // Health check endpoint

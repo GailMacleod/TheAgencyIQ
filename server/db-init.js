@@ -59,6 +59,18 @@ class DatabaseManager {
       // Simple query to test connection
       const result = await this.db.execute('SELECT NOW() as current_time');
       console.log(`🕐 Database connection test successful: ${result.rows[0]?.current_time}`);
+      
+      // Ensure sessions table exists
+      await this.db.execute(`
+        CREATE TABLE IF NOT EXISTS sessions (
+          sid VARCHAR PRIMARY KEY,
+          sess JSONB NOT NULL,
+          expire TIMESTAMP NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS IDX_session_expire ON sessions(expire);
+      `);
+      console.log('✅ Sessions table ready');
+      
     } catch (error) {
       console.error('❌ Database connection test failed:', error);
       throw new Error(`Database connection failed: ${error.message}`);
