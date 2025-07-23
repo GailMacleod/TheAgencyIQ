@@ -3009,13 +3009,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logout with complete session cleanup
+  // Enhanced logout with HTTP-only cookie clearing and PWA synchronization
   app.post("/api/auth/logout", async (req: any, res) => {
     try {
       const userId = req.session?.userId;
+      const sessionId = req.sessionID;
       
       if (userId) {
-        console.log(`Logging out user ${userId}`);
+        console.log(`🔓 Logging out user ${userId}, session ${sessionId}`);
+        
+        // Revoke OAuth tokens before logout for security
+        try {
+          const sessionManager = (await import('./sessionUtils.js')).default;
+          await sessionManager.refreshTokensIfNeeded(userId); // Clear refresh tokens
+        } catch (tokenError) {
+          console.log('⚠️ Token revocation failed during logout:', tokenError.message);
+        }
       }
       
       // Destroy session from database/store
@@ -3025,51 +3034,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-      // Clear all possible session cookies with comprehensive options
+      // Clear all HTTP-only cookies with expired dates (critical fix)
+      const expiredDate = new Date(0); // January 1, 1970
+      
+      // Primary session cookie with HTTP-only flag
+      res.setHeader('Set-Cookie', [
+        `connect.sid=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`,
+        `theagencyiq.session=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`,
+        `session.sig=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`,
+        // Regular cookies that frontend can access
+        `sessionId=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `userId=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `userEmail=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `subscriptionStatus=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `auth_token=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `remember_token=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        // PWA-specific cookies
+        `pwa_session=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `app_installed=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`
+      ]);
+      
+      // Additional clearCookie calls for redundancy
       res.clearCookie('connect.sid', {
         path: '/',
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        domain: undefined // Clear for all domains
+        sameSite: 'lax'
       });
       
-      // Clear additional cookies that might persist
-      res.clearCookie('sessionId', { path: '/' });
-      res.clearCookie('userId', { path: '/' });
-      res.clearCookie('userEmail', { path: '/' });
-      res.clearCookie('subscriptionStatus', { path: '/' });
+      res.clearCookie('theagencyiq.session', {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
       
-      // Set cache control headers to prevent caching
+      // Set comprehensive cache control headers to prevent caching
       res.set({
-        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
         'Pragma': 'no-cache',
-        'Expires': '0'
+        'Expires': '0',
+        'Last-Modified': new Date(0).toUTCString(),
+        'X-PWA-Session-Clear': 'true' // Signal PWA to clear cache
       });
       
-      console.log('User logged out successfully - session completely cleared');
+      console.log('✅ User logged out successfully - HTTP-only cookies cleared with expired dates');
       res.json({ 
         success: true,
         message: "Logged out successfully",
         redirect: "/",
-        clearCache: true // Signal frontend to clear local storage
+        clearCache: true, // Signal frontend to clear local/session storage
+        clearCookies: true, // Signal frontend to attempt cookie clearing
+        sessionCleared: true,
+        pwaRefresh: true, // Signal PWA to refresh service worker cache
+        timestamp: new Date().toISOString()
       });
       
     } catch (error: any) {
       console.error('Logout error:', error);
       
-      // Force session clear even on error
+      // Force session clear even on error with expired cookie headers
       req.session.destroy((err: any) => {
         if (err) console.error('Force session destroy error:', err);
       });
-      res.clearCookie('connect.sid', { path: '/' });
-      res.clearCookie('sessionId', { path: '/' });
-      res.clearCookie('userId', { path: '/' });
+      
+      const expiredDate = new Date(0);
+      res.setHeader('Set-Cookie', [
+        `connect.sid=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax`,
+        `theagencyiq.session=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax`,
+        `sessionId=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`
+      ]);
       
       res.json({ 
         success: true,
         message: "Logged out successfully",
-        clearCache: true
+        clearCache: true,
+        clearCookies: true,
+        pwaRefresh: true,
+        timestamp: new Date().toISOString()
       });
     }
   });

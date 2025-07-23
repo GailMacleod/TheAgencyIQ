@@ -13,6 +13,7 @@ import { useAnalytics } from "./hooks/use-analytics";
 import { clearBrowserCache } from "./utils/cache-utils";
 import { sessionManager } from "./utils/session-manager";
 import { apiClient } from "./utils/api-client";
+import pwaSessionManager from "./utils/PWASessionManager";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
@@ -66,44 +67,43 @@ function Router() {
         <Route path="/admin/video-prompts" component={AdminVideoPrompts} />
         <Route path="/video-gen" component={VideoGen} />
         <Route path="/logout" component={() => {
-          // Handle logout as a route with complete session clearing
-          fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-            .then(response => response.json())
-            .then(data => {
-              if (data.clearCache) {
-                // Clear all local storage and session storage
+          // Handle logout as a route with PWA-aware session clearing
+          import('./utils/PWASessionManager').then(({ default: pwaSessionManager }) => {
+            pwaSessionManager.handleLogout()
+              .then(() => {
+                // Additional cleanup for non-PWA browsers
                 localStorage.clear();
                 sessionStorage.clear();
                 
                 // Clear any cached data
                 if ('caches' in window) {
-                caches.keys().then(names => {
-                  names.forEach(name => {
-                    caches.delete(name);
+                  caches.keys().then(names => {
+                    names.forEach(name => {
+                      caches.delete(name);
+                    });
                   });
-                });
-              }
-              
-              // Clear onboarding progress specifically
-              localStorage.removeItem('onboarding-progress');
-              localStorage.removeItem('wizardProgress');
-              localStorage.removeItem('userPreferences');
-              
-              console.log('Local storage cleared on logout');
-            }
-            
-            // Force page reload to clear any cached state
-            window.location.replace('/');
-          })
-          .catch(error => {
-            console.error('Logout error:', error);
-            // Force logout even on error
-            localStorage.clear();
-            sessionStorage.clear();
-            window.location.replace('/');
+                }
+                
+                // Clear onboarding progress specifically
+                localStorage.removeItem('onboarding-progress');
+                localStorage.removeItem('wizardProgress');
+                localStorage.removeItem('userPreferences');
+                
+                console.log('Local storage cleared on logout');
+                
+                // Force page reload to clear any cached state
+                window.location.replace('/');
+              })
+              .catch(error => {
+                console.error('Logout error:', error);
+                // Force logout even on error
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.replace('/');
+              });
           });
-        return null;
-      }} />
+          return null;
+        }} />
       <Route path="/dashboard" component={ConnectPlatforms} />
       <Route path="/connection-repair" component={ConnectionRepair} />
       <Route path="/oauth-reconnect" component={OAuthReconnect} />
@@ -138,10 +138,14 @@ function App() {
     }
   }, []);
 
-  // Establish session on app startup to prevent 401 errors - ENHANCED FOR USER ID 2
+  // Initialize PWA Session Manager and establish session
   useEffect(() => {
-    const establishSession = async () => {
+    const initializeApp = async () => {
       try {
+        // Initialize PWA Session Manager
+        await pwaSessionManager.init();
+        
+        // Establish backend session
         await sessionManager.establishSession();
         
         // Wait a moment to ensure session is properly saved before invalidating queries
@@ -173,7 +177,7 @@ function App() {
       }
     };
 
-    establishSession();
+    initializeApp();
   }, []);
 
   // PWA Install Prompt Handler
