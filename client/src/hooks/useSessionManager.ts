@@ -30,7 +30,7 @@ export function useSessionManager() {
   const { toast } = useToast();
 
   /**
-   * Establish session with proper UI feedback and React Query sync
+   * Establish session with OAuth token refresh and comprehensive error handling
    */
   const establishSession = useCallback(async (showToast = false) => {
     if (sessionState.isEstablishing) {
@@ -48,13 +48,65 @@ export function useSessionManager() {
       // Initialize PWA Session Manager first
       await pwaSessionManager.init();
       
-      // Establish backend session with timeout
-      const sessionPromise = sessionManager.establishSession();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Session establishment timeout')), 10000)
-      );
-
-      const sessionInfo = await Promise.race([sessionPromise, timeoutPromise]) as any;
+      // Attempt session establishment with OAuth token refresh capability
+      let sessionInfo;
+      let retryCount = 0;
+      const maxRetries = 2;
+      
+      while (retryCount <= maxRetries) {
+        try {
+          // Get current OAuth token for Authorization header
+          const oauthToken = localStorage.getItem('oauth_access_token');
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+          
+          const response = await fetch('/api/establish-session', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              ...(oauthToken && { 'Authorization': `Bearer ${oauthToken}` })
+            },
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
+            sessionInfo = await response.json();
+            break;
+          } else if (response.status === 401 && retryCount === 0) {
+            // Attempt OAuth token refresh on first 401
+            console.log('🔄 Attempting OAuth token refresh...');
+            
+            const refreshResponse = await fetch('/api/oauth-refresh', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              if (refreshData.access_token) {
+                localStorage.setItem('oauth_access_token', refreshData.access_token);
+                retryCount++;
+                continue; // Retry with new token
+              }
+            }
+            
+            throw new Error('Authentication failed - please log in again');
+          } else {
+            throw new Error(`Session establishment failed: ${response.status}`);
+          }
+        } catch (error: any) {
+          if (retryCount >= maxRetries) {
+            throw error;
+          }
+          retryCount++;
+        }
+      }
 
       setSessionState({
         isEstablishing: false,
@@ -107,6 +159,13 @@ export function useSessionManager() {
       throw error;
     }
   }, [sessionState.isEstablishing, queryClient, toast]);
+
+  /**
+   * Retry session establishment with UI feedback
+   */
+  const retrySession = useCallback(async () => {
+    return await establishSession(true);
+  }, [establishSession]);
 
   /**
    * Enhanced logout with UI feedback
@@ -179,12 +238,7 @@ export function useSessionManager() {
     return null;
   }, []);
 
-  /**
-   * Retry session establishment
-   */
-  const retrySession = useCallback(() => {
-    return establishSession(true);
-  }, [establishSession]);
+
 
   return {
     ...sessionState,

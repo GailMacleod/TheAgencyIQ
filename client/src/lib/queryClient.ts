@@ -173,29 +173,59 @@ export const queryClient = new QueryClient({
         // Enhanced retry logic with quota awareness
         if (failureCount >= 3) return false;
         
-        // Always retry network errors
-        if (!error || !error.response) return true;
+        // Parse error response for proper quota detection
+        const errorMessage = error?.message || '';
+        const status = error?.response?.status || (errorMessage.includes('429:') ? 429 : null);
         
-        const status = error.response?.status;
+        // Always retry network errors and timeouts
+        if (!error || errorMessage.includes('Failed to fetch') || errorMessage.includes('timeout')) return true;
         
-        // Retry on rate limits, quota errors, and server errors
-        if (status === 429 || (status === 403 && error.message?.includes('quota')) || status >= 500) {
+        // Retry on rate limits (429), quota errors (403 with quota), and server errors (5xx)
+        if (status === 429 || 
+            (status === 403 && (errorMessage.includes('quota') || errorMessage.includes('rate limit'))) || 
+            (status >= 500 && status < 600)) {
           return true;
         }
         
-        // Single retry for auth errors
+        // Single retry for auth errors to attempt token refresh
         if (status === 401 && failureCount === 0) return true;
         
         return false;
       },
       retryDelay: (attemptIndex, error: any) => {
-        // Check for quota-related errors
-        if (error?.message?.includes('quota') || error?.message?.includes('Rate limited')) {
-          return 30000; // 30 seconds for quota errors
+        const errorMessage = error?.message || '';
+        const status = error?.response?.status || (errorMessage.includes('429:') ? 429 : null);
+        
+        // 30-second delay for quota/rate limit errors (429, 403 with quota)
+        if (status === 429 || 
+            (status === 403 && (errorMessage.includes('quota') || errorMessage.includes('rate limit'))) ||
+            errorMessage.includes('quotaExceeded') ||
+            errorMessage.includes('rateLimitExceeded')) {
+          return 30000;
         }
         
-        // Exponential backoff: 1s, 2s, 4s
-        return Math.min(1000 * Math.pow(2, attemptIndex), 30000);
+        // 5-second delay for auth errors to allow token refresh
+        if (status === 401) {
+          return 5000;
+        }
+        
+        // Exponential backoff for other errors: 1s, 2s, 4s (max 10s)
+        return Math.min(1000 * Math.pow(2, attemptIndex), 10000);
+      },
+      // Add cache configuration for quota-sensitive queries
+      cacheTime: (context: any) => {
+        const queryKey = context?.queryKey?.[0] || '';
+        
+        // Short cache for quota-sensitive endpoints to avoid over-fetching
+        if (queryKey.includes('/api/video/') || 
+            queryKey.includes('/api/generate') ||
+            queryKey.includes('/api/posting-queue') ||
+            queryKey.includes('/api/quota-status')) {
+          return 30000; // 30 seconds
+        }
+        
+        // Default cache time for other queries
+        return 300000; // 5 minutes
       },
     },
     mutations: {

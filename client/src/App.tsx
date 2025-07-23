@@ -20,6 +20,7 @@ import { apiClient } from "./utils/api-client";
 import pwaSessionManager from "./utils/PWASessionManager";
 import { useSessionManager } from "@/hooks/useSessionManager";
 import SessionLoadingSpinner from "@/components/SessionLoadingSpinner";
+import { useMobileDetection } from "@/hooks/useMobileDetection";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
@@ -144,6 +145,8 @@ function Router() {
 
 function AppContent() {
   const sessionHook = useSessionManager();
+  const mobileState = useMobileDetection();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Initialize Google Analytics when app loads
   useEffect(() => {
@@ -154,6 +157,20 @@ function AppContent() {
       initGA();
     }
   }, []);
+
+  // Apply mobile layout dynamically
+  useEffect(() => {
+    if (mobileState.isMobile) {
+      console.log('Mobile layout applied');
+      document.body.classList.add('mobile-layout');
+    } else {
+      document.body.classList.remove('mobile-layout');
+    }
+    
+    // Clean up orientation classes
+    document.body.classList.remove('portrait', 'landscape');
+    document.body.classList.add(mobileState.orientation);
+  }, [mobileState.isMobile, mobileState.orientation]);
 
   // Enhanced session establishment with UI feedback
   useEffect(() => {
@@ -169,14 +186,55 @@ function AppContent() {
     initializeApp();
   }, []);
 
-  // PWA Install Prompt Handler
+  // Conditional onboarding based on session state and localStorage
+  useEffect(() => {
+    if (sessionHook.isReady && sessionHook.sessionInfo) {
+      const onboardingComplete = localStorage.getItem('onboarding-complete');
+      const hasCompletedSetup = sessionHook.sessionInfo.user?.hasCompletedSetup;
+      
+      // Show onboarding if not completed or if localStorage flag is false
+      if (!onboardingComplete || onboardingComplete === 'false' || !hasCompletedSetup) {
+        setShowOnboarding(true);
+      } else {
+        setShowOnboarding(false);
+      }
+    } else if (!sessionHook.isEstablishing && !sessionHook.isReady) {
+      // No session - don't show onboarding
+      setShowOnboarding(false);
+    }
+  }, [sessionHook.isReady, sessionHook.sessionInfo, sessionHook.isEstablishing]);
+
+  // Enhanced PWA Install Prompt Handler with session sync
   useEffect(() => {
     let deferredPrompt: any;
+    const DISMISSAL_STORAGE_KEY = 'pwa-install-dismissed';
+    const DISMISSAL_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       deferredPrompt = e as any;
+      
+      // Check if already installed or recently dismissed
+      if (isAlreadyInstalled() || isRecentlyDismissed()) {
+        return;
+      }
+      
       showInstallPromotion();
+    };
+
+    const isAlreadyInstalled = () => {
+      // Check if app is already installed (standalone mode)
+      return window.matchMedia('(display-mode: standalone)').matches || 
+             (window.navigator as any).standalone === true;
+    };
+
+    const isRecentlyDismissed = () => {
+      const dismissedTime = localStorage.getItem(DISMISSAL_STORAGE_KEY);
+      if (!dismissedTime) return false;
+      
+      const now = Date.now();
+      const dismissed = parseInt(dismissedTime, 10);
+      return (now - dismissed) < DISMISSAL_DURATION;
     };
 
     const showInstallPromotion = () => {
@@ -203,12 +261,18 @@ function AppContent() {
       
       installButton.addEventListener('click', () => {
         if (deferredPrompt) {
+          // Sync session before installation
+          if (sessionHook.sessionInfo) {
+            localStorage.setItem('pre-install-session', JSON.stringify(sessionHook.sessionInfo));
+          }
+          
           deferredPrompt.prompt();
           deferredPrompt.userChoice.then((choiceResult: any) => {
             if (choiceResult.outcome === 'accepted') {
               console.log('User accepted the install prompt');
             } else {
               console.log('User dismissed the install prompt');
+              localStorage.setItem(DISMISSAL_STORAGE_KEY, Date.now().toString());
             }
             deferredPrompt = null;
             installButton.remove();
@@ -216,6 +280,31 @@ function AppContent() {
         }
       });
       
+      // Add dismiss button
+      const dismissButton = document.createElement('button');
+      dismissButton.textContent = '×';
+      dismissButton.style.cssText = `
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: transparent;
+        color: white;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+      
+      dismissButton.addEventListener('click', () => {
+        localStorage.setItem(DISMISSAL_STORAGE_KEY, Date.now().toString());
+        installButton.remove();
+      });
+      
+      installButton.appendChild(dismissButton);
       document.body.appendChild(installButton);
     };
 
@@ -226,63 +315,9 @@ function AppContent() {
       const button = document.getElementById('pwa-install-button');
       if (button) button.remove();
     };
-  }, []);
+  }, [sessionHook.sessionInfo]);
 
-  // Establish authentication session on app load with robust error handling
-  useEffect(() => {
-    const establishSession = async () => {
-      try {
-        // Add timeout to prevent hanging requests
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
-        const response = await fetch('/api/establish-session', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Session established:', data.user?.email);
-        } else {
-          console.log('Session establishment failed, continuing without auth');
-        }
-      } catch (error: any) {
-        if (error.name === 'AbortError') {
-          console.log('Session establishment timeout, continuing without auth');
-        } else if (error.message?.includes('Failed to fetch')) {
-          console.log('Network error during session establishment, continuing without auth');
-        } else {
-          console.log('Session establishment error, continuing without auth');
-        }
-      }
-    };
-    
-    // Don't await to prevent blocking app initialization
-    establishSession().catch(() => {
-      // Silently handle any remaining unhandled promise rejections
-    });
-  }, []);
 
-  // Mobile layout detection and setup
-  useEffect(() => {
-    if (window.matchMedia('(max-width: 768px)').matches) {
-      console.log('Mobile layout applied');
-      const buttons = document.querySelectorAll('.connect-button, .profile-menu button');
-      buttons.forEach(button => {
-        const htmlButton = button as HTMLElement;
-        htmlButton.addEventListener('click', () => {
-          if (!htmlButton.offsetParent) console.log('Reverting to default layout');
-        });
-      });
-    }
-  }, []);
 
   return (
     <div className="min-h-screen bg-background">
