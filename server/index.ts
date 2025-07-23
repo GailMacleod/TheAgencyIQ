@@ -204,13 +204,16 @@ async function startServer() {
     console.log('⚠️  Redis unavailable, falling back to PostgreSQL sessions');
     console.log('🔧 Configuring PostgreSQL session store...');
     
-    // Fallback to PostgreSQL session store
+    // Enhanced PostgreSQL session store with proper configuration
     const pgStore = connectPg(session);
     sessionStore = new pgStore({
       conString: process.env.DATABASE_URL,
       createTableIfMissing: true,
-      ttl: sessionTtlMs,
+      ttl: sessionTtl, // Use seconds for PostgreSQL TTL
       tableName: "sessions",
+      touchInterval: 60000, // Touch sessions every minute to prevent premature expiry
+      disableTouch: false, // Enable touch for active sessions
+      pruneSessionInterval: 60 * 60 * 1000, // Prune expired sessions every hour
       errorLog: (error) => {
         console.error('Session store error:', error);
       }
@@ -222,7 +225,7 @@ async function startServer() {
         console.error('❌ Session store connection failed:', err);
       } else {
         console.log('✅ PostgreSQL session store connection successful');
-        console.log('⚠️  Session persistence: LIMITED (vulnerable to restarts)');
+        console.log('🔒 Session persistence: ENHANCED (survives restarts with touch support)');
       }
     });
   }
@@ -254,8 +257,19 @@ async function startServer() {
     },
     rolling: true, // Extend session on activity
     proxy: true, // Works with trust proxy setting
-    unset: 'destroy' // Properly clean up sessions
+    unset: 'destroy', // Properly clean up sessions
+    touch: true // Enable session touching for active sessions
   }));
+
+  // Session touch middleware for active sessions to prevent premature expiry
+  app.use((req, res, next) => {
+    if (req.session && req.session.userId) {
+      // Touch session to extend TTL for active users
+      req.session.touch();
+      req.session.lastActivity = Date.now();
+    }
+    next();
+  });
 
   // CRITICAL FIX 4: Session debugging middleware with detailed logging
   app.use((req, res, next) => {

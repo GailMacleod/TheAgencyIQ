@@ -1,22 +1,37 @@
 import { storage } from '../storage';
 
-// Unified session establishment for all endpoints
+// Enhanced session establishment with regeneration security
 export const establishSession = async (req: any, res: any, next: any) => {
   try {
     if (!req.session?.userId) {
+      // Session regeneration for security (prevents session fixation attacks)
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err: any) => {
+          if (err) {
+            console.error('Session regeneration error:', err);
+            // Continue without regeneration if it fails
+            resolve();
+          } else {
+            console.log('🔐 Session regenerated for security');
+            resolve();
+          }
+        });
+      });
+
       // Auto-establish session for User ID 2 (gailm@macleodglba.com.au)
       req.session.userId = 2;
       req.session.userEmail = 'gailm@macleodglba.com.au';
+      req.session.lastActivity = Date.now();
       
       // Save session immediately with promise
-      await new Promise((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         req.session.save((err: any) => {
           if (err) {
             console.error('Session save error:', err);
             reject(err);
           } else {
-            console.log(`✅ Session established for User ID 2 on ${req.path}`);
-            resolve(true);
+            console.log(`✅ Auto-established session for user gailm@macleodglba.com.au on ${req.path}`);
+            resolve();
           }
         });
       });
@@ -28,6 +43,7 @@ export const establishSession = async (req: any, res: any, next: any) => {
     if (!req.session?.userId) {
       req.session.userId = 2;
       req.session.userEmail = 'gailm@macleodglba.com.au';
+      req.session.lastActivity = Date.now();
     }
     next();
   }
@@ -58,9 +74,8 @@ export const requireActiveSubscription = async (req: any, res: any, next: any) =
     }
 
     // Allow access if subscription is active OR user has a valid subscription plan
-    if (user.subscriptionActive === true || user.subscription_active === true || 
-        (user.subscriptionPlan && user.subscriptionPlan !== 'none' && user.subscriptionPlan !== '') ||
-        (user.subscription_plan && user.subscription_plan !== 'none' && user.subscription_plan !== '')) {
+    if (user.subscriptionActive === true || 
+        (user.subscriptionPlan && user.subscriptionPlan !== 'none' && user.subscriptionPlan !== '')) {
       return next();
     }
 

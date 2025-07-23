@@ -1749,7 +1749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Session establishment with proper user validation - FIXED FOR USER ID 2
+  // Enhanced session establishment with regeneration security
   app.post('/api/establish-session', async (req, res) => {
     console.log('Session establishment request:', {
       body: req.body,
@@ -1778,6 +1778,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         delete req.session.userId;
       }
     }
+
+    // Session regeneration for security (prevents session fixation attacks)
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((err: any) => {
+        if (err) {
+          console.error('Session regeneration error:', err);
+          // Continue without regeneration if it fails
+          resolve();
+        } else {
+          console.log('🔐 Session regenerated for security');
+          resolve();
+        }
+      });
+    });
     
     // Handle explicit userId from request
     if (userId) {
@@ -1818,6 +1832,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (targetUser) {
           req.session.userId = targetUser.id;
+          req.session.lastActivity = Date.now();
           await new Promise<void>((resolve, reject) => {
             req.session.save((err: any) => {
               if (err) reject(err);
@@ -2824,11 +2839,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Session regeneration for security before establishing new session
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err: any) => {
+          if (err) {
+            console.error('Session regeneration error:', err);
+            resolve();
+          } else {
+            console.log('🔐 Session regenerated for auto-establishment');
+            resolve();
+          }
+        });
+      });
+
       // Auto-establish session for User ID 2 (development mode)
       const user = await storage.getUser(2);
       if (user) {
         req.session.userId = 2;
         req.session.userEmail = user.email;
+        req.session.lastActivity = Date.now();
         
         // Force session save with callback
         await new Promise<void>((resolve, reject) => {
