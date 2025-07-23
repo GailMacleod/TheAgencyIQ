@@ -282,3 +282,34 @@ export type GiftCertificateActionLog = typeof giftCertificateActionLog.$inferSel
 export type InsertGiftCertificateActionLog = z.infer<typeof insertGiftCertificateActionLogSchema>;
 export type SubscriptionAnalytics = typeof subscriptionAnalytics.$inferSelect;
 export type InsertSubscriptionAnalytics = z.infer<typeof insertSubscriptionAnalyticsSchema>;
+
+// Post logs table for auto-posting tracking and error handling
+export const postLogs = pgTable("post_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  postId: integer("post_id").references(() => posts.id),
+  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
+  content: text("content").notNull(),
+  status: text("status").notNull(), // 'pending', 'success', 'failed', 'retrying'
+  attemptNumber: integer("attempt_number").default(1),
+  maxRetries: integer("max_retries").default(3),
+  errorCode: text("error_code"), // OAuth error, rate limit, API error codes
+  errorMessage: text("error_message"),
+  platformResponse: jsonb("platform_response"), // Full platform API response
+  oauthTokenUsed: text("oauth_token_used"), // Last 4 chars of token for debugging
+  retryAfter: timestamp("retry_after"), // When to retry based on platform response
+  publishedUrl: text("published_url"), // URL of published post if successful
+  analytics: jsonb("analytics"), // Platform analytics if available
+  processingTimeMs: integer("processing_time_ms"), // Performance tracking
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPostLogSchema = createInsertSchema(postLogs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type PostLog = typeof postLogs.$inferSelect;
+export type InsertPostLog = z.infer<typeof insertPostLogSchema>;

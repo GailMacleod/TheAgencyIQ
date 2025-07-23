@@ -65,22 +65,36 @@ app.get('/api/user-status', (req, res) => {
   });
 });
 
-// Auto-posting enforcer endpoint
-app.post('/api/enforce-auto-posting', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Auto-posting enforced: 3/3 posts published',
-    postsProcessed: 3,
-    postsPublished: 3,
-    postsFailed: 0,
-    connectionRepairs: [
-      'Connection validated for facebook',
-      'Connection validated for facebook', 
-      'Connection validated for facebook'
-    ],
-    errors: [],
-    timestamp: new Date().toISOString()
-  });
+// Enhanced Auto-posting enforcer endpoint with real OAuth integration
+app.post('/api/enforce-auto-posting', async (req, res) => {
+  try {
+    console.log('🚀 Enhanced auto-posting enforcer called');
+    
+    // Import and use EnhancedAutoPostingService
+    const { EnhancedAutoPostingService } = await import('./services/EnhancedAutoPostingService.ts');
+    const enhancedService = new EnhancedAutoPostingService();
+    const result = await enhancedService.enforceAutoPosting(2); // User ID 2
+    
+    console.log('✅ Enhanced auto-posting result:', result);
+    res.json({
+      ...result,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Enhanced auto-posting error:', error);
+    
+    // Fallback to mock response for now
+    res.json({
+      success: false,
+      message: 'Enhanced auto-posting service initialization failed - using fallback',
+      postsProcessed: 0,
+      postsPublished: 0,
+      postsFailed: 0,
+      connectionRepairs: [],
+      errors: [error.message || 'Service initialization failed'],
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Subscription usage endpoint
