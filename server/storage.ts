@@ -541,6 +541,75 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedLedger;
   }
+
+  // OAuth token operations for TokenManager integration
+  async storeOAuthToken(userId: number, provider: string, tokenData: any): Promise<void> {
+    const { oauthTokens } = await import('@shared/schema');
+    
+    await db.insert(oauthTokens)
+      .values({
+        userId: userId.toString(),
+        provider,
+        accessToken: tokenData.accessToken,
+        refreshToken: tokenData.refreshToken,
+        expiresAt: new Date(tokenData.expiresAt),
+        scope: tokenData.scope || [],
+        profileId: tokenData.profileId
+      })
+      .onConflictDoUpdate({
+        target: [oauthTokens.userId, oauthTokens.provider],
+        set: {
+          accessToken: tokenData.accessToken,
+          refreshToken: tokenData.refreshToken,
+          expiresAt: new Date(tokenData.expiresAt),
+          scope: tokenData.scope || []
+        }
+      });
+  }
+
+  async getOAuthToken(userId: number, provider: string): Promise<any> {
+    const { oauthTokens } = await import('@shared/schema');
+    
+    const [token] = await db.select()
+      .from(oauthTokens)
+      .where(and(
+        eq(oauthTokens.userId, userId.toString()),
+        eq(oauthTokens.provider, provider)
+      ));
+    
+    return token || null;
+  }
+
+  async getUserOAuthTokens(userId: number): Promise<Record<string, any>> {
+    const { oauthTokens } = await import('@shared/schema');
+    
+    const tokens = await db.select()
+      .from(oauthTokens)
+      .where(eq(oauthTokens.userId, userId.toString()));
+    
+    const tokenMap: Record<string, any> = {};
+    for (const token of tokens) {
+      tokenMap[token.provider] = {
+        accessToken: token.accessToken,
+        refreshToken: token.refreshToken,
+        expiresAt: token.expiresAt?.getTime(),
+        scope: token.scope || [],
+        provider: token.provider
+      };
+    }
+    
+    return tokenMap;
+  }
+
+  async removeOAuthToken(userId: number, provider: string): Promise<void> {
+    const { oauthTokens } = await import('@shared/schema');
+    
+    await db.delete(oauthTokens)
+      .where(and(
+        eq(oauthTokens.userId, userId.toString()),
+        eq(oauthTokens.provider, provider)
+      ));
+  }
 }
 
 export const storage = new DatabaseStorage();

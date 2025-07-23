@@ -42,6 +42,7 @@ import { PipelineOrchestrator } from './services/PipelineOrchestrator';
 import { EnhancedCancellationHandler } from './services/EnhancedCancellationHandler';
 import PipelineIntegrationFix from './services/PipelineIntegrationFix';
 import SessionCacheManager from './services/SessionCacheManager';
+import TokenManager from './oauth/tokenManager.js';
 
 // Extended session types
 declare module 'express-session' {
@@ -83,6 +84,9 @@ if (!process.env.SESSION_SECRET) {
 }
 
 // Initialize services
+// Initialize Token Manager for OAuth handling
+const tokenManager = new TokenManager(storage);
+
 // Initialize Stripe only if secret key is available
 let stripe: any = null;
 if (process.env.STRIPE_SECRET_KEY) {
@@ -3018,12 +3022,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (userId) {
         console.log(`🔓 Logging out user ${userId}, session ${sessionId}`);
         
-        // Revoke OAuth tokens before logout for security
+        // Comprehensive OAuth token revocation before logout
         try {
-          const sessionManager = (await import('./sessionUtils.js')).default;
-          await sessionManager.refreshTokensIfNeeded(userId); // Clear refresh tokens
+          const providers = ['google', 'facebook', 'linkedin', 'twitter', 'youtube'];
+          const revocationResults = [];
+          
+          for (const provider of providers) {
+            try {
+              const success = await tokenManager.revokeToken(userId, provider);
+              revocationResults.push({ provider, success });
+              console.log(`🔐 ${provider} token revocation: ${success ? 'SUCCESS' : 'FAILED'}`);
+            } catch (providerError) {
+              console.log(`⚠️ ${provider} token revocation failed:`, providerError.message);
+              revocationResults.push({ provider, success: false, error: providerError.message });
+            }
+          }
+          
+          console.log(`✅ OAuth revocation completed: ${revocationResults.filter(r => r.success).length}/${providers.length} successful`);
         } catch (tokenError) {
-          console.log('⚠️ Token revocation failed during logout:', tokenError.message);
+          console.log('⚠️ OAuth token revocation system failed during logout:', tokenError.message);
         }
       }
       
@@ -4165,6 +4182,64 @@ Continue building your Value Proposition Canvas systematically.`;
     } catch (error) {
       console.error("Error fetching analytics:", error);
       res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // OAuth token management endpoints
+  app.get('/api/oauth/tokens', requireAuth, async (req: any, res: any) => {
+    try {
+      const tokens = await tokenManager.getUserTokens(req.session.userId);
+      res.json(tokens);
+    } catch (error) {
+      console.error('Failed to get OAuth tokens:', error);
+      res.status(500).json({ error: 'Failed to retrieve tokens' });
+    }
+  });
+
+  app.post('/api/oauth/refresh', requireAuth, async (req: any, res: any) => {
+    try {
+      const { provider } = req.body;
+      const refreshedToken = await tokenManager.refreshAccessToken(req.session.userId, provider);
+      res.json(refreshedToken);
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      res.status(401).json({ error: 'Token refresh failed' });
+    }
+  });
+
+  app.post('/api/oauth/revoke', requireAuth, async (req: any, res: any) => {
+    try {
+      const { provider } = req.body;
+      const success = await tokenManager.revokeToken(req.session.userId, provider);
+      res.json({ success });
+    } catch (error) {
+      console.error('Token revocation failed:', error);
+      res.status(500).json({ error: 'Token revocation failed' });
+    }
+  });
+
+  app.get('/api/oauth/status', requireAuth, async (req: any, res: any) => {
+    try {
+      const tokens = await tokenManager.getUserTokens(req.session.userId);
+      const status: Record<string, any> = {};
+      
+      for (const [provider, token] of Object.entries(tokens)) {
+        const tokenData = token as any;
+        const needsRefresh = tokenManager.tokenNeedsRefresh(tokenData);
+        
+        status[provider] = {
+          connected: true,
+          expiresAt: tokenData.expiresAt,
+          needsRefresh,
+          scopes: tokenData.scope || [],
+          provider
+        };
+      }
+      
+      res.json(status);
+    } catch (error) {
+      console.error('Failed to get OAuth status:', error);
+      res.status(500).json({ error: 'Failed to retrieve OAuth status' });
     }
   });
 
