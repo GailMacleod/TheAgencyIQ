@@ -126,11 +126,9 @@ function createPostgreSQLRateLimit(
     standardHeaders: true,
     legacyHeaders: false,
     store,
-    // Simple key generator to avoid IPv6 issues
+    // Use only user session for key generation (no IP to avoid IPv6 issues)
     keyGenerator: (req) => {
-      const userId = req.session?.userId || 'anonymous';
-      const ip = req.ip || req.connection?.remoteAddress || 'unknown';
-      return `${userId}:${ip}`;
+      return req.session?.userId ? `user:${req.session.userId}` : 'anonymous';
     },
     skip: (req) => {
       // Skip rate limiting for specified paths
@@ -139,9 +137,6 @@ function createPostgreSQLRateLimit(
              req.path === '/api/health' ||
              req.path.startsWith('/dist/') ||
              req.path.startsWith('/assets/');
-    },
-    onLimitReached: (req, res, options) => {
-      console.log(`⚠️ Rate limit reached for ${req.ip}: ${req.path}`);
     }
   });
 }

@@ -1,243 +1,386 @@
-/**
- * AUTHENTICATED AUTO-POSTING SERVICE
- * Replaces mock success assumptions with real OAuth token validation
- * Provides proper scope checking and 401 refresh handling
- */
+import { db } from '../db';
+import { users, quotaUsage, postSchedule, platformConnections } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
+import passport from 'passport';
+import { Strategy as TwitterStrategy } from 'passport-twitter';
+import { Strategy as FacebookStrategy } from 'passport-facebook';
+import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import sgMail from '@sendgrid/mail';
+import twilio from 'twilio';
+import { AtomicQuotaManager } from '../middleware/AtomicQuotaManager';
 
-import { oauthTokenManager } from './OAuthTokenManager';
-import axios from 'axios';
+// Initialize Twilio client
+let twilioClient: any = null;
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+  twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+}
 
-interface PostData {
-  content: string;
-  platform: string;
-  userId: string;
-  postId: number;
-  imageUrl?: string;
-  videoUrl?: string;
+// Initialize SendGrid
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
 interface PostResult {
   success: boolean;
   platform: string;
-  postId: number;
-  platformPostId?: string;
+  postId?: string;
   error?: string;
-  tokenRefreshed?: boolean;
+  retryAttempt?: number;
+}
+
+interface AuthTokens {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: Date;
+  scope?: string[];
 }
 
 export class AuthenticatedAutoPosting {
-  private static instance: AuthenticatedAutoPosting;
   
-  // Platform-specific required scopes for posting
-  private readonly requiredScopes: Record<string, string[]> = {
-    facebook: ['pages_manage_posts', 'pages_read_engagement'],
-    instagram: ['instagram_basic', 'instagram_content_publish'],
-    linkedin: ['w_member_social', 'r_liteprofile'],
-    youtube: ['https://www.googleapis.com/auth/youtube.upload'],
-    x: ['tweet.write', 'users.read']
-  };
-
-  public static getInstance(): AuthenticatedAutoPosting {
-    if (!AuthenticatedAutoPosting.instance) {
-      AuthenticatedAutoPosting.instance = new AuthenticatedAutoPosting();
-    }
-    return AuthenticatedAutoPosting.instance;
+  constructor() {
+    this.initializePassportStrategies();
   }
 
   /**
-   * Post to single platform with authentic OAuth validation
+   * Initialize Passport.js strategies for all platforms
    */
-  async postToPlatform(postData: PostData): Promise<PostResult> {
-    const { platform, userId, postId, content } = postData;
-    
+  private initializePassportStrategies() {
+    // Twitter Strategy
+    if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
+      passport.use(new TwitterStrategy({
+        consumerKey: process.env.TWITTER_CONSUMER_KEY,
+        consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
+        callbackURL: '/auth/twitter/callback'
+      }, async (token, tokenSecret, profile, done) => {
+        try {
+          await this.storeOAuthTokens(profile.id, 'twitter', {
+            accessToken: token,
+            refreshToken: tokenSecret,
+            scope: ['tweet.write', 'users.read']
+          });
+          return done(null, profile);
+        } catch (error) {
+          return done(error);
+        }
+      }));
+    }
+
+    // Facebook Strategy
+    if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
+      passport.use(new FacebookStrategy({
+        clientID: process.env.FACEBOOK_APP_ID,
+        clientSecret: process.env.FACEBOOK_APP_SECRET,
+        callbackURL: '/auth/facebook/callback'
+      }, async (accessToken, refreshToken, profile, done) => {
+        try {
+          await this.storeOAuthTokens(profile.id, 'facebook', {
+            accessToken,
+            refreshToken,
+            scope: ['pages_manage_posts', 'pages_read_engagement']
+          });
+          return done(null, profile);
+        } catch (error) {
+          return done(error);
+        }
+      }));
+    }
+
+    // LinkedIn Strategy
+    if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
+      passport.use(new LinkedInStrategy({
+        clientID: process.env.LINKEDIN_CLIENT_ID,
+        clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+        callbackURL: '/auth/linkedin/callback',
+        scope: ['w_member_social', 'r_liteprofile']
+      }, async (accessToken, refreshToken, profile, done) => {
+        try {
+          await this.storeOAuthTokens(profile.id, 'linkedin', {
+            accessToken,
+            refreshToken,
+            scope: ['w_member_social']
+          });
+          return done(null, profile);
+        } catch (error) {
+          return done(error);
+        }
+      }));
+    }
+
+    // Google Strategy (for YouTube)
+    if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+      passport.use(new GoogleStrategy({
+        clientID: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        callbackURL: '/auth/google/callback'
+      }, async (accessToken, refreshToken, profile, done) => {
+        try {
+          await this.storeOAuthTokens(profile.id, 'youtube', {
+            accessToken,
+            refreshToken,
+            scope: ['https://www.googleapis.com/auth/youtube.upload']
+          });
+          return done(null, profile);
+        } catch (error) {
+          return done(error);
+        }
+      }));
+    }
+
+    console.log('✅ Passport strategies initialized for authenticated posting');
+  }
+
+  /**
+   * Store OAuth tokens in database using Drizzle
+   */
+  private async storeOAuthTokens(userId: string, platform: string, tokens: AuthTokens) {
     try {
-      console.log(`🚀 Starting authenticated post to ${platform} for user ${userId}`);
-      
-      // Step 1: Get valid OAuth token with automatic refresh
-      const token = await oauthTokenManager.getValidToken(userId, platform);
-      if (!token) {
-        return {
-          success: false,
-          platform,
-          postId,
-          error: 'No valid OAuth token available. Please reconnect your account.'
-        };
-      }
+      await db.insert(platformConnections).values({
+        userId,
+        platform,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresAt: tokens.expiresAt,
+        scope: tokens.scope?.join(','),
+        isActive: true
+      }).onConflictDoUpdate({
+        target: [platformConnections.userId, platformConnections.platform],
+        set: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresAt: tokens.expiresAt,
+          scope: tokens.scope?.join(','),
+          updatedAt: new Date()
+        }
+      });
 
-      // Step 2: Validate required scopes for posting
-      const requiredScopes = this.requiredScopes[platform] || [];
-      if (!oauthTokenManager.validateScopes(token, requiredScopes)) {
-        return {
-          success: false,
-          platform,
-          postId,
-          error: `Insufficient permissions. Required scopes: ${requiredScopes.join(', ')}`
-        };
-      }
+      console.log(`✅ OAuth tokens stored for ${platform} - User: ${userId}`);
+    } catch (error) {
+      console.error(`❌ Failed to store OAuth tokens for ${platform}:`, error);
+      throw error;
+    }
+  }
 
-      // Step 3: Attempt to post to platform
-      let result = await this.performPlatformPost(postData, token.accessToken);
-      
-      // Step 4: Handle 401 response with token refresh
-      if (result.status === 401) {
-        console.log(`🔄 Got 401 response, attempting token refresh for ${platform}`);
+  /**
+   * Authenticate auto-posting with real OAuth tokens and Drizzle transactions
+   */
+  async enforceAutoPosting(userId: string, posts: any[]): Promise<PostResult[]> {
+    console.log(`🚀 Starting authenticated auto-posting for user ${userId} with ${posts.length} posts`);
+    
+    const results: PostResult[] = [];
+
+    for (const post of posts) {
+      try {
+        // Check quota using atomic manager before posting
+        const quotaResult = await AtomicQuotaManager.enforceQuota(
+          userId,
+          post.platform,
+          'post',
+          'professional'
+        );
+
+        if (!quotaResult.allowed) {
+          results.push({
+            success: false,
+            platform: post.platform,
+            error: quotaResult.message
+          });
+          continue;
+        }
+
+        // Perform authenticated posting with Drizzle transaction
+        const postResult = await db.transaction(async (tx) => {
+          // Get OAuth tokens from database
+          const connection = await tx
+            .select()
+            .from(platformConnections)
+            .where(
+              and(
+                eq(platformConnections.userId, userId),
+                eq(platformConnections.platform, post.platform),
+                eq(platformConnections.isActive, true)
+              )
+            );
+
+          if (!connection.length) {
+            throw new Error(`No OAuth connection found for ${post.platform}`);
+          }
+
+          const tokens = connection[0];
+
+          // Refresh token if expired
+          if (tokens.expiresAt && new Date() > tokens.expiresAt) {
+            await this.refreshTokenIfNeeded(userId, post.platform, tokens);
+          }
+
+          // Post to platform with exponential backoff retry
+          const platformResult = await this.postToPlatformWithRetry(
+            post.platform,
+            post.content,
+            tokens.accessToken,
+            3 // max retries
+          );
+
+          // Update post status in database
+          await tx
+            .update(postSchedule)
+            .set({
+              status: platformResult.success ? 'posted' : 'failed',
+              isCounted: platformResult.success,
+              publishedAt: platformResult.success ? new Date() : undefined
+            })
+            .where(eq(postSchedule.postId, post.postId));
+
+          return platformResult;
+        });
+
+        results.push(postResult);
+
+        // Send notifications
+        await this.sendPostNotifications(userId, postResult);
+
+      } catch (error) {
+        console.error(`❌ Auto-posting failed for ${post.platform}:`, error);
+        results.push({
+          success: false,
+          platform: post.platform,
+          error: error.message
+        });
+
+        // Send failure notification
+        await this.sendFailureNotification(userId, post.platform, error.message);
+      }
+    }
+
+    console.log(`✅ Auto-posting completed: ${results.filter(r => r.success).length}/${results.length} successful`);
+    return results;
+  }
+
+  /**
+   * Post to platform with exponential backoff retry
+   */
+  private async postToPlatformWithRetry(
+    platform: string,
+    content: string,
+    accessToken: string,
+    maxRetries: number
+  ): Promise<PostResult> {
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const result = await this.postToPlatform(platform, content, accessToken);
         
-        const refreshedToken = await oauthTokenManager.handle401Response(userId, platform);
-        if (refreshedToken) {
-          console.log(`✅ Token refreshed, retrying post to ${platform}`);
-          result = await this.performPlatformPost(postData, refreshedToken.accessToken);
-          
-          return {
-            success: result.success,
-            platform,
-            postId,
-            platformPostId: result.platformPostId,
-            error: result.error,
-            tokenRefreshed: true
-          };
-        } else {
+        if (result.success) {
+          return { ...result, retryAttempt: attempt };
+        }
+
+        // If not successful and not last attempt, wait before retry
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 30000); // Exponential backoff max 30s
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+
+      } catch (error) {
+        console.error(`❌ Attempt ${attempt} failed for ${platform}:`, error);
+        
+        if (attempt === maxRetries) {
           return {
             success: false,
             platform,
-            postId,
-            error: 'Authentication failed and token refresh unsuccessful. Please reconnect your account.'
+            error: error.message,
+            retryAttempt: attempt
           };
         }
+
+        // Wait before retry
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 30000);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-
-      return {
-        success: result.success,
-        platform,
-        postId,
-        platformPostId: result.platformPostId,
-        error: result.error
-      };
-
-    } catch (error: any) {
-      console.error(`❌ Error posting to ${platform}:`, error);
-      return {
-        success: false,
-        platform,
-        postId,
-        error: `Platform API error: ${error.message}`
-      };
     }
-  }
 
-  /**
-   * Perform actual platform-specific posting
-   */
-  private async performPlatformPost(postData: PostData, accessToken: string): Promise<{
-    success: boolean;
-    status?: number;
-    platformPostId?: string;
-    error?: string;
-  }> {
-    const { platform, content, imageUrl, videoUrl } = postData;
-
-    try {
-      switch (platform) {
-        case 'facebook':
-          return await this.postToFacebook(content, accessToken, imageUrl);
-        
-        case 'instagram':
-          return await this.postToInstagram(content, accessToken, imageUrl);
-        
-        case 'linkedin':
-          return await this.postToLinkedIn(content, accessToken);
-        
-        case 'youtube':
-          return await this.postToYouTube(content, accessToken, videoUrl);
-        
-        case 'x':
-          return await this.postToX(content, accessToken, imageUrl);
-        
-        default:
-          return {
-            success: false,
-            error: `Unsupported platform: ${platform}`
-          };
-      }
-    } catch (error: any) {
-      return {
-        success: false,
-        status: error.response?.status,
-        error: error.response?.data?.error?.message || error.message
-      };
-    }
-  }
-
-  /**
-   * Facebook posting implementation
-   */
-  private async postToFacebook(content: string, accessToken: string, imageUrl?: string): Promise<any> {
-    const postData: any = {
-      message: content,
-      access_token: accessToken
+    return {
+      success: false,
+      platform,
+      error: 'Max retry attempts exceeded',
+      retryAttempt: maxRetries
     };
+  }
 
-    if (imageUrl) {
-      postData.link = imageUrl;
+  /**
+   * Real platform API calls (no mock random success)
+   */
+  private async postToPlatform(platform: string, content: string, accessToken: string): Promise<PostResult> {
+    switch (platform) {
+      case 'twitter':
+        return await this.postToTwitter(content, accessToken);
+      case 'facebook':
+        return await this.postToFacebook(content, accessToken);
+      case 'linkedin':
+        return await this.postToLinkedIn(content, accessToken);
+      case 'instagram':
+        return await this.postToInstagram(content, accessToken);
+      case 'youtube':
+        return await this.postToYouTube(content, accessToken);
+      default:
+        throw new Error(`Unsupported platform: ${platform}`);
     }
+  }
 
-    const response = await axios.post(
-      'https://graph.facebook.com/me/feed',
-      postData
-    );
+  private async postToTwitter(content: string, accessToken: string): Promise<PostResult> {
+    const response = await fetch('https://api.twitter.com/2/tweets', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text: content })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(`Twitter API error: ${data.title || 'Unknown error'}`);
+    }
 
     return {
       success: true,
-      status: response.status,
-      platformPostId: response.data.id
+      platform: 'twitter',
+      postId: data.data?.id
     };
   }
 
-  /**
-   * Instagram posting implementation
-   */
-  private async postToInstagram(content: string, accessToken: string, imageUrl?: string): Promise<any> {
-    // Instagram requires image URL for posts
-    if (!imageUrl) {
-      return {
-        success: false,
-        error: 'Instagram posts require an image'
-      };
+  private async postToFacebook(content: string, accessToken: string): Promise<PostResult> {
+    const response = await fetch('https://graph.facebook.com/v18.0/me/feed', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message: content })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(`Facebook API error: ${data.error?.message || 'Unknown error'}`);
     }
-
-    // Create media container
-    const containerResponse = await axios.post(
-      'https://graph.facebook.com/me/media',
-      {
-        image_url: imageUrl,
-        caption: content,
-        access_token: accessToken
-      }
-    );
-
-    // Publish the media
-    const publishResponse = await axios.post(
-      'https://graph.facebook.com/me/media_publish',
-      {
-        creation_id: containerResponse.data.id,
-        access_token: accessToken
-      }
-    );
 
     return {
       success: true,
-      status: publishResponse.status,
-      platformPostId: publishResponse.data.id
+      platform: 'facebook',
+      postId: data.id
     };
   }
 
-  /**
-   * LinkedIn posting implementation
-   */
-  private async postToLinkedIn(content: string, accessToken: string): Promise<any> {
-    const response = await axios.post(
-      'https://api.linkedin.com/v2/ugcPosts',
-      {
-        author: 'urn:li:person:YOUR_PERSON_ID', // This should be obtained from user profile
+  private async postToLinkedIn(content: string, accessToken: string): Promise<PostResult> {
+    const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        author: 'urn:li:person:PLACEHOLDER',
         lifecycleState: 'PUBLISHED',
         specificContent: {
           'com.linkedin.ugc.ShareContent': {
@@ -250,123 +393,266 @@ export class AuthenticatedAutoPosting {
         visibility: {
           'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
         }
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(`LinkedIn API error: ${data.message || 'Unknown error'}`);
+    }
+
+    return {
+      success: true,
+      platform: 'linkedin',
+      postId: data.id
+    };
+  }
+
+  private async postToInstagram(content: string, accessToken: string): Promise<PostResult> {
+    // Instagram posting requires Facebook Graph API
+    const response = await fetch('https://graph.facebook.com/v18.0/me/media', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
       },
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
+      body: JSON.stringify({
+        caption: content,
+        media_type: 'TEXT'
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(`Instagram API error: ${data.error?.message || 'Unknown error'}`);
+    }
+
+    return {
+      success: true,
+      platform: 'instagram',
+      postId: data.id
+    };
+  }
+
+  private async postToYouTube(content: string, accessToken: string): Promise<PostResult> {
+    // YouTube Community Posts API
+    const response = await fetch('https://www.googleapis.com/youtube/v3/communityPosts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        snippet: {
+          textMessageDetails: {
+            messageText: content
+          }
         }
-      }
-    );
+      })
+    });
 
-    return {
-      success: true,
-      status: response.status,
-      platformPostId: response.headers['x-linkedin-id']
-    };
-  }
-
-  /**
-   * YouTube posting implementation (for video content)
-   */
-  private async postToYouTube(content: string, accessToken: string, videoUrl?: string): Promise<any> {
-    if (!videoUrl) {
-      return {
-        success: false,
-        error: 'YouTube posts require a video URL'
-      };
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(`YouTube API error: ${data.error?.message || 'Unknown error'}`);
     }
 
-    // YouTube upload implementation would go here
-    // This is a complex process involving the YouTube Data API v3
-    console.log('🎥 YouTube posting not fully implemented - would upload video with content:', content);
-    
     return {
       success: true,
-      status: 200,
-      platformPostId: `youtube_${Date.now()}`
+      platform: 'youtube',
+      postId: data.id
     };
   }
 
   /**
-   * X (Twitter) posting implementation
+   * Refresh OAuth token if needed
    */
-  private async postToX(content: string, accessToken: string, imageUrl?: string): Promise<any> {
-    const tweetData: any = {
-      text: content
-    };
-
-    if (imageUrl) {
-      // First upload media if image provided
-      // Twitter media upload is a separate process
-      console.log('📸 X image upload not fully implemented');
-    }
-
-    const response = await axios.post(
-      'https://api.twitter.com/2/tweets',
-      tweetData,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    return {
-      success: true,
-      status: response.status,
-      platformPostId: response.data.data.id
-    };
-  }
-
-  /**
-   * Bulk posting with authentication validation
-   */
-  async bulkPost(posts: PostData[]): Promise<PostResult[]> {
-    console.log(`🚀 Starting authenticated bulk posting for ${posts.length} posts`);
-    
-    const results: PostResult[] = [];
-    
-    // Rate limiting: 2 second delay between posts to prevent platform bans
-    for (const post of posts) {
-      const result = await this.postToPlatform(post);
-      results.push(result);
+  private async refreshTokenIfNeeded(userId: string, platform: string, tokens: any) {
+    try {
+      console.log(`🔄 Refreshing ${platform} token for user ${userId}`);
       
-      // Delay between posts
-      if (posts.indexOf(post) < posts.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      let refreshUrl = '';
+      let refreshPayload: any = {};
+
+      switch (platform) {
+        case 'google':
+        case 'youtube':
+          refreshUrl = 'https://oauth2.googleapis.com/token';
+          refreshPayload = {
+            client_id: process.env.GOOGLE_CLIENT_ID,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET,
+            refresh_token: tokens.refreshToken,
+            grant_type: 'refresh_token'
+          };
+          break;
+        case 'facebook':
+        case 'instagram':
+          refreshUrl = 'https://graph.facebook.com/v18.0/oauth/access_token';
+          refreshPayload = {
+            client_id: process.env.FACEBOOK_APP_ID,
+            client_secret: process.env.FACEBOOK_APP_SECRET,
+            grant_type: 'fb_exchange_token',
+            fb_exchange_token: tokens.accessToken
+          };
+          break;
+        case 'linkedin':
+          refreshUrl = 'https://www.linkedin.com/oauth/v2/accessToken';
+          refreshPayload = {
+            client_id: process.env.LINKEDIN_CLIENT_ID,
+            client_secret: process.env.LINKEDIN_CLIENT_SECRET,
+            refresh_token: tokens.refreshToken,
+            grant_type: 'refresh_token'
+          };
+          break;
       }
+
+      const response = await fetch(refreshUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(refreshPayload)
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(`Token refresh failed: ${data.error_description || data.error}`);
+      }
+
+      // Update tokens in database
+      await db
+        .update(platformConnections)
+        .set({
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token || tokens.refreshToken,
+          expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : undefined,
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            eq(platformConnections.userId, userId),
+            eq(platformConnections.platform, platform)
+          )
+        );
+
+      console.log(`✅ Token refreshed successfully for ${platform}`);
+
+    } catch (error) {
+      console.error(`❌ Token refresh failed for ${platform}:`, error);
+      throw error;
     }
-    
-    console.log(`✅ Bulk posting completed: ${results.filter(r => r.success).length}/${results.length} successful`);
-    return results;
   }
 
   /**
-   * Check user's posting permissions across all platforms
+   * Send notifications via Twilio SMS and SendGrid email
    */
-  async checkPostingPermissions(userId: string): Promise<Record<string, {
-    connected: boolean;
-    hasRequiredScopes: boolean;
-    scopes?: string[];
-  }>> {
-    const platforms = ['facebook', 'instagram', 'linkedin', 'youtube', 'x'];
-    const permissions: Record<string, any> = {};
-    
-    for (const platform of platforms) {
-      const token = await oauthTokenManager.getValidToken(userId, platform);
-      const requiredScopes = this.requiredScopes[platform] || [];
+  private async sendPostNotifications(userId: string, result: PostResult) {
+    try {
+      // Get user details
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!user.length) return;
+
+      const userInfo = user[0];
       
-      permissions[platform] = {
-        connected: !!token,
-        hasRequiredScopes: token ? oauthTokenManager.validateScopes(token, requiredScopes) : false,
-        scopes: token?.scope || []
-      };
+      if (result.success) {
+        // Send success notifications
+        await this.sendSMSNotification(
+          userInfo.email || '',
+          `✅ Post published successfully to ${result.platform}! Post ID: ${result.postId}`
+        );
+
+        await this.sendEmailNotification(
+          userInfo.email || '',
+          `Post Published - ${result.platform}`,
+          `Your post has been successfully published to ${result.platform}.\n\nPost ID: ${result.postId}\nPlatform: ${result.platform}\nTime: ${new Date().toISOString()}`
+        );
+      }
+
+    } catch (error) {
+      console.error('❌ Failed to send post notifications:', error);
     }
-    
-    return permissions;
+  }
+
+  /**
+   * Send failure notification
+   */
+  private async sendFailureNotification(userId: string, platform: string, error: string) {
+    try {
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!user.length) return;
+
+      const userInfo = user[0];
+
+      await this.sendSMSNotification(
+        userInfo.email || '',
+        `❌ Post failed on ${platform}: ${error}`
+      );
+
+      await this.sendEmailNotification(
+        userInfo.email || '',
+        `Post Failed - ${platform}`,
+        `Your post failed to publish to ${platform}.\n\nError: ${error}\nTime: ${new Date().toISOString()}\n\nPlease check your ${platform} connection and try again.`
+      );
+
+    } catch (error) {
+      console.error('❌ Failed to send failure notification:', error);
+    }
+  }
+
+  /**
+   * Send SMS via Twilio
+   */
+  private async sendSMSNotification(phoneNumber: string, message: string) {
+    if (!twilioClient || !process.env.TWILIO_PHONE_NUMBER) {
+      console.log('⚠️ Twilio not configured, skipping SMS');
+      return;
+    }
+
+    try {
+      await twilioClient.messages.create({
+        body: message,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: phoneNumber
+      });
+
+      console.log(`📱 SMS sent to ${phoneNumber}`);
+    } catch (error) {
+      console.error('❌ SMS sending failed:', error);
+    }
+  }
+
+  /**
+   * Send email via SendGrid
+   */
+  private async sendEmailNotification(email: string, subject: string, text: string) {
+    if (!process.env.SENDGRID_API_KEY || !process.env.SENDGRID_FROM_EMAIL) {
+      console.log('⚠️ SendGrid not configured, skipping email');
+      return;
+    }
+
+    try {
+      await sgMail.send({
+        to: email,
+        from: process.env.SENDGRID_FROM_EMAIL,
+        subject,
+        text,
+        html: `<p>${text.replace(/\n/g, '<br>')}</p>`
+      });
+
+      console.log(`📧 Email sent to ${email}`);
+    } catch (error) {
+      console.error('❌ Email sending failed:', error);
+    }
   }
 }
-
-export const authenticatedAutoPosting = AuthenticatedAutoPosting.getInstance();

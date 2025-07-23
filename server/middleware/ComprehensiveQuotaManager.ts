@@ -17,33 +17,32 @@ class PostgreSQLStore {
       const result = await db.transaction(async (tx) => {
         const existing = await tx
           .select()
-          .from(rateLimits)
+          .from(rateLimitStore)
           .where(and(
-            eq(rateLimits.key, key),
-            eq(rateLimits.windowStart, windowStart)
+            eq(rateLimitStore.key, key),
+            eq(rateLimitStore.resetTime, windowStart)
           ))
-          .for('update')
           .limit(1);
 
-        const currentCount = existing[0]?.count || 0;
-        const newCount = currentCount + 1;
+        const currentHits = existing[0]?.hits || 0;
+        const newHits = currentHits + 1;
 
         await tx
-          .insert(rateLimits)
+          .insert(rateLimitStore)
           .values({
             key,
-            windowStart,
-            count: newCount
+            hits: newHits,
+            resetTime: new Date(windowStart.getTime() + 60 * 60 * 1000)
           })
           .onConflictDoUpdate({
-            target: [rateLimits.key, rateLimits.windowStart],
+            target: [rateLimitStore.key],
             set: {
-              count: sql`${rateLimits.count} + 1`,
-              updatedAt: new Date()
+              hits: sql`${rateLimitStore.hits} + 1`,
+              resetTime: sql`${rateLimitStore.resetTime}`
             }
           });
 
-        return newCount;
+        return newHits;
       });
 
       const nextReset = new Date(windowStart);

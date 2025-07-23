@@ -122,6 +122,24 @@ export const rateLimitStore = pgTable("rate_limit_store", {
   windowStartIdx: index("idx_rate_limit_window_start").on(table.windowStart),
 }));
 
+// Platform connections table for OAuth tokens
+export const platformConnections = pgTable("platform_connections", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 50 }).notNull(),
+  platform: varchar("platform", { length: 50 }).notNull(), // 'facebook', 'instagram', 'linkedin', 'twitter', 'youtube'
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at"),
+  scope: text("scope"), // Comma-separated scopes
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userPlatformIdx: unique().on(table.userId, table.platform),
+  userIdx: index("idx_platform_user").on(table.userId),
+  platformIdx: index("idx_platform_type").on(table.platform),
+}));
+
 // Legacy posts table (keeping for backward compatibility)
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
@@ -149,22 +167,7 @@ export const posts = pgTable("posts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Platform connections for OAuth tokens with unique constraints
-export const platformConnections = pgTable("platform_connections", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
-  platformUserId: text("platform_user_id").notNull(),
-  platformUsername: text("platform_username").notNull(),
-  accessToken: text("access_token").notNull(),
-  refreshToken: text("refresh_token"),
-  expiresAt: timestamp("expires_at"),
-  isActive: boolean("is_active").default(true),
-  connectedAt: timestamp("connected_at").defaultNow(),
-}, (table) => ({
-  // UNIQUE CONSTRAINT: Prevent duplicate active connections per user-platform
-  uniqueUserPlatform: index("unique_user_platform_active").on(table.userId, table.platform).where(eq(table.isActive, true)),
-}));
+// Platform connections already defined above - removing duplicate
 
 // Brand purpose for content generation
 export const brandPurpose = pgTable("brand_purpose", {
