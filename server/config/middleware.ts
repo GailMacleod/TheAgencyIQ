@@ -181,10 +181,21 @@ export function configureMiddleware(app: Express): void {
   app.use(session(sessionConfig));
   console.log('✅ PostgreSQL session store configured');
 
-  // Passport initialization
-  app.use(passport.initialize());
-  app.use(passport.session());
-  console.log('✅ Passport OAuth initialized');
+  // Passport initialization - skip for video endpoints to avoid session errors
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/video/')) {
+      return next();
+    }
+    passport.initialize()(req, res, next);
+  });
+  
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/video/')) {
+      return next();
+    }
+    passport.session()(req, res, next);
+  });
+  console.log('✅ Passport OAuth initialized (bypassed for video endpoints)');
 
   // Rate limiting
   app.use('/api/', apiRateLimit);

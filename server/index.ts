@@ -1130,6 +1130,12 @@ async function startServer() {
   // Register API routes FIRST before any middleware that might interfere
   try {
     console.log('📡 Loading routes...');
+    
+    // Setup OAuth routes with complete system BEFORE main routes
+    const { oauthCompleteSystem } = await import('./auth/oauth-complete-system');
+    await oauthCompleteSystem.setupRoutes(app);
+    console.log('🔗 Complete OAuth system configured with Passport.js');
+    
     const { registerRoutes } = await import('./routes');
     await registerRoutes(app);
     console.log('✅ Routes registered successfully');

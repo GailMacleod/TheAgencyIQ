@@ -109,18 +109,15 @@ Technical Specifications:
     `.trim();
   }
 
-  async generateVideo(userId: string, request: VeoVideoRequest): Promise<{ jobId: string; estimatedTime: string }> {
+  async generateVideo(request: VeoVideoRequest): Promise<{ jobId: string; estimatedTime: string }> {
     try {
-      console.log(`🎬 Starting VEO video generation for user ${userId}`);
+      console.log(`🎬 Starting VEO video generation`);
       console.log(`📝 Original prompt: ${request.prompt}`);
       
-      // FIXED: Get user with brand purpose from updated schema
-      const user = await storage.getUser(userId);
-      if (user) {
-        request.brandPurpose = request.brandPurpose || user.brandPurpose || 'Helping Queensland businesses succeed';
-        request.businessName = request.businessName || user.businessName || user.firstName || 'Queensland Business';
-        request.location = request.location || user.location || 'Queensland, Australia';
-      }
+      // Use provided context or defaults
+      request.brandPurpose = request.brandPurpose || 'Helping Queensland businesses succeed';
+      request.businessName = request.businessName || 'Queensland Business';
+      request.location = request.location || 'Queensland, Australia';
 
       const accessToken = await this.getAccessToken();
       const cinematicPrompt = this.createCinematicPrompt(request);
