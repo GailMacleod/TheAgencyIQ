@@ -6,6 +6,7 @@
 
 import { Express } from 'express';
 import { SecurePostManager, postManagerLogger } from '../services/SecurePostManager';
+import { EnhancedPostManager, scriptRateLimiter, enhancedPostLogger } from '../services/EnhancedPostManager';
 import { z } from 'zod';
 
 // Validation schemas
@@ -25,6 +26,15 @@ const bulkUpdateSchema = z.object({
     content: z.string().min(1).max(5000).optional(),
     scheduledFor: z.string().datetime().optional()
   })).min(1).max(50)
+});
+
+const publishPostSchema = z.object({
+  postId: z.number().positive(),
+  platform: z.enum(['facebook', 'instagram', 'linkedin', 'x', 'youtube']),
+  content: z.string().min(1).max(5000),
+  scheduledFor: z.string().datetime().optional(),
+  imageUrl: z.string().url().optional(),
+  videoUrl: z.string().url().optional()
 });
 
 export function registerSecurePostRoutes(app: Express) {
@@ -301,4 +311,144 @@ export function registerSecurePostRoutes(app: Express) {
       });
     }
   });
+
+  // Enhanced post publishing with OAuth, notifications, and transaction safety
+  app.post('/api/posts/publish-enhanced', scriptRateLimiter, async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      // Validate request body
+      const validation = publishPostSchema.safeParse(req.body);
+      if (!validation.success) {
+        enhancedPostLogger.warn('Invalid enhanced publish request', {
+          userId: userId.substring(0, 8) + '...',
+          errors: validation.error.errors,
+          ip: req.ip
+        });
+        return res.status(400).json({ 
+          message: 'Invalid request data',
+          errors: validation.error.errors
+        });
+      }
+
+      const postData = validation.data;
+      const sessionId = req.session?.id || req.headers['x-session-id'];
+
+      enhancedPostLogger.info('Enhanced post publishing started', {
+        postId: postData.postId,
+        platform: postData.platform,
+        userId: userId.substring(0, 8) + '...',
+        hasSession: !!sessionId,
+        ip: req.ip
+      });
+
+      // Complete publishing workflow with all integrations
+      const result = await EnhancedPostManager.publishPostComplete({
+        ...postData,
+        userId
+      }, sessionId);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          message: 'Post published successfully with all integrations',
+          details: result.details
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Enhanced publishing failed',
+          error: result.details.error
+        });
+      }
+
+    } catch (error: any) {
+      enhancedPostLogger.error('Enhanced publish endpoint error', {
+        userId: req.session?.userId?.substring(0, 8) + '...',
+        error: error.message,
+        ip: req.ip
+      });
+      res.status(500).json({ 
+        message: 'Enhanced publishing failed',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  });
+
+  // OAuth token validation endpoint
+  app.get('/api/posts/oauth-status/:platform', async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      const { platform } = req.params;
+      if (!['facebook', 'instagram', 'linkedin', 'x', 'youtube'].includes(platform)) {
+        return res.status(400).json({ message: 'Invalid platform' });
+      }
+
+      enhancedPostLogger.info('OAuth status check', {
+        platform,
+        userId: userId.substring(0, 8) + '...',
+        ip: req.ip
+      });
+
+      const tokenData = await EnhancedPostManager.getOAuthToken(userId, platform);
+      
+      res.json({
+        platform,
+        connected: !!tokenData,
+        hasRefreshToken: !!(tokenData?.refreshToken),
+        expiresAt: tokenData?.expiresAt?.toISOString(),
+        scopes: tokenData?.scope || []
+      });
+
+    } catch (error: any) {
+      enhancedPostLogger.error('OAuth status check failed', {
+        platform: req.params.platform,
+        userId: req.session?.userId?.substring(0, 8) + '...',
+        error: error.message,
+        ip: req.ip
+      });
+      res.status(500).json({ 
+        message: 'OAuth status check failed',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  });
+
+  // Session validation endpoint
+  app.post('/api/posts/validate-session', async (req: any, res) => {
+    try {
+      const { sessionId } = req.body;
+      
+      enhancedPostLogger.info('Session validation request', {
+        hasSessionId: !!sessionId,
+        ip: req.ip
+      });
+
+      const validation = await EnhancedPostManager.validateSession(sessionId);
+      
+      res.json({
+        valid: validation.isValid,
+        userId: validation.isValid ? validation.userId.substring(0, 8) + '...' : null,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error: any) {
+      enhancedPostLogger.error('Session validation failed', {
+        error: error.message,
+        ip: req.ip
+      });
+      res.status(500).json({ 
+        message: 'Session validation failed',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  });
 }
+
