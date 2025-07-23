@@ -13025,8 +13025,11 @@ async function fetchYouTubeAnalytics(accessToken: string) {
   registerSecurePostRoutes(app);
 
   const httpServer = createServer(app);
-  // VEO 2.0 Video Generation Endpoints with Quota Protection
-  app.post("/api/video/generate", requireAuth, atomicQuotaFix.quotaMiddleware('veo', 'api_call'), async (req: any, res) => {
+  // Import comprehensive quota manager
+  const { comprehensiveQuotaManager } = await import('./middleware/ComprehensiveQuotaManager');
+
+  // VEO 2.0 Video Generation Endpoints with Comprehensive Quota Protection
+  app.post("/api/video/generate", requireAuth, comprehensiveQuotaManager.quotaEnforcementMiddleware('veo'), async (req: any, res) => {
     try {
       const { VeoVideoService } = await import('./services/VeoVideoService');
       const { JTBDPromptGenerator } = await import('./services/JTBDPromptGenerator');
@@ -13063,11 +13066,15 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       const jtbdContext = jtbdGenerator.generateJTBDContext(enhancedRequest);
       const cinematicPrompt = jtbdGenerator.createCinematicPrompt(enhancedRequest, jtbdContext);
 
-      // Start VEO video generation
-      const result = await veoService.generateVideo(userId, {
-        ...enhancedRequest,
-        prompt: cinematicPrompt
-      });
+      // Start VEO video generation with backoff retry
+      const result = await comprehensiveQuotaManager.withBackoffRetry(
+        () => veoService.generateVideo(userId, {
+          ...enhancedRequest,
+          prompt: cinematicPrompt
+        }),
+        3, // max retries
+        2000 // 2 second base delay
+      );
 
       res.json({
         success: true,
@@ -13130,59 +13137,6 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       res.status(500).json({ 
         error: 'Download failed',
         message: error.message 
-      });
-    }
-  });
-      
-      const context = {
-        businessName: user?.businessName || businessContext?.businessName,
-        industry: businessContext?.industry || user?.industry,
-        brandPurpose: user?.brandPurpose || businessContext?.brandPurpose,
-        location: businessContext?.location || 'Queensland, Australia',
-        targetAudience: businessContext?.targetAudience
-      };
-
-      // Generate JTBD-enhanced prompt if requested
-      let enhancedPrompt = prompt;
-      if (req.body.useJTBD) {
-        const jtbdPrompt = jtbdGenerator.generateJTBDPrompt(context, videoType);
-        enhancedPrompt = jtbdPrompt.videoPrompt;
-        
-        // Store JTBD context for user reference
-        res.locals.jtbdContext = {
-          situation: jtbdPrompt.situation,
-          motivation: jtbdPrompt.motivation,
-          outcome: jtbdPrompt.outcome,
-          cinematicElements: jtbdPrompt.cinematicElements
-        };
-      }
-
-      // Generate video with VEO 2.0
-      const result = await veoService.generateVideo(userId, {
-        prompt: enhancedPrompt,
-        brandPurpose: context.brandPurpose,
-        businessName: context.businessName,
-        location: context.location,
-        aspectRatio: req.body.aspectRatio || '16:9',
-        duration: req.body.duration || 30,
-        style: videoType
-      });
-
-      console.log(`🎬 VEO video generation started for ${user?.email || userId}`);
-
-      res.json({
-        success: true,
-        jobId: result.jobId,
-        estimatedTime: result.estimatedTime,
-        jtbdContext: res.locals.jtbdContext,
-        message: 'Cinematic video generation started with VEO 2.0'
-      });
-
-    } catch (error: any) {
-      console.error('❌ Video generation failed:', error);
-      res.status(500).json({ 
-        error: 'Video generation failed', 
-        details: error.message 
       });
     }
   });

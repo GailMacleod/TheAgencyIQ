@@ -64,8 +64,19 @@ async function startServer() {
   app.use(morgan(secureDefaults.LOG_LEVEL));
   app.use(requestLogger);
 
-  // Rate limiting for all routes
-  const limiter = rateLimit({
+  // FIXED: Comprehensive rate limiting with PostgreSQL store
+  const { comprehensiveQuotaManager } = await import('./middleware/ComprehensiveQuotaManager');
+  
+  // Apply rate limiting middleware
+  app.use('/api', comprehensiveQuotaManager.getAPIRateLimit());
+  app.use('/api/posts', comprehensiveQuotaManager.getSocialPostingRateLimit());
+  app.use('/api/video', comprehensiveQuotaManager.getVEORateLimit());
+  
+  // Sync subscribers.json with Drizzle on startup
+  await comprehensiveQuotaManager.syncSubscribersWithDrizzle();
+  
+  // Legacy rate limiter for non-API routes
+  const legacyLimiter = rateLimit({
     windowMs: secureDefaults.RATE_LIMIT_WINDOW,
     max: secureDefaults.RATE_LIMIT_MAX,
     message: {
@@ -75,7 +86,6 @@ async function startServer() {
     standardHeaders: true,
     legacyHeaders: false,
   });
-  app.use('/api', limiter);
 
   // Health check with basic rate limiting
   const healthLimiter = rateLimit({

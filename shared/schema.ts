@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean, jsonb, varchar, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean, jsonb, varchar, index, unique } from "drizzle-orm/pg-core";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -85,15 +85,30 @@ export const quotaUsage = pgTable("quota_usage", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id", { length: 50 }).notNull(),
   platform: varchar("platform", { length: 50 }).notNull(),
-  operation: varchar("operation", { length: 50 }).notNull(), // 'post', 'call'
+  operation: varchar("operation", { length: 50 }).notNull(),
   hourWindow: timestamp("hour_window").notNull(),
   count: integer("count").default(1),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("idx_quota_usage_user_platform").on(table.userId, table.platform),
-  index("idx_quota_usage_hour_window").on(table.hourWindow),
-]);
+}, (table) => ({
+  uniqueConstraint: unique().on(table.userId, table.platform, table.operation, table.hourWindow),
+  userPlatformIdx: index("idx_quota_user_platform").on(table.userId, table.platform),
+  hourWindowIdx: index("idx_quota_hour_window").on(table.hourWindow),
+}));
+
+// Rate limiting table for PostgreSQL store
+export const rateLimits = pgTable("rate_limits", {
+  id: serial("id").primaryKey(),
+  key: varchar("key", { length: 255 }).notNull(),
+  windowStart: timestamp("window_start").notNull(),
+  count: integer("count").default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniqueConstraint: unique().on(table.key, table.windowStart),
+  keyIdx: index("idx_rate_limit_key").on(table.key),
+  windowIdx: index("idx_rate_limit_window").on(table.windowStart),
+}));
 
 // Legacy posts table (keeping for backward compatibility)
 export const posts = pgTable("posts", {
