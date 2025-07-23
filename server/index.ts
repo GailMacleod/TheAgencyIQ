@@ -682,21 +682,7 @@ async function startServer() {
     }
   });
 
-  // Authenticated public route (replaces hardcoded bypass)
-  app.get('/public', sessionAuthMiddleware.requireAuthenticatedSession(), (req, res) => {
-    const userSession = sessionAuthMiddleware.extractUserFromSession(req);
-    
-    if (!userSession) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        message: 'Please establish a valid session first',
-        redirectTo: '/login'
-      });
-    }
-
-    console.log(`Authenticated access granted for user ${userSession.email}`);
-    res.redirect('/platform-connections');
-  });
+  // Public route removed - now handled in routes.ts without authentication
 
   // OAuth connection routes
   app.get('/connect/:platform', (req, res) => {

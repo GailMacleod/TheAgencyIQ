@@ -133,7 +133,8 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
     '/api/verify-email',
     '/api/oauth/',
     '/auth/',
-    '/api/video/'
+    '/api/video/',
+    '/api/public/'
   ];
   
   // Check if this is a public path - if so, skip all authentication checks
