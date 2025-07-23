@@ -52,6 +52,8 @@ import { EnhancedAutoPostingService } from './services/EnhancedAutoPostingServic
 import { autoPostingValidator } from './services/AutoPostingValidator';
 import secureOAuthRoutes from './oauth/secure-routes';
 import { SecureSessionManager } from './middleware/SecureSessionManager';
+import { atomicQuotaFix } from './middleware/QuotaRaceConditionFix';
+import { productionCookieManager } from './middleware/ProductionCookieManager';
 
 // Extended session types
 declare module 'express-session' {
@@ -13023,8 +13025,8 @@ async function fetchYouTubeAnalytics(accessToken: string) {
   registerSecurePostRoutes(app);
 
   const httpServer = createServer(app);
-  // VEO 2.0 Video Generation Endpoints
-  app.post("/api/video/generate", requireAuth, async (req: any, res) => {
+  // VEO 2.0 Video Generation Endpoints with Quota Protection
+  app.post("/api/video/generate", requireAuth, atomicQuotaFix.quotaMiddleware('veo', 'api_call'), async (req: any, res) => {
     try {
       const { VeoVideoService } = await import('./services/VeoVideoService');
       const { JTBDPromptGenerator } = await import('./services/JTBDPromptGenerator');
@@ -13033,14 +13035,104 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       const jtbdGenerator = new JTBDPromptGenerator();
       
       const { prompt, businessContext, videoType = 'cinematic' } = req.body;
-      const userId = req.session.userId;
+      const userId = req.session.userId?.toString();
 
       if (!prompt) {
         return res.status(400).json({ error: 'Video prompt is required' });
       }
 
-      // Get user's brand purpose and business info
+      // FIXED: Get user with brand purpose from updated schema
       const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Enhance prompt with JTBD framework and brand purpose
+      const enhancedRequest = {
+        ...req.body,
+        prompt,
+        brandPurpose: user.brandPurpose || 'Helping Queensland businesses succeed',
+        businessName: user.businessName || user.firstName || 'Queensland Business',
+        location: user.location || 'Queensland, Australia',
+        targetAudience: user.targetAudience || businessContext?.targetAudience,
+        industry: user.industry || businessContext?.industry
+      };
+
+      // Generate JTBD-enhanced prompt
+      const jtbdContext = jtbdGenerator.generateJTBDContext(enhancedRequest);
+      const cinematicPrompt = jtbdGenerator.createCinematicPrompt(enhancedRequest, jtbdContext);
+
+      // Start VEO video generation
+      const result = await veoService.generateVideo(userId, {
+        ...enhancedRequest,
+        prompt: cinematicPrompt
+      });
+
+      res.json({
+        success: true,
+        jobId: result.jobId,
+        estimatedTime: result.estimatedTime,
+        jtbdContext,
+        cinematicPrompt
+      });
+
+    } catch (error: any) {
+      console.error('VEO generation error:', error);
+      res.status(500).json({ 
+        error: 'Video generation failed',
+        message: error.message 
+      });
+    }
+  });
+
+  // VEO Video Status Endpoint
+  app.get("/api/video/status/:jobId", requireAuth, async (req: any, res) => {
+    try {
+      const { VeoVideoService } = await import('./services/VeoVideoService');
+      const veoService = new VeoVideoService();
+      
+      const status = await veoService.checkVideoStatus(req.params.jobId);
+      
+      res.json({
+        status: status.status,
+        ready: status.ready,
+        failed: status.failed,
+        videoUri: status.videoUri,
+        error: status.error
+      });
+
+    } catch (error: any) {
+      console.error('VEO status check error:', error);
+      res.status(500).json({ 
+        error: 'Status check failed',
+        message: error.message 
+      });
+    }
+  });
+
+  // VEO Video Download Endpoint
+  app.post("/api/video/download/:jobId", requireAuth, async (req: any, res) => {
+    try {
+      const { VeoVideoService } = await import('./services/VeoVideoService');
+      const veoService = new VeoVideoService();
+      
+      const videoBlob = await veoService.downloadVideo(req.params.jobId);
+      
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Content-Disposition', `attachment; filename="theagencyiq_video_${req.params.jobId}.mp4"`);
+      
+      // Stream the video blob
+      videoBlob.pipe(res);
+
+    } catch (error: any) {
+      console.error('VEO download error:', error);
+      res.status(500).json({ 
+        error: 'Download failed',
+        message: error.message 
+      });
+    }
+  });
       
       const context = {
         businessName: user?.businessName || businessContext?.businessName,

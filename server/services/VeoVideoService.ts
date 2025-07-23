@@ -114,13 +114,12 @@ Technical Specifications:
       console.log(`🎬 Starting VEO video generation for user ${userId}`);
       console.log(`📝 Original prompt: ${request.prompt}`);
       
-      // Get user info for enhanced prompting
-      const user = await storage.getUser(parseInt(userId));
+      // FIXED: Get user with brand purpose from updated schema
+      const user = await storage.getUser(userId);
       if (user) {
-        // Note: brandPurpose and businessName would be added to user schema
-        // For now, use placeholder values
-        request.brandPurpose = request.brandPurpose || 'Helping Queensland businesses succeed';
-        request.businessName = request.businessName || user.firstName || 'Queensland Business';
+        request.brandPurpose = request.brandPurpose || user.brandPurpose || 'Helping Queensland businesses succeed';
+        request.businessName = request.businessName || user.businessName || user.firstName || 'Queensland Business';
+        request.location = request.location || user.location || 'Queensland, Australia';
       }
 
       const accessToken = await this.getAccessToken();

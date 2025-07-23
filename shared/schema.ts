@@ -29,6 +29,14 @@ export const users = pgTable("users", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   subscriptionSource: text("subscription_source").default("legacy"), // 'none', 'stripe', 'certificate', 'legacy'
   subscriptionActive: boolean("subscription_active").default(true),
+  // Business info for VEO integration
+  businessName: varchar("business_name"),
+  businessType: varchar("business_type"),
+  industry: varchar("industry"),
+  location: varchar("location").default("Queensland, Australia"),
+  // Brand purpose for JTBD framework
+  brandPurpose: text("brand_purpose"),
+  targetAudience: text("target_audience"),
   // Onboarding tracking
   onboardingCompleted: boolean("onboarding_completed").default(false),
   onboardingStep: text("onboarding_step").default("profile"), // 'profile', 'brand', 'oauth', 'complete'
