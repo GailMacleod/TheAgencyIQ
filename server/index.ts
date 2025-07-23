@@ -1084,19 +1084,7 @@ async function startServer() {
     }
   }));
   
-  // Serve dist files with proper MIME types
-  app.use('/dist', express.static('dist', {
-    setHeaders: (res, path) => {
-      if (path.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css');
-      } else if (path.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
-      }
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    }
-  }));
+
   
   // Serve logo.png from root path
   app.get('/logo.png', (req, res) => {
@@ -1126,6 +1114,17 @@ async function startServer() {
       timestamp: new Date().toISOString()
     });
   });
+
+  // Serve static dist files FIRST before any middleware interference
+  app.use('/dist', express.static('dist', {
+    setHeaders: (res, path) => {
+      if (path.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      } else if (path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      }
+    }
+  }));
 
   // Register API routes FIRST before any middleware that might interfere
   try {

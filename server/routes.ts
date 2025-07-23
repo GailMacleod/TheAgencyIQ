@@ -201,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { PostingQueue } = await import('./services/posting_queue.js');
   await redisSessionManager.initialize();
   
-  // Add session persistence middleware
+  // Add session persistence middleware AFTER static files
   const { RedisSessionManager } = await import('./services/RedisSessionManager.js');
   app.use(RedisSessionManager.createSessionMiddleware());
   
