@@ -48,6 +48,7 @@ import { QuotaTracker, checkQuotaMiddleware } from './services/QuotaTracker';
 import { registerQuotaRoutes } from './routes/quota-status';
 import { AtomicQuotaManager } from './services/AtomicQuotaManager';
 import { atomicQuotaMiddleware, quotaStatusMiddleware, validateQuotaMiddleware } from './middleware/atomic-quota';
+import { EnhancedAutoPostingService } from './services/EnhancedAutoPostingService';
 
 // Extended session types
 declare module 'express-session' {
@@ -11937,6 +11938,136 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       res.status(500).json({
         success: false,
         error: 'Video proxy failed'
+      });
+    }
+  });
+
+  // Enhanced Auto-Posting Routes with Real OAuth Integration
+  
+  // Execute enhanced auto-posting with real API calls
+  app.post('/api/enhanced-auto-posting', requireAuth, async (req: CustomRequest, res: Response) => {
+    try {
+      console.log(`🚀 [API] Enhanced auto-posting requested for user ${req.session.userId}`);
+      
+      const result = await EnhancedAutoPostingService.executeEnhancedAutoPosting(req.session.userId!);
+      
+      console.log(`📊 [API] Enhanced auto-posting complete: ${result.successfulPosts}/${result.totalPosts} successful`);
+      
+      res.json({
+        success: result.success,
+        message: `Published ${result.successfulPosts}/${result.totalPosts} posts successfully`,
+        results: result
+      });
+      
+    } catch (error: any) {
+      console.error(`❌ [API] Enhanced auto-posting error:`, error);
+      res.status(500).json({
+        success: false,
+        error: 'Enhanced auto-posting failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Get enhanced auto-posting status
+  app.get('/api/enhanced-auto-posting/status', requireAuth, async (req: CustomRequest, res: Response) => {
+    try {
+      const status = await EnhancedAutoPostingService.getAutoPostingStatus(req.session.userId!);
+      
+      res.json({
+        success: true,
+        status
+      });
+      
+    } catch (error: any) {
+      console.error(`❌ [API] Auto-posting status error:`, error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get auto-posting status',
+        details: error.message
+      });
+    }
+  });
+
+  // Test OAuth connections for all platforms
+  app.get('/api/oauth-connections/test', requireAuth, async (req: CustomRequest, res: Response) => {
+    try {
+      const connectionTests = await EnhancedAutoPostingService.testOAuthConnections(req.session.userId!);
+      
+      res.json({
+        success: true,
+        connections: connectionTests
+      });
+      
+    } catch (error: any) {
+      console.error(`❌ [API] OAuth connection test error:`, error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to test OAuth connections',
+        details: error.message
+      });
+    }
+  });
+
+  // Publish single post with enhanced features
+  app.post('/api/posts/:postId/publish-enhanced', requireAuth, async (req: CustomRequest, res: Response) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      
+      if (isNaN(postId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid post ID'
+        });
+      }
+      
+      console.log(`📤 [API] Enhanced publish requested for post ${postId}`);
+      
+      const result = await EnhancedAutoPostingService.publishSinglePost(postId, req.session.userId!);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          message: 'Post published successfully',
+          platformPostId: result.platformPostId,
+          analytics: result.analytics
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error || 'Publishing failed'
+        });
+      }
+      
+    } catch (error: any) {
+      console.error(`❌ [API] Enhanced publish error:`, error);
+      res.status(500).json({
+        success: false,
+        error: 'Enhanced publishing failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Retry failed posts
+  app.post('/api/enhanced-auto-posting/retry', requireAuth, async (req: CustomRequest, res: Response) => {
+    try {
+      console.log(`🔄 [API] Retry failed posts requested for user ${req.session.userId}`);
+      
+      const result = await EnhancedAutoPostingService.retryFailedPosts(req.session.userId!);
+      
+      res.json({
+        success: result.success,
+        message: `Retried posts: ${result.successfulPosts}/${result.totalPosts} successful`,
+        results: result
+      });
+      
+    } catch (error: any) {
+      console.error(`❌ [API] Retry failed posts error:`, error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to retry posts',
+        details: error.message
       });
     }
   });
