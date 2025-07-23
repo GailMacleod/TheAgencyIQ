@@ -511,10 +511,93 @@ async function startServer() {
     }
   });
 
-  // Public bypass route
-  app.get('/public', (req, res) => {
-    req.session.userId = 2;
-    console.log(`React fix bypass activated at ${new Date().toISOString()}`);
+  // Import session authentication middleware
+  const { sessionAuthMiddleware } = await import('./middleware/session-auth.js');
+
+  // Enhanced session establishment endpoint with proper authentication
+  app.post('/api/establish-session', async (req, res) => {
+    try {
+      const { userId, email } = req.body;
+      
+      // Require user credentials for session establishment
+      if (!userId || !email) {
+        return res.status(400).json({
+          success: false,
+          error: 'User credentials required',
+          code: 'MISSING_CREDENTIALS',
+          message: 'userId and email are required for session establishment'
+        });
+      }
+
+      console.log('Session establishment request:', {
+        userId,
+        email,
+        sessionId: req.sessionID?.substring(0, 10) + '...'
+      });
+
+      // Check if session already exists with same user
+      if (req.session?.userId === userId) {
+        console.log(`Session already established for user ${email}`);
+        return res.json({
+          success: true,
+          sessionId: req.sessionID,
+          userId: req.session.userId,
+          email: req.session.userEmail,
+          message: 'Session already established',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Regenerate session for security
+      const newSessionId = await sessionAuthMiddleware.regenerateSession(req, {
+        userId,
+        email
+      });
+
+      // Set backup session cookie
+      res.cookie('aiq_backup_session', newSessionId, {
+        httpOnly: true,
+        secure: secureDefaults.SECURE_COOKIES,
+        sameSite: 'strict',
+        maxAge: sessionTtlMs,
+        path: '/'
+      });
+
+      console.log(`✅ Session established for user ${email}`);
+
+      res.json({
+        success: true,
+        sessionId: newSessionId,
+        userId: userId,
+        email: email,
+        message: 'Session established successfully',
+        sessionRegenerated: true,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ Session establishment failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Session establishment failed',
+        message: error.message 
+      });
+    }
+  });
+
+  // Authenticated public route (replaces hardcoded bypass)
+  app.get('/public', sessionAuthMiddleware.requireAuthenticatedSession(), (req, res) => {
+    const userSession = sessionAuthMiddleware.extractUserFromSession(req);
+    
+    if (!userSession) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'Please establish a valid session first',
+        redirectTo: '/login'
+      });
+    }
+
+    console.log(`Authenticated access granted for user ${userSession.email}`);
     res.redirect('/platform-connections');
   });
 

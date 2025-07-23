@@ -69,6 +69,22 @@ export const postLedger = pgTable("post_ledger", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Quota tracking table for atomic operations (PostgreSQL-based)
+export const quotaUsage = pgTable("quota_usage", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x', 'video', 'api'
+  operation: text("operation").notNull(), // 'post', 'call', 'video', 'generation'
+  hourWindow: timestamp("hour_window").notNull(), // Truncated to hour for time-based limits
+  count: integer("count").notNull().default(1),
+  lastUsed: timestamp("last_used").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  // Unique constraint for atomic updates
+  uniqueQuotaWindow: index("unique_quota_window").on(table.userId, table.platform, table.operation, table.hourWindow),
+}));
+
 // Legacy posts table (keeping for backward compatibility)
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),

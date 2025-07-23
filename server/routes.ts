@@ -46,6 +46,8 @@ import TokenManager from './oauth/tokenManager.js';
 import { apiRateLimit, socialPostingRateLimit, videoGenerationRateLimit, authRateLimit, skipRateLimitForDevelopment } from './middleware/rateLimiter';
 import { QuotaTracker, checkQuotaMiddleware } from './services/QuotaTracker';
 import { registerQuotaRoutes } from './routes/quota-status';
+import { AtomicQuotaManager } from './services/AtomicQuotaManager';
+import { atomicQuotaMiddleware, quotaStatusMiddleware, validateQuotaMiddleware } from './middleware/atomic-quota';
 
 // Extended session types
 declare module 'express-session' {
@@ -114,10 +116,7 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
   // Allow wizard and subscription endpoints to be public
   const publicPaths = [
     '/api/subscription-plans',
-    '/api/user-status',
-    '/api/user',
     '/api/auth/',
-    '/api/platform-connections',
     '/webhook',
     '/api/webhook',
     '/manifest.json',
@@ -132,22 +131,19 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
   }
   
   // Auto-establish session for User ID 2 if not present
+  // SECURITY FIX: No auto-establishment for paid subscription middleware
   if (!req.session?.userId) {
-    try {
-      const user = await storage.getUser(2);
-      if (user) {
-        req.session.userId = 2;
-        req.session.userEmail = user.email;
-        await new Promise<void>((resolve) => {
-          req.session.save((err: any) => {
-            if (err) console.error('Session save error:', err);
-            resolve();
-          });
-        });
-        console.log(`✅ Auto-established session for user ${user.email}`);
-      }
-    } catch (error) {
-      console.error('Auto-session error:', error);
+    // Subscription middleware requires authenticated session
+    const publicEndpoint = req.path.startsWith('/api/subscription-plans') || 
+                           req.path.startsWith('/api/auth/') ||
+                           req.path.startsWith('/webhook');
+    
+    if (!publicEndpoint) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        code: 'SESSION_REQUIRED',
+        message: 'Valid subscription requires authenticated session'
+      });
     }
   }
   
@@ -224,22 +220,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Auto-establish session for User ID 2 if not present
+    // SECURITY FIX: No auto-establishment in global middleware
     if (!req.session?.userId) {
-      try {
-        const user = await storage.getUser(2);
-        if (user) {
-          req.session.userId = 2;
-          req.session.userEmail = user.email;
-          await new Promise<void>((resolve) => {
-            req.session.save((err: any) => {
-              if (err) console.error('Session save error:', err);
-              resolve();
-            });
-          });
-          console.log(`✅ Auto-established session for user ${user.email} on ${req.path}`);
-        }
-      } catch (error) {
-        console.error('Auto-session error:', error);
+      // Only allow health checks and public routes without sessions
+      const publicRoute = req.path === '/health' || 
+                         req.path === '/manifest.json' ||
+                         req.path.startsWith('/public/js/') ||
+                         req.path.startsWith('/attached_assets/');
+      
+      if (!publicRoute) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'SESSION_REQUIRED',
+          message: 'Valid authenticated session required'
+        });
       }
     }
     next();
@@ -498,23 +492,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`Cookie:`, req.cookies);
 
     if (!req.session?.userId) {
-      // Auto-establish session for User ID 2 (gailm@macleodglba.com.au)
-      console.log(`✅ Auto-established session for user gailm@macleodglba.com.au on ${req.path}`);
-      req.session.userId = 2;
-      req.session.userEmail = 'gailm@macleodglba.com.au';
-      
-      // Save session immediately
-      try {
-        await new Promise((resolve, reject) => {
-          req.session.save((err: any) => {
-            if (err) reject(err);
-            else resolve(true);
-          });
-        });
-        console.log(`🔧 Setting session cookies for authenticated user`);
-      } catch (error) {
-        console.error('Session save error:', error);
-      }
+      // SECURITY FIX: No auto-establishment in requireAuth middleware
+      return res.status(401).json({
+        error: 'Authentication required',
+        code: 'SESSION_REQUIRED',
+        message: 'Valid authenticated session required. Please establish session first.'
+      });
     }
     
     try {
@@ -2549,31 +2532,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Quota status endpoint - Fix for unhooked quota leaks (404 errors)
-  app.get('/api/quota-status', requireAuth, async (req: any, res) => {
+  // Atomic quota status endpoint - Race condition free
+  app.get('/api/quota-status', requireAuth, quotaStatusMiddleware, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
       
-      const user = await storage.getUser(userId);
+      // Use atomic quota manager for comprehensive status
+      const atomicStatus = await AtomicQuotaManager.getComprehensiveQuotaStatus(userId);
       
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
+      if (atomicStatus.error) {
+        return res.status(500).json({ error: atomicStatus.error });
       }
       
-      // Return quota information from user data
-      const quotaInfo = {
-        remainingPosts: user.remainingPosts || 0,
-        totalPosts: user.totalPosts || 52,
-        subscriptionPlan: user.subscriptionPlan || 'professional',
-        subscriptionActive: user.subscriptionActive ?? true
-      };
-      
-      res.json(quotaInfo);
+      // Return comprehensive quota information
+      res.json({
+        ...atomicStatus,
+        // Legacy compatibility
+        remainingPosts: atomicStatus.platforms?.facebook?.posts?.remaining || 0,
+        totalPosts: atomicStatus.limits?.posts || 52,
+        subscriptionPlan: atomicStatus.plan || 'professional',
+        subscriptionActive: true
+      });
     } catch (error: any) {
-      console.error('Quota status error:', error);
+      console.error('Atomic quota status error:', error);
       res.status(500).json({ error: 'Failed to get quota status' });
     }
   });
@@ -6061,26 +6045,14 @@ Continue building your Value Proposition Canvas systematically.`;
   // Strategic content generation endpoint with waterfall strategyzer methodology
   app.post("/api/generate-strategic-content", async (req: any, res) => {
     try {
-      // Auto-establish session for User ID 2 if not present
-      let userId = req.session?.userId;
+      // SECURITY FIX: No auto-establishment in strategic content generation
+      const userId = req.session?.userId;
       if (!userId) {
-        try {
-          const user = await storage.getUser(2);
-          if (user) {
-            req.session.userId = 2;
-            req.session.userEmail = user.email;
-            await new Promise<void>((resolve) => {
-              req.session.save((err: any) => {
-                if (err) console.error('Session save error:', err);
-                resolve();
-              });
-            });
-            userId = 2;
-            console.log(`✅ Auto-established session for user ${user.email} in /api/generate-strategic-content`);
-          }
-        } catch (error) {
-          console.error('Auto-session error in /api/generate-strategic-content:', error);
-        }
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'SESSION_REQUIRED', 
+          message: 'Valid authenticated session required for strategic content generation'
+        });
       }
       
       const { brandPurpose, totalPosts = 52, platforms, resetQuota = false } = req.body;
@@ -10777,26 +10749,14 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
   // Enhanced posts endpoint with auto-authentication
   app.get('/api/posts', async (req: any, res) => {
     try {
-      // Auto-establish session for User ID 2 if not present
-      let userId = req.session?.userId;
+      // SECURITY FIX: No auto-establishment in posts endpoint  
+      const userId = req.session?.userId;
       if (!userId) {
-        try {
-          const user = await storage.getUser(2);
-          if (user) {
-            req.session.userId = 2;
-            req.session.userEmail = user.email;
-            await new Promise<void>((resolve) => {
-              req.session.save((err: any) => {
-                if (err) console.error('Session save error:', err);
-                resolve();
-              });
-            });
-            userId = 2;
-            console.log(`✅ Auto-established session for user ${user.email} in /api/posts`);
-          }
-        } catch (error) {
-          console.error('Auto-session error in /api/posts:', error);
-        }
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'SESSION_REQUIRED',
+          message: 'Valid authenticated session required to access posts'
+        });
       }
       
       if (!userId) {
@@ -11257,26 +11217,19 @@ async function fetchYouTubeAnalytics(accessToken: string) {
   });
 
   // VIDEO GENERATION API ENDPOINTS - WORKING VERSION
-  // Generate video prompts for post content
-  app.post('/api/video/generate-prompts', checkQuotaMiddleware('multiple', 'api_call'), async (req: any, res) => {
+  // Generate video prompts for post content - ATOMIC QUOTA SYSTEM
+  app.post('/api/video/generate-prompts', atomicQuotaMiddleware('video', 'generation'), async (req: any, res) => {
     try {
       console.log('=== VIDEO PROMPT GENERATION STARTED ===');
       console.log(`🔍 Direct session check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
       
-      // Establish session if not present
+      // SECURITY FIX: No auto-establishment in video generation
       if (!req.session?.userId) {
-        console.log('✅ Auto-establishing session for video prompt generation');
-        req.session.userId = 2;
-        req.session.userEmail = 'gailm@macleodglba.com.au';
-        
-        // Save session immediately
-        await new Promise((resolve, reject) => {
-          req.session.save((err: any) => {
-            if (err) reject(err);
-            else resolve(true);
-          });
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'SESSION_REQUIRED',
+          message: 'Valid authenticated session required for video generation'
         });
-        console.log('🔧 Session saved for video generation');
       }
       
       const { postContent, strategicIntent, platform, userId } = req.body;
