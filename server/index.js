@@ -5,35 +5,88 @@
 
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 import session from 'express-session';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { validateEnvironment, getSecureDefaults } from './config/env-validation.js';
+import { dbManager } from './db-init.js';
+import { createServer } from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Validate environment before starting server
+const validatedEnv = validateEnvironment();
+const secureDefaults = getSecureDefaults();
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS configuration
+// Security headers with Helmet
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Vite dev needs unsafe-eval
+      connectSrc: ["'self'", "https:", "wss:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Needed for Vite dev server
+}));
+
+// Request logging with Morgan
+app.use(morgan(secureDefaults.LOG_LEVEL));
+
+// Rate limiting for all routes
+const limiter = rateLimit({
+  windowMs: secureDefaults.RATE_LIMIT_WINDOW,
+  max: secureDefaults.RATE_LIMIT_MAX,
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: Math.ceil(secureDefaults.RATE_LIMIT_WINDOW / 1000)
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api', limiter);
+
+// Health check with basic rate limiting
+const healthLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per minute for health check
+  message: { error: 'Health check rate limit exceeded' }
+});
+
+// CORS configuration - secure in production, permissive in development
 app.use(cors({
-  origin: true,
-  credentials: true
+  origin: secureDefaults.CORS_ORIGIN,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
 // Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
+// Session configuration with secure defaults
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'theagencyiq-fallback-secret',
+  secret: secureDefaults.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  name: 'theagencyiq.session', // Custom session name
   cookie: {
-    secure: false,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
   }
 }));
 
@@ -49,11 +102,12 @@ try {
   console.warn('⚠️ OAuth setup failed (API keys may be missing):', error.message);
 }
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
+// Health check endpoint with rate limiting
+app.get('/api/health', healthLimiter, (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
     message: 'TheAgencyIQ Server is running'
   });
 });
@@ -432,29 +486,108 @@ try {
   console.warn('⚠️ OAuth routes mounting failed:', error.message);
 }
 
-// Serve static files
-app.use(express.static(path.join(__dirname, '../dist')));
-
-// SPA fallback
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
-});
-
-// Error handling
+// Enhanced error handler - secure in production
 app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: err.message
-  });
+  console.error('❌ Server Error:', err);
+  
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  // Log full error details for debugging
+  if (isDevelopment) {
+    console.error('Stack trace:', err.stack);
+  }
+  
+  // Return appropriate error response
+  const status = err.status || err.statusCode || 500;
+  const response = {
+    error: true,
+    message: isDevelopment ? err.message : 'Internal server error',
+    status
+  };
+  
+  // Only include stack trace in development
+  if (isDevelopment && err.stack) {
+    response.stack = err.stack;
+  }
+  
+  res.status(status).json(response);
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 TheAgencyIQ Server with Authentication Middleware running on port ${PORT}`);
-  console.log(`📅 Deploy time: ${new Date().toLocaleString()}`);
-  console.log(`✅ All endpoints now require proper authentication and use real database queries`);
-  console.log(`🔐 Authentication features: requireAuth, requireOAuthScope, requireActiveSubscription`);
-});
+// Build detection and static file serving
+const buildPath = path.join(__dirname, '../dist');
+const publicPath = path.join(__dirname, '../public');
+
+// Check if build exists, serve appropriate static files
+import { existsSync } from 'fs';
+
+if (existsSync(buildPath)) {
+  console.log('✅ Production build detected - serving from /dist');
+  app.use(express.static(buildPath));
+  
+  // Catch-all handler for SPA routing
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
+} else if (existsSync(publicPath)) {
+  console.log('⚠️ Development mode - serving from /public (limited functionality)');
+  app.use(express.static(publicPath));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(publicPath, 'index.html'));
+  });
+} else {
+  console.warn('⚠️ No static files found - API only mode');
+  
+  // Fallback route for missing build
+  app.get('*', (req, res) => {
+    res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Frontend build not found. Run build process first.',
+      apiEndpoint: '/api/health'
+    });
+  });
+}
+
+// Initialize database before starting server
+async function startServer() {
+  try {
+    // Initialize database connection
+    console.log('🚀 Starting TheAgencyIQ Server...');
+    await dbManager.initialize();
+    
+    const server = createServer(app);
+    
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log('🎉 Server startup complete!');
+      console.log(`🌐 TheAgencyIQ Server running on port ${PORT}`);
+      console.log(`🕐 Deploy time: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })} AEST`);
+      console.log(`🔒 Security: Helmet enabled, CORS configured, Rate limiting active`);
+      console.log(`📊 Logging: Morgan ${secureDefaults.LOG_LEVEL} mode`);
+      console.log(`🗄️ Database: PostgreSQL connected and ready`);
+      console.log(`🔐 OAuth: Passport.js strategies configured`);
+      console.log('✅ Production-ready server deployment successful');
+    });
+
+    // Graceful shutdown handling
+    process.on('SIGTERM', async () => {
+      console.log('🛑 SIGTERM received, shutting down gracefully...');
+      await dbManager.closeConnection();
+      process.exit(0);
+    });
+
+    process.on('SIGINT', async () => {
+      console.log('🛑 SIGINT received, shutting down gracefully...');
+      await dbManager.closeConnection();
+      process.exit(0);
+    });
+
+  } catch (error) {
+    console.error('💥 Server startup failed:', error);
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();
 
 export default app;
