@@ -1,7 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import { db } from '../db';
 import { sql, eq, and } from 'drizzle-orm';
-import { users, postSchedule, quotaUsage, rateLimits } from '@shared/schema';
+import { users, postSchedule, quotaUsage, rateLimitStore } from '@shared/schema';
 import sgMail from '@sendgrid/mail';
 import type { Request, Response, NextFunction } from 'express';
 

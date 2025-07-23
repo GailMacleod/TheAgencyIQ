@@ -54,6 +54,8 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// First quotaUsage table definition removed to prevent duplicate
+
 // Post schedule table for quota enforcement with mobile UID
 export const postSchedule = pgTable("post_schedule", {
   postId: text("post_id").primaryKey(), // UUID
@@ -106,18 +108,18 @@ export const quotaUsage = pgTable("quota_usage", {
   hourWindowIdx: index("idx_quota_hour_window").on(table.hourWindow),
 }));
 
-// Rate limiting table for PostgreSQL store
-export const rateLimits = pgTable("rate_limits", {
+// Rate limiting store table for express-rate-limit with PostgreSQL  
+export const rateLimitStore = pgTable("rate_limit_store", {
   id: serial("id").primaryKey(),
   key: varchar("key", { length: 255 }).notNull(),
+  hits: integer("hits").default(1),
   windowStart: timestamp("window_start").notNull(),
-  count: integer("count").default(1),
+  windowMs: integer("window_ms").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
-  uniqueConstraint: unique().on(table.key, table.windowStart),
-  keyIdx: index("idx_rate_limit_key").on(table.key),
-  windowIdx: index("idx_rate_limit_window").on(table.windowStart),
+  keyWindowIdx: index("idx_rate_limit_key_window").on(table.key, table.windowStart),
+  windowStartIdx: index("idx_rate_limit_window_start").on(table.windowStart),
 }));
 
 // Legacy posts table (keeping for backward compatibility)

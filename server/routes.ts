@@ -53,6 +53,19 @@ import { autoPostingValidator } from './services/AutoPostingValidator';
 import secureOAuthRoutes from './oauth/secure-routes';
 import { SecureSessionManager } from './middleware/SecureSessionManager';
 import { atomicQuotaFix } from './middleware/QuotaRaceConditionFix';
+import { 
+  apiRateLimit as newApiRateLimit, 
+  authRateLimit as newAuthRateLimit, 
+  videoRateLimit as newVideoRateLimit, 
+  postingRateLimit as newPostingRateLimit,
+  cleanupRateLimitStore 
+} from './middleware/PostgreSQLRateLimit';
+import { 
+  atomicQuotaMiddleware as newAtomicQuotaMiddleware,
+  videoQuotaMiddleware as newVideoQuotaMiddleware,
+  generalPostingQuotaMiddleware 
+} from './middleware/atomicQuotaMiddleware';
+import { registerQuotaManagementRoutes } from './routes/quota-management';
 import { productionCookieManager } from './middleware/ProductionCookieManager';
 
 // Extended session types
@@ -265,7 +278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const jtbdGenerator = new JTBDPromptGenerator();
 
   // JTBD Prompt Generation
-  app.post('/api/video/prompts/generate', async (req: any, res: any) => {
+  app.post('/api/video/prompts/generate', newVideoRateLimit, newVideoQuotaMiddleware, async (req: any, res: any) => {
     try {
       const { businessContext, videoType = 'cinematic', useJTBD = true } = req.body;
       
@@ -583,6 +596,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register quota management routes
   registerQuotaRoutes(app);
+  registerQuotaManagementRoutes(app);
   
   // Register secure OAuth routes with enhanced cookie security
   app.use(secureOAuthRoutes);
@@ -3612,7 +3626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Authenticated auto-posting endpoint
-  app.post("/api/posts/:postId/publish-authenticated", async (req: any, res) => {
+  app.post("/api/posts/:postId/publish-authenticated", newPostingRateLimit, generalPostingQuotaMiddleware, async (req: any, res) => {
     try {
       const userId = req.session?.userId;
       if (!userId) {
@@ -6233,7 +6247,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // FIXED: Authentic auto-posting with real social media APIs
-  app.post("/api/enforce-auto-posting", requireAuth, socialPostingRateLimit, checkQuotaMiddleware('multiple', 'post'), async (req: any, res) => {
+  app.post("/api/enforce-auto-posting", requireAuth, newPostingRateLimit, generalPostingQuotaMiddleware, async (req: any, res) => {
     try {
       // FIXED: Replace mock AutoPostingEnforcer with authentic social media service
       const { AuthenticSocialMediaService } = await import('./services/AuthenticSocialMediaService');
@@ -7027,7 +7041,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Create new post
-  app.post("/api/posts", requireAuth, async (req: any, res) => {
+  app.post("/api/posts", requireAuth, newPostingRateLimit, generalPostingQuotaMiddleware, async (req: any, res) => {
     try {
       const postData = insertPostSchema.parse({
         ...req.body,
