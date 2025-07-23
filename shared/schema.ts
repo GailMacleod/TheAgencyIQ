@@ -14,13 +14,13 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// Users table with phone as primary UID for robust data integrity
+// Users table with secure ID management for customer onboarding
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id", { length: 15 }).notNull().unique(), // Phone number UID
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  phone: text("phone"), // Legacy field for migration
+  id: varchar("id").primaryKey().notNull(), // Secure string ID from OAuth
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
   subscriptionPlan: text("subscription_plan"), // 'starter', 'growth', 'professional'
   subscriptionStart: timestamp("subscription_start"),
   remainingPosts: integer("remaining_posts").default(0),
@@ -29,6 +29,9 @@ export const users = pgTable("users", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   subscriptionSource: text("subscription_source").default("legacy"), // 'none', 'stripe', 'certificate', 'legacy'
   subscriptionActive: boolean("subscription_active").default(true),
+  // Onboarding tracking
+  onboardingCompleted: boolean("onboarding_completed").default(false),
+  onboardingStep: text("onboarding_step").default("profile"), // 'profile', 'brand', 'oauth', 'complete'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -72,7 +75,7 @@ export const postLedger = pgTable("post_ledger", {
 // Quota tracking table for atomic operations (PostgreSQL-based)
 export const quotaUsage = pgTable("quota_usage", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x', 'video', 'api'
   operation: text("operation").notNull(), // 'post', 'call', 'video', 'generation'
   hourWindow: timestamp("hour_window").notNull(), // Truncated to hour for time-based limits
@@ -88,7 +91,7 @@ export const quotaUsage = pgTable("quota_usage", {
 // Legacy posts table (keeping for backward compatibility)
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
   content: text("content").notNull(),
   status: text("status").notNull().default("draft"), // 'draft', 'approved', 'scheduled', 'published', 'failed'
@@ -115,7 +118,7 @@ export const posts = pgTable("posts", {
 // Platform connections for OAuth tokens with unique constraints
 export const platformConnections = pgTable("platform_connections", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
   platformUserId: text("platform_user_id").notNull(),
   platformUsername: text("platform_username").notNull(),
@@ -132,7 +135,8 @@ export const platformConnections = pgTable("platform_connections", {
 // Brand purpose for content generation
 export const brandPurpose = pgTable("brand_purpose", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  businessName: text("business_name").notNull(), // Fixed field name
   brandName: text("brand_name").notNull(),
   productsServices: text("products_services").notNull(),
   corePurpose: text("core_purpose").notNull(),
@@ -146,6 +150,25 @@ export const brandPurpose = pgTable("brand_purpose", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// OAuth tokens table for secure token management
+export const oauthTokens = pgTable("oauth_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(), // OAuth provider name
+  platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at"),
+  scope: text("scope").array(), // Array of granted scopes
+  profileId: text("profile_id"), // Platform-specific user ID
+  isValid: boolean("is_valid").default(true), // Token validity status
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  // Unique constraint for user-platform combination
+  uniqueUserPlatform: index("unique_user_platform_oauth").on(table.userId, table.platform),
+}));
 
 // Verification codes for phone verification
 export const verificationCodes = pgTable("verification_codes", {
@@ -227,6 +250,20 @@ export const insertBrandPurposeSchema = createInsertSchema(brandPurpose).omit({
   updatedAt: true,
 });
 
+export const insertOAuthTokenSchema = createInsertSchema(oauthTokens).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Export types for OAuth tokens and brand purpose
+export type OAuthToken = typeof oauthTokens.$inferSelect;
+export type InsertOAuthToken = typeof oauthTokens.$inferInsert;
+export type BrandPurpose = typeof brandPurpose.$inferSelect;
+export type InsertBrandPurpose = typeof brandPurpose.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
+
 export const insertVerificationCodeSchema = createInsertSchema(verificationCodes).omit({
   id: true,
   createdAt: true,
@@ -257,31 +294,9 @@ export const insertPostLedgerSchema = createInsertSchema(postLedger).omit({
   updatedAt: true,
 });
 
-// Types
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
+// Additional types
 export type Post = typeof posts.$inferSelect;
 export type InsertPost = z.infer<typeof insertPostSchema>;
-
-// OAuth tokens table for comprehensive token management
-export const oauthTokens = pgTable("oauth_tokens", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
-  provider: varchar("provider").notNull(), // google, facebook, linkedin, twitter, youtube
-  accessToken: text("access_token").notNull(),
-  refreshToken: text("refresh_token"),
-  expiresAt: timestamp("expires_at"),
-  scope: text("scope").array(),
-  profileId: varchar("profile_id"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => [
-  index("oauth_tokens_user_provider_idx").on(table.userId, table.provider),
-  index("oauth_tokens_expires_idx").on(table.expiresAt),
-]);
-
-export type OAuthToken = typeof oauthTokens.$inferSelect;
-export type InsertOAuthToken = typeof oauthTokens.$inferInsert;
 export type PostSchedule = typeof postSchedule.$inferSelect;
 export type InsertPostSchedule = z.infer<typeof insertPostScheduleSchema>;
 export type PostLedger = typeof postLedger.$inferSelect;
