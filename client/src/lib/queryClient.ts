@@ -170,14 +170,32 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: Infinity,
       retry: (failureCount, error: any) => {
-        // Don't retry on network errors or timeouts
-        if (error?.message?.includes('Network connection failed') || 
-            error?.message?.includes('Request timeout') ||
-            error?.message?.includes('Failed to fetch')) {
-          return false;
+        // Enhanced retry logic with quota awareness
+        if (failureCount >= 3) return false;
+        
+        // Always retry network errors
+        if (!error || !error.response) return true;
+        
+        const status = error.response?.status;
+        
+        // Retry on rate limits, quota errors, and server errors
+        if (status === 429 || (status === 403 && error.message?.includes('quota')) || status >= 500) {
+          return true;
         }
-        // Only retry up to 2 times for other errors
-        return failureCount < 2;
+        
+        // Single retry for auth errors
+        if (status === 401 && failureCount === 0) return true;
+        
+        return false;
+      },
+      retryDelay: (attemptIndex, error: any) => {
+        // Check for quota-related errors
+        if (error?.message?.includes('quota') || error?.message?.includes('Rate limited')) {
+          return 30000; // 30 seconds for quota errors
+        }
+        
+        // Exponential backoff: 1s, 2s, 4s
+        return Math.min(1000 * Math.pow(2, attemptIndex), 30000);
       },
     },
     mutations: {
