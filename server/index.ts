@@ -954,6 +954,169 @@ async function startServer() {
     await registerRoutes(app);
     console.log('✅ Routes registered successfully');
     
+    // PHONE/PASSWORD AUTHENTICATION ROUTES
+    console.log('📡 Loading authentication routes...');
+    
+    // Phone/Password Login endpoint
+    app.post('/api/auth/login', async (req: any, res: any) => {
+      try {
+        const { phone, password } = req.body;
+
+        if (!phone || !password) {
+          return res.status(400).json({
+            error: 'Phone number and password required',
+            code: 'MISSING_CREDENTIALS'
+          });
+        }
+
+        // Dynamic imports for security
+        const bcrypt = (await import('bcrypt')).default;
+        const { db } = await import('./db');
+        const { users } = await import('../shared/schema');
+        const { eq } = await import('drizzle-orm');
+
+        // Find user by phone number
+        const [user] = await db.select()
+          .from(users)
+          .where(eq(users.phone, phone));
+
+        if (!user) {
+          return res.status(401).json({
+            error: 'Invalid phone number or password',
+            code: 'INVALID_CREDENTIALS'
+          });
+        }
+
+        // Verify password
+        const passwordValid = await bcrypt.compare(password, user.password);
+        
+        if (!passwordValid) {
+          console.log('[SECURITY] Failed login attempt', {
+            phone,
+            ip: req.ip,
+            userAgent: req.headers['user-agent']
+          });
+          
+          return res.status(401).json({
+            error: 'Invalid phone number or password',
+            code: 'INVALID_CREDENTIALS'
+          });
+        }
+
+        // Establish session
+        req.session.userId = user.id;
+        req.session.userEmail = user.email;
+        req.session.userPhone = user.phone;
+        req.session.subscriptionPlan = user.subscriptionPlan;
+        req.session.subscriptionActive = user.subscriptionActive;
+        
+        // Generate session ID for response
+        const sessionId = req.session.id || `aiq_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 15)}`;
+
+        console.log('[AUTH] Successful login', {
+          userId: user.id,
+          email: user.email,
+          phone: user.phone,
+          sessionId
+        });
+
+        res.json({
+          success: true,
+          message: 'Login successful',
+          user: {
+            id: user.id,
+            email: user.email,
+            phone: user.phone,
+            subscriptionPlan: user.subscriptionPlan,
+            subscriptionActive: user.subscriptionActive
+          },
+          sessionId
+        });
+      } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
+          error: 'Login failed',
+          code: 'LOGIN_ERROR'
+        });
+      }
+    });
+
+    // Get current user from session
+    app.get('/api/auth/user', async (req: any, res: any) => {
+      try {
+        if (!req.session || !req.session.userId) {
+          return res.status(401).json({
+            error: 'Not authenticated',
+            code: 'NOT_AUTHENTICATED'
+          });
+        }
+
+        const { db } = await import('./db');
+        const { users } = await import('../shared/schema');
+        const { eq } = await import('drizzle-orm');
+
+        const [user] = await db.select()
+          .from(users)
+          .where(eq(users.id, req.session.userId));
+
+        if (!user) {
+          return res.status(404).json({
+            error: 'User not found',
+            code: 'USER_NOT_FOUND'
+          });
+        }
+
+        res.json({
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          subscriptionPlan: user.subscriptionPlan,
+          subscriptionActive: user.subscriptionActive,
+          userId: user.userId
+        });
+      } catch (error) {
+        console.error('Get user failed:', error);
+        res.status(500).json({
+          error: 'Failed to get user',
+          code: 'GET_USER_ERROR'
+        });
+      }
+    });
+
+    // Logout endpoint
+    app.post('/api/auth/logout', async (req: any, res: any) => {
+      try {
+        if (req.session) {
+          await new Promise<void>((resolve) => {
+            req.session.destroy((err: any) => {
+              if (err) {
+                console.error('Session destruction failed:', err);
+              }
+              resolve();
+            });
+          });
+        }
+
+        // Clear all cookies
+        res.clearCookie('theagencyiq.session');
+        res.clearCookie('connect.sid');
+        res.clearCookie('aiq_backup_session');
+
+        res.json({
+          success: true,
+          message: 'Logged out successfully'
+        });
+      } catch (error) {
+        console.error('Logout failed:', error);
+        res.status(500).json({
+          error: 'Logout failed',
+          code: 'LOGOUT_ERROR'
+        });
+      }
+    });
+    
+    console.log('✅ Authentication routes registered successfully');
+    
   } catch (routeError) {
     console.error('❌ Route registration failed:', routeError);
     throw routeError;
