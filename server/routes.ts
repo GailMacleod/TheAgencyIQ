@@ -12672,15 +12672,16 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     try {
       console.log('[ONBOARDING] Enabling guest mode for limited access...');
       
-      const { customerOnboardingService } = await import('./services/CustomerOnboardingService');
-      const guestResult = await customerOnboardingService.enableGuestMode();
+      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
+      const onboardingService = new CustomerOnboardingService();
+      const guestResult = await onboardingService.enableGuestMode();
       
-      if (guestResult.success && guestResult.guestSession) {
-        console.log(`✅ Guest mode enabled: ${guestResult.guestSession.guestId}`);
+      if (guestResult.success && guestResult.guestToken) {
+        console.log(`✅ Guest mode enabled: ${guestResult.guestToken}`);
         
         // Set guest session
         req.session.isGuest = true;
-        req.session.guestId = guestResult.guestSession.guestId;
+        req.session.guestToken = guestResult.guestToken;
         req.session.accessLevel = 'limited';
         
         await new Promise<void>((resolve, reject) => {
@@ -12697,9 +12698,9 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         res.json({
           success: true,
           message: 'Guest mode enabled successfully',
-          guestSession: guestResult.guestSession,
+          guestToken: guestResult.guestToken,
           sessionId: req.sessionID,
-          limitations: guestResult.guestSession.limitations,
+          limitations: guestResult.limitations,
           availableFeatures: [
             'Browse documentation',
             'View platform previews',
@@ -12707,10 +12708,10 @@ async function fetchYouTubeAnalytics(accessToken: string) {
           ]
         });
       } else {
-        console.log(`❌ Guest mode failed: ${guestResult.error}`);
+        console.log(`❌ Guest mode failed: Unknown error`);
         res.status(500).json({
           success: false,
-          error: guestResult.error
+          error: 'Guest mode setup failed'
         });
       }
 
@@ -13261,6 +13262,227 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         error: 'History retrieval failed', 
         details: error.message 
       });
+    }
+  });
+
+  // FIXED: Customer onboarding with real Twilio OTP and SendGrid email verification
+  app.post("/api/onboarding/validate", async (req, res) => {
+    try {
+      console.log('[ONBOARDING] Validating user data...');
+      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
+      const onboardingService = new CustomerOnboardingService();
+
+      if (!req.body || Object.keys(req.body).length === 0) {
+        return res.status(400).json({ error: 'User data is required' });
+      }
+
+      const validation = await onboardingService.validateUserData(req.body);
+
+      if (!validation.valid) {
+        return res.status(400).json({
+          error: 'Validation failed',
+          errors: validation.errors
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Data validation successful',
+        nextStep: 'phone_verification'
+      });
+
+    } catch (error: any) {
+      console.log('[ONBOARDING] Validation error:', error);
+      console.error('❌ Onboarding validation failed:', error);
+      res.status(500).json({ error: 'Validation service failed' });
+    }
+  });
+
+  app.post("/api/onboarding/send-phone-otp", async (req, res) => {
+    try {
+      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
+      const onboardingService = new CustomerOnboardingService();
+
+      const { phoneNumber } = req.body;
+      
+      if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required' });
+      }
+
+      const result = await onboardingService.sendPhoneOTP(phoneNumber);
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        message: 'OTP sent successfully',
+        verificationSid: result.verificationSid
+      });
+
+    } catch (error: any) {
+      console.error('❌ Phone OTP send failed:', error);
+      res.status(500).json({ error: 'Failed to send OTP' });
+    }
+  });
+
+  app.post("/api/onboarding/verify-phone-otp", async (req, res) => {
+    try {
+      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
+      const onboardingService = new CustomerOnboardingService();
+
+      const { phoneNumber, code } = req.body;
+
+      if (!phoneNumber || !code) {
+        return res.status(400).json({ error: 'Phone number and code are required' });
+      }
+
+      const result = await onboardingService.verifyPhoneOTP(phoneNumber, code);
+
+      if (!result.success || !result.verified) {
+        return res.status(400).json({ 
+          error: result.error || 'Invalid verification code'
+        });
+      }
+
+      res.json({
+        success: true,
+        verified: true,
+        message: 'Phone number verified successfully',
+        nextStep: 'email_verification'
+      });
+
+    } catch (error: any) {
+      console.error('❌ Phone OTP verification failed:', error);
+      res.status(500).json({ error: 'Verification failed' });
+    }
+  });
+
+  app.post("/api/onboarding/send-email-verification", async (req, res) => {
+    try {
+      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
+      const onboardingService = new CustomerOnboardingService();
+
+      const { email, firstName } = req.body;
+
+      if (!email || !firstName) {
+        return res.status(400).json({ error: 'Email and first name are required' });
+      }
+
+      const result = await onboardingService.sendEmailVerification(email, firstName);
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        message: 'Verification email sent successfully',
+        verificationToken: result.verificationToken
+      });
+
+    } catch (error: any) {
+      console.error('❌ Email verification send failed:', error);
+      res.status(500).json({ error: 'Failed to send verification email' });
+    }
+  });
+
+  app.post("/api/onboarding/complete", async (req, res) => {
+    try {
+      console.log('[ONBOARDING] Completing user registration...');
+      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
+      const onboardingService = new CustomerOnboardingService();
+
+      if (!req.body || Object.keys(req.body).length === 0) {
+        return res.status(400).json({ error: 'User data is required' });
+      }
+
+      const result = await onboardingService.completeOnboarding(req.body);
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      // Establish session for new user
+      req.session.userId = result.userId;
+      req.session.established = true;
+
+      res.json({
+        success: true,
+        userId: result.userId,
+        message: 'Onboarding completed successfully',
+        redirectTo: '/dashboard'
+      });
+
+    } catch (error: any) {
+      console.error('❌ Onboarding completion failed:', error);
+      res.status(500).json({ error: 'Failed to complete onboarding' });
+    }
+  });
+
+
+
+  app.get("/api/onboarding/status", (req, res) => {
+    console.log('[ONBOARDING] Checking onboarding status...');
+    const hasSession = !!req.session.userId || !!req.session.guestToken;
+    const isComplete = !!req.session.established;
+
+    res.json({
+      hasSession,
+      isComplete,
+      isGuest: !!req.session.isGuest,
+      nextStep: hasSession ? (isComplete ? 'dashboard' : 'complete') : 'validate'
+    });
+  });
+
+  app.get("/verify-email", async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token) {
+        return res.status(400).json({ error: 'Verification token is required' });
+      }
+
+      const { CustomerOnboardingService } = await import('./services/CustomerOnboardingService');
+      const onboardingService = new CustomerOnboardingService();
+
+      // Verify email token
+      const verification = await onboardingService.verifyEmailToken(token as string);
+
+      if (verification.success) {
+        res.status(200).send(`
+          <html>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+              <h1>Email Verified Successfully!</h1>
+              <p>Your email has been verified. You can now complete your registration.</p>
+              <a href="/" style="color: #2563eb; text-decoration: none;">Return to TheAgencyIQ</a>
+            </body>
+          </html>
+        `);
+      } else {
+        res.status(400).send(`
+          <html>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+              <h1>Verification Failed</h1>
+              <p>The verification token is invalid or has expired.</p>
+              <a href="/" style="color: #2563eb; text-decoration: none;">Return to TheAgencyIQ</a>
+            </body>
+          </html>
+        `);
+      }
+
+    } catch (error: any) {
+      console.error('❌ Email verification failed:', error);
+      res.status(500).send(`
+        <html>
+          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+            <h1>Verification Error</h1>
+            <p>An error occurred during verification. Please try again.</p>
+            <a href="/" style="color: #2563eb; text-decoration: none;">Return to TheAgencyIQ</a>
+          </body>
+        </html>
+      `);
     }
   });
 

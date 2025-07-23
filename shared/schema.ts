@@ -14,6 +14,16 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+// Verification codes table for onboarding
+export const verificationCodes = pgTable("verification_codes", {
+  id: serial("id").primaryKey(),
+  phone: varchar("phone", { length: 100 }).notNull(),
+  code: varchar("code", { length: 100 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  verified: boolean("verified").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Users table with secure ID management for customer onboarding
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(), // Secure string ID from OAuth
@@ -192,15 +202,7 @@ export const oauthTokens = pgTable("oauth_tokens", {
   uniqueUserPlatform: index("unique_user_platform_oauth").on(table.userId, table.platform),
 }));
 
-// Verification codes for phone verification
-export const verificationCodes = pgTable("verification_codes", {
-  id: serial("id").primaryKey(),
-  phone: text("phone").notNull(),
-  code: text("code").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  verified: boolean("verified").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+
 
 export const giftCertificates = pgTable("gift_certificates", {
   id: serial("id").primaryKey(),

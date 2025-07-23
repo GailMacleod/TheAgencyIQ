@@ -24,6 +24,7 @@ import pwaSessionManager from "./utils/PWASessionManager";
 import { useSessionManager } from "@/hooks/useSessionManager";
 import SessionLoadingSpinner from "@/components/SessionLoadingSpinner";
 import { useMobileDetection } from "@/hooks/useMobileDetection";
+import { useSessionHook } from "@/hooks/useSessionHook";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
@@ -54,6 +55,19 @@ import VideoGeneration from "@/pages/VideoGeneration";
 function Router() {
   // Track page views when routes change
   useAnalytics();
+  
+  // FIXED: Show OnboardingWizard conditionally based on session status
+  const { sessionEstablished, onboardingComplete, isLoading } = useSessionHook();
+  
+  // Show loading spinner while checking session status
+  if (isLoading) {
+    return <SessionLoadingSpinner />;
+  }
+  
+  // Show onboarding wizard if session not established or onboarding not complete
+  if (!sessionEstablished || !onboardingComplete) {
+    return <OnboardingWizard />;
+  }
   
   // Add error boundary for routing
   try {
