@@ -164,9 +164,9 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // Redis-based persistent session management for deployment stability
-  const sessionTtl = 30 * 60; // 30 minutes in seconds (Redis format)
-  const sessionTtlMs = sessionTtl * 1000; // 30 minutes in milliseconds (Express format)
+  // Enhanced persistent session management with secure cookie configuration
+  const sessionTtl = 3 * 24 * 60 * 60; // 3 days in seconds (Redis format) - 72 hours for PWA persistent logins
+  const sessionTtlMs = sessionTtl * 1000; // 3 days in milliseconds (Express format) - 72 hours
   
   let sessionStore: any;
   
@@ -245,12 +245,12 @@ async function startServer() {
       return `aiq_${timestamp}_${random}`;
     },
     cookie: { 
-      secure: true, // PRECISION FIX: Required for sameSite none and Replit HTTPS
-      maxAge: sessionTtlMs, // 30 minutes
-      httpOnly: false, // Allow frontend access for user validation
-      sameSite: 'none', // PRECISION FIX: Allow cross-origin cookies in Replit
+      secure: process.env.NODE_ENV === 'production', // Secure cookies in production for HTTPS
+      httpOnly: true, // Prevent JavaScript access to prevent XSS attacks
+      sameSite: 'strict', // Prevent CSRF attacks with strict same-site policy
+      maxAge: sessionTtlMs, // 72 hours (3 days) for persistent PWA logins
       path: '/',
-      domain: undefined // Let express handle domain
+      domain: undefined // Let express handle domain automatically
     },
     rolling: true, // Extend session on activity
     proxy: true, // Works with trust proxy setting
@@ -267,12 +267,12 @@ async function startServer() {
     // PRECISION FIX: Add detailed cookie debugging as requested
     console.log('Cookie:', req.cookies);
     
-    // Set backup session cookie if missing
+    // Set secure backup session cookie if missing
     if (req.session?.userId && !req.headers.cookie?.includes('aiq_backup_session')) {
-      console.log('🔧 Setting session cookies for authenticated user');
+      console.log('🔧 Setting secure session cookies for authenticated user');
       res.setHeader('Set-Cookie', [
-        `aiq_backup_session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=Lax${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`,
-        `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=false; SameSite=Lax${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`
+        `aiq_backup_session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=strict${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`,
+        `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=strict${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`
       ]);
     }
     
