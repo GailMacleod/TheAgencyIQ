@@ -83,24 +83,46 @@ export const requireActiveSubscription = async (req: any, res: any, next: any) =
 // Secure authentication middleware with session validation
 export const requireAuth = async (req: any, res: any, next: any) => {
   try {
-    // SECURITY FIX: Use session authentication middleware instead of auto-establishment
+    // Check for simple session userId (from /api/establish-session endpoint)
+    if (req.session && req.session.userId) {
+      console.log(`✅ Session validation passed for user ${req.session.userId}`);
+      
+      // Update session activity
+      if (req.session.touch) {
+        req.session.touch();
+      }
+      
+      // Attach user info to request for downstream middleware
+      req.authenticatedUser = {
+        userId: req.session.userId,
+        email: req.session.userEmail
+      };
+      
+      return next();
+    }
+    
+    // Fallback: Try complex session authentication middleware
     const userSession = sessionAuthMiddleware.extractUserFromSession(req);
     
-    if (!userSession) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'SESSION_REQUIRED',
-        message: 'Valid authenticated session required. Please establish session first.'
-      });
+    if (userSession) {
+      console.log(`✅ Complex session validation passed for user ${userSession.email}`);
+      
+      // Update session activity for authenticated users
+      sessionAuthMiddleware.updateSessionActivity(req);
+      
+      // Attach user info to request for downstream middleware
+      req.authenticatedUser = userSession;
+      
+      return next();
     }
 
-    // Update session activity for authenticated users
-    sessionAuthMiddleware.updateSessionActivity(req);
-    
-    // Attach user info to request for downstream middleware
-    req.authenticatedUser = userSession;
-    
-    next();
+    console.log(`❌ Session validation failed - no userId in session`);
+    return res.status(401).json({
+      error: 'Authentication required',
+      code: 'SESSION_REQUIRED',
+      message: 'Valid authenticated session required. Please establish session first.'
+    });
+
   } catch (error) {
     console.error('Auth middleware error:', error);
     return res.status(500).json({ 

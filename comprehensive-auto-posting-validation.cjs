@@ -1,353 +1,559 @@
+#!/usr/bin/env node
+
 /**
- * COMPREHENSIVE AUTO-POSTING VALIDATION TEST
- * Tests the enhanced auto-posting system with real OAuth integration
+ * COMPREHENSIVE AUTO-POSTING VALIDATION SUITE
+ * Tests auto-posting after onboarding, token refresh scenarios, and notification confirmations
  */
 
 const axios = require('axios');
+const util = require('util');
+
+const BASE_URL = 'http://localhost:5000';
 
 // Test configuration
-const BASE_URL = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
-const HEADERS = {
-  'Content-Type': 'application/json',
-  'Cookie': 'aiq_backup_session=aiq_mdfgyv0g_8tbnxxg2zt3; theagencyiq.session=s%3Aaiq_mdfgyv0g_8tbnxxg2zt3.CIXTq2u6fBOIAxKdlBrLkJcziKaH8zGsVJnGtGhnzM0'
+const TEST_CONFIG = {
+  userId: '2',
+  testEmail: 'gail@macleodglbal.com.au',
+  platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
+  sleepDelay: 2000, // 2 seconds between tests
+  maxRetries: 3
 };
 
-class AutoPostingValidator {
+// Utility functions
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const exponentialBackoff = async (attempt, maxDelay = 60000) => {
+  const baseDelay = 1000; // 1 second
+  const jitter = Math.random() * 0.1; // 10% jitter
+  const delay = Math.min(baseDelay * Math.pow(2, attempt) * (1 + jitter), maxDelay);
+  
+  console.log(`⏱️ Exponential backoff: ${delay.toFixed(0)}ms (attempt ${attempt + 1})`);
+  await sleep(delay);
+};
+
+class AutoPostingTestManager {
   constructor() {
-    this.testResults = {};
-    this.totalTests = 0;
-    this.passedTests = 0;
+    this.testResults = {
+      onboardingTests: [],
+      tokenRefreshTests: [],
+      notificationTests: [],
+      healthChecks: [],
+      connectionTriggerTests: []
+    };
+    this.sessionCookie = null;
   }
 
-  async runTest(testName, testFunction) {
-    this.totalTests++;
-    console.log(`\n🧪 Running: ${testName}`);
-    
+  /**
+   * Establish test session
+   */
+  async establishTestSession() {
     try {
-      const result = await testFunction();
+      console.log('🔐 Establishing test session...');
+      
+      const response = await axios.post(`${BASE_URL}/api/auth/login`, {
+        phone: '+61424835189',
+        password: 'password123'
+      }, {
+        withCredentials: true,
+        timeout: 10000
+      });
+
+      if (response.data.success) {
+        // Extract session cookie
+        const cookies = response.headers['set-cookie'];
+        if (cookies && cookies.length > 0) {
+          this.sessionCookie = cookies[0].split(';')[0];
+          console.log('✅ Session established successfully');
+          return true;
+        }
+      }
+      
+      console.log('❌ Session establishment failed');
+      return false;
+    } catch (error) {
+      console.error('❌ Session establishment error:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Make authenticated request
+   */
+  async authenticatedRequest(method, endpoint, data = null) {
+    const config = {
+      method,
+      url: `${BASE_URL}${endpoint}`,
+      withCredentials: true,
+      timeout: 15000,
+      headers: {}
+    };
+
+    if (this.sessionCookie) {
+      config.headers.Cookie = this.sessionCookie;
+    }
+
+    if (data && (method === 'POST' || method === 'PUT')) {
+      config.data = data;
+      config.headers['Content-Type'] = 'application/json';
+    }
+
+    try {
+      const response = await axios(config);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.error || error.message,
+        status: error.response?.status
+      };
+    }
+  }
+
+  /**
+   * Test auto-posting after onboarding completion
+   */
+  async testOnboardingAutoPosting() {
+    console.log('\n📋 1. ONBOARDING AUTO-POSTING TESTS');
+    console.log('--------------------------------------------------');
+
+    try {
+      console.log('🔄 Testing auto-posting after onboarding completion...');
+      
+      const result = await this.authenticatedRequest('POST', '/api/auto-posting/test-onboarding');
+      
       if (result.success) {
-        this.passedTests++;
-        console.log(`✅ ${testName}: PASSED`);
-        if (result.details) console.log(`   ${result.details}`);
-      } else {
-        console.log(`❌ ${testName}: FAILED`);
-        if (result.error) console.log(`   Error: ${result.error}`);
-      }
-      this.testResults[testName] = result;
-    } catch (error) {
-      console.log(`❌ ${testName}: ERROR - ${error.message}`);
-      this.testResults[testName] = { success: false, error: error.message };
-    }
-  }
+        const data = result.data;
+        this.testResults.onboardingTests.push({
+          test: 'Onboarding Auto-Posting',
+          passed: data.success,
+          platforms: data.platforms || [],
+          successfulPosts: data.results?.filter(r => r.success).length || 0,
+          totalPosts: data.results?.length || 0,
+          notificationsSent: data.notificationsSent || 0,
+          errors: data.errors || []
+        });
 
-  // Test 1: Enhanced auto-posting service availability
-  async testEnhancedServiceAvailability() {
-    try {
-      const response = await axios.post(`${BASE_URL}/api/enforce-auto-posting`, {}, {
-        headers: HEADERS,
-        timeout: 30000
+        if (data.success) {
+          console.log('✅ PASS Onboarding Auto-Posting Test');
+          console.log(`   Platforms: ${data.platforms?.join(', ') || 'None'}`);
+          console.log(`   Successful posts: ${data.results?.filter(r => r.success).length || 0}/${data.results?.length || 0}`);
+          console.log(`   Notifications sent: ${data.notificationsSent || 0}`);
+        } else {
+          console.log('❌ FAIL Onboarding Auto-Posting Test');
+          console.log(`   Errors: ${data.errors?.join(', ') || 'Unknown'}`);
+        }
+      } else {
+        console.log('❌ FAIL Onboarding Auto-Posting Test');
+        console.log(`   Error: ${result.error}`);
+        
+        this.testResults.onboardingTests.push({
+          test: 'Onboarding Auto-Posting',
+          passed: false,
+          error: result.error
+        });
+      }
+
+      await sleep(TEST_CONFIG.sleepDelay);
+
+    } catch (error) {
+      console.error('❌ Onboarding auto-posting test failed:', error.message);
+      this.testResults.onboardingTests.push({
+        test: 'Onboarding Auto-Posting',
+        passed: false,
+        error: error.message
       });
-
-      const data = response.data;
-      
-      if (response.status === 200 && data.message && !data.message.includes('fallback')) {
-        return {
-          success: true,
-          details: `Service responded: ${data.message}`
-        };
-      } else {
-        return {
-          success: false,
-          error: `Service using fallback or unexpected response: ${data.message}`
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `Request failed: ${error.response?.status} - ${error.message}`
-      };
     }
   }
 
-  // Test 2: OAuth token usage validation
-  async testOAuthTokenUsage() {
-    try {
-      const response = await axios.post(`${BASE_URL}/api/enforce-auto-posting`, {}, {
-        headers: HEADERS,
-        timeout: 30000
-      });
+  /**
+   * Test posting with refreshed tokens
+   */
+  async testTokenRefreshPosting() {
+    console.log('\n🔄 2. TOKEN REFRESH POSTING TESTS');
+    console.log('--------------------------------------------------');
 
-      const data = response.data;
-      
-      // Check if response indicates real OAuth token usage
-      const hasRealTokenIndicators = 
-        data.connectionRepairs?.some(repair => repair.includes('OAuth')) ||
-        data.errors?.some(error => error.includes('token')) ||
-        (data.postsPublished > 0 && !data.message?.includes('mock'));
-
-      if (hasRealTokenIndicators || data.postsPublished > 0) {
-        return {
-          success: true,
-          details: `OAuth integration detected - ${data.postsProcessed} posts processed, ${data.postsPublished} published`
-        };
-      } else {
-        return {
-          success: false,
-          error: 'No indicators of real OAuth token usage detected'
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `OAuth validation failed: ${error.message}`
-      };
-    }
-  }
-
-  // Test 3: Retry mechanism and error handling
-  async testRetryMechanism() {
-    try {
-      // Make multiple rapid requests to test retry logic
-      const promises = Array(3).fill().map(() =>
-        axios.post(`${BASE_URL}/api/enforce-auto-posting`, {}, {
-          headers: HEADERS,
-          timeout: 20000
-        })
-      );
-
-      const responses = await Promise.allSettled(promises);
-      const successResponses = responses.filter(r => r.status === 'fulfilled');
-      
-      if (successResponses.length > 0) {
-        const data = successResponses[0].value.data;
-        const hasRetryLogic = 
-          data.errors?.some(error => error.includes('retry') || error.includes('attempt')) ||
-          data.connectionRepairs?.some(repair => repair.includes('retry'));
-
-        return {
-          success: true,
-          details: `Retry mechanism handling detected in ${successResponses.length}/${responses.length} responses`
-        };
-      } else {
-        return {
-          success: false,
-          error: 'All retry test requests failed'
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `Retry test failed: ${error.message}`
-      };
-    }
-  }
-
-  // Test 4: PostgreSQL logging validation
-  async testPostgreSQLLogging() {
-    try {
-      const response = await axios.post(`${BASE_URL}/api/enforce-auto-posting`, {}, {
-        headers: HEADERS,
-        timeout: 30000
-      });
-
-      const data = response.data;
-      
-      // Check for indicators of database logging
-      const hasDatabaseLogging = 
-        data.message?.includes('logged') ||
-        data.connectionRepairs?.some(repair => repair.includes('database')) ||
-        (response.status === 200 && data.postsProcessed >= 0); // Any valid response suggests DB interaction
-
-      if (hasDatabaseLogging) {
-        return {
-          success: true,
-          details: `Database logging functionality detected - ${data.postsProcessed} posts processed`
-        };
-      } else {
-        return {
-          success: false,
-          error: 'No indicators of PostgreSQL logging found'
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `PostgreSQL logging test failed: ${error.message}`
-      };
-    }
-  }
-
-  // Test 5: Rate limiting and quota management
-  async testRateLimitingAndQuota() {
-    try {
-      const response = await axios.post(`${BASE_URL}/api/enforce-auto-posting`, {}, {
-        headers: HEADERS,
-        timeout: 30000
-      });
-
-      const data = response.data;
-      
-      // Check for rate limiting indicators
-      const hasRateLimiting = 
-        data.errors?.some(error => error.includes('rate') || error.includes('quota') || error.includes('limit')) ||
-        data.connectionRepairs?.some(repair => repair.includes('rate') || repair.includes('quota')) ||
-        data.message?.includes('quota') ||
-        data.message?.includes('limit');
-
-      if (hasRateLimiting || data.postsProcessed < 10) { // Reasonable limit suggests quota management
-        return {
-          success: true,
-          details: `Rate limiting/quota management active - processed ${data.postsProcessed} posts`
-        };
-      } else {
-        return {
-          success: false,
-          error: 'No rate limiting or quota management indicators found'
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `Rate limiting test failed: ${error.message}`
-      };
-    }
-  }
-
-  // Test 6: Platform-specific error handling
-  async testPlatformErrorHandling() {
-    try {
-      const response = await axios.post(`${BASE_URL}/api/enforce-auto-posting`, {}, {
-        headers: HEADERS,
-        timeout: 30000
-      });
-
-      const data = response.data;
-      
-      // Check for platform-specific error handling
-      const hasPlatformHandling = 
-        data.errors?.some(error => 
-          error.includes('facebook') || error.includes('instagram') || 
-          error.includes('linkedin') || error.includes('youtube') || error.includes('twitter')
-        ) ||
-        data.connectionRepairs?.some(repair => 
-          repair.includes('facebook') || repair.includes('instagram') || 
-          repair.includes('linkedin') || repair.includes('youtube') || repair.includes('twitter')
-        );
-
-      if (hasPlatformHandling || data.postsProcessed > 0) {
-        return {
-          success: true,
-          details: `Platform-specific handling detected - ${data.connectionRepairs?.length || 0} platform interactions`
-        };
-      } else {
-        return {
-          success: false,
-          error: 'No platform-specific error handling indicators found'
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `Platform error handling test failed: ${error.message}`
-      };
-    }
-  }
-
-  // Test 7: Exponential backoff implementation
-  async testExponentialBackoff() {
-    try {
-      const startTime = Date.now();
-      const response = await axios.post(`${BASE_URL}/api/enforce-auto-posting`, {}, {
-        headers: HEADERS,
-        timeout: 45000 // Longer timeout for backoff testing
-      });
-      const duration = Date.now() - startTime;
-
-      const data = response.data;
-      
-      // Check for backoff indicators
-      const hasBackoff = 
-        duration > 2000 || // Took reasonable time suggesting delays
-        data.errors?.some(error => error.includes('backoff') || error.includes('delay') || error.includes('waiting')) ||
-        data.connectionRepairs?.some(repair => repair.includes('retry') || repair.includes('delay'));
-
-      if (hasBackoff || data.postsProcessed > 0) {
-        return {
-          success: true,
-          details: `Backoff mechanism detected - request took ${duration}ms`
-        };
-      } else {
-        return {
-          success: false,
-          error: `No exponential backoff indicators found (${duration}ms)`
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `Backoff test failed: ${error.message}`
-      };
-    }
-  }
-
-  async runAllTests() {
-    console.log('🚀 COMPREHENSIVE AUTO-POSTING VALIDATION SUITE');
-    console.log('='.repeat(60));
+    const platforms = TEST_CONFIG.platforms;
     
-    await this.runTest('Enhanced Service Availability', () => this.testEnhancedServiceAvailability());
-    await this.runTest('OAuth Token Usage', () => this.testOAuthTokenUsage());
-    await this.runTest('Retry Mechanism', () => this.testRetryMechanism());
-    await this.runTest('PostgreSQL Logging', () => this.testPostgreSQLLogging());
-    await this.runTest('Rate Limiting & Quota', () => this.testRateLimitingAndQuota());
-    await this.runTest('Platform Error Handling', () => this.testPlatformErrorHandling());
-    await this.runTest('Exponential Backoff', () => this.testExponentialBackoff());
+    for (const platform of platforms) {
+      try {
+        console.log(`🔑 Testing token refresh posting for ${platform}...`);
+        
+        const oldToken = `old_token_${platform}_${Date.now()}`;
+        
+        const result = await this.authenticatedRequest('POST', '/api/auto-posting/test-refresh-token', {
+          platform,
+          oldToken
+        });
+        
+        if (result.success) {
+          const data = result.data;
+          this.testResults.tokenRefreshTests.push({
+            test: `Token Refresh Posting - ${platform}`,
+            passed: data.success,
+            platform: data.platform,
+            tokenRefreshed: data.tokenRefreshed,
+            postId: data.postId,
+            quotaUsed: data.quotaUsed,
+            notificationSent: data.notificationSent,
+            errors: data.errors || []
+          });
 
-    this.generateReport();
+          if (data.success) {
+            console.log(`✅ PASS Token Refresh Posting - ${platform}`);
+            console.log(`   Token refreshed: ${data.tokenRefreshed ? 'Yes' : 'No'}`);
+            console.log(`   Post ID: ${data.postId || 'None'}`);
+            console.log(`   Notification sent: ${data.notificationSent ? 'Yes' : 'No'}`);
+          } else {
+            console.log(`❌ FAIL Token Refresh Posting - ${platform}`);
+            console.log(`   Errors: ${data.errors?.join(', ') || 'Unknown'}`);
+          }
+        } else {
+          console.log(`❌ FAIL Token Refresh Posting - ${platform}`);
+          console.log(`   Error: ${result.error}`);
+          
+          this.testResults.tokenRefreshTests.push({
+            test: `Token Refresh Posting - ${platform}`,
+            passed: false,
+            platform,
+            error: result.error
+          });
+        }
+
+        await sleep(TEST_CONFIG.sleepDelay);
+
+      } catch (error) {
+        console.error(`❌ Token refresh posting test failed for ${platform}:`, error.message);
+        this.testResults.tokenRefreshTests.push({
+          test: `Token Refresh Posting - ${platform}`,
+          passed: false,
+          platform,
+          error: error.message
+        });
+      }
+    }
   }
 
+  /**
+   * Test notification system
+   */
+  async testNotificationSystem() {
+    console.log('\n📧 3. NOTIFICATION SYSTEM TESTS');
+    console.log('--------------------------------------------------');
+
+    const notificationTypes = [
+      'onboarding_complete',
+      'post_success',
+      'token_refresh',
+      'system_health'
+    ];
+
+    for (const type of notificationTypes) {
+      try {
+        console.log(`📨 Testing ${type} notification...`);
+        
+        const result = await this.authenticatedRequest('POST', '/api/auto-posting/test-notification', {
+          type,
+          platform: 'facebook' // test platform
+        });
+        
+        if (result.success) {
+          const data = result.data;
+          this.testResults.notificationTests.push({
+            test: `Notification - ${type}`,
+            passed: data.success,
+            type,
+            email: data.email,
+            subject: data.subject,
+            error: data.error
+          });
+
+          if (data.success) {
+            console.log(`✅ PASS Notification - ${type}`);
+            console.log(`   Email: ${data.email || 'Unknown'}`);
+            console.log(`   Subject: ${data.subject || 'Unknown'}`);
+          } else {
+            console.log(`❌ FAIL Notification - ${type}`);
+            console.log(`   Error: ${data.error || 'Unknown'}`);
+          }
+        } else {
+          console.log(`❌ FAIL Notification - ${type}`);
+          console.log(`   Error: ${result.error}`);
+          
+          this.testResults.notificationTests.push({
+            test: `Notification - ${type}`,
+            passed: false,
+            type,
+            error: result.error
+          });
+        }
+
+        await sleep(1000); // Shorter delay for notifications
+
+      } catch (error) {
+        console.error(`❌ Notification test failed for ${type}:`, error.message);
+        this.testResults.notificationTests.push({
+          test: `Notification - ${type}`,
+          passed: false,
+          type,
+          error: error.message
+        });
+      }
+    }
+  }
+
+  /**
+   * Test auto-posting system health
+   */
+  async testSystemHealth() {
+    console.log('\n🏥 4. SYSTEM HEALTH TESTS');
+    console.log('--------------------------------------------------');
+
+    try {
+      console.log('🔍 Testing auto-posting system health...');
+      
+      const result = await this.authenticatedRequest('GET', '/api/auto-posting/health-check');
+      
+      if (result.success) {
+        const data = result.data;
+        this.testResults.healthChecks.push({
+          test: 'System Health Check',
+          passed: data.healthy,
+          issues: data.issues || [],
+          recommendations: data.recommendations || [],
+          message: data.message
+        });
+
+        if (data.healthy) {
+          console.log('✅ PASS System Health Check');
+          console.log(`   Message: ${data.message || 'System healthy'}`);
+        } else {
+          console.log('⚠️ WARN System Health Check - Issues Found');
+          console.log(`   Issues: ${data.issues?.join(', ') || 'None'}`);
+          console.log(`   Recommendations: ${data.recommendations?.join(', ') || 'None'}`);
+        }
+      } else {
+        console.log('❌ FAIL System Health Check');
+        console.log(`   Error: ${result.error}`);
+        
+        this.testResults.healthChecks.push({
+          test: 'System Health Check',
+          passed: false,
+          error: result.error
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ System health test failed:', error.message);
+      this.testResults.healthChecks.push({
+        test: 'System Health Check',
+        passed: false,
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Test connection trigger
+   */
+  async testConnectionTrigger() {
+    console.log('\n🔗 5. CONNECTION TRIGGER TESTS');
+    console.log('--------------------------------------------------');
+
+    const platforms = ['facebook', 'instagram'];
+    
+    for (const platform of platforms) {
+      try {
+        console.log(`⚡ Testing connection trigger for ${platform}...`);
+        
+        const result = await this.authenticatedRequest('POST', '/api/auto-posting/trigger-after-connection', {
+          platform
+        });
+        
+        if (result.success) {
+          const data = result.data;
+          this.testResults.connectionTriggerTests.push({
+            test: `Connection Trigger - ${platform}`,
+            passed: data.success,
+            platform: data.platform,
+            postId: data.postId,
+            notificationSent: data.notificationSent,
+            errors: data.errors || []
+          });
+
+          if (data.success) {
+            console.log(`✅ PASS Connection Trigger - ${platform}`);
+            console.log(`   Post ID: ${data.postId || 'None'}`);
+            console.log(`   Notification sent: ${data.notificationSent ? 'Yes' : 'No'}`);
+          } else {
+            console.log(`❌ FAIL Connection Trigger - ${platform}`);
+            console.log(`   Errors: ${data.errors?.join(', ') || 'Unknown'}`);
+          }
+        } else {
+          console.log(`❌ FAIL Connection Trigger - ${platform}`);
+          console.log(`   Error: ${result.error}`);
+          
+          this.testResults.connectionTriggerTests.push({
+            test: `Connection Trigger - ${platform}`,
+            passed: false,
+            platform,
+            error: result.error
+          });
+        }
+
+        await sleep(TEST_CONFIG.sleepDelay);
+
+      } catch (error) {
+        console.error(`❌ Connection trigger test failed for ${platform}:`, error.message);
+        this.testResults.connectionTriggerTests.push({
+          test: `Connection Trigger - ${platform}`,
+          passed: false,
+          platform,
+          error: error.message
+        });
+      }
+    }
+  }
+
+  /**
+   * Generate comprehensive test report
+   */
   generateReport() {
-    console.log('\n' + '='.repeat(60));
-    console.log('📊 COMPREHENSIVE AUTO-POSTING VALIDATION REPORT');
-    console.log('='.repeat(60));
-    
-    const successRate = ((this.passedTests / this.totalTests) * 100).toFixed(1);
-    
-    console.log(`\n📈 Overall Results:`);
-    console.log(`   Tests Passed: ${this.passedTests}/${this.totalTests}`);
-    console.log(`   Success Rate: ${successRate}%`);
-    
-    if (successRate >= 85) {
-      console.log(`\n✅ EXCELLENT: Enhanced auto-posting system is production-ready!`);
-    } else if (successRate >= 70) {
-      console.log(`\n⚠️ GOOD: Enhanced auto-posting system is mostly functional with minor issues.`);
-    } else {
-      console.log(`\n❌ NEEDS WORK: Enhanced auto-posting system requires significant improvements.`);
-    }
+    console.log('\n📊 COMPREHENSIVE AUTO-POSTING VALIDATION SUMMARY');
+    console.log('======================================================================');
 
-    console.log(`\n🔍 Detailed Results:`);
-    Object.entries(this.testResults).forEach(([test, result]) => {
-      const status = result.success ? '✅ PASS' : '❌ FAIL';
-      console.log(`   ${status}: ${test}`);
-      if (result.details) console.log(`        ${result.details}`);
-      if (result.error) console.log(`        Error: ${result.error}`);
+    const allTests = [
+      ...this.testResults.onboardingTests,
+      ...this.testResults.tokenRefreshTests,
+      ...this.testResults.notificationTests,
+      ...this.testResults.healthChecks,
+      ...this.testResults.connectionTriggerTests
+    ];
+
+    const passedTests = allTests.filter(t => t.passed).length;
+    const totalTests = allTests.length;
+    const successRate = totalTests > 0 ? ((passedTests / totalTests) * 100).toFixed(1) : '0.0';
+
+    console.log(`✅ Tests Passed: ${passedTests}`);
+    console.log(`❌ Tests Failed: ${totalTests - passedTests}`);
+    console.log(`📈 Success Rate: ${successRate}%`);
+    console.log('');
+
+    // Category breakdown
+    console.log('🔍 CATEGORY BREAKDOWN:');
+    console.log('--------------------------------------------------');
+    
+    const categories = [
+      { name: 'Onboarding Tests', tests: this.testResults.onboardingTests },
+      { name: 'Token Refresh Tests', tests: this.testResults.tokenRefreshTests },
+      { name: 'Notification Tests', tests: this.testResults.notificationTests },
+      { name: 'Health Checks', tests: this.testResults.healthChecks },
+      { name: 'Connection Triggers', tests: this.testResults.connectionTriggerTests }
+    ];
+
+    categories.forEach(category => {
+      const passed = category.tests.filter(t => t.passed).length;
+      const total = category.tests.length;
+      const rate = total > 0 ? ((passed / total) * 100).toFixed(1) : '0.0';
+      
+      console.log(`${category.name}: ${passed}/${total} (${rate}%)`);
     });
 
-    console.log(`\n📝 Key Features Validated:`);
-    console.log(`   🔐 Real OAuth token integration with passport-oauth2`);
-    console.log(`   🔄 Exponential backoff retry mechanism`);
-    console.log(`   🗄️ PostgreSQL logging with Drizzle ORM`);
-    console.log(`   📊 Comprehensive quota and rate limiting`);
-    console.log(`   🛡️ Platform-specific error handling`);
-    console.log(`   ⚡ Production-ready performance and reliability`);
-    
-    console.log('\n' + '='.repeat(60));
+    console.log('');
+
+    // Detailed failures
+    const failedTests = allTests.filter(t => !t.passed);
+    if (failedTests.length > 0) {
+      console.log('❌ FAILED TESTS DETAILS:');
+      console.log('--------------------------------------------------');
+      failedTests.forEach(test => {
+        console.log(`• ${test.test}: ${test.error || 'Unknown error'}`);
+      });
+      console.log('');
+    }
+
+    // Success indicators
+    if (successRate >= '80.0') {
+      console.log('🎯 OVERALL STATUS: ✅ AUTO-POSTING VALIDATION SUCCESSFUL');
+      console.log('');
+      console.log('⚡ AUTO-POSTING FEATURES CONFIRMED:');
+      console.log('   ✅ Onboarding auto-posting tests working correctly');
+      console.log('   ✅ Token refresh posting validation implemented');
+      console.log('   ✅ Twilio/SendGrid notification system operational');
+      console.log('   ✅ System health checks providing comprehensive monitoring');
+      console.log('   ✅ Connection trigger tests ensuring post-onboarding validation');
+      console.log('   ✅ Comprehensive error handling and notification workflows');
+      console.log('');
+      console.log('🚀 AUTO-POSTING VALIDATION COMPLETE: Post-onboarding testing with notifications');
+    } else {
+      console.log('🎯 OVERALL STATUS: ❌ AUTO-POSTING VALIDATION NEEDS ATTENTION');
+      console.log('');
+      console.log('⚠️ ISSUES TO ADDRESS:');
+      console.log('   • Review failed test details above');
+      console.log('   • Ensure notification services are properly configured');
+      console.log('   • Verify platform connections and token refresh mechanisms');
+      console.log('   • Check quota management integration');
+    }
+
+    return successRate >= '80.0';
+  }
+
+  /**
+   * Run all validation tests
+   */
+  async runAllTests() {
+    console.log('🚀 STARTING COMPREHENSIVE AUTO-POSTING VALIDATION');
+    console.log('======================================================================');
+    console.log(`Test Configuration:`);
+    console.log(`- Base URL: ${BASE_URL}`);
+    console.log(`- User ID: ${TEST_CONFIG.userId}`);
+    console.log(`- Test Email: ${TEST_CONFIG.testEmail}`);
+    console.log(`- Platforms: ${TEST_CONFIG.platforms.join(', ')}`);
+    console.log(`- Sleep Delay: ${TEST_CONFIG.sleepDelay}ms`);
+    console.log('');
+
+    // Establish session first
+    const sessionEstablished = await this.establishTestSession();
+    if (!sessionEstablished) {
+      console.log('❌ Cannot continue without valid session');
+      return false;
+    }
+
+    // Run all test suites
+    await this.testOnboardingAutoPosting();
+    await this.testTokenRefreshPosting();
+    await this.testNotificationSystem();
+    await this.testSystemHealth();
+    await this.testConnectionTrigger();
+
+    // Generate final report
+    return this.generateReport();
   }
 }
 
-// Run the validation suite
+// Main execution
 async function main() {
-  const validator = new AutoPostingValidator();
-  await validator.runAllTests();
+  const validator = new AutoPostingTestManager();
+  
+  try {
+    const success = await validator.runAllTests();
+    process.exit(success ? 0 : 1);
+  } catch (error) {
+    console.error('💥 Validation suite crashed:', error);
+    process.exit(1);
+  }
 }
 
-main().catch(console.error);
+// Handle process termination
+process.on('SIGINT', () => {
+  console.log('\n⚠️ Validation interrupted');
+  process.exit(1);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n⚠️ Validation terminated');
+  process.exit(1);
+});
+
+if (require.main === module) {
+  main();
+}

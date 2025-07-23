@@ -49,6 +49,7 @@ import { registerQuotaRoutes } from './routes/quota-status';
 import { AtomicQuotaManager } from './services/AtomicQuotaManager';
 import { atomicQuotaMiddleware, quotaStatusMiddleware, validateQuotaMiddleware } from './middleware/atomic-quota';
 import { EnhancedAutoPostingService } from './services/EnhancedAutoPostingService';
+import { autoPostingValidator } from './services/AutoPostingValidator';
 
 // Extended session types
 declare module 'express-session' {
@@ -12221,6 +12222,265 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       res.setHeader('Accept-Ranges', 'bytes');
     }
   }));
+
+  // AUTO-POSTING VALIDATION ENDPOINTS
+  // Test auto-posting after onboarding completion
+  app.post('/api/auto-posting/test-onboarding', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      console.log(`[AUTO-POST-TEST] Testing auto-posting after onboarding for user ${userId}`);
+      
+      const result = await autoPostingValidator.testAutoPostingAfterOnboarding(userId.toString());
+      
+      res.json({
+        success: result.success,
+        platforms: result.platforms,
+        results: result.results,
+        notificationsSent: result.notificationsSent,
+        errors: result.errors,
+        message: result.success ? 
+          'Onboarding auto-posting test completed successfully' : 
+          'Onboarding auto-posting test failed'
+      });
+
+    } catch (error: any) {
+      console.error('[AUTO-POST-TEST] Onboarding test error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Auto-posting test failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Test posting with refreshed token
+  app.post('/api/auto-posting/test-refresh-token', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { platform, oldToken } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      if (!platform || !oldToken) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Platform and oldToken are required' 
+        });
+      }
+
+      console.log(`[AUTO-POST-REFRESH] Testing posting with refreshed token for user ${userId}, platform ${platform}`);
+      
+      const result = await autoPostingValidator.testPostingWithRefreshedToken(
+        userId.toString(), 
+        platform, 
+        oldToken
+      );
+      
+      res.json({
+        success: result.success,
+        platform: result.platform,
+        postId: result.postId,
+        tokenRefreshed: result.tokenRefreshed,
+        quotaUsed: result.quotaUsed,
+        notificationSent: result.notificationSent,
+        errors: result.errors,
+        message: result.success ? 
+          'Token refresh and posting test successful' : 
+          'Token refresh or posting test failed'
+      });
+
+    } catch (error: any) {
+      console.error('[AUTO-POST-REFRESH] Token refresh test error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Token refresh test failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Validate auto-posting system health
+  app.get('/api/auto-posting/health-check', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      console.log(`[AUTO-POST-HEALTH] Health check for user ${userId}`);
+      
+      const healthResult = await autoPostingValidator.validateAutoPostingSystem(userId.toString());
+      
+      res.json({
+        success: true,
+        healthy: healthResult.healthy,
+        issues: healthResult.issues,
+        recommendations: healthResult.recommendations,
+        message: healthResult.healthy ? 
+          'Auto-posting system is healthy' : 
+          'Auto-posting system requires attention'
+      });
+
+    } catch (error: any) {
+      console.error('[AUTO-POST-HEALTH] Health check error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Health check failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Trigger auto-posting test after successful platform connection
+  app.post('/api/auto-posting/trigger-after-connection', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { platform } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      if (!platform) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Platform is required' 
+        });
+      }
+
+      console.log(`[AUTO-POST-TRIGGER] Triggering auto-posting test after ${platform} connection for user ${userId}`);
+      
+      // Get the latest connection for this platform
+      const connections = await db
+        .select()
+        .from(platformConnections)
+        .where(
+          and(
+            eq(platformConnections.userId, userId.toString()),
+            eq(platformConnections.platform, platform),
+            eq(platformConnections.isActive, true)
+          )
+        )
+        .orderBy(desc(platformConnections.connectedAt))
+        .limit(1);
+
+      if (connections.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'No active connection found for platform'
+        });
+      }
+
+      // Test posting with the new connection
+      const result = await autoPostingValidator.testPostingWithRefreshedToken(
+        userId.toString(),
+        platform,
+        connections[0].accessToken
+      );
+
+      res.json({
+        success: result.success,
+        platform: result.platform,
+        postId: result.postId,
+        notificationSent: result.notificationSent,
+        errors: result.errors,
+        message: result.success ? 
+          'Post-connection auto-posting test successful' : 
+          'Post-connection auto-posting test failed'
+      });
+
+    } catch (error: any) {
+      console.error('[AUTO-POST-TRIGGER] Connection trigger error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Connection trigger test failed',
+        details: error.message
+      });
+    }
+  });
+
+  // Send test notification (for testing notification system)
+  app.post('/api/auto-posting/test-notification', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { type, platform } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      console.log(`[AUTO-POST-NOTIFY] Testing notification for user ${userId}, type: ${type}`);
+      
+      // Get user email
+      const [user] = await db.select().from(users).where(eq(users.id, userId.toString()));
+      if (!user || !user.email) {
+        return res.status(404).json({
+          success: false,
+          error: 'User email not found'
+        });
+      }
+
+      // Send test notification via SendGrid
+      if (process.env.SENDGRID_API_KEY) {
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+        const subjects = {
+          onboarding_complete: '🎉 Test: Onboarding Complete',
+          post_success: '✅ Test: Post Successful',
+          token_refresh: '🔄 Test: Token Refreshed',
+          system_health: '🏥 Test: System Health Check'
+        };
+
+        const messages = {
+          onboarding_complete: 'This is a test notification for onboarding completion.',
+          post_success: `This is a test notification for successful posting${platform ? ` on ${platform}` : ''}.`,
+          token_refresh: `This is a test notification for token refresh${platform ? ` on ${platform}` : ''}.`,
+          system_health: 'This is a test notification for system health check.'
+        };
+
+        const subject = subjects[type as keyof typeof subjects] || '🧪 Test Notification';
+        const message = messages[type as keyof typeof messages] || 'This is a test notification from TheAgencyIQ.';
+
+        const msg = {
+          to: user.email,
+          from: 'notifications@theagencyiq.com',
+          subject,
+          text: message,
+          html: message.replace(/\n/g, '<br>')
+        };
+
+        await sgMail.send(msg);
+
+        res.json({
+          success: true,
+          message: 'Test notification sent successfully',
+          email: user.email.substring(0, 10) + '...',
+          type,
+          subject
+        });
+      } else {
+        res.json({
+          success: false,
+          error: 'SendGrid API key not configured',
+          message: 'Test notification would be sent if SendGrid was configured'
+        });
+      }
+
+    } catch (error: any) {
+      console.error('[AUTO-POST-NOTIFY] Test notification error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Test notification failed',
+        details: error.message
+      });
+    }
+  });
 
   // Register secure post routes (replaces insecure post.js)
   const { registerSecurePostRoutes } = await import('./routes/secure-post-routes');
