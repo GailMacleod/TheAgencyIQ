@@ -3157,9 +3157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get current user - simplified for consistency
-
-  // User data cache for faster response times
+  // Get current user - with OAuth token manager integration
   const userDataCache = new Map();
   const CACHE_DURATION = 30000; // 30 seconds cache
 
@@ -3167,20 +3165,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log(`🔍 /api/user - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
       
-      // Session is established by global middleware
       const userId = req.session?.userId;
-      
       if (!userId) {
         console.log('❌ No user ID in session - authentication required');
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      // Check cache first for faster response
+      // Check cache first
       const cacheKey = `user_${userId}`;
       const cachedData = userDataCache.get(cacheKey);
       
       if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
-        console.log(`🚀 Fast cache hit for user ${userId} - ${cachedData.data.email}`);
+        console.log(`🚀 Fast cache hit for user ${userId}`);
         return res.json(cachedData.data);
       }
 
@@ -3195,14 +3191,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userData = { 
         id: user.id, 
         email: user.email, 
-        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
         subscriptionPlan: user.subscriptionPlan,
-        subscriptionActive: user.subscriptionActive ?? true, // Ensure boolean value for tests
+        subscriptionActive: user.subscriptionActive ?? true,
         remainingPosts: user.remainingPosts,
-        totalPosts: user.totalPosts
+        totalPosts: user.totalPosts,
+        onboardingCompleted: user.onboardingCompleted ?? false,
+        onboardingStep: user.onboardingStep
       };
 
-      // Cache the response for faster subsequent requests
+      // Cache the response
       userDataCache.set(cacheKey, {
         data: userData,
         timestamp: Date.now()
@@ -3212,6 +3212,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Get user error:', error);
       res.status(500).json({ message: "Error fetching user" });
+    }
+  });
+
+  // OAuth Token Management Endpoints
+  const { oauthTokenManager } = await import('./services/OAuthTokenManager');
+  const { authenticatedAutoPosting } = await import('./services/AuthenticatedAutoPosting');
+
+  // Get OAuth connection status with token validation
+  app.get("/api/oauth-status", async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const connections = await oauthTokenManager.getUserConnections(userId);
+      const permissions = await authenticatedAutoPosting.checkPostingPermissions(userId);
+      
+      res.json({
+        connections,
+        permissions,
+        hasValidTokens: Object.values(connections).some(connected => connected)
+      });
+    } catch (error: any) {
+      console.error('OAuth status error:', error);
+      res.status(500).json({ message: "Error fetching OAuth status" });
+    }
+  });
+
+  // Test OAuth connections
+  app.post("/api/oauth-connections/test", async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { platform } = req.body;
+      if (!platform) {
+        return res.status(400).json({ message: "Platform required" });
+      }
+
+      const hasValidConnection = await oauthTokenManager.hasValidConnection(userId, platform);
+      const token = await oauthTokenManager.getValidToken(userId, platform);
+      
+      res.json({
+        platform,
+        connected: hasValidConnection,
+        tokenValid: !!token,
+        expiresAt: token?.expiresAt,
+        scopes: token?.scope || []
+      });
+    } catch (error: any) {
+      console.error('OAuth connection test error:', error);
+      res.status(500).json({ message: "Error testing OAuth connection" });
+    }
+  });
+
+  // Refresh OAuth token manually
+  app.post("/api/oauth/refresh", async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { platform } = req.body;
+      if (!platform) {
+        return res.status(400).json({ message: "Platform required" });
+      }
+
+      console.log(`🔄 Manual token refresh requested for user ${userId}, platform ${platform}`);
+      
+      const refreshedToken = await oauthTokenManager.handle401Response(userId, platform);
+      
+      if (refreshedToken) {
+        res.json({
+          success: true,
+          platform,
+          expiresAt: refreshedToken.expiresAt,
+          message: "Token refreshed successfully"
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          platform,
+          message: "Failed to refresh token. Please reconnect your account."
+        });
+      }
+    } catch (error: any) {
+      console.error('OAuth refresh error:', error);
+      res.status(500).json({ message: "Error refreshing OAuth token" });
+    }
+  });
+
+  // Authenticated auto-posting endpoint
+  app.post("/api/posts/:postId/publish-authenticated", async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { postId } = req.params;
+      const { platforms, content, imageUrl, videoUrl } = req.body;
+
+      if (!platforms || !Array.isArray(platforms) || platforms.length === 0) {
+        return res.status(400).json({ message: "At least one platform required" });
+      }
+
+      // Create post data for each platform
+      const postPromises = platforms.map(platform => 
+        authenticatedAutoPosting.postToPlatform({
+          platform,
+          userId,
+          postId: parseInt(postId),
+          content: content || `Post content for ${platform}`,
+          imageUrl,
+          videoUrl
+        })
+      );
+
+      const results = await Promise.all(postPromises);
+      
+      const successCount = results.filter(r => r.success).length;
+      const failedResults = results.filter(r => !r.success);
+      
+      res.json({
+        success: successCount > 0,
+        totalPlatforms: platforms.length,
+        successCount,
+        failedCount: failedResults.length,
+        results,
+        failedPlatforms: failedResults.map(r => ({ platform: r.platform, error: r.error }))
+      });
+    } catch (error: any) {
+      console.error('Authenticated publishing error:', error);
+      res.status(500).json({ message: "Error publishing post" });
     }
   });
 
@@ -11430,8 +11568,11 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         
         console.log(`🎬 VEO 2.0: Using Grok-enhanced prompt for ${platform}`);
         
-        // Refresh tokens if needed before video generation
-        await sessionManager.refreshTokensIfNeeded(req.session?.userId || userId);
+        // Check OAuth connections before video generation
+        if (req.session?.userId || userId) {
+          const connections = await oauthTokenManager.getUserConnections(req.session?.userId || userId);
+          console.log(`🔗 OAuth connections for video generation: ${JSON.stringify(connections)}`);
+        }
         
         const veoResult = await veoService.generateVideo(enhancedPrompt, {
           aspectRatio: platform === 'instagram' ? '9:16' : '16:9',

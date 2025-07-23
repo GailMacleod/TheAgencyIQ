@@ -5,7 +5,8 @@
  */
 
 import { RealPublishingService } from './RealPublishingService';
-import { OAuthTokenManager } from './OAuthTokenManager';
+import { oauthTokenManager } from './OAuthTokenManager';
+import { authenticatedAutoPosting } from './AuthenticatedAutoPosting';
 import { NotificationService } from './NotificationService';
 import { storage } from '../storage';
 import { db } from '../db';
@@ -32,7 +33,6 @@ interface BulkPublishResult {
 }
 
 export class EnhancedAutoPostingService {
-  private static tokenManager = new OAuthTokenManager();
   private static notifications = new NotificationService();
 
   /**

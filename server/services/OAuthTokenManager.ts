@@ -1,396 +1,344 @@
 /**
- * OAUTH TOKEN MANAGER
- * Handles token validation, refresh, and expiry management for all platforms
+ * OAUTH TOKEN MANAGER - COMPREHENSIVE TOKEN MANAGEMENT WITH REFRESH LOGIC
+ * Provides authenticated auto-posting with proper OAuth token handling
+ * Eliminates mock success assumptions by validating real tokens
  */
 
-import axios from 'axios';
-import { storage } from '../storage';
 import { db } from '../db';
-import { platformConnections } from '@shared/schema';
+import { oauthTokens, type OAuthToken, type InsertOAuthToken } from '../../shared/schema';
 import { eq, and } from 'drizzle-orm';
+import axios from 'axios';
 
-interface TokenResult {
-  success: boolean;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresAt?: Date;
-  error?: string;
+interface TokenRefreshConfig {
+  provider: string;
+  platform: string;
+  refreshEndpoint: string;
+  clientId: string;
+  clientSecret: string;
+  grantType: string;
 }
 
 export class OAuthTokenManager {
+  private static instance: OAuthTokenManager;
   
-  /**
-   * Get valid token for a platform, refreshing if necessary
-   */
-  async getValidToken(userId: number, platform: string): Promise<TokenResult> {
-    try {
-      // Get current OAuth connection from database
-      const [connection] = await db
-        .select()
-        .from(platformConnections)
-        .where(
-          and(
-            eq(platformConnections.userId, userId),
-            eq(platformConnections.platform, platform)
-          )
-        );
+  private refreshConfigs: Map<string, TokenRefreshConfig> = new Map([
+    ['facebook', {
+      provider: 'facebook',
+      platform: 'facebook',
+      refreshEndpoint: 'https://graph.facebook.com/oauth/access_token',
+      clientId: process.env.FACEBOOK_APP_ID || '',
+      clientSecret: process.env.FACEBOOK_APP_SECRET || '',
+      grantType: 'fb_exchange_token'
+    }],
+    ['instagram', {
+      provider: 'facebook',
+      platform: 'instagram',
+      refreshEndpoint: 'https://graph.facebook.com/oauth/access_token',
+      clientId: process.env.FACEBOOK_APP_ID || '',
+      clientSecret: process.env.FACEBOOK_APP_SECRET || '',
+      grantType: 'fb_exchange_token'
+    }],
+    ['google', {
+      provider: 'google',
+      platform: 'youtube',
+      refreshEndpoint: 'https://oauth2.googleapis.com/token',
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      grantType: 'refresh_token'
+    }],
+    ['linkedin', {
+      provider: 'linkedin',
+      platform: 'linkedin',
+      refreshEndpoint: 'https://www.linkedin.com/oauth/v2/accessToken',
+      clientId: process.env.LINKEDIN_CLIENT_ID || '',
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
+      grantType: 'refresh_token'
+    }],
+    ['twitter', {
+      provider: 'twitter',
+      platform: 'x',
+      refreshEndpoint: 'https://api.twitter.com/2/oauth2/token',
+      clientId: process.env.TWITTER_CLIENT_ID || '',
+      clientSecret: process.env.TWITTER_CLIENT_SECRET || '',
+      grantType: 'refresh_token'
+    }]
+  ]);
 
-      if (!connection) {
-        return {
-          success: false,
-          error: `No OAuth connection found for ${platform}. Please connect your account.`
-        };
-      }
-
-      // Check if token is still valid (not expired)
-      const now = new Date();
-      const bufferTime = 5 * 60 * 1000; // 5 minutes buffer
-      const expiresAt = new Date(connection.expiresAt);
-
-      if (expiresAt.getTime() > now.getTime() + bufferTime) {
-        // Token is still valid
-        console.log(`✅ [TOKEN] Valid token found for ${platform} (expires: ${expiresAt.toISOString()})`);
-        return {
-          success: true,
-          accessToken: connection.accessToken,
-          refreshToken: connection.refreshToken,
-          expiresAt
-        };
-      }
-
-      // Token is expired or about to expire - refresh it
-      console.log(`🔄 [TOKEN] Token expired for ${platform}, attempting refresh...`);
-      return await this.refreshToken(connection);
-
-    } catch (error: any) {
-      console.error(`❌ [TOKEN] Error getting token for ${platform}:`, error);
-      return {
-        success: false,
-        error: `Token retrieval failed: ${error.message}`
-      };
+  public static getInstance(): OAuthTokenManager {
+    if (!OAuthTokenManager.instance) {
+      OAuthTokenManager.instance = new OAuthTokenManager();
     }
+    return OAuthTokenManager.instance;
   }
 
   /**
-   * Refresh OAuth token based on platform
+   * Get valid OAuth token for user and platform with automatic refresh
    */
-  private async refreshToken(connection: any): Promise<TokenResult> {
+  async getValidToken(userId: string, platform: string): Promise<OAuthToken | null> {
     try {
-      switch (connection.platform) {
-        case 'facebook':
-        case 'instagram':
-          return await this.refreshFacebookToken(connection);
-        
-        case 'linkedin':
-          return await this.refreshLinkedInToken(connection);
-        
-        case 'google':
-        case 'youtube':
-          return await this.refreshGoogleToken(connection);
-        
-        case 'x':
-        case 'twitter':
-          // X uses OAuth 1.0a which doesn't support refresh tokens
-          return await this.validateXToken(connection);
-        
-        default:
-          return {
-            success: false,
-            error: `Token refresh not supported for platform: ${connection.platform}`
-          };
-      }
-    } catch (error: any) {
-      console.error(`❌ [REFRESH] Failed to refresh ${connection.platform} token:`, error);
-      return {
-        success: false,
-        error: `Token refresh failed: ${error.message}`
-      };
-    }
-  }
-
-  /**
-   * Refresh Facebook/Instagram token using Graph API
-   */
-  private async refreshFacebookToken(connection: any): Promise<TokenResult> {
-    try {
-      // Facebook long-lived tokens can be refreshed via Graph API
-      const response = await axios.get(
-        'https://graph.facebook.com/v20.0/oauth/access_token',
-        {
-          params: {
-            grant_type: 'fb_exchange_token',
-            client_id: process.env.FACEBOOK_CLIENT_ID,
-            client_secret: process.env.FACEBOOK_CLIENT_SECRET,
-            fb_exchange_token: connection.accessToken
-          },
-          timeout: 10000
-        }
-      );
-
-      const newAccessToken = response.data.access_token;
-      const expiresIn = response.data.expires_in || 5184000; // Default 60 days
-      const newExpiresAt = new Date(Date.now() + (expiresIn * 1000));
-
-      // Update database with new token
-      await db
-        .update(platformConnections)
-        .set({
-          accessToken: newAccessToken,
-          expiresAt: newExpiresAt
-        })
-        .where(eq(platformConnections.id, connection.id));
-
-      console.log(`✅ [REFRESH] Facebook token refreshed successfully (expires: ${newExpiresAt.toISOString()})`);
-
-      return {
-        success: true,
-        accessToken: newAccessToken,
-        refreshToken: connection.refreshToken,
-        expiresAt: newExpiresAt
-      };
-
-    } catch (error: any) {
-      console.error(`❌ [REFRESH] Facebook token refresh failed:`, error.response?.data || error.message);
-      return {
-        success: false,
-        error: `Facebook token refresh failed: ${error.response?.data?.error?.message || error.message}`
-      };
-    }
-  }
-
-  /**
-   * Refresh LinkedIn token using OAuth 2.0
-   */
-  private async refreshLinkedInToken(connection: any): Promise<TokenResult> {
-    try {
-      if (!connection.refreshToken) {
-        throw new Error('No refresh token available for LinkedIn');
-      }
-
-      const response = await axios.post(
-        'https://www.linkedin.com/oauth/v2/accessToken',
-        new URLSearchParams({
-          grant_type: 'refresh_token',
-          refresh_token: connection.refreshToken,
-          client_id: process.env.LINKEDIN_CLIENT_ID!,
-          client_secret: process.env.LINKEDIN_CLIENT_SECRET!
-        }),
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          timeout: 10000
-        }
-      );
-
-      const newAccessToken = response.data.access_token;
-      const newRefreshToken = response.data.refresh_token || connection.refreshToken;
-      const expiresIn = response.data.expires_in || 5184000; // Default 60 days
-      const newExpiresAt = new Date(Date.now() + (expiresIn * 1000));
-
-      // Update database with new tokens
-      await db
-        .update(platformConnections)
-        .set({
-          accessToken: newAccessToken,
-          refreshToken: newRefreshToken,
-          expiresAt: newExpiresAt
-        })
-        .where(eq(platformConnections.id, connection.id));
-
-      console.log(`✅ [REFRESH] LinkedIn token refreshed successfully (expires: ${newExpiresAt.toISOString()})`);
-
-      return {
-        success: true,
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-        expiresAt: newExpiresAt
-      };
-
-    } catch (error: any) {
-      console.error(`❌ [REFRESH] LinkedIn token refresh failed:`, error.response?.data || error.message);
-      return {
-        success: false,
-        error: `LinkedIn token refresh failed: ${error.response?.data?.error_description || error.message}`
-      };
-    }
-  }
-
-  /**
-   * Refresh Google/YouTube token using OAuth 2.0
-   */
-  private async refreshGoogleToken(connection: any): Promise<TokenResult> {
-    try {
-      if (!connection.refreshToken) {
-        throw new Error('No refresh token available for Google');
-      }
-
-      const response = await axios.post(
-        'https://oauth2.googleapis.com/token',
-        {
-          grant_type: 'refresh_token',
-          refresh_token: connection.refreshToken,
-          client_id: process.env.GOOGLE_CLIENT_ID,
-          client_secret: process.env.GOOGLE_CLIENT_SECRET
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          timeout: 10000
-        }
-      );
-
-      const newAccessToken = response.data.access_token;
-      const expiresIn = response.data.expires_in || 3600; // Default 1 hour
-      const newExpiresAt = new Date(Date.now() + (expiresIn * 1000));
-
-      // Update database with new token
-      await db
-        .update(platformConnections)
-        .set({
-          accessToken: newAccessToken,
-          expiresAt: newExpiresAt
-        })
-        .where(eq(platformConnections.id, connection.id));
-
-      console.log(`✅ [REFRESH] Google token refreshed successfully (expires: ${newExpiresAt.toISOString()})`);
-
-      return {
-        success: true,
-        accessToken: newAccessToken,
-        refreshToken: connection.refreshToken,
-        expiresAt: newExpiresAt
-      };
-
-    } catch (error: any) {
-      console.error(`❌ [REFRESH] Google token refresh failed:`, error.response?.data || error.message);
-      return {
-        success: false,
-        error: `Google token refresh failed: ${error.response?.data?.error_description || error.message}`
-      };
-    }
-  }
-
-  /**
-   * Validate X (Twitter) token - OAuth 1.0a doesn't support refresh
-   */
-  private async validateXToken(connection: any): Promise<TokenResult> {
-    try {
-      // X uses OAuth 1.0a which doesn't expire like OAuth 2.0
-      // We can validate by making a simple API call
-      const OAuth = require('oauth-1.0a');
-      const crypto = require('crypto');
+      console.log(`🔍 Getting valid token for user ${userId}, platform ${platform}`);
       
-      const oauth = OAuth({
-        consumer: {
-          key: process.env.X_CLIENT_ID || process.env.TWITTER_CLIENT_ID!,
-          secret: process.env.X_CLIENT_SECRET || process.env.TWITTER_CLIENT_SECRET!
-        },
-        signature_method: 'HMAC-SHA1',
-        hash_function(base_string: string, key: string) {
-          return crypto.createHmac('sha1', key).update(base_string).digest('base64');
+      // Get current token from database
+      const [token] = await db
+        .select()
+        .from(oauthTokens)
+        .where(and(
+          eq(oauthTokens.userId, userId),
+          eq(oauthTokens.platform, platform),
+          eq(oauthTokens.isValid, true)
+        ))
+        .limit(1);
+
+      if (!token) {
+        console.log(`❌ No OAuth token found for user ${userId}, platform ${platform}`);
+        return null;
+      }
+
+      // Check if token is expired or will expire within 5 minutes
+      const now = new Date();
+      const expiryBuffer = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes buffer
+      
+      if (token.expiresAt && token.expiresAt <= expiryBuffer) {
+        console.log(`🔄 Token expiring soon, attempting refresh for ${platform}`);
+        const refreshedToken = await this.refreshToken(token);
+        return refreshedToken || token; // Return original if refresh fails
+      }
+
+      console.log(`✅ Valid token found for ${platform}`);
+      return token;
+    } catch (error) {
+      console.error(`❌ Error getting valid token for ${platform}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Refresh OAuth token using platform-specific refresh logic
+   */
+  async refreshToken(token: OAuthToken): Promise<OAuthToken | null> {
+    try {
+      const config = this.refreshConfigs.get(token.provider);
+      if (!config) {
+        console.error(`❌ No refresh config for provider ${token.provider}`);
+        return null;
+      }
+
+      if (!token.refreshToken) {
+        console.error(`❌ No refresh token available for ${token.platform}`);
+        return null;
+      }
+
+      console.log(`🔄 Refreshing token for ${token.platform} via ${config.refreshEndpoint}`);
+
+      let refreshResponse;
+
+      // Platform-specific refresh logic
+      switch (token.provider) {
+        case 'facebook':
+          refreshResponse = await axios.get(config.refreshEndpoint, {
+            params: {
+              grant_type: config.grantType,
+              client_id: config.clientId,
+              client_secret: config.clientSecret,
+              fb_exchange_token: token.accessToken
+            }
+          });
+          break;
+
+        case 'google':
+          refreshResponse = await axios.post(config.refreshEndpoint, {
+            grant_type: config.grantType,
+            client_id: config.clientId,
+            client_secret: config.clientSecret,
+            refresh_token: token.refreshToken
+          });
+          break;
+
+        case 'linkedin':
+          refreshResponse = await axios.post(config.refreshEndpoint, {
+            grant_type: config.grantType,
+            client_id: config.clientId,
+            client_secret: config.clientSecret,
+            refresh_token: token.refreshToken
+          });
+          break;
+
+        case 'twitter':
+          refreshResponse = await axios.post(config.refreshEndpoint, {
+            grant_type: config.grantType,
+            client_id: config.clientId,
+            client_secret: config.clientSecret,
+            refresh_token: token.refreshToken
+          }, {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            }
+          });
+          break;
+
+        default:
+          console.error(`❌ Unsupported provider for refresh: ${token.provider}`);
+          return null;
+      }
+
+      const newTokenData = refreshResponse.data;
+      
+      // Calculate new expiry time
+      const newExpiresAt = newTokenData.expires_in 
+        ? new Date(Date.now() + newTokenData.expires_in * 1000)
+        : null;
+
+      // Update token in database
+      const [updatedToken] = await db
+        .update(oauthTokens)
+        .set({
+          accessToken: newTokenData.access_token,
+          refreshToken: newTokenData.refresh_token || token.refreshToken,
+          expiresAt: newExpiresAt,
+          updatedAt: new Date()
+        })
+        .where(eq(oauthTokens.id, token.id))
+        .returning();
+
+      console.log(`✅ Token refreshed successfully for ${token.platform}`);
+      return updatedToken;
+    } catch (error: any) {
+      console.error(`❌ Failed to refresh token for ${token.platform}:`, error.response?.data || error.message);
+      
+      // Mark token as invalid if refresh fails permanently
+      await this.markTokenInvalid(token.id);
+      return null;
+    }
+  }
+
+  /**
+   * Store new OAuth token
+   */
+  async storeToken(tokenData: InsertOAuthToken): Promise<OAuthToken> {
+    try {
+      // First, invalidate any existing tokens for this user-platform combination
+      await db
+        .update(oauthTokens)
+        .set({ isValid: false, updatedAt: new Date() })
+        .where(and(
+          eq(oauthTokens.userId, tokenData.userId),
+          eq(oauthTokens.platform, tokenData.platform)
+        ));
+
+      // Insert new token
+      const [newToken] = await db
+        .insert(oauthTokens)
+        .values(tokenData)
+        .returning();
+
+      console.log(`✅ New OAuth token stored for ${tokenData.platform}`);
+      return newToken;
+    } catch (error) {
+      console.error(`❌ Error storing OAuth token:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark token as invalid
+   */
+  async markTokenInvalid(tokenId: number): Promise<void> {
+    try {
+      await db
+        .update(oauthTokens)
+        .set({ isValid: false, updatedAt: new Date() })
+        .where(eq(oauthTokens.id, tokenId));
+      
+      console.log(`✅ Token ${tokenId} marked as invalid`);
+    } catch (error) {
+      console.error(`❌ Error marking token invalid:`, error);
+    }
+  }
+
+  /**
+   * Check if user has valid OAuth connection for platform
+   */
+  async hasValidConnection(userId: string, platform: string): Promise<boolean> {
+    const token = await this.getValidToken(userId, platform);
+    return token !== null;
+  }
+
+  /**
+   * Get all valid connections for user
+   */
+  async getUserConnections(userId: string): Promise<Record<string, boolean>> {
+    try {
+      const tokens = await db
+        .select()
+        .from(oauthTokens)
+        .where(and(
+          eq(oauthTokens.userId, userId),
+          eq(oauthTokens.isValid, true)
+        ));
+
+      const connections: Record<string, boolean> = {
+        facebook: false,
+        instagram: false,
+        linkedin: false,
+        youtube: false,
+        x: false
+      };
+
+      tokens.forEach(token => {
+        if (connections.hasOwnProperty(token.platform)) {
+          connections[token.platform] = true;
         }
       });
 
-      const token = {
-        key: connection.accessToken,
-        secret: connection.refreshToken // For X, refreshToken stores tokenSecret
-      };
-
-      const request_data = {
-        url: 'https://api.twitter.com/2/users/me',
-        method: 'GET'
-      };
-
-      const auth_header = oauth.toHeader(oauth.authorize(request_data, token));
-
-      // Test the token with a simple API call
-      await axios.get(
-        'https://api.twitter.com/2/users/me',
-        {
-          headers: auth_header,
-          timeout: 10000
-        }
-      );
-
-      console.log(`✅ [VALIDATE] X token is valid`);
-
+      return connections;
+    } catch (error) {
+      console.error(`❌ Error getting user connections:`, error);
       return {
-        success: true,
-        accessToken: connection.accessToken,
-        refreshToken: connection.refreshToken, // token secret
-        expiresAt: new Date(Date.now() + (365 * 24 * 60 * 60 * 1000)) // X tokens don't expire
-      };
-
-    } catch (error: any) {
-      console.error(`❌ [VALIDATE] X token validation failed:`, error.response?.data || error.message);
-      return {
-        success: false,
-        error: `X token validation failed: ${error.response?.data?.detail || error.message}`
+        facebook: false,
+        instagram: false,
+        linkedin: false,
+        youtube: false,
+        x: false
       };
     }
   }
 
   /**
-   * Mark connection as invalid (requires re-authentication)
+   * Validate token scopes for posting
    */
-  async markConnectionInvalid(userId: number, platform: string, reason: string): Promise<void> {
-    try {
-      await db
-        .update(platformConnections)
-        .set({
-          isActive: false
-        })
-        .where(
-          and(
-            eq(platformConnections.userId, userId),
-            eq(platformConnections.platform, platform)
-          )
-        );
-
-      console.log(`⚠️ [TOKEN] Marked ${platform} connection as invalid for user ${userId}: ${reason}`);
-    } catch (error: any) {
-      console.error(`❌ [TOKEN] Failed to mark connection invalid:`, error);
+  validateScopes(token: OAuthToken, requiredScopes: string[]): boolean {
+    if (!token.scope || !Array.isArray(token.scope)) {
+      return false;
     }
+
+    return requiredScopes.every(scope => 
+      token.scope!.includes(scope)
+    );
   }
 
   /**
-   * Get all valid connections for a user
+   * Handle 401 response by attempting token refresh
    */
-  async getAllValidConnections(userId: number): Promise<any[]> {
-    try {
-      const connections = await db
-        .select()
-        .from(platformConnections)
-        .where(
-          and(
-            eq(platformConnections.userId, userId),
-            eq(platformConnections.isActive, true)
-          )
-        );
+  async handle401Response(userId: string, platform: string): Promise<OAuthToken | null> {
+    console.log(`🔄 Handling 401 response for ${platform} - attempting token refresh`);
+    
+    const [token] = await db
+      .select()
+      .from(oauthTokens)
+      .where(and(
+        eq(oauthTokens.userId, userId),
+        eq(oauthTokens.platform, platform),
+        eq(oauthTokens.isValid, true)
+      ))
+      .limit(1);
 
-      const validConnections = [];
-
-      for (const connection of connections) {
-        const tokenResult = await this.getValidToken(userId, connection.platform);
-        if (tokenResult.success) {
-          validConnections.push({
-            ...connection,
-            accessToken: tokenResult.accessToken,
-            refreshToken: tokenResult.refreshToken,
-            expiresAt: tokenResult.expiresAt
-          });
-        } else {
-          // Mark connection as invalid
-          await this.markConnectionInvalid(userId, connection.platform, tokenResult.error!);
-        }
-      }
-
-      return validConnections;
-    } catch (error: any) {
-      console.error(`❌ [TOKEN] Error getting valid connections:`, error);
-      return [];
+    if (!token) {
+      console.log(`❌ No token found for 401 refresh attempt`);
+      return null;
     }
+
+    return await this.refreshToken(token);
   }
 }
+
+export const oauthTokenManager = OAuthTokenManager.getInstance();
