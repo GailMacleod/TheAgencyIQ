@@ -1,121 +1,140 @@
 import { useState, useEffect } from 'react';
-import { makeAuthenticatedRequest, validateSession } from '@/utils/authenticatedRequest';
+import { apiRequest } from '@/lib/queryClient';
+
+// ✅ SESSION HOOK FOR CONDITIONAL ONBOARDING WIZARD DISPLAY
+// Shows wizard if !session.established or !localStorage 'onboarding-complete'
 
 interface SessionStatus {
   sessionEstablished: boolean;
   onboardingComplete: boolean;
-  isLoading: boolean;
-  sessionError: boolean;
-  sessionId?: string;
-  lastActivity?: number;
+  guestMode: boolean;
+  userId?: string;
+  email?: string;
+  guestExpiresAt?: string;
+  limitations?: {
+    maxPosts: number;
+    noPlatformConnections: boolean;
+    noVideoGeneration: boolean;
+    noAnalytics: boolean;
+  };
 }
 
-export function useSessionHook(): SessionStatus {
-  const [sessionEstablished, setSessionEstablished] = useState(false);
-  const [onboardingComplete, setOnboardingComplete] = useState(false);
+export function useSessionHook() {
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [sessionError, setSessionError] = useState(false);
-  const [sessionId, setSessionId] = useState<string | undefined>();
-  const [lastActivity, setLastActivity] = useState<number | undefined>();
+  const [error, setError] = useState<string | null>(null);
+
+  // Check if onboarding is complete in localStorage
+  const isOnboardingCompleteInStorage = () => {
+    try {
+      return localStorage.getItem('onboarding-complete') === 'true';
+    } catch {
+      return false;
+    }
+  };
+
+  const fetchSessionStatus = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiRequest('/api/onboarding/status');
+      setSessionStatus(response);
+      setError(null);
+
+      // Update localStorage if onboarding is complete
+      if (response.onboardingComplete) {
+        localStorage.setItem('onboarding-complete', 'true');
+      }
+
+    } catch (error: any) {
+      console.error('Session status fetch error:', error);
+      setError(error.message || 'Failed to fetch session status');
+      
+      // If API fails, check localStorage for offline fallback
+      const localOnboardingComplete = isOnboardingCompleteInStorage();
+      setSessionStatus({
+        sessionEstablished: false,
+        onboardingComplete: localOnboardingComplete,
+        guestMode: false
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const checkSessionStatus = async () => {
-      setIsLoading(true);
-      setSessionError(false);
-      
-      try {
-        console.log('🔍 Checking session status...');
-        
-        // First check if onboarding is complete from localStorage
-        const onboardingCompleteFlag = localStorage.getItem('onboarding-complete');
-        
-        if (onboardingCompleteFlag === 'true') {
-          setOnboardingComplete(true);
-          console.log('✅ Onboarding marked as complete');
-        }
-
-        // Validate session with server using authenticated request
-        try {
-          const sessionValid = await validateSession();
-          
-          if (sessionValid) {
-            // Get detailed session information
-            const response = await makeAuthenticatedRequest('/api/auth/session', {
-              method: 'GET',
-              maxRetries: 2,
-              timeout: 8000
-            });
-            
-            if (response.ok) {
-              const sessionData = await response.json();
-              console.log('✅ Session validated:', sessionData.sessionId);
-              
-              setSessionEstablished(true);
-              setSessionId(sessionData.sessionId);
-              setLastActivity(sessionData.lastActivity);
-              
-              // Store session info for offline access
-              localStorage.setItem('session-id', sessionData.sessionId);
-              localStorage.setItem('last-activity', sessionData.lastActivity?.toString() || '');
-            }
-          } else {
-            console.log('❌ Session validation failed');
-            setSessionEstablished(false);
-          }
-        } catch (sessionValidationError) {
-          console.error('Session validation error:', sessionValidationError);
-          
-          // Fallback: Check for cached session
-          const cachedSessionId = localStorage.getItem('session-id');
-          const cachedActivity = localStorage.getItem('last-activity');
-          
-          if (cachedSessionId && cachedActivity) {
-            const activityTime = parseInt(cachedActivity);
-            const oneHourAgo = Date.now() - (60 * 60 * 1000);
-            
-            // If cached session is less than 1 hour old, assume it's valid
-            if (activityTime > oneHourAgo) {
-              console.log('📋 Using cached session for offline/PWA mode');
-              setSessionEstablished(true);
-              setSessionId(cachedSessionId);
-              setLastActivity(activityTime);
-            } else {
-              console.log('🕒 Cached session expired');
-              localStorage.removeItem('session-id');
-              localStorage.removeItem('last-activity');
-            }
-          }
-        }
-        
-      } catch (error) {
-        console.error('Session status check failed:', error);
-        setSessionError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkSessionStatus();
-
-    // Set up periodic session validation (every 5 minutes)
-    const interval = setInterval(() => {
-      if (sessionEstablished && !isLoading) {
-        validateSession().catch(() => {
-          console.log('Periodic session validation failed');
-          // Don't set error state for periodic checks
-        });
-      }
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
+    fetchSessionStatus();
   }, []);
 
+  // Determine if onboarding wizard should be shown
+  const shouldShowOnboardingWizard = () => {
+    if (!sessionStatus) return false;
+    
+    const localOnboardingComplete = isOnboardingCompleteInStorage();
+    
+    // Show wizard if:
+    // 1. Session not established AND local storage not complete
+    // 2. OR session established but onboarding not complete in session
+    return (!sessionStatus.sessionEstablished && !localOnboardingComplete) ||
+           (sessionStatus.sessionEstablished && !sessionStatus.onboardingComplete);
+  };
+
+  // Enable guest mode when authentication fails
+  const enableGuestMode = async () => {
+    try {
+      const response = await apiRequest('/api/onboarding/guest-mode', {
+        method: 'POST'
+      });
+
+      if (response.success) {
+        setSessionStatus({
+          sessionEstablished: true,
+          onboardingComplete: false,
+          guestMode: true,
+          guestExpiresAt: response.guestExpiresAt,
+          limitations: response.limitations
+        });
+        
+        console.log('🎯 Guest mode enabled with limitations:', response.limitations);
+        return response;
+      }
+
+      throw new Error(response.error || 'Failed to enable guest mode');
+    } catch (error: any) {
+      console.error('Guest mode activation error:', error);
+      throw error;
+    }
+  };
+
+  // Complete onboarding and update session
+  const completeOnboarding = async (userData: any) => {
+    try {
+      const response = await apiRequest('/api/onboarding/complete', {
+        method: 'POST',
+        body: userData
+      });
+
+      if (response.success) {
+        localStorage.setItem('onboarding-complete', 'true');
+        await fetchSessionStatus(); // Refresh session status
+      }
+
+      return response;
+    } catch (error: any) {
+      console.error('Onboarding completion error:', error);
+      throw error;
+    }
+  };
+
   return {
-    sessionEstablished,
-    onboardingComplete,
+    sessionStatus,
     isLoading,
-    sessionError,
-    sessionId,
-    lastActivity
+    error,
+    shouldShowOnboardingWizard: shouldShowOnboardingWizard(),
+    enableGuestMode,
+    completeOnboarding,
+    refreshSessionStatus: fetchSessionStatus,
+    isGuestMode: sessionStatus?.guestMode || false,
+    hasActiveLimitations: !!(sessionStatus?.limitations),
+    guestExpiresAt: sessionStatus?.guestExpiresAt
   };
 }
