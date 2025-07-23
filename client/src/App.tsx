@@ -14,6 +14,8 @@ import { clearBrowserCache } from "./utils/cache-utils";
 import { sessionManager } from "./utils/session-manager";
 import { apiClient } from "./utils/api-client";
 import pwaSessionManager from "./utils/PWASessionManager";
+import { useSessionManager } from "@/hooks/useSessionManager";
+import SessionLoadingSpinner from "@/components/SessionLoadingSpinner";
 import Splash from "@/pages/splash";
 import Subscription from "@/pages/subscription";
 import BrandPurpose from "@/pages/brand-purpose";
@@ -127,7 +129,9 @@ function Router() {
   }
 }
 
-function App() {
+function AppContent() {
+  const sessionHook = useSessionManager();
+
   // Initialize Google Analytics when app loads
   useEffect(() => {
     // Verify required environment variable is present
@@ -138,42 +142,14 @@ function App() {
     }
   }, []);
 
-  // Initialize PWA Session Manager and establish session
+  // Enhanced session establishment with UI feedback
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Initialize PWA Session Manager
-        await pwaSessionManager.init();
-        
-        // Establish backend session
-        await sessionManager.establishSession();
-        
-        // Wait a moment to ensure session is properly saved before invalidating queries
-        setTimeout(() => {
-          // Force refresh all queries to use the new session
-          queryClient.invalidateQueries();
-          console.log('🔄 Queries invalidated after session establishment');
-          
-          // Force a test API call to verify session is working
-          setTimeout(() => {
-            apiClient.get('/api/user', {
-                credentials: 'include',
-                cache: 'no-cache',
-              }).then(response => {
-                console.log('🔍 Session verification test:', response.status);
-                if (response.ok) {
-                  console.log('✅ Session working correctly');
-                } else {
-                  console.log('❌ Session verification failed');
-                }
-              }).catch(err => {
-                console.log('❌ Session verification error:', err.message);
-              });
-          }, 200);
-        }, 100);
-        
+        await sessionHook.establishSession();
+        console.log('✅ Session established with UI feedback');
       } catch (error) {
-        console.log('❌ Session establishment error, continuing with guest access');
+        console.log('❌ Session establishment failed, user can retry via UI');
       }
     };
 
@@ -296,14 +272,36 @@ function App() {
   }, []);
 
   return (
+    <div className="min-h-screen bg-background">
+      <Router />
+      <OnboardingWizard />
+      <GrokWidget />
+      <Toaster />
+      <SessionLoadingSpinner
+        isEstablishing={sessionHook.isEstablishing}
+        isError={sessionHook.isError}
+        error={sessionHook.error}
+        onRetry={sessionHook.retrySession}
+      />
+    </div>
+  );
+}
+
+function App() {
+  // Initialize Google Analytics when app loads
+  useEffect(() => {
+    // Verify required environment variable is present
+    if (!import.meta.env.VITE_GA_MEASUREMENT_ID) {
+      console.warn('Missing required Google Analytics key: VITE_GA_MEASUREMENT_ID');
+    } else {
+      initGA();
+    }
+  }, []);
+
+  return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="app-container">
-          <Toaster />
-          <Router />
-          <OnboardingWizard />
-          <GrokWidget />
-        </div>
+        <AppContent />
       </TooltipProvider>
     </QueryClientProvider>
   );
