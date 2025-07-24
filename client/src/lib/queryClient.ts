@@ -213,20 +213,7 @@ export const queryClient = new QueryClient({
         return Math.min(1000 * Math.pow(2, attemptIndex), 10000);
       },
       // Add cache configuration for quota-sensitive queries
-      cacheTime: (context: any) => {
-        const queryKey = context?.queryKey?.[0] || '';
-        
-        // Short cache for quota-sensitive endpoints to avoid over-fetching
-        if (queryKey.includes('/api/video/') || 
-            queryKey.includes('/api/generate') ||
-            queryKey.includes('/api/posting-queue') ||
-            queryKey.includes('/api/quota-status')) {
-          return 30000; // 30 seconds
-        }
-        
-        // Default cache time for other queries
-        return 300000; // 5 minutes
-      },
+      gcTime: 300000, // 5 minutes default cache time
     },
     mutations: {
       retry: false,

@@ -204,7 +204,7 @@ export default function BrandPurpose() {
       
       try {
         const response = await apiRequest("POST", "/api/brand-purpose/autosave", formData);
-        return response.json();
+        return response; // apiRequest already returns parsed JSON
       } catch (error) {
         console.error("Auto-save failed:", error);
         return null;
@@ -222,7 +222,7 @@ export default function BrandPurpose() {
     mutationFn: async (formData: BrandPurposeForm) => {
       try {
         const response = await apiRequest("POST", "/api/brand-purpose", formData);
-        return response.json();
+        return response; // apiRequest already returns parsed JSON
       } catch (error) {
         console.error("Save brand purpose failed:", error);
         throw error;
