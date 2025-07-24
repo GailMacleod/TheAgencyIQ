@@ -11415,7 +11415,32 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       };
       
       try {
-        const authenticatedUserId = userId || '2';session?.userId || userId;
+        // Test credential detection immediately 
+        console.log(`🔍 VEO 3.0: Testing credential format for video generation...`);
+        const testKey = process.env.VERTEX_AI_SERVICE_ACCOUNT_KEY;
+        if (testKey) {
+          console.log(`🔍 VEO 3.0: Credential length: ${testKey.length}`);
+          console.log(`🔍 VEO 3.0: Is JSON format: ${testKey.startsWith('{')}`);
+          console.log(`🔍 VEO 3.0: Contains project_id: ${testKey.includes('project_id')}`);
+          console.log(`🔍 VEO 3.0: First 100 chars: ${testKey.substring(0, 100)}`);
+          
+          if (testKey.startsWith('{')) {
+            try {
+              const parsed = JSON.parse(testKey);
+              console.log(`🎯 VEO 3.0: ✅ AUTHENTIC JSON CREDENTIALS DETECTED!`);
+              console.log(`🎯 VEO 3.0: Project ID: ${parsed.project_id}`);
+              console.log(`🎯 VEO 3.0: Client Email: ${parsed.client_email}`);
+            } catch (e) {
+              console.log(`❌ VEO 3.0: JSON parse error: ${e.message}`);
+            }
+          } else {
+            console.log(`⚠️ VEO 3.0: Still using string format - falling back to Google AI Studio`);
+          }
+        } else {
+          console.log(`❌ VEO 3.0: No credential found in environment`);
+        }
+        
+        const authenticatedUserId = req.session?.userId || userId || '2';
         const brandPurposeRecord = await storage.getBrandPurposeByUser(authenticatedUserId);
         if (brandPurposeRecord) {
           brandPurpose = {
