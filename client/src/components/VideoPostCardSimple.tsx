@@ -206,8 +206,8 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
       }, 2000));
       
       phaseTimeouts.push(setTimeout(() => {
-        setCurrentPhase('VEO 3.0 neural processing - generating video frames...');
-        console.log('🎯 Phase 2: VEO 3.0 neural processing');
+        setCurrentPhase('VEO 3.0 neural rendering - generating video frames...');
+        console.log('🎯 Phase 2: VEO 3.0 neural rendering');
       }, 15000)); // 15 seconds
       
       phaseTimeouts.push(setTimeout(() => {
@@ -249,10 +249,10 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
       console.log('🎬 Is async operation:', data.isAsync);
       console.log('🎬 Operation ID:', data.operationId);
       
-      // Handle async VEO 2.0 operations
+      // Handle async VEO 3.0 operations
       if (data.isAsync && data.operationId) {
-        console.log('🎬 Starting async VEO 2.0 polling...');
-        setCurrentPhase('VEO 2.0 generation initiated - polling for updates...');
+        console.log('🎬 Starting async VEO 3.0 polling...');
+        setCurrentPhase('VEO 3.0 generation initiated - polling for updates...');
         
         // Start polling for operation status
         const pollOperation = async () => {
@@ -264,7 +264,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
             
             if (statusData.completed) {
               if (statusData.failed) {
-                setError(statusData.error || 'VEO 2.0 generation failed');
+                setError(statusData.error || 'VEO 3.0 generation failed');
                 setCurrentPhase('Generation failed');
                 setRenderingProgress(0);
               } else {
@@ -272,14 +272,14 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
                 setVideoSrc(statusData.videoUrl);
                 setVideoData(statusData);
                 setHasGeneratedVideo(true);
-                setCurrentPhase('VEO 2.0 generation completed!');
+                setCurrentPhase('VEO 3.0 generation completed!');
                 setRenderingProgress(100);
                 
-                console.log('✅ VEO 2.0 video generation completed:', statusData.videoUrl);
+                console.log('✅ VEO 3.0 video generation completed:', statusData.videoUrl);
                 
                 toast({
                   title: "Video Generated",
-                  description: `VEO 2.0 video ready in ${Math.floor(statusData.generationTime / 1000)}s`,
+                  description: `VEO 3.0 video ready in ${Math.floor(statusData.generationTime / 1000)}s`,
                   variant: "default",
                 });
               }
@@ -296,7 +296,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
               if (statusData.phase) {
                 setCurrentPhase(statusData.phase);
               } else if (statusData.status) {
-                setCurrentPhase(`VEO 2.0 ${statusData.status} - ${statusData.estimatedTimeRemaining}s remaining...`);
+                setCurrentPhase(`VEO 3.0 ${statusData.status} - ${statusData.estimatedTimeRemaining}s remaining...`);
               }
               
               // Continue polling
@@ -477,7 +477,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
               </Button>
               {!isRendering && (
                 <div className="text-xs text-purple-600 font-medium">
-                  VEO 2.0 Ready
+                  VEO 3.0 Ready
                 </div>
               )}
             </div>
@@ -570,13 +570,13 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
           )}
         </div>
         
-        {/* VEO 2.0 Video Preview Card with URL Validation and Error Recovery */}
+        {/* VEO 3.0 Video Preview Card with URL Validation and Error Recovery */}
         {hasGeneratedVideo && videoData && (
           <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg">
             <div className="flex items-center justify-between mb-3">
               <Badge className={`px-3 py-1 text-white ${videoData.veo2Generated ? 'bg-gradient-to-r from-blue-600 to-indigo-600' : 'bg-gradient-to-r from-purple-600 to-indigo-600'}`}>
                 <VideoIcon className="w-4 h-4 mr-2" />
-                {videoData.grokEnhanced ? 'Grok + VEO 2.0' : videoData.veo2Generated ? 'VEO 2.0 Ready' : 'Video Ready'}
+                {videoData.grokEnhanced ? 'Grok + VEO 3.0' : videoData.veo3Generated ? 'VEO 3.0 Ready' : 'Video Ready'}
               </Badge>
               <div className="flex gap-2">
                 <Button
