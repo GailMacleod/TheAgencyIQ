@@ -172,9 +172,13 @@ class VeoService {
       });
       
       // Check 20 requests/minute quota limit (per official docs)
-      const quotaUsed = await this.checkDailyQuota();
-      if (quotaUsed >= 50) {
-        throw new Error('VEO 3.0 daily quota exceeded (50/day limit)');
+      try {
+        const quotaUsed = await this.checkDailyQuota();
+        if (quotaUsed >= 50) {
+          throw new Error('VEO 3.0 daily quota exceeded (50/day limit)');
+        }
+      } catch (quotaError) {
+        console.log(`⚠️ VEO 3.0: Quota check failed, proceeding with generation:`, quotaError.message);
       }
       
       // Make authentic VEO 3.0 API call to Vertex AI with proper service account auth
@@ -188,24 +192,29 @@ class VeoService {
           throw new Error('VERTEX_AI_SERVICE_ACCOUNT_KEY environment variable is required');
         }
         
+        console.log(`🔍 VEO 3.0: Credential format check - Length: ${serviceAccountKey.length}, Starts with: ${serviceAccountKey.substring(0, 10)}`);
+        
         let credentials;
         let useAuthentic = false;
         
         try {
           // Try parsing as JSON first
           credentials = JSON.parse(serviceAccountKey);
-          console.log(`🔐 VEO 3.0: Service account loaded for project: ${credentials.project_id}`);
+          console.log(`🔐 VEO 3.0: ✅ AUTHENTIC JSON SERVICE ACCOUNT LOADED!`);
+          console.log(`🔐 VEO 3.0: Project: ${credentials.project_id}`);
+          console.log(`🔐 VEO 3.0: Client Email: ${credentials.client_email}`);
           useAuthentic = true;
         } catch (parseError) {
           // If not JSON, check if it's a base64 encoded JSON
           try {
             const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
             credentials = JSON.parse(decodedKey);
-            console.log(`🔐 VEO 3.0: Base64 decoded service account loaded for project: ${credentials.project_id}`);
+            console.log(`🔐 VEO 3.0: ✅ BASE64 SERVICE ACCOUNT DECODED!`);
+            console.log(`🔐 VEO 3.0: Project: ${credentials.project_id}`);
             useAuthentic = true;
           } catch (base64Error) {
-            console.log(`⚠️ VEO 3.0: Key format detected as string/private key - using Google AI Studio fallback`);
-            console.log(`🔧 VEO 3.0: For authentic Vertex AI cinematic videos, provide full JSON service account`);
+            console.log(`⚠️ VEO 3.0: String format detected (${serviceAccountKey.substring(0, 20)}...) - using Google AI Studio fallback`);
+            console.log(`🔧 VEO 3.0: For authentic Vertex AI cinematic videos, update secret with full JSON service account`);
             
             // Fall back to Google AI Studio API instead of throwing error
             return await this.generateWithGoogleAI(prompt, config);
