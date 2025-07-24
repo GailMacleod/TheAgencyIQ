@@ -32,7 +32,7 @@ export default function Login() {
     resolver: zodResolver(loginSchema),
     defaultValues: {
       phone: "+61424835189",
-      password: "",
+      password: "password",
     },
   });
 

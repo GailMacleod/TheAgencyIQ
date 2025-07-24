@@ -957,8 +957,9 @@ async function startServer() {
     // PHONE/PASSWORD AUTHENTICATION ROUTES
     console.log('📡 Loading authentication routes...');
     
-    // Phone/Password Login endpoint
+    // Phone/Password Login endpoint (OVERRIDE routes.ts version)
     app.post('/api/auth/login', async (req: any, res: any) => {
+      console.log('[AUTH] Custom login endpoint called with:', req.body);
       try {
         const { phone, password } = req.body;
 
@@ -980,6 +981,8 @@ async function startServer() {
           .from(users)
           .where(eq(users.phone, phone));
 
+        console.log('[DEBUG] User lookup result:', { phone, found: !!user, userId: user?.id });
+
         if (!user) {
           return res.status(401).json({
             error: 'Invalid phone number or password',
@@ -988,6 +991,11 @@ async function startServer() {
         }
 
         // Verify password
+        console.log('[DEBUG] Password verification:', { 
+          provided: password?.length ? `${password.length} chars` : 'empty',
+          stored: user.password?.length ? `${user.password.length} chars` : 'empty'
+        });
+        
         const passwordValid = await bcrypt.compare(password, user.password);
         
         if (!passwordValid) {

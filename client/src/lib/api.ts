@@ -9,7 +9,7 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown,
-): Promise<Response> {
+): Promise<any> {
   console.log(`API call to ${url} starting with method ${method}`);
   
   try {
@@ -35,7 +35,15 @@ export async function apiRequest(
     clearTimeout(timeoutId);
     console.log(`API call to ${url} returned ${response.status}`);
     
-    return response;
+    // Parse response as JSON
+    const result = await response.json();
+    
+    if (!response.ok) {
+      console.error(`API error:`, result);
+      throw new Error(result.error || result.message || 'Server error');
+    }
+    
+    return result;
     
   } catch (error: any) {
     // Enhanced error handling for AbortController issues
@@ -55,26 +63,6 @@ export async function apiRequest(
     console.error('Unexpected API request error:', error, 'for', method, url);
     throw error;
   }
-
-  if (!response.ok) {
-    const text = await response.text();
-    console.error(`API error:`, text);
-    
-    // Check if response is HTML (DOCTYPE error)
-    if (text.includes('<!DOCTYPE') || text.includes('<html')) {
-      throw new Error('Server returned HTML instead of JSON - environment issue detected');
-    }
-    
-    // Try to parse as JSON for proper error handling
-    try {
-      const errorData = JSON.parse(text);
-      throw new Error(errorData.error || errorData.message || 'Server error');
-    } catch (parseError) {
-      throw new Error('Server error: ' + text.substring(0, 50));
-    }
-  }
-
-  return response;
 }
 
 // Microservice-specific API function
