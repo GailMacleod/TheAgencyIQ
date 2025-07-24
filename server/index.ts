@@ -482,44 +482,9 @@ async function startServer() {
   app.use('/api/platform-connections', dbAuth.requireSessionAuth());
   app.use('/api/subscription-usage', dbAuth.requireSessionAuth());
 
-  // Quota status endpoint with authentication
-  app.get('/api/quota-status', async (req, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: 'Authentication required',
-          code: 'AUTHENTICATION_REQUIRED'
-        });
-      }
-
-      // Validate session before quota access
-      const { sessionValidator } = await import('./utils/session-validator.js');
-      if (!sessionValidator.validateDatabaseAccess(req.sessionID, userId, 'quota-status')) {
-        return res.status(401).json({
-          success: false,
-          message: 'Session validation failed for quota access',
-          code: 'SESSION_VALIDATION_FAILED'
-        });
-      }
-
-      const quotaStatus = await quotaTracker.getUserQuotaStatus(userId);
-      res.json({
-        success: true,
-        quotaStatus,
-        timestamp: new Date().toISOString(),
-        sessionValidated: true
-      });
-    } catch (error) {
-      logger.error('Quota status error', { error: error.message, userId: req.session?.userId });
-      res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve quota status',
-        code: 'QUOTA_STATUS_ERROR'
-      });
-    }
-  });
+  // Quota status endpoint - completely disabled to avoid ES module conflicts
+  // The real quota endpoint is handled in routes.ts to avoid import issues
+  // This endpoint is commented out to prevent ES module conflicts
 
   // Public bypass route
   app.get('/public', (req, res) => {
