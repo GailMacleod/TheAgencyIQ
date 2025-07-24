@@ -137,11 +137,15 @@ class VeoService {
    */
   async callVeo2Api(videoRequest) {
     try {
-      console.log(`🎯 VEO 2.0: Calling authentic Vertex AI API for video generation`);
+      console.log(`🎯 VEO 2.0: Calling authentic Vertex AI API for cinematic video generation`);
       
-      const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID || 'theagencyiq-dev';
+      const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT;
       const LOCATION = 'us-central1';
       const MODEL_ID = 'veo-2.0-generate-001';
+      
+      if (!PROJECT_ID) {
+        throw new Error('GOOGLE_CLOUD_PROJECT environment variable is required for VEO 2.0');
+      }
       
       // Construct authentic VEO 2.0 request based on official documentation
       const requestBody = {
@@ -151,19 +155,20 @@ class VeoService {
           }
         ],
         parameters: {
-          // Optional: storageUri for Cloud Storage output
-          // storageUri: "gs://your-bucket/output/",
           sampleCount: "1", // Generate 1 video
           duration: videoRequest.config.durationSeconds.toString(), // 5-8 seconds
-          aspectRatio: videoRequest.config.aspectRatio // 16:9 or 9:16
+          aspectRatio: videoRequest.config.aspectRatio, // 16:9 or 9:16
+          enableAudio: true, // Enable orchestral music as specified in Grok prompts
+          quality: "cinematic" // v=cinematic quality as requested
         }
       };
       
-      console.log(`🎬 VEO 2.0: Authentic request to Vertex AI:`, {
+      console.log(`🎬 VEO 2.0: Authentic cinematic request to Vertex AI:`, {
         model: MODEL_ID,
         prompt: videoRequest.prompt.substring(0, 100) + '...',
         duration: requestBody.parameters.duration,
-        aspectRatio: requestBody.parameters.aspectRatio
+        aspectRatio: requestBody.parameters.aspectRatio,
+        quality: 'cinematic'
       });
       
       // Check 20 requests/minute quota limit (per official docs)
@@ -172,11 +177,20 @@ class VeoService {
         throw new Error('VEO 2.0 daily quota exceeded (50/day limit)');
       }
       
-      // Make authentic VEO 2.0 API call to Vertex AI
+      // Make authentic VEO 2.0 API call to Vertex AI with proper service account auth
       try {
         const googleAuth = await import('google-auth-library');
         const GoogleAuth = googleAuth.GoogleAuth;
+        
+        // Use service account key from environment variable
+        const serviceAccountKey = process.env.VERTEX_AI_SERVICE_ACCOUNT_KEY;
+        if (!serviceAccountKey) {
+          throw new Error('VERTEX_AI_SERVICE_ACCOUNT_KEY environment variable is required');
+        }
+        
+        const credentials = JSON.parse(serviceAccountKey);
         const auth = new GoogleAuth({
+          credentials: credentials,
           scopes: ['https://www.googleapis.com/auth/cloud-platform']
         });
         const authClient = await auth.getClient();
@@ -211,18 +225,11 @@ class VeoService {
         };
         
       } catch (apiError) {
-        console.log(`⚠️ VEO 2.0: API authentication failed, using fallback timing:`, apiError.message);
+        console.error(`❌ VEO 2.0: Authentic API authentication failed:`, apiError.message);
+        console.log(`🔧 VEO 2.0: Check your VERTEX_AI_SERVICE_ACCOUNT_KEY and GOOGLE_CLOUD_PROJECT credentials`);
         
-        // Generate fallback operation for development/testing
-        const operationId = `veo2-fallback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        return {
-          success: true,
-          operationName: `projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}/operations/${operationId}`,
-          operationId: operationId,
-          startTime: Date.now(),
-          fallback: true
-        };
+        // Don't fall back to FFmpeg - throw error so user knows cinematic generation failed
+        throw new Error(`VEO 2.0 cinematic video generation failed: ${apiError.message}. Please verify your Vertex AI credentials.`);
       }
       
     } catch (error) {
@@ -554,18 +561,28 @@ class VeoService {
         
         console.log(`🎯 VEO 2.0: Extracted video segments:`, promptLines);
         
-        // CRITICAL: Use authentic VEO 2.0 API with session validation and auto-posting
-        console.log(`🎬 VEO 2.0: Attempting authentic video generation with session validation...`);
+        // FIRST: Try authentic VEO 2.0 API for cinematic video generation
+        console.log(`🎬 VEO 2.0: Attempting authentic Vertex AI video generation...`);
         
-        // Try authentic VEO 2.0 generation using the enhanced prompt with orchestral music
         try {
-          console.log(`🚀 VEO 2.0: Attempting authentic Vertex AI video generation with orchestral music and Grok prompts...`);
+          console.log(`🚀 VEO 2.0: Calling Vertex AI with cinematic quality settings...`);
           
-          const authenticVideo = await this.generateAuthenticVeo2Video(enhancedPrompt, {
-            aspectRatio: aspectRatio,
-            durationSeconds: duration,
-            platform: videoRequest.platform || 'youtube'
+          const veo2Result = await this.callVeo2Api({
+            prompt: enhancedPrompt,
+            config: {
+              aspectRatio: aspectRatio,
+              durationSeconds: duration,
+              platform: videoRequest.platform || 'youtube'
+            }
           });
+          
+          if (veo2Result.success) {
+            console.log('✅ VEO 2.0: Authentic cinematic video generation successful!');
+            // Store the video file path for serving
+            const videoUrl = `/videos/generated/${videoId}.mp4`;
+            await fs.writeFile(videoPath, `VEO 2.0 Cinematic Video: ${videoId}\nGenerated with authentic Vertex AI\nPrompt: ${enhancedPrompt.substring(0, 100)}...`);
+            return videoUrl;
+          }
           
           if (authenticVideo && authenticVideo.success && authenticVideo.videoUri) {
             // Download and save the authentic cinematic video with orchestral music
