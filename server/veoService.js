@@ -3,6 +3,8 @@
  * Implements predictLongRunning endpoint with fetchPredictOperation polling
  */
 import OptimizedVideoManager from './services/OptimizedVideoManager.js';
+import { execSync } from 'child_process';
+import fs from 'fs/promises';
 
 // Singleton pattern to ensure operations persist across instances
 let sharedOperations = new Map();
@@ -632,7 +634,7 @@ class VeoService {
         
       } catch (ffmpegError) {
         console.log(`⚠️ FFmpeg execution failed:`, ffmpegError.message);
-        console.log(`🔧 VEO 2.0: FFmpeg command that failed:`, ffmpegCommand.substring(0, 200) + '...');
+        console.log(`🔧 VEO 2.0: FFmpeg command failed, creating simple test video...`);
         
         // Fallback: Create a simple test video pattern
         await this.createSimpleTestVideo(videoPath, duration, width, height);
