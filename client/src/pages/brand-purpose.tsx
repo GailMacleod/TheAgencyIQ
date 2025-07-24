@@ -126,6 +126,8 @@ export default function BrandPurpose() {
   useEffect(() => {
     if (existingBrandPurpose && typeof existingBrandPurpose === 'object') {
       setIsExistingData(true);
+      console.log('Loading existing brand purpose data:', existingBrandPurpose);
+      
       // Populate form with existing data for editing
       const brandData = existingBrandPurpose as any;
       form.reset({
@@ -160,10 +162,13 @@ export default function BrandPurpose() {
         },
       });
       
+      
       // Set logo preview if exists
       if (brandData.logoUrl) {
         setLogoPreview(brandData.logoUrl);
       }
+      
+      console.log('Form populated with brand data successfully');
     }
   }, [existingBrandPurpose, form]);
 
