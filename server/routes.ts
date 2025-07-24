@@ -295,6 +295,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration moved to server/index.ts to prevent duplicates
 
   // Session-based authentication endpoint - MUST BE BEFORE requirePaidSubscription
+  // DISABLED: Conflicting login route - using custom auth in index.ts
+  /*
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -346,6 +348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: 'Login failed' });
     }
   });
+  */
 
   // Apply comprehensive subscription middleware to ALL routes EXCEPT auth
   app.use((req, res, next) => {
@@ -1195,7 +1198,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DISABLED: Conflicting login route - using custom auth in index.ts  
   // Main authentication endpoint
+  /*
   app.post('/api/auth/login', async (req: any, res: Response) => {
     try {
       const { phone, password } = req.body;
@@ -1293,6 +1298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error logging in", error: error.message });
     }
   });
+  */
 
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -2923,7 +2929,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Login with phone number
+  // DISABLED: Conflicting login route - using custom auth in index.ts
+  // Login with phone number  
+  /*
   app.post("/api/auth/login", async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
@@ -3051,6 +3059,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error logging in" });
     }
   });
+  */
 
   // Enhanced logout with HTTP-only cookie clearing and PWA synchronization
   app.post("/api/auth/logout", async (req: any, res) => {
