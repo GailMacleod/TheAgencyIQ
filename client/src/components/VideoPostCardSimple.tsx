@@ -486,13 +486,13 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
 
         </div>
         
-        {/* Authentic VEO 2.0 Progress Indicator */}
+        {/* Authentic VEO 3.0 Progress Indicator */}
         {isRendering && (
           <div className="mt-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-purple-800 font-semibold">VEO 2.0 Generation</span>
+                <span className="text-sm text-purple-800 font-semibold">VEO 3.0 Generation</span>
               </div>
               <div className="text-right">
                 <span className="text-sm font-mono text-purple-700">
@@ -516,7 +516,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
                 <p className="text-sm font-medium text-purple-800">{currentPhase}</p>
                 {renderingTime > 60 && (
                   <p className="text-xs text-purple-600">
-                    VEO 2.0 is creating high-quality video content. Please wait...
+                    VEO 3.0 is creating high-quality video content. Please wait...
                   </p>
                 )}
               </div>
