@@ -332,7 +332,7 @@ class VeoService {
         operation.status = 'completed';
         
         const videoData = operation.videoData || {
-          videoId: `veo2_emergency_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          videoId: `veo3_emergency_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           prompt: operation.prompt,
           aspectRatio: operation.config?.aspectRatio || '16:9',
           duration: operation.config?.durationSeconds || 8,
@@ -405,7 +405,7 @@ class VeoService {
             
             // Process authentic VEO 2.0 result
             const videoData = operation.videoData || {
-              videoId: `veo2_vertex_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              videoId: `veo3_vertex_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
               prompt: operation.prompt,
               aspectRatio: operation.config?.aspectRatio || '16:9',
               duration: operation.config?.durationSeconds || 8,
@@ -461,7 +461,7 @@ class VeoService {
         console.log(`✅ VEO 2.0: Completing operation ${operationId} after ${elapsed}ms`);
         
         const videoData = operation.videoData || {
-          videoId: `veo2_completed_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          videoId: `veo3_completed_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           prompt: operation.prompt,
           aspectRatio: operation.config?.aspectRatio || '16:9',
           duration: operation.config?.durationSeconds || 8,
@@ -719,12 +719,12 @@ class VeoService {
             duration: `${config.durationSeconds}s`,
             aspect_ratio: config.aspectRatio,
             quality: config.quality || '720p',
-            model: 'veo-2.0-generate-001'
+            model: 'veo-3.0-generate-preview'
           }
         }]
       };
       
-      const url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/veo-2.0-generate-001:predictLongRunning`;
+      const url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/veo-3.0-generate-preview:predictLongRunning`;
       
       console.log(`📡 VEO 2.0: Sending request to Vertex AI endpoint...`);
       

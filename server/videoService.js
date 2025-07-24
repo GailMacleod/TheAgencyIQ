@@ -23,7 +23,7 @@ async function getPostingQueue() {
 
 // VEO 3.0 API configuration - Google AI Studio Integration
 const VEO3_MODEL = 'veo-3.0-generate-preview'; // Updated to VEO 3.0 as requested
-const VEO2_VIDEO_MODEL = 'veo-2.0-generate-001';
+const VEO2_VIDEO_MODEL = 'veo-3.0-generate-preview';
 
 // Dynamic Google AI client initialization for ESM compatibility
 let genAI;
@@ -332,7 +332,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       
       // Generate content using the cache
       const model = genAI.getGenerativeModel({ 
-        model: VEO2_MODEL, // Using VEO 2.0 generate model
+        model: VEO3_MODEL, // Using VEO 3.0 generate model
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 800,
@@ -369,7 +369,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       
       // Fallback to implicit caching approach with enhanced error handling
       const model = genAI.getGenerativeModel({ 
-        model: VEO2_MODEL, // Using VEO 2.0 generate model
+        model: VEO3_MODEL, // Using VEO 3.0 generate model
         generationConfig: {
           temperature: enhancedError.adjustedTemperature || 0.7,
           maxOutputTokens: enhancedError.adjustedTokens || 800,
@@ -426,7 +426,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
       // Create new session-optimized cache with extended TTL for active users
       console.log(`🔄 Creating session-optimized cache for user ${userId}...`);
       const cache = await genAI.caches?.create({
-        model: VEO2_MODEL, // Using VEO 2.0 generate model
+        model: VEO3_MODEL, // Using VEO 3.0 generate model
         display_name: cacheDisplayName,
         system_instruction: systemInstruction,
         contents: [{
@@ -560,7 +560,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
           console.log(`📥 Creating local video file from GCS: ${gcsUri}`);
           
           // Create local video file that can actually play
-          const localVideoId = `veo2_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          const localVideoId = `veo3_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const videoDirectory = path.join(process.cwd(), 'public', 'videos');
           const localVideoPath = path.join(videoDirectory, `${localVideoId}.mp4`);
           const localVideoUrl = `/videos/${localVideoId}.mp4`;
@@ -1752,7 +1752,7 @@ Ready to transform your operations? Let's have a yarn! 🇦🇺
           
           // Create real video URL and metadata
           const timestamp = Date.now();
-          const videoId = `veo2_${platform}_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
+          const videoId = `veo3_${platform}_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
           const videoUrl = `/videos/${videoId}.mp4`;
           
           // Create video placeholder for immediate display
@@ -2126,7 +2126,7 @@ Ready to transform your operations? Let's have a yarn! 🇦🇺
             
             // Use working Google AI model with proper error handling
             console.log('🚀 Initializing Gemini model...');
-            const model = googleAI.getGenerativeModel({ model: VEO2_MODEL }); // Using VEO 2.0 generate model
+            const model = googleAI.getGenerativeModel({ model: VEO3_MODEL }); // Using VEO 3.0 generate model
             
             console.log('🎬 Generating actual Veo3 video content...');
             
