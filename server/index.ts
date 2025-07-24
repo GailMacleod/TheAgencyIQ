@@ -1,8 +1,12 @@
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
 import session from 'express-session';
+import rateLimit from 'express-rate-limit';
+import passport from 'passport';
+import { configureOAuthStrategies, setupOAuthRoutes } from './config/oauth-strategies.js';
+import { createSecureSessionConfig, createSecureSessionStore, createSessionValidationMiddleware, createLogoutHandler } from './config/secure-session.js';
+import { applyRateLimiting } from './config/production-rate-limiting.js';
 import connectPg from 'connect-pg-simple';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -281,6 +285,9 @@ async function startServer() {
 
   // Remove duplicate CORS - already configured above with proper order
 
+  // Initialize Passport.js for OAuth (moved after session config)
+  // OAuth strategies will be configured after session middleware
+  
   // Production-grade session configuration with security
   const isProduction = process.env.NODE_ENV === 'production';
   
@@ -383,6 +390,9 @@ async function startServer() {
     
     next();
   });
+
+  // OAuth configuration temporarily disabled to fix core publishing functionality
+  console.log('⚠️ OAuth configuration temporarily disabled - focusing on core publishing fix');
 
   // Load routes
 

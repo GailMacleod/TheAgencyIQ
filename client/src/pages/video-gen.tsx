@@ -34,7 +34,7 @@ interface GeneratedVideo {
   createdAt: string;
 }
 
-export default function VideoGeneration() {
+function VideoGeneration() {
   const [prompt, setPrompt] = useState("");
   const [selectedStyle, setSelectedStyle] = useState<'cinematic' | 'documentary' | 'tech-showcase' | 'asmr'>('cinematic');
   const [selectedPlatform, setSelectedPlatform] = useState("instagram");
@@ -335,3 +335,5 @@ export default function VideoGeneration() {
     </div>
   );
 }
+
+export default VideoGeneration;

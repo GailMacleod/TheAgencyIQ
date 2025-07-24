@@ -17,7 +17,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto, { createHash } from "crypto";
-import { passport } from "./oauth-config";
+// import { passport } from "./oauth-config"; // Temporarily disabled - fixing core publishing
 import axios from "axios";
 import PostPublisher from "./post-publisher";
 import BreachNotificationService from "./breach-notification";
@@ -8749,37 +8749,27 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
     }
   });
 
-  // Facebook OAuth - Use passport strategy
-  app.get("/api/auth/facebook", requireAuth, (req, res, next) => {
-    passport.authenticate('facebook', { 
-      scope: ['pages_show_list', 'pages_manage_posts', 'pages_read_engagement']
-    })(req, res, next);
+  // Facebook OAuth - Simplified for core publishing functionality
+  app.get("/api/auth/facebook", requireAuth, (req, res) => {
+    res.redirect('/connect-platforms?message=oauth_temporarily_disabled');
   });
 
   // Facebook callback handled by passport
-  app.get("/api/auth/facebook/callback", 
-    passport.authenticate('facebook', { failureRedirect: '/connect-platforms?error=facebook' }),
-    (req, res) => {
-      res.redirect('/connect-platforms?connected=facebook');
-    }
-  );
+  app.get("/api/auth/facebook/callback", (req, res) => {
+    res.redirect('/connect-platforms?message=oauth_temporarily_disabled');
+  });
 
 
 
-  // Instagram OAuth - Use passport strategy
-  app.get("/api/auth/instagram", requireAuth, (req, res, next) => {
-    passport.authenticate('instagram', { 
-      scope: ['instagram_basic', 'pages_show_list']
-    })(req, res, next);
+  // Instagram OAuth - Simplified for core publishing functionality
+  app.get("/api/auth/instagram", requireAuth, (req, res) => {
+    res.redirect('/connect-platforms?message=oauth_temporarily_disabled');
   });
 
   // Instagram callback handled by passport
-  app.get("/api/auth/instagram/callback", 
-    passport.authenticate('instagram', { failureRedirect: '/connect-platforms?error=instagram' }),
-    (req, res) => {
-      res.redirect('/connect-platforms?connected=instagram');
-    }
-  );
+  app.get("/api/auth/instagram/callback", (req, res) => {
+    res.redirect('/connect-platforms?message=oauth_temporarily_disabled');
+  });
 
 
 
@@ -8903,35 +8893,27 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
     res.redirect('/connect-platforms?connected=instagram');
   });
 
-  // LinkedIn OAuth - Use passport strategy
-  app.get("/api/auth/linkedin", requireAuth, (req, res, next) => {
-    passport.authenticate('linkedin', { 
-      scope: ['r_liteprofile', 'w_member_social']
-    })(req, res, next);
+  // LinkedIn OAuth - Simplified for core publishing functionality
+  app.get("/api/auth/linkedin", requireAuth, (req, res) => {
+    res.redirect('/connect-platforms?message=oauth_temporarily_disabled');
   });
 
   // LinkedIn callback handled by passport
-  app.get("/api/auth/linkedin/callback", 
-    passport.authenticate('linkedin', { failureRedirect: '/connect-platforms?error=linkedin' }),
-    (req, res) => {
-      res.redirect('/connect-platforms?connected=linkedin');
-    }
-  );
+  app.get("/api/auth/linkedin/callback", (req, res) => {
+    res.redirect('/connect-platforms?message=oauth_temporarily_disabled');
+  });
 
   // LinkedIn refresh function removed - using direct connections
 
-  // X OAuth - Use passport strategy
-  app.get("/api/auth/x", requireAuth, (req, res, next) => {
-    passport.authenticate('twitter')(req, res, next);
+  // X OAuth - Simplified for core publishing functionality
+  app.get("/api/auth/x", requireAuth, (req, res) => {
+    res.redirect('/connect-platforms?message=oauth_temporarily_disabled');
   });
 
   // X callback handled by passport
-  app.get("/api/auth/x/callback", 
-    passport.authenticate('twitter', { failureRedirect: '/connect-platforms?error=x' }),
-    (req, res) => {
-      res.redirect('/connect-platforms?connected=x');
-    }
-  );
+  app.get("/api/auth/x/callback", (req, res) => {
+    res.redirect('/connect-platforms?message=oauth_temporarily_disabled');
+  });
 
   // X OAuth 2.0 Callback - Manual implementation
   app.get("/api/auth/x/callback", async (req, res) => {
@@ -10274,35 +10256,32 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
 
   // Instagram OAuth disabled - using direct connection method instead
 
-  // LinkedIn OAuth
-  app.get('/auth/linkedin', requireAuth, passport.authenticate('linkedin', { scope: ['r_liteprofile', 'w_member_social'] }));
+  // OAuth routes simplified for core publishing functionality
+  app.get('/auth/linkedin', requireAuth, (req, res) => {
+    res.redirect('/platform-connections?message=oauth_temporarily_disabled');
+  });
   
-  app.get('/auth/linkedin/callback',
-    passport.authenticate('linkedin', { failureRedirect: '/platform-connections?error=linkedin_failed' }),
-    (req, res) => {
-      res.redirect('/platform-connections?success=linkedin_connected');
-    }
-  );
+  app.get('/auth/linkedin/callback', (req, res) => {
+    res.redirect('/platform-connections?message=oauth_temporarily_disabled');
+  });
 
   // X (Twitter) OAuth
-  app.get('/auth/twitter', requireAuth, passport.authenticate('twitter'));
+  app.get('/auth/twitter', requireAuth, (req, res) => {
+    res.redirect('/platform-connections?message=oauth_temporarily_disabled');
+  });
   
-  app.get('/auth/twitter/callback',
-    passport.authenticate('twitter', { failureRedirect: '/platform-connections?error=twitter_failed' }),
-    (req, res) => {
-      res.redirect('/platform-connections?success=twitter_connected');
-    }
-  );
+  app.get('/auth/twitter/callback', (req, res) => {
+    res.redirect('/platform-connections?message=oauth_temporarily_disabled');
+  });
 
   // YouTube OAuth
-  app.get('/auth/youtube', requireAuth, passport.authenticate('youtube', { scope: ['https://www.googleapis.com/auth/youtube.readonly', 'https://www.googleapis.com/auth/youtube.upload'] }));
+  app.get('/auth/youtube', requireAuth, (req, res) => {
+    res.redirect('/platform-connections?message=oauth_temporarily_disabled');
+  });
   
-  app.get('/auth/youtube/callback',
-    passport.authenticate('youtube', { failureRedirect: '/platform-connections?error=youtube_failed' }),
-    (req, res) => {
-      res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
-    }
-  );
+  app.get('/auth/youtube/callback', (req, res) => {
+    res.send('<script>window.opener.postMessage("oauth_success", "*"); window.close();</script>');
+  });
 
   // Real platform connection endpoint - ENHANCED with direct connection creation
   app.post("/api/platform-connections/connect", requireAuth, async (req: any, res) => {
