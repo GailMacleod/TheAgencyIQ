@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 import OptimizedTooltipProvider from "@/components/OptimizedTooltipProvider";
 import RouterErrorBoundary from "@/components/RouterErrorBoundary";
 import { performSecureLogout } from "@/utils/logout-handler";
-import { useSSRQueryClient, SSRHydrate } from "@/utils/query-client-ssr";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 import GrokWidget from "@/components/grok-widget";
@@ -422,11 +421,8 @@ function App() {
     initializeGA();
   }, []);
 
-  // Enhanced QueryClient with SSR support for future scalability
-  const ssrQueryClient = useSSRQueryClient();
-
   return (
-    <QueryClientProvider client={ssrQueryClient}>
+    <QueryClientProvider client={queryClient}>
       <OptimizedTooltipProvider>
         <RouterErrorBoundary>
           <AppContent />
