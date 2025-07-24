@@ -72,7 +72,7 @@ export const postLedger = pgTable("post_ledger", {
 // Legacy posts table (keeping for backward compatibility)
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id", { length: 50 }).notNull(),
   platform: text("platform").notNull(), // 'facebook', 'instagram', 'linkedin', 'youtube', 'x'
   content: text("content").notNull(),
   status: text("status").notNull().default("draft"), // 'draft', 'approved', 'scheduled', 'published', 'failed'

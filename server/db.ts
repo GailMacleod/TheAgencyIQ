@@ -3,7 +3,12 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
+// Fix WebSocket constructor for Neon serverless - critical for database integrity  
+if (typeof ws !== 'undefined') {
+  neonConfig.webSocketConstructor = ws;
+} else {
+  console.warn('⚠️ WebSocket constructor not available, database connections may be limited');
+}
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
