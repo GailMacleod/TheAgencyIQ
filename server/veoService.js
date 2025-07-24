@@ -589,35 +589,35 @@ class VeoService {
         const sceneTime = duration / 4;
         const fontSize = Math.floor(height / 12);
         
-        // Create cinematic video with multiple dynamic backgrounds and orchestral soundtrack
+        // Create cinematic video with DYNAMIC MOVING CONTENT instead of static backgrounds
         const ffmpegCommand = `ffmpeg ` +
-          // Generate multiple dynamic video sources with working filters
-          `-f lavfi -i "color=c=0x1a1a2e:size=${width}x${height}:duration=${duration}" ` +
-          `-f lavfi -i "color=c=0x16213e:size=${width}x${height}:duration=${duration}" ` +
-          `-f lavfi -i "color=c=0x0f3460:size=${width}x${height}:duration=${duration}" ` +
-          `-f lavfi -i "color=c=0x533483:size=${width}x${height}:duration=${duration}" ` +
+          // Generate DYNAMIC MOVING video sources with animated patterns
+          `-f lavfi -i "mandelbrot=size=${width}x${height}:rate=25:inner=16777215:outer=0:bailout=10:maxiter=100:start_scale=3:end_scale=0.3:start_x=-0.743:start_y=-0.11:end_x=-0.743:end_y=-0.11" ` +
+          `-f lavfi -i "life=size=${width}x${height}:rate=25:random_fill_ratio=0.1:rule=B3/S23" ` +
+          `-f lavfi -i "plasma=size=${width}x${height}:rate=25" ` +
+          `-f lavfi -i "tunnelbrot=size=${width}x${height}:rate=25" ` +
           // Generate orchestral-style audio with multiple tones
           `-f lavfi -i "sine=frequency=220:duration=${duration}" ` +
           `-f lavfi -i "sine=frequency=330:duration=${duration}" ` +
           `-f lavfi -i "sine=frequency=440:duration=${duration}" ` +
           `-filter_complex "` +
-          // Create cinematic scene transitions with dynamic backgrounds
-          `[0:v]scale=${width}:${height},fade=in:0:15,fade=out:st=${sceneTime-0.3}:d=0.3[scene1];` +
-          `[1:v]scale=${width}:${height},fade=in:st=${sceneTime}:d=0.3,fade=out:st=${sceneTime*2-0.3}:d=0.3[scene2];` +
-          `[2:v]scale=${width}:${height},fade=in:st=${sceneTime*2}:d=0.3,fade=out:st=${sceneTime*3-0.3}:d=0.3[scene3];` +
-          `[3:v]scale=${width}:${height},fade=in:st=${sceneTime*3}:d=0.3[scene4];` +
-          // Composite scenes with smooth transitions
+          // Apply dynamic color effects and scaling to animated content
+          `[0:v]scale=${width}:${height},colorchannelmixer=.3:.4:.3:0:0:.2:.3:.5:0:0:.1:.2:.6:0,fade=in:0:15,fade=out:st=${sceneTime-0.3}:d=0.3[scene1];` +
+          `[1:v]scale=${width}:${height},colorchannelmixer=.2:.3:.5:0:0:.3:.4:.3:0:0:.4:.3:.3:0,fade=in:st=${sceneTime}:d=0.3,fade=out:st=${sceneTime*2-0.3}:d=0.3[scene2];` +
+          `[2:v]scale=${width}:${height},colorchannelmixer=.4:.2:.4:0:0:.3:.5:.2:0:0:.2:.3:.5:0,fade=in:st=${sceneTime*2}:d=0.3,fade=out:st=${sceneTime*3-0.3}:d=0.3[scene3];` +
+          `[3:v]scale=${width}:${height},colorchannelmixer=.5:.3:.2:0:0:.2:.4:.4:0:0:.3:.3:.4:0,fade=in:st=${sceneTime*3}:d=0.3[scene4];` +
+          // Composite animated scenes with smooth transitions
           `[scene1][scene2]overlay=enable='between(t,0,${sceneTime*2})'[comp1];` +
           `[comp1][scene3]overlay=enable='between(t,${sceneTime},${sceneTime*3})'[comp2];` +
           `[comp2][scene4]overlay=enable='between(t,${sceneTime*2},${duration})'[background];` +
           // Add professional text overlays with Queensland business branding
-          `[background]drawtext=text='${promptLines[0]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:boxborderw=3:x=(w-text_w)/2:y=h*0.2:enable='between(t,0,${sceneTime})',` +
+          `[background]drawtext=text='${promptLines[0]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000DD:boxborderw=5:x=(w-text_w)/2:y=h*0.2:enable='between(t,0,${sceneTime})',` +
           `drawtext=text='QUEENSLAND BUSINESS TRANSFORMATION':fontsize=${Math.floor(fontSize*0.6)}:fontcolor=0x00f0ff:x=(w-text_w)/2:y=h*0.85:enable='between(t,0,${sceneTime})',` +
-          `drawtext=text='${promptLines[1]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:boxborderw=3:x=(w-text_w)/2:y=h*0.2:enable='between(t,${sceneTime},${sceneTime*2})',` +
+          `drawtext=text='${promptLines[1]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000DD:boxborderw=5:x=(w-text_w)/2:y=h*0.2:enable='between(t,${sceneTime},${sceneTime*2})',` +
           `drawtext=text='PROFESSIONAL DIGITAL AUTHORITY':fontsize=${Math.floor(fontSize*0.6)}:fontcolor=0x3250fa:x=(w-text_w)/2:y=h*0.85:enable='between(t,${sceneTime},${sceneTime*2})',` +
-          `drawtext=text='${promptLines[2]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:boxborderw=3:x=(w-text_w)/2:y=h*0.2:enable='between(t,${sceneTime*2},${sceneTime*3})',` +
+          `drawtext=text='${promptLines[2]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000DD:boxborderw=5:x=(w-text_w)/2:y=h*0.2:enable='between(t,${sceneTime*2},${sceneTime*3})',` +
           `drawtext=text='SMART GROWTH STRATEGY':fontsize=${Math.floor(fontSize*0.6)}:fontcolor=0x00f0ff:x=(w-text_w)/2:y=h*0.85:enable='between(t,${sceneTime*2},${sceneTime*3})',` +
-          `drawtext=text='${promptLines[3]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:boxborderw=3:x=(w-text_w)/2:y=h*0.2:enable='between(t,${sceneTime*3},${duration})',` +
+          `drawtext=text='${promptLines[3]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000DD:boxborderw=5:x=(w-text_w)/2:y=h*0.2:enable='between(t,${sceneTime*3},${duration})',` +
           `drawtext=text='TheAgencyIQ.com.au':fontsize=${Math.floor(fontSize*0.8)}:fontcolor=0x3250fa:x=(w-text_w)/2:y=h*0.85:enable='between(t,${sceneTime*3},${duration})'[finalvideo];` +
           // Mix multiple audio channels for orchestral effect
           `[4:a][5:a][6:a]amix=inputs=3:duration=longest:weights=0.5 0.3 0.2[orchestral]" ` +
@@ -924,17 +924,19 @@ class VeoService {
       const sceneTime = duration / 4;
       
       const cinematicCommand = `ffmpeg -y ` +
-        `-f lavfi -i "color=c=0x1a1a2e:size=${width}x${height}:duration=${duration}" ` +
-        `-f lavfi -i "color=c=0x16213e:size=${width}x${height}:duration=${duration}" ` +
-        `-f lavfi -i "color=c=0x0f3460:size=${width}x${height}:duration=${duration}" ` +
-        `-f lavfi -i "color=c=0x533483:size=${width}x${height}:duration=${duration}" ` +
+        // Create DYNAMIC ANIMATED backgrounds instead of static colors
+        `-f lavfi -i "testsrc2=size=${width}x${height}:rate=25:duration=${duration}" ` +
+        `-f lavfi -i "rgbtestsrc=size=${width}x${height}:rate=25:duration=${duration}" ` +
+        `-f lavfi -i "smptebars=size=${width}x${height}:rate=25:duration=${duration}" ` +
+        `-f lavfi -i "yuvtestsrc=size=${width}x${height}:rate=25:duration=${duration}" ` +
         `-f lavfi -i "sine=frequency=220:duration=${duration}" ` +
         `-f lavfi -i "sine=frequency=330:duration=${duration}" ` +
         `-filter_complex "` +
-        `[0:v]drawtext=text='Professional Queensland':fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.3:enable='between(t,0,${sceneTime})'[v1];` +
-        `[1:v]drawtext=text='Business Transformation':fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime},${sceneTime*2})'[v2];` +
-        `[2:v]drawtext=text='Digital Authority':fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime*2},${sceneTime*3})'[v3];` +
-        `[3:v]drawtext=text='TheAgencyIQ.com.au':fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime*3},${duration})'[v4];` +
+        // Apply motion and text to animated test patterns
+        `[0:v]scale=${width}:${height},colorchannelmixer=.3:.4:.3:0:0:.2:.3:.5:0:0:.1:.2:.6:0,drawtext=text='Professional Queensland':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:x=(w-text_w)/2:y=h*0.3:enable='between(t,0,${sceneTime})'[v1];` +
+        `[1:v]scale=${width}:${height},colorchannelmixer=.2:.3:.5:0:0:.3:.4:.3:0:0:.4:.3:.3:0,drawtext=text='Business Transformation':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime},${sceneTime*2})'[v2];` +
+        `[2:v]scale=${width}:${height},colorchannelmixer=.4:.2:.4:0:0:.3:.5:.2:0:0:.2:.3:.5:0,drawtext=text='Digital Authority':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime*2},${sceneTime*3})'[v3];` +
+        `[3:v]scale=${width}:${height},colorchannelmixer=.5:.3:.2:0:0:.2:.4:.4:0:0:.3:.3:.4:0,drawtext=text='TheAgencyIQ.com.au':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime*3},${duration})'[v4];` +
         `[v1][v2]overlay=enable='between(t,${sceneTime},${sceneTime*2})'[comp1];` +
         `[comp1][v3]overlay=enable='between(t,${sceneTime*2},${sceneTime*3})'[comp2];` +
         `[comp2][v4]overlay=enable='between(t,${sceneTime*3},${duration})'[video];` +
