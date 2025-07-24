@@ -11,8 +11,8 @@ let Redis: any = null;
 let connectRedis: any = null;
 
 try {
-  Redis = require('ioredis');
-  connectRedis = require('connect-redis');
+  Redis = await import('ioredis').then(m => m.default);
+  connectRedis = await import('connect-redis').then(m => m.default);
 } catch (error) {
   console.warn('⚠️ Redis packages not available, using PostgreSQL fallback only');
 }
@@ -104,7 +104,7 @@ export class SessionCacheManager {
    */
   private setupPostgreSQLStore(sessionConfig: any): void {
     try {
-      const pgSession = require('connect-pg-simple')(session);
+      const pgSession = (await import('connect-pg-simple')).default(session);
       sessionConfig.store = new pgSession({
         conString: process.env.DATABASE_URL,
         tableName: 'sessions',
