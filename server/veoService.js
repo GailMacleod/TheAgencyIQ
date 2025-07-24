@@ -387,7 +387,7 @@ class VeoService {
         progress = Math.min(100, 90 + ((elapsed - 20000) / 5000) * 10); // 90-100% in final 5s
       }
       
-      const phase = elapsed < 15000 ? 'VEO 2.0 API processing' :
+      const phase = elapsed < 15000 ? 'VEO 3.0 API processing' :
                    elapsed < 60000 ? 'VEO 2.0 neural rendering' :
                    elapsed < 180000 ? 'VEO 2.0 video assembly' :
                    'VEO 2.0 finalizing';
@@ -515,7 +515,7 @@ class VeoService {
           generationTime: elapsed, // Add elapsed time in milliseconds
           estimatedTimeRemaining: Math.max(0, Math.round((estimatedDuration - elapsed) / 1000)),
           platform: operation.platform,
-          message: `VEO 2.0 processing: ${Math.round(progress)}% complete`
+          message: `VEO 3.0 processing: ${Math.round(progress)}% complete`
         };
       }
 
