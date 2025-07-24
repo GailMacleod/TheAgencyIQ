@@ -1,5 +1,5 @@
 /**
- * Google VEO 2.0 Vertex AI Service
+ * Google VEO 3.0 Vertex AI Service
  * Uses Google AI Studio Key for cinematic video generation
  */
 

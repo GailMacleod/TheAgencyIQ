@@ -1,5 +1,5 @@
 /**
- * Redis-based Video Caching Service for VEO 2.0 responses
+ * Redis-based Video Caching Service for VEO 3.0 responses
  * Implements CDN-style caching with speed optimization
  */
 
@@ -37,7 +37,7 @@ class VideoCache {
       });
 
       await this.redis.connect();
-      console.log('✅ Redis connected for VEO 2.0 video caching');
+      console.log('✅ Redis connected for VEO 3.0 video caching');
     } catch (error) {
       console.log('📦 Using in-memory cache (Redis unavailable)');
       this.redis = null;
@@ -47,11 +47,11 @@ class VideoCache {
   /**
    * Memory-efficient video caching
    * @param {string} promptHash - Hash of video prompt for caching key
-   * @param {Object} videoData - VEO 2.0 response data
+   * @param {Object} videoData - VEO 3.0 response data
    * @param {number} ttl - Time to live in seconds (reduced to 6 hours)
    */
   async cacheVideo(promptHash, videoData, ttl = 6 * 60 * 60) {
-    const cacheKey = `veo2:video:${promptHash}`;
+    const cacheKey = `veo3:video:${promptHash}`;
     const cacheData = {
       ...videoData,
       cachedAt: Date.now(),
@@ -61,7 +61,7 @@ class VideoCache {
     try {
       if (this.redis) {
         await this.redis.setex(cacheKey, ttl, JSON.stringify(cacheData));
-        console.log(`📦 VEO 2.0 video cached with Redis: ${cacheKey}`);
+        console.log(`📦 VEO 3.0 video cached with Redis: ${cacheKey}`);
       } else {
         // Memory-conscious fallback cache
         if (this.fallbackCache.size >= this.maxFallbackSize) {
@@ -86,21 +86,21 @@ class VideoCache {
    * @returns {Object|null} - Cached video data or null
    */
   async getCachedVideo(promptHash) {
-    const cacheKey = `veo2:video:${promptHash}`;
+    const cacheKey = `veo3:video:${promptHash}`;
 
     try {
       if (this.redis) {
         const cached = await this.redis.get(cacheKey);
         if (cached) {
           const videoData = JSON.parse(cached);
-          console.log(`⚡ Redis cache hit for VEO 2.0 video: ${cacheKey}`);
+          console.log(`⚡ Redis cache hit for VEO 3.0 video: ${cacheKey}`);
           return videoData;
         }
       } else {
         // Check memory cache
         const cached = this.fallbackCache.get(cacheKey);
         if (cached && cached.expiry > Date.now()) {
-          console.log(`⚡ Memory cache hit for VEO 2.0 video: ${cacheKey}`);
+          console.log(`⚡ Memory cache hit for VEO 3.0 video: ${cacheKey}`);
           return cached.data;
         } else if (cached) {
           // Expired - remove from memory
@@ -108,7 +108,7 @@ class VideoCache {
         }
       }
 
-      console.log(`❌ Cache miss for VEO 2.0 video: ${cacheKey}`);
+      console.log(`❌ Cache miss for VEO 3.0 video: ${cacheKey}`);
       return null;
     } catch (error) {
       console.error('❌ Video cache retrieval error:', error.message);
@@ -145,7 +145,7 @@ class VideoCache {
     }
 
     try {
-      const keys = await this.redis.keys('veo2:video:*');
+      const keys = await this.redis.keys('veo3:video:*');
       const pipeline = this.redis.pipeline();
       
       for (const key of keys) {
@@ -168,7 +168,7 @@ class VideoCache {
   async getCacheStats() {
     try {
       if (this.redis) {
-        const keys = await this.redis.keys('veo2:video:*');
+        const keys = await this.redis.keys('veo3:video:*');
         const memory = await this.redis.memory('usage');
         return {
           type: 'Redis',

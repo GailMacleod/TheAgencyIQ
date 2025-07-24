@@ -1,5 +1,5 @@
 /**
- * Session Utilities for VEO 2.0 Integration
+ * Session Utilities for VEO 3.0 Integration
  * Handles secure session management, token validation, and auto-posting integration
  */
 

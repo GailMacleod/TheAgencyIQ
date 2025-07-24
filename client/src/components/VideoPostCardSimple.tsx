@@ -40,7 +40,7 @@ function VideoPlayerWithFallback({ videoUrl, thumbnail, title, onError }: { vide
           <div className="w-16 h-16 mx-auto mb-3 bg-purple-600 rounded-full flex items-center justify-center">
             <VideoIcon className="w-8 h-8" />
           </div>
-          <p className="text-lg font-semibold mb-1">VEO 2.0 Generated</p>
+          <p className="text-lg font-semibold mb-1">VEO 3.0 Generated</p>
           <p className="text-sm opacity-80">Video ready for preview</p>
           <div className="mt-3 flex justify-center gap-2">
             <span className="px-2 py-1 bg-blue-600 rounded text-xs">16:9</span>
@@ -176,14 +176,14 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
     let phaseTimeouts: NodeJS.Timeout[] = [];
 
     const startProgress = () => {
-      setCurrentPhase('Submitting to Google VEO 2.0 API...');
+      setCurrentPhase('Submitting to Google VEO 3.0 API...');
       setRenderingProgress(5);
       
       progressInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         setRenderingTime(elapsed);
         
-        // Authentic VEO 2.0 timing: 11s minimum to 6 minutes maximum
+        // Authentic VEO 3.0 timing: 11s minimum to 6 minutes maximum
         // Progress should never reach 100% until actual completion
         let targetProgress;
         if (elapsed < 15) {
@@ -199,25 +199,25 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
         setRenderingProgress(targetProgress);
       }, 1000);
 
-      // Authentic VEO 2.0 phase progression based on real API timing
+      // Authentic VEO 3.0 phase progression based on real API timing
       phaseTimeouts.push(setTimeout(() => {
-        setCurrentPhase('VEO 2.0 API request submitted - processing initiated...');
-        console.log('🎯 Phase 1: VEO 2.0 API request submitted');
+        setCurrentPhase('VEO 3.0 API request submitted - processing initiated...');
+        console.log('🎯 Phase 1: VEO 3.0 API request submitted');
       }, 2000));
       
       phaseTimeouts.push(setTimeout(() => {
-        setCurrentPhase('VEO 2.0 neural processing - generating video frames...');
-        console.log('🎯 Phase 2: VEO 2.0 neural processing');
+        setCurrentPhase('VEO 3.0 neural processing - generating video frames...');
+        console.log('🎯 Phase 2: VEO 3.0 neural processing');
       }, 15000)); // 15 seconds
       
       phaseTimeouts.push(setTimeout(() => {
-        setCurrentPhase('VEO 2.0 rendering - assembling 8-second video...');
-        console.log('🎯 Phase 3: VEO 2.0 rendering video');
+        setCurrentPhase('VEO 3.0 rendering - assembling 8-second video...');
+        console.log('🎯 Phase 3: VEO 3.0 rendering video');
       }, 45000)); // 45 seconds
       
       phaseTimeouts.push(setTimeout(() => {
-        setCurrentPhase('VEO 2.0 finalizing - this can take up to 6 minutes total...');
-        console.log('🎯 Phase 4: VEO 2.0 finalizing');
+        setCurrentPhase('VEO 3.0 finalizing - this can take up to 6 minutes total...');
+        console.log('🎯 Phase 4: VEO 3.0 finalizing');
       }, 90000)); // 90 seconds
     };
 

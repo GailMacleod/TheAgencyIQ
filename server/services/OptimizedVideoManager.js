@@ -1,5 +1,5 @@
 /**
- * Memory-Optimized Video Manager for VEO 2.0
+ * Memory-Optimized Video Manager for VEO 3.0
  * Implements lazy loading, metadata-only caching, and automatic cleanup
  */
 

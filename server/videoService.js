@@ -1,5 +1,5 @@
 /**
- * VIDEO GENERATION SERVICE - VEO 2.0 INTEGRATION
+ * VIDEO GENERATION SERVICE - VEO 3.0 INTEGRATION
  * Handles AI video generation, prompt creation, and platform posting
  */
 
@@ -21,8 +21,8 @@ async function getPostingQueue() {
   return postingQueue;
 }
 
-// VEO 2.0 API configuration - Google AI Studio Integration
-const VEO2_MODEL = 'veo-2.0-generate-001'; // Updated to VEO 2.0 as requested
+// VEO 3.0 API configuration - Google AI Studio Integration
+const VEO3_MODEL = 'veo-3.0-generate-preview'; // Updated to VEO 3.0 as requested
 const VEO2_VIDEO_MODEL = 'veo-2.0-generate-001';
 
 // Dynamic Google AI client initialization for ESM compatibility
@@ -482,45 +482,45 @@ Your job is to create detailed video scripts with specific timing, camera moveme
     }
   }
 
-  // AUTHENTIC VEO 2.0 VIDEO GENERATION - REAL VIDEO CREATION WITH ASYNC POLLING
-  static async generateVeo2VideoContent(prompt, options = {}) {
+  // AUTHENTIC VEO 3.0 VIDEO GENERATION - REAL VIDEO CREATION WITH ASYNC POLLING
+  static async generateVeo3VideoContent(prompt, options = {}) {
     try {
-      console.log('🎥 VEO 2.0 VIDEO GENERATION: Starting authentic video creation with proper async polling...');
+      console.log('🎥 VEO 3.0 VIDEO GENERATION: Starting authentic video creation with proper async polling...');
       
       // Dynamic import for ESM compatibility
       if (!genAI) {
         await initializeGoogleAI();
       }
       
-      // VEO 2.0 Technical Constraints (from documentation)
-      const veo2Params = {
+      // VEO 3.0 Technical Constraints (from documentation)
+      const veo3Params = {
         prompt: prompt,
-        aspectRatio: '16:9', // VEO 2.0 only supports 16:9
-        duration: 8, // VEO 2.0 fixed at 8 seconds
-        model: 'veo-2.0-generate-001', // VEO 2.0 model as requested
-        generateAudio: true // VEO 2.0 supports audio generation
+        aspectRatio: '16:9', // VEO 3.0 supports 16:9
+        duration: 8, // VEO 3.0 fixed at 8 seconds
+        model: 'veo-3.0-generate-preview', // VEO 3.0 model as requested
+        generateAudio: true // VEO 3.0 supports audio generation
       };
       
-      console.log(`🎬 VEO 2.0 Parameters: ${JSON.stringify(veo2Params, null, 2)}`);
+      console.log(`🎬 VEO 3.0 Parameters: ${JSON.stringify(veo3Params, null, 2)}`);
       
       try {
-        // STEP 1: Generate video using proper VEO 2.0 API (not generateContent)
-        console.log('🚀 Calling VEO 2.0 generate_videos API...');
+        // STEP 1: Generate video using proper VEO 3.0 API (not generateContent)
+        console.log('🚀 Calling VEO 3.0 generate_videos API...');
         
         const operation = await genAI.models.generate_videos({
-          model: veo2Params.model,
-          prompt: veo2Params.prompt,
+          model: veo3Params.model,
+          prompt: veo3Params.prompt,
           config: {
-            aspectRatio: veo2Params.aspectRatio,
-            durationSeconds: veo2Params.duration,
-            generateAudio: veo2Params.generateAudio,
+            aspectRatio: veo3Params.aspectRatio,
+            durationSeconds: veo3Params.duration,
+            generateAudio: veo3Params.generateAudio,
             personGeneration: "allow_adult", // Allow adults only
             enhancePrompt: true, // Use Gemini to enhance prompts
             resolution: "1080p"
           }
         });
 
-        console.log(`🔄 VEO 2.0 operation started: ${operation.name}`);
+        console.log(`🔄 VEO 3.0 operation started: ${operation.name}`);
         
         // STEP 2: Poll until operation is complete (async polling)
         let pollingAttempts = 0;
@@ -539,7 +539,7 @@ Your job is to create detailed video scripts with specific timing, camera moveme
             console.log(`🔄 Polling attempt ${pollingAttempts}/${maxPollingAttempts} - Status: ${operation.done ? 'Complete' : 'Processing'}`);
             
             if (operation.done) {
-              console.log('✅ VEO 2.0 video generation completed!');
+              console.log('✅ VEO 3.0 video generation completed!');
               break;
             }
           } catch (pollError) {

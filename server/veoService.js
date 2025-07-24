@@ -1,5 +1,5 @@
 /**
- * Authentic VEO 2.0 Service using official Vertex AI documentation
+ * Authentic VEO 3.0 Service using official Vertex AI documentation
  * Implements predictLongRunning endpoint with fetchPredictOperation polling
  */
 import OptimizedVideoManager from './services/OptimizedVideoManager.js';
@@ -12,7 +12,7 @@ let sharedVideoManager = null;
 
 class VeoService {
   constructor() {
-    this.VEO2_MODEL = 'veo-2.0-generate-001';
+    this.VEO3_MODEL = 'veo-3.0-generate-preview';
     this.operations = sharedOperations; // Use shared operations map
     this.quotaManager = null;
     if (!sharedVideoManager) {
@@ -29,39 +29,39 @@ class VeoService {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       
       if (!process.env.GOOGLE_AI_STUDIO_KEY) {
-        console.log('⚠️ VEO 2.0: Google AI Studio key not found in environment');
+        console.log('⚠️ VEO 3.0: Google AI Studio key not found in environment');
         return;
       }
       
       this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_KEY);
-      console.log('✅ VEO 2.0: Google AI initialized with authentic VEO credentials');
-      console.log('🎬 VEO 2.0: Ready for cinematic video generation');
+      console.log('✅ VEO 3.0: Google AI initialized with authentic VEO credentials');
+      console.log('🎬 VEO 3.0: Ready for cinematic video generation');
     } catch (error) {
-      console.log('⚠️ VEO 2.0: Google AI initialization failed:', error.message);
+      console.log('⚠️ VEO 3.0: Google AI initialization failed:', error.message);
     }
   }
 
   /**
-   * Generate VEO 2.0 video using authentic Vertex AI API
+   * Generate VEO 3.0 video using authentic Vertex AI API
    * @param {string} prompt - Video generation prompt
    * @param {Object} config - Video configuration
    * @returns {Promise<Object>} - Generation result
    */
   async generateVideo(prompt, config = {}) {
     try {
-      console.log(`🎬 VEO 2.0: Starting authentic video generation`);
+      console.log(`🎬 VEO 3.0: Starting authentic video generation`);
       
-      // Prepare final configuration with VEO 2.0 constraints
+      // Prepare final configuration with VEO 3.0 constraints
       const finalConfig = {
         aspectRatio: config.aspectRatio || '16:9',
-        durationSeconds: Math.min(Math.max(config.durationSeconds || 8, 5), 8), // VEO 2.0: 5-8 seconds
-        resolution: '720p', // VEO 2.0 supports 720p
+        durationSeconds: Math.min(Math.max(config.durationSeconds || 8, 5), 8), // VEO 3.0: 5-8 seconds
+        resolution: '720p', // VEO 3.0 supports 720p
         enhancePrompt: config.enhancePrompt !== false,
         personGeneration: config.personGeneration || 'allow',
         platform: config.platform || 'youtube'
       };
 
-      console.log(`🎯 VEO 2.0: Config - ${finalConfig.durationSeconds}s, ${finalConfig.aspectRatio}, ${finalConfig.resolution}`);
+      console.log(`🎯 VEO 3.0: Config - ${finalConfig.durationSeconds}s, ${finalConfig.aspectRatio}, ${finalConfig.resolution}`);
 
       // Construct video request for Vertex AI
       const videoRequest = {
@@ -69,14 +69,14 @@ class VeoService {
         config: finalConfig
       };
 
-      // Call authentic VEO 2.0 API via Vertex AI
-      console.log(`🔄 VEO 2.0: Initiating authentic Vertex AI video generation`);
-      console.log(`⏱️  VEO 2.0: Estimated generation time: 5-8 seconds video, 30s to 6 minutes processing`);
+      // Call authentic VEO 3.0 API via Vertex AI
+      console.log(`🔄 VEO 3.0: Initiating authentic Vertex AI video generation`);
+      console.log(`⏱️  VEO 3.0: Estimated generation time: 5-8 seconds video, 30s to 6 minutes processing`);
       
-      const apiResult = await this.callVeo2Api(videoRequest);
+      const apiResult = await this.callVeo3Api(videoRequest);
       
       if (!apiResult.success) {
-        throw new Error(`VEO 2.0 API call failed: ${apiResult.error}`);
+        throw new Error(`VEO 3.0 API call failed: ${apiResult.error}`);
       }
       
       // Store operation for authentic tracking
@@ -89,7 +89,7 @@ class VeoService {
         vertexAiOperation: apiResult, // Store full Vertex AI operation details
         estimatedCompletion: Date.now() + (Math.floor(Math.random() * 300) + 30) * 1000, // 30s-5min realistic timing
         videoData: {
-          videoId: `veo2_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          videoId: `veo3_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           prompt: prompt,
           aspectRatio: finalConfig.aspectRatio,
           duration: finalConfig.durationSeconds,
@@ -97,7 +97,7 @@ class VeoService {
         }
       });
 
-      // Return async operation tracking for authentic VEO 2.0 timing
+      // Return async operation tracking for authentic VEO 3.0 timing
       return {
         success: true,
         operationId: apiResult.operationId,
@@ -105,19 +105,19 @@ class VeoService {
         isAsync: true,
         status: 'processing',
         estimatedTime: '30s to 6 minutes',
-        message: 'VEO 2.0 generation initiated via Vertex AI - authentic timing',
+        message: 'VEO 3.0 generation initiated via Vertex AI - authentic timing',
         platform: finalConfig.platform || 'youtube',
         vertexAi: true
       };
 
     } catch (error) {
-      console.error(`❌ VEO 2.0: Generation failed:`, error);
+      console.error(`❌ VEO 3.0: Generation failed:`, error);
       
       // Enhanced error handling with specific error types
       if (error.message.includes('quota') || error.message.includes('limit')) {
         return {
           success: false,
-          error: 'VEO 2.0 quota exceeded - please try again later',
+          error: 'VEO 3.0 quota exceeded - please try again later',
           platform: config.platform || 'youtube'
         };
       }
@@ -131,11 +131,11 @@ class VeoService {
   }
 
   /**
-   * Call authentic Vertex AI VEO 2.0 API based on official documentation
+   * Call authentic Vertex AI VEO 3.0 API based on official documentation
    * @param {Object} videoRequest - Video generation request
    * @returns {Promise<Object>} - API response with operation
    */
-  async callVeo2Api(videoRequest) {
+  async callVeo3Api(videoRequest) {
     try {
       console.log(`🎯 VEO 3.0: Calling authentic Vertex AI API for cinematic video generation`);
       
@@ -147,7 +147,7 @@ class VeoService {
         throw new Error('GOOGLE_CLOUD_PROJECT environment variable is required for VEO 3.0');
       }
       
-      // Construct authentic VEO 2.0 request based on official documentation
+      // Construct authentic VEO 3.0 request based on official documentation
       const requestBody = {
         instances: [
           {
@@ -177,7 +177,7 @@ class VeoService {
         throw new Error('VEO 3.0 daily quota exceeded (50/day limit)');
       }
       
-      // Make authentic VEO 2.0 API call to Vertex AI with proper service account auth
+      // Make authentic VEO 3.0 API call to Vertex AI with proper service account auth
       try {
         const googleAuth = await import('google-auth-library');
         const GoogleAuth = googleAuth.GoogleAuth;
@@ -253,7 +253,7 @@ class VeoService {
    */
   async pollVertexAiOperation(operation) {
     try {
-      console.log(`🔄 VEO 2.0: Polling operation ${operation.operationId}...`);
+      console.log(`🔄 VEO 3.0: Polling operation ${operation.operationId}...`);
       
       const { GoogleAuth } = await import('google-auth-library');
       const auth = new GoogleAuth({
@@ -276,11 +276,11 @@ class VeoService {
       });
       
       if (!response.ok) {
-        throw new Error(`VEO 2.0 polling failed: ${response.status} ${response.statusText}`);
+        throw new Error(`VEO 3.0 polling failed: ${response.status} ${response.statusText}`);
       }
       
       const result = await response.json();
-      console.log(`📊 VEO 2.0: Operation status:`, result.done ? 'COMPLETED' : 'RUNNING');
+      console.log(`📊 VEO 3.0: Operation status:`, result.done ? 'COMPLETED' : 'RUNNING');
       
       return {
         done: result.done,
@@ -290,7 +290,7 @@ class VeoService {
       };
       
     } catch (error) {
-      console.error(`❌ VEO 2.0: Polling failed:`, error);
+      console.error(`❌ VEO 3.0: Polling failed:`, error);
       throw error;
     }
   }

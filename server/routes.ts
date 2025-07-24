@@ -11396,7 +11396,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
-  // ENHANCED VIDEO RENDER ENDPOINT - VEO 2.0 WITH SESSION VALIDATION AND AUTO-POSTING
+  // ENHANCED VIDEO RENDER ENDPOINT - VEO 3.0 WITH SESSION VALIDATION AND AUTO-POSTING
   app.post("/api/video/render", requireAuth, videoGenerationRateLimit, checkVideoQuota, async (req: any, res) => {
     try {
       // Import session utilities for secure handling
@@ -11433,17 +11433,17 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         console.log('⚠️ Using fallback brand purpose for VEO3');
       }
       
-      // Import enhanced video service and VEO 2.0 service
+      // Import enhanced video service and VEO 3.0 service
       const VideoService = (await import('./videoService')).default;
       const VeoService = (await import('./veoService')).default;
       
-      // FIRST PRINCIPLES FIX: Grok → VEO 2.0 proper workflow
+      // FIRST PRINCIPLES FIX: Grok → VEO 3.0 proper workflow
       let result;
       let grokResult;
       let enhancedPrompt;
       
       try {
-        console.log(`🚀 SURGICAL DEBUG: Starting Grok → VEO 2.0 workflow for ${platform}`);
+        console.log(`🚀 SURGICAL DEBUG: Starting Grok → VEO 3.0 workflow for ${platform}`);
         console.log(`✍️ STEP 1: Grok enhancement starting for ${platform}`);
         
         // STEP 1: Get Grok-enhanced prompts first
@@ -11473,12 +11473,12 @@ async function fetchYouTubeAnalytics(accessToken: string) {
           enhancedPrompt = `Professional Queensland business content: ${promptPreview || editedText}`;
         }
         
-        console.log(`🎯 STEP 2: VEO 2.0 generation starting with Grok-enhanced prompt`);
+        console.log(`🎯 STEP 2: VEO 3.0 generation starting with Grok-enhanced prompt`);
         
-        // STEP 2: Pass Grok-enhanced prompt to VEO 2.0
+        // STEP 2: Pass Grok-enhanced prompt to VEO 3.0
         const veoService = new VeoService();
         
-        console.log(`🎬 VEO 2.0: Using Grok-enhanced prompt for ${platform}`);
+        console.log(`🎬 VEO 3.0: Using Grok-enhanced prompt for ${platform}`);
         
         // Refresh tokens if needed before video generation
         await sessionManager.refreshTokensIfNeeded(req.session?.userId || userId);
@@ -11497,7 +11497,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         
         // CRITICAL: Always use VEO result, even if it reports error but provides async operation
         if (veoResult.isAsync && veoResult.operationId) {
-          // VEO 2.0 async operation initiated successfully
+          // VEO 3.0 async operation initiated successfully
           result = {
             ...veoResult,
             grokEnhanced: true,
@@ -11505,31 +11505,31 @@ async function fetchYouTubeAnalytics(accessToken: string) {
             originalPrompt: promptPreview || editedText,
             grokResult: grokResult
           };
-          console.log(`✅ WORKFLOW COMPLETE: Grok → VEO 2.0 async operation ${veoResult.operationId} initiated for ${platform}`);
+          console.log(`✅ WORKFLOW COMPLETE: Grok → VEO 3.0 async operation ${veoResult.operationId} initiated for ${platform}`);
         } else if (veoResult.success) {
-          // Immediate VEO 2.0 result (cached)
+          // Immediate VEO 3.0 result (cached)
           result = {
             success: true,
             videoId: veoResult.videoId,
             url: veoResult.videoUrl,
             videoUrl: veoResult.videoUrl,
-            title: `Grok + VEO 2.0 Generated - ${platform.toUpperCase()}`,
-            description: `Professional video generated with Grok enhancement + VEO 2.0 for ${brandPurpose?.brandName || 'Queensland Business'}`,
+            title: `Grok + VEO 3.0 Generated - ${platform.toUpperCase()}`,
+            description: `Professional video generated with Grok enhancement + VEO 3.0 for ${brandPurpose?.brandName || 'Queensland Business'}`,
             duration: veoResult.duration,
             aspectRatio: veoResult.aspectRatio,
             quality: veoResult.resolution,
-            veo2Generated: true,
+            veo3Generated: true,
             grokEnhanced: true,
             platform: platform,
             generationTime: veoResult.generationTime,
             enhancedPrompt: enhancedPrompt,
             originalPrompt: promptPreview || editedText,
-            message: 'Grok + VEO 2.0 video generated successfully'
+            message: 'Grok + VEO 3.0 video generated successfully'
           };
         } else {
           // Force async operation even if VEO service reports failure
-          console.log(`🔄 VEO 2.0: Forcing async operation despite service error`);
-          const operationId = `veo2-forced-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          console.log(`🔄 VEO 3.0: Forcing async operation despite service error`);
+          const operationId = `veo3-forced-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           
           result = {
             success: true,
@@ -11539,7 +11539,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
             estimatedTime: '11s to 6 minutes',
             status: 'processing',
             platform: platform,
-            message: 'VEO 2.0 generation initiated (forced async mode)'
+            message: 'VEO 3.0 generation initiated (forced async mode)'
           };
           
           // Store operation in VEO service for tracking
@@ -11554,10 +11554,10 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         }
         
       } catch (veoError) {
-        console.log('🔄 VEO 2.0: Service error, forcing async operation anyway:', veoError.message);
+        console.log('🔄 VEO 3.0: Service error, forcing async operation anyway:', veoError.message);
         
         // NEVER FALLBACK - always provide async operation for authentic timing
-        const operationId = `veo2-emergency-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const operationId = `veo3-emergency-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         result = {
           success: true,
@@ -11567,7 +11567,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
           estimatedTime: '11s to 6 minutes',
           status: 'processing',
           platform: platform,
-          message: 'VEO 2.0 generation initiated (emergency async mode)'
+          message: 'VEO 3.0 generation initiated (emergency async mode)'
         };
         
         // Store emergency operation
@@ -11583,12 +11583,12 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       }
       
       if (result.success) {
-        console.log(`✅ VEO 2.0 video generation successful for ${platform}`);
+        console.log(`✅ VEO 3.0 video generation successful for ${platform}`);
         
-        // Check if this is an async operation (VEO 2.0 actual generation)
+        // Check if this is an async operation (VEO 3.0 actual generation)
         if (result.isAsync && result.operationId) {
-          // Return operation tracking for authentic VEO 2.0 generation
-          console.log(`🔄 VEO 2.0: Returning async operation tracking for ${result.operationId}`);
+          // Return operation tracking for authentic VEO 3.0 generation
+          console.log(`🔄 VEO 3.0: Returning async operation tracking for ${result.operationId}`);
           res.json({
             success: true,
             isAsync: true,
@@ -11598,7 +11598,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
             status: 'processing',
             platform: platform,
             pollEndpoint: `/api/video/operation/${result.operationId}`,
-            message: 'VEO 2.0 generation initiated - use operation ID to check status',
+            message: 'VEO 3.0 generation initiated - use operation ID to check status',
             pollEndpoint: `/api/video/operation/${result.operationId}`,
             pollInterval: 5000 // Poll every 5 seconds
           });
@@ -11610,8 +11610,8 @@ async function fetchYouTubeAnalytics(accessToken: string) {
             videoData: result,
             videoUrl: result.url || result.videoUrl,
             platform: result.platform || platform,
-            message: result.message || 'VEO 2.0 video generated successfully',
-            veo2Generated: result.veo2Generated,
+            message: result.message || 'VEO 3.0 video generated successfully',
+            veo3Generated: result.veo3Generated,
             fromCache: result.fromCache || false,
             // Enhanced JTBD Copywriting flags
             grokEnhanced: result.grokEnhanced || false,
@@ -11626,29 +11626,29 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       } else {
         res.status(500).json({
           success: false,
-          error: result.message || 'VEO 2.0 video generation failed'
+          error: result.message || 'VEO 3.0 video generation failed'
         });
       }
       
     } catch (error: any) {
-      console.error('❌ VEO 2.0 video generation failed:', error);
+      console.error('❌ VEO 3.0 video generation failed:', error);
       res.status(500).json({
         success: false,
-        error: 'VEO 2.0 video generation temporarily unavailable',
+        error: 'VEO 3.0 video generation temporarily unavailable',
         details: error.message
       });
     }
   });
 
-  // VEO 2.0 OPERATION STATUS ENDPOINT - For checking async generation progress
+  // VEO 3.0 OPERATION STATUS ENDPOINT - For checking async generation progress
   app.get('/api/video/operation/:operationId', requireAuth, async (req: any, res) => {
     try {
       const { operationId } = req.params;
       
-      console.log(`🔍 Checking VEO 2.0 operation status: ${operationId}`);
+      console.log(`🔍 Checking VEO 3.0 operation status: ${operationId}`);
       
       // EMERGENCY FIX: Force complete any hanging operations from old system
-      if (operationId === 'veo2-fallback-1753153075856-qgkr5r3kg') {
+      if (operationId === 'veo3-fallback-1753153075856-qgkr5r3kg') {
         console.log(`🚨 EMERGENCY COMPLETION: Forcing completion of stuck operation ${operationId}`);
         return res.json({
           success: true,
@@ -11684,7 +11684,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
           quality: operationStatus.quality,
           generationTime: operationStatus.generationTime,
           platform: operationStatus.platform,
-          message: 'VEO 2.0 video generation completed'
+          message: 'VEO 3.0 video generation completed'
         });
       } else if (operationStatus.failed) {
         // Operation failed
@@ -11693,7 +11693,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
           completed: true,
           failed: true,
           error: operationStatus.error,
-          message: 'VEO 2.0 generation failed'
+          message: 'VEO 3.0 generation failed'
         });
       } else {
         // Still processing - pass through all timing data OR force complete if broken
@@ -11709,7 +11709,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
             status: 'processing',
             estimatedTimeRemaining: 5,
             generationTime: 30000,
-            message: 'VEO 2.0 generation completing...'
+            message: 'VEO 3.0 generation completing...'
           });
         } else {
           res.json({
@@ -11721,7 +11721,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
             status: operationStatus.status,
             estimatedTimeRemaining: operationStatus.estimatedTimeRemaining,
             generationTime: operationStatus.generationTime, // ADD: generation time
-            message: operationStatus.message || 'VEO 2.0 generation in progress...'
+            message: operationStatus.message || 'VEO 3.0 generation in progress...'
           });
         }
       }
