@@ -112,26 +112,40 @@ class InstagramPublisher implements PlatformPublisher {
 class LinkedInPublisher implements PlatformPublisher {
   async publishPost(content: string, accessToken: string, options?: any) {
     try {
-      const response = await fetch(`https://api.linkedin.com/v2/ugcPosts`, {
+      // Use real LinkedIn token from environment if available
+      const realToken = process.env.LINKEDIN_ACCESS_TOKEN || accessToken;
+      console.log(`🔗 Publishing to LinkedIn with token: ${realToken.substring(0, 15)}...`);
+      
+      // First get user profile to get the correct person URN
+      const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${realToken}`,
+        }
+      });
+      
+      let personUrn = 'unknown';
+      if (profileResponse.ok) {
+        const profile = await profileResponse.json();
+        personUrn = profile.sub; // This is the LinkedIn user ID
+        console.log(`🔗 LinkedIn profile ID: ${personUrn}`);
+      }
+      
+      const response = await fetch(`https://api.linkedin.com/v2/shares`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${realToken}`,
           'Content-Type': 'application/json',
           'X-Restli-Protocol-Version': '2.0.0'
         },
         body: JSON.stringify({
-          author: `urn:li:person:${options?.profileId}`,
-          lifecycleState: 'PUBLISHED',
-          specificContent: {
-            'com.linkedin.ugc.ShareContent': {
-              shareCommentary: {
-                text: content
-              },
-              shareMediaCategory: 'NONE'
-            }
+          owner: `urn:li:person:${personUrn}`,
+          text: {
+            text: content
           },
-          visibility: {
-            'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+          distribution: {
+            linkedInDistributionTarget: {
+              visibleToGuest: true
+            }
           }
         })
       });
