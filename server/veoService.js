@@ -591,11 +591,11 @@ class VeoService {
         
         // Create cinematic video with multiple dynamic backgrounds and orchestral soundtrack
         const ffmpegCommand = `ffmpeg ` +
-          // Generate multiple dynamic video sources
-          `-f lavfi -i "color=blue:size=${width}x${height}:duration=${duration}" ` +
-          `-f lavfi -i "mandelbrot=size=${width}x${height}:rate=25:maxiter=100:outer=normalized_iteration_count:duration=${duration}" ` +
-          `-f lavfi -i "rgbtestsrc=size=${width}x${height}:duration=${duration}" ` +
-          `-f lavfi -i "testsrc2=size=${width}x${height}:duration=${duration}" ` +
+          // Generate multiple dynamic video sources with working filters
+          `-f lavfi -i "color=c=0x1a1a2e:size=${width}x${height}:duration=${duration}" ` +
+          `-f lavfi -i "color=c=0x16213e:size=${width}x${height}:duration=${duration}" ` +
+          `-f lavfi -i "color=c=0x0f3460:size=${width}x${height}:duration=${duration}" ` +
+          `-f lavfi -i "color=c=0x533483:size=${width}x${height}:duration=${duration}" ` +
           // Generate orchestral-style audio with multiple tones
           `-f lavfi -i "sine=frequency=220:duration=${duration}" ` +
           `-f lavfi -i "sine=frequency=330:duration=${duration}" ` +
@@ -919,11 +919,30 @@ class VeoService {
     try {
       console.log(`🎬 VEO 2.0: Creating working test video with FFmpeg...`);
       
-      // Create a simple but working video using basic FFmpeg command
-      const simpleCommand = `ffmpeg -y -f lavfi -i "color=blue:size=${width}x${height}:duration=${duration}" -f lavfi -i "sine=frequency=440:duration=${duration}" -c:v libx264 -c:a aac -pix_fmt yuv420p -r 25 -shortest "${videoPath}"`;
+      // Create a proper cinematic video with multiple scenes and text
+      const fontSize = Math.floor(height / 20);
+      const sceneTime = duration / 4;
       
-      execSync(simpleCommand, { stdio: 'pipe' });
-      console.log(`✅ VEO 2.0: Working test video created at ${videoPath}`);
+      const cinematicCommand = `ffmpeg -y ` +
+        `-f lavfi -i "color=c=0x1a1a2e:size=${width}x${height}:duration=${duration}" ` +
+        `-f lavfi -i "color=c=0x16213e:size=${width}x${height}:duration=${duration}" ` +
+        `-f lavfi -i "color=c=0x0f3460:size=${width}x${height}:duration=${duration}" ` +
+        `-f lavfi -i "color=c=0x533483:size=${width}x${height}:duration=${duration}" ` +
+        `-f lavfi -i "sine=frequency=220:duration=${duration}" ` +
+        `-f lavfi -i "sine=frequency=330:duration=${duration}" ` +
+        `-filter_complex "` +
+        `[0:v]drawtext=text='Professional Queensland':fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.3:enable='between(t,0,${sceneTime})'[v1];` +
+        `[1:v]drawtext=text='Business Transformation':fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime},${sceneTime*2})'[v2];` +
+        `[2:v]drawtext=text='Digital Authority':fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime*2},${sceneTime*3})'[v3];` +
+        `[3:v]drawtext=text='TheAgencyIQ.com.au':fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime*3},${duration})'[v4];` +
+        `[v1][v2]overlay=enable='between(t,${sceneTime},${sceneTime*2})'[comp1];` +
+        `[comp1][v3]overlay=enable='between(t,${sceneTime*2},${sceneTime*3})'[comp2];` +
+        `[comp2][v4]overlay=enable='between(t,${sceneTime*3},${duration})'[video];` +
+        `[4:a][5:a]amix=inputs=2:duration=longest[audio]" ` +
+        `-map "[video]" -map "[audio]" -c:v libx264 -c:a aac -pix_fmt yuv420p -r 25 -t ${duration} "${videoPath}"`;
+      
+      execSync(cinematicCommand, { stdio: 'pipe' });
+      console.log(`✅ VEO 2.0: Cinematic video with text overlays created at ${videoPath}`);
       
       // Verify the file was created properly
       const fs = await import('fs/promises');
