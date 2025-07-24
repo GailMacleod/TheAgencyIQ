@@ -4717,11 +4717,25 @@ Continue building your Value Proposition Canvas systematically.`;
 
   // Removed conflicting /schedule route to allow React component to render
 
-  // Get posts for schedule screen
-  app.get("/api/posts", requireActiveSubscription, async (req: any, res) => {
+  // Get posts for schedule screen with enhanced data
+  app.get("/api/posts", requireAuth, async (req: any, res) => {
     try {
       const posts = await storage.getPostsByUser(req.session.userId);
-      res.json(posts);
+      
+      // Add quota information to response
+      const user = await storage.getUser(req.session.userId);
+      const quotaInfo = user ? {
+        remainingPosts: user.remainingPosts || 0,
+        totalPosts: user.totalPosts || 52,
+        subscriptionPlan: user.subscriptionPlan || 'professional'
+      } : null;
+      
+      res.json({
+        posts,
+        quotaInfo,
+        success: true,
+        totalCount: posts.length
+      });
     } catch (error: any) {
       console.error('Get posts error:', error);
       res.status(500).json({ message: "Error fetching posts" });
@@ -10771,54 +10785,7 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
     }
   });
   
-  // Enhanced posts endpoint with auto-authentication
-  app.get('/api/posts', async (req: any, res) => {
-    try {
-      // Auto-establish session for User ID 2 if not present
-      let userId = req.session?.userId;
-      if (!userId) {
-        try {
-          const user = await storage.getUser(2);
-          if (user) {
-            req.session.userId = 2;
-            req.session.userEmail = user.email;
-            await new Promise<void>((resolve) => {
-              req.session.save((err: any) => {
-                if (err) console.error('Session save error:', err);
-                resolve();
-              });
-            });
-            userId = 2;
-            console.log(`✅ Auto-established session for user ${user.email} in /api/posts`);
-          }
-        } catch (error) {
-          console.error('Auto-session error in /api/posts:', error);
-        }
-      }
-      
-      if (!userId) {
-        return res.status(401).json({ message: 'Not authenticated' });
-      }
-      
-      const posts = await storage.getPostsByUser(userId);
-      
-      // Add quota information to response
-      const quotaInfo = await DirectPublishService.getUserQuota(userId);
-      
-      return res.json({
-        posts,
-        quotaInfo,
-        totalPosts: posts.length,
-        metadata: {
-          userId,
-          timestamp: new Date().toISOString()
-        }
-      });
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      return res.status(500).json({ message: 'Failed to fetch posts' });
-    }
-  });
+  // REMOVED DUPLICATE /api/posts ENDPOINT - Using single endpoint above
 
   const httpServer = createServer(app);
   // ADMIN QUOTA MONITORING ENDPOINTS
