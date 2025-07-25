@@ -12017,6 +12017,46 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
+  // VEO 3.0 TEST ENDPOINT
+  app.post("/api/video/test-veo3", async (req: any, res) => {
+    try {
+      const { prompt } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ error: 'Prompt is required' });
+      }
+
+      console.log('🧪 Testing VEO 3.0 with simple prompt:', prompt);
+      
+      // Import VideoService to test VEO 3.0 functionality
+      const VideoService = (await import('./videoService')).default;
+      
+      // Test VEO 3.0 generation with simple prompt
+      const result = await VideoService.generateVeo3VideoContent(prompt, {
+        aspectRatio: '16:9',
+        durationSeconds: 8
+      });
+      
+      console.log('🎥 VEO 3.0 test result:', result);
+      
+      return res.json({
+        success: true,
+        tested: 'VEO 3.0 integration',
+        result: result,
+        prompt: prompt,
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('❌ VEO 3.0 test failed:', error);
+      return res.status(500).json({ 
+        error: 'VEO 3.0 test failed', 
+        details: error.message,
+        apiKeyConfigured: !!process.env.GEMINI_API_KEY,
+        vertexKeyConfigured: !!process.env.VERTEX_AI_SERVICE_ACCOUNT_KEY
+      });
+    }
+  });
+
   // Return the existing HTTP server instance
   // Serve Veo3 generated videos with proper headers
   app.use('/videos', express.static('public/videos', {
