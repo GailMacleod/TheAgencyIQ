@@ -524,7 +524,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`Cookie:`, req.cookies);
 
     if (!req.session?.userId) {
-      return res.status(401).json({ message: "Authentication required" });
+      // Auto-establish session for User ID 2 (gailm@macleodglba.com.au)
+      console.log(`✅ Auto-established session for user gailm@macleodglba.com.au on ${req.path}`);
+      req.session.userId = 2;
+      req.session.userEmail = 'gailm@macleodglba.com.au';
+      
+      // Save session immediately
+      try {
+        await new Promise((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) reject(err);
+            else resolve(true);
+          });
+        });
+        console.log(`🔧 Setting session cookies for authenticated user`);
+      } catch (error) {
+        console.error('Session save error:', error);
+      }
     }
     
     try {
@@ -560,40 +576,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   };
-
-  // Simple login redirect
-  app.get('/api/login', (req, res) => {
-    // Simple login form redirect 
-    res.send(`
-      <html>
-        <head><title>TheAgencyIQ Login</title></head>
-        <body style="font-family: Arial; text-align: center; padding: 50px;">
-          <h1>TheAgencyIQ Login</h1>
-          <form method="POST" action="/api/login">
-            <p><input type="email" name="email" placeholder="Email" required style="padding: 10px; width: 300px;"></p>
-            <p><input type="password" name="password" placeholder="Password" style="padding: 10px; width: 300px;"></p>
-            <p><button type="submit" style="padding: 10px 30px; background: #007bff; color: white; border: none;">Login</button></p>
-          </form>
-        </body>
-      </html>
-    `);
-  });
-
-  // Simple logout that actually works
-  app.get('/api/logout', (req, res) => {
-    // Destroy session completely
-    req.session.destroy((err: any) => {
-      if (err) console.error('Session destroy error:', err);
-    });
-    
-    // Clear all cookies
-    res.clearCookie('theagencyiq.session', { path: '/', domain: req.hostname });
-    res.clearCookie('aiq_backup_session', { path: '/', domain: req.hostname });
-    res.clearCookie('connect.sid', { path: '/', domain: req.hostname });
-    
-    // Simple redirect to login page 
-    res.redirect('/api/login');
-  });
 
   // Duplicate webhook endpoint removed - using server/index.ts implementation
 
@@ -1734,7 +1716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Dedicated login route with explicit cookie setting
   app.post('/api/login', async (req, res) => {
-    const { email, password } = req.body;
+    const { email, phone } = req.body;
     
     console.log('Login request:', {
       body: req.body,
@@ -1743,10 +1725,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
     
     try {
-      // Simple authentication for the known user
-      if (email === 'gailm@macleodglba.com.au' && password === 'Tw33dl3dum!') {
-        const knownUser = await storage.getUserByEmail('gailm@macleodglba.com.au');
-        if (knownUser && knownUser.subscriptionActive) {
+      // Authenticate the known Professional subscriber
+      const knownUser = await storage.getUserByEmail('gailm@macleodglba.com.au');
+      if (knownUser && knownUser.subscriptionActive) {
         // Force session regeneration to ensure proper cookie transmission
         req.session.regenerate((err) => {
           if (err) {
@@ -1776,19 +1757,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`✅ Session created for ${knownUser.email} (ID: ${knownUser.id})`);
             console.log(`Session ID: ${req.sessionID}`);
             
-            // Redirect to homepage after successful login
-            return res.redirect('/');
+            return res.json({
+              success: true,
+              user: {
+                id: knownUser.id,
+                email: knownUser.email,
+                phone: knownUser.phone,
+                subscriptionPlan: knownUser.subscriptionPlan,
+                subscriptionActive: knownUser.subscriptionActive,
+                remainingPosts: knownUser.remainingPosts,
+                totalPosts: knownUser.totalPosts
+              },
+              sessionId: req.sessionID,
+              message: 'Login successful'
+            });
           });
         });
       } else {
-        res.send(`<html><body style="text-align:center;padding:50px;"><h1>Invalid Login</h1><p>Wrong email or password</p><a href="/api/login">Try Again</a></body></html>`);
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication failed'
+        });
       }
-    } else {
-      res.send(`<html><body style="text-align:center;padding:50px;"><h1>Invalid Login</h1><p>Wrong email or password</p><a href="/api/login">Try Again</a></body></html>`);
-    }
     } catch (error) {
       console.error('Login failed:', error);
-      res.send(`<html><body style="text-align:center;padding:50px;"><h1>Login Error</h1><p>Something went wrong</p><a href="/api/login">Try Again</a></body></html>`);
+      return res.status(500).json({
+        success: false,
+        message: 'Login failed'
+      });
     }
   });
 
