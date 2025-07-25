@@ -11328,6 +11328,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       }
       
       const VideoService = (await import('./videoService.js')).default;
+      const videoService = new VideoService();
       
       // Enhanced backend logging for debugging (no frontend display)
       console.log('🎬 Video prompt generation started:', { 
@@ -11340,7 +11341,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       });
       
       // Enhanced with Grok copywriter for witty, engaging content
-      const result = await VideoService.generateVideoPromptsWithGrokCopywriter(contentForGeneration, platform, brandData, authenticatedUserId);
+      const result = await videoService.generateVideoPromptsWithGrokCopywriter(contentForGeneration, platform, brandData, authenticatedUserId);
       
       // Enhanced backend result logging
       console.log('🎯 Video prompt generation completed:', {
