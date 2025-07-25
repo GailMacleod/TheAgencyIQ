@@ -111,13 +111,10 @@ Return JSON format:
     }
   }
 
-  // VEO 3.0 Video Generation with EXACT USER SPECIFICATIONS
+  // VEO 3.0 Video Generation with EXACT USER SPECIFICATIONS - VERTEX AI IMPLEMENTATION
   static async generateVeo3VideoContent(prompt, options = {}) {
     try {
-      console.log('🎥 VEO 3.0 VIDEO GENERATION: Starting with user-specified polling and GCS download...');
-      
-      // Initialize Google AI with GEMINI_API_KEY
-      if (!genAI) await initializeGoogleAI();
+      console.log('🎥 VEO 3.0 VIDEO GENERATION: Starting with Vertex AI and user specifications...');
       
       // Generate unique operation ID for async tracking
       const operationId = `veo3-authentic-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -127,62 +124,120 @@ Return JSON format:
       // Start async operation with user specifications in background
       setTimeout(async () => {
         try {
-          console.log('🎯 VEO 3.0: Background process starting with user specifications...');
+          console.log('🎯 VEO 3.0: Background process starting with Vertex AI credentials...');
+          
+          // USER SPECIFICATION: Use Vertex AI for VEO 3.0 model
+          const { VertexAI } = await import('@google-cloud/vertexai');
+          
+          // Initialize Vertex AI with service account credentials
+          const credentials = process.env.VERTEX_AI_SERVICE_ACCOUNT_KEY;
+          let vertexAI;
+          
+          if (credentials && credentials.startsWith('{')) {
+            const parsed = JSON.parse(credentials);
+            vertexAI = new VertexAI({
+              project: parsed.project_id,
+              location: 'us-central1',
+              credentials: parsed
+            });
+            console.log(`🔐 VEO 3.0: Vertex AI initialized with project ${parsed.project_id}`);
+          } else {
+            throw new Error('Valid JSON service account credentials required for VEO 3.0');
+          }
           
           // USER SPECIFICATION: Use model 'veo-3.0-generate-preview'
-          const model = genAI.getGenerativeModel({ model: 'veo-3.0-generate-preview' });
+          const model = vertexAI.getGenerativeModel({ 
+            model: 'veo-3.0-generate-preview',
+            generationConfig: {
+              maxOutputTokens: 8192,
+              temperature: 0.4,
+              topP: 1.0,
+              topK: 32
+            }
+          });
           
           console.log('🚀 VEO 3.0: Initiating video generation with model veo-3.0-generate-preview');
           
           // Create VEO 3.0 video generation request
-          const videoRequest = {
-            prompt: prompt,
-            aspectRatio: options.aspectRatio || '16:9',
-            durationSeconds: options.durationSeconds || 8,
-            quality: 'cinematic'
-          };
+          const videoRequest = [{
+            text: `VEO 3.0 GENERATION. **Aspect Ratio:** ${options.aspectRatio || '16:9'} (${options.aspectRatio === '9:16' ? 'Vertical' : 'Horizontal'}). **Duration:** ${options.durationSeconds || 8} seconds.
+
+${prompt}
+
+**NATIVE AUDIO (Essential):**
+- **DIALOGUE:** Professional voiceover with Queensland accent
+- **SOUND EFFECTS:** Business environment sounds, notification chimes
+- **AMBIENT:** Orchestral music background, subtle office ambience
+- **ORCHESTRAL:** Uplifting orchestral score for professional impact
+
+**CINEMATIC QUALITY:** 720p resolution, professional cinematography, smooth transitions, authentic business setting.`
+          }];
           
           console.log('📡 VEO 3.0: Starting long-running operation...');
           
-          // Start VEO 3.0 generation operation
-          const operation = await model.generateContent(videoRequest);
+          // Start VEO 3.0 generation operation using Vertex AI predictLongRunning
+          const operation = await model.predictLongRunning({
+            instances: [{
+              prompt: videoRequest[0].text,
+              aspectRatio: options.aspectRatio || '16:9',
+              duration: `${options.durationSeconds || 8}s`,
+              quality: 'cinematic'
+            }]
+          });
           
           console.log('⏳ VEO 3.0: Polling operation until completion with user-specified 10-second intervals...');
           
           // USER SPECIFICATION: Implement exact polling loop
           let currentOperation = operation;
-          while (!currentOperation.done) {
-            console.log('🔄 VEO 3.0: Operation still processing, waiting 10 seconds...');
+          let pollCount = 0;
+          const maxPolls = 36; // 6 minutes max
+          
+          while (!currentOperation.done && pollCount < maxPolls) {
+            console.log(`🔄 VEO 3.0: Operation still processing, waiting 10 seconds... (${pollCount * 10}s elapsed)`);
+            
             // USER SPECIFICATION: 10-second polling interval
             await new Promise(r => setTimeout(r, 10000));
             
-            // USER SPECIFICATION: Get updated operation status
-            currentOperation = await genAI.operations.get(currentOperation.name);
-            console.log(`📊 VEO 3.0: Operation status - Done: ${currentOperation.done}`);
+            try {
+              // USER SPECIFICATION: Get updated operation status using proper Vertex AI client
+              const operationClient = vertexAI.operations();
+              currentOperation = await operationClient.get(currentOperation.name);
+              console.log(`📊 VEO 3.0: Operation status - Done: ${currentOperation.done}, Progress: ${currentOperation.metadata?.progress || 'unknown'}`);
+              pollCount++;
+            } catch (pollError) {
+              console.error('❌ VEO 3.0: Polling error:', pollError.message);
+              break;
+            }
           }
           
-          console.log('✅ VEO 3.0: Operation completed! Downloading video...');
-          
-          // Extract GCS URI from completed operation
-          const gcsUri = currentOperation.response?.videoUri || currentOperation.response?.uri;
-          
-          if (gcsUri) {
-            console.log(`📥 VEO 3.0: Downloading from GCS URI: ${gcsUri}`);
+          if (currentOperation.done) {
+            console.log('✅ VEO 3.0: Operation completed! Downloading video...');
             
-            // USER SPECIFICATION: Download using @google-cloud/storage
-            const videoBuffer = await VideoService.downloadVeo3Video(gcsUri);
+            // Extract GCS URI from completed operation
+            const gcsUri = currentOperation.response?.videoUris?.[0] || 
+                         currentOperation.response?.uri ||
+                         currentOperation.response?.videoUri;
             
-            // Save authentic VEO 3.0 video
-            const videoPath = `generated/veo3_authentic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`;
-            const fs = await import('fs');
-            const path = await import('path');
-            
-            const fullPath = path.join(process.cwd(), videoPath);
-            await fs.promises.writeFile(fullPath, videoBuffer);
-            
-            console.log(`✅ VEO 3.0: Authentic video saved to ${videoPath} (${videoBuffer.length} bytes)`);
+            if (gcsUri) {
+              console.log(`📥 VEO 3.0: Downloading from GCS URI: ${gcsUri}`);
+              
+              // USER SPECIFICATION: Download using @google-cloud/storage
+              const videoBuffer = await VideoService.downloadVeo3Video(gcsUri);
+              
+              // Save authentic VEO 3.0 video
+              const videoPath = `generated/veo3_authentic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`;
+              const fs = await import('fs');
+              const path = await import('path');
+              
+              const fullPath = path.join(process.cwd(), videoPath);
+              await fs.promises.writeFile(fullPath, videoBuffer);
+              
+              console.log(`✅ VEO 3.0: Authentic video saved to ${videoPath} (${videoBuffer.length} bytes)`);
+            } else {
+              console.log('⚠️ VEO 3.0: No GCS URI found in completed operation');
+            }
           } else {
-            console.log('⚠️ VEO 3.0: No GCS URI found in completed operation');
+            console.log(`⚠️ VEO 3.0: Operation timeout after ${pollCount * 10} seconds`);
           }
           
         } catch (bgError) {
