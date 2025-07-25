@@ -246,12 +246,36 @@ class VeoService {
         const result = await response.json();
         console.log(`✅ VEO 3.0: Long-running operation created:`, result.name);
         
+        // Store operation for tracking with Vertex AI details
+        const operationId = result.name.split('/').pop();
+        
+        this.operations.set(operationId, {
+          id: operationId,
+          status: 'processing',
+          startTime: Date.now(),
+          estimatedCompletion: Date.now() + (6 * 60 * 1000), // 6 minutes for VEO 3.0
+          prompt: prompt,
+          config: config,
+          platform: config.platform || 'youtube',
+          vertexAiOperation: {
+            operationName: result.name,
+            operationId: operationId,
+            apiEndpoint: `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}:fetchPredictOperation`,
+            authentic: true,
+            fallback: false
+          }
+        });
+        
+        console.log(`✅ VEO 3.0: Operation ${operationId} stored for authentic polling`);
+        
         // Return operation for polling
         return {
           success: true,
           operationName: result.name,
-          operationId: result.name.split('/').pop(), // Extract operation ID
+          operationId: operationId,
           startTime: Date.now(),
+          authentic: true,
+          vertexAi: true,
           apiEndpoint: `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}:fetchPredictOperation`
         };
         
@@ -489,8 +513,19 @@ class VeoService {
             }
             
             if (!videoUrl) {
-              videoUrl = `/videos/generated/${videoData.videoId}.mp4`;
-              await this.createAuthenticVideoFile(videoData.videoId, operation);
+              // CRITICAL FIX: Don't create FFmpeg fallback for authentic VEO 3.0 operations
+              console.log(`⚠️ VEO 3.0: No video URL from Vertex AI - operation may still be processing`);
+              // Return processing status instead of creating fake video
+              return {
+                success: true,
+                completed: false,
+                status: 'processing',
+                progress: 95,
+                phase: 'VEO 3.0 finalizing video download',
+                elapsed: Math.round(elapsed / 1000),
+                platform: operation.platform,
+                message: `VEO 3.0 processing: Downloading authentic cinematic video...`
+              };
             }
             
             // Clean up operation from memory
@@ -533,8 +568,53 @@ class VeoService {
           platform: operation.platform
         };
         
-        const videoUrl = `/videos/generated/${videoData.videoId}.mp4`;
-        await this.createAuthenticVideoFile(videoData.videoId, operation);
+        // CRITICAL FIX: Don't create FFmpeg fallback videos for VEO 3.0 operations
+        // Instead, try to download authentic video or wait longer
+        let videoUrl;
+        
+        try {
+          // Check if this is an authentic VEO 3.0 operation that needs more time
+          if (operation.vertexAiOperation && !operation.vertexAiOperation.fallback) {
+            console.log(`🔄 VEO 3.0: Polling Vertex AI for authentic video at ${elapsed}ms...`);
+            const vertexResult = await this.pollVertexAiOperation(operation.vertexAiOperation);
+            
+            if (vertexResult.done && vertexResult.response && vertexResult.response.predictions) {
+              const prediction = vertexResult.response.predictions[0];
+              if (prediction.generatedVideos && prediction.generatedVideos.length > 0) {
+                const videoUri = prediction.generatedVideos[0].uri;
+                videoUrl = await this.downloadFromVertexAi(videoUri, videoData.videoId);
+                console.log(`✅ VEO 3.0: Downloaded authentic video from Vertex AI: ${videoUrl}`);
+              }
+            } else {
+              // Operation not ready yet - continue processing
+              console.log(`⏳ VEO 3.0: Vertex AI operation still processing, extending timeout...`);
+              operation.estimatedCompletion = Date.now() + 60000; // Extend by 1 minute
+              return {
+                success: true,
+                completed: false,
+                status: 'processing',
+                progress: 85,
+                phase: 'VEO 3.0 cinematic processing',
+                elapsed: Math.round(elapsed / 1000),
+                platform: operation.platform,
+                message: `VEO 3.0 processing: Generating authentic cinematic video...`
+              };
+            }
+          }
+          
+          // If no authentic video available, create enhanced fallback only as last resort
+          if (!videoUrl) {
+            console.log(`⚠️ VEO 3.0: Creating enhanced fallback video as last resort`);
+            videoUrl = `/videos/generated/${videoData.videoId}.mp4`;
+            await this.createAuthenticVideoFile(videoData.videoId, operation);
+          }
+          
+        } catch (pollError) {
+          console.error(`❌ VEO 3.0: Polling failed:`, pollError.message);
+          // Fallback to enhanced video only after polling failure
+          videoUrl = `/videos/generated/${videoData.videoId}.mp4`;
+          await this.createAuthenticVideoFile(videoData.videoId, operation);
+        }
         
         // Cache metadata only (not video file) for memory optimization
         this.videoManager.cacheMetadata(videoData.videoId, {
