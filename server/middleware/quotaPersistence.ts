@@ -21,13 +21,22 @@ export function createPersistentQuotaMiddleware(limits: { dailyApiCalls: number;
 
     const userId = req.session.userId.toString();
     
+    // Post-cancellation UX: Block paid features for cancelled subscriptions
+    if (req.session.subscriptionActive === false) {
+      if (req.path.includes('post') || req.path.includes('auto-posting') || req.path.includes('video')) {
+        return res.status(403).json({ 
+          error: 'Subscription cancelled - reactivate to access features',
+          requiresReactivation: true 
+        });
+      }
+    }
+    
     try {
       // Get or create user quota record - using dbManager singleton
-      const { db } = await import('../db-init.js');
+      const { db } = await import('../db.js');
       let [userQuota] = await db.select().from(quotaUsage).where(eq(quotaUsage.userId, userId));
       
       if (!userQuota) {
-        const { db } = await import('../db-init.js');
         [userQuota] = await db.insert(quotaUsage).values({
           userId,
           dailyApiCalls: 0,
@@ -41,7 +50,6 @@ export function createPersistentQuotaMiddleware(limits: { dailyApiCalls: number;
       const hoursSinceReset = (now.getTime() - lastReset.getTime()) / (1000 * 60 * 60);
       
       if (hoursSinceReset >= 24) {
-        const { db } = await import('../db-init.js');
         await db.update(quotaUsage)
           .set({
             dailyApiCalls: 0,
@@ -78,7 +86,6 @@ export function createPersistentQuotaMiddleware(limits: { dailyApiCalls: number;
       }
       
       // Increment API call counter
-      const { db } = await import('../db-init.js');
       await db.update(quotaUsage)
         .set({
           dailyApiCalls: sql`${quotaUsage.dailyApiCalls} + 1`
@@ -113,7 +120,7 @@ export function createPersistentQuotaMiddleware(limits: { dailyApiCalls: number;
 // Get quota status for user
 export async function getQuotaStatus(userId: string) {
   try {
-    const { db } = await import('../db-init.js');
+    const { db } = await import('../db.js');
     const [userQuota] = await db.select().from(quotaUsage).where(eq(quotaUsage.userId, userId));
     
     if (!userQuota) {

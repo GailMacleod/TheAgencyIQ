@@ -24,6 +24,14 @@ export function MobileNavigationMenu() {
     enabled: true
   });
 
+  // Fetch user subscription status for conditional rendering
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/user'],
+    enabled: true,
+    staleTime: 30000 // 30 second cache to avoid excessive requests
+  });
+
+  // Generate navigation items with subscription-aware logic
   const navigationItems: NavigationItem[] = [
     {
       id: 'home',
@@ -38,7 +46,11 @@ export function MobileNavigationMenu() {
       icon: Plus,
       path: '/intelligent-schedule',
       color: 'text-purple-600',
-      badge: quotaData?.remainingPosts > 0 ? `${quotaData.remainingPosts} left` : 'Limit reached'
+      badge: user?.subscriptionActive === false 
+        ? 'Reactivate Required' 
+        : quotaData?.remainingPosts > 0 
+          ? `${quotaData.remainingPosts} left` 
+          : 'Limit reached'
     },
     {
       id: 'schedule',
@@ -56,14 +68,14 @@ export function MobileNavigationMenu() {
     },
     {
       id: 'platforms',
-      label: 'Platform Setup',
+      label: user?.subscriptionActive === false ? 'Platform Reactivation' : 'Platform Setup',
       icon: Settings,
       path: '/token-status',
       color: 'text-orange-600'
     },
     {
       id: 'subscription',
-      label: 'Subscription',
+      label: user?.subscriptionActive === false ? 'Reactivate Plan' : 'Subscription',
       icon: Zap,
       path: '/subscription',
       color: 'text-yellow-600'

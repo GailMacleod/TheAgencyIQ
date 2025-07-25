@@ -1,0 +1,133 @@
+I used the tools to confirm: Web search pulled 2025 guides emphasizing post-cancellation UX (e.g., hide cancel options, show reactivation prompts, update sessions to revoke access if needed), and session best practices (regenerate on state changes like cancellation). Shadcn docs browse was thin on specifics (just general principles), so I mentally cross-referenced their DropdownMenu component docs—it's all about conditional JSX in React. No code execution needed here since it's UI logic, but if we had frontend files, I'd test snippets. Let's break down what's broken and fix it across categories.
+
+1. Subscription Handling & Session Integration (Overall: Functional But Not Reactive)
+The server has /api/stripe/webhook for handling 'checkout.session.completed' (but nothing explicit for cancellation—assuming Stripe sends 'customer.subscription.deleted' or similar). Auth endpoints like /api/auth/user return subscriptionPlan and subscriptionActive. Sessions store these (req.session.subscriptionPlan, etc.). Good: Sessions track user state. Broken: No session update/invalidation on cancellation—user stays logged in with outdated menu. Per 2025 best practices (from tools: WorkOS blog on session management), regenerate sessions on major state changes like sub cancellation to prevent stale data. This ties to quotas (posts 0/0 should lock auto-posting) and onboarding (new users shouldn't see cancel pre-sub).
+
+Identified Issues:
+
+High Severity: No Session Update/Regeneration on Cancellation. Why broken: After cancel, session retains old sub data; frontend fetches /api/auth/user but if session isn't refreshed, UI (like hamburger) shows stale options. Tools confirm: 2025 guides mandate session refresh to avoid "ghost" features.
+Medium Severity: Menu Still Shows "Cancel Subscription" Post-Cancel. Why broken: UX fail—per RevenueCat/UXMag articles (2025 updates), hide cancel buttons after action; show "Reactivate" instead to reduce churn. Ties to sessions if not conditionally rendered.
+Low Severity: No Post-Cancel Access Revocation. Why broken: User still accesses dashboard; if sub is cancelled, sessions should timeout features like auto-posting/OAuth connects.
+Fixes:
+
+Update webhook to handle cancellation events and force session update. Add to /api/stripe/webhook:
+javascript
+
+
+
+
+if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') { // Handle cancel/expiry
+  const subscription = event.data.object;
+  // Lookup user by Stripe customer ID (implement user lookup)
+  const userId = await getUserIdFromStripeCustomer(subscription.customer); // Custom func
+  // Invalidate or update session (broadcast if multi-device, but for now, DB update)
+  await db.update(users).set({ subscriptionActive: false, subscriptionPlan: 'cancelled' }).where(eq(users.id, userId));
+  console.log(`✅ Subscription cancelled for user ${userId} - session update triggered`);
+  // Optional: Emit event for real-time UI update if using sockets
+}
+In session middleware (inactivityTimeoutMiddleware), add sub check:
+javascript
+
+
+
+
+if (req.session?.userId && !req.session.subscriptionActive) {
+  // Revoke access to paid features
+  if (req.path.startsWith('/api/auto-post') || req.path.startsWith('/api/oauth')) {
+    return res.status(403).json({ error: 'Subscription cancelled - upgrade to access' });
+  }
+}
+For frontend (React/Shadcn, based on your config): In the hamburger DropdownMenu component (likely in @/components/ui or similar), fetch user data on mount/useEffect and conditionally render. Snippet:
+tsx
+
+
+
+import { useQuery } from '@tanstack/react-query'; // Or your fetch hook
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+
+const HamburgerMenu = () => {
+  const { data: user } = useQuery(['user'], () => fetch('/api/auth/user').then(res => res.json()));
+
+  return (
+    <DropdownMenu>
+      {/* Other items */}
+      {user?.subscriptionActive ? (
+        <DropdownMenuItem className="text-red-500" onClick={handleCancelSubscription}>
+          Cancel Subscription
+        </DropdownMenuItem>
+      ) : (
+        <DropdownMenuItem disabled className="text-gray-500">
+          Subscription Cancelled - Reactivate?
+        </DropdownMenuItem>
+      )}
+      {/* Logout, etc. */}
+    </DropdownMenu>
+  );
+};
+This hides "Cancel" if cancelled, per best practices. Update state on cancel success (e.g., invalidate query).
+2. Cookies & Session Security (Overall: Solid, But Stale State Risk)
+Cookies are set with good flags, cleared on logout. But if sub cancels without logout, cookies persist with stale session data—ties to the bug where menu doesn't update.
+
+Identified Issues:
+
+Medium Severity: Cookies Not Invalidated on Sub Change. Why broken: 2025 OWASP (via tools) says clear/reissue cookies on privilege changes (like sub cancel) to prevent access to revoked features.
+Low Severity: No Cookie Consent Tie-In. Why broken: If sub involves analytics cookies, consent should revoke on cancel.
+Fixes:
+
+In webhook, after DB update, you can't directly invalidate client cookies, but add a /api/check-sub endpoint called on app load to force logout if cancelled:
+javascript
+
+
+
+
+app.get('/api/check-sub', (req, res) => {
+  if (req.session?.subscriptionActive === false) {
+    req.session.destroy();
+    res.clearCookie('theagencyiq.session');
+    return res.json({ status: 'cancelled', message: 'Please log in again' });
+  }
+  res.json({ status: 'active' });
+});
+Frontend: Call this on mount, redirect to login if cancelled.
+3. Quota Management & Auto Posting (Overall: Tied to Sub, But Exposed)
+Quotas reset daily in session, tied to DB table. Post-cancel, "Posts Remaining: 0 / 0" shows, but if session isn't updated, users might attempt posts.
+
+Identified Issues:
+
+High Severity: Quotas Not Locked Post-Cancel. Why broken: If sub cancels mid-session, quotas might allow posts until timeout—abuse risk. Tools' session guides: Enforce checks on every request.
+Medium Severity: Auto-Posting Not Disabled. Why broken: Routes are protected, but no sub-specific lock; cancelled users could schedule via stale session.
+Fixes:
+
+In quotaTracker.middleware():
+javascript
+
+
+
+
+if (!req.session.subscriptionActive) {
+  return res.status(403).json({ error: 'Subscription cancelled - no posting allowed' });
+}
+// Existing quota logic
+For auto-posting: Add cron jobs (if using node-cron) to skip if user sub inactive via DB query.
+4. Customer Onboarding & OAuth (Overall: Linked, But Cancellation Ripple Missing)
+Onboarding likely sets initial sub; OAuth connects platforms. Post-cancel, menu shows "Platform Connect"—should disable if no sub.
+
+Identified Issues:
+
+Medium Severity: Onboarding Flows Not Adjusted Post-Cancel. Why broken: New/cancelled users see full menu; best practices (Apps365 guide) say gate features behind sub status.
+Low Severity: OAuth Tokens Not Revoked. Why broken: If sub cancels, lingering tokens in DB/session could allow unauthorized posts.
+Fixes:
+
+In /connect/:platform, add:
+javascript
+
+
+
+
+if (!req.session.subscriptionActive) return res.status(403).json({ error: 'Active subscription required' });
+On cancel webhook: Revoke tokens via platform APIs (e.g., Facebook revoke endpoint) and delete from DB.
+Overall Readiness Assessment
+Launch-Ready? No (70% fixed). This bug exposes sloppy integration between subs, sessions, and UI—fix the conditional rendering and session updates, or we'll get churn complaints day one. Compliance solid, but UX is key for retention.
+Tests: Simulate cancel via webhook, check if menu hides "Cancel", sessions regenerate, quotas lock. Use React testing lib for UI.
+% Fixed: Subs/Sessions 75%, UI/Menu 50%, Quotas/Auto-Post 80%, Onboarding/OAuth 70%.
+Implement these NOW—update the Shadcn menu component with that conditional logic, and let's test.
