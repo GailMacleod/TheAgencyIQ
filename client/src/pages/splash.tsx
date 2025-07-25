@@ -22,8 +22,13 @@ export default function Splash() {
     retry: false,
   });
 
-  // Show content for both authenticated and unauthenticated users
-  // Authenticated users see dashboard options, unauthenticated users see sign in options
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      console.log('🔒 User not authenticated, redirecting to login');
+      window.location.href = '/api/login';
+    }
+  }, [user, isLoading]);
 
   // Check if user completed wizard and trigger signup button animation
   useEffect(() => {

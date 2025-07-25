@@ -1074,73 +1074,34 @@ async function startServer() {
       }
     });
 
-    // Enhanced logout endpoint with comprehensive session and cookie clearing
+    // Logout endpoint
     app.post('/api/auth/logout', async (req: any, res: any) => {
       try {
-        const userId = req.session?.userId;
-        const sessionId = req.sessionID;
-        
-        if (userId) {
-          console.log(`🔓 Logging out user ${userId}, session ${sessionId}`);
-        }
-
-        // Destroy PostgreSQL session completely
         if (req.session) {
           await new Promise<void>((resolve) => {
             req.session.destroy((err: any) => {
               if (err) {
-                console.error('❌ Session destruction failed:', err);
-              } else {
-                console.log('✅ PostgreSQL session destroyed');
+                console.error('Session destruction failed:', err);
               }
               resolve();
             });
           });
         }
 
-        // Clear all cookies with proper security flags
-        const cookieOptions = {
-          path: '/',
-          domain: undefined,
-          secure: process.env.NODE_ENV === 'production',
-          httpOnly: true,
-          sameSite: 'strict' as const
-        };
-
-        res.clearCookie('theagencyiq.session', cookieOptions);
-        res.clearCookie('connect.sid', cookieOptions);
-        res.clearCookie('aiq_backup_session', cookieOptions);
-
-        console.log('🚪 Session destroyed and all cookies cleared');
-
-        res.json({
-          success: true,
-          message: 'Logged out successfully',
-          clearCache: true,
-          clearCookies: true,
-          pwaRefresh: true,
-          timestamp: new Date().toISOString()
-        });
-      } catch (error) {
-        console.error('❌ Logout failed:', error);
-        
-        // Force session clear even on error
-        if (req.session) {
-          req.session = null;
-        }
-        
-        // Clear cookies even on error
+        // Clear all cookies
         res.clearCookie('theagencyiq.session');
         res.clearCookie('connect.sid');
         res.clearCookie('aiq_backup_session');
-        
+
         res.json({
           success: true,
-          message: 'Logged out successfully (forced)',
-          clearCache: true,
-          clearCookies: true,
-          pwaRefresh: true,
-          timestamp: new Date().toISOString()
+          message: 'Logged out successfully'
+        });
+      } catch (error) {
+        console.error('Logout failed:', error);
+        res.status(500).json({
+          error: 'Logout failed',
+          code: 'LOGOUT_ERROR'
         });
       }
     });
