@@ -168,8 +168,9 @@ class VeoService {
         throw new Error(`VEO 3.0 API call failed: ${apiResult.error}`);
       }
       
-      // Store operation for authentic tracking
-      this.operations.set(apiResult.operationId, {
+      // Store operation for authentic tracking with proper data structure
+      const operationData = {
+        operationId: apiResult.operationId,
         startTime: Date.now(),
         prompt: prompt,
         config: finalConfig,
@@ -177,14 +178,28 @@ class VeoService {
         platform: finalConfig.platform || 'youtube',
         vertexAiOperation: apiResult, // Store full Vertex AI operation details
         estimatedCompletion: Date.now() + (Math.floor(Math.random() * 300) + 30) * 1000, // 30s-5min realistic timing
+        progress: 10, // Start at 10% progress
+        phase: 'VEO 3.0 initialization',
         videoData: {
           videoId: `veo3_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           prompt: prompt,
           aspectRatio: finalConfig.aspectRatio,
           duration: finalConfig.durationSeconds,
           platform: finalConfig.platform
-        }
+        },
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      };
+      
+      console.log(`💾 VEO 3.0: Storing operation data for ${apiResult.operationId}:`, {
+        operationId: operationData.operationId,
+        startTime: operationData.startTime,
+        status: operationData.status,
+        progress: operationData.progress,
+        platform: operationData.platform
       });
+      
+      await this.operations.set(apiResult.operationId, operationData);
 
       // Return async operation tracking for authentic VEO 3.0 timing
       return {
@@ -531,10 +546,10 @@ class VeoService {
   async getOperationStatus(operationId) {
     try {
       console.log(`🔍 VEO 3.0 DEBUG: Checking operation status for ${operationId}`);
-      console.log(`🔍 VEO 3.0 DEBUG: Total operations in memory: ${this.operations.size}`);
-      console.log(`🔍 VEO 3.0 DEBUG: Operation IDs: ${Array.from(this.operations.keys()).join(', ')}`);
+      console.log(`🔍 VEO 3.0 DEBUG: Total operations in memory: ${await this.operations.size()}`);
+      console.log(`🔍 VEO 3.0 DEBUG: Operation IDs: ${(await this.operations.keys()).join(', ')}`);
       
-      const operation = this.operations.get(operationId);
+      const operation = await this.operations.get(operationId);
       
       if (!operation) {
         console.log(`❌ VEO 3.0 DEBUG: Operation ${operationId} not found`);
@@ -545,10 +560,23 @@ class VeoService {
         };
       }
       
+      // Check for corrupted data and clean up if necessary
+      if (!operation.startTime || operation.startTime === undefined || isNaN(operation.startTime)) {
+        console.log(`⚠️ VEO 3.0 DEBUG: Corrupted operation data detected, cleaning up ${operationId}`);
+        await this.operations.delete(operationId);
+        return {
+          success: false,
+          error: 'Operation data corrupted - please retry video generation',
+          operationId: operationId
+        };
+      }
+      
       console.log(`✅ VEO 3.0 DEBUG: Operation found:`, {
+        operationId: operation.operationId,
         status: operation.status,
         startTime: operation.startTime,
-        elapsed: Date.now() - operation.startTime
+        platform: operation.platform,
+        hasValidData: !!(operation.startTime && operation.status)
       });
 
       const elapsed = Date.now() - operation.startTime;
