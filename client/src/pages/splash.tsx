@@ -22,6 +22,14 @@ export default function Splash() {
     retry: false,
   });
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      console.log('🔒 User not authenticated, redirecting to login');
+      window.location.href = '/api/login';
+    }
+  }, [user, isLoading]);
+
   // Check if user completed wizard and trigger signup button animation
   useEffect(() => {
     const urlParams = new URLSearchParams(location.split('?')[1] || '');

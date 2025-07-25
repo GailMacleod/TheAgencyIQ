@@ -135,11 +135,17 @@ export function MobileNavigationMenu() {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Posts Remaining</span>
-              <span className="font-medium">{quotaData?.remainingPosts || 0}</span>
+              <span className="font-medium">
+                {quotaData?.remainingPosts || 0} / {
+                  quotaData?.subscriptionPlan === 'professional' ? 30 :
+                  quotaData?.subscriptionPlan === 'growth' ? 20 :
+                  quotaData?.subscriptionPlan === 'starter' ? 10 : 30
+                }
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Plan</span>
-              <span className="font-medium capitalize">{quotaData?.subscriptionPlan || 'Basic'}</span>
+              <span className="font-medium capitalize">{quotaData?.subscriptionPlan || 'Professional'}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Published</span>
