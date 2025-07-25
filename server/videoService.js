@@ -156,12 +156,13 @@ Return JSON format:
       // Start async operation with user specifications in background
       setTimeout(async () => {
         try {
-          console.log('🎯 VEO 3.0: Background process starting with Vertex AI credentials...');
+          console.log('🎯 VEO 3.0: Background process starting with UPDATED Vertex AI credentials...');
+          console.log('🔑 Using new VERTEX_AI_SERVICE_ACCOUNT_KEY provided by user');
           
           // USER SPECIFICATION: Use Vertex AI for VEO 3.0 model
           const { VertexAI } = await import('@google-cloud/vertexai');
           
-          // Initialize Vertex AI with service account credentials
+          // Initialize Vertex AI with NEW service account credentials
           const credentials = process.env.VERTEX_AI_SERVICE_ACCOUNT_KEY;
           let vertexAI;
           

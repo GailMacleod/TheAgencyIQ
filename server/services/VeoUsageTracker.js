@@ -3,7 +3,7 @@
  * Prevents cost spiraling through comprehensive usage monitoring
  */
 
-import { db } from '../db.js';
+import { db } from '../db.ts';
 import { videoUsage } from '../../shared/schema.js';
 import { eq, and, gte, sql } from 'drizzle-orm';
 
