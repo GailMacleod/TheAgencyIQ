@@ -83,7 +83,7 @@ const Schedule = () => {
   // Sync brand posts with schedule
   useEffect(() => {
     if (brandPostsData?.posts) {
-      const expectedCount = brandPostsData.postCount || 52; // Default to professional plan
+      const expectedCount = brandPostsData.postCount || 30; // Default to professional plan
       syncBrandPosts(brandPostsData.posts, 'gailm@macleodglba.com.au', expectedCount);
     } else if (error) {
       const currentDate = new Date().toISOString().split('T')[0];

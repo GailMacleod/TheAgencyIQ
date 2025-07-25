@@ -58,7 +58,7 @@ export function EnhancedDashboard() {
                   explanation="Only published posts count toward your quota"
                 />
                 <span className="font-medium">
-                  {usage?.usedPosts || 0} / {usage?.totalAllocation || 52}
+                  {usage?.usedPosts || 0} / {usage?.totalAllocation || 30}
                 </span>
               </div>
               <div className="flex justify-between items-center">

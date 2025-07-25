@@ -329,7 +329,7 @@ export default function OnboardingWizard() {
       icon: <AnimatedIcon icon={CreditCard} colorScheme="cyan" size="sm" />,
       actionText: "View Plans",
       tips: [
-        "Professional plan includes 52 posts per month",
+        "Professional plan includes 30 posts per month",
         "All plans include multi-platform publishing"
       ],
       content: (
@@ -341,7 +341,7 @@ export default function OnboardingWizard() {
                 <h4 className="font-medium text-gray-800 mb-2">Professional Plan</h4>
                 <p className="text-2xl font-bold text-gray-600">$99.99</p>
                 <div className="text-sm text-gray-600 space-y-1">
-                  <div>52 posts per month</div>
+                  <div>30 posts per month</div>
                   <div>5 platforms</div>
                   <div>Premium analytics</div>
                 </div>
@@ -434,7 +434,7 @@ export default function OnboardingWizard() {
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-sm">52 AI-generated posts monthly</span>
+                <span className="text-sm">30 AI-generated posts monthly</span>
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />

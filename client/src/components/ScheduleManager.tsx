@@ -365,8 +365,9 @@ export function ScheduleManager() {
             <div className="space-y-2">
               <h4 className="font-medium">Available Plans:</h4>
               <ul className="text-sm space-y-1">
-                <li>• <strong>Growth:</strong> 27 posts/month - $41.99</li>
-                <li>• <strong>Professional:</strong> 52 posts/month - $99.99</li>
+                <li>• <strong>Starter:</strong> 10 posts/month - $19.99</li>
+                <li>• <strong>Growth:</strong> 20 posts/month - $41.99</li>
+                <li>• <strong>Professional:</strong> 30 posts/month - $99.99</li>
               </ul>
             </div>
 
