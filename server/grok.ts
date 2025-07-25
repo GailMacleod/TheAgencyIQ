@@ -40,13 +40,13 @@ const THEAGENCYIQ_KNOWLEDGE_BASE = {
         x: "280 characters (enforced platform limit)",
         youtube: "350-600 characters (optimal for video descriptions)"
       },
-      queenslandFocus: "30 Queensland event-driven posts including Brisbane Ekka focus (20 posts), other Queensland events (10 posts)",
+      queenslandFocus: "52 Queensland event-driven posts including Brisbane Ekka focus (37 posts), other Queensland events (15 posts)",
       businessAlignment: "Content aligns with brand purpose to solve 'invisible business' problem through 'always-on beacon' strategy"
     },
     
     scheduling: {
       system: "Smart AI scheduling with Queensland market optimization",
-      postAllocation: "Professional plan: 30 posts with intelligent quota management",
+      postAllocation: "Professional plan: 52 posts with intelligent quota management",
       optimization: "Event-driven scheduling aligned with Queensland business calendar and local events",
       workflow: "Draft posts → Review/Edit → Approve → Multi-platform publishing",
       quotaManagement: "Real-time quota tracking with deferred deduction until post approval"
@@ -69,7 +69,7 @@ const THEAGENCYIQ_KNOWLEDGE_BASE = {
     },
     
     subscription: {
-      plans: "Professional plan with 30 posts allocation per cycle",
+      plans: "Professional plan with 52 posts allocation per cycle",
       billing: "Stripe integration with webhook synchronization for real-time updates",
       access: "Subscription validation on all premium features with automatic redirects",
       wizard: "Public demo mode for non-subscribers to preview platform capabilities",
@@ -104,7 +104,7 @@ const THEAGENCYIQ_KNOWLEDGE_BASE = {
       "Generate initial AI content schedule"
     ],
     contentCreation: [
-      "AI generates 30 strategic posts based on brand purpose",
+      "AI generates 52 strategic posts based on brand purpose",
       "Review and edit posts in intuitive dashboard",
       "Approve selected posts for publishing",
       "Multi-platform publishing with real-time status updates",
