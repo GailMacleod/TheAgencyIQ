@@ -53,14 +53,59 @@ function VideoGeneration() {
     queryKey: ["/api/brand-purpose"],
   });
 
+  // Integrated workflow: Grok enhancement → VEO 3.0 rendering
+  const generateAndRenderVideo = async (postContent: string, platform: string, userId: number) => {
+    try {
+      console.log('🎬 Starting integrated video workflow: Grok → VEO 3.0');
+      
+      // Step 1: Generate enhanced prompts with Grok copywriter
+      const promptResponse = await fetch('/api/video/generate-prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postContent, platform, userId })
+      });
+      
+      if (!promptResponse.ok) throw new Error('Prompt generation failed');
+      
+      const promptData = await promptResponse.json();
+      const enhancedPrompt = promptData.prompts?.[0]?.prompt || promptData.enhancedCopy || 'Professional Queensland business video';
+      
+      console.log('✅ Grok enhancement completed, starting VEO 3.0 rendering...');
+      
+      // Step 2: Render video with enhanced prompt
+      const renderResponse = await fetch('/api/video/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          prompt: enhancedPrompt, 
+          platform, 
+          userId,
+          grokEnhanced: true,
+          originalContent: postContent
+        })
+      });
+      
+      if (!renderResponse.ok) throw new Error('Video rendering failed');
+      
+      const videoData = await renderResponse.json();
+      console.log('✅ Integrated workflow completed:', videoData.videoUrl);
+      return videoData;
+      
+    } catch (error) {
+      console.error('❌ Integrated workflow error:', error);
+      throw error;
+    }
+  };
+
   const generateVideoMutation = useMutation({
     mutationFn: async (request: VideoGenerationRequest) => {
-      return await apiRequest("POST", "/api/video/generate", request);
+      // Use integrated workflow instead of direct API call
+      return await generateAndRenderVideo(request.prompt, request.platform, 2);
     },
     onSuccess: (data) => {
       toast({
         title: "Video Generation Started",
-        description: "Your video is being generated. This usually takes 2-3 minutes.",
+        description: "Grok-enhanced video with VEO 3.0 is being generated. This usually takes 2-3 minutes.",
       });
       setIsGenerating(true);
       setGenerationProgress(0);
@@ -122,7 +167,7 @@ function VideoGeneration() {
       style: selectedStyle,
       duration,
       platform: selectedPlatform,
-      brandContext: brandPurpose?.corePurpose || ""
+      brandContext: (brandPurpose as any)?.corePurpose || ""
     });
   };
 

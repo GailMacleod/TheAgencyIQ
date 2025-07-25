@@ -11404,7 +11404,18 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       const sessionManager = (await import('./sessionUtils.js')).default;
       const migrationValidator = (await import('./drizzleMigrationValidator.js')).default;
       
-      const { promptType, promptPreview, editedText, platform, userId, postId, autoPost } = req.body;
+      const { 
+        promptType, 
+        promptPreview, 
+        editedText, 
+        platform, 
+        userId, 
+        postId, 
+        autoPost,
+        prompt: enhancedPromptFromWorkflow,
+        grokEnhanced,
+        originalContent
+      } = req.body;
       
       console.log(`🎬 Enhanced VEO3 video generation requested for ${platform}`);
       
@@ -11472,33 +11483,40 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         console.log(`🚀 SURGICAL DEBUG: Starting Grok → VEO 3.0 workflow for ${platform}`);
         console.log(`✍️ STEP 1: Grok enhancement starting for ${platform}`);
         
-        // STEP 1: Get Grok-enhanced prompts first
-        try {
-          // Create videoService instance for method access
-          const videoServiceInstance = new VideoService();
-          grokResult = await videoServiceInstance.generateVideoPromptsWithGrokCopywriter(
-            promptPreview || editedText || 'Professional Queensland business content',
-            platform,
-            brandPurpose,
-            req.session?.userId || userId
-          );
-          
-          console.log(`✅ STEP 1 COMPLETE: Grok enhanced prompts generated`);
-          console.log(`🔍 GROK RESULT:`, JSON.stringify(grokResult, null, 2));
-          
-          // Extract enhanced prompt with fallback
-          enhancedPrompt = grokResult?.prompts?.[0]?.prompt || 
-                          grokResult?.enhancedCopy || 
-                          grokResult?.cinematicPrompt ||
-                          promptPreview || 
-                          'Professional Queensland business transformation video with cinematic quality';
-          
-          console.log(`🎬 ENHANCED PROMPT: ${enhancedPrompt}`);
-          
-        } catch (grokError) {
-          console.error(`❌ GROK STEP FAILED:`, grokError);
-          // Still use enhanced prompt for VEO
-          enhancedPrompt = `Professional Queensland business content: ${promptPreview || editedText}`;
+        // Check if we already have an enhanced prompt from the workflow
+        if (enhancedPromptFromWorkflow && grokEnhanced) {
+          console.log(`✅ WORKFLOW INTEGRATION: Using pre-enhanced Grok prompt`);
+          enhancedPrompt = enhancedPromptFromWorkflow;
+          grokResult = { grokEnhanced: true, enhancedCopy: enhancedPromptFromWorkflow };
+        } else {
+          // STEP 1: Get Grok-enhanced prompts first (fallback for direct calls)
+          try {
+            console.log(`✍️ FALLBACK: Running Grok enhancement for direct API calls`);
+            // Create videoService instance for method access
+            const videoServiceInstance = new VideoService();
+            grokResult = await videoServiceInstance.generateVideoPromptsWithGrokCopywriter(
+              promptPreview || editedText || 'Professional Queensland business content',
+              platform,
+              brandPurpose,
+              req.session?.userId || userId
+            );
+            
+            console.log(`✅ STEP 1 COMPLETE: Grok enhanced prompts generated`);
+            
+            // Extract enhanced prompt with fallback
+            enhancedPrompt = grokResult?.prompts?.[0]?.prompt || 
+                            grokResult?.enhancedCopy || 
+                            grokResult?.cinematicPrompt ||
+                            promptPreview || 
+                            'Professional Queensland business transformation video with cinematic quality';
+            
+            console.log(`🎬 ENHANCED PROMPT: ${enhancedPrompt}`);
+            
+          } catch (grokError) {
+            console.error(`❌ GROK STEP FAILED:`, grokError);
+            // Still use enhanced prompt for VEO
+            enhancedPrompt = `Professional Queensland business content: ${promptPreview || editedText}`;
+          }
         }
         
         console.log(`🎯 STEP 2: VEO 3.0 generation starting with Grok-enhanced prompt`);
