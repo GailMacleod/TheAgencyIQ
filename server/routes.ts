@@ -11521,19 +11521,18 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         
         console.log(`🎯 STEP 2: VEO 3.0 generation starting with Grok-enhanced prompt`);
         
-        // STEP 2: Pass Grok-enhanced prompt to VEO 3.0
-        const veoService = new VeoService();
-        
-        console.log(`🎬 VEO 3.0: Using Grok-enhanced prompt for ${platform}`);
+        // STEP 2: Pass Grok-enhanced prompt to VEO 3.0 WITH USER SPECIFICATIONS
+        console.log(`🎬 VEO 3.0: Using Grok-enhanced prompt for ${platform} WITH EXACT USER SPECS`);
         
         // Refresh tokens if needed before video generation
         await sessionManager.refreshTokensIfNeeded(req.session?.userId || userId);
         
-        const veoResult = await veoService.generateVideo(enhancedPrompt, {
+        // Use the UPDATED VideoService with user's exact specifications
+        const veoResult = await VideoService.generateVeo3VideoContent(enhancedPrompt, {
           aspectRatio: platform === 'instagram' ? '9:16' : '16:9',
           durationSeconds: 8,
           platform: platform,
-          withSound: true, // Include sound as specified
+          withSound: true,
           grokEnhanced: true,
           jtbdFramework: brandPurpose?.jobToBeDone || 'Queensland business growth',
           userId: req.session?.userId || userId,
