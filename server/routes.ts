@@ -11685,8 +11685,11 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
+  // Import VEO 3.0 polling rate limiter
+  const { veoPollingRateLimit } = await import('./middleware/veoPollingRateLimit');
+
   // VEO 3.0 OPERATION STATUS ENDPOINT - For checking async generation progress
-  app.get('/api/video/operation/:operationId', requireAuth, async (req: any, res) => {
+  app.get('/api/video/operation/:operationId', veoPollingRateLimit, requireAuth, async (req: any, res) => {
     try {
       const { operationId } = req.params;
       

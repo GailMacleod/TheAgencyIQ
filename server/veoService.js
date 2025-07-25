@@ -6,14 +6,103 @@ import OptimizedVideoManager from './services/OptimizedVideoManager.js';
 import { execSync } from 'child_process';
 import fs from 'fs/promises';
 
-// Singleton pattern to ensure operations persist across instances
+// Singleton pattern to ensure operations persist across instances with database backup
 let sharedOperations = new Map();
+
+// Enhanced operation storage with Replit database persistence
+class PersistentOperationStore {
+  constructor() {
+    this.memoryStore = sharedOperations;
+    this.dbStore = null;
+  }
+  
+  async initDB() {
+    if (!this.dbStore) {
+      try {
+        const Database = (await import('@replit/database')).default;
+        this.dbStore = new Database();
+      } catch (error) {
+        console.log('⚠️ VEO 3.0: Database initialization failed:', error.message);
+      }
+    }
+  }
+  
+  async set(operationId, operationData) {
+    // Store in memory first
+    this.memoryStore.set(operationId, operationData);
+    console.log(`💾 VEO 3.0: Stored operation ${operationId} in memory (${this.memoryStore.size} total)`);
+    
+    // Backup to Replit database
+    try {
+      await this.initDB();
+      if (this.dbStore) {
+        await this.dbStore.set(`veo_op_${operationId}`, {
+          ...operationData,
+          storedAt: Date.now(),
+          persistent: true
+        });
+        console.log(`💾 VEO 3.0: Backed up operation ${operationId} to Replit DB`);
+      }
+    } catch (dbError) {
+      console.log(`⚠️ VEO 3.0: DB backup failed for ${operationId}:`, dbError.message);
+    }
+  }
+  
+  async get(operationId) {
+    // Check memory first
+    if (this.memoryStore.has(operationId)) {
+      console.log(`📖 VEO 3.0: Found operation ${operationId} in memory`);
+      return this.memoryStore.get(operationId);
+    }
+    
+    // Restore from database
+    try {
+      await this.initDB();
+      if (this.dbStore) {
+        const dbOperation = await this.dbStore.get(`veo_op_${operationId}`);
+        if (dbOperation) {
+          console.log(`📖 VEO 3.0: Restored operation ${operationId} from Replit DB`);
+          this.memoryStore.set(operationId, dbOperation);
+          return dbOperation;
+        }
+      }
+    } catch (dbError) {
+      console.log(`⚠️ VEO 3.0: DB restore failed for ${operationId}:`, dbError.message);
+    }
+    
+    return null;
+  }
+  
+  async delete(operationId) {
+    this.memoryStore.delete(operationId);
+    try {
+      await this.initDB();
+      if (this.dbStore) {
+        await this.dbStore.delete(`veo_op_${operationId}`);
+        console.log(`🗑️ VEO 3.0: Cleaned up operation ${operationId}`);
+      }
+    } catch (dbError) {
+      console.log(`⚠️ VEO 3.0: DB cleanup failed for ${operationId}:`, dbError.message);
+    }
+  }
+  
+  size() {
+    return this.memoryStore.size;
+  }
+  
+  keys() {
+    return Array.from(this.memoryStore.keys());
+  }
+}
+
+// Global persistent operation store
+const persistentOperations = new PersistentOperationStore();
 let sharedVideoManager = null;
 
 class VeoService {
   constructor() {
     this.VEO3_MODEL = 'veo-3.0-generate-preview';
-    this.operations = sharedOperations; // Use shared operations map
+    this.operations = persistentOperations; // Use persistent operations store
     this.quotaManager = null;
     if (!sharedVideoManager) {
       sharedVideoManager = new OptimizedVideoManager();

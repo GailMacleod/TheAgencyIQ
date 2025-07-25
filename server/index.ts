@@ -65,7 +65,7 @@ async function startServer() {
   app.use(morgan(secureDefaults.LOG_LEVEL));
   app.use(requestLogger);
 
-  // Rate limiting for all routes
+  // Rate limiting for all routes with VEO 3.0 polling exemption
   const limiter = rateLimit({
     windowMs: secureDefaults.RATE_LIMIT_WINDOW,
     max: secureDefaults.RATE_LIMIT_MAX,
@@ -75,6 +75,14 @@ async function startServer() {
     },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => {
+      // Skip rate limiting for VEO 3.0 operation polling endpoints
+      if (req.path.startsWith('/api/video/operation/')) {
+        console.log(`🔄 VEO 3.0: Exempting operation polling from rate limit: ${req.path}`);
+        return true;
+      }
+      return false;
+    }
   });
   app.use('/api', limiter);
 
