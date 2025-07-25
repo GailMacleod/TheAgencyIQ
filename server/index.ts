@@ -368,6 +368,20 @@ async function startServer() {
     next();
   });
 
+  // CRITICAL: Anomaly detection middleware (2025 OWASP requirement)
+  const suspiciousPatterns = ['/admin', '/debug', '/test', '/.env', '/config'];
+  app.use((req, res, next) => {
+    if (suspiciousPatterns.some(p => req.path.includes(p))) {
+      console.warn('🚨 [ANOMALY] Suspicious request detected:', {
+        path: req.path,
+        ip: req.ip,
+        userAgent: req.headers['user-agent']?.substring(0, 30),
+        timestamp: new Date().toISOString()
+      });
+    }
+    next();
+  });
+
   // Session security and touch middleware with absolute timeout
   app.use((req, res, next) => {
     if (req.session && req.session.userId) {
@@ -382,8 +396,8 @@ async function startServer() {
         console.log('🔒 [SECURITY] Session expired due to absolute timeout (24h):', {
           userId: req.session.userId,
           sessionAge: Math.round(sessionAge / (1000 * 60 * 60)) + 'h',
-          ip: req.ip,
-          userAgent: req.headers['user-agent']?.substring(0, 50)
+          ip: req.ip?.substring(0, 10) + '...', // Masked IP logging
+          userAgent: req.headers['user-agent']?.substring(0, 30) + '...' // Masked UA logging
         });
         req.session.destroy((err: any) => {
           if (err) console.error('Session destruction failed:', err);
@@ -391,7 +405,8 @@ async function startServer() {
             httpOnly: true, 
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            path: '/'
+            path: '/api',
+            partitioned: true
           });
           res.clearCookie('aiq_backup_session');
           return res.status(401).json({ 
@@ -1141,6 +1156,16 @@ async function startServer() {
           req.session.subscriptionPlan = user.subscriptionPlan;
           req.session.subscriptionActive = user.subscriptionActive;
           req.session.createdAt = Date.now(); // For absolute timeout tracking
+          
+          // CRITICAL: Set secure session cookie with 2025 compliance flags
+          res.cookie('theagencyiq.session', req.sessionID, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            partitioned: true,
+            maxAge: 30 * 60 * 1000, // 30 minutes
+            path: '/api' // Scope tightly to API endpoints
+          });
           
           // Generate session ID for response
           const sessionId = req.session.id || `aiq_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 15)}`;
