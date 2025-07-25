@@ -4,11 +4,11 @@ let genAI = null;
 
 // Initialize Google AI Studio
 async function initializeGoogleAI() {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY not configured');
+  if (!process.env.GOOGLE_AI_STUDIO_KEY) {
+    throw new Error('GOOGLE_AI_STUDIO_KEY not configured');
   }
-  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  console.log('✅ Google AI Studio initialized for VEO 3.0');
+  genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_STUDIO_KEY);
+  console.log('✅ Google AI Studio initialized for VEO 3.0 with updated key');
 }
 
 class VideoService {
@@ -101,7 +101,7 @@ Return JSON format:
     try {
       console.log('🎥 VEO 3.0 VIDEO GENERATION: Starting with correct model name...');
       
-      // Initialize Google AI with GEMINI_API_KEY
+      // Initialize Google AI with GOOGLE_AI_STUDIO_KEY
       if (!genAI) await initializeGoogleAI();
       
       // Use correct VEO 3.0 model name as specified by user

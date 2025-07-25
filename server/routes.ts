@@ -12053,7 +12053,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       return res.status(500).json({ 
         error: 'VEO 3.0 test failed', 
         details: error.message,
-        apiKeyConfigured: !!process.env.GEMINI_API_KEY,
+        apiKeyConfigured: !!process.env.GOOGLE_AI_STUDIO_KEY,
         vertexKeyConfigured: !!process.env.VERTEX_AI_SERVICE_ACCOUNT_KEY
       });
     }
