@@ -263,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { OAuthConsolidationManager } = await import('./middleware/oauthConsolidation');
     const oauthManager = OAuthConsolidationManager.getInstance();
     
-    // Anomaly detection system
+    // Anomaly detection system (development-friendly)
     const { AnomalyDetectionManager } = await import('./middleware/anomalyDetection');
     const anomalyDetector = AnomalyDetectionManager.getInstance();
     app.use(anomalyDetector.detectAnomalies);

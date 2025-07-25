@@ -77,8 +77,8 @@ export class AnomalyDetectionManager {
         this.trackSuspiciousActivity(sessionId, userId);
       }
 
-      // Block high-severity attempts
-      if (suspiciousPattern.severity === 'HIGH') {
+      // Block high-severity attempts (ONLY in production)
+      if (suspiciousPattern.severity === 'HIGH' && process.env.NODE_ENV === 'production') {
         console.error(`🔒 [SECURITY_BLOCK] High-severity request blocked:`, {
           pattern: suspiciousPattern.pattern,
           ip,
@@ -92,6 +92,12 @@ export class AnomalyDetectionManager {
           pattern: suspiciousPattern.pattern
         });
         return;
+      } else if (suspiciousPattern.severity === 'HIGH') {
+        console.warn(`🚨 [DEV_MODE] High-severity pattern detected but allowed in development:`, {
+          pattern: suspiciousPattern.pattern,
+          path,
+          method
+        });
       }
     }
 
