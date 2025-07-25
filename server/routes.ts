@@ -248,13 +248,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', skipRateLimitForDevelopment);
   console.log('🚀 Rate limiting configured for all API endpoints (100 req/15min)');
 
-  // CRITICAL FIX: Enable consent management routes (2025 GDPR compliance)
+  // CRITICAL FIX: Enable all middleware systems (HIGH SEVERITY)
   try {
+    // GDPR consent management
     const { setupConsentRoutes } = await import('./middleware/cookieConsent');
     setupConsentRoutes(app);
     console.log('✅ [CONSENT] GDPR consent routes enabled');
+
+    // Session invalidation manager  
+    const { SessionInvalidationManager } = await import('./middleware/sessionInvalidation');
+    const sessionManager = SessionInvalidationManager.getInstance();
+    
+    // OAuth consolidation system
+    const { OAuthConsolidationManager } = await import('./middleware/oauthConsolidation');
+    const oauthManager = OAuthConsolidationManager.getInstance();
+    
+    // Anomaly detection system
+    const { AnomalyDetectionManager } = await import('./middleware/anomalyDetection');
+    const anomalyDetector = AnomalyDetectionManager.getInstance();
+    app.use(anomalyDetector.detectAnomalies);
+    
+    console.log('✅ [MIDDLEWARE] All middleware systems loaded (session, oauth, consent, anomaly)');
   } catch (error) {
-    console.error('⚠️ [CONSENT_ERROR] Consent middleware unavailable:', error);
+    console.error('⚠️ [MIDDLEWARE_ERROR] Middleware systems unavailable:', error);
   }
 
   // CRITICAL FIX: Dynamic imports for ES conflict resolution
@@ -2281,6 +2297,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Gift certificate generation error:', error);
       res.status(500).json({ message: "Certificate generation failed" });
+    }
+  });
+
+  // CRITICAL FIX: Consolidated OAuth callback route (HIGH SEVERITY - eliminates duplicates)
+  app.get('/auth/callback', async (req: any, res) => {
+    try {
+      const { OAuthConsolidationManager } = await import('./middleware/oauthConsolidation');
+      const oauthManager = OAuthConsolidationManager.getInstance();
+      await oauthManager.handleCallback(req, res);
+    } catch (error) {
+      console.error('🚨 [OAUTH_CALLBACK] Error:', error);
+      res.send(`
+        <script>
+          if (window.opener) {
+            window.opener.postMessage({ type: 'oauth_error', message: 'OAuth callback failed' }, '*');
+          }
+          window.close();
+        </script>
+      `);
+    }
+  });
+
+  // CRITICAL FIX: Enhanced subscription cancellation with session invalidation
+  app.post('/api/cancel-subscription', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      
+      // Import session invalidation manager
+      const { SessionInvalidationManager, revokeOAuthTokens } = await import('./middleware/sessionInvalidation');
+      const sessionManager = SessionInvalidationManager.getInstance();
+      
+      // 1. Cancel subscription in database
+      await db.update(users)
+        .set({
+          subscriptionPlan: 'cancelled',
+          subscriptionActive: false,
+          remainingPosts: 0,
+          totalPosts: 0,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+      
+      // 2. Revoke all OAuth tokens
+      await revokeOAuthTokens(userId);
+      
+      // 3. Invalidate session completely
+      await sessionManager.invalidateUserSession(req, res);
+      
+      console.log('✅ [CANCEL] Complete subscription cancellation for user:', userId);
+      
+      res.json({
+        success: true,
+        message: 'Subscription cancelled successfully',
+        sessionInvalidated: true,
+        redirectTo: '/api/login'
+      });
+      
+    } catch (error: any) {
+      console.error('🚨 [CANCEL] Cancellation failed:', error);
+      res.status(500).json({
+        error: 'Cancellation failed',
+        message: error.message
+      });
     }
   });
 

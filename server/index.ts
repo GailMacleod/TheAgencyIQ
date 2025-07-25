@@ -24,7 +24,7 @@ import * as connectRedis from 'connect-redis';
 import crypto from 'crypto';
 import { sessionRegenerationMiddleware, oauthSessionRegenerationMiddleware } from './middleware/sessionRegeneration.js';
 import { createPersistentQuotaMiddleware } from './middleware/quotaPersistence.js';
-import { cookieConsentMiddleware } from './middleware/cookieConsent.js';
+// Cookie consent middleware loaded dynamically in routes
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -486,7 +486,7 @@ async function startServer() {
   });
 
   // Cookie consent middleware
-  app.use(cookieConsentMiddleware);
+  // Cookie consent middleware loaded dynamically in routes
   
   // Session regeneration middleware for login security  
   app.use(sessionRegenerationMiddleware);
