@@ -12,6 +12,90 @@ async function initializeGoogleAI() {
 }
 
 class VideoService {
+  // VEO 3.0 Video Generation with Grok Integration
+  async generateVideoPromptsWithGrokCopywriter(postContent, platform, brandData, userId) {
+    try {
+      console.log('🚀 Grok copywriter enhancement starting...');
+      
+      // Initialize Google AI if needed
+      if (!genAI) await initializeGoogleAI();
+      
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      
+      const grokPrompt = `You are Grok, the advanced copywriter for TheAgencyIQ. Create enhanced video prompts for VEO 3.0 generation.
+
+Business Context:
+- Brand: ${brandData?.brandName || 'Queensland Business'}
+- Core Purpose: ${brandData?.corePurpose || 'Professional business growth'}
+- Target Audience: ${brandData?.audience || 'Queensland SMEs'}
+- JTBD Framework: ${brandData?.jobToBeDone || 'Business transformation and growth'}
+
+Original Content: ${postContent}
+Platform: ${platform}
+
+Create 3 cinematic video prompts optimized for VEO 3.0 generation with:
+1. Queensland cultural context and business transformation themes
+2. Professional cinematography elements (camera movements, lighting, composition)
+3. 8-second duration optimization with clear narrative arc
+4. Platform-specific aspect ratio considerations (${platform === 'instagram' ? '9:16 vertical' : '16:9 horizontal'})
+5. Orchestral music integration and professional sound design
+
+Return JSON format:
+{
+  "prompts": [
+    {
+      "title": "Option 1 Title",
+      "prompt": "Detailed cinematic prompt...",
+      "style": "documentary/narrative/transformation"
+    },
+    // ... 2 more options
+  ],
+  "grokEnhanced": true,
+  "enhancedCopy": "Best prompt for VEO 3.0"
+}`;
+
+      const result = await model.generateContent(grokPrompt);
+      const response = await result.response;
+      const grokText = response.text();
+      
+      console.log('✅ Grok enhancement completed');
+      
+      // Try to parse JSON, fallback to text if needed
+      try {
+        const parsed = JSON.parse(grokText.replace(/```json|```/g, ''));
+        return {
+          ...parsed,
+          grokEnhanced: true,
+          rawResponse: grokText
+        };
+      } catch (parseError) {
+        // Fallback if JSON parsing fails
+        return {
+          grokEnhanced: true,
+          enhancedCopy: grokText,
+          prompts: [{
+            title: "Grok Enhanced Prompt",
+            prompt: grokText,
+            style: "enhanced"
+          }],
+          rawResponse: grokText
+        };
+      }
+      
+    } catch (error) {
+      console.error('❌ Grok enhancement failed:', error.message);
+      return {
+        grokEnhanced: false,
+        error: error.message,
+        prompts: [{
+          title: "Fallback Prompt",
+          prompt: `Professional Queensland business video: ${postContent}`,
+          style: "fallback"
+        }]
+      };
+    }
+  }
+
   // VEO 3.0 Video Generation with Correct Model Name
   static async generateVeo3VideoContent(prompt, options = {}) {
     try {
@@ -68,3 +152,6 @@ class VideoService {
 }
 
 export default VideoService;
+
+// Export individual methods for compatibility
+export { VideoService };

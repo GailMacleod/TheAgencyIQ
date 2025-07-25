@@ -11473,7 +11473,9 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         
         // STEP 1: Get Grok-enhanced prompts first
         try {
-          grokResult = await VideoService.generateVideoPromptsWithGrokCopywriter(
+          // Create videoService instance for method access
+          const videoServiceInstance = new VideoService();
+          grokResult = await videoServiceInstance.generateVideoPromptsWithGrokCopywriter(
             promptPreview || editedText || 'Professional Queensland business content',
             platform,
             brandPurpose,
