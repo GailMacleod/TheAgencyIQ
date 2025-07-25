@@ -21,6 +21,7 @@ import path from 'path';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
 import { createClient } from 'redis';
 import * as connectRedis from 'connect-redis';
+import crypto from 'crypto';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -223,9 +224,9 @@ async function startServer() {
     res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
   });
 
-  // Enhanced persistent session management with secure cookie configuration
-  const sessionTtl = 3 * 24 * 60 * 60; // 3 days in seconds (Redis format) - 72 hours for PWA persistent logins
-  const sessionTtlMs = sessionTtl * 1000; // 3 days in milliseconds (Express format) - 72 hours
+  // SECURE SESSION TIMEOUT - 30 minutes for security (was 3 days)
+  const sessionTtl = 30 * 60; // 30 minutes in seconds (Redis format)
+  const sessionTtlMs = sessionTtl * 1000; // 30 minutes in milliseconds (Express format)
   
   // Initialize database before session store
   await dbManager.initialize();
@@ -261,7 +262,7 @@ async function startServer() {
     
     sessionStore = new RedisStore({
       client: redisClient,
-      ttl: sessionTtl,
+      ttl: sessionTtl, // 30 minutes TTL for security
       prefix: 'theagencyiq:sess:',
       disableTTL: false,
       disableTouch: false
@@ -279,7 +280,7 @@ async function startServer() {
     sessionStore = new pgStore({
       conString: process.env.DATABASE_URL,
       createTableIfMissing: true,
-      ttl: sessionTtl, // Use seconds for PostgreSQL TTL
+      ttl: sessionTtl, // 30 minutes TTL for security (was 3 days)
       tableName: "sessions",
       touchInterval: 60000, // Touch sessions every minute to prevent premature expiry
       disableTouch: false, // Enable touch for active sessions
@@ -316,17 +317,16 @@ async function startServer() {
     saveUninitialized: false, // Don't create sessions for unauthenticated users
     name: 'theagencyiq.session',
     genid: () => {
-      const timestamp = Date.now().toString(36);
-      const random = Math.random().toString(36).substring(2, 15);
-      return `aiq_${timestamp}_${random}`;
+      // REQUIRED: Generate cryptographically secure session IDs (128+ bits)
+      return 'aiq_' + crypto.randomBytes(16).toString('hex'); // 128-bit secure ID
     },
     cookie: { 
-      secure: secureDefaults.SECURE_COOKIES, // Production-grade cookie security
-      httpOnly: true, // Prevent JavaScript access to prevent XSS attacks
-      sameSite: 'strict', // Prevent CSRF attacks with strict same-site policy
-      maxAge: sessionTtlMs, // 72 hours (3 days) for persistent PWA logins
-      path: '/',
-      domain: undefined // Let express handle domain automatically
+      secure: isProduction, // REQUIRED: HTTPS only in production 
+      httpOnly: true, // REQUIRED: Prevent XSS attacks via JavaScript access
+      sameSite: isProduction ? 'strict' : 'lax', // REQUIRED: Prevent CSRF, lax for dev OAuth
+      maxAge: 30 * 60 * 1000, // SECURITY FIX: 30 minutes (was 3 days)
+      path: '/', // Limit cookie scope to root path
+      domain: undefined // REQUIRED: First-party cookies only, no cross-domain
     },
     rolling: true, // Extend session on activity
     proxy: true, // Works with trust proxy setting
@@ -334,12 +334,28 @@ async function startServer() {
     touch: true // Enable session touching for active sessions
   }));
 
-  // Session touch middleware for active sessions to prevent premature expiry
+  // Session security and touch middleware for active sessions
   app.use((req, res, next) => {
     if (req.session && req.session.userId) {
       // Touch session to extend TTL for active users
       req.session.touch();
       req.session.lastActivity = Date.now();
+      
+      // Monitor for suspicious activity (IP/User-Agent changes)
+      const currentIP = req.ip || req.connection.remoteAddress;
+      const currentUA = req.headers['user-agent'];
+      
+      if (req.session.lastIP && req.session.lastIP !== currentIP) {
+        console.log('⚠️ IP change detected - potential session hijacking:', {
+          userId: req.session.userId,
+          oldIP: req.session.lastIP,
+          newIP: currentIP
+        });
+      }
+      
+      // Update security tracking
+      req.session.lastIP = currentIP;
+      req.session.lastUA = currentUA;
     }
     next();
   });
@@ -358,8 +374,8 @@ async function startServer() {
     if (req.session?.userId && !req.headers.cookie?.includes('aiq_backup_session')) {
       console.log('🔧 Setting secure session cookies for authenticated user');
       res.setHeader('Set-Cookie', [
-        `aiq_backup_session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=strict${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`,
-        `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=strict${isProduction ? '; Secure' : ''}; Max-Age=${sessionTtlMs / 1000}`
+        `aiq_backup_session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=${isProduction ? 'strict' : 'lax'}${isProduction ? '; Secure' : ''}; Max-Age=${30 * 60}`,
+        `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=${isProduction ? 'strict' : 'lax'}${isProduction ? '; Secure' : ''}; Max-Age=${30 * 60}`
       ]);
     }
     
