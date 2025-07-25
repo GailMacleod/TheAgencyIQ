@@ -22,6 +22,9 @@ import { initializeMonitoring, logInfo, logError } from './monitoring';
 import { createClient } from 'redis';
 import * as connectRedis from 'connect-redis';
 import crypto from 'crypto';
+import { sessionRegenerationMiddleware, oauthSessionRegenerationMiddleware } from './middleware/sessionRegeneration.js';
+import { createPersistentQuotaMiddleware } from './middleware/quotaPersistence.js';
+import { cookieConsentMiddleware } from './middleware/cookieConsent.js';
 
 // Production-compatible logger
 function log(message: string, source = "express") {
@@ -256,9 +259,16 @@ async function startServer() {
     
     const RedisStore = connectRedis.default(session);
     
-    // Test Redis connection
+    // Test Redis connection and check version for security
     await redisClient.connect();
     await redisClient.ping();
+    
+    // Check Redis version for known vulnerabilities
+    const redisInfo = await redisClient.info('server');
+    console.log('🔍 Redis version check:', redisInfo.substring(0, 100) + '...');
+    if (!redisInfo.includes('redis_version:7.') && !redisInfo.includes('redis_version:6.2.')) {
+      console.log('⚠️ Redis version may have known vulnerabilities - consider updating');
+    }
     
     sessionStore = new RedisStore({
       client: redisClient,
@@ -324,9 +334,10 @@ async function startServer() {
       secure: isProduction, // REQUIRED: HTTPS only in production 
       httpOnly: true, // REQUIRED: Prevent XSS attacks via JavaScript access
       sameSite: isProduction ? 'strict' : 'lax', // REQUIRED: Prevent CSRF, lax for dev OAuth
-      maxAge: 30 * 60 * 1000, // SECURITY FIX: 30 minutes (was 3 days)
+      maxAge: 24 * 60 * 60 * 1000, // Absolute timeout: 24 hours maximum
       path: '/', // Limit cookie scope to root path
-      domain: undefined // REQUIRED: First-party cookies only, no cross-domain
+      domain: undefined, // REQUIRED: First-party cookies only, no cross-domain
+      partitioned: true // 2025 browser partitioning support
     },
     rolling: true, // Extend session on activity
     proxy: true, // Works with trust proxy setting
@@ -334,22 +345,61 @@ async function startServer() {
     touch: true // Enable session touching for active sessions
   }));
 
-  // Session security and touch middleware for active sessions
+  // Session security and touch middleware with absolute timeout
   app.use((req, res, next) => {
     if (req.session && req.session.userId) {
+      // Set creation timestamp on first use
+      if (!req.session.createdAt) {
+        req.session.createdAt = Date.now();
+      }
+      
+      // Check absolute timeout (24 hours regardless of activity)
+      const sessionAge = Date.now() - req.session.createdAt;
+      if (sessionAge > 24 * 60 * 60 * 1000) {
+        console.log('⏰ Session expired due to absolute timeout (24h):', {
+          userId: req.session.userId,
+          sessionAge: Math.round(sessionAge / (1000 * 60 * 60)) + 'h'
+        });
+        req.session.destroy((err: any) => {
+          if (err) console.error('Session destruction failed:', err);
+          res.clearCookie('theagencyiq.session');
+          res.clearCookie('aiq_backup_session');
+          return res.status(401).json({ error: 'Session expired (absolute timeout)' });
+        });
+        return;
+      }
+      
+      // Check inactivity timeout (30 minutes)
+      if (req.session.lastActivity) {
+        const inactiveTime = Date.now() - req.session.lastActivity;
+        if (inactiveTime > 30 * 60 * 1000) {
+          console.log('⏰ Session expired due to inactivity:', {
+            userId: req.session.userId,
+            inactiveMinutes: Math.round(inactiveTime / (1000 * 60))
+          });
+          req.session.destroy((err: any) => {
+            if (err) console.error('Session destruction failed:', err);
+            res.clearCookie('theagencyiq.session');
+            res.clearCookie('aiq_backup_session');
+            return res.status(401).json({ error: 'Session expired due to inactivity' });
+          });
+          return;
+        }
+      }
+      
       // Touch session to extend TTL for active users
       req.session.touch();
       req.session.lastActivity = Date.now();
       
-      // Monitor for suspicious activity (IP/User-Agent changes)
+      // Monitor for suspicious activity (IP/User-Agent changes) - masked logging
       const currentIP = req.ip || req.connection.remoteAddress;
       const currentUA = req.headers['user-agent'];
       
       if (req.session.lastIP && req.session.lastIP !== currentIP) {
         console.log('⚠️ IP change detected - potential session hijacking:', {
           userId: req.session.userId,
-          oldIP: req.session.lastIP,
-          newIP: currentIP
+          oldIP: req.session.lastIP?.substring(0, 8) + '...', // Masked
+          newIP: currentIP?.substring(0, 8) + '...' // Masked
         });
       }
       
@@ -365,10 +415,14 @@ async function startServer() {
     console.log(`🔍 Session Debug - ${req.method} ${req.path}`);
     console.log(`📋 Session ID: ${req.sessionID || 'No session'}`);
     console.log(`📋 User ID: ${req.session?.userId || 'anonymous'}`);
-    console.log(`📋 Session Cookie: ${req.headers.cookie?.substring(0, 150) || 'MISSING - Will be set in response'}...`);
+    console.log(`📋 Session Cookie: ${req.headers.cookie ? '[PRESENT - ' + req.headers.cookie.length + ' chars]' : 'MISSING - Will be set in response'}`);
     
-    // PRECISION FIX: Add detailed cookie debugging as requested
-    console.log('Cookie:', req.cookies);
+    // Masked cookie logging for security
+    const maskedCookies = Object.keys(req.cookies || {}).reduce((acc: any, key) => {
+      acc[key] = req.cookies[key]?.substring(0, 8) + '...' || '[empty]';
+      return acc;
+    }, {});
+    console.log('Cookie (masked):', maskedCookies);
     
     // Set secure backup session cookie if missing
     if (req.session?.userId && !req.headers.cookie?.includes('aiq_backup_session')) {
@@ -382,6 +436,13 @@ async function startServer() {
     next();
   });
 
+  // Cookie consent middleware
+  app.use(cookieConsentMiddleware);
+  
+  // Session regeneration middleware for login security  
+  app.use(sessionRegenerationMiddleware);
+  app.use(oauthSessionRegenerationMiddleware);
+  
   // Session validation and security middleware
   app.use((req, res, next) => {
     // Session activity tracking for quota management
