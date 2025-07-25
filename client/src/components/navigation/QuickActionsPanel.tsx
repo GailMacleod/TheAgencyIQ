@@ -9,7 +9,7 @@ interface QuickActionsPanelProps {
   totalPosts?: number;
 }
 
-export function QuickActionsPanel({ remainingPosts = 0, totalPosts = 52 }: QuickActionsPanelProps) {
+export function QuickActionsPanel({ remainingPosts = 0, totalPosts = 30 }: QuickActionsPanelProps) {
   const [, setLocation] = useLocation();
 
   const { data: quotaData } = useQuery({

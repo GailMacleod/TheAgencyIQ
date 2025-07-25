@@ -226,7 +226,7 @@ export class PipelineOrchestrator {
   static async generateContent(
     userId: string,
     sessionId: string,
-    postCount: number = 52
+    postCount: number = 30
   ): Promise<{ success: boolean; state?: PipelineState; errors?: string[] }> {
     try {
       const state = await this.getCachedState(userId, sessionId);

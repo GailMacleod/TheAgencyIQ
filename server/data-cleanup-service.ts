@@ -153,16 +153,16 @@ export class DataCleanupService {
         u.subscription_plan,
         COALESCE(p.actual_published, 0) as actual_published,
         CASE 
-          WHEN u.subscription_plan = 'starter' THEN 12
-          WHEN u.subscription_plan = 'growth' THEN 27
-          WHEN u.subscription_plan = 'professional' THEN 52
-          ELSE 12
+          WHEN u.subscription_plan = 'starter' THEN 10
+          WHEN u.subscription_plan = 'growth' THEN 20
+          WHEN u.subscription_plan = 'professional' THEN 30
+          ELSE 10
         END as plan_quota,
         CASE 
-          WHEN u.subscription_plan = 'starter' THEN 12
-          WHEN u.subscription_plan = 'growth' THEN 27
-          WHEN u.subscription_plan = 'professional' THEN 52
-          ELSE 12
+          WHEN u.subscription_plan = 'starter' THEN 10
+          WHEN u.subscription_plan = 'growth' THEN 20
+          WHEN u.subscription_plan = 'professional' THEN 30
+          ELSE 10
         END - COALESCE(p.actual_published, 0) as correct_remaining
       FROM users u
       LEFT JOIN (
@@ -252,25 +252,25 @@ export class DataCleanupService {
         u.remaining_posts,
         u.subscription_plan,
         CASE 
-          WHEN u.subscription_plan = 'starter' THEN 12
-          WHEN u.subscription_plan = 'growth' THEN 27
-          WHEN u.subscription_plan = 'professional' THEN 52
-          ELSE 12
+          WHEN u.subscription_plan = 'starter' THEN 10
+          WHEN u.subscription_plan = 'growth' THEN 20
+          WHEN u.subscription_plan = 'professional' THEN 30
+          ELSE 10
         END as plan_quota
       FROM users u
       WHERE 
         u.total_posts > CASE 
-          WHEN u.subscription_plan = 'starter' THEN 12
-          WHEN u.subscription_plan = 'growth' THEN 27
-          WHEN u.subscription_plan = 'professional' THEN 52
-          ELSE 12
+          WHEN u.subscription_plan = 'starter' THEN 10
+          WHEN u.subscription_plan = 'growth' THEN 20
+          WHEN u.subscription_plan = 'professional' THEN 30
+          ELSE 10
         END
         OR u.remaining_posts < 0
         OR u.remaining_posts > CASE 
-          WHEN u.subscription_plan = 'starter' THEN 12
-          WHEN u.subscription_plan = 'growth' THEN 27
-          WHEN u.subscription_plan = 'professional' THEN 52
-          ELSE 12
+          WHEN u.subscription_plan = 'starter' THEN 10
+          WHEN u.subscription_plan = 'growth' THEN 20
+          WHEN u.subscription_plan = 'professional' THEN 30
+          ELSE 10
         END
     `));
 
@@ -299,17 +299,17 @@ export class DataCleanupService {
         COALESCE(p.approved_count, 0) as approved_pending,
         COALESCE(p.draft_count, 0) as drafts,
         CASE 
-          WHEN u.subscription_plan = 'starter' THEN 12
-          WHEN u.subscription_plan = 'growth' THEN 27
-          WHEN u.subscription_plan = 'professional' THEN 52
-          ELSE 12
+          WHEN u.subscription_plan = 'starter' THEN 10
+          WHEN u.subscription_plan = 'growth' THEN 20
+          WHEN u.subscription_plan = 'professional' THEN 30
+          ELSE 10
         END as plan_quota,
         ROUND(
           (COALESCE(p.published_count, 0) * 100.0 / CASE 
-            WHEN u.subscription_plan = 'starter' THEN 12
-            WHEN u.subscription_plan = 'growth' THEN 27
-            WHEN u.subscription_plan = 'professional' THEN 52
-            ELSE 12
+            WHEN u.subscription_plan = 'starter' THEN 10
+            WHEN u.subscription_plan = 'growth' THEN 20
+            WHEN u.subscription_plan = 'professional' THEN 30
+            ELSE 10
           END), 2
         ) as quota_usage_percentage
       FROM users u

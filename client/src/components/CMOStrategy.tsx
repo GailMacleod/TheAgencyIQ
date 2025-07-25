@@ -27,7 +27,7 @@ export default function CMOStrategy({ brandPurpose, onStrategyGenerated }: CMOSt
         },
         body: JSON.stringify({
           brandPurpose,
-          totalPosts: 52,
+          totalPosts: 30,
           platforms: ['facebook', 'instagram', 'linkedin', 'youtube']
         })
       });

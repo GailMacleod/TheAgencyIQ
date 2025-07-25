@@ -153,7 +153,7 @@ export class EventSchedulingService {
     console.log(`🎪 Brisbane Ekka focus: ${schedule.filter(p => p.eventId.includes('ekka')).length} posts`);
     console.log(`🏢 Other Queensland events: ${schedule.filter(p => !p.eventId.includes('ekka')).length} posts`);
     
-    return schedule.slice(0, 52); // Professional plan limit
+    return schedule.slice(0, 30); // Professional plan limit
   }
 
   /**

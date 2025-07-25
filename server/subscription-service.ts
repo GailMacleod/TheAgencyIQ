@@ -12,19 +12,19 @@ export interface SubscriptionPlan {
 export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   starter: {
     name: 'Starter',
-    postsPerMonth: 14,
+    postsPerMonth: 10,
     freeBonus: 0,
     price: 19.99
   },
   growth: {
     name: 'Growth', 
-    postsPerMonth: 27,
+    postsPerMonth: 20,
     freeBonus: 0,
     price: 41.99
   },
   professional: {
     name: 'Professional',
-    postsPerMonth: 52,
+    postsPerMonth: 30,
     freeBonus: 0,
     price: 99.99
   }

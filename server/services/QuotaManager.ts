@@ -7,9 +7,9 @@ import Database from '@replit/database';
 export class QuotaManager {
   private static quotaLimits = {
     free: { videos: 1, apiCalls: 5, posts: 5 },
-    starter: { videos: 5, apiCalls: 50, posts: 20 },
-    growth: { videos: 15, apiCalls: 150, posts: 50 },
-    professional: { videos: 52, apiCalls: 300, posts: 52 }
+    starter: { videos: 5, apiCalls: 50, posts: 10 },
+    growth: { videos: 15, apiCalls: 150, posts: 20 },
+    professional: { videos: 30, apiCalls: 300, posts: 30 }
   };
 
   // Pre-check video generation quota - FIXED FOR PROFESSIONAL USERS

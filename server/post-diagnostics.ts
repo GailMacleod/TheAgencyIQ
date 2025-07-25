@@ -254,7 +254,7 @@ export class PostDiagnosticsService {
       const user = await storage.getUser(userId);
       if (user) {
         const publishedPosts = posts.filter(p => p.status === 'published').length;
-        const expectedRemaining = (user.totalPosts || 52) - publishedPosts;
+        const expectedRemaining = (user.totalPosts || 30) - publishedPosts;
         
         if (user.remainingPosts !== expectedRemaining) {
           await storage.updateUser(userId, { remainingPosts: expectedRemaining });

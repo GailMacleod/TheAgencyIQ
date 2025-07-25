@@ -31,17 +31,17 @@ export default class SubscriptionService {
       // Video quota: 1 video per post for PRO users only
       const videoQuota = videoAccess ? 1 : 0;
       
-      // Posts quota based on plan
+      // Posts quota based on plan (30-day period)
       let postsQuota = 0;
       switch (plan) {
         case 'starter':
-          postsQuota = 12;
+          postsQuota = 10;
           break;
         case 'growth':
-          postsQuota = 27;
+          postsQuota = 20;
           break;
         case 'professional':
-          postsQuota = 52;
+          postsQuota = 30;
           break;
         default:
           postsQuota = 0;

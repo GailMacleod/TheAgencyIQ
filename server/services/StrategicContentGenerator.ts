@@ -886,17 +886,17 @@ Return JSON with:
 
   /**
    * QUOTA RESET UTILITY
-   * Resets user quota to Professional plan allocation (52 posts)
+   * Resets user quota to Professional plan allocation (30 posts)
    */
   static async resetQuotaToFiftyTwo(userId: number): Promise<void> {
-    console.log(`🔄 Resetting quota for user ${userId} to Professional plan (52 posts)`);
+    console.log(`🔄 Resetting quota for user ${userId} to Professional plan (30 posts)`);
     
     // Update published posts to archived to reset quota
     await db.update(posts)
       .set({ status: 'archived' })
       .where(and(eq(posts.userId, userId), eq(posts.status, 'published')));
       
-    console.log(`✅ Quota reset complete - user ${userId} now has 52/52 posts available`);
+    console.log(`✅ Quota reset complete - user ${userId} now has 30/30 posts available`);
   }
 
   /**

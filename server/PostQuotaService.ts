@@ -31,9 +31,9 @@ export class PostQuotaService {
    * PLAN QUOTAS - Single source of truth
    */
   private static readonly PLAN_QUOTAS = {
-    'starter': 12,
-    'growth': 27, 
-    'professional': 52
+    'starter': 10,
+    'growth': 20, 
+    'professional': 30
   };
 
   /**
@@ -952,7 +952,7 @@ export class PostQuotaService {
   }
 
   /**
-   * Enforce 52 event-driven posts for 30-day cycle
+   * Enforce 30 event-driven posts for 30-day cycle
    */
   static async enforce30DayCycle(userId: number): Promise<{ success: boolean; message: string; postsInCycle: number }> {
     const startTime = Date.now();
@@ -976,14 +976,14 @@ export class PostQuotaService {
         return { success: false, message: 'User quota not found', postsInCycle: 0 };
       }
       
-      // Enforce professional plan 52 posts for 30-day cycle
-      if (quota.subscriptionPlan === 'professional' && postsInCycle.length > 52) {
+      // Enforce professional plan 30 posts for 30-day cycle
+      if (quota.subscriptionPlan === 'professional' && postsInCycle.length > 30) {
         await PostQuotaService.logQuotaOperation(userId, 0, 'CYCLE_ENFORCEMENT', 
-          `Excess posts detected: ${postsInCycle.length}/52 in cycle. Enforcement active.`);
+          `Excess posts detected: ${postsInCycle.length}/30 in cycle. Enforcement active.`);
         
         return { 
           success: false, 
-          message: `Cycle quota exceeded: ${postsInCycle.length}/52 posts`,
+          message: `Cycle quota exceeded: ${postsInCycle.length}/30 posts`,
           postsInCycle: postsInCycle.length
         };
       }
@@ -992,7 +992,7 @@ export class PostQuotaService {
       
       return { 
         success: true, 
-        message: `Cycle quota OK: ${postsInCycle.length}/52 posts`,
+        message: `Cycle quota OK: ${postsInCycle.length}/30 posts`,
         postsInCycle: postsInCycle.length
       };
       

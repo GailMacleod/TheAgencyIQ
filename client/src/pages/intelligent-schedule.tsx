@@ -531,7 +531,7 @@ function IntelligentSchedule() {
         credentials: 'include',
         body: JSON.stringify({
           brandPurpose,
-          totalPosts: 52, // Professional plan allocation
+          totalPosts: 30, // Professional plan allocation
           platforms: ['facebook', 'instagram', 'linkedin', 'x', 'youtube'],
           resetQuota: true // Reset quota to Professional plan
         })

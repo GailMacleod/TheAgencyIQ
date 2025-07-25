@@ -94,14 +94,14 @@ const server = http.createServer((req, res) => {
   if (pathname === '/api/subscription-usage') {
     return jsonResponse(res, 200, {
       subscriptionPlan: 'professional',
-      totalAllocation: 52,
-      remainingPosts: 49,
+      totalAllocation: 30,
+      remainingPosts: 27,
       usedPosts: 3,
       publishedPosts: 3,
       failedPosts: 0,
       partialPosts: 0,
       planLimits: {
-        posts: 52,
+        posts: 30,
         reach: 15000,
         engagement: 4.5
       },
