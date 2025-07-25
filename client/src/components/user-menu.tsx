@@ -324,12 +324,11 @@ Are you absolutely sure you want to proceed?`;
             </DropdownMenuItem>
             
             <DropdownMenuItem
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
+              onClick={() => window.location.href = '/api/logout'}
               className="cursor-pointer"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              {logoutMutation.isPending ? "Logging out..." : "Logout"}
+              Logout
             </DropdownMenuItem>
           </div>
         </div>

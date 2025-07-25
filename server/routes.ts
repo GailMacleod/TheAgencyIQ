@@ -577,6 +577,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   };
 
+  // Logout route - redirects to external OAuth logout
+  app.get('/api/logout', (req, res) => {
+    req.logout(() => {
+      // Destroy session completely
+      req.session.destroy((err: any) => {
+        if (err) console.error('Session destroy error:', err);
+      });
+      
+      // Clear cookies
+      res.clearCookie('theagencyiq.session');
+      res.clearCookie('aiq_backup_session');
+      res.clearCookie('connect.sid');
+      
+      // Redirect to external OAuth logout to clear all authentication
+      res.redirect(
+        `https://replit.com/logout?post_logout_redirect_uri=${encodeURIComponent(
+          `${req.protocol}://${req.hostname}`
+        )}`
+      );
+    });
+  });
+
   // Duplicate webhook endpoint removed - using server/index.ts implementation
 
 

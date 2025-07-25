@@ -212,7 +212,7 @@ export default function Header({
                   Cancel Subscription
                 </DropdownMenuItem>
                 
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+                <DropdownMenuItem onClick={() => window.location.href = '/api/logout'} className="text-red-600 cursor-pointer">
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
                 </DropdownMenuItem>
