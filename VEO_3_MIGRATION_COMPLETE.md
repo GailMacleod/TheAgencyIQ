@@ -11,10 +11,9 @@
 ## 🔑 New Credentials Integration
 
 ### Vertex AI Service Account
-- **Project ID**: planar-catbird-466704-b6
-- **Client Email**: veo-service@planar-catbird-466704-b6.iam.gserviceaccount.com
 - **Format**: ✅ Valid JSON service account
 - **Status**: OPERATIONAL
+- **Authentication**: Environment variable configured
 
 ### Gemini API Key
 - **Length**: 40 characters

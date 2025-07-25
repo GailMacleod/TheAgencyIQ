@@ -1025,7 +1025,7 @@ class VeoService {
       
       // Check if we have proper Vertex AI credentials
       const serviceAccountKey = process.env.VERTEX_AI_SERVICE_ACCOUNT_KEY;
-      const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'planar-catbird-466704-b6';
+      const projectId = process.env.GOOGLE_CLOUD_PROJECT;
       
       if (!serviceAccountKey) {
         console.log(`⚠️ VEO 3.0: VERTEX_AI_SERVICE_ACCOUNT_KEY not configured - returning async operation`);
