@@ -258,8 +258,7 @@ export default function BrandPurpose() {
           motivations: formData.motivations,
           painPoints: formData.painPoints
         });
-        const result = await response.json();
-        return result.guidance;
+        return response.guidance;
       } catch (error) {
         console.error("Guidance API request failed:", error);
         return null;
