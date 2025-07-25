@@ -123,7 +123,55 @@ function Router() {
         <Route path="/admin" component={AdminDashboard} />
         <Route path="/admin/video-prompts" component={AdminVideoPrompts} />
         <Route path="/video-gen" component={VideoGen} />
-        <Route path="/logout" component={LogoutComponent} />
+        <Route path="/logout">
+          {() => {
+            // Immediately perform logout when route is accessed
+            useEffect(() => {
+              const performLogout = async () => {
+                try {
+                  // Call server logout endpoint
+                  await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                  });
+                  
+                  // Clear all client-side storage
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  
+                  // Clear cookies manually
+                  document.cookie.split(";").forEach((c) => {
+                    const eqPos = c.indexOf("=");
+                    const name = eqPos > -1 ? c.substr(0, eqPos) : c;
+                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
+                  });
+                  
+                  // Clear any cached data
+                  if ('caches' in window) {
+                    const names = await caches.keys();
+                    await Promise.all(names.map(name => caches.delete(name)));
+                  }
+                  
+                  console.log('🚪 Complete logout performed');
+                  
+                  // Force redirect to login
+                  window.location.replace('/api/login');
+                } catch (error) {
+                  console.error('Logout error:', error);
+                  // Force logout even on error
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  window.location.replace('/api/login');
+                }
+              };
+              
+              performLogout();
+            }, []);
+            
+            return <div>Logging out...</div>;
+          }}
+        </Route>
       <Route path="/dashboard" component={ConnectPlatforms} />
       <Route path="/connection-repair" component={ConnectionRepair} />
       <Route path="/oauth-reconnect" component={OAuthReconnect} />
