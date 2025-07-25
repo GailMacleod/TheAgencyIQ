@@ -73,16 +73,27 @@ export default function Subscription() {
     },
   ];
 
-  const features = [
-    "brand purpose creation",
-    "social media scheduling", 
-    "automated post creation",
-    "automated posting",
-    "post analytics",
-    "content recommendation",
-    "q&a assistant",
-    "platform connections",
-  ];
+  const getFeatures = (planId: string) => {
+    const baseFeatures = [
+      "brand purpose creation",
+      "social media scheduling", 
+      "automated post creation",
+      "automated posting",
+      "post analytics",
+      "content recommendation",
+      "q&a assistant",
+      "platform connections",
+    ];
+    
+    if (planId === "professional") {
+      return [
+        ...baseFeatures,
+        "veo 3.0 video generation", // Exclusive to Professional
+      ];
+    }
+    
+    return baseFeatures;
+  };
 
   const handleSelectPlan = (planId: string) => {
     setShowSignupForm(planId);
@@ -241,12 +252,27 @@ export default function Subscription() {
                   </div>
                   
                   <div className="space-y-4">
-                    {features.map((feature, featureIndex) => (
+                    {getFeatures(plan.id).map((feature, featureIndex) => (
                       <div key={featureIndex} className="flex items-center space-x-3">
-                        <div className="w-5 h-5 bg-gradient-atomiq rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          feature === "veo 3.0 video generation" 
+                            ? "bg-gradient-to-r from-purple-600 to-indigo-600" 
+                            : "bg-gradient-atomiq"
+                        }`}>
                           <CheckIcon className="w-3 h-3 text-white" />
                         </div>
-                        <span className="text-sm text-left capitalize">{feature}</span>
+                        <span className={`text-sm text-left capitalize ${
+                          feature === "veo 3.0 video generation" 
+                            ? "font-semibold text-purple-800" 
+                            : ""
+                        }`}>
+                          {feature}
+                          {feature === "veo 3.0 video generation" && (
+                            <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
+                              PRO EXCLUSIVE
+                            </span>
+                          )}
+                        </span>
                       </div>
                     ))}
                   </div>
