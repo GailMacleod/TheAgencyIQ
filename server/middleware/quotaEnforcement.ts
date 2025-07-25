@@ -75,7 +75,7 @@ export const checkVideoQuota = async (req: QuotaRequest, res: Response, next: Ne
 
     console.log(`🎬 Video quota check for user ${userId} with ${subscriptionTier} plan`);
 
-    // Check quota for all users including professional (52 video limit)
+    // Check quota for all users including professional (30 post limit)
     const quotaCheck = await QuotaManager.canGenerateVideo(userId);
     
     if (!quotaCheck.allowed) {
