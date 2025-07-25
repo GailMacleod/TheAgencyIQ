@@ -136,7 +136,7 @@ export default function HorizontalNavigation() {
           <h3 className="text-2xl sm:text-4xl md:text-5xl font-bold text-[#3b5cff]">
             Your Workflow
           </h3>
-          <p className="text-base sm:text-xl max-w-3xl mx-auto font-normal text-[#3253eb]">
+          <p className="text-base sm:text-xl max-w-3xl mx-auto text-[#3253eb] font-semibold">
             Social Media automation in 4 simple steps
           </p>
         </div>
