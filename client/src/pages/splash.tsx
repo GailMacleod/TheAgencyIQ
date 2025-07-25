@@ -184,17 +184,17 @@ export default function Splash() {
                 <div className="flex-1">
                   <h4 className="text-xs sm:text-sm font-semibold mb-1 text-gray-900">Starter</h4>
                   <p className="text-xs text-[#3b5cff] font-medium mb-1">$19.99/month</p>
-                  <p className="text-xs text-gray-600">12 posts (10 + 2 free)</p>
+                  <p className="text-xs text-gray-600">10 posts per 30 days</p>
                 </div>
                 <div className="flex-1 sm:border-l sm:border-r border-gray-200 sm:px-4">
                   <h4 className="text-xs sm:text-sm font-semibold mb-1 text-gray-900">Growth</h4>
                   <p className="text-xs text-[#3b5cff] font-medium mb-1">$41.99/month</p>
-                  <p className="text-xs text-gray-600">27 posts (25 + 2 free)</p>
+                  <p className="text-xs text-gray-600">20 posts per 30 days</p>
                 </div>
                 <div className="flex-1">
                   <h4 className="text-xs sm:text-sm font-semibold mb-1 text-gray-900">Professional</h4>
                   <p className="text-xs text-[#3b5cff] font-medium mb-1">$99.99/month</p>
-                  <p className="text-xs text-gray-600">52 posts (50 + 2 free)</p>
+                  <p className="text-xs text-gray-600">30 posts per 30 days</p>
                 </div>
               </div>
             </div>

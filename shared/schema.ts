@@ -61,9 +61,9 @@ export const postSchedule = pgTable("post_schedule", {
 // Post ledger for 30-day rolling quota tracking
 export const postLedger = pgTable("post_ledger", {
   userId: text("user_id").primaryKey(), // Mobile number UID
-  subscriptionTier: text("subscription_tier").notNull(), // 'starter', 'growth', 'pro'
+  subscriptionTier: text("subscription_tier").notNull(), // 'starter', 'growth', 'professional'
   periodStart: timestamp("period_start").notNull(),
-  quota: integer("quota").notNull(), // 12, 27, 52
+  quota: integer("quota").notNull(), // 10, 20, 30 (updated July 25, 2025)
   usedPosts: integer("used_posts").notNull().default(0),
   lastPosted: timestamp("last_posted"),
   createdAt: timestamp("created_at").defaultNow(),

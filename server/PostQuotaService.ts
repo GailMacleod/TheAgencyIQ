@@ -29,6 +29,7 @@ export class PostQuotaService {
   
   /**
    * PLAN QUOTAS - Single source of truth
+   * Updated July 25, 2025: Starter 10, Growth 20, Pro 30 posts per 30-day cycle
    */
   private static readonly PLAN_QUOTAS = {
     'starter': 10,
@@ -169,7 +170,7 @@ export class PostQuotaService {
         const publishedCount = await db.select({ count: sql`count(*)` })
           .from(posts)
           .where(and(
-            eq(posts.userId, userId),
+            eq(posts.userId, userId.toString()),
             eq(posts.status, 'published')
           ));
         
@@ -320,7 +321,7 @@ export class PostQuotaService {
       try {
         // Verify post exists and belongs to user
         const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
-        if (post.length === 0 || post[0].userId !== userId) {
+        if (post.length === 0 || post[0].userId !== userId.toString()) {
           console.warn(`Post ${postId} not found or doesn't belong to user ${userId}`);
           return false;
         }
@@ -371,7 +372,7 @@ export class PostQuotaService {
       try {
         // Verify post exists and belongs to user
         const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
-        if (post.length === 0 || post[0].userId !== userId) {
+        if (post.length === 0 || post[0].userId !== userId.toString()) {
           console.warn(`Post ${postId} not eligible for quota deduction - doesn't belong to user ${userId}`);
           return false;
         }
@@ -485,7 +486,7 @@ export class PostQuotaService {
           console.error(`💥 CRITICAL: Rollback failed for user ${userId}, post ${postId}:`, rollbackError);
           // Log critical rollback failure
           await this.logQuotaOperation(userId, postId, 'rollback_failure', 
-            `Critical rollback failure: ${rollbackError.message}`);
+            `Critical rollback failure: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`);
         }
         
         return false;
