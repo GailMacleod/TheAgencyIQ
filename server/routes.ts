@@ -3072,78 +3072,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   */
 
-  // Enhanced logout with HTTP-only cookie clearing and PWA synchronization
+  // Comprehensive logout with proper Express session destruction
   app.post("/api/auth/logout", async (req: any, res) => {
     try {
       const userId = req.session?.userId;
       const sessionId = req.sessionID;
       
+      console.log(`🔓 Starting logout process for user ${userId}, session ${sessionId}`);
+      
+      // Step 1: Revoke OAuth tokens in database before session destruction
       if (userId) {
-        console.log(`🔓 Logging out user ${userId}, session ${sessionId}`);
-        
-        // Comprehensive OAuth token revocation before logout
         try {
-          const providers = ['google', 'facebook', 'linkedin', 'twitter', 'youtube'];
-          const revocationResults = [];
-          
-          for (const provider of providers) {
-            try {
-              const success = await tokenManager.revokeToken(userId, provider);
-              revocationResults.push({ provider, success });
-              console.log(`🔐 ${provider} token revocation: ${success ? 'SUCCESS' : 'FAILED'}`);
-            } catch (providerError) {
-              console.log(`⚠️ ${provider} token revocation failed:`, providerError.message);
-              revocationResults.push({ provider, success: false, error: providerError.message });
-            }
+          console.log('🔐 Revoking OAuth tokens in database...');
+          // Deactivate all platform connections for this user
+          const connections = await storage.getPlatformConnectionsByUser(userId);
+          for (const connection of connections) {
+            await storage.updatePlatformConnection(connection.id, { isActive: false });
           }
-          
-          console.log(`✅ OAuth revocation completed: ${revocationResults.filter(r => r.success).length}/${providers.length} successful`);
+          console.log('✅ OAuth tokens revoked successfully');
         } catch (tokenError) {
-          console.log('⚠️ OAuth token revocation system failed during logout:', tokenError.message);
+          console.warn('⚠️ OAuth token revocation failed:', tokenError.message);
+          // Continue with logout even if token revocation fails
         }
       }
       
-      // Destroy session from database/store
-      req.session.destroy((err: any) => {
-        if (err) {
-          console.error('Session destruction error:', err);
-        }
-      });
+      // Step 2: Destroy session using proper Express-session method
+      if (req.session) {
       
-      // Clear all HTTP-only cookies with expired dates (critical fix)
-      const expiredDate = new Date(0); // January 1, 1970
+        // Proper session destruction with callback handling
+        await new Promise<void>((resolve) => {
+          req.session.destroy((err: any) => {
+            if (err) {
+              console.error('❌ Session destruction error:', err);
+            } else {
+              console.log('✅ Session destroyed successfully');
+            }
+            resolve();
+          });
+        });
+      } else {
+        console.log('⚠️ No session to destroy');
+      }
       
-      // Primary session cookie with HTTP-only flag
-      res.setHeader('Set-Cookie', [
-        `connect.sid=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`,
-        `theagencyiq.session=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`,
-        `session.sig=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`,
-        // Regular cookies that frontend can access
-        `sessionId=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
-        `userId=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
-        `userEmail=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
-        `subscriptionStatus=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
-        `auth_token=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
-        `remember_token=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
-        // PWA-specific cookies
-        `pwa_session=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
-        `app_installed=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`
-      ]);
+      // Step 3: Clear all session cookies with proper attributes
       
-      // Additional clearCookie calls for redundancy
-      res.clearCookie('connect.sid', {
+      // Step 4: Clear all session cookies using Express clearCookie
+      const cookieOptions = {
         path: '/',
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-      });
+        sameSite: 'strict' as const
+      };
       
-      res.clearCookie('theagencyiq.session', {
+      // Clear primary session cookies
+      res.clearCookie('connect.sid', cookieOptions);
+      res.clearCookie('theagencyiq.session', cookieOptions);
+      res.clearCookie('session.sig', cookieOptions);
+      res.clearCookie('aiq_backup_session', cookieOptions);
+      
+      // Clear any additional app cookies (without httpOnly for frontend access)
+      const publicCookieOptions = {
         path: '/',
-        httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-      });
+        sameSite: 'strict' as const
+      };
+      
+      res.clearCookie('sessionId', publicCookieOptions);
+      res.clearCookie('userId', publicCookieOptions);
+      res.clearCookie('userEmail', publicCookieOptions);
       
       // Set comprehensive cache control headers to prevent caching
       res.set({
