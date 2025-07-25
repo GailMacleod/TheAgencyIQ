@@ -345,6 +345,29 @@ async function startServer() {
     touch: true // Enable session touching for active sessions
   }));
 
+  // CRITICAL: Redis security validation (2025 CVE protection)
+  const { redisSecurityMiddleware } = await import('./middleware/redisSecurityValidator');
+  app.use(redisSecurityMiddleware);
+
+  // CRITICAL: Cookie consent middleware (2025 ePrivacy compliance)  
+  app.use((req, res, next) => {
+    // Check if this is an API request or if consent already given
+    if (req.path.startsWith('/api/') || req.cookies['cookie-consent']) {
+      return next();
+    }
+    
+    // For non-API requests without consent, set consent banner flag
+    if (!req.cookies['cookie-consent']) {
+      res.cookie('consent-required', '1', { 
+        maxAge: 5 * 60 * 1000, // 5 minutes
+        httpOnly: false, // Needs to be accessible to frontend
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+    }
+    next();
+  });
+
   // Session security and touch middleware with absolute timeout
   app.use((req, res, next) => {
     if (req.session && req.session.userId) {
@@ -353,18 +376,29 @@ async function startServer() {
         req.session.createdAt = Date.now();
       }
       
-      // Check absolute timeout (24 hours regardless of activity)
+      // CRITICAL: Absolute timeout enforcement (24h max - 2025 OWASP requirement)
       const sessionAge = Date.now() - req.session.createdAt;
       if (sessionAge > 24 * 60 * 60 * 1000) {
-        console.log('⏰ Session expired due to absolute timeout (24h):', {
+        console.log('🔒 [SECURITY] Session expired due to absolute timeout (24h):', {
           userId: req.session.userId,
-          sessionAge: Math.round(sessionAge / (1000 * 60 * 60)) + 'h'
+          sessionAge: Math.round(sessionAge / (1000 * 60 * 60)) + 'h',
+          ip: req.ip,
+          userAgent: req.headers['user-agent']?.substring(0, 50)
         });
         req.session.destroy((err: any) => {
           if (err) console.error('Session destruction failed:', err);
-          res.clearCookie('theagencyiq.session');
+          res.clearCookie('theagencyiq.session', { 
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/'
+          });
           res.clearCookie('aiq_backup_session');
-          return res.status(401).json({ error: 'Session expired (absolute timeout)' });
+          return res.status(401).json({ 
+            error: 'Session expired (absolute timeout)', 
+            code: 'ABSOLUTE_TIMEOUT_EXCEEDED',
+            redirectTo: '/api/login'
+          });
         });
         return;
       }
@@ -1090,35 +1124,47 @@ async function startServer() {
           });
         }
 
-        // Establish session
-        req.session.userId = user.id;
-        req.session.userEmail = user.email;
-        req.session.userPhone = user.phone;
-        req.session.subscriptionPlan = user.subscriptionPlan;
-        req.session.subscriptionActive = user.subscriptionActive;
-        
-        // Generate session ID for response
-        const sessionId = req.session.id || `aiq_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 15)}`;
+        // CRITICAL: Session regeneration to prevent fixation attacks (2025 OWASP requirement)
+        req.session.regenerate((err) => {
+          if (err) {
+            console.error('[SECURITY] Session regeneration failed:', err);
+            return res.status(500).json({
+              error: 'Session security error',
+              code: 'SESSION_REGENERATION_FAILED'
+            });
+          }
+          
+          // Establish authenticated session after regeneration
+          req.session.userId = user.id;
+          req.session.userEmail = user.email;
+          req.session.userPhone = user.phone;
+          req.session.subscriptionPlan = user.subscriptionPlan;
+          req.session.subscriptionActive = user.subscriptionActive;
+          req.session.createdAt = Date.now(); // For absolute timeout tracking
+          
+          // Generate session ID for response
+          const sessionId = req.session.id || `aiq_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 15)}`;
 
-        console.log('[AUTH] Successful login', {
-          userId: user.id,
-          email: user.email,
-          phone: user.phone,
-          sessionId
-        });
-
-        res.json({
-          success: true,
-          message: 'Login successful',
-          user: {
-            id: user.id,
+          console.log('[AUTH] Successful login with session regeneration', {
+            userId: user.id,
             email: user.email,
             phone: user.phone,
-            subscriptionPlan: user.subscriptionPlan,
-            subscriptionActive: user.subscriptionActive
-          },
-          sessionId
-        });
+            sessionId
+          });
+
+          res.json({
+            success: true,
+            message: 'Login successful',
+            user: {
+              id: user.id,
+              email: user.email,
+              phone: user.phone,
+              subscriptionPlan: user.subscriptionPlan,
+              subscriptionActive: user.subscriptionActive
+            },
+            sessionId
+          });
+        }); // Close regenerate callback
       } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({
