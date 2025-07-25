@@ -493,15 +493,21 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
                 <span className="text-sm text-purple-800 font-semibold">VEO 3.0 Generation</span>
+                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                  30s - 6min process
+                </span>
               </div>
               <div className="text-right">
                 <span className="text-sm font-mono text-purple-700">
                   {Math.floor(renderingTime / 60)}:{(renderingTime % 60).toString().padStart(2, '0')}
                 </span>
-                <div className="text-xs text-purple-600">
-                  {renderingTime < 11 ? 'Minimum 11s' : renderingTime > 360 ? 'Max 6min' : 'Processing...'}
-                </div>
               </div>
+            </div>
+
+            {/* Important user message about async timing */}
+            <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+              <strong>Please wait:</strong> VEO 3.0 uses authentic async processing (not instant results). 
+              Operations take 30 seconds to 6 minutes to complete for cinematic quality.
             </div>
             
             <div className="w-full bg-purple-100 rounded-full h-2 mb-3">
@@ -514,11 +520,16 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
             {currentPhase && (
               <div className="space-y-1">
                 <p className="text-sm font-medium text-purple-800">{currentPhase}</p>
-                {renderingTime > 60 && (
-                  <p className="text-xs text-purple-600">
-                    VEO 3.0 is creating high-quality video content. Please wait...
-                  </p>
-                )}
+                <div className="flex items-center gap-2 text-xs text-purple-600">
+                  <span>🎬 Cinematic Quality</span>
+                  <span>•</span>
+                  <span>🎵 Orchestral Audio</span>
+                  <span>•</span>
+                  <span>🇦🇺 Queensland Context</span>
+                </div>
+                <div className="text-xs text-purple-600 mt-1 italic">
+                  Authentic Vertex AI processing - please keep this tab open while generating
+                </div>
               </div>
             )}
           </div>

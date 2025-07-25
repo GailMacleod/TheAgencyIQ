@@ -247,10 +247,13 @@ function VideoGeneration() {
               {isGenerating && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Generating...</span>
+                    <span className="text-sm font-medium">VEO 3.0 Generating...</span>
                     <span className="text-sm text-muted-foreground">{Math.round(generationProgress)}%</span>
                   </div>
                   <Progress value={generationProgress} className="w-full" />
+                  <div className="p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                    <strong>Please wait:</strong> VEO 3.0 async processing takes 30 seconds to 6 minutes for cinematic quality.
+                  </div>
                 </div>
               )}
 
