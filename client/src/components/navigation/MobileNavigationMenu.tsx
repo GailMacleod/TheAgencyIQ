@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, Home, Calendar, BarChart3, Settings, User, Plus, Zap, LogOut } from "lucide-react";
+import { Menu, X, Home, Calendar, BarChart3, Settings, User, Plus, Zap } from "lucide-react";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
@@ -154,20 +154,9 @@ export function MobileNavigationMenu() {
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t space-y-2">
+        <div className="mt-6 pt-4 border-t">
           <Button 
             variant="outline" 
-            className="w-full text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={() => {
-              setIsOpen(false);
-              window.location.href = '/api/auth/logout';
-            }}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
-          <Button 
-            variant="ghost" 
             className="w-full"
             onClick={() => setIsOpen(false)}
           >

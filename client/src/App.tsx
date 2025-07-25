@@ -54,22 +54,11 @@ function LogoutComponent() {
   useEffect(() => {
     const performLogout = async () => {
       try {
-        console.log('🔓 Starting logout process...');
-        
-        // Call proper server logout endpoint
-        const response = await fetch('/api/auth/logout', {
+        // Call server logout endpoint
+        await fetch('/api/auth/logout', {
           method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache'
-          }
+          credentials: 'include'
         });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Server logout successful:', data);
-        }
         
         // Clear all client-side storage
         localStorage.clear();
@@ -78,11 +67,9 @@ function LogoutComponent() {
         // Clear cookies manually
         document.cookie.split(";").forEach((c) => {
           const eqPos = c.indexOf("=");
-          const name = eqPos > -1 ? c.substr(0, eqPos).trim() : c.trim();
-          // Clear with various path/domain combinations
-          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
-          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${window.location.hostname}`;
+          const name = eqPos > -1 ? c.substr(0, eqPos) : c;
+          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
         });
         
         // Clear any cached data
@@ -91,38 +78,23 @@ function LogoutComponent() {
           await Promise.all(names.map(name => caches.delete(name)));
         }
         
-        console.log('✅ Complete logout performed - redirecting to login');
+        console.log('🚪 Complete logout performed');
         
-        // Force redirect using window.location.href for better compatibility
-        window.location.href = '/api/login';
+        // Force redirect to login
+        window.location.replace('/api/login');
       } catch (error) {
-        console.error('❌ Logout error:', error);
+        console.error('Logout error:', error);
         // Force logout even on error
         localStorage.clear();
         sessionStorage.clear();
-        window.location.href = '/api/login';
+        window.location.replace('/api/login');
       }
     };
     
     performLogout();
   }, []);
   
-  return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '100vh',
-      fontFamily: 'system-ui'
-    }}>
-      <div>
-        <div>Logging out...</div>
-        <div style={{ fontSize: '14px', color: '#666', marginTop: '8px' }}>
-          Please wait while we securely log you out
-        </div>
-      </div>
-    </div>
-  );
+  return <div>Logging out...</div>;
 }
 
 function Router() {

@@ -3072,146 +3072,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   */
 
-  // CRITICAL: Complete logout with database cleanup and session destruction
+  // Enhanced logout with HTTP-only cookie clearing and PWA synchronization
   app.post("/api/auth/logout", async (req: any, res) => {
     try {
       const userId = req.session?.userId;
       const sessionId = req.sessionID;
       
-      console.log(`🔓 URGENT LOGOUT: Starting complete logout for user ${userId}, session ${sessionId}`);
-      
-      // Step 1: Delete/invalidate OAuth tokens in database
       if (userId) {
+        console.log(`🔓 Logging out user ${userId}, session ${sessionId}`);
+        
+        // Comprehensive OAuth token revocation before logout
         try {
-          console.log('🗑️ Deleting OAuth tokens from database...');
-          // Delete all platform connections for this user (complete removal)
-          const connections = await storage.getPlatformConnectionsByUser(userId);
-          for (const connection of connections) {
-            await storage.deletePlatformConnection(connection.id);
-            console.log(`🗑️ Deleted connection ${connection.id} for platform ${connection.platform}`);
+          const providers = ['google', 'facebook', 'linkedin', 'twitter', 'youtube'];
+          const revocationResults = [];
+          
+          for (const provider of providers) {
+            try {
+              const success = await tokenManager.revokeToken(userId, provider);
+              revocationResults.push({ provider, success });
+              console.log(`🔐 ${provider} token revocation: ${success ? 'SUCCESS' : 'FAILED'}`);
+            } catch (providerError) {
+              console.log(`⚠️ ${provider} token revocation failed:`, providerError.message);
+              revocationResults.push({ provider, success: false, error: providerError.message });
+            }
           }
           
-          // Clear any session-related user data (if exists)
-          try {
-            await storage.updateUser(userId, { 
-              updatedAt: new Date()
-            });
-          } catch (updateError) {
-            console.warn('User record update failed during logout:', updateError.message);
-          }
-          
-          console.log('✅ All OAuth tokens and session data deleted from database');
+          console.log(`✅ OAuth revocation completed: ${revocationResults.filter(r => r.success).length}/${providers.length} successful`);
         } catch (tokenError) {
-          console.error('❌ Database cleanup failed:', tokenError.message);
-          // Continue with logout even if database cleanup fails
+          console.log('⚠️ OAuth token revocation system failed during logout:', tokenError.message);
         }
       }
       
-      // Step 2: Destroy session from database/store completely
-      if (req.session) {
-        console.log('🗑️ Destroying session from database store...');
-        await new Promise<void>((resolve) => {
-          req.session.destroy((err: any) => {
-            if (err) {
-              console.error('❌ Session destruction error:', err);
-            } else {
-              console.log('✅ Session destroyed from database store');
-            }
-            resolve();
-          });
-        });
-      } else {
-        console.log('⚠️ No active session found to destroy');
-      }
-      
-      // Step 3: Force clear ALL cookies with expired headers (nuclear option)
-      console.log('🧹 Force clearing all session cookies...');
-      
-      const expiredDate = new Date(0); // January 1, 1970
-      const cookieList = [
-        'connect.sid', 'theagencyiq.session', 'session.sig', 
-        'aiq_backup_session', 'sessionId', 'userId', 'userEmail',
-        'auth_token', 'remember_token', 'pwa_session'
-      ];
-      
-      // Set expired cookies with comprehensive attributes
-      const expiredCookies = cookieList.map(name => 
-        `${name}=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Strict; Secure=${process.env.NODE_ENV === 'production'}`
-      );
-      
-      res.setHeader('Set-Cookie', expiredCookies);
-      
-      // Also use clearCookie as backup
-      cookieList.forEach(name => {
-        res.clearCookie(name, {
-          path: '/',
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict' as const
-        });
+      // Destroy session from database/store
+      req.session.destroy((err: any) => {
+        if (err) {
+          console.error('Session destruction error:', err);
+        }
       });
       
-      // Step 4: Set aggressive cache control headers
+      // Clear all HTTP-only cookies with expired dates (critical fix)
+      const expiredDate = new Date(0); // January 1, 1970
+      
+      // Primary session cookie with HTTP-only flag
+      res.setHeader('Set-Cookie', [
+        `connect.sid=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`,
+        `theagencyiq.session=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`,
+        `session.sig=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`,
+        // Regular cookies that frontend can access
+        `sessionId=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `userId=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `userEmail=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `subscriptionStatus=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `auth_token=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `remember_token=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        // PWA-specific cookies
+        `pwa_session=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`,
+        `app_installed=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`
+      ]);
+      
+      // Additional clearCookie calls for redundancy
+      res.clearCookie('connect.sid', {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+      
+      res.clearCookie('theagencyiq.session', {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+      
+      // Set comprehensive cache control headers to prevent caching
       res.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
         'Pragma': 'no-cache',
         'Expires': '0',
-        'Clear-Site-Data': '"cache", "cookies", "storage", "executionContexts"',
-        'X-Logout-Complete': 'true'
+        'Last-Modified': new Date(0).toUTCString(),
+        'X-PWA-Session-Clear': 'true' // Signal PWA to clear cache
       });
       
-      console.log('✅ CRITICAL LOGOUT COMPLETE: Session destroyed, DB cleaned, cookies cleared');
-      
-      // Send immediate response for frontend state reset
-      res.status(200).json({ 
+      console.log('✅ User logged out successfully - HTTP-only cookies cleared with expired dates');
+      res.json({ 
         success: true,
-        message: "Complete logout successful",
-        sessionDestroyed: true,
-        databaseCleaned: true,
-        cookiesCleared: true,
-        requiresLogin: true,
-        redirectUrl: '/api/login',
+        message: "Logged out successfully",
+        redirect: "/",
+        clearCache: true, // Signal frontend to clear local/session storage
+        clearCookies: true, // Signal frontend to attempt cookie clearing
+        sessionCleared: true,
+        pwaRefresh: true, // Signal PWA to refresh service worker cache
         timestamp: new Date().toISOString()
       });
       
     } catch (error: any) {
-      console.error('❌ URGENT LOGOUT ERROR:', error);
+      console.error('Logout error:', error);
       
-      // Emergency logout even on error
-      try {
-        if (req.session) {
-          req.session.destroy((err: any) => {
-            if (err) console.error('Emergency session destroy error:', err);
-          });
-        }
-      } catch (destroyError) {
-        console.error('Emergency destroy failed:', destroyError);
-      }
+      // Force session clear even on error with expired cookie headers
+      req.session.destroy((err: any) => {
+        if (err) console.error('Force session destroy error:', err);
+      });
       
-      // Force clear cookies even on error
       const expiredDate = new Date(0);
       res.setHeader('Set-Cookie', [
-        `connect.sid=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Strict`,
-        `theagencyiq.session=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Strict`,
-        `aiq_backup_session=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Strict`
+        `connect.sid=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax`,
+        `theagencyiq.session=; Path=/; Expires=${expiredDate.toUTCString()}; HttpOnly; SameSite=Lax`,
+        `sessionId=; Path=/; Expires=${expiredDate.toUTCString()}; SameSite=Lax`
       ]);
       
-      res.status(200).json({ 
+      res.json({ 
         success: true,
-        message: "Emergency logout completed",
-        error: error.message,
-        sessionForceCleared: true,
-        requiresLogin: true,
-        redirectUrl: '/api/login',
+        message: "Logged out successfully",
+        clearCache: true,
+        clearCookies: true,
+        pwaRefresh: true,
         timestamp: new Date().toISOString()
       });
     }
-  });
-
-  // Simple logout redirect route for frontend convenience
-  app.get("/logout", (req: any, res) => {
-    console.log('🔄 Logout redirect - forwarding to POST /api/auth/logout');
-    res.redirect(307, '/api/auth/logout');
   });
 
   // Get current user - simplified for consistency

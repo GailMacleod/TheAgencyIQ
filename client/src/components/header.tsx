@@ -75,15 +75,15 @@ export default function Header({
         description: "You have been logged out successfully",
       });
       
-      // Redirect to login page after successful logout
-      window.location.href = "/api/login";
+      // Force page reload to ensure complete session cleanup
+      window.location.replace("/");
     } catch (error: any) {
       console.error("Logout error:", error);
       
-      // Force logout and redirect even on error
+      // Force logout even on error
       localStorage.clear();
       sessionStorage.clear();
-      window.location.href = "/api/login";
+      window.location.replace("/");
       
       toast({
         title: "Logout Failed",

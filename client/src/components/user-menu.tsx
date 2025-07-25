@@ -59,17 +59,21 @@ export default function UserMenu() {
       
       console.log('Complete session cleanup on logout');
       
-      // Redirect to login page after successful logout
-      window.location.href = "/api/login";
+      // Force page reload to ensure complete session cleanup
+      window.location.replace("/");
     },
     onError: (error: any) => {
       console.error("Logout error:", error);
       
-      // Force logout and redirect even on error
+      // Force logout even on error
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.replace("/");
+      
+      // Even on error, force logout locally
       queryClient.clear();
       localStorage.clear();
       sessionStorage.clear();
-      window.location.href = "/api/login";
       
       toast({
         title: "Logged Out",
