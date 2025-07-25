@@ -96,6 +96,8 @@ interface VideoData {
   artDirected?: boolean;
   veoGenerated?: boolean;
   veo2Generated?: boolean;
+  veo3Generated?: boolean; // ADD: VEO 3.0 generation flag
+  grokEnhanced?: boolean; // ADD: Grok enhancement flag
   artDirectorPreview?: boolean;
   strategicIntent?: string;
   visualTheme?: string;
@@ -263,17 +265,22 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
             console.log('🔍 Operation status:', statusData);
             
             if (statusData.completed) {
+              // CRITICAL: Stop all progress tracking immediately on completion
+              stopProgress();
+              setIsRendering(false);
+              
               if (statusData.failed) {
                 setError(statusData.error || 'VEO 3.0 generation failed');
                 setCurrentPhase('Generation failed');
                 setRenderingProgress(0);
               } else {
-                // Success - display video
+                // Success - display video with final completion state
                 setVideoSrc(statusData.videoUrl);
                 setVideoData(statusData);
                 setHasGeneratedVideo(true);
                 setCurrentPhase('VEO 3.0 generation completed!');
                 setRenderingProgress(100);
+                setRenderingTime(Math.floor(statusData.generationTime / 1000));
                 
                 console.log('✅ VEO 3.0 video generation completed:', statusData.videoUrl);
                 
@@ -283,8 +290,6 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
                   variant: "default",
                 });
               }
-              
-              stopProgress();
             } else {
               // Update progress and timing from server
               if (statusData.progress) {
@@ -313,37 +318,33 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
         setTimeout(pollOperation, 2000);
         
       } else if (data.videoUrl) {
-        // Immediate response (cached or fallback)
+        // Immediate response (cached or fallback) - stop progress immediately
+        stopProgress();
         setVideoSrc(data.videoUrl);
         setRenderingProgress(100);
         setCurrentPhase('Complete');
         setVideoData(data);
         setHasGeneratedVideo(true);
+        setIsRendering(false);
         
         toast({
           title: "Video Ready",
-          description: `Veo3 ${post.platform} video generated`
+          description: `VEO 3.0 ${post.platform} video generated`
         });
-        
-        setTimeout(() => {
-          setIsRendering(false);
-        }, 1000);
       } else if (data.response || data.textDescription) { 
-        // Fallback to text description if no URL
+        // Fallback to text description if no URL - stop progress immediately
+        stopProgress();
         setPreviewText(data.response || data.textDescription);
         setRenderingProgress(100);
         setCurrentPhase('Preview Mode');
         setVideoData(data);
         setHasGeneratedVideo(true);
+        setIsRendering(false);
         
         toast({
           title: "Preview Mode",
           description: "Video generation unavailable - showing text preview"
         });
-        
-        setTimeout(() => {
-          setIsRendering(false);
-        }, 1000);
       } else {
         throw new Error(data.error || 'Generation failed');
       }
