@@ -1105,6 +1105,16 @@ async function startServer() {
         });
       }
     });
+
+    // Simple logout route for direct URL access
+    app.get('/logout', (req, res) => {
+      req.session.destroy((err) => {
+        if (err) console.error('Session destroy error:', err);
+        res.clearCookie('theagencyiq.session');
+        res.clearCookie('aiq_backup_session');
+        res.redirect('/api/login');
+      });
+    });
     
     console.log('✅ Authentication routes registered successfully');
     
