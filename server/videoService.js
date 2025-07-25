@@ -22,7 +22,7 @@ class VideoService {
       
       const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       
-      const grokPrompt = `You are Grok, the advanced copywriter for TheAgencyIQ. Create enhanced video prompts for VEO 3.0 generation.
+      const grokPrompt = `You are Grok, the advanced copywriter for TheAgencyIQ. Create enhanced video prompts for VEO 3.0 generation with NATIVE AUDIO CAPABILITIES.
 
 Business Context:
 - Brand: ${brandData?.brandName || 'Queensland Business'}
@@ -33,12 +33,17 @@ Business Context:
 Original Content: ${postContent}
 Platform: ${platform}
 
-Create 3 cinematic video prompts optimized for VEO 3.0 generation with:
-1. Queensland cultural context and business transformation themes
-2. Professional cinematography elements (camera movements, lighting, composition)
-3. 8-second duration optimization with clear narrative arc
-4. Platform-specific aspect ratio considerations (${platform === 'instagram' ? '9:16 vertical' : '16:9 horizontal'})
-5. Orchestral music integration and professional sound design
+VEO 3.0 NATIVE AUDIO FEATURES (use these extensively):
+- DIALOGUE: Use quotes for specific speech ("This is Queensland excellence," the CEO states confidently)
+- SOUND EFFECTS: Explicitly describe sounds (keyboards clicking, coffee brewing, phones ringing)
+- AMBIENT NOISE: Describe environmental soundscape (bustling office ambiance, gentle piano music)
+
+Create 3 cinematic video prompts optimized for VEO 3.0 with RICH AUDIO:
+1. Queensland cultural context with authentic business dialogue
+2. Professional cinematography with synchronized sound design
+3. 8-second duration with layered audio elements (dialogue + SFX + ambient)
+4. Platform-specific optimization (${platform === 'instagram' ? '9:16 vertical' : '16:9 horizontal'})
+5. Native VEO 3.0 audio generation (orchestral scores, voiceovers, business sounds)
 
 Return JSON format:
 {

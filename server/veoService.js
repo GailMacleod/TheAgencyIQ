@@ -217,7 +217,7 @@ class VeoService {
             console.log(`🔧 VEO 3.0: For authentic Vertex AI cinematic videos, update secret with full JSON service account`);
             
             // Fall back to Google AI Studio API instead of throwing error
-            return await this.generateWithGoogleAI(prompt, config);
+            return await this.generateWithGoogleAI(videoRequest.prompt, videoRequest.config);
           }
         }
         const auth = new GoogleAuth({
