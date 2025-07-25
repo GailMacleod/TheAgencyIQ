@@ -99,13 +99,13 @@ function VideoGeneration() {
 
   const generateVideoMutation = useMutation({
     mutationFn: async (request: VideoGenerationRequest) => {
-      // Use integrated workflow instead of direct API call
+      // Use VEO 3.0 direct integration with GEMINI_API_KEY
       return await generateAndRenderVideo(request.prompt, request.platform, 2);
     },
     onSuccess: (data) => {
       toast({
-        title: "Video Generation Started",
-        description: "Grok-enhanced video with VEO 3.0 is being generated. This usually takes 2-3 minutes.",
+        title: "🎬 VEO 3.0 Generation Started",
+        description: "Cinematic video with Gemini enhancement and VEO 3.0 is generating. Processing time: 30s-6 minutes.",
       });
       setIsGenerating(true);
       setGenerationProgress(0);
@@ -113,8 +113,8 @@ function VideoGeneration() {
     },
     onError: (error: any) => {
       toast({
-        title: "Generation Failed",
-        description: error.message || "Failed to start video generation",
+        title: "VEO 3.0 Generation Failed",
+        description: error.message || "Failed to start VEO 3.0 video generation",
         variant: "destructive",
       });
     },
@@ -213,8 +213,16 @@ function VideoGeneration() {
       
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">AI Video Generation</h1>
-          <p className="text-muted-foreground">Create professional videos with AI for your social media platforms</p>
+          <div className="flex items-center space-x-3 mb-4">
+            <h1 className="text-3xl font-bold">VEO 3.0 Video Generation</h1>
+            <Badge variant="secondary" className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+              ✨ Powered by Google VEO 3.0
+            </Badge>
+          </div>
+          <p className="text-muted-foreground">
+            Create cinematic-quality videos with Google's VEO 3.0 AI and Gemini enhancement. 
+            Features orchestral music, Queensland business context, and authentic 30s-6min processing.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -223,8 +231,12 @@ function VideoGeneration() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Video className="w-5 h-5" />
-                <span>Create New Video</span>
+                <span>VEO 3.0 Video Generator</span>
+                <Badge variant="outline" className="ml-2">Gemini + VEO 3.0</Badge>
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Enhanced with Queensland business context and JTBD framework
+              </p>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
@@ -232,7 +244,7 @@ function VideoGeneration() {
                 <Textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Describe your video... (e.g., 'A professional showing business automation benefits')"
+                  placeholder="Describe your Queensland business video... VEO 3.0 will create cinematic quality with orchestral music (e.g., 'Professional business transformation meeting with Australian executives')"
                   className="min-h-24"
                 />
               </div>
@@ -305,10 +317,16 @@ function VideoGeneration() {
               <Button
                 onClick={handleGenerate}
                 disabled={isGenerating || generateVideoMutation.isPending}
-                className="w-full"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
-                {isGenerating ? "Generating..." : "Generate Video"}
+                {isGenerating ? "🎬 VEO 3.0 Generating..." : "🚀 Generate with VEO 3.0"}
               </Button>
+              
+              <div className="text-xs text-center text-muted-foreground space-y-1">
+                <p>🎵 <strong>Automatic Features:</strong> Orchestral music, Queensland context, cinematic quality</p>
+                <p>⏱️ <strong>Processing Time:</strong> 30 seconds to 6 minutes for authentic VEO 3.0 quality</p>
+                <p>🤖 <strong>AI Engine:</strong> Gemini enhancement → VEO 3.0 generation → JTBD framework</p>
+              </div>
             </CardContent>
           </Card>
 
