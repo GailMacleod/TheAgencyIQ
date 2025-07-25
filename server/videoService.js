@@ -1,6 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Storage } from '@google-cloud/storage';
 
 let genAI = null;
+let storage = null;
 
 // Initialize Google AI with GEMINI_API_KEY
 async function initializeGoogleAI() {
@@ -113,41 +115,117 @@ Return JSON format:
   // VEO 3.0 Video Generation with Vertex AI Integration
   static async generateVeo3VideoContent(prompt, options = {}) {
     try {
-      console.log('🎥 VEO 3.0 VIDEO GENERATION: Starting with Vertex AI integration...');
+      console.log('🎥 VEO 3.0 VIDEO GENERATION: Starting with authentic Vertex AI integration...');
       
-      // Initialize Google AI with GEMINI_API_KEY for prompt enhancement
+      // Initialize Google AI with GEMINI_API_KEY
       if (!genAI) await initializeGoogleAI();
       
-      // Use Gemini for prompt enhancement, then VEO 3.0 for video generation
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      // Use VEO 3.0 model as specified
+      const model = genAI.getGenerativeModel({ model: 'veo-3.0-generate-preview' });
       
-      console.log('🚀 Step 1: Enhancing prompt with Gemini, then VEO 3.0 generation...');
+      console.log('🚀 VEO 3.0: Initiating video generation with model veo-3.0-generate-preview');
       
       // Create VEO 3.0 video generation request
       const videoRequest = {
         prompt: prompt,
         aspectRatio: options.aspectRatio || '16:9',
         durationSeconds: options.durationSeconds || 8,
-        quality: 'cinematic',
-        platform: options.platform || 'youtube'
+        quality: 'cinematic'
       };
       
-      console.log('📡 Initiating VEO 3.0 operation...');
+      console.log('📡 VEO 3.0: Starting long-running operation...');
       
-      // Step 1: Enhance prompt with Gemini
-      const enhancedPromptResponse = await model.generateContent([
-        `Enhance this video prompt for VEO 3.0 cinematic generation:`,
-        `Original: ${prompt}`,
-        `Platform: ${options.platform || 'social media'}`,
-        `Aspect Ratio: ${options.aspectRatio || '16:9'}`,
-        `Duration: ${options.durationSeconds || 8} seconds`,
-        `Style: Professional Queensland business cinematic quality`,
-        ``,
-        `Create a detailed cinematic prompt with:`,
-        `- Professional cinematography descriptions`,
-        `- Queensland business context`,
-        `- Audio elements (dialogue, sound effects, music)`,
-        `- Camera movements and lighting`,
+      // Start VEO 3.0 generation operation
+      const operation = await model.generateContent(videoRequest);
+      
+      console.log('⏳ VEO 3.0: Polling operation until completion...');
+      
+      // Implement polling as specified
+      let currentOperation = operation;
+      while (!currentOperation.done) {
+        console.log('🔄 VEO 3.0: Operation still processing, waiting 10 seconds...');
+        await new Promise(r => setTimeout(r, 10000));
+        
+        // Get updated operation status
+        currentOperation = await genAI.operations.get(currentOperation.name);
+        console.log(`📊 VEO 3.0: Operation status - Done: ${currentOperation.done}`);
+      }
+      
+      console.log('✅ VEO 3.0: Operation completed! Downloading video...');
+      
+      // Extract GCS URI from completed operation
+      const gcsUri = currentOperation.response?.videoUri || currentOperation.response?.uri;
+      
+      if (!gcsUri) {
+        throw new Error('No video URI found in completed operation');
+      }
+      
+      console.log(`📥 VEO 3.0: Downloading from GCS URI: ${gcsUri}`);
+      
+      // Download video using Google Cloud Storage
+      const videoBuffer = await this.downloadVeo3Video(gcsUri);
+      
+      return {
+        success: true,
+        videoBuffer: videoBuffer,
+        gcsUri: gcsUri,
+        operationName: currentOperation.name,
+        authentic: true,
+        veo3Generated: true
+      };
+
+    } catch (error) {
+      console.error('❌ VEO 3.0 generation failed:', error.message);
+      throw new Error(`VEO 3.0 video generation failed: ${error.message}`);
+    }
+  }
+
+  // Download VEO 3.0 video from Google Cloud Storage
+  static async downloadVeo3Video(gcsUri) {
+    try {
+      console.log('📥 VEO 3.0: Initializing Google Cloud Storage download...');
+      
+      // Initialize Google Cloud Storage if needed
+      if (!storage) {
+        const credentials = process.env.VERTEX_AI_SERVICE_ACCOUNT_KEY;
+        if (credentials && credentials.startsWith('{')) {
+          const parsed = JSON.parse(credentials);
+          storage = new Storage({
+            projectId: parsed.project_id,
+            keyFilename: null,
+            credentials: parsed
+          });
+        } else {
+          throw new Error('Valid JSON service account credentials required for GCS download');
+        }
+      }
+      
+      // Extract bucket and file path from GCS URI
+      const gcsMatch = gcsUri.match(/gs:\/\/([^\/]+)\/(.+)/);
+      if (!gcsMatch) {
+        throw new Error(`Invalid GCS URI format: ${gcsUri}`);
+      }
+      
+      const bucketName = gcsMatch[1];
+      const fileName = gcsMatch[2];
+      
+      console.log(`📦 VEO 3.0: Downloading from bucket: ${bucketName}, file: ${fileName}`);
+      
+      // Download file from Google Cloud Storage
+      const bucket = storage.bucket(bucketName);
+      const file = bucket.file(fileName);
+      
+      const [buffer] = await file.download();
+      
+      console.log(`✅ VEO 3.0: Successfully downloaded ${buffer.length} bytes from GCS`);
+      
+      return buffer;
+      
+    } catch (error) {
+      console.error('❌ VEO 3.0: GCS download failed:', error.message);
+      throw new Error(`Failed to download VEO 3.0 video from GCS: ${error.message}`);
+    }
+  }
         `Return just the enhanced prompt, nothing else.`
       ].join('\n\n'));
       
