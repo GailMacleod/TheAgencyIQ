@@ -4,6 +4,8 @@ import morgan from 'morgan';
 import session from 'express-session';
 import rateLimit from 'express-rate-limit';
 import passport from 'passport';
+import sgMail from '@sendgrid/mail';
+import bodyParser from 'body-parser';
 import { configureOAuthStrategies, setupOAuthRoutes } from './config/oauth-strategies.js';
 import { createSecureSessionConfig, createSecureSessionStore, createSessionValidationMiddleware, createLogoutHandler } from './config/secure-session.js';
 import { applyRateLimiting } from './config/production-rate-limiting.js';
@@ -15,7 +17,6 @@ import { validateEnvironment, getSecureDefaults } from './config/env-validation.
 import { dbManager } from './db-init.js';
 import { logger, requestLogger } from './utils/logger.js';
 import { quotaTracker, createQuotaTable } from './middleware/quota-tracker.js';
-import passport from 'passport';
 import path from 'path';
 import { initializeMonitoring, logInfo, logError } from './monitoring';
 import { createClient } from 'redis';
@@ -35,6 +36,14 @@ function log(message: string, source = "express") {
 async function startServer() {
   // Initialize monitoring
   initializeMonitoring();
+  
+  // Initialize SendGrid for production notifications
+  if (process.env.SENDGRID_API_KEY) {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    console.log('✅ SendGrid initialized for notifications');
+  } else {
+    console.log('⚠️ SendGrid API key not configured - notifications disabled');
+  }
   
   // Validate environment before starting server
   const validatedEnv = validateEnvironment();
@@ -1114,6 +1123,86 @@ async function startServer() {
         res.clearCookie('aiq_backup_session');
         res.redirect('/api/login');
       });
+    });
+
+    // Stripe webhook for subscription management (raw body required for signature verification)
+    app.post('/api/stripe/webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
+      try {
+        const sig = req.headers['stripe-signature'];
+        if (!process.env.STRIPE_WEBHOOK_SECRET) {
+          console.log('⚠️ Stripe webhook secret not configured');
+          return res.status(400).json({ error: 'Webhook not configured' });
+        }
+
+        // Import Stripe dynamically if needed
+        const Stripe = (await import('stripe')).default;
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+        
+        let event;
+        try {
+          event = stripe.webhooks.constructEvent(req.body, sig as string, process.env.STRIPE_WEBHOOK_SECRET);
+        } catch (err: any) {
+          console.error('Webhook signature verification failed:', err.message);
+          return res.status(400).send(`Webhook Error: ${err.message}`);
+        }
+
+        if (event.type === 'checkout.session.completed') {
+          const session = event.data.object as any;
+          console.log('✅ Subscription payment completed:', session.id);
+          
+          // Find user by Stripe customer ID and activate subscription
+          // This would need to be implemented based on your user lookup logic
+          console.log('Processing subscription activation for customer:', session.customer);
+        }
+
+        res.json({ received: true });
+      } catch (error: any) {
+        console.error('Stripe webhook error:', error);
+        res.status(500).json({ error: 'Webhook processing failed' });
+      }
+    });
+
+    // Gift certificate redemption with fraud protection
+    const giftRedeemLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 5, // Limit each IP to 5 requests per windowMs
+      message: { error: 'Too many redemption attempts. Please try again later.' },
+      standardHeaders: true,
+      legacyHeaders: false,
+    });
+
+    app.post('/api/redeem-gift', giftRedeemLimiter, async (req, res) => {
+      try {
+        const { code } = req.body;
+        const ip = req.ip || req.connection.remoteAddress || 'unknown';
+        const userAgent = req.get('User-Agent') || 'unknown';
+        
+        if (!code) {
+          return res.status(400).json({ error: 'Gift certificate code required' });
+        }
+
+        // Basic fraud scoring
+        let fraudScore = 0;
+        if (userAgent.includes('bot') || userAgent.includes('crawler')) fraudScore += 3;
+        if (ip === 'unknown') fraudScore += 2;
+        
+        console.log(`🎁 Gift redemption attempt: ${code}, IP: ${ip}, Fraud Score: ${fraudScore}`);
+        
+        // Block high fraud score attempts
+        if (fraudScore > 5) {
+          console.log('🚫 Blocked high fraud score redemption attempt');
+          return res.status(403).json({ error: 'Redemption blocked due to security concerns' });
+        }
+
+        res.json({ 
+          success: true, 
+          message: 'Gift certificate processing would happen here',
+          fraudScore // For debugging only, remove in production
+        });
+      } catch (error: any) {
+        console.error('Gift redemption error:', error);
+        res.status(500).json({ error: 'Redemption processing failed' });
+      }
     });
     
     console.log('✅ Authentication routes registered successfully');

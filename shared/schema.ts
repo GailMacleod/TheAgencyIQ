@@ -257,6 +257,7 @@ export const giftCertificateActionLog = pgTable("gift_certificate_action_log", {
   sessionId: varchar("session_id", { length: 100 }),
   success: boolean("success").default(true),
   errorMessage: text("error_message"),
+  fraudScore: integer("fraud_score").default(0), // Basic fraud scoring
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
