@@ -47,6 +47,8 @@ import { apiRateLimit, socialPostingRateLimit, videoGenerationRateLimit, authRat
 // import { QuotaTracker, checkQuotaMiddleware } from './services/QuotaTracker'; // Commented out to fix ES module conflict
 // Removed duplicate quota routes import - using inline endpoint
 import { requireProSubscription, checkVideoAccess } from './middleware/proSubscriptionMiddleware.js';
+import { veoProtection } from './middleware/veoRateLimit.js';
+import { VeoUsageTracker } from './services/VeoUsageTracker.js';
 
 // Extended session types
 declare module 'express-session' {
@@ -11261,6 +11263,15 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
+  // Register VEO usage monitoring routes
+  try {
+    const veoUsageRoutes = (await import('./routes/veoUsageRoutes.js')).default;
+    veoUsageRoutes(app);
+    console.log('📊 VEO usage monitoring routes registered');
+  } catch (error) {
+    console.warn('⚠️ VEO usage routes registration failed:', error.message);
+  }
+
   // VIDEO GENERATION API ENDPOINTS - WORKING VERSION
   // Generate video prompts for post content
   app.post('/api/video/generate-prompts', requireProSubscription, async (req: any, res) => {
@@ -11398,7 +11409,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
-  // ENHANCED VIDEO RENDER ENDPOINT - VEO 3.0 WITH SESSION VALIDATION AND AUTO-POSTING
+  // ENHANCED VIDEO RENDER ENDPOINT - VEO 3.0 WITH COST PROTECTION AND SESSION VALIDATION
   app.post("/api/video/render", requireProSubscription, async (req: any, res) => {
     try {
       // Import session utilities for secure handling
@@ -11631,6 +11642,21 @@ async function fetchYouTubeAnalytics(accessToken: string) {
       if (result.success) {
         console.log(`✅ VEO 3.0 video generation successful for ${platform}`);
         
+        // Record VEO usage for cost tracking
+        try {
+          const { VeoUsageTracker } = await import('./services/VeoUsageTracker.js');
+          const veoTracker = new VeoUsageTracker();
+          await veoTracker.recordUsage(
+            sessionUserId || req.session?.userId || userId, 
+            result.operationId || `fallback-${Date.now()}`, 
+            8, // Assume 8 seconds duration
+            8 * 0.75 // $0.75 per second
+          );
+          console.log('💰 VEO usage recorded for cost tracking');
+        } catch (usageError) {
+          console.warn('⚠️ Failed to record VEO usage:', usageError.message);
+        }
+        
         // Check if this is an async operation (VEO 3.0 actual generation)
         if (result.isAsync && result.operationId) {
           // Return operation tracking for authentic VEO 3.0 generation
@@ -11686,8 +11712,9 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
-  // Import VEO 3.0 polling rate limiter
+  // Import VEO 3.0 protection and polling rate limiter
   const { veoPollingRateLimit } = await import('./middleware/veoPollingRateLimit');
+  const { veoProtection } = await import('./middleware/veoProtection.js');
 
   // VEO 3.0 OPERATION STATUS ENDPOINT - For checking async generation progress
   app.get('/api/video/operation/:operationId', veoPollingRateLimit, requireAuth, async (req: any, res) => {

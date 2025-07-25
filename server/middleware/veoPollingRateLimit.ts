@@ -22,9 +22,5 @@ export const veoPollingRateLimit = rateLimit({
       message: 'Please wait 1 minute before polling again'
     });
   },
-  keyGenerator: (req) => {
-    // Use operation ID + IP for more granular rate limiting
-    const operationId = req.params?.operationId || 'unknown';
-    return `veo-poll:${req.ip}:${operationId}`;
-  }
+  // Remove keyGenerator to avoid IPv6 issues
 });
