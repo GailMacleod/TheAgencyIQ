@@ -314,14 +314,17 @@ Are you absolutely sure you want to proceed?`;
               </>
             )}
             
-            <DropdownMenuItem
-              onClick={handleCancelSubscription}
-              disabled={cancelSubscriptionMutation.isPending}
-              className="cursor-pointer text-destructive focus:text-destructive"
-            >
-              <CreditCard className="mr-2 h-4 w-4" />
-              {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Cancel Subscription"}
-            </DropdownMenuItem>
+            {/* Only show Cancel Subscription if subscription is active */}
+            {user?.subscriptionActive && user?.subscriptionPlan !== 'cancelled' && (
+              <DropdownMenuItem
+                onClick={handleCancelSubscription}
+                disabled={cancelSubscriptionMutation.isPending}
+                className="cursor-pointer text-destructive focus:text-destructive"
+              >
+                <CreditCard className="mr-2 h-4 w-4" />
+                {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Cancel Subscription"}
+              </DropdownMenuItem>
+            )}
             
             <DropdownMenuItem
               onClick={() => logoutMutation.mutate()}

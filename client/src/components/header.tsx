@@ -207,10 +207,13 @@ export default function Header({
                 
                 <DropdownMenuSeparator />
                 
-                <DropdownMenuItem onClick={handleCancelSubscription} className="cursor-pointer">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Cancel Subscription
-                </DropdownMenuItem>
+                {/* Only show Cancel Subscription if subscription is active */}
+                {user?.subscriptionActive && user?.subscriptionPlan !== 'cancelled' && (
+                  <DropdownMenuItem onClick={handleCancelSubscription} className="cursor-pointer">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Cancel Subscription
+                  </DropdownMenuItem>
+                )}
                 
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                   <LogOut className="h-4 w-4 mr-2" />

@@ -1016,12 +1016,22 @@ async function startServer() {
     });
   });
 
-  // Register API routes FIRST before any middleware that might interfere
+  // CRITICAL: Mount API routes BEFORE static serving to prevent HTML responses
   try {
-    console.log('📡 Loading routes...');
+    console.log('📡 Mounting API routes...');
     const { registerRoutes } = await import('./routes');
-    await registerRoutes(app);
-    console.log('✅ Routes registered successfully');
+    const server = await registerRoutes(app);
+    console.log('✅ API routes mounted successfully');
+    
+    // Add catch-all for unmatched API routes to return JSON instead of HTML
+    app.use('/api/*', (req, res) => {
+      console.log(`❌ API endpoint not found: ${req.method} ${req.path}`);
+      res.status(404).json({ 
+        error: 'API endpoint not found',
+        path: req.path,
+        method: req.method
+      });
+    });
     
     // PHONE/PASSWORD AUTHENTICATION ROUTES
     console.log('📡 Loading authentication routes...');

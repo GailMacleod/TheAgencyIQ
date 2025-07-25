@@ -7651,6 +7651,15 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
       
       console.log(`🔴 ENHANCED CANCELLATION INITIATED for user ${userId}`);
       
+      // CRITICAL: Regenerate session on subscription state change to prevent stale UI state
+      req.session.regenerate((err) => {
+        if (err) {
+          console.error('Session regeneration error on cancellation:', err);
+        } else {
+          console.log('✅ Session regenerated on subscription cancellation');
+        }
+      });
+      
       // Use Enhanced Cancellation Handler with full integration
       const result = await cancellationHandler.handleSubscriptionCancellation(userId, req);
       
