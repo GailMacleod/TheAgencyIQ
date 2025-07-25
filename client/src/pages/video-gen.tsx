@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { Video, Play, Pause, Download, Wand2, Sparkles, Camera, Film } from "lucide-react";
+import { Video, Play, Pause, Download, Wand2, Sparkles, Camera, Film, Crown, Lock } from "lucide-react";
 import MasterHeader from "@/components/master-header";
 import MasterFooter from "@/components/master-footer";
 import BackButton from "@/components/back-button";
@@ -43,6 +43,14 @@ function VideoGeneration() {
   const [generationProgress, setGenerationProgress] = useState(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch user subscription status for video access control
+  const { data: user } = useQuery({
+    queryKey: ["/api/user"],
+  });
+
+  // Pro subscription check - only pro users can access video generation
+  const hasProSubscription = user?.subscriptionPlan === 'professional' || user?.subscriptionPlan === 'pro';
 
   const { data: videos, isLoading } = useQuery<GeneratedVideo[]>({
     queryKey: ["/api/videos"],
@@ -314,13 +322,41 @@ function VideoGeneration() {
                 </div>
               )}
 
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating || generateVideoMutation.isPending}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              >
-                {isGenerating ? "🎬 VEO 3.0 Generating..." : "🚀 Generate with VEO 3.0"}
-              </Button>
+              {hasProSubscription ? (
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || generateVideoMutation.isPending}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                >
+                  {isGenerating ? "🎬 VEO 3.0 Generating..." : "🚀 Generate with VEO 3.0"}
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <Button
+                    disabled
+                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white opacity-75 cursor-not-allowed"
+                  >
+                    <Lock className="w-5 h-5 mr-2" />
+                    Pro Feature Required
+                    <Crown className="w-4 h-4 ml-2" />
+                  </Button>
+                  <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-lg text-center">
+                    <Crown className="w-8 h-8 mx-auto mb-2 text-amber-600" />
+                    <h3 className="font-semibold text-amber-800 mb-1">Upgrade to Pro for VEO 3.0</h3>
+                    <p className="text-sm text-amber-700 mb-3">
+                      Access cinematic video generation with Queensland business context, orchestral music, and authentic VEO 3.0 processing
+                    </p>
+                    <Button 
+                      onClick={() => window.location.href = '/pricing'}
+                      className="bg-amber-600 hover:bg-amber-700 text-white"
+                      size="sm"
+                    >
+                      <Crown className="w-4 h-4 mr-1" />
+                      Upgrade Now
+                    </Button>
+                  </div>
+                </div>
+              )}
               
               <div className="text-xs text-center text-muted-foreground space-y-1">
                 <p>🎵 <strong>Automatic Features:</strong> Orchestral music, Queensland context, cinematic quality</p>

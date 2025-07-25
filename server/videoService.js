@@ -23,11 +23,27 @@ async function initializeGoogleAI() {
   }
 }
 
+// Import subscription service for pro-only access control
+import SubscriptionService from './SubscriptionService.js';
+
 export default class VideoService {
   // Generate enhanced video prompts using Grok copywriter approach
   static async generateVideoPromptsWithGrokCopywriter(postContent, brandPurpose, platform, userId) {
     try {
       console.log('🚀 Grok copywriter enhancement starting...');
+      
+      // Check subscription access for video generation (PRO ONLY)
+      const subscriptionValidation = await SubscriptionService.validateVideoGeneration(userId);
+      if (!subscriptionValidation.allowed) {
+        return {
+          error: subscriptionValidation.error,
+          code: subscriptionValidation.code,
+          currentPlan: subscriptionValidation.currentPlan,
+          message: 'Video generation requires Professional plan subscription'
+        };
+      }
+      
+      console.log(`✅ Video access validated for Pro subscriber ${userId}`);
       
       // Initialize Google AI if not already done
       if (!genAI) await initializeGoogleAI();
@@ -115,6 +131,22 @@ Return JSON format:
   static async generateVeo3VideoContent(prompt, options = {}) {
     try {
       console.log('🎥 VEO 3.0 VIDEO GENERATION: Starting with Vertex AI and user specifications...');
+      
+      // Check subscription access for video generation (PRO ONLY)
+      const userId = options.userId;
+      if (userId) {
+        const subscriptionValidation = await SubscriptionService.validateVideoGeneration(userId);
+        if (!subscriptionValidation.allowed) {
+          return {
+            success: false,
+            error: subscriptionValidation.error,
+            code: subscriptionValidation.code,
+            currentPlan: subscriptionValidation.currentPlan,
+            message: 'VEO 3.0 video generation requires Professional plan subscription'
+          };
+        }
+        console.log(`✅ VEO 3.0 access validated for Pro subscriber ${userId}`);
+      }
       
       // Generate unique operation ID for async tracking
       const operationId = `veo3-authentic-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;

@@ -46,6 +46,7 @@ import TokenManager from './oauth/tokenManager.js';
 import { apiRateLimit, socialPostingRateLimit, videoGenerationRateLimit, authRateLimit, skipRateLimitForDevelopment } from './middleware/rateLimiter';
 // import { QuotaTracker, checkQuotaMiddleware } from './services/QuotaTracker'; // Commented out to fix ES module conflict
 // Removed duplicate quota routes import - using inline endpoint
+import { requireProSubscription, checkVideoAccess } from './middleware/proSubscriptionMiddleware.js';
 
 // Extended session types
 declare module 'express-session' {
@@ -11262,7 +11263,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
 
   // VIDEO GENERATION API ENDPOINTS - WORKING VERSION
   // Generate video prompts for post content
-  app.post('/api/video/generate-prompts', async (req: any, res) => {
+  app.post('/api/video/generate-prompts', requireProSubscription, async (req: any, res) => {
     try {
       console.log('=== VIDEO PROMPT GENERATION STARTED ===');
       console.log(`🔍 Direct session check - Session ID: ${req.sessionID}, User ID: ${req.session?.userId}`);
@@ -11398,7 +11399,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
   });
 
   // ENHANCED VIDEO RENDER ENDPOINT - VEO 3.0 WITH SESSION VALIDATION AND AUTO-POSTING
-  app.post("/api/video/render", async (req: any, res) => {
+  app.post("/api/video/render", requireProSubscription, async (req: any, res) => {
     try {
       // Import session utilities for secure handling
       const sessionManager = (await import('./sessionUtils.js')).default;

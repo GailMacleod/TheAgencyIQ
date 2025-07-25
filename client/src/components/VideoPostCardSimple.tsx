@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { VideoIcon, LoaderIcon, CheckIcon, XIcon, Edit } from 'lucide-react';
+import { VideoIcon, LoaderIcon, CheckIcon, XIcon, Edit, Crown, Lock } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import LazyVideoPreview from './LazyVideoPreview';
 
 // Video Player Component with URL Validation and Error Recovery
@@ -146,10 +147,19 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
   const [previewText, setPreviewText] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Fetch user subscription status for video access control
+  const { data: user } = useQuery({
+    queryKey: ["/api/user"],
+    enabled: Boolean(userId),
+  });
+
   // CRITICAL: Video generation only available for platforms that support video content
   const videoSupportedPlatforms = ['youtube', 'facebook', 'x'];
   const isVideoSupported = videoSupportedPlatforms.includes(post.platform.toLowerCase());
-  const canGenerateVideo = Boolean(userId) && isVideoSupported;
+  
+  // Pro subscription check - only pro users can access video generation
+  const hasProSubscription = user?.subscriptionPlan === 'professional' || user?.subscriptionPlan === 'pro';
+  const canGenerateVideo = Boolean(userId) && isVideoSupported && hasProSubscription;
 
   // Modern video generation with subtle progress
   const generateVideoOneClick = async () => {
@@ -455,31 +465,54 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
             )}
           </div>
           
-          {canGenerateVideo && !post.hasVideo && !post.videoApproved && isVideoSupported && (
+          {/* Video Generation Section - With Pro Subscription Control */}
+          {isVideoSupported && !post.hasVideo && !post.videoApproved && (
             <div className="flex flex-col items-end gap-2">
-              <Button
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium shadow-sm"
-                size="sm"
-                onClick={generateVideoOneClick}
-                disabled={isRendering || hasGeneratedVideo}
-                aria-label="Generate cinematic video for this post"
-              >
-                {isRendering ? (
-                  <>
-                    <LoaderIcon className="w-4 h-4 mr-2 animate-spin" />
-                    Creating... ({renderingTime}s)
-                  </>
-                ) : (
-                  <>
-                    <VideoIcon className="w-4 h-4 mr-2" />
-                    Generate Video
-                  </>
-                )}
-              </Button>
-              {!isRendering && (
-                <div className="text-xs text-purple-600 font-medium">
-                  VEO 3.0 Ready
-                </div>
+              {hasProSubscription ? (
+                // Pro users: Show active generate button
+                <>
+                  <Button
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium shadow-sm"
+                    size="sm"
+                    onClick={generateVideoOneClick}
+                    disabled={isRendering || hasGeneratedVideo}
+                    aria-label="Generate cinematic video for this post"
+                  >
+                    {isRendering ? (
+                      <>
+                        <LoaderIcon className="w-4 h-4 mr-2 animate-spin" />
+                        Creating... ({renderingTime}s)
+                      </>
+                    ) : (
+                      <>
+                        <VideoIcon className="w-4 h-4 mr-2" />
+                        Generate Video
+                      </>
+                    )}
+                  </Button>
+                  {!isRendering && (
+                    <div className="text-xs text-purple-600 font-medium">
+                      VEO 3.0 Ready
+                    </div>
+                  )}
+                </>
+              ) : (
+                // Non-pro users: Show upgrade prompt
+                <>
+                  <Button
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-medium shadow-sm relative opacity-75 cursor-not-allowed"
+                    size="sm"
+                    disabled
+                    aria-label="Video generation requires pro subscription"
+                  >
+                    <Lock className="w-4 h-4 mr-2" />
+                    Pro Feature
+                    <Crown className="w-3 h-3 ml-1" />
+                  </Button>
+                  <div className="text-xs text-amber-600 font-medium text-right">
+                    Upgrade to Pro for VEO 3.0
+                  </div>
+                </>
               )}
             </div>
           )}
