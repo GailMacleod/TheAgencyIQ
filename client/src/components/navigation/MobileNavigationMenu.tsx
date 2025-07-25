@@ -160,7 +160,7 @@ export function MobileNavigationMenu() {
             className="w-full text-red-600 hover:bg-red-50 hover:text-red-700"
             onClick={() => {
               setIsOpen(false);
-              window.location.href = '/logout';
+              window.location.href = '/api/auth/logout';
             }}
           >
             <LogOut className="w-4 h-4 mr-2" />
