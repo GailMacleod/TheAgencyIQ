@@ -22,14 +22,11 @@ export default function Splash() {
     retry: false,
   });
 
-  // Redirect to login if not authenticated, or to reactivation page if cancelled
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !user) {
       console.log('🔒 User not authenticated, redirecting to login');
       window.location.href = '/api/login';
-    } else if (!isLoading && user && (user as any)?.subscriptionPlan === 'cancelled') {
-      console.log('🔄 User has cancelled subscription, redirecting to reactivation page');
-      window.location.href = '/reactivate-subscription';
     }
   }, [user, isLoading]);
 
@@ -82,11 +79,19 @@ export default function Splash() {
             <div className="flex items-center space-x-4">
               {!isLoading && user ? (
                 <div className="flex items-center space-x-4">
-                  <Link href="/schedule">
-                    <Button variant="ghost" className="text-gray-700 hover:text-primary font-medium">
-                      Dashboard
-                    </Button>
-                  </Link>
+                  {(user as any)?.subscriptionPlan === 'cancelled' ? (
+                    <Link href="/subscription">
+                      <Button className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg shadow-lg">
+                        Subscription Cancelled
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link href="/schedule">
+                      <Button variant="ghost" className="text-gray-700 hover:text-primary font-medium">
+                        Dashboard
+                      </Button>
+                    </Link>
+                  )}
                   <UserMenu />
                 </div>
               ) : (
