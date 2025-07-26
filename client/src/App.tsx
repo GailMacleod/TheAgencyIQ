@@ -48,7 +48,7 @@ import DataDeletionStatus from "@/pages/data-deletion-status";
 import MetaPixelTest from "@/pages/meta-pixel-test";
 import BulletproofDashboard from "@/pages/bulletproof-dashboard";
 import VideoGen from "@/pages/video-gen";
-import ReactivateSubscription from "@/pages/reactivate-subscription";
+
 
 // Enhanced logout component with comprehensive session clearing
 function LogoutComponent() {
@@ -107,7 +107,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={Splash} />
-        <Route path="/reactivate-subscription" component={ReactivateSubscription} />
+
         <Route path="/subscription" component={Subscription} />
         <Route path="/brand-purpose" component={BrandPurpose} />
         <Route path="/platform-connections" component={ConnectPlatforms} />
