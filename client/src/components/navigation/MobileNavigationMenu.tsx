@@ -23,7 +23,7 @@ export function MobileNavigationMenu() {
   const { data: quotaData } = useQuery({
     queryKey: ['/api/subscription-usage'],
     enabled: true
-  });
+  }) as { data?: { remainingPosts?: number; subscriptionPlan?: string; publishedPosts?: number } };
 
   // Real-time subscription status updates
   const { status: sseStatus } = useSubscriptionSSE();

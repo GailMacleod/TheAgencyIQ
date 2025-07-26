@@ -112,7 +112,7 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
   twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
 
-// Comprehensive subscription middleware - blocks ALL access except wizard
+// SURGICAL FIX: Enhanced subscription middleware with live database checks
 const requirePaidSubscription = async (req: any, res: any, next: any) => {
   // Allow wizard and subscription endpoints to be public
   const publicPaths = [
@@ -134,11 +134,33 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
     return next();
   }
   
-  // Auto-establish session for User ID 2 if not present
-  if (!req.session?.userId) {
+  // SURGICAL FIX: Check user subscription status BEFORE establishing session
+  let userId = req.session?.userId;
+  
+  // Auto-establish session for User ID 2 if not present, but check subscription first
+  if (!userId) {
     try {
       const user = await storage.getUser(2);
       if (user) {
+        // CRITICAL: Block cancelled users BEFORE session establishment
+        console.log(`🔍 [DEBUG] User subscription check for ${req.path}:`, {
+          userId: user.id,
+          subscriptionPlan: user.subscriptionPlan,
+          subscriptionActive: user.subscriptionActive,
+          shouldBlock: (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive)
+        });
+        
+        if (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive) {
+          console.log(`🚫 [ACCESS] Blocked cancelled user ${user.id} from accessing ${req.path} (pre-session check)`);
+          return res.status(403).json({ 
+            message: "Subscription cancelled - access denied",
+            requiresLogin: true,
+            subscriptionCancelled: true,
+            redirectTo: '/api/login'
+          });
+        }
+        
+        // Only establish session if subscription is active
         req.session.userId = 2;
         req.session.userEmail = user.email;
         await new Promise<void>((resolve) => {
@@ -147,7 +169,8 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
             resolve();
           });
         });
-        console.log(`✅ Auto-established session for user ${user.email}`);
+        console.log(`✅ Auto-established session for user ${user.email} with active subscription`);
+        userId = 2;
       }
     } catch (error) {
       console.error('Auto-session error:', error);
@@ -155,7 +178,7 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
   }
   
   // Check for authenticated session
-  if (!req.session?.userId) {
+  if (!userId) {
     console.log(`❌ No user ID in session - authentication required`);
     return res.status(401).json({ 
       message: "Not authenticated",
@@ -165,7 +188,7 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
   
   try {
     // Verify user exists and has active subscription
-    const user = await storage.getUser(req.session.userId);
+    const user = await storage.getUser(userId);
     if (!user) {
       req.session.destroy((err: any) => {
         if (err) console.error('Session destroy error:', err);
@@ -173,6 +196,23 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
       return res.status(401).json({ 
         message: "User account not found",
         requiresLogin: true 
+      });
+    }
+    
+    // SURGICAL FIX: Live access control - block cancelled subscriptions immediately
+    if (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive) {
+      console.log(`🚫 [ACCESS] Blocked cancelled user ${user.id} from accessing ${req.path}`);
+      
+      // Clear stale session for cancelled user
+      req.session.destroy((err: any) => {
+        if (err) console.error('Session destroy error:', err);
+      });
+      
+      return res.status(403).json({ 
+        message: "Subscription cancelled - access denied",
+        requiresLogin: true,
+        subscriptionCancelled: true,
+        redirectTo: '/api/login'
       });
     }
     
@@ -553,7 +593,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.url === '/api/quota-status' || 
         req.url === '/api/user-status' ||
         req.url === '/api/cancel-subscription' ||
-        req.url === '/api/subscription-status-sse') {
+        req.url === '/api/subscription-status-sse' ||
+        req.url === '/api/yearly-analytics') {
       return next();
     }
     return requirePaidSubscription(req, res, next);
@@ -580,6 +621,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(users.id, userId.toString()))
         .returning();
+
+      // SURGICAL FIX: Broadcast real-time cancellation via SSE
+      try {
+        const { SSEManager } = await import('./middleware/sseManager.js');
+        const sseManager = SSEManager.getInstance();
+        sseManager.broadcast('subscription_cancelled', {
+          userId: userId.toString(),
+          plan: 'cancelled', 
+          active: false,
+          totalPosts: 0,
+          remainingPosts: 0,
+          timestamp: new Date().toISOString(),
+          action: 'logout_required'
+        });
+        console.log(`📡 [CANCEL] SSE broadcast sent for user ${userId} cancellation`);
+      } catch (sseError) {
+        console.error('SSE broadcast failed:', sseError);
+        // Continue with cancellation even if SSE fails
+      }
 
       if (!updatedUser) {
         throw new Error('User not found during cancellation');
@@ -8694,8 +8754,22 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      // Get user and brand purpose data
+      // SURGICAL FIX: Block cancelled users from accessing yearly analytics
       const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // CRITICAL: Block cancelled subscriptions from accessing analytics
+      if (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive) {
+        console.log(`🚫 [ACCESS] Blocked cancelled user ${userId} from accessing /api/yearly-analytics (direct route protection)`);
+        return res.status(403).json({ 
+          message: "Subscription cancelled - analytics access denied",
+          requiresLogin: true,
+          subscriptionCancelled: true,
+          redirectTo: '/api/login'
+        });
+      }
       const brandPurpose = await storage.getBrandPurposeByUser(userId);
       const posts = await storage.getPostsByUser(userId);
 

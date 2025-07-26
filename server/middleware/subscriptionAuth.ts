@@ -18,7 +18,28 @@ export const establishSession = async (req: any, res: any, next: any) => {
         });
       });
 
-      // Auto-establish session for User ID 2 (gailm@macleodglba.com.au)
+      // SURGICAL FIX: Check subscription status BEFORE establishing session
+      const user = await storage.getUser(2);
+      if (!user) {
+        console.log(`❌ User ID 2 not found - cannot establish session`);
+        return res.status(401).json({ 
+          message: "User account not found",
+          requiresLogin: true 
+        });
+      }
+      
+      // CRITICAL: Block cancelled users BEFORE session establishment
+      if (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive) {
+        console.log(`🚫 [ACCESS] Blocked cancelled user ${user.id} from accessing ${req.path} (subscription auth middleware)`);
+        return res.status(403).json({ 
+          message: "Subscription cancelled - access denied",
+          requiresLogin: true,
+          subscriptionCancelled: true,
+          redirectTo: '/api/login'
+        });
+      }
+      
+      // Only establish session if subscription is active
       req.session.userId = 2;
       req.session.userEmail = 'gailm@macleodglba.com.au';
       req.session.lastActivity = Date.now();
@@ -30,7 +51,7 @@ export const establishSession = async (req: any, res: any, next: any) => {
             console.error('Session save error:', err);
             reject(err);
           } else {
-            console.log(`✅ Auto-established session for user gailm@macleodglba.com.au on ${req.path}`);
+            console.log(`✅ Auto-established session for user with active subscription on ${req.path}`);
             resolve();
           }
         });
@@ -52,9 +73,30 @@ export const establishSession = async (req: any, res: any, next: any) => {
 // Enhanced authentication middleware that checks both login and subscription status
 export const requireActiveSubscription = async (req: any, res: any, next: any) => {
   try {
-    // 1. Auto-establish session if not present
+    // SURGICAL FIX: Check subscription status BEFORE establishing session
     if (!req.session?.userId) {
-      // Auto-establish session for User ID 2 (gailm@macleodglba.com.au)
+      // First check user exists and has active subscription BEFORE establishing session
+      const user = await storage.getUser(2);
+      if (!user) {
+        console.log(`❌ User ID 2 not found - cannot establish session`);
+        return res.status(401).json({ 
+          message: "User account not found",
+          requiresLogin: true 
+        });
+      }
+      
+      // CRITICAL: Block cancelled users BEFORE session establishment
+      if (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive) {
+        console.log(`🚫 [ACCESS] Blocked cancelled user ${user.id} from accessing ${req.path} (requireActiveSubscription middleware)`);
+        return res.status(403).json({ 
+          message: "Subscription cancelled - access denied",
+          requiresLogin: true,
+          subscriptionCancelled: true,
+          redirectTo: '/api/login'
+        });
+      }
+      
+      // Only establish session if subscription is active
       req.session.userId = 2;
       req.session.userEmail = 'gailm@macleodglba.com.au';
       
@@ -62,15 +104,29 @@ export const requireActiveSubscription = async (req: any, res: any, next: any) =
       await new Promise((resolve, reject) => {
         req.session.save((err: any) => {
           if (err) reject(err);
-          else resolve(true);
+          else {
+            console.log(`✅ Auto-established session for user with active subscription on ${req.path}`);
+            resolve(true);
+          }
         });
       });
     }
 
-    // 2. Check subscription status
+    // 2. Double-check subscription status for existing sessions
     const user = await storage.getUser(req.session.userId);
     if (!user) {
       return res.status(401).json({ message: "User not found" });
+    }
+
+    // Block cancelled subscriptions even with existing sessions
+    if (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive) {
+      console.log(`🚫 [ACCESS] Blocked cancelled user ${user.id} from accessing ${req.path} (session double-check)`);
+      return res.status(403).json({ 
+        message: "Subscription cancelled - access denied",
+        requiresLogin: true,
+        subscriptionCancelled: true,
+        redirectTo: '/api/login'
+      });
     }
 
     // Allow access if subscription is active OR user has a valid subscription plan
@@ -92,11 +148,32 @@ export const requireActiveSubscription = async (req: any, res: any, next: any) =
   }
 };
 
-// Legacy auth middleware for backwards compatibility
+// Legacy auth middleware for backwards compatibility - SURGICAL FIX: Check subscription before session
 export const requireAuth = async (req: any, res: any, next: any) => {
   try {
     if (!req.session?.userId) {
-      // Auto-establish session for User ID 2 (gailm@macleodglba.com.au)
+      // SURGICAL FIX: Check subscription status BEFORE establishing session
+      const user = await storage.getUser(2);
+      if (!user) {
+        console.log(`❌ User ID 2 not found - cannot establish session`);
+        return res.status(401).json({ 
+          message: "User account not found",
+          requiresLogin: true 
+        });
+      }
+      
+      // CRITICAL: Block cancelled users BEFORE session establishment
+      if (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive) {
+        console.log(`🚫 [ACCESS] Blocked cancelled user ${user.id} from accessing ${req.path} (requireAuth middleware)`);
+        return res.status(403).json({ 
+          message: "Subscription cancelled - access denied",
+          requiresLogin: true,
+          subscriptionCancelled: true,
+          redirectTo: '/api/login'
+        });
+      }
+      
+      // Only establish session if subscription is active
       req.session.userId = 2;
       req.session.userEmail = 'gailm@macleodglba.com.au';
       
@@ -104,7 +181,10 @@ export const requireAuth = async (req: any, res: any, next: any) => {
       await new Promise((resolve, reject) => {
         req.session.save((err: any) => {
           if (err) reject(err);
-          else resolve(true);
+          else {
+            console.log(`✅ Auto-established session for user with active subscription on ${req.path}`);
+            resolve(true);
+          }
         });
       });
     }

@@ -188,7 +188,7 @@ function Router() {
     
     // Log to Sentry if available
     if (window.Sentry) {
-      window.Sentry.captureException(error, {
+      window.Sentry.captureException(error as Error, {
         tags: { component: 'Router' },
         extra: { location: window.location.href }
       });
@@ -244,7 +244,7 @@ function AppContent() {
         
         // Report GA initialization failure to Sentry if available
         if (window.Sentry?.captureException) {
-          window.Sentry.captureException(error, {
+          window.Sentry.captureException(error as Error, {
             tags: { component: 'GA_initialization' },
             extra: { measurementId: import.meta.env.VITE_GA_MEASUREMENT_ID }
           });
@@ -469,7 +469,7 @@ function App() {
         
         // Report GA initialization failure to Sentry if available
         if (window.Sentry?.captureException) {
-          window.Sentry.captureException(error, {
+          window.Sentry.captureException(error as Error, {
             tags: { component: 'GA_initialization' },
             extra: { measurementId: import.meta.env.VITE_GA_MEASUREMENT_ID }
           });
