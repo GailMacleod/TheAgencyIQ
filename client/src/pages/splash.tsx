@@ -22,11 +22,14 @@ export default function Splash() {
     retry: false,
   });
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated, or to reactivation page if cancelled
   useEffect(() => {
     if (!isLoading && !user) {
       console.log('🔒 User not authenticated, redirecting to login');
       window.location.href = '/api/login';
+    } else if (!isLoading && user && (user as any)?.subscriptionPlan === 'cancelled') {
+      console.log('🔄 User has cancelled subscription, redirecting to reactivation page');
+      window.location.href = '/reactivate-subscription';
     }
   }, [user, isLoading]);
 
