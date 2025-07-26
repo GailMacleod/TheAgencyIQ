@@ -2,6 +2,25 @@
 // Ensures all database operations require valid session authentication
 
 import { logger } from '../utils/logger.js';
+import fs from 'fs';
+import path from 'path';
+
+// SURGICAL FIX: Persistent logout cooldown constants
+const LOGOUT_COOLDOWN = 10000; // 10 seconds
+const LOGOUT_TIMESTAMP_FILE = path.join(process.cwd(), 'temp/last_logout.txt');
+
+// Function to get persistent logout timestamp
+const getLastLogoutTime = () => {
+  try {
+    if (fs.existsSync(LOGOUT_TIMESTAMP_FILE)) {
+      const timestamp = parseInt(fs.readFileSync(LOGOUT_TIMESTAMP_FILE, 'utf8'));
+      return isNaN(timestamp) ? 0 : timestamp;
+    }
+  } catch (error) {
+    console.error('Error reading logout timestamp:', error);
+  }
+  return 0;
+};
 
 class DatabaseAuthMiddleware {
   constructor() {
@@ -37,6 +56,20 @@ class DatabaseAuthMiddleware {
     return (req, res, next) => {
       const sessionId = req.sessionID;
       const userId = req.session?.userId;
+
+      // SURGICAL FIX: Check logout cooldown before session validation
+      if (!userId) {
+        const now = Date.now();
+        const lastLogoutTime = getLastLogoutTime();
+        if (now - lastLogoutTime < LOGOUT_COOLDOWN) {
+          console.log(`🔒 DATABASE-AUTH: Auto-session disabled - logout cooldown active (${Math.round((LOGOUT_COOLDOWN - (now - lastLogoutTime)) / 1000)}s remaining) for ${req.path}`);
+          return res.status(401).json({
+            error: 'Authentication required - logout cooldown active',
+            code: 'LOGOUT_COOLDOWN_ACTIVE',
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
 
       if (!this.validateSessionForDB(sessionId, userId)) {
         logger.security('Unauthorized database access attempt blocked', {

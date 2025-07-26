@@ -139,6 +139,17 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
   
   // Auto-establish session for User ID 2 if not present, but check subscription first
   if (!userId) {
+    // SURGICAL FIX: Respect logout cooldown period in subscription middleware
+    const now = Date.now();
+    const lastLogoutTime = getLastLogoutTime();
+    if (now - lastLogoutTime < LOGOUT_COOLDOWN) {
+      console.log(`🔒 SUBSCRIPTION: Auto-session disabled - logout cooldown active (${Math.round((LOGOUT_COOLDOWN - (now - lastLogoutTime)) / 1000)}s remaining) for ${req.path}`);
+      return res.status(401).json({ 
+        message: "Not authenticated - logout cooldown active",
+        requiresLogin: true 
+      });
+    }
+    
     try {
       const user = await storage.getUser(2);
       if (user) {
@@ -169,7 +180,7 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
             resolve();
           });
         });
-        console.log(`✅ Auto-established session for user ${user.email} with active subscription`);
+        console.log(`✅ SUBSCRIPTION: Auto-established session for user ${user.email} with active subscription`);
         userId = 2;
       }
     } catch (error) {
@@ -362,10 +373,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   
+  // SURGICAL FIX: Persistent logout cooldown to prevent immediate session re-establishment
+  const fs = await import('fs');
+  const pathLib = await import('path');
+  const LOGOUT_COOLDOWN = 10000; // 10 seconds
+  const LOGOUT_TIMESTAMP_FILE = pathLib.join(process.cwd(), 'temp/last_logout.txt');
+  
+  // Function to get persistent logout timestamp
+  const getLastLogoutTime = () => {
+    try {
+      if (fs.existsSync(LOGOUT_TIMESTAMP_FILE)) {
+        const timestamp = parseInt(fs.readFileSync(LOGOUT_TIMESTAMP_FILE, 'utf8'));
+        return isNaN(timestamp) ? 0 : timestamp;
+      }
+    } catch (error) {
+      console.error('Error reading logout timestamp:', error);
+    }
+    return 0;
+  };
+  
+  // Function to set persistent logout timestamp
+  const setLastLogoutTime = (timestamp: number) => {
+    try {
+      const dir = pathLib.dirname(LOGOUT_TIMESTAMP_FILE);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(LOGOUT_TIMESTAMP_FILE, timestamp.toString());
+    } catch (error) {
+      console.error('Error writing logout timestamp:', error);
+    }
+  };
+  
   // Global session establishment middleware - runs on ALL requests
   app.use(async (req: any, res: any, next: any) => {
     // Skip session establishment for static assets
     if (req.path.startsWith('/public/') || req.path.startsWith('/assets/')) {
+      return next();
+    }
+    
+    // SURGICAL FIX: Skip auto-session after logout
+    if (req.path === '/api/auth/logout') {
+      return next();
+    }
+    
+    // Check if we're in logout cooldown period
+    const now = Date.now();
+    const lastLogoutTime = getLastLogoutTime();
+    if (now - lastLogoutTime < LOGOUT_COOLDOWN) {
+      console.log(`🔒 GLOBAL: Auto-session disabled - logout cooldown active (${Math.round((LOGOUT_COOLDOWN - (now - lastLogoutTime)) / 1000)}s remaining) for ${req.path}`);
       return next();
     }
     
@@ -382,7 +438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               resolve();
             });
           });
-          console.log(`✅ Auto-established session for user ${user.email} on ${req.path}`);
+          console.log(`✅ GLOBAL: Auto-established session for user ${user.email} on ${req.path}`);
         }
       } catch (error) {
         console.error('Auto-session error:', error);
@@ -896,8 +952,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`Cookie:`, req.cookies);
 
     if (!req.session?.userId) {
+      // SURGICAL FIX: Respect logout cooldown period
+      const now = Date.now();
+      const lastLogoutTime = getLastLogoutTime();
+      if (now - lastLogoutTime < LOGOUT_COOLDOWN) {
+        console.log(`🔒 REQUIREAUTH: Auto-session disabled - logout cooldown active (${Math.round((LOGOUT_COOLDOWN - (now - lastLogoutTime)) / 1000)}s remaining) for ${req.path}`);
+        return res.status(401).json({ 
+          message: "Not authenticated - logout cooldown active",
+          requiresLogin: true 
+        });
+      }
+      
       // Auto-establish session for User ID 2 (gailm@macleodglba.com.au)
-      console.log(`✅ Auto-established session for user gailm@macleodglba.com.au on ${req.path}`);
+      console.log(`✅ REQUIREAUTH: Auto-established session for user gailm@macleodglba.com.au on ${req.path}`);
       req.session.userId = 2;
       req.session.userEmail = 'gailm@macleodglba.com.au';
       
@@ -3588,6 +3655,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Last-Modified': new Date(0).toUTCString(),
         'X-PWA-Session-Clear': 'true' // Signal PWA to clear cache
       });
+      
+      // SURGICAL FIX: Set persistent logout timestamp to disable auto-session for cooldown period
+      const logoutTime = Date.now();
+      setLastLogoutTime(logoutTime);
+      res.setHeader('X-Logout-Performed', 'true');
+      console.log(`🔒 Persistent logout timestamp set - auto-session disabled for ${LOGOUT_COOLDOWN/1000} seconds`);
       
       console.log('✅ User logged out successfully - HTTP-only cookies cleared with expired dates');
       res.json({ 
