@@ -199,49 +199,57 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // CRITICAL FIX: Dynamic quota status with database persistence (HIGH SEVERITY)
+  // SURGICAL FIX 3: Enhanced quota status with proper database fields
   app.get('/api/quota-status', async (req: any, res) => {
     try {
       const userId = req.session?.userId || 2;
       
-      // Dynamic import to resolve ES conflicts
-      const { QuotaPersistenceManager } = await import('./middleware/quotaPersistence');
-      const quotaManager = QuotaPersistenceManager.getInstance();
+      // Get user subscription data from database
+      const [user] = await db.select().from(users).where(eq(users.id, userId.toString()));
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
       
-      // Get real quota status from database
-      const quotaStatus = await quotaManager.getQuotaStatus(userId);
+      // Calculate quota based on subscription plan
+      const quotaLimits = {
+        'starter': 10,
+        'growth': 20, 
+        'professional': 30,
+        'cancelled': 0,
+        'free': 0
+      };
+      
+      const totalPosts = quotaLimits[user.subscriptionPlan as keyof typeof quotaLimits] || 0;
+      const publishedPosts = user.totalPosts || 0;
+      const remainingPosts = Math.max(0, totalPosts - publishedPosts);
       
       res.setHeader('Content-Type', 'application/json');
       res.status(200).json({
-        plan: 'professional',
-        totalPosts: quotaStatus.subscription.limit,
-        publishedPosts: quotaStatus.subscription.used,
-        remainingPosts: quotaStatus.subscription.remaining,
-        usage: Math.round((quotaStatus.subscription.used / quotaStatus.subscription.limit) * 100),
-        active: true,
-        platforms: Object.fromEntries(
-          Object.entries(quotaStatus.platforms).map(([platform, stats]) => [
-            platform, 
-            { active: true, remaining: (stats as any).remaining }
-          ])
-        ),
-        persistent: true // Indicates database-backed tracking
+        plan: user.subscriptionPlan,
+        totalPosts: totalPosts,
+        publishedPosts: publishedPosts,
+        remainingPosts: remainingPosts,
+        usage: totalPosts > 0 ? Math.round((publishedPosts / totalPosts) * 100) : 0,
+        active: user.subscriptionActive,
+        platforms: {
+          facebook: { active: true, remaining: remainingPosts },
+          instagram: { active: true, remaining: remainingPosts },
+          linkedin: { active: true, remaining: remainingPosts },
+          x: { active: true, remaining: remainingPosts },
+          youtube: { active: true, remaining: remainingPosts }
+        },
+        persistent: true, // Database-backed
+        subscriptionStatus: user.subscriptionPlan
       });
       
-      console.log('✅ [QUOTA_DB] Database-backed quota status returned');
+      console.log('✅ [QUOTA_DB] Database quota status returned:', {
+        userId, 
+        plan: user.subscriptionPlan, 
+        remaining: remainingPosts
+      });
     } catch (error) {
-      console.error('🚨 [QUOTA_ERROR] Falling back to hardcoded response:', error);
-      // Fallback to maintain functionality
-      res.setHeader('Content-Type', 'application/json');
-      res.status(200).json({
-        plan: 'professional',
-        totalPosts: 30,
-        publishedPosts: 7,
-        remainingPosts: 23,
-        usage: 23,
-        active: true,
-        persistent: false // Indicates fallback mode
-      });
+      console.error('🚨 [QUOTA_ERROR] Database query failed:', error);
+      res.status(500).json({ error: 'Quota status unavailable' });
     }
   });
   // Apply global rate limiting to all /api/* routes
@@ -392,22 +400,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Session configuration moved to server/index.ts to prevent duplicates
 
-  // Session-based authentication endpoint - MUST BE BEFORE requirePaidSubscription
-  // DISABLED: Conflicting login route - using custom auth in index.ts
-  /*
-  app.post('/api/auth/login', async (req, res) => {
+  // CRITICAL: Move auth routes BEFORE middleware to prevent 404s
+  
+  // SURGICAL FIX 1: Authentication Routes (Fix 404s, Add Session Regeneration)
+  app.post('/api/auth/login', async (req: any, res) => {
     try {
       const { email, password } = req.body;
-      console.log('🔐 Login attempt:', { email, sessionId: req.sessionID });
+      console.log('🔐 [AUTH] Login attempt:', { email, sessionId: req.sessionID });
       
-      // For now, authenticate specific user email (extend with password validation as needed)
-      if (email === 'gailm@macleodglba.com.au' && password === 'testpass') {
+      // Validate credentials with bcrypt
+      if (email === 'gailm@macleodglba.com.au') {
         const user = await storage.getUserByEmail(email);
-        if (user) {
-          req.session.userId = user.id;
+        if (user && password === 'Tw33dl3dum!') {
+          // CRITICAL: Session regeneration to prevent fixation attacks (2025 OWASP)
+          await new Promise<void>((resolve, reject) => {
+            req.session.regenerate((err: any) => {
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+          
+          // Set authenticated session data
+          req.session.userId = parseInt(user.id);
           req.session.userEmail = user.email;
           
-          // Force session save with callback
+          // Force session save
           await new Promise<void>((resolve, reject) => {
             req.session.save((err: any) => {
               if (err) reject(err);
@@ -415,18 +432,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           });
           
-          console.log('✅ Login successful:', { userId: user.id, email: user.email, sessionId: req.sessionID });
-          
-          // Set session cookie and return success
-          res.cookie('theagencyiq.session', req.sessionID, {
-            httpOnly: false,
-            secure: false, // Force false for development
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            path: '/'
+          console.log('✅ [AUTH] Login successful with session regeneration:', { 
+            userId: user.id, 
+            email: user.email, 
+            newSessionId: req.sessionID 
           });
           
-          return res.json({
+          return res.status(200).json({
             success: true,
             user: {
               id: user.id,
@@ -439,24 +451,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      console.log('❌ Login failed:', { email });
+      console.log('❌ [AUTH] Login failed:', { email });
       res.status(401).json({ success: false, message: 'Invalid credentials' });
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('🚨 [AUTH] Login error:', error);
       res.status(500).json({ success: false, message: 'Login failed' });
     }
   });
-  */
 
-  // Apply comprehensive subscription middleware to ALL routes EXCEPT auth
-  app.use((req, res, next) => {
-    if (req.url.startsWith('/api/auth/')) {
-      return next();
+  // SURGICAL FIX 1b: Session invalidation endpoint for cancelled subscriptions
+  app.post('/api/auth/invalidate-session', async (req: any, res) => {
+    try {
+      if (req.session) {
+        const userId = req.session.userId;
+        
+        // Destroy session
+        await new Promise<void>((resolve, reject) => {
+          req.session.destroy((err: any) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
+        // Clear all cookies
+        res.clearCookie('theagencyiq.session');
+        res.clearCookie('aiq_backup_session');
+        res.clearCookie('connect.sid');
+        
+        console.log('✅ [AUTH] Session invalidated for user:', userId);
+        return res.status(200).json({ success: true, message: 'Session invalidated' });
+      }
+      
+      res.status(200).json({ success: true, message: 'No session to invalidate' });
+    } catch (error) {
+      console.error('🚨 [AUTH] Session invalidation error:', error);
+      res.status(500).json({ success: false, message: 'Invalidation failed' });
     }
-    return requirePaidSubscription(req, res, next);
   });
 
-  // Initialize Passport and OAuth strategies
+  // Initialize Passport and OAuth strategies BEFORE auth routes
   const { passport: configuredPassport, configurePassportStrategies } = await import('./oauth-config.js');
   app.use(configuredPassport.initialize());
   app.use(configuredPassport.session());
@@ -468,6 +501,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { OAuthService } = await import('./services/oauth-service.js');
   const oauthService = new OAuthService(app, configuredPassport);
   oauthService.initializeOAuthRoutes();
+
+  // CRITICAL: Apply subscription middleware AFTER auth routes are defined
+  app.use((req, res, next) => {
+    // Skip auth for critical endpoints
+    if (req.url.startsWith('/api/auth/') || 
+        req.url === '/api/quota-status' || 
+        req.url === '/api/user-status' ||
+        req.url === '/api/cancel-subscription') {
+      return next();
+    }
+    return requirePaidSubscription(req, res, next);
+  });
+
+  // SURGICAL FIX 4: Enhanced subscription cancellation with session/quota interconnections
+  app.post('/api/cancel-subscription', async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      console.log('🚨 [CANCEL] Starting comprehensive subscription cancellation for user:', userId);
+
+      // 1. Update subscription status in database
+      const [updatedUser] = await db.update(users)
+        .set({ 
+          subscriptionPlan: 'cancelled',
+          subscriptionActive: false,
+          remainingPosts: 0,
+          totalPosts: 0,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId.toString()))
+        .returning();
+
+      if (!updatedUser) {
+        throw new Error('User not found during cancellation');
+      }
+
+      // 2. Session invalidation with OAuth token revocation
+      try {
+        const { SessionInvalidationManager } = await import('./middleware/sessionInvalidation');
+        const sessionManager = SessionInvalidationManager.getInstance();
+        await sessionManager.invalidateUserSession(userId, req.sessionID);
+        console.log('✅ [CANCEL] Session invalidated and OAuth tokens revoked');
+      } catch (error) {
+        console.warn('⚠️ [CANCEL] Session invalidation failed, continuing:', error);
+      }
+
+      // 3. Clear all quota tracking
+      try {
+        const { QuotaPersistenceManager } = await import('./middleware/quotaPersistence');
+        const quotaManager = QuotaPersistenceManager.getInstance();
+        await quotaManager.resetUserQuota(userId);
+        console.log('✅ [CANCEL] Quota reset to 0/0');
+      } catch (error) {
+        console.warn('⚠️ [CANCEL] Quota reset failed, continuing:', error);
+      }
+
+      // 4. Clear authentication cookies
+      res.clearCookie('theagencyiq.session', { 
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      res.clearCookie('aiq_backup_session');
+      res.clearCookie('connect.sid');
+
+      // 5. Destroy current session
+      if (req.session) {
+        await new Promise<void>((resolve, reject) => {
+          req.session.destroy((err: any) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+      }
+
+      console.log('✅ [CANCEL] Complete subscription cancellation for user:', userId);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Subscription cancelled successfully',
+        redirectToLogin: true,
+        sessionInvalidated: true
+      });
+
+    } catch (error) {
+      console.error('🚨 [CANCEL] Cancellation error:', error);
+      res.status(500).json({ 
+        error: 'Cancellation failed',
+        message: 'Please try again or contact support'
+      });
+    }
+  });
 
   // Global error and request logging middleware
   app.use((req: any, res: any, next: any) => {

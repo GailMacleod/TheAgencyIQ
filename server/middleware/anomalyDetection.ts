@@ -77,14 +77,18 @@ export class AnomalyDetectionManager {
         this.trackSuspiciousActivity(sessionId, userId);
       }
 
-      // Block high-severity attempts (ONLY in production)
-      if (suspiciousPattern.severity === 'HIGH' && process.env.NODE_ENV === 'production') {
+      // SURGICAL FIX 2: Tighten anomaly detection - block suspicious paths in ALL environments
+      if (suspiciousPattern.severity === 'HIGH') {
         console.error(`🔒 [SECURITY_BLOCK] High-severity request blocked:`, {
           pattern: suspiciousPattern.pattern,
           ip,
           path,
-          method
+          method,
+          environment: process.env.NODE_ENV
         });
+        
+        // Track violation
+        this.trackSuspiciousActivity(sessionId, userId);
         
         res.status(403).json({
           error: 'Access denied',
@@ -92,12 +96,6 @@ export class AnomalyDetectionManager {
           pattern: suspiciousPattern.pattern
         });
         return;
-      } else if (suspiciousPattern.severity === 'HIGH') {
-        console.warn(`🚨 [DEV_MODE] High-severity pattern detected but allowed in development:`, {
-          pattern: suspiciousPattern.pattern,
-          path,
-          method
-        });
       }
     }
 
