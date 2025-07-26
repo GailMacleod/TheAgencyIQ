@@ -499,6 +499,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SURGICAL FIX: Add missing signup endpoint
+  app.post('/api/auth/signup', async (req: any, res) => {
+    try {
+      const { email, password, phone, planId } = req.body;
+      console.log('🔐 [SIGNUP] Registration attempt:', { email, planId, sessionId: req.sessionID });
+      
+      if (!email || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Email and password are required' 
+        });
+      }
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'User already exists' 
+        });
+      }
+      
+      // For now, return success response - payment integration will be added later
+      console.log('✅ [SIGNUP] Basic validation passed for:', email);
+      res.status(200).json({
+        success: true,
+        message: 'Registration initiated - payment processing not yet implemented',
+        requiresPayment: true,
+        planId: planId || 'starter'
+      });
+      
+    } catch (error) {
+      console.error('🚨 [SIGNUP] Registration error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Registration failed' 
+      });
+    }
+  });
+
   // SURGICAL FIX 1b: Session invalidation endpoint for cancelled subscriptions
   app.post('/api/auth/invalidate-session', async (req: any, res) => {
     try {
