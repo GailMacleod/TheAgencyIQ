@@ -5,6 +5,7 @@ import { Menu, X, Home, Calendar, BarChart3, Settings, User, Plus, Zap } from "l
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { useSubscriptionSSE } from "@/hooks/useSubscriptionSSE";
 
 interface NavigationItem {
   id: string;
@@ -24,6 +25,9 @@ export function MobileNavigationMenu() {
     enabled: true
   });
 
+  // Real-time subscription status updates
+  const { status: sseStatus } = useSubscriptionSSE();
+
   const navigationItems: NavigationItem[] = [
     {
       id: 'home',
@@ -38,7 +42,9 @@ export function MobileNavigationMenu() {
       icon: Plus,
       path: '/intelligent-schedule',
       color: 'text-purple-600',
-      badge: quotaData?.remainingPosts > 0 ? `${quotaData.remainingPosts} left` : 'Limit reached'
+      badge: (sseStatus?.remainingPosts || quotaData?.remainingPosts || 0) > 0 
+        ? `${sseStatus?.remainingPosts || quotaData?.remainingPosts || 0} left` 
+        : 'Limit reached'
     },
     {
       id: 'schedule',
@@ -136,20 +142,20 @@ export function MobileNavigationMenu() {
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Posts Remaining</span>
               <span className="font-medium">
-                {quotaData?.remainingPosts || 0} / {
-                  quotaData?.subscriptionPlan === 'professional' ? 30 :
+                {sseStatus?.remainingPosts || quotaData?.remainingPosts || 0} / {sseStatus?.totalPosts || 
+                  (quotaData?.subscriptionPlan === 'professional' ? 30 :
                   quotaData?.subscriptionPlan === 'growth' ? 20 :
-                  quotaData?.subscriptionPlan === 'starter' ? 10 : 30
+                  quotaData?.subscriptionPlan === 'starter' ? 10 : 30)
                 }
               </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Plan</span>
-              <span className="font-medium capitalize">{quotaData?.subscriptionPlan || 'Professional'}</span>
+              <span className="font-medium capitalize">{sseStatus?.plan || quotaData?.subscriptionPlan || 'Professional'}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Published</span>
-              <span className="font-medium">{quotaData?.publishedPosts || 0}</span>
+              <span className="font-medium">{(sseStatus?.totalPosts || 0) - (sseStatus?.remainingPosts || 0) || quotaData?.publishedPosts || 0}</span>
             </div>
           </div>
         </div>

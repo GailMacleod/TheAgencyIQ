@@ -54,10 +54,17 @@ export class AnomalyDetectionManager {
     const sessionId = (req as any).session?.sessionId || 'anonymous';
     const userId = (req as any).session?.userId;
 
-    // Check for suspicious patterns
-    const suspiciousPattern = this.suspiciousPatterns.find(p => 
-      path.includes(p.pattern.toLowerCase())
-    );
+    // Check for suspicious patterns - only block exact admin/debug paths
+    const suspiciousPattern = this.suspiciousPatterns.find(p => {
+      const lowerPath = path.toLowerCase();
+      const lowerPattern = p.pattern.toLowerCase();
+      
+      // More precise matching to avoid blocking legitimate routes
+      if (lowerPattern === '/admin' || lowerPattern === '/debug') {
+        return lowerPath === lowerPattern || lowerPath.startsWith(lowerPattern + '/');
+      }
+      return lowerPath.includes(lowerPattern);
+    });
 
     if (suspiciousPattern) {
       console.warn(`🚨 [ANOMALY_${suspiciousPattern.severity}] Suspicious pattern detected:`, {
@@ -77,8 +84,10 @@ export class AnomalyDetectionManager {
         this.trackSuspiciousActivity(sessionId, userId);
       }
 
-      // SURGICAL FIX 2: Tighten anomaly detection - block suspicious paths in ALL environments
-      if (suspiciousPattern.severity === 'HIGH') {
+      // Only block HIGH severity exact patterns
+      if (suspiciousPattern.severity === 'HIGH' && 
+          (path.toLowerCase() === suspiciousPattern.pattern.toLowerCase() ||
+           path.toLowerCase().startsWith(suspiciousPattern.pattern.toLowerCase() + '/'))) {
         console.error(`🔒 [SECURITY_BLOCK] High-severity request blocked:`, {
           pattern: suspiciousPattern.pattern,
           ip,
@@ -86,9 +95,6 @@ export class AnomalyDetectionManager {
           method,
           environment: process.env.NODE_ENV
         });
-        
-        // Track violation
-        this.trackSuspiciousActivity(sessionId, userId);
         
         res.status(403).json({
           error: 'Access denied',

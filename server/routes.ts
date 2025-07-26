@@ -502,13 +502,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const oauthService = new OAuthService(app, configuredPassport);
   oauthService.initializeOAuthRoutes();
 
+  // Real-time SSE endpoint for subscription status updates
+  app.get('/api/subscription-status-sse', async (req: any, res) => {
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Set SSE headers
+    res.set({
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    const clientId = `sse_${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const { SSEManager } = await import('./middleware/sseManager');
+    const sseManager = SSEManager.getInstance();
+    
+    sseManager.addClient(clientId, userId.toString(), res);
+
+    // Send initial subscription status
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, userId.toString()));
+      if (user) {
+        const initialStatus = {
+          type: 'subscription_status',
+          data: {
+            plan: user.subscriptionPlan || 'cancelled',
+            active: user.subscriptionActive || false,
+            remainingPosts: user.remainingPosts || 0,
+            totalPosts: user.totalPosts || 0,
+            usage: user.totalPosts > 0 ? Math.round(((user.totalPosts - user.remainingPosts) / user.totalPosts) * 100) : 0
+          },
+          timestamp: new Date().toISOString()
+        };
+        sseManager.sendToClient(clientId, initialStatus);
+      }
+    } catch (error) {
+      console.error('❌ [SSE] Failed to send initial status:', error);
+    }
+  });
+
   // CRITICAL: Apply subscription middleware AFTER auth routes are defined
   app.use((req, res, next) => {
-    // Skip auth for critical endpoints
+    // Skip auth for critical endpoints including SSE
     if (req.url.startsWith('/api/auth/') || 
         req.url === '/api/quota-status' || 
         req.url === '/api/user-status' ||
-        req.url === '/api/cancel-subscription') {
+        req.url === '/api/cancel-subscription' ||
+        req.url === '/api/subscription-status-sse') {
       return next();
     }
     return requirePaidSubscription(req, res, next);
@@ -548,6 +593,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('✅ [CANCEL] Session invalidated and OAuth tokens revoked');
       } catch (error) {
         console.warn('⚠️ [CANCEL] Session invalidation failed, continuing:', error);
+      }
+
+      // 3. Real-time notification to all user's connected clients
+      try {
+        const { SSEManager } = await import('./middleware/sseManager');
+        const sseManager = SSEManager.getInstance();
+        const notification = {
+          type: 'subscription_cancelled',
+          data: {
+            plan: 'cancelled',
+            active: false,
+            remainingPosts: 0,
+            totalPosts: 0,
+            usage: 0,
+            action: 'clearSession',
+            redirectTo: '/api/login'
+          },
+          timestamp: new Date().toISOString()
+        };
+        
+        const clientsNotified = sseManager.sendToUser(userId.toString(), notification);
+        console.log(`📡 [CANCEL] Real-time notification sent to ${clientsNotified} clients`);
+      } catch (error) {
+        console.warn('⚠️ [CANCEL] SSE notification failed, continuing:', error);
       }
 
       // 3. Clear all quota tracking
