@@ -250,6 +250,13 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // CRITICAL FIX: Service Worker route with correct MIME type
+  app.get('/sw.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Service-Worker-Allowed', '/');
+    res.sendFile(path.join(process.cwd(), 'public', 'sw.js'));
+  });
+  
   // SURGICAL FIX 3: Enhanced quota status with proper database fields
   app.get('/api/quota-status', async (req: any, res) => {
     try {
