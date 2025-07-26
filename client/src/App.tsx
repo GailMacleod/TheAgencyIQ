@@ -107,7 +107,6 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={Splash} />
-
         <Route path="/subscription" component={Subscription} />
         <Route path="/brand-purpose" component={BrandPurpose} />
         <Route path="/platform-connections" component={ConnectPlatforms} />
