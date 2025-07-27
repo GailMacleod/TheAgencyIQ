@@ -341,21 +341,7 @@ async function startServer() {
 
   // Remove duplicate CORS - already configured above with proper order
 
-  // SURGICAL FIX 5: OAuth initialization with error handling
-  try {
-    console.log('🔧 Initializing OAuth strategies...');
-    configureOAuthStrategies(app);
-    setupOAuthRoutes(app);
-    console.log('✅ OAuth strategies configured successfully');
-  } catch (oauthError) {
-    console.error('⚠️ OAuth initialization failed:', oauthError);
-    console.log('🔧 Application will continue without OAuth - manual token entry required');
-  }
-  
-  // Production-grade session configuration with security
-  // isProd already defined in startup validation
-  
-  // SURGICAL FIX 1: Enhanced session configuration for Replit deployment
+  // SURGICAL FIX 1: Enhanced session configuration for Replit deployment (MOVED BEFORE OAUTH)
   app.use(session({
     secret: process.env.SESSION_SECRET,
     store: sessionStore,
@@ -380,6 +366,17 @@ async function startServer() {
     unset: 'destroy', // Properly clean up sessions
     touch: true // Enable session touching for active sessions
   }));
+
+  // SURGICAL FIX 5: OAuth initialization with error handling (MOVED AFTER SESSION)
+  try {
+    console.log('🔧 Initializing OAuth strategies...');
+    configureOAuthStrategies(app);
+    setupOAuthRoutes(app);
+    console.log('✅ OAuth strategies configured successfully');
+  } catch (oauthError) {
+    console.error('⚠️ OAuth initialization failed:', oauthError);
+    console.log('🔧 Application will continue without OAuth - manual token entry required');
+  }
 
   // CRITICAL: Redis security validation (2025 CVE protection)
   const { redisSecurityMiddleware } = await import('./middleware/redisSecurityValidator');
