@@ -390,10 +390,10 @@ async function startServer() {
         req.session.createdAt = Date.now();
       }
       
-      // CRITICAL: Absolute timeout enforcement (24h max - 2025 OWASP requirement)
+      // CRITICAL: Absolute timeout enforcement (7 days max - reasonable for user experience)
       const sessionAge = Date.now() - req.session.createdAt;
-      if (sessionAge > 24 * 60 * 60 * 1000) {
-        console.log('🔒 [SECURITY] Session expired due to absolute timeout (24h):', {
+      if (sessionAge > 7 * 24 * 60 * 60 * 1000) {
+        console.log('🔒 [SECURITY] Session expired due to absolute timeout (7 days):', {
           userId: req.session.userId,
           sessionAge: Math.round(sessionAge / (1000 * 60 * 60)) + 'h',
           ip: req.ip?.substring(0, 10) + '...', // Masked IP logging
