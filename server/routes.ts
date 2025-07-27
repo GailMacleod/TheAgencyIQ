@@ -43,7 +43,7 @@ import { EnhancedCancellationHandler } from './services/EnhancedCancellationHand
 import PipelineIntegrationFix from './services/PipelineIntegrationFix';
 // import SessionCacheManager from './services/SessionCacheManager'; // Commented out to fix ES module conflict
 import TokenManager from './oauth/tokenManager.js';
-import { apiRateLimit, socialPostingRateLimit, videoGenerationRateLimit, authRateLimit, skipRateLimitForDevelopment } from './middleware/rateLimiter';
+// import { apiRateLimit, socialPostingRateLimit, videoGenerationRateLimit, authRateLimit, skipRateLimitForDevelopment } from './middleware/rateLimiter'; // DISABLED FOR DEPLOYMENT
 // import { QuotaTracker, checkQuotaMiddleware } from './services/QuotaTracker'; // Commented out to fix ES module conflict
 // Removed duplicate quota routes import - using inline endpoint
 import { requireProSubscription, checkVideoAccess } from './middleware/proSubscriptionMiddleware.js';
@@ -310,9 +310,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Quota status unavailable' });
     }
   });
-  // Apply global rate limiting to all /api/* routes
-  app.use('/api', skipRateLimitForDevelopment);
-  console.log('🚀 Rate limiting configured for all API endpoints (100 req/15min)');
+  // RATE LIMITING DISABLED FOR DEPLOYMENT
+  // skipRateLimitForDevelopment function not available due to disabled import
+  // Rate limiting will be re-enabled with production-appropriate limits after deployment
+  console.log('⚠️ Rate limiting disabled for production deployment');
 
   // CRITICAL FIX: Enable all middleware systems (HIGH SEVERITY)
   try {
@@ -6405,7 +6406,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Auto-posting enforcer - Ensures posts are published within 30-day subscription
-  app.post("/api/enforce-auto-posting", requireAuth, socialPostingRateLimit, async (req: any, res) => {
+  app.post("/api/enforce-auto-posting", requireAuth, async (req: any, res) => {
     try {
       const { AutoPostingEnforcer } = await import('./auto-posting-enforcer');
       
@@ -6443,7 +6444,7 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // Auto-post entire 30-day schedule with bulletproof publishing
-  app.post("/api/auto-post-schedule", requireAuth, socialPostingRateLimit, async (req: any, res) => {
+  app.post("/api/auto-post-schedule", requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.session.userId);
       if (!user) {

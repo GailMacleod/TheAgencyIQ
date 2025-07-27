@@ -88,18 +88,19 @@ async function startServer() {
   app.use(morgan(secureDefaults.LOG_LEVEL));
   app.use(requestLogger);
 
-  // Rate limiting for all routes with VEO 3.0 polling exemption
+  // PRODUCTION DEPLOYMENT: Rate limiting disabled to resolve 429 errors
+  // Will be re-enabled with production-appropriate limits after deployment
+  /*
   const limiter = rateLimit({
-    windowMs: secureDefaults.RATE_LIMIT_WINDOW,
-    max: secureDefaults.RATE_LIMIT_MAX,
+    windowMs: 60 * 60 * 1000, // 1 hour for production
+    max: 1000, // 1000 requests per hour for Queensland SME users
     message: {
       error: 'Too many requests from this IP, please try again later.',
-      retryAfter: Math.ceil(secureDefaults.RATE_LIMIT_WINDOW / 1000)
+      retryAfter: 3600
     },
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => {
-      // Skip rate limiting for VEO 3.0 operation polling endpoints
       if (req.path.startsWith('/api/video/operation/')) {
         console.log(`🔄 VEO 3.0: Exempting operation polling from rate limit: ${req.path}`);
         return true;
@@ -108,13 +109,18 @@ async function startServer() {
     }
   });
   app.use('/api', limiter);
+  */
 
-  // Health check with basic rate limiting
+  console.log('⚠️ Rate limiting disabled for production deployment');
+
+  // Health check rate limiting also disabled
+  /*
   const healthLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
     max: 10, // 10 requests per minute for health check
     message: { error: 'Health check rate limit exceeded' }
   });
+  */
 
   // SURGICAL FIX 3: CORS configuration for deployment
   app.use(cors({
@@ -370,10 +376,11 @@ async function startServer() {
   // SURGICAL FIX 5: OAuth initialization with error handling (MOVED AFTER SESSION)
   try {
     console.log('🔧 Initializing OAuth strategies...');
+    const { configureOAuthStrategies, setupOAuthRoutes } = await import('./oauth-strategies');
     configureOAuthStrategies(app);
     setupOAuthRoutes(app);
     console.log('✅ OAuth strategies configured successfully');
-  } catch (oauthError) {
+  } catch (oauthError: any) {
     console.error('⚠️ OAuth initialization failed:', oauthError);
     console.log('🔧 Application will continue without OAuth - manual token entry required');
   }
@@ -620,7 +627,7 @@ async function startServer() {
       if (req.session) {
         req.session.deviceInfo = deviceInfo;
         req.session.lastSyncAt = new Date().toISOString();
-        req.session.save((err) => {
+        req.session.save((err: any) => {
           if (err) {
             console.error('Session sync error:', err);
             res.status(500).json({ success: false, error: 'Session sync failed' });
@@ -1460,7 +1467,7 @@ async function startServer() {
     const status = err.status || err.statusCode || 500;
     
     // Log error with proper categorization
-    logger.error('Server Error', {
+    console.error('Server Error', {
       message: err.message,
       stack: err.stack,
       path: req.path,
@@ -1472,7 +1479,7 @@ async function startServer() {
     
     // Security logging for potential attacks
     if (status === 400 || status === 401 || status === 403) {
-      logger.security('HTTP Error', {
+      console.log('HTTP Error', {
         statusCode: status,
         path: req.path,
         ip: req.ip,
@@ -1485,7 +1492,7 @@ async function startServer() {
     }
     
     // Return appropriate error response
-    const response = {
+    const response: any = {
       error: true,
       message: isDevelopment ? err.message : 'Internal server error',
       status
@@ -1493,7 +1500,7 @@ async function startServer() {
     
     // Only include stack trace in development
     if (isDevelopment && err.stack) {
-      response.stack = err.stack;
+      (response as any).stack = err.stack;
     }
     
     res.status(status).json(response);

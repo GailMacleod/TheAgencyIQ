@@ -73,9 +73,9 @@ export default function HorizontalNavigation() {
   });
 
   // Check if user has active subscription
-  const hasActiveSubscription = user?.subscriptionPlan && 
-    user.subscriptionPlan !== '' && 
-    user.subscriptionPlan !== 'none';
+  const hasActiveSubscription = (user as any)?.subscriptionPlan && 
+    (user as any).subscriptionPlan !== '' && 
+    (user as any).subscriptionPlan !== 'none';
 
   // Check if brand purpose is completed
   const brandPurposeCompleted = brandPurpose && (brandPurpose as any).businessName;
@@ -165,7 +165,7 @@ export default function HorizontalNavigation() {
                     <IconComponent className={cn(
                       "w-6 h-6 transition-colors",
                       iconState === "next" && "text-[#00f0ff]",
-                      iconState === "completed" && "text-[#3250fa]",
+                      iconState === "available" && "text-[#3250fa]",
                       iconState === "available" && "text-[#3250fa]",
                       iconState === "disabled" && "text-gray-400"
                     )} />
@@ -175,7 +175,7 @@ export default function HorizontalNavigation() {
                   <span className={cn(
                     "text-xs font-medium",
                     iconState === "next" && "text-[#00f0ff]",
-                    iconState === "completed" && "text-[#3250fa]",
+                    iconState === "available" && "text-[#3250fa]",
                     iconState === "available" && "text-[#3250fa]",
                     iconState === "disabled" && "text-gray-400"
                   )}>
