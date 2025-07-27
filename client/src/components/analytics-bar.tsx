@@ -72,7 +72,7 @@ export default function AnalyticsBar({ className }: AnalyticsBarProps) {
         console.error('Error fetching analytics:', error);
         
         // Track analytics loading errors
-        MetaPixelTracker.trackError('analytics_bar_load_failed', error.message, {
+        MetaPixelTracker.trackError('analytics_bar_load_failed', (error as Error).message, {
           component: 'analytics_bar',
           retry_attempt: 'initial'
         });

@@ -17,8 +17,8 @@ export function EnhancedDashboard() {
     enabled: true
   });
 
-  const recentPosts = posts?.slice(0, 5) || [];
-  const publishedPosts = posts?.filter(p => p.status === 'published') || [];
+  const recentPosts = (posts as any)?.slice(0, 5) || [];
+  const publishedPosts = (posts as any)?.filter((p: any) => p.status === 'published') || [];
 
   return (
     <div className="space-y-6">

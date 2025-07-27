@@ -158,7 +158,7 @@ function VideoPostCardSimple({ post, userId, onVideoApproved, onPostUpdate, onEd
   const isVideoSupported = videoSupportedPlatforms.includes(post.platform.toLowerCase());
   
   // Pro subscription check - only pro users can access video generation
-  const hasProSubscription = user?.subscriptionPlan === 'professional' || user?.subscriptionPlan === 'pro';
+  const hasProSubscription = (user as any)?.subscriptionPlan === 'professional' || (user as any)?.subscriptionPlan === 'pro';
   const canGenerateVideo = Boolean(userId) && isVideoSupported && hasProSubscription;
 
   // Modern video generation with subtle progress
