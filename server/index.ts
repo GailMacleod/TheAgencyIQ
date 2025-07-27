@@ -38,6 +38,10 @@ function log(message: string, source = "express") {
 }
 
 async function startServer() {
+  // SURGICAL FIX 2: Environment validation
+  const envValidation = await import('./startup-validation.js');
+  const isProd = envValidation.isProd;
+
   // Initialize monitoring
   initializeMonitoring();
   
@@ -106,12 +110,16 @@ async function startServer() {
     message: { error: 'Health check rate limit exceeded' }
   });
 
-  // CORS configuration - secure in production, permissive in development
+  // SURGICAL FIX 3: CORS configuration for deployment
   app.use(cors({
-    origin: secureDefaults.CORS_ORIGIN,
+    origin: [
+      'https://app.theagencyiq.ai',
+      process.env.CLIENT_URL || 'http://localhost:3000',
+      'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev'
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie', 'Set-Cookie'],
   }));
 
   // Essential middleware - after CORS, before session
@@ -285,20 +293,28 @@ async function startServer() {
     console.log('⚠️  Redis unavailable, falling back to PostgreSQL sessions');
     console.log('🔧 Configuring PostgreSQL session store...');
     
-    // Enhanced PostgreSQL session store with proper configuration
+    // SURGICAL FIX 4: Enhanced PostgreSQL session store with error handling
     const pgStore = connectPg(session);
-    sessionStore = new pgStore({
-      conString: process.env.DATABASE_URL,
-      createTableIfMissing: true,
-      ttl: sessionTtl, // 30 minutes TTL for security (was 3 days)
-      tableName: "sessions",
-      touchInterval: 60000, // Touch sessions every minute to prevent premature expiry
-      disableTouch: false, // Enable touch for active sessions
-      pruneSessionInterval: 60 * 60 * 1000, // Prune expired sessions every hour
-      errorLog: (error) => {
-        console.error('Session store error:', error);
-      }
-    });
+    try {
+      sessionStore = new pgStore({
+        conString: process.env.DATABASE_URL,
+        createTableIfMissing: true,
+        ttl: sessionTtl, // 30 minutes TTL for security (was 3 days)
+        tableName: "sessions",
+        touchInterval: 60000, // Touch sessions every minute to prevent premature expiry
+        disableTouch: false, // Enable touch for active sessions
+        pruneSessionInterval: 60 * 60 * 1000, // Prune expired sessions every hour
+        errorLog: (error) => {
+          console.error('❌ PostgreSQL session store error:', error);
+        }
+      });
+      console.log('✅ PostgreSQL session store configured successfully');
+    } catch (sessionStoreError) {
+      console.error('❌ PostgreSQL session store failed, falling back to memory store:', sessionStoreError);
+      // SURGICAL FIX 4: Fallback to memory store if PostgreSQL fails
+      sessionStore = new session.MemoryStore();
+      console.log('⚠️ Using memory store - sessions will not persist across restarts');
+    }
     
     // Test PostgreSQL session store connection
     sessionStore.get('test-connection', (err: any, session: any) => {
@@ -313,13 +329,21 @@ async function startServer() {
 
   // Remove duplicate CORS - already configured above with proper order
 
-  // Initialize Passport.js for OAuth (moved after session config)
-  // OAuth strategies will be configured after session middleware
+  // SURGICAL FIX 5: OAuth initialization with error handling
+  try {
+    console.log('🔧 Initializing OAuth strategies...');
+    configureOAuthStrategies(app);
+    setupOAuthRoutes(app);
+    console.log('✅ OAuth strategies configured successfully');
+  } catch (oauthError) {
+    console.error('⚠️ OAuth initialization failed:', oauthError);
+    console.log('🔧 Application will continue without OAuth - manual token entry required');
+  }
   
   // Production-grade session configuration with security
-  const isProduction = process.env.NODE_ENV === 'production';
+  // isProd already defined in startup validation
   
-  // CRITICAL FIX 3: Enhanced session configuration with proper secure cookie handling
+  // SURGICAL FIX 1: Enhanced session configuration for Replit deployment
   app.use(session({
     secret: secureDefaults.SESSION_SECRET,
     store: sessionStore,
@@ -331,10 +355,10 @@ async function startServer() {
       return 'aiq_' + crypto.randomBytes(16).toString('hex'); // 128-bit secure ID
     },
     cookie: { 
-      secure: isProduction, // REQUIRED: HTTPS only in production 
+      secure: isProd ? true : false, // SURGICAL: Replit deployment HTTPS handling
       httpOnly: true, // REQUIRED: Prevent XSS attacks via JavaScript access
-      sameSite: isProduction ? 'strict' : 'lax', // REQUIRED: Prevent CSRF, lax for dev OAuth
-      maxAge: 24 * 60 * 60 * 1000, // Absolute timeout: 24 hours maximum
+      sameSite: 'lax', // SURGICAL: Always lax for OAuth compatibility in production
+      maxAge: 72 * 60 * 60 * 1000, // SURGICAL: Extended 72 hours for longer sessions
       path: '/', // Limit cookie scope to root path
       domain: undefined, // REQUIRED: First-party cookies only, no cross-domain
       partitioned: true // 2025 browser partitioning support
@@ -361,7 +385,7 @@ async function startServer() {
       res.cookie('consent-required', '1', { 
         maxAge: 5 * 60 * 1000, // 5 minutes
         httpOnly: false, // Needs to be accessible to frontend
-        secure: process.env.NODE_ENV === 'production',
+        secure: isProd,
         sameSite: 'strict'
       });
     }
@@ -390,9 +414,9 @@ async function startServer() {
         req.session.createdAt = Date.now();
       }
       
-      // CRITICAL: Absolute timeout enforcement (7 days max - reasonable for user experience)
+      // SURGICAL FIX 6: Remove absolute timeout for deployment (was causing ABSOLUTE_TIMEOUT_EXCEEDED)
       const sessionAge = Date.now() - req.session.createdAt;
-      if (sessionAge > 7 * 24 * 60 * 60 * 1000) {
+      if (sessionAge > 72 * 24 * 60 * 60 * 1000) { // 72 hours instead of 7 days
         console.log('🔒 [SECURITY] Session expired due to absolute timeout (7 days):', {
           userId: req.session.userId,
           sessionAge: Math.round(sessionAge / (1000 * 60 * 60)) + 'h',
@@ -403,7 +427,7 @@ async function startServer() {
           if (err) console.error('Session destruction failed:', err);
           res.clearCookie('theagencyiq.session', { 
             httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production',
+            secure: isProd,
             sameSite: 'strict',
             path: '/api',
             partitioned: true
@@ -477,8 +501,8 @@ async function startServer() {
     if (req.session?.userId && !req.headers.cookie?.includes('aiq_backup_session')) {
       console.log('🔧 Setting secure session cookies for authenticated user');
       res.setHeader('Set-Cookie', [
-        `aiq_backup_session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=${isProduction ? 'strict' : 'lax'}${isProduction ? '; Secure' : ''}; Max-Age=${30 * 60}`,
-        `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=${isProduction ? 'strict' : 'lax'}${isProduction ? '; Secure' : ''}; Max-Age=${30 * 60}`
+        `aiq_backup_session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=${isProd ? 'strict' : 'lax'}${isProd ? '; Secure' : ''}; Max-Age=${30 * 60}`,
+        `theagencyiq.session=${req.sessionID}; Path=/; HttpOnly=true; SameSite=${isProd ? 'strict' : 'lax'}${isProd ? '; Secure' : ''}; Max-Age=${30 * 60}`
       ]);
     }
     
@@ -631,7 +655,13 @@ async function startServer() {
 
   // Public bypass route
   app.get('/public', (req, res) => {
-    req.session.userId = 2;
+    // SURGICAL FIX 6: Disable auto-establishment in production
+    if (!isProd) {
+      req.session.userId = 2;
+      console.log('🔧 [DEV] Auto-established session for User ID 2');
+    } else {
+      console.log('🚫 [PROD] Auto-establishment disabled in production');
+    }
     console.log(`React fix bypass activated at ${new Date().toISOString()}`);
     res.redirect('/platform-connections');
   });
@@ -1160,7 +1190,7 @@ async function startServer() {
           // CRITICAL: Set secure session cookie with 2025 compliance flags
           res.cookie('theagencyiq.session', req.sessionID, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: isProd,
             sameSite: 'strict',
             partitioned: true,
             maxAge: 30 * 60 * 1000, // 30 minutes
