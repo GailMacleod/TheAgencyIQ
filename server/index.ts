@@ -357,7 +357,7 @@ async function startServer() {
   
   // SURGICAL FIX 1: Enhanced session configuration for Replit deployment
   app.use(session({
-    secret: secureDefaults.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET,
     store: sessionStore,
     resave: false,
     saveUninitialized: false, // Don't create sessions for unauthenticated users
