@@ -12646,6 +12646,16 @@ async function fetchYouTubeAnalytics(accessToken: string) {
     }
   });
 
+  // PRODUCTION OAUTH CONFIGURATION FOR app.theagencyiq.ai
+  // Import and configure production OAuth routes for deployment
+  try {
+    const { setupProductionOAuthRoutes } = await import('./config/production-oauth.js');
+    setupProductionOAuthRoutes(app);
+    console.log('🚀 PRODUCTION OAUTH ROUTES CONFIGURED FOR DEPLOYMENT');
+  } catch (oauthError) {
+    console.warn('⚠️ Production OAuth configuration failed, skipping OAuth setup:', oauthError.message);
+  }
+
   // Return the existing HTTP server instance
   // Serve Veo3 generated videos with proper headers
   app.use('/videos', express.static('public/videos', {

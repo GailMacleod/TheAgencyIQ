@@ -29,9 +29,13 @@ interface OAuthTokens {
  * Implements secure token storage and refresh logic
  */
 export function configureOAuthStrategies() {
-  const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000';
+  // Production-ready URL configuration for app.theagencyiq.ai
+  const isProd = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYED === 'true';
+  const baseUrl = isProd 
+    ? 'https://app.theagencyiq.ai' 
+    : (process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000');
   
-  console.log('🔧 Configuring OAuth strategies for production...');
+  console.log(`🔧 Configuring OAuth strategies for ${isProd ? 'PRODUCTION' : 'DEVELOPMENT'} (${baseUrl})...`);
 
   // Passport serialization/deserialization
   passport.serializeUser((user: any, done) => {
