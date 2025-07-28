@@ -3,34 +3,62 @@ import { sql } from "drizzle-orm";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import * as auth from './authSchema';
-import * as post from './postSchema';
-import * as user from './userSchema';
-import * as analytics from './analyticsSchema';
-import * as platform from './platformSchema';
+
+export * from './authSchema';
+export * from './postSchema';
+export * from './userSchema';
+export * from './analyticsSchema';
+export * from './platformSchema';
 
 export {
-// List all exports explicitly
-sessions from './authSchema',
-enhancedOauthTokens from './authSchema',
-oauthTokens from './authSchema',
-postSchedule from './postSchema',
-postLedger from './postSchema',
-posts from './postSchema',
-postLogs from './postSchema',
-enhancedPostLogs from './postSchema',
-users from './userSchema',
-brandPurpose from './userSchema',
-verificationCodes from './userSchema',
-giftCertificates from './userSchema',
-giftCertificateActionLog from './userSchema',
-subscriptionAnalytics from './analyticsSchema',
-videoUsage from './analyticsSchema',
-quotaUsage from './analyticsSchema',
-notificationLogs from './analyticsSchema',
-platformConnections from './platformSchema',
-// Add any insert schemas similarly
-insertUserSchema from './userSchema',
-insertPostSchema from './postSchema',
-// etc. for all insert schemas
+// Auth
+sessions,
+enhancedOauthTokens,
+oauthTokens,
+// Post
+postSchedule,
+postLedger,
+posts,
+postLogs,
+enhancedPostLogs,
+// User
+users,
+brandPurpose,
+verificationCodes,
+giftCertificates,
+giftCertificateActionLog,
+// Analytics
+subscriptionAnalytics,
+videoUsage,
+quotaUsage,
+notificationLogs,
+// Platform
+platformConnections,
+// Insert schemas
+insertUserSchema,
+insertPostSchema,
+insertPlatformConnectionSchema,
+insertBrandPurposeSchema,
+insertVerificationCodeSchema,
+insertGiftCertificateSchema,
+insertGiftCertificateActionLogSchema,
+insertSubscriptionAnalyticsSchema,
+insertPostScheduleSchema,
+insertPostLedgerSchema,
+insertPostLogSchema
 };
+
+Commit "Fix spread export in schema.ts by listing explicitly".
+
+Patch for server/routes.ts (Line 12213)
+Open server/routes.ts in GitHub, edit, at line 12213, add comma after the line above else (e.g., status: 'processing' , ) if missing, or } if brace issue.
+
+If code is:
+if (result.isAsync && result.operationId) {
+res.json({
+...,
+message: 'VEO 3.0 generation initiated - use operation ID to check status'
+});
+} else {
+...
+},
