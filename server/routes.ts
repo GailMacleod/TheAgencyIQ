@@ -12195,7 +12195,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         } catch (usageError) {
           console.warn('⚠️ Failed to record VEO usage:', usageError.message);
         }
-    // Check if this is an async operation (VEO 3.0 actual generation)
+ // Check if this is an async operation (VEO 3.0 actual generation)
 if (result.isAsync && result.operationId) {
   // Return operation tracking for authentic VEO 3.0 generation
   console.log(`🔄 VEO 3.0: Returning async operation tracking for ${result.operationId}`);
@@ -12207,7 +12207,7 @@ if (result.isAsync && result.operationId) {
     estimatedTime: result.estimatedTime || '11s to 6 minutes',
     status: 'processing',
     platform: platform,
-    message: 'VEO 3.0 generation initiated - use operation ID to check status',  // Added comma here
+    message: 'VEO 3.0 generation initiated - use operation ID to check status'
   });
 } else {
   // Return completed video (either immediate fallback or cached)
