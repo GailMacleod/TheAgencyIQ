@@ -47,12 +47,3 @@ insertPostLedgerSchema,
 insertPostLogSchema
 };
 
-If code is:
-if (result.isAsync && result.operationId) {
-res.json({
-...,
-message: 'VEO 3.0 generation initiated - use operation ID to check status'
-});
-} else {
-...
-},
