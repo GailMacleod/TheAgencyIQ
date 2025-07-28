@@ -12190,7 +12190,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
             result.operationId || `fallback-${Date.now()}`, 
             8, // Assume 8 seconds duration
             8 * 0.75 // $0.75 per second
-          );
+         );
           console.log('💰 VEO usage recorded for cost tracking');
         } catch (usageError) {
           console.warn('⚠️ Failed to record VEO usage:', usageError.message);
@@ -12208,7 +12208,8 @@ async function fetchYouTubeAnalytics(accessToken: string) {
             estimatedTime: result.estimatedTime || '11s to 6 minutes',
             status: 'processing',
             platform: platform,
-            message: 'VEO 3.0 generation initiated - use operation ID to check status',
+            message: 'VEO 3.0 generation initiated - use operation ID to check status'
+          });
         } else {
           // Return completed video (either immediate fallback or cached)
           res.json({
