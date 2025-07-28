@@ -12259,21 +12259,22 @@ if (result.isAsync && result.operationId) {
       console.log(`🔍 Checking VEO 3.0 operation status: ${operationId}`);
       
       // EMERGENCY FIX: Force complete any hanging operations from old system
-      if (operationId === 'veo3-fallback-1753153075856-qgkr5r3kg') {
-        console.log(`🚨 EMERGENCY COMPLETION: Forcing completion of stuck operation ${operationId}`);
-        return res.json({
-          success: true,
-          completed: true});
-          videoId: `completed-${operationId}`,
-          videoUrl: videoUrl: '/api/video/placehold/emergency-fix.mp4',
-          duration: 8000,
-          aspectRatio: '16:9',
-          quality: '720p',
-          generationTime: 25000,
-          platform: 'youtube',
-          message: 'Emergency completion - operation was stuck'
-        });
-      }
+    // EMERGENCY FIX: Force complete any hanging operations from old system
+if (operationId === 'veo3-fallback-1753153075856-qgkr5r3kg') {
+  console.log(`🚨 EMERGENCY COMPLETION: Forcing completion of stuck operation ${operationId}`);
+  return res.json({
+    success: true,
+    completed: true,
+    videoId: `completed-${operationId}`,
+    videoUrl: '/api/video/placeholder/emergency-fix.mp4',
+    duration: 8000,
+    aspectRatio: '16:9',
+    quality: '720p',
+    generationTime: 25000,
+    platform: 'youtube',
+    message: 'Emergency completion - operation was stuck'
+  });
+}
       
       // Import VeoService to check operation status
       const VeoService = (await import('./veoService')).default;
