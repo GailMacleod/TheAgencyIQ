@@ -12265,7 +12265,7 @@ if (result.isAsync && result.operationId) {
           success: true,
           completed: true});
           videoId: `completed-${operationId}`,
-          videoUrl: '/api/video/placeholder/emergency-fix.mp4',
+          videoUrl: videoUrl: '/api/video/placehold/emergency-fix.mp4',
           duration: 8000,
           aspectRatio: '16:9',
           quality: '720p',
