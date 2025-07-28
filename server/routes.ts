@@ -12207,7 +12207,7 @@ if (result.isAsync && result.operationId) {
     estimatedTime: result.estimatedTime || '11s to 6 minutes',
     status: 'processing',
     platform: platform,
-    message: 'VEO 3.0 generation initiated - use operation ID to check status',
+    message: 'VEO 3.0 generation initiated - use operation ID to check status', // Added comma
   });
 } else {
   // Return completed video (either immediate fallback or cached)
