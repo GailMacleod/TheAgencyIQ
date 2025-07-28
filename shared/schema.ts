@@ -47,11 +47,6 @@ insertPostLedgerSchema,
 insertPostLogSchema
 };
 
-Commit Fix spread export in schema.ts by listing explicitly.
-
-Patch for server/routes.ts (Line 12213)
-Open server/routes.ts in GitHub, edit, at line 12213, add comma after the line above else (e.g., status: 'processing' , ) if missing, or } if brace issue.
-
 If code is:
 if (result.isAsync && result.operationId) {
 res.json({
