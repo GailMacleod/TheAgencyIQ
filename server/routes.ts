@@ -12196,41 +12196,41 @@ async function fetchYouTubeAnalytics(accessToken: string) {
           console.warn('⚠️ Failed to record VEO usage:', usageError.message);
         }
         
-        // Check if this is an async operation (VEO 3.0 actual generation)
-        if (result.isAsync && result.operationId) {
-          // Return operation tracking for authentic VEO 3.0 generation
-          console.log(`🔄 VEO 3.0: Returning async operation tracking for ${result.operationId}`);
-          res.json({
-            success: true,
-            isAsync: true,
-            operationId: result.operationId,
-            operationName: result.operationName,
-            estimatedTime: result.estimatedTime || '11s to 6 minutes',
-            status: 'processing',
-            platform: platform,
-            message: 'VEO 3.0 generation initiated - use operation ID to check status'
-          });
-        } else {
-          // Return completed video (either immediate fallback or cached)
-          res.json({
-            success: true,
-            videoId: result.videoId,
-            videoData: result,
-            videoUrl: result.url || result.videoUrl,
-            platform: result.platform || platform,
-            message: result.message || 'VEO 3.0 video generated successfully',
-            veo3Generated: result.veo3Generated,
-            fromCache: result.fromCache || false,
-            // Enhanced JTBD Copywriting flags
-            grokEnhanced: result.grokEnhanced || false,
-            editable: result.editable || false,
-            wittyStyle: result.wittyStyle || false,
-            postCopy: result.postCopy || null,
-            enhancedCopy: result.enhancedCopy || null,
-            jtbdIntegrated: result.jtbdIntegrated || false,
-            brandPurposeDriven: result.brandPurposeDriven || false
-          });
-        }
+       // Check if this is an async operation (VEO 3.0 actual generation)
+if (result.isAsync && result.operationId) {
+  // Return operation tracking for authentic VEO 3.0 generation
+  console.log(`🔄 VEO 3.0: Returning async operation tracking for ${result.operationId}`);
+  res.json({
+    success: true,
+    isAsync: true,
+    operationId: result.operationId,
+    operationName: result.operationName,
+    estimatedTime: result.estimatedTime || '11s to 6 minutes',
+    status: 'processing',
+    platform: platform,
+    message: 'VEO 3.0 generation initiated - use operation ID to check status'
+  });
+} else {
+  // Return completed video (either immediate fallback or cached)
+  res.json({
+    success: true,
+    videoId: result.videoId,
+    videoData: result,
+    videoUrl: result.url || result.videoUrl,
+    platform: result.platform || platform,
+    message: result.message || 'VEO 3.0 video generated successfully',
+    veo3Generated: result.veo3Generated,
+    fromCache: result.fromCache || false,
+    // Enhanced JTBD Copywriting flags
+    grokEnhanced: result.grokEnhanced || false,
+    editable: result.editable || false,
+    wittyStyle: result.wittyStyle || false,
+    postCopy: result.postCopy || null,
+    enhancedCopy: result.enhancedCopy || null,
+    jtbdIntegrated: result.jtbdIntegrated || false,
+    brandPurposeDriven: result.brandPurposeDriven || false
+  });
+}
       } else {
         res.status(500).json({
           success: false,
