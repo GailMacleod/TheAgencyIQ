@@ -1389,12 +1389,6 @@ class VeoService {
     }
   }
 
-  /**
-   * Create quality video file with authentic business content
-   */
-  async createQualityVideoFile(videoPath, prompt, duration, width, height) {
-    try {
-      console.log(`🎬 VEO 3.0: Creating quality video file with business content...`);
       
       // Extract meaningful text from the prompt
       const promptLines = prompt.split('.').slice(0, 4).map(line => 
