@@ -1390,15 +1390,16 @@ class VeoService {
   }
 
       
-      // Extract meaningful text from the prompt
-const promptLines = prompt.split('.').slice(0, 4).map(line => 
-  line.trim().replace(/['"\\:;]/g, '').replace(/[^a-zA-Z0-9 ]/g, ' ').substring(0, 25).trim()
-).filter(line => line.length > 5);
+    // Extract meaningful text from the prompt
+const promptLines = prompt.split('.').slice(0, 4).map(line => {
+  return line.trim().replace(/['"\\:;]/g, '').replace(/[^a-zA-Z0-9 ]/g, ' ').substring(0, 25).trim();
+}).filter(line => line.length > 5);
 
 // Ensure we have 4 meaningful text segments
 while (promptLines.length < 4) {
   promptLines.push(`Queensland Business Success ${promptLines.length + 1}`);
 }
+
 console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/quota tracing
       
       const sceneTime = duration / 4;
