@@ -12208,7 +12208,6 @@ async function fetchYouTubeAnalytics(accessToken: string) {
             estimatedTime: result.estimatedTime || '11s to 6 minutes',
             status: 'processing',
             platform: platform,
-            pollEndpoint: `/api/video/operation/${result.operationId}`,
             message: 'VEO 3.0 generation initiated - use operation ID to check status',
         } else {
           // Return completed video (either immediate fallback or cached)
