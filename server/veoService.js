@@ -929,19 +929,17 @@ class VeoService {
       try {
         const { execSync } = await import('child_process');
         
-        // Extract smart content from the enhanced Grok prompt
-        const enhancedPrompt = videoRequest.prompt || videoRequest.enhancedPrompt || '';
-        console.log(`🎬 VEO 3.0: Using enhanced prompt content:`, enhancedPrompt.substring(0, 200));
-        
-        // Parse key elements from the Grok-enhanced prompt - ESCAPE FOR FFMPEG
-        const promptLines = enhancedPrompt.split('.').slice(0, 4).map(line => 
-          line.trim().replace(/['"\\:;]/g, '').replace(/[^a-zA-Z0-9 ]/g, ' ').substring(0, 25).trim()
-        ).filter(line => line.length > 5);
-        
-        // Ensure we have 4 meaningful text segments
-        while (promptLines.length < 4) {
-          promptLines.push(`Queensland SME Success Story ${promptLines.length + 1}`);
-        }
+       // Extract meaningful text from the prompt
+const promptLines = prompt.split('.').slice(0, 4).map(line => {
+  return line.trim().replace(/['"\\:;]/g, '').replace(/[^a-zA-Z0-9 ]/g, ' ').substring(0, 25).trim();
+}).filter(line => line.length > 5);
+
+// Ensure we have 4 meaningful text segments
+while (promptLines.length < 4) {
+  promptLines.push(`Queensland Business Success ${promptLines.length + 1}`);
+}
+
+console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/quota tracing
         
         console.log(`🎯 VEO 3.0: Extracted video segments:`, promptLines);
         
