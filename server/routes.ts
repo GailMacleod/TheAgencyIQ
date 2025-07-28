@@ -12263,7 +12263,7 @@ async function fetchYouTubeAnalytics(accessToken: string) {
         console.log(`🚨 EMERGENCY COMPLETION: Forcing completion of stuck operation ${operationId}`);
         return res.json({
           success: true,
-          completed: true,
+          completed: true});
           videoId: `completed-${operationId}`,
           videoUrl: '/api/video/placeholder/emergency-fix.mp4',
           duration: 8000,
