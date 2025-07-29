@@ -483,7 +483,128 @@ app.get('/facebook-data-deletion', (req, res) => {
   
   // Add subscription enforcement middleware to all routes
   app.use(requirePaidSubscription);
-  
+
+  import express, { Express, Request, Response, NextFunction } from 'express';
+import { Server } from 'http';
+import crypto from 'crypto';
+import session from 'express-session';
+import { storage } from '../services/storage'; // Adjust path as needed
+import db from '../db'; // Adjust path as needed
+import { eq } from 'drizzle-orm'; // Adjust if using a different ORM
+import { users } from '../db/schema'; // Adjust path as needed
+
+// Use our custom request interface
+interface CustomRequest extends Request {
+  session: session.Session & Partial<session.SessionData> & {
+    userId?: number;
+    userEmail?: string;
+  };
+}
+
+// Subscription middleware
+const requirePaidSubscription = async (req: CustomRequest, res: Response, next: NextFunction) => {
+  // Public paths
+  const publicPaths = [
+    '/api/subscription-plans',
+    '/api/user-status',
+    '/api/user',
+    '/api/auth/',
+    '/api/platform-connections',
+    '/webhook',
+    '/api/webhook',
+    '/manifest.json',
+    '/',
+    '/subscription',
+    '/public',
+    '/facebook-data-deletion' // Added to allow public access
+  ];
+
+  // Check if this is a public path
+  if (publicPaths.some(path => req.path === path || req.path.startsWith(path))) {
+    return next();
+  }
+
+  // Check user subscription status
+  let userId = req.session?.userId;
+
+  if (!userId) {
+    return res.status(401).json({
+      message: "Not authenticated",
+      requiresLogin: true
+    });
+  }
+
+  try {
+    const user = await storage.getUser(userId);
+    if (!user) {
+      req.session.destroy((err: any) => {
+        if (err) console.error('Session destroy error:', err);
+      });
+      return res.status(401).json({
+        message: "User account not found",
+        requiresLogin: true
+      });
+    }
+
+    // Block cancelled subscriptions
+    if (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive) {
+      req.session.destroy((err: any) => {
+        if (err) console.error('Session destroy error:', err);
+      });
+      return res.status(403).json({
+        message: "Subscription cancelled - access denied",
+        requiresLogin: true,
+        subscriptionCancelled: true,
+        redirectTo: '/api/login'
+      });
+    }
+
+    // Check subscription status
+    const hasActiveSubscription = user.subscriptionPlan && user.subscriptionPlan !== 'free';
+    if (!hasActiveSubscription) {
+      return res.status(403).json({
+        message: "Active subscription required",
+        requiresSubscription: true,
+        currentPlan: user.subscriptionPlan || 'free'
+      });
+    }
+
+    req.session.touch();
+    next();
+  } catch (error: any) {
+    console.error('Subscription auth error:', error);
+    return res.status(500).json({
+      message: "Authentication error",
+      requiresLogin: true
+    });
+  }
+};
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Apply subscription middleware
+  app.use(requirePaidSubscription);
+
+  // Facebook Data Deletion endpoints
+  app.use('/facebook-data-deletion', express.urlencoded({ extended: true }));
+  app.use('/facebook-data-deletion', express.json());
+
+  // GET for status
+  app.get('/facebook-data-deletion', (req: CustomRequest, res: Response) => {
+    res.send('Data Deletion Instructions: Email support@theagencyiq.ai to delete.');
+  });
+
+  // POST for deletion request from Facebook
+  app.post('/facebook-data-deletion', (req: CustomRequest, res: Response) => {
+    const { signed_request } = req.body;
+    // Parse signed_request, delete user data, respond with confirmation URL
+    const confirmationCode = crypto.randomUUID();
+    const statusUrl = `https://the-agency-iq.vercel.app/api/deletion-status/${confirmationCode}`;
+    res.json({ url: statusUrl, confirmation_code: confirmationCode });
+  });
+
+  // Return the app instance
+  return app;
+}
   // Register quota management routes
   // Quota routes integrated inline - removed external import
   
