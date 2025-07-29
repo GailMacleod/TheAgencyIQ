@@ -276,6 +276,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'cancelled': 0,
         'free': 0
       };
+
+      app.get('/privacy-policy', (req, res) => {
+  res.status(200).send('Privacy Policy: Your data is secure. For deletion, contact support.');
+});
+
+app.get('/facebook-data-deletion', (req, res) => {
+  res.status(200).send('Data Deletion Instructions: Email support@theagencyiq.ai with your user ID to delete.');
+});
       
       const totalPosts = quotaLimits[user.subscriptionPlan as keyof typeof quotaLimits] || 0;
       const publishedPosts = user.totalPosts || 0;
@@ -501,6 +509,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       </html>
     `);
   });
+
+  // LinkedIn OAuth callback
+app.get('/api/auth/linkedin/callback', 
+  passport.authenticate('linkedin', { failureRedirect: '/login' }),
+  (req, res) => {
+    // Successful authentication, redirect to dashboard or home
+    res.redirect('/dashboard');
+  }
+);
+
+// Instagram OAuth callback (using Facebook since IG uses FB API)
+app.get('/api/auth/instagram/callback', 
+  passport.authenticate('facebook', { failureRedirect: '/login' }),
+  (req, res) => {
+    res.redirect('/dashboard');
+  }
+);
+
+// X (Twitter) OAuth callback
+app.get('/api/auth/twitter/callback', 
+  passport.authenticate('twitter', { failureRedirect: '/login' }),
+  (req, res) => {
+    res.redirect('/dashboard');
+  }
+);
+
+// YouTube OAuth callback (using Google)
+app.get('/api/auth/youtube/callback', 
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  (req, res) => {
+    res.redirect('/dashboard');
+  }
+);
   
   // Session configuration moved to server/index.ts to prevent duplicates
 
