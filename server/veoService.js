@@ -135,36 +135,41 @@ class VeoService {
    * @returns {Promise<Object>} - Generation result
    */
   async generateVideo(prompt, config = {}) {
-    try {
-      console.log(`🎬 VEO 3.0: Starting authentic video generation`);
-      
-      // Prepare final configuration with VEO 3.0 constraints
-      const finalConfig = {
-        aspectRatio: config.aspectRatio || '16:9',
-        durationSeconds: Math.min(Math.max(config.durationSeconds || 8, 5), 8), // VEO 3.0: 5-8 seconds
-        resolution: '720p', // VEO 3.0 supports 720p
-        enhancePrompt: config.enhancePrompt !== false,
-        personGeneration: config.personGeneration || 'allow',
-        platform: config.platform || 'youtube'
-      };
+  try {
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
 
-      console.log(`🎯 VEO 3.0: Config - ${finalConfig.durationSeconds}s, ${finalConfig.aspectRatio}, ${finalConfig.resolution}`);
+    const model = genAI.getGenerativeModel({ model: "veo-3.0-generate-preview" });
 
-      // Construct video request for Vertex AI
-      const videoRequest = {
-        prompt: prompt,
-        config: finalConfig
-      };
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        duration: config.durationSeconds || 8,
+        aspectRatio: config.aspectRatio || "16:9",
+      },
+      safetySettings: [{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }],
+    });
 
-      // Call authentic VEO 3.0 API via Vertex AI
-      console.log(`🔄 VEO 3.0: Initiating authentic Vertex AI video generation`);
-      console.log(`⏱️  VEO 3.0: Estimated generation time: 5-8 seconds video, 30s to 6 minutes processing`);
-      
-      const apiResult = await this.callVeo3Api(videoRequest);
-      
-      if (!apiResult.success) {
-        throw new Error(`VEO 3.0 API call failed: ${apiResult.error}`);
-      }
+    const operationId = result.response.candidates[0].content.parts[0].operation.name.split('/').pop();
+
+    // Store op for polling
+    const operationData = {
+      operationId,
+      startTime: Date.now(),
+      prompt,
+      config,
+      status: 'processing',
+      platform: config.platform || 'youtube',
+      estimatedCompletion: Date.now() + 360000,  // 6 min
+    };
+    await this.operations.set(operationId, operationData);
+
+    return { success: true, isAsync: true, operationId, status: 'processing' };
+  } catch (error) {
+    console.error('Veo gen failed:', error);
+    throw new Error('Video generation failed - check API key/quotas');
+  }
+}
       
       // Store operation for authentic tracking with proper data structure
       const operationData = {
