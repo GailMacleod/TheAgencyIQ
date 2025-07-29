@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Define users table (if not in userSchema.ts)
+// Define users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).unique().notNull(),
@@ -13,7 +13,6 @@ export const users = pgTable("users", {
   // Add other fields per blueprint
 });
 
-// Export from sub-files
 export * from './authSchema';
 export * from './postSchema';
 export * from './userSchema';
@@ -31,7 +30,6 @@ export {
   postLogs,
   enhancedPostLogs,
   // User
-  users,  // Explicitly export users here
   brandPurpose,
   verificationCodes,
   giftCertificates,
