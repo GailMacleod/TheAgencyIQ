@@ -135,16 +135,25 @@ async function startServer() {
   }));
 
   // Essential middleware - after CORS, before session
-  app.use(cookieParser()); // PRECISION FIX: Add cookie parser for req.cookies
-  app.use(express.urlencoded({ extended: true }));
-  app.use(express.json());
-  // Filter out Replit-specific tracking in production
-  app.use((req, res, next) => {
-    // Block Replit tracking requests in production
-    if (req.headers.host === 'app.theagencyiq.ai' && 
-        (req.url.includes('replit') || req.url.includes('tracking') || req.url.includes('beacon'))) {
-      return res.status(204).end(); // No content, ignore silently
-    }
+ app.use(cookieParser());
+app.use(session({
+  store: new (require('connect-pg-simple')(session))({
+    conString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    ttl: 86400,
+  }),
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 86400000,
+  },
+  genid: (req) => crypto.randomUUID(),
+}));
+app.use(passport.initialize());
+app.use(passport.session());
     
     const origin = req.headers.origin || 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
     res.header('Access-Control-Allow-Origin', origin);
