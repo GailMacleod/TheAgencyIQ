@@ -145,13 +145,9 @@ class VeoService {
     const client = await auth.getClient();
     const accessToken = (await client.getAccessToken()).token;
 
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT;
-    const location = 'us-central1';
-    const modelId = 'veo-3.0-generate-preview';
-
-    if (!projectId) {
-      throw new Error('GOOGLE_CLOUD_PROJECT environment variable is required for VEO 3.0');
-    }
+    const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'your-project-id';
+    const location = process.env.LOCATION || 'us-central1';
+    const modelId = process.env.MODEL_ID || 'veo-3.0-generate-preview';
 
     const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:predictLongRunning`;
 
@@ -159,18 +155,15 @@ class VeoService {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        instances: [{
-          prompt: videoRequest.prompt,
-        }],
+        instances: [{ prompt: videoRequest.prompt }],
         parameters: {
           durationSeconds: videoRequest.config.durationSeconds,
           aspectRatio: videoRequest.config.aspectRatio,
           resolution: videoRequest.config.resolution,
-          enhancePrompt: true,
-          generateAudio: true,  // Required for veo-3.0-generate-preview
+          generateAudio: true,
           personGeneration: videoRequest.config.personGeneration,
         },
       }),
@@ -181,20 +174,14 @@ class VeoService {
     }
 
     const { name: operationName } = await response.json();
-    const operationId = operationName.split('/').pop();  // Extract ID from name
+    const operationId = operationName.split('/').pop();
 
-    return {
-      success: true,
-      operationId,
-      operationName,
-      status: 'processing',
-    };
+    return { success: true, operationId, operationName, status: 'processing' };
   } catch (error) {
-    console.error('Vertex AI Veo 3.0 API call failed:', error);
+    console.error('Vertex AI Veo 3.0 call failed:', error);
     return { success: false, error: error.message };
   }
-}
-      
+}   
       // Store operation for authentic tracking with proper data structure
       const operationData = {
         operationId: apiResult.operationId,
@@ -571,40 +558,44 @@ class VeoService {
    * @returns {Promise<Object>} - Operation status
    */
   async getOperationStatus(operationId) {
-    try {
-      console.log(`🔍 VEO 3.0 DEBUG: Checking operation status for ${operationId}`);
-      console.log(`🔍 VEO 3.0 DEBUG: Total operations in memory: ${await this.operations.size()}`);
-      console.log(`🔍 VEO 3.0 DEBUG: Operation IDs: ${(await this.operations.keys()).join(', ')}`);
-      
-      const operation = await this.operations.get(operationId);
-      
-      if (!operation) {
-        console.log(`❌ VEO 3.0 DEBUG: Operation ${operationId} not found`);
-        return {
-          success: false,
-          error: 'Operation not found',
-          operationId: operationId
-        };
-      }
-      
-      // Check for corrupted data and clean up if necessary
-      if (!operation.startTime || operation.startTime === undefined || isNaN(operation.startTime)) {
-        console.log(`⚠️ VEO 3.0 DEBUG: Corrupted operation data detected, cleaning up ${operationId}`);
-        await this.operations.delete(operationId);
-        return {
-          success: false,
-          error: 'Operation data corrupted - please retry video generation',
-          operationId: operationId
-        };
-      }
-      
-      console.log(`✅ VEO 3.0 DEBUG: Operation found:`, {
-        operationId: operation.operationId,
-        status: operation.status,
-        startTime: operation.startTime,
-        platform: operation.platform,
-        hasValidData: !!(operation.startTime && operation.status)
-      });
+  const op = await this.operations.get(operationId);
+  if (!op) throw new Error('Invalid operationId');
+
+  if (op.status === 'completed') return op;
+
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+  const location = 'us-central1';
+  const url = `https://${location}-aiplatform.googleapis.com/v1/${op.operationName}`;
+
+  const { GoogleAuth } = await import('google-auth-library');
+  const auth = new GoogleAuth({ scopes: 'https://www.googleapis.com/auth/cloud-platform' });
+  const client = await auth.getClient();
+  const accessToken = (await client.getAccessToken()).token;
+
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+  });
+
+  const { done, response: result, error } = await response.json();
+
+  if (done) {
+    if (error) {
+      op.status = 'failed';
+      op.error = error.message;
+    } else {
+      op.status = 'completed';
+      op.videoUrl = result.output.videoUri;  // From Vertex response
+      op.duration = result.output.durationSeconds;
+      // Update videoUsage with real data for quota
+      const veoTracker = new VeoUsageTracker();
+      await veoTracker.updateUsage(op.userId, operationId, op.duration, op.duration * 0.75);
+    }
+    await this.operations.set(operationId, op);
+    return op;
+  }
+
+  return { ...op, status: 'processing', progress: 50 };  // Mock progress
+}
 
       const elapsed = Date.now() - operation.startTime;
       const estimatedDuration = operation.estimatedCompletion - operation.startTime;
