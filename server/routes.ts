@@ -218,6 +218,24 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
       req.session.destroy((err: any) => {
         if (err) console.error('Session destroy error:', err);
       });
+
+      // Facebook Data Deletion endpoints
+app.use('/facebook-data-deletion', express.urlencoded({ extended: true }));
+app.use('/facebook-data-deletion', express.json());
+
+// GET for status
+app.get('/facebook-data-deletion', (req, res) => {
+  res.send('Data Deletion Instructions: Email support@theagencyiq.ai to delete.');
+});
+
+// POST for deletion request from Facebook
+app.post('/facebook-data-deletion', (req, res) => {
+  const { signed_request } = req.body;
+  // Parse signed_request, delete user data, respond with confirmation URL
+  const confirmationCode = crypto.randomUUID();
+  const statusUrl = `https://the-agency-iq.vercel.app/api/deletion-status/${confirmationCode}`;
+  res.json({ url: statusUrl, confirmation_code: confirmationCode });
+});
       
       return res.status(403).json({ 
         message: "Subscription cancelled - access denied",
