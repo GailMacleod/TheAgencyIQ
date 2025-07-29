@@ -219,37 +219,69 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
         if (err) console.error('Session destroy error:', err);
       });
 
-      // Facebook Data Deletion endpoints
+      // Facebook Data Deletion endpoint (handles GET test and POST deletion)
 app.use('/facebook-data-deletion', express.urlencoded({ extended: true }));
 app.use('/facebook-data-deletion', express.json());
 
-// GET for status
-app.get('/facebook-data-deletion', (req, res) => {
-  res.send('Data Deletion Instructions: Email support@theagencyiq.ai to delete.');
+app.all('/facebook-data-deletion', async (req, res) => {
+  try {
+    if (!process.env.FACEBOOK_APP_SECRET) {
+      throw new Error('FACEBOOK_APP_SECRET not configured');
+    }
+
+    if (req.method === 'GET') {
+      res.status(200).json({ message: 'Data deletion handled automatically via callback' });
+      return;
+    }
+
+    if (req.method === 'POST') {
+      const { signed_request } = req.body;
+      if (!signed_request) throw new Error('Missing signed_request');
+
+      // Parse and verify signed_request
+      const [encodedSig, payload] = signed_request.split('.');
+      const sig = Buffer.from(encodedSig, 'base64').toString('hex');
+      const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'));
+      const crypto = require('crypto');
+      const expectedSig = crypto.createHmac('sha256', process.env.FACEBOOK_APP_SECRET)
+        .update(payload)
+        .digest('hex');
+      if (sig !== expectedSig) throw new Error('Invalid signature');
+
+      const userId = data.user_id;
+      const internalUser = await db.select().from(users)
+        .innerJoin(platformConnections, eq(users.id, platformConnections.userId))
+        .where(and(eq(platformConnections.platform, 'facebook'), eq(platformConnections.externalId, userId)))
+        .get();
+      if (!internalUser) throw new Error('User not found');
+
+      // Delete user data automatically in-app
+      await db.delete(giftCertificates).where(eq(giftCertificates.userId, internalUser.users.id));
+      await db.delete(giftCertificateActionLog).where(eq(giftCertificateActionLog.userId, internalUser.users.id));
+      await db.delete(verificationCodes).where(eq(verificationCodes.userId, internalUser.users.id));
+      await db.delete(brandPurpose).where(eq(brandPurpose.userId, internalUser.users.id));
+      await db.delete(postSchedule).where(eq(postSchedule.userId, internalUser.users.id));
+      await db.delete(postLedger).where(eq(postLedger.userId, internalUser.users.id));
+      await db.delete(videoUsage).where(eq(videoUsage.userId, internalUser.users.id));
+      await db.delete(platformConnections).where(eq(platformConnections.userId, internalUser.users.id));
+      await db.delete(enhancedOauthTokens).where(eq(enhancedOauthTokens.userId, internalUser.users.id));
+      await db.delete(users).where(eq(users.id, internalUser.users.id));
+
+      // Confirmation
+      const confirmationCode = crypto.randomUUID();
+      const statusUrl = `https://the-agency-iq.vercel.app/api/deletion-status/${confirmationCode}`;
+      res.json({ url: statusUrl, confirmation_code: confirmationCode });
+    }
+  } catch (error) {
+    console.error('Facebook data deletion failed:', error);
+    res.status(400).json({ error: error.message });
+  }
 });
 
-// POST for deletion request from Facebook
-app.post('/facebook-data-deletion', (req, res) => {
-  const { signed_request } = req.body;
-  // Parse signed_request, delete user data, respond with confirmation URL
-  const confirmationCode = crypto.randomUUID();
-  const statusUrl = `https://the-agency-iq.vercel.app/api/deletion-status/${confirmationCode}`;
-  res.json({ url: statusUrl, confirmation_code: confirmationCode });
+// Status endpoint (unchanged)
+app.get('/api/deletion-status/:code', (req, res) => {
+  res.status(200).send(`Data deletion confirmed for code: ${req.params.code}`);
 });
-      
-      return res.status(403).json({ 
-        message: "Subscription cancelled - access denied",
-        requiresLogin: true,
-        subscriptionCancelled: true,
-        redirectTo: '/api/login'
-      });
-    }
-    
-    // Check subscription status - allow Professional plan
-    const hasActiveSubscription = user.subscriptionPlan && user.subscriptionPlan !== 'free';
-    if (!hasActiveSubscription) {
-      return res.status(403).json({ 
-        message: "Active subscription required",
         requiresSubscription: true,
         currentPlan: user.subscriptionPlan || 'free'
       });
@@ -458,7 +490,10 @@ app.get('/facebook-data-deletion', (req, res) => {
       console.log(`🔒 GLOBAL: Auto-session disabled - logout cooldown active (${Math.round((LOGOUT_COOLDOWN - (now - lastLogoutTime)) / 1000)}s remaining) for ${req.path}`);
       return next();
     }
-    
+
+    app.get('/facebook-data-deletion', (req, res) => {
+  res.status(200).json({ message: 'Data deletion handled automatically via callback' });
+});
     // Auto-establish session for User ID 2 if not present
     if (!req.session?.userId) {
       try {
