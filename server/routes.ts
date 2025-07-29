@@ -664,33 +664,33 @@ app.get('/api/auth/youtube/callback',
 
   // SURGICAL FIX 1b: Session invalidation endpoint for cancelled subscriptions
   app.post('/api/auth/invalidate-session', async (req: any, res) => {
-    try {
-      if (req.session) {
-        const userId = req.session.userId;
-        
-        // Destroy session
-        await new Promise<void>((resolve, reject) => {
-          req.session.destroy((err: any) => {
-            if (err) reject(err);
-            else resolve();
-          });
-        });
-        
-        // Clear all cookies
-        res.clearCookie('theagencyiq.session');
-        res.clearCookie('aiq_backup_session');
-        res.clearCookie('connect.sid');
-        
-        console.log('✅ [AUTH] Session invalidated for user:', userId);
-        return res.status(200).json({ success: true, message: 'Session invalidated' });
-      }
+  try {
+    if (req.session) {
+      const userId = req.session.userId;
       
-      res.status(200).json({ success: true, message: 'No session to invalidate' });
-    } catch (error) {
-      console.error('🚨 [AUTH] Session invalidation error:', error);
-      res.status(500).json({ success: false, message: 'Invalidation failed' });
+      // Destroy session
+      await new Promise<void>((resolve, reject) => {
+        req.session.destroy((err: any) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      
+      // Clear all cookies
+      res.clearCookie('theagencyiq.session', { path: '/', secure: true, sameSite: 'lax' });
+      res.clearCookie('aiq_backup_session', { path: '/', secure: true, sameSite: 'lax' });
+      res.clearCookie('connect.sid', { path: '/', secure: true, sameSite: 'lax' });
+      
+      console.log('✅ [AUTH] Session invalidated for user:', userId);
+      return res.status(200).json({ success: true, message: 'Session invalidated' });
     }
-  });
+    
+    res.status(200).json({ success: true, message: 'No session to invalidate' });
+  } catch (error) {
+    console.error('🚨 [AUTH] Session invalidation error:', error);
+    res.status(500).json({ success: false, message: 'Invalidation failed' });
+  }
+});
 
   // Initialize Passport and OAuth strategies BEFORE auth routes
   const { passport: configuredPassport, configurePassportStrategies } = await import('./oauth-config.js');
