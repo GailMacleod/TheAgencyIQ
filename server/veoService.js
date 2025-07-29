@@ -320,6 +320,105 @@ class VeoService {
   }
 
   /**
+   * Poll Vertex AI operation
+   * @param {Object} operation - Operation object from initial API call
+   * @returns {Promise<Object>} - Completed operation result
+   */
+  async pollVertexAiOperation(operation) {
+    try {
+      console.log(`🔄 VEO 3.0: Polling operation ${operation.operationId}...`);
+      
+      const { GoogleAuth } = await import('google-auth-library');
+      const auth = new GoogleAuth({
+        scopes: ['https://www.googleapis.com/auth/cloud-platform']
+      });
+      const authClient = await auth.getClient();
+      const accessToken = await authClient.getAccessToken();
+      
+      const requestBody = {
+        operationName: operation.operationName
+      };
+      
+      const response = await fetch(operation.apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken.token}`,
+          'Content-Type': 'application/json; charset=utf-8'
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`VEO 3.0 polling failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log(`📊 VEO 3.0: Operation status:`, result.done ? 'COMPLETED' : 'RUNNING');
+      
+      return {
+        done: result.done,
+        response: result.response,
+        error: result.error,
+        metadata: result.metadata
+      };
+      
+    } catch (error) {
+      console.error(`❌ VEO 3.0: Polling failed:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Download authentic VEO 3.0 video from Google Cloud Storage
+   * @param {string} gcsUri - Google Cloud Storage URI
+   * @param {string} videoId - Local video identifier
+   * @returns {Promise<boolean>} - Download success
+   */
+  async downloadFromGcsUri(gcsUri, videoId) {
+    try {
+      console.log(`📥 VEO 3.0: Downloading authentic video from GCS: ${gcsUri}`);
+      
+      const https = await import('https');
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      // Create download directory if it doesn't exist
+      const videoDir = path.join(process.cwd(), 'public', 'videos', 'generated');
+      await fs.promises.mkdir(videoDir, { recursive: true });
+      
+      const videoPath = path.join(videoDir, `${videoId}.mp4`);
+      
+      return new Promise((resolve, reject) => {
+        const file = fs.createWriteStream(videoPath);
+        
+        https.get(gcsUri, (response) => {
+          if (response.statusCode !== 200) {
+            reject(new Error(`Failed to download: ${response.statusCode}`));
+            return;
+          }
+          
+          response.pipe(file);
+          
+          file.on('finish', () => {
+            file.close();
+            console.log(`✅ VEO 3.0: Authentic video downloaded to ${videoPath}`);
+            resolve(true);
+          });
+          
+          file.on('error', (error) => {
+            fs.unlink(videoPath, () => {}); // Delete partial file
+            reject(error);
+          });
+        }).on('error', reject);
+      });
+      
+    } catch (error) {
+      console.error(`❌ VEO 3.0: GCS download failed:`, error);
+      return false;
+    }
+  }
+
+  /**
    * Generate video using Google AI Studio as fallback
    * @param {string} prompt - Video generation prompt
    * @param {Object} config - Video configuration
