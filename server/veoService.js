@@ -136,37 +136,64 @@ class VeoService {
    * @param {Object} config - Video configuration
    * @returns {Promise<Object>} - Generation result
    */
-  async generateVideo(prompt, config = {}) {
-    try {
-      console.log(`🎬 VEO 3.0: Starting authentic video generation`);
-      
-      // Prepare final configuration with VEO 3.0 constraints
-      const finalConfig = {
-        aspectRatio: config.aspectRatio || '16:9',
-        durationSeconds: Math.min(Math.max(config.durationSeconds || 8, 5), 8), // VEO 3.0: 5-8 seconds
-        resolution: '720p', // VEO 3.0 supports 720p
-        enhancePrompt: config.enhancePrompt !== false,
-        personGeneration: config.personGeneration || 'allow',
-        platform: config.platform || 'youtube'
-      };
+  async callVeo3Api(videoRequest) {
+  try {
+    const { GoogleAuth } = await import('google-auth-library');
+    const auth = new GoogleAuth({
+      scopes: 'https://www.googleapis.com/auth/cloud-platform',
+    });
+    const client = await auth.getClient();
+    const accessToken = (await client.getAccessToken()).token;
 
-      console.log(`🎯 VEO 3.0: Config - ${finalConfig.durationSeconds}s, ${finalConfig.aspectRatio}, ${finalConfig.resolution}`);
+    const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+    const location = 'us-central1';
+    const modelId = 'veo-3.0-generate-preview';
 
-      // Construct video request for Vertex AI
-      const videoRequest = {
-        prompt: prompt,
-        config: finalConfig
-      };
+    if (!projectId) {
+      throw new Error('GOOGLE_CLOUD_PROJECT environment variable is required for VEO 3.0');
+    }
 
-      // Call authentic VEO 3.0 API via Vertex AI
-      console.log(`🔄 VEO 3.0: Initiating authentic Vertex AI video generation`);
-      console.log(`⏱️  VEO 3.0: Estimated generation time: 5-8 seconds video, 30s to 6 minutes processing`);
-      
-      const apiResult = await this.callVeo3Api(videoRequest);
-      
-      if (!apiResult.success) {
-        throw new Error(`VEO 3.0 API call failed: ${apiResult.error}`);
-      }
+    const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:predictLongRunning`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify({
+        instances: [{
+          prompt: videoRequest.prompt,
+        }],
+        parameters: {
+          durationSeconds: videoRequest.config.durationSeconds,
+          aspectRatio: videoRequest.config.aspectRatio,
+          resolution: videoRequest.config.resolution,
+          enhancePrompt: true,
+          generateAudio: true,  // Required for veo-3.0-generate-preview
+          personGeneration: videoRequest.config.personGeneration,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Vertex AI error: ${response.status} - ${await response.text()}`);
+    }
+
+    const { name: operationName } = await response.json();
+    const operationId = operationName.split('/').pop();  // Extract ID from name
+
+    return {
+      success: true,
+      operationId,
+      operationName,
+      status: 'processing',
+    };
+  } catch (error) {
+    console.error('Vertex AI Veo 3.0 API call failed:', error);
+    return { success: false, error: error.message };
+  }
+}
       
       // Store operation for authentic tracking with proper data structure
       const operationData = {
