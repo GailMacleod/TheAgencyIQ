@@ -4,46 +4,55 @@ import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Define users table (if not in userSchema.ts)
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  password: text("password").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  // Add other fields per blueprint
+});
+
+// Export from sub-files
 export * from './authSchema';
 export * from './postSchema';
 export * from './userSchema';
 export * from './analyticsSchema';
 export * from './platformSchema';
 export {
-// Auth
-sessions,
-enhancedOauthTokens,
-oauthTokens,
-// Post
-postSchedule,
-postLedger,
-posts,
-postLogs,
-enhancedPostLogs,
-// User
-users,
-brandPurpose,
-verificationCodes,
-giftCertificates,
-giftCertificateActionLog,
-// Analytics
-subscriptionAnalytics,
-videoUsage,
-quotaUsage,
-notificationLogs,
-// Platform
-platformConnections,
-// Insert schemas
-insertUserSchema,
-insertPostSchema,
-insertPlatformConnectionSchema,
-insertBrandPurposeSchema,
-insertVerificationCodeSchema,
-insertGiftCertificateSchema,
-insertGiftCertificateActionLogSchema,
-insertSubscriptionAnalyticsSchema,
-insertPostScheduleSchema,
-insertPostLedgerSchema,
-insertPostLogSchema
+  // Auth
+  sessions,
+  enhancedOauthTokens,
+  oauthTokens,
+  // Post
+  postSchedule,
+  postLedger,
+  posts,
+  postLogs,
+  enhancedPostLogs,
+  // User
+  users,  // Explicitly export users here
+  brandPurpose,
+  verificationCodes,
+  giftCertificates,
+  giftCertificateActionLog,
+  // Analytics
+  subscriptionAnalytics,
+  videoUsage,
+  quotaUsage,
+  notificationLogs,
+  // Platform
+  platformConnections,
+  // Insert schemas
+  insertUserSchema,
+  insertPostSchema,
+  insertPlatformConnectionSchema,
+  insertBrandPurposeSchema,
+  insertVerificationCodeSchema,
+  insertGiftCertificateSchema,
+  insertGiftCertificateActionLogSchema,
+  insertSubscriptionAnalyticsSchema,
+  insertPostScheduleSchema,
+  insertPostLedgerSchema,
+  insertPostLogSchema
 };
-
