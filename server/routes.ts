@@ -3584,41 +3584,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Enhanced logout with HTTP-only cookie clearing and PWA synchronization
   app.post("/api/auth/logout", async (req: any, res) => {
-    try {
-      const userId = req.session?.userId;
-      const sessionId = req.sessionID;
+  try {
+    const userId = req.session?.userId;
+    const sessionId = req.sessionID;
+    
+    if (userId) {
+      console.log(`🔓 Logging out user ${userId}, session ${sessionId}`);
       
-      if (userId) {
-        console.log(`🔓 Logging out user ${userId}, session ${sessionId}`);
+      // Comprehensive OAuth token revocation before logout
+      try {
+        const providers = ['google', 'facebook', 'linkedin', 'twitter', 'youtube'];
+        const revocationResults = [];
         
-        // Comprehensive OAuth token revocation before logout
-        try {
-          const providers = ['google', 'facebook', 'linkedin', 'twitter', 'youtube'];
-          const revocationResults = [];
-          
-          for (const provider of providers) {
-            try {
-              const success = await tokenManager.revokeToken(userId, provider);
-              revocationResults.push({ provider, success });
-              console.log(`🔐 ${provider} token revocation: ${success ? 'SUCCESS' : 'FAILED'}`);
-            } catch (providerError) {
-              console.log(`⚠️ ${provider} token revocation failed:`, providerError.message);
-              revocationResults.push({ provider, success: false, error: providerError.message });
-            }
+        for (const provider of providers) {
+          try {
+            const success = await tokenManager.revokeToken(userId, provider);
+            revocationResults.push({ provider, success });
+            console.log(`🔐 ${provider} token revocation: ${success ? 'SUCCESS' : 'FAILED'}`);
+          } catch (providerError) {
+            console.log(`⚠️ ${provider} token revocation failed:`, providerError.message);
+            revocationResults.push({ provider, success: false, error: providerError.message });
           }
-          
-          console.log(`✅ OAuth revocation completed: ${revocationResults.filter(r => r.success).length}/${providers.length} successful`);
-        } catch (tokenError) {
-          console.log('⚠️ OAuth token revocation system failed during logout:', tokenError.message);
         }
+        
+        console.log(`✅ OAuth revocation completed: ${revocationResults.filter(r => r.success).length}/${providers.length} successful`);
+      } catch (tokenError) {
+        console.log('⚠️ OAuth token revocation system failed during logout:', tokenError.message);
+      }
+    }
+    
+    // Destroy session from database/store
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error('Session destruction error:', err);
+        return res.status(500).json({ success: false, error: 'Logout failed' });
       }
       
-      // Destroy session from database/store
-      req.session.destroy((err: any) => {
-        if (err) {
-          console.error('Session destruction error:', err);
-        }
-      });
+      // Clear the session cookie on client
+      res.clearCookie('connect.sid', { path: '/', secure: true, sameSite: 'lax' });
+      
+      res.json({ success: true });
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ success: false, error: 'Logout failed' });
+  }
+});
       
       // Clear all HTTP-only cookies with expired dates (critical fix)
       const expiredDate = new Date(0); // January 1, 1970
