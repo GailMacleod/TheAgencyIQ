@@ -148,14 +148,13 @@ class VeoService {
       safetySettings: [{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }],
     });
 
-    const operationName = result.response.operation.name;  // Correct path per API docs
+    const operationName = result.response.operation.name;
     const operationId = operationName.split('/').pop();
 
-    // Store op for polling
     const operationData = {
       operationId,
       startTime: Date.now(),
-      prompt,  // Use param
+      prompt,
       config,
       status: 'processing',
       platform: config.platform || 'youtube',
@@ -169,17 +168,6 @@ class VeoService {
     throw new Error('Video generation failed - check API key/quotas');
   }
 }
-} catch (error) {
-  console.error(`❌ VEO 3.0: Generation failed:`, error);
-  
-  // Enhanced error handling with specific error types
-  if (error.message.includes('quota') || error.message.includes('limit')) {
-    return {
-      success: false,
-      error: 'VEO 3.0 quota exceeded - please try again later',
-      platform: config.platform || 'youtube'
-    };
-  }
   
   throw new Error(error.message);  // Throw for other errors to avoid silent fail
 }
