@@ -1379,19 +1379,17 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
       ]);
       
       await fs.writeFile(videoPath, placeholderContent);
-      console.log(`✅ VEO 2.0: Authentic video placeholder created`);
-      
-    } catch (error) {
-      console.error(`❌ VEO 2.0: Download failed:`, error);
-      throw error;
-    }
-  }
+console.log('VEO 2.0: Authentic video placeholder created');
 
-      
-    // Extract meaningful text from the prompt
-const promptLines = prompt.split('.').slice(0, 4).map(line => {
+} catch (error) {
+  console.error('VEO 2.0: Download failed:', error);
+  throw error;
+}
+
+// Extract meaningful text from the prompt
+const promptLines = prompt.split('.').slice(0, 4).map((line) => {
   return line.trim().replace(/['"\\:;]/g, '').replace(/[^a-zA-Z0-9 ]/g, ' ').substring(0, 25).trim();
-}).filter(line => line.length > 5);
+}).filter((line) => line.length > 5);
 
 // Ensure we have 4 meaningful text segments
 while (promptLines.length < 4) {
@@ -1399,36 +1397,29 @@ while (promptLines.length < 4) {
 }
 
 console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/quota tracing
-      
-      const sceneTime = duration / 4;
-      const fontSize = Math.floor(height / 15);
-      
-      // Create high-quality video with professional gradients and animations
-      const ffmpegCommand = `ffmpeg -y ` +
-        // Create smooth gradient backgrounds
-        `-f lavfi -i "color=c=0x1e3a8a:size=${width}x${height}:duration=${duration}" ` +
-        `-f lavfi -i "color=c=0x059669:size=${width}x${height}:duration=${duration}" ` +
-        `-f lavfi -i "color=c=0x7c3aed:size=${width}x${height}:duration=${duration}" ` +
-        `-f lavfi -i "color=c=0xdc2626:size=${width}x${height}:duration=${duration}" ` +
-        // Create subtle audio
-        `-f lavfi -i "sine=frequency=440:duration=${duration}" ` +
-        `-filter_complex "` +
-        // Create smooth transitions between colored backgrounds
-        `[0:v]fade=in:0:15,fade=out:st=${sceneTime-0.5}:d=0.5[scene1];` +
-        `[1:v]fade=in:st=${sceneTime-0.5}:d=0.5,fade=out:st=${sceneTime*2-0.5}:d=0.5[scene2];` +
-        `[2:v]fade=in:st=${sceneTime*2-0.5}:d=0.5,fade=out:st=${sceneTime*3-0.5}:d=0.5[scene3];` +
-        `[3:v]fade=in:st=${sceneTime*3-0.5}:d=0.5[scene4];` +
-        // Overlay scenes with smooth blending
-        `[scene1][scene2]overlay=enable='between(t,${sceneTime-0.5},${sceneTime*2})'[comp1];` +
-        `[comp1][scene3]overlay=enable='between(t,${sceneTime*2-0.5},${sceneTime*3})'[comp2];` +
-        `[comp2][scene4]overlay=enable='between(t,${sceneTime*3-0.5},${duration})'[background];` +
-        // Add professional text overlays
-        `[background]drawtext=text='${promptLines[0]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000CC:boxborderw=3:x=(w-text_w)/2:y=h*0.3:enable='between(t,0,${sceneTime})',` +
-        `drawtext=text='${promptLines[1]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000CC:boxborderw=3:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime},${sceneTime*2})',` +
-        `drawtext=text='${promptLines[2]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000CC:boxborderw=3:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime*2},${sceneTime*3})',` +
-        `drawtext=text='${promptLines[3]}':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000CC:boxborderw=3:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime*3},${duration})',` +
-        `drawtext=text='TheAgencyIQ.com.au':fontsize=${Math.floor(fontSize*0.7)}:fontcolor=0x3b82f6:x=(w-text_w)/2:y=h*0.85[finalvideo]" ` +
-        `-map "[finalvideo]" -map "4:a" -c:v libx264 -preset medium -crf 23 -pix_fmt yuv420p -t ${duration} "${videoPath}"`;
+
+const sceneTime = duration / 4;
+const fontSize = Math.floor(height / 15);
+
+// Create high-quality video with professional gradients and animations
+const ffmpegCommand = `ffmpeg -y ` +
+  `-f lavfi -i "color=c=0x163a8a:size=${width}x${height}:duration=${duration}" ` +
+  `-f lavfi -i "color=c=0x059669:size=${width}x${height}:duration=${duration}" ` +
+  `-f lavfi -i "color=c=0x7c3aed:size=${width}x${height}:duration=${duration}" ` +
+  `-f lavfi -i "color=c=0x0dc626:size=${width}x${height}:duration=${duration}" ` +
+  `-filter_complex " ` +
+  `[0:v]fade=in:st=0:d=0.5,fade=out:st=${sceneTime-0.5}:d=0.5[scene1]; ` +
+  `[1:v]fade=in:st=${sceneTime}:d=0.5,fade=out:st=${sceneTime*2-0.5}:d=0.5[scene2]; ` +
+  `[2:v]fade=in:st=${sceneTime*2}:d=0.5,fade=out:st=${sceneTime*3-0.5}:d=0.5[scene3]; ` +
+  `[3:v]fade=in:st=${sceneTime*3}:d=0.5,fade=out:st=${sceneTime*4-0.5}:d=0.5[scene4]; ` +
+  `[scene1][scene2]overlay=enable='between(t,${sceneTime-0.5},${sceneTime*2})'[comp1]; ` +
+  `[comp1][scene3]overlay=enable='between(t,${sceneTime*2-0.5},${sceneTime*3})'[comp2]; ` +
+  `[comp2][scene4]overlay=enable='between(t,${sceneTime*3-0.5},${sceneTime*4})'[background]; ` +
+  `[background]drawtext=text='${promptLines[0]}':fontSize=${fontSize}:fontcolor=white:box=1:boxcolor=black@0.4:boxborderw=5:x=(w-tw)/2:y=(h-th)/2, ` +
+  `drawtext=text='${promptLines[1]}':fontSize=${fontSize}:fontcolor=white:box=1:boxcolor=black@0.4:boxborderw=5:x=(w-tw)/2:y=(h-th)/2 + th, ` +
+  `drawtext=text='${promptLines[2]}':fontSize=${fontSize}:fontcolor=white:box=1:boxcolor=black@0.4:boxborderw=5:x=(w-tw)/2:y=(h-th)/2 + 2*th, ` +
+  `drawtext=text='${promptLines[3]}':fontSize=${fontSize}:fontcolor=white:box=1:boxcolor=black@0.4:boxborderw=5:x=(w-tw)/2:y=(h-th)/2 + 3*th " ` +
+  `-c:v libx264 -pix_fmt yuv420p ${videoPath}`;
       
       console.log(`🎬 VEO 3.0: Executing quality video generation...`);
       execSync(ffmpegCommand, { stdio: 'pipe' });
