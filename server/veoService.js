@@ -132,8 +132,6 @@ class VeoService {
    * Generate VEO 3.0 video using authentic Vertex AI API
    * @param {string} prompt - Video generation prompt
    * @param {Object} config - Video configuration
-   * @returns {Promise<Object>} - Generation result
-   */
   async generateVideo(prompt, config = {}) {
   try {
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
@@ -150,13 +148,14 @@ class VeoService {
       safetySettings: [{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }],
     });
 
-    const operationId = result.response.candidates[0].content.parts[0].operation.name.split('/').pop();
+    const operationName = result.response.operation.name;  // Correct path per API docs
+    const operationId = operationName.split('/').pop();
 
     // Store op for polling
     const operationData = {
       operationId,
       startTime: Date.now(),
-      prompt,
+      prompt,  // Use param
       config,
       status: 'processing',
       platform: config.platform || 'youtube',
@@ -170,64 +169,20 @@ class VeoService {
     throw new Error('Video generation failed - check API key/quotas');
   }
 }
-      
-      // Store operation for authentic tracking with proper data structure
-      const operationData = {
-        operationId: apiResult.operationId,
-        startTime: Date.now(),
-        prompt: prompt,
-        config: finalConfig,
-        status: 'processing',
-        platform: finalConfig.platform || 'youtube',
-        vertexAiOperation: apiResult, // Store full Vertex AI operation details
-        estimatedCompletion: Date.now() + (Math.floor(Math.random() * 300) + 30) * 1000, // 30s-5min realistic timing
-        progress: 10, // Start at 10% progress
-        phase: 'VEO 3.0 initialization',
-        videoData: {
-          videoId: `veo3_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          prompt: prompt,
-          aspectRatio: finalConfig.aspectRatio,
-          duration: finalConfig.durationSeconds,
-          platform: finalConfig.platform
-        },
-        createdAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString()
-      };
-      
-      console.log(`💾 VEO 3.0: Storing operation data for ${apiResult.operationId}:`, {
-        operationId: operationData.operationId,
-        startTime: operationData.startTime,
-        status: operationData.status,
-        progress: operationData.progress,
-        platform: operationData.platform
-      });
-      
-      await this.operations.set(apiResult.operationId, operationData);
-
-      // Return async operation tracking for authentic VEO 3.0 timing
-      return {
-        success: true,
-        operationId: apiResult.operationId,
-        operationName: apiResult.operationName,
-        isAsync: true,
-        status: 'processing',
-        estimatedTime: '30s to 6 minutes',
-        message: 'VEO 3.0 generation initiated via Vertex AI - authentic timing',
-        platform: finalConfig.platform || 'youtube',
-        vertexAi: true
-      };
-
-    } catch (error) {
-      console.error(`❌ VEO 3.0: Generation failed:`, error);
-      
-      // Enhanced error handling with specific error types
-      if (error.message.includes('quota') || error.message.includes('limit')) {
-        return {
-          success: false,
-          error: 'VEO 3.0 quota exceeded - please try again later',
-          platform: config.platform || 'youtube'
-        };
-      }
+} catch (error) {
+  console.error(`❌ VEO 3.0: Generation failed:`, error);
+  
+  // Enhanced error handling with specific error types
+  if (error.message.includes('quota') || error.message.includes('limit')) {
+    return {
+      success: false,
+      error: 'VEO 3.0 quota exceeded - please try again later',
+      platform: config.platform || 'youtube'
+    };
+  }
+  
+  throw new Error(error.message);  // Throw for other errors to avoid silent fail
+}
       
       return {
         success: false,
