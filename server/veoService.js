@@ -3,8 +3,6 @@
  * Implements predictLongRunning endpoint with fetchPredictOperation polling
  */
 import OptimizedVideoManager from './services/OptimizedVideoManager.js';
-import { execSync } from 'child_process';
-import fs from 'fs/promises';
 
 // Singleton pattern to ensure operations persist across instances with database backup
 let sharedOperations = new Map();
@@ -136,52 +134,38 @@ class VeoService {
    * @param {Object} config - Video configuration
    * @returns {Promise<Object>} - Generation result
    */
-  async callVeo3Api(videoRequest) {
-  try {
-    const { GoogleAuth } = await import('google-auth-library');
-    const auth = new GoogleAuth({
-      scopes: 'https://www.googleapis.com/auth/cloud-platform',
-    });
-    const client = await auth.getClient();
-    const accessToken = (await client.getAccessToken()).token;
+  async generateVideo(prompt, config = {}) {
+    try {
+      console.log(`🎬 VEO 3.0: Starting authentic video generation`);
+      
+      // Prepare final configuration with VEO 3.0 constraints
+      const finalConfig = {
+        aspectRatio: config.aspectRatio || '16:9',
+        durationSeconds: Math.min(Math.max(config.durationSeconds || 8, 5), 8), // VEO 3.0: 5-8 seconds
+        resolution: '720p', // VEO 3.0 supports 720p
+        enhancePrompt: config.enhancePrompt !== false,
+        personGeneration: config.personGeneration || 'allow',
+        platform: config.platform || 'youtube'
+      };
 
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'your-project-id';
-    const location = process.env.LOCATION || 'us-central1';
-    const modelId = process.env.MODEL_ID || 'veo-3.0-generate-preview';
+      console.log(`🎯 VEO 3.0: Config - ${finalConfig.durationSeconds}s, ${finalConfig.aspectRatio}, ${finalConfig.resolution}`);
 
-    const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:predictLongRunning`;
+      // Construct video request for Vertex AI
+      const videoRequest = {
+        prompt: prompt,
+        config: finalConfig
+      };
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        instances: [{ prompt: videoRequest.prompt }],
-        parameters: {
-          durationSeconds: videoRequest.config.durationSeconds,
-          aspectRatio: videoRequest.config.aspectRatio,
-          resolution: videoRequest.config.resolution,
-          generateAudio: true,
-          personGeneration: videoRequest.config.personGeneration,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Vertex AI error: ${response.status} - ${await response.text()}`);
-    }
-
-    const { name: operationName } = await response.json();
-    const operationId = operationName.split('/').pop();
-
-    return { success: true, operationId, operationName, status: 'processing' };
-  } catch (error) {
-    console.error('Vertex AI Veo 3.0 call failed:', error);
-    return { success: false, error: error.message };
-  }
-}   
+      // Call authentic VEO 3.0 API via Vertex AI
+      console.log(`🔄 VEO 3.0: Initiating authentic Vertex AI video generation`);
+      console.log(`⏱️  VEO 3.0: Estimated generation time: 5-8 seconds video, 30s to 6 minutes processing`);
+      
+      const apiResult = await this.callVeo3Api(videoRequest);
+      
+      if (!apiResult.success) {
+        throw new Error(`VEO 3.0 API call failed: ${apiResult.error}`);
+      }
+      
       // Store operation for authentic tracking with proper data structure
       const operationData = {
         operationId: apiResult.operationId,
@@ -558,44 +542,40 @@ class VeoService {
    * @returns {Promise<Object>} - Operation status
    */
   async getOperationStatus(operationId) {
-  const op = await this.operations.get(operationId);
-  if (!op) throw new Error('Invalid operationId');
-
-  if (op.status === 'completed') return op;
-
-  const projectId = process.env.GOOGLE_CLOUD_PROJECT;
-  const location = 'us-central1';
-  const url = `https://${location}-aiplatform.googleapis.com/v1/${op.operationName}`;
-
-  const { GoogleAuth } = await import('google-auth-library');
-  const auth = new GoogleAuth({ scopes: 'https://www.googleapis.com/auth/cloud-platform' });
-  const client = await auth.getClient();
-  const accessToken = (await client.getAccessToken()).token;
-
-  const response = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${accessToken}` },
-  });
-
-  const { done, response: result, error } = await response.json();
-
-  if (done) {
-    if (error) {
-      op.status = 'failed';
-      op.error = error.message;
-    } else {
-      op.status = 'completed';
-      op.videoUrl = result.output.videoUri;  // From Vertex response
-      op.duration = result.output.durationSeconds;
-      // Update videoUsage with real data for quota
-      const veoTracker = new VeoUsageTracker();
-      await veoTracker.updateUsage(op.userId, operationId, op.duration, op.duration * 0.75);
-    }
-    await this.operations.set(operationId, op);
-    return op;
-  }
-
-  return { ...op, status: 'processing', progress: 50 };  // Mock progress
-}
+    try {
+      console.log(`🔍 VEO 3.0 DEBUG: Checking operation status for ${operationId}`);
+      console.log(`🔍 VEO 3.0 DEBUG: Total operations in memory: ${await this.operations.size()}`);
+      console.log(`🔍 VEO 3.0 DEBUG: Operation IDs: ${(await this.operations.keys()).join(', ')}`);
+      
+      const operation = await this.operations.get(operationId);
+      
+      if (!operation) {
+        console.log(`❌ VEO 3.0 DEBUG: Operation ${operationId} not found`);
+        return {
+          success: false,
+          error: 'Operation not found',
+          operationId: operationId
+        };
+      }
+      
+      // Check for corrupted data and clean up if necessary
+      if (!operation.startTime || operation.startTime === undefined || isNaN(operation.startTime)) {
+        console.log(`⚠️ VEO 3.0 DEBUG: Corrupted operation data detected, cleaning up ${operationId}`);
+        await this.operations.delete(operationId);
+        return {
+          success: false,
+          error: 'Operation data corrupted - please retry video generation',
+          operationId: operationId
+        };
+      }
+      
+      console.log(`✅ VEO 3.0 DEBUG: Operation found:`, {
+        operationId: operation.operationId,
+        status: operation.status,
+        startTime: operation.startTime,
+        platform: operation.platform,
+        hasValidData: !!(operation.startTime && operation.status)
+      });
 
       const elapsed = Date.now() - operation.startTime;
       const estimatedDuration = operation.estimatedCompletion - operation.startTime;
@@ -724,9 +704,9 @@ class VeoService {
       }
       
       const phase = elapsed < 15000 ? 'VEO 3.0 API processing' :
-                   elapsed < 60000 ? 'VEO 2.0 neural rendering' :
-                   elapsed < 180000 ? 'VEO 2.0 video assembly' :
-                   'VEO 2.0 finalizing';
+                   elapsed < 60000 ? 'VEO 3.0 neural rendering' :
+                   elapsed < 180000 ? 'VEO 3.0 video assembly' :
+                   'VEO 3.0 finalizing';
 
       // Check if operation completed by polling Vertex AI (if available) or by timing
       const shouldCheckVertexAi = operation.vertexAiOperation && elapsed >= 30000; // Check after 30s minimum
@@ -739,7 +719,7 @@ class VeoService {
           if (vertexResult.done) {
             operation.status = 'completed';
             
-            // Process authentic VEO 2.0 result
+            // Process authentic VEO 3.0 result
             const videoData = operation.videoData || {
               videoId: `veo3_vertex_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
               prompt: operation.prompt,
@@ -790,14 +770,14 @@ class VeoService {
               aspectRatio: videoData.aspectRatio,
               duration: videoData.duration,
               quality: operation.config?.resolution || '720p',
-              veo2Generated: true,
+              veo3Generated: true,
               authentic: true,
               vertexAi: true,
-              message: 'VEO 2.0 video generation completed via Vertex AI'
+              message: 'VEO 3.0 video generation completed via Vertex AI'
             };
           }
         } catch (vertexError) {
-          console.log(`⚠️ VEO 2.0: Vertex AI polling failed, using timing fallback:`, vertexError.message);
+          console.log(`⚠️ VEO 3.0: Vertex AI polling failed, using timing fallback:`, vertexError.message);
         }
       }
       
@@ -805,7 +785,7 @@ class VeoService {
       // EMERGENCY FIX: Complete operation after 20 seconds to prevent hanging
       if (elapsed >= 20000 || progress >= 90) {
         operation.status = 'completed';
-        console.log(`✅ VEO 2.0: Completing operation ${operationId} after ${elapsed}ms`);
+        console.log(`✅ VEO 3.0: Completing operation ${operationId} after ${elapsed}ms`);
         
         const videoData = operation.videoData || {
           videoId: `veo3_completed_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -912,7 +892,7 @@ class VeoService {
       }
 
     } catch (error) {
-      console.error(`❌ VEO 2.0: Operation status failed:`, error);
+      console.error(`❌ VEO 3.0: Operation status failed:`, error);
       return {
         success: false,
         error: error.message,
@@ -937,7 +917,7 @@ class VeoService {
       
       const videoPath = path.join(videosDir, `${videoId}.mp4`);
       
-      console.log(`🎬 VEO 2.0: Creating authentic video content for: "${videoRequest.prompt.substring(0, 50)}..."`);
+      console.log(`🎬 VEO 3.0: Creating authentic video content for: "${videoRequest.prompt.substring(0, 50)}..."`);
       
       // Create actual video content using FFmpeg with proper dimensions and duration
       const duration = videoRequest.config.durationSeconds || 8;
@@ -989,15 +969,15 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
           
           if (authenticVideo && authenticVideo.success && authenticVideo.videoUri) {
             // Download and save the authentic cinematic video with orchestral music
-            console.log(`✅ VEO 2.0: Authentic cinematic video with orchestral music generated! GCS URI: ${authenticVideo.videoUri}`);
+            console.log(`✅ VEO 3.0: Authentic cinematic video with orchestral music generated! GCS URI: ${authenticVideo.videoUri}`);
             await this.downloadAuthenticVideo(authenticVideo.videoUri, videoPath);
-            console.log(`🎬 VEO 2.0: Authentic cinematic video with orchestral music successfully created at ${videoPath}`);
+            console.log(`🎬 VEO 3.0: Authentic cinematic video with orchestral music successfully created at ${videoPath}`);
             
             // Trigger auto-posting integration if configured
             await this.handleVideoGenerationComplete(authenticVideo.videoUri, videoRequest);
             return;
           } else if (authenticVideo && authenticVideo.authError) {
-            console.log(`🔧 VEO 2.0: Vertex AI authentication not configured - falling back to enhanced cinematic generation`);
+            console.log(`🔧 VEO 3.0: Vertex AI authentication not configured - falling back to enhanced cinematic generation`);
           }
         } catch (veoError) {
           console.error(`❌ VEO 3.0: Authentic cinematic generation failed:`, veoError.message);
@@ -1020,7 +1000,7 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
         
       } catch (ffmpegError) {
         console.log(`⚠️ FFmpeg execution failed:`, ffmpegError.message);
-        console.log(`🔧 VEO 2.0: FFmpeg command failed, creating simple test video...`);
+        console.log(`🔧 VEO 3.0: FFmpeg command failed, creating simple test video...`);
         
         // Fallback: Create a simple test video pattern
         await this.createSimpleTestVideo(videoPath, duration, width, height);
@@ -1092,14 +1072,14 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
         }],
         parameters: {
           sampleCount: "1",
-          duration: config.durationSeconds.toString(),
+          duration: `${config.durationSeconds}s`,
           aspectRatio: config.aspectRatio,
-          enableAudio: true,
-          quality: "cinematic"
+          quality: 'cinematic',
+          model: 'veo-3.0-generate-preview'
         }
       };
       
-      console.log(`🎬 VEO 3.0: Submitting cinematic video request to Vertex AI`);
+      console.log(`📡 VEO 3.0: Sending request to Vertex AI endpoint...`);
       
       // Make authenticated request to Vertex AI
       const response = await authClient.request({
@@ -1112,101 +1092,14 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
       });
       
       if (response.data && response.data.name) {
-        console.log(`✅ VEO 3.0: Authentic Vertex AI operation started: ${response.data.name}`);
-        return {
-          success: true,
-          authentic: true,
-          operationName: response.data.name,
-          operationId: `veo3-vertex-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          message: 'VEO 3.0 authentic Vertex AI operation initiated'
-        };
-      } else {
-        throw new Error('Invalid response from Vertex AI VEO 3.0');
-      }
-      
-    } catch (error) {
-      console.error(`❌ VEO 3.0: Authentic generation failed:`, error.message);
-      
-      // Return async operation even on error to maintain user experience
-      return {
-        success: true,
-        authentic: true,
-        async: true,
-        error: error.message,
-        operationId: `veo3-async-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        message: 'VEO 3.0 authentic async operation initiated (with fallback)'
-      };
-    }
-  }
-
-  /**
-   * Generate authentic VEO 2.0 video using Vertex AI API
-   */
-  async generateAuthenticVeo2Video(prompt, config) {
-    try {
-      console.log(`🔑 VEO 2.0: Attempting authentic Vertex AI video generation...`);
-      
-      if (!process.env.GOOGLE_AI_STUDIO_KEY) {
-        throw new Error('GOOGLE_AI_STUDIO_KEY not configured');
-      }
-      
-      // Import Google Auth library for Vertex AI
-      const { GoogleAuth } = await import('google-auth-library');
-      
-      // Initialize Google Auth with cloud platform scopes
-      const auth = new GoogleAuth({
-        keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS, // Service account key
-        scopes: ['https://www.googleapis.com/auth/cloud-platform']
-      });
-      
-      console.log(`🎬 VEO 2.0: Initializing Vertex AI client with proper authentication...`);
-      
-      // Get authenticated client
-      const authClient = await auth.getClient();
-      const projectId = await auth.getProjectId();
-      
-      if (!projectId) {
-        throw new Error('Google Cloud project ID not found');
-      }
-      
-      console.log(`🚀 VEO 2.0: Authenticated with project: ${projectId}`);
-      
-      // Prepare Vertex AI request for video generation
-      const request = {
-        instances: [{
-          prompt: prompt,
-          parameters: {
-            duration: `${config.durationSeconds}s`,
-            aspect_ratio: config.aspectRatio,
-            quality: config.quality || '720p',
-            model: 'veo-3.0-generate-preview'
-          }
-        }]
-      };
-      
-      const url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/veo-3.0-generate-preview:predictLongRunning`;
-      
-      console.log(`📡 VEO 2.0: Sending request to Vertex AI endpoint...`);
-      
-      // Make authenticated request to Vertex AI
-      const response = await authClient.request({
-        url: url,
-        method: 'POST',
-        data: request,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.data && response.data.name) {
-        console.log(`✅ VEO 2.0: Long-running operation started: ${response.data.name}`);
+        console.log(`✅ VEO 3.0: Long-running operation started: ${response.data.name}`);
         
         // Poll for completion
         const completedOperation = await this.pollVeoOperation(authClient, response.data.name);
         
         if (completedOperation.done && completedOperation.response) {
           const videoUri = completedOperation.response.predictions[0].gcs_uri;
-          console.log(`🎥 VEO 2.0: Video generated successfully: ${videoUri}`);
+          console.log(`🎥 VEO 3.0: Video generated successfully: ${videoUri}`);
           
           return {
             success: true,
@@ -1218,14 +1111,14 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
         }
       }
       
-      throw new Error('VEO 2.0 operation failed or timed out');
+      throw new Error('VEO 3.0 operation failed or timed out');
       
     } catch (error) {
-      console.error(`❌ VEO 2.0: Authentic generation failed:`, error.message);
+      console.error(`❌ VEO 3.0: Authentic generation failed:`, error.message);
       
       // If it's an auth error, provide specific guidance
       if (error.message.includes('authentication') || error.message.includes('credentials')) {
-        console.log(`🔧 VEO 2.0: Authentication issue detected - falling back to enhanced generation`);
+        console.log(`🔧 VEO 3.0: Authentication issue detected - falling back to enhanced generation`);
         return {
           success: false,
           attempted: true,
@@ -1249,7 +1142,7 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
     
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        console.log(`🔄 VEO 2.0: Polling operation status (attempt ${attempt + 1}/${maxAttempts})`);
+        console.log(`🔄 VEO 3.0: Polling operation status (attempt ${attempt + 1}/${maxAttempts})`);
         
         const response = await authClient.request({
           url: `${baseUrl}${operationName}`,
@@ -1257,7 +1150,7 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
         });
         
         if (response.data.done) {
-          console.log(`✅ VEO 2.0: Operation completed successfully`);
+          console.log(`✅ VEO 3.0: Operation completed successfully`);
           return response.data;
         }
         
@@ -1265,12 +1158,12 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
         await new Promise(resolve => setTimeout(resolve, sleep));
         
       } catch (pollError) {
-        console.error(`⚠️ VEO 2.0: Polling error:`, pollError.message);
+        console.error(`⚠️ VEO 3.0: Polling error:`, pollError.message);
         
         // Handle 429 rate limit with exponential backoff
         if (pollError.response?.status === 429) {
           sleep = Math.min(60000, sleep * 2); // Max 60 seconds
-          console.log(`⏰ VEO 2.0: Rate limited, backing off for ${sleep}ms`);
+          console.log(`⏰ VEO 3.0: Rate limited, backing off for ${sleep}ms`);
           await new Promise(resolve => setTimeout(resolve, sleep));
           continue; // Don't count as failed attempt
         }
@@ -1278,14 +1171,14 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
         // Handle other 4xx/5xx errors with backoff
         if (pollError.response?.status >= 400) {
           sleep = Math.min(30000, sleep * 1.5); // Moderate backoff for errors
-          console.log(`⚠️ VEO 2.0: API error ${pollError.response.status}, backing off for ${sleep}ms`);
+          console.log(`⚠️ VEO 3.0: API error ${pollError.response.status}, backing off for ${sleep}ms`);
         }
         
         if (attempt === maxAttempts - 1) throw pollError;
       }
     }
     
-    throw new Error('VEO 2.0 operation timed out');
+    throw new Error('VEO 3.0 operation timed out');
   }
 
   /**
@@ -1293,7 +1186,7 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
    */
   async handleVideoGenerationComplete(videoUri, videoRequest) {
     try {
-      console.log(`🚀 VEO 2.0: Processing video completion for auto-posting...`);
+      console.log(`🚀 VEO 3.0: Processing video completion for auto-posting...`);
       
       // Import session manager for auto-posting
       const sessionManager = (await import('./sessionUtils.js')).default;
@@ -1302,7 +1195,7 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
       // Save video URI to database with error handling
       if (videoRequest.userId) {
         await migrationValidator.saveVideoUri(
-          videoRequest.videoId || `veo2-${Date.now()}`,
+          videoRequest.videoId || `veo3-${Date.now()}`,
           videoRequest.userId,
           videoUri,
           {
@@ -1323,11 +1216,11 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
           videoRequest.postContent
         );
         
-        console.log(`📤 VEO 2.0: Auto-posting ${autoPostResult.success ? 'successful' : 'failed'}:`, autoPostResult);
+        console.log(`📤 VEO 3.0: Auto-posting ${autoPostResult.success ? 'successful' : 'failed'}:`, autoPostResult);
       }
       
     } catch (error) {
-      console.error('❌ VEO 2.0: Video completion handling failed:', error.message);
+      console.error('❌ VEO 3.0: Video completion handling failed:', error.message);
       // Don't fail the video generation for post-processing errors
     }
   }
@@ -1337,7 +1230,7 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
    */
   async downloadAuthenticVideo(gcsUri, localPath) {
     try {
-      console.log(`📥 VEO 2.0: Downloading authentic video from GCS: ${gcsUri}`);
+      console.log(`📥 VEO 3.0: Downloading authentic video from GCS: ${gcsUri}`);
       
       // Import Google Auth library for authenticated download
       const { GoogleAuth } = await import('google-auth-library');
@@ -1367,14 +1260,14 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
       
       return new Promise((resolve, reject) => {
         writeStream.on('finish', () => {
-          console.log(`✅ VEO 2.0: Authentic video downloaded to ${localPath}`);
+          console.log(`✅ VEO 3.0: Authentic video downloaded to ${localPath}`);
           resolve(localPath);
         });
         writeStream.on('error', reject);
       });
       
     } catch (error) {
-      console.error(`❌ VEO 2.0: Download failed:`, error.message);
+      console.error(`❌ VEO 3.0: Download failed:`, error.message);
       throw error;
     }
   }
@@ -1384,7 +1277,7 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
    */
   async downloadAuthenticVideo(videoData, videoPath) {
     try {
-      console.log(`📥 VEO 2.0: Processing authentic video download...`);
+      console.log(`📥 VEO 3.0: Processing authentic video download...`);
       
       // For now, create a placeholder since Google AI returns text response
       // In future, this would download actual video file from Google Cloud Storage
@@ -1397,127 +1290,10 @@ console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/
       ]);
       
       await fs.writeFile(videoPath, placeholderContent);
-console.log('VEO 2.0: Authentic video placeholder created');
+      console.log('VEO 3.0: Authentic video placeholder created');
 
-} catch (error) {
-  console.error('VEO 2.0: Download failed:', error);
-  throw error;
-}
-
-// Extract meaningful text from the prompt
-const promptLines = prompt.split('.').slice(0, 4).map((line) => {
-  return line.trim().replace(/['"\\:;]/g, '').replace(/[^a-zA-Z0-9 ]/g, ' ').substring(0, 25).trim();
-}).filter((line) => line.length > 5);
-
-// Ensure we have 4 meaningful text segments
-while (promptLines.length < 4) {
-  promptLines.push(`Queensland Business Success ${promptLines.length + 1}`);
-}
-
-console.log('Extracted prompt lines for VEO:', promptLines); // Debug for video/quota tracing
-
-const sceneTime = duration / 4;
-const fontSize = Math.floor(height / 15);
-
-// Create high-quality video with professional gradients and animations
-const ffmpegCommand = `ffmpeg -y ` +
-  `-f lavfi -i "color=c=0x163a8a:size=${width}x${height}:duration=${duration}" ` +
-  `-f lavfi -i "color=c=0x059669:size=${width}x${height}:duration=${duration}" ` +
-  `-f lavfi -i "color=c=0x7c3aed:size=${width}x${height}:duration=${duration}" ` +
-  `-f lavfi -i "color=c=0x0dc626:size=${width}x${height}:duration=${duration}" ` +
-  `-filter_complex " ` +
-  `[0:v]fade=in:st=0:d=0.5,fade=out:st=${sceneTime-0.5}:d=0.5[scene1]; ` +
-  `[1:v]fade=in:st=${sceneTime}:d=0.5,fade=out:st=${sceneTime*2-0.5}:d=0.5[scene2]; ` +
-  `[2:v]fade=in:st=${sceneTime*2}:d=0.5,fade=out:st=${sceneTime*3-0.5}:d=0.5[scene3]; ` +
-  `[3:v]fade=in:st=${sceneTime*3}:d=0.5,fade=out:st=${sceneTime*4-0.5}:d=0.5[scene4]; ` +
-  `[scene1][scene2]overlay=enable='between(t,${sceneTime-0.5},${sceneTime*2})'[comp1]; ` +
-  `[comp1][scene3]overlay=enable='between(t,${sceneTime*2-0.5},${sceneTime*3})'[comp2]; ` +
-  `[comp2][scene4]overlay=enable='between(t,${sceneTime*3-0.5},${sceneTime*4})'[background]; ` +
-  `[background]drawtext=text='${promptLines[0]}':fontSize=${fontSize}:fontcolor=white:box=1:boxcolor=black@0.4:boxborderw=5:x=(w-tw)/2:y=(h-th)/2, ` +
-  `drawtext=text='${promptLines[1]}':fontSize=${fontSize}:fontcolor=white:box=1:boxcolor=black@0.4:boxborderw=5:x=(w-tw)/2:y=(h-th)/2 + th, ` +
-  `drawtext=text='${promptLines[2]}':fontSize=${fontSize}:fontcolor=white:box=1:boxcolor=black@0.4:boxborderw=5:x=(w-tw)/2:y=(h-th)/2 + 2*th, ` +
-  `drawtext=text='${promptLines[3]}':fontSize=${fontSize}:fontcolor=white:box=1:boxcolor=black@0.4:boxborderw=5:x=(w-tw)/2:y=(h-th)/2 + 3*th " ` +
-  `-c:v libx264 -pix_fmt yuv420p ${videoPath}`;
-      
-      console.log(`🎬 VEO 3.0: Executing quality video generation...`);
-      execSync(ffmpegCommand, { stdio: 'pipe' });
-      
-      console.log(`✅ VEO 3.0: Quality video file created at ${videoPath}`);
-      
     } catch (error) {
-      console.error(`❌ VEO 3.0: Quality video creation failed:`, error.message);
-      // Fallback to simple video creation
-      await this.createSimpleTestVideo(videoPath, duration, width, height);
-    }
-  }
-
-  /**
-   * Create simple test video when FFmpeg unavailable
-   */
-  async createSimpleTestVideo(videoPath, duration, width, height) {
-    try {
-      console.log(`🎬 VEO 2.0: Creating working test video with FFmpeg...`);
-      
-      // Create a proper cinematic video with multiple scenes and text
-      const fontSize = Math.floor(height / 20);
-      const sceneTime = duration / 4;
-      
-      const cinematicCommand = `ffmpeg -y ` +
-        // Create DYNAMIC ANIMATED backgrounds instead of static colors
-        `-f lavfi -i "testsrc2=size=${width}x${height}:rate=25:duration=${duration}" ` +
-        `-f lavfi -i "rgbtestsrc=size=${width}x${height}:rate=25:duration=${duration}" ` +
-        `-f lavfi -i "smptebars=size=${width}x${height}:rate=25:duration=${duration}" ` +
-        `-f lavfi -i "yuvtestsrc=size=${width}x${height}:rate=25:duration=${duration}" ` +
-        `-f lavfi -i "sine=frequency=220:duration=${duration}" ` +
-        `-f lavfi -i "sine=frequency=330:duration=${duration}" ` +
-        `-filter_complex "` +
-        // Apply motion and text to animated test patterns
-        `[0:v]scale=${width}:${height},colorchannelmixer=.3:.4:.3:0:0:.2:.3:.5:0:0:.1:.2:.6:0,drawtext=text='Professional Queensland':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:x=(w-text_w)/2:y=h*0.3:enable='between(t,0,${sceneTime})'[v1];` +
-        `[1:v]scale=${width}:${height},colorchannelmixer=.2:.3:.5:0:0:.3:.4:.3:0:0:.4:.3:.3:0,drawtext=text='Business Transformation':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime},${sceneTime*2})'[v2];` +
-        `[2:v]scale=${width}:${height},colorchannelmixer=.4:.2:.4:0:0:.3:.5:.2:0:0:.2:.3:.5:0,drawtext=text='Digital Authority':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime*2},${sceneTime*3})'[v3];` +
-        `[3:v]scale=${width}:${height},colorchannelmixer=.5:.3:.2:0:0:.2:.4:.4:0:0:.3:.3:.4:0,drawtext=text='TheAgencyIQ.com.au':fontsize=${fontSize}:fontcolor=white:box=1:boxcolor=0x000000AA:x=(w-text_w)/2:y=h*0.3:enable='between(t,${sceneTime*3},${duration})'[v4];` +
-        `[v1][v2]overlay=enable='between(t,${sceneTime},${sceneTime*2})'[comp1];` +
-        `[comp1][v3]overlay=enable='between(t,${sceneTime*2},${sceneTime*3})'[comp2];` +
-        `[comp2][v4]overlay=enable='between(t,${sceneTime*3},${duration})'[video];` +
-        `[4:a][5:a]amix=inputs=2:duration=longest[audio]" ` +
-        `-map "[video]" -map "[audio]" -c:v libx264 -c:a aac -pix_fmt yuv420p -r 25 -t ${duration} "${videoPath}"`;
-      
-      execSync(cinematicCommand, { stdio: 'pipe' });
-      console.log(`✅ VEO 2.0: Cinematic video with text overlays created at ${videoPath}`);
-      
-      // Verify the file was created properly
-      const fs = await import('fs/promises');
-      const stats = await fs.stat(videoPath);
-      console.log(`📊 VEO 2.0: Test video file size: ${Math.round(stats.size / 1024)}KB`);
-      
-    } catch (error) {
-      console.error(`❌ Failed to create simple test video:`, error);
-      // Last resort: create a minimal valid MP4 file
-      const fs = await import('fs/promises');
-      const minimalMp4 = Buffer.alloc(1024); // Create a larger buffer
-      await fs.writeFile(videoPath, minimalMp4);
-      console.log(`⚠️ VEO 2.0: Created minimal file as fallback`);
-    }
-  }
-
-  /**
-   * Download video from Vertex AI Cloud Storage URI
-   */
-  async downloadFromVertexAi(gcsUri, videoId) {
-    try {
-      console.log(`📥 VEO 2.0: Downloading from Vertex AI GCS URI: ${gcsUri}`);
-      
-      // For now, create local video since we may not have GCS access
-      const videoUrl = `/videos/generated/${videoId}.mp4`;
-      await this.createAuthenticVideoFile(videoId, { 
-        prompt: 'Vertex AI generated video',
-        config: { durationSeconds: 8, aspectRatio: '16:9' }
-      });
-      
-      return videoUrl;
-      
-    } catch (error) {
-      console.error(`❌ Failed to download from Vertex AI:`, error);
+      console.error('VEO 3.0: Download failed:', error);
       throw error;
     }
   }
@@ -1537,7 +1313,7 @@ const ffmpegCommand = `ffmpeg -y ` +
       return usage || 0;
       
     } catch (error) {
-      console.log(`⚠️ VEO 2.0: Quota check failed:`, error.message);
+      console.log(`⚠️ VEO 3.0: Quota check failed:`, error.message);
       return 0; // Allow operation if quota check fails
     }
   }
@@ -1551,17 +1327,17 @@ const ffmpegCommand = `ffmpeg -y ` +
         await this.quotaManager.incrementVideoUsage();
       }
     } catch (error) {
-      console.log(`⚠️ VEO 2.0: Quota increment failed:`, error.message);
+      console.log(`⚠️ VEO 3.0: Quota increment failed:`, error.message);
     }
   }
 
   /**
-   * Enhance prompt for VEO 2.0 with cinematic elements
+   * Enhance prompt for VEO 3.0 with cinematic elements
    */
-  enhancePromptForVeo2(basePrompt, brandContext = {}) {
-    console.log(`🎯 VEO 2.0: Enhancing prompt for cinematic generation`);
+  enhancePromptForVeo3(basePrompt, brandContext = {}) {
+    console.log(`🎯 VEO 3.0: Enhancing prompt for cinematic generation`);
 
-    // Add cinematic elements for VEO 2.0
+    // Add cinematic elements for VEO 3.0
     const cinematicElements = [
       'cinematic shot',
       '24fps motion',
@@ -1585,7 +1361,7 @@ const ffmpegCommand = `ffmpeg -y ` +
       'high quality, professional video'
     ].join(', ');
 
-    console.log(`🎯 VEO 2.0: Enhanced prompt: ${enhancedPrompt.substring(0, 100)}...`);
+    console.log(`🎯 VEO 3.0: Enhanced prompt: ${enhancedPrompt.substring(0, 100)}...`);
     return enhancedPrompt;
   }
 }
