@@ -205,7 +205,6 @@ app.get('/api/user-status', requireAuth, async (req, res) => {
       success: false,
       message: 'Failed to retrieve user status',
       code: 'USER_STATUS_ERROR'
-    });
   }
 });
 
