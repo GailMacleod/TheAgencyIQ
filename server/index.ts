@@ -440,32 +440,32 @@ app.use(passport.session());
       }
       
       // SURGICAL FIX 6: Remove absolute timeout for deployment (was causing ABSOLUTE_TIMEOUT_EXCEEDED)
-      const sessionAge = Date.now() - req.session.createdAt;
-      if (sessionAge > 72 * 24 * 60 * 60 * 1000) { // 72 hours instead of 7 days
-        console.log('🔒 [SECURITY] Session expired due to absolute timeout (7 days):', {
-          userId: req.session.userId,
-          sessionAge: Math.round(sessionAge / (1000 * 60 * 60)) + 'h',
-          ip: req.ip?.substring(0, 10) + '...', // Masked IP logging
-          userAgent: req.headers['user-agent']?.substring(0, 30) + '...' // Masked UA logging
-        });
-        req.session.destroy((err: any) => {
-          if (err) console.error('Session destruction failed:', err);
-          res.clearCookie('theagencyiq.session', { 
-            httpOnly: true, 
-            secure: isProd,
-            sameSite: 'strict',
-            path: '/api',
-            partitioned: true
-          });
-          res.clearCookie('aiq_backup_session');
-          return res.status(401).json({ 
-            error: 'Session expired (absolute timeout)', 
-            code: 'ABSOLUTE_TIMEOUT_EXCEEDED',
-            redirectTo: '/api/login'
-          });
-        });
-        return;
-      }
+     const sessionAge = Date.now() - req.session.createdAt;
+if (sessionAge > 72 * 24 * 60 * 60 * 1000) { // 72 hours instead of 7 days
+  console.log('🔒 [SECURITY] Session expired due to absolute timeout (7 days):', {
+    userId: req.session.userId,
+    sessionAge: Math.round(sessionAge / (1000 * 60 * 60)) + 'h',
+    ip: req.ip?.substring(0, 10) + '...', // Masked IP logging
+    userAgent: req.headers['user-agent']?.substring(0, 30) + '...' // Masked UA logging
+  });
+  req.session.destroy((err: any) => {
+    if (err) console.error('Session destruction failed:', err);
+    res.clearCookie('theagencyiq.session', { 
+      httpOnly: true, 
+      secure: isProd,
+      sameSite: 'strict',
+      path: '/api',
+      partitioned: true
+    });
+    res.clearCookie('aiq_backup_session');
+    return res.status(401).json({ 
+      error: 'Session expired (absolute timeout)', 
+      code: 'ABSOLUTE_TIMEOUT_EXCEEDED',
+      redirectTo: '/api/login'
+    });
+  });
+  return;
+}
       
       // Check inactivity timeout (30 minutes)
       if (req.session.lastActivity) {
