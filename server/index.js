@@ -199,16 +199,16 @@ app.get('/api/quota-status', requireAuth, async (req, res) => {
       quotaStatus,
       timestamp: new Date().toISOString()
     });
-  } catch (error) {
-    console.error('❌ Quota status error in index.js - DISABLED TO AVOID CONFLICT');
-    // Disabled to avoid ES module conflicts - real endpoint is in routes.ts
-    res.status(200).json({
-      success: true,
-      message: 'Quota endpoint redirected to routes.ts',
-      redirected: true
-    });
-  }
-});
+} catch (error) {
+  console.error('❌ Quota status error:', error);
+  // Fix broken silent fail - add response and clear
+  res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+  res.status(500).json({
+    success: false,
+    message: 'Quota status failed - check routes.ts for real endpoint',
+    error: error.message
+  });
+}
 
 // Enhanced Auto-posting enforcer endpoint with auth middleware and real OAuth integration
 app.post('/api/enforce-auto-posting', requireAuth, requireActiveSubscription, async (req, res) => {
