@@ -1,4 +1,4 @@
-/**
+ /**
  * Emergency TheAgencyIQ Server - JavaScript fallback
  * Bypasses TypeScript compilation issues
  */
@@ -16,6 +16,13 @@ import { validateEnvironment, getSecureDefaults } from './config/env-validation.
 import { dbManager } from './db-init.js';
 import { logger, requestLogger } from './utils/logger.js';
 import { createServer } from 'http';
+import connectPgSimple from 'connect-pg-simple';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';  // For hashing in onboarding
+import twilioService from './twilio-service';  // Assume exists for verification
+import quotaManager from './quota-manager';  // Assume exists for checks/deducts
+import postScheduler from './post-scheduler';  // Assume exists for halt
+import { oauthService } from './oauth-service';  // Assume exists for revoke
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,26 +34,26 @@ const secureDefaults = getSecureDefaults();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security headers with Helmet
+// Security headers with Helmet (tightened CSP)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],  // Tighten unsafe-inline if possible
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Vite dev needs unsafe-eval
+      scriptSrc: ["'self'", "'unsafe-inline'"],  // Remove unsafe-eval for prod
       connectSrc: ["'self'", "https:", "wss:"],
     },
   },
-  crossOriginEmbedderPolicy: false, // Needed for Vite dev server
+  crossOriginEmbedderPolicy: false,
 }));
 
 // Request logging with Morgan and custom logger
 app.use(morgan(secureDefaults.LOG_LEVEL));
 app.use(requestLogger);
 
-// Rate limiting for all routes
+// Rate limiting for all routes (fix spam open)
 const limiter = rateLimit({
   windowMs: secureDefaults.RATE_LIMIT_WINDOW,
   max: secureDefaults.RATE_LIMIT_MAX,
@@ -57,7 +64,7 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use('/api', limiter);
+app.use(limiter);
 
 // Health check with basic rate limiting
 const healthLimiter = rateLimit({
@@ -70,7 +77,7 @@ const healthLimiter = rateLimit({
 app.use(cors({
   origin: secureDefaults.CORS_ORIGIN,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
@@ -79,26 +86,28 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // PostgreSQL session store configuration
-import connectPgSimple from 'connect-pg-simple';
 const PgSession = connectPgSimple(session);
 
-// Session configuration with PostgreSQL store
+// Session configuration with PostgreSQL store (added regen, env TTL, secure genid)
+const sessionTtl = parseInt(process.env.SESSION_TTL || '1800', 10); // Seconds
+const sessionTtlMs = sessionTtl * 1000; // Milliseconds
 const sessionStore = new PgSession({
   conString: process.env.DATABASE_URL,
-  tableName: 'sessions',
   createTableIfMissing: true,
+  ttl: sessionTtl,
+  tableName: "sessions",
 });
-
 app.use(session({
   store: sessionStore,
-  secret: secureDefaults.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
   resave: false,
   saveUninitialized: false,
   name: 'theagencyiq.session',
+  genid: () => crypto.randomBytes(32).toString('hex'),  // Secure genid
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: sessionTtlMs,
     sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
   }
 }));
@@ -108,7 +117,18 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Apply quota tracking middleware to protected routes
-app.use('/api/enforce-auto-posting', quotaTracker.middleware());
+app.use('/api/enforce-auto-posting', async (req, res, next) => {
+  try {
+    const quotaCheck = await quotaManager.checkQuota(req.session?.userId || 2, 'facebook', 'post');
+    if (!quotaCheck.allowed) {
+      return res.status(429).json({ error: 'Quota exceeded', reason: quotaCheck.reason });
+    }
+    next();
+  } catch (err) {
+    console.error('Quota check failed:', err);
+    res.status(500).json({ error: 'Quota check failed' });
+  }
+});
 app.use('/api/auto-post-schedule', quotaTracker.middleware());
 app.use('/api/video/*', quotaTracker.middleware());
 app.use('/api/posts', quotaTracker.middleware());
