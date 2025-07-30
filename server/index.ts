@@ -277,14 +277,16 @@ try {
 
 // Create quota tracking table (deployment-safe with timeout)
 try {
-  await Promise.race([
-    createQuotaTable(),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Quota table timeout')), 10000))
-  ]);
-  console.log('✅ Quota tracking table ready');
-} catch (err) {
-  console.log('⚠️ Quota table creation skipped for deployment:', err);
-}
+  await new Promise<void>((resolve, reject) => {  // Fix unexpected ) - add reject for error
+  req.session.save((err: any) => {
+    if (err) {
+      console.error('Session save error:', err);
+      reject(err);
+      return;
+    }
+    resolve();
+  });
+});
 
 // PostgreSQL session store setup
 const PgSession = connectPg(session);
