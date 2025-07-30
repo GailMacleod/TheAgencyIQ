@@ -728,28 +728,30 @@ app.get('/api/auth/youtube/callback',
       console.log('🔐 [AUTH] Login attempt:', { email, sessionId: req.sessionID });
       
       // Validate credentials with bcrypt
-      if (email === 'gailm@macleodglba.com.au') {
-        const user = await storage.getUserByEmail(email);
-        if (user && password === 'Tw33dl3dum!') {
-          // CRITICAL: Session regeneration to prevent fixation attacks (2025 OWASP)
-          await new Promise<void>((resolve, reject) => {
-            req.session.regenerate((err: any) => {
-              if (err) reject(err);
-              else resolve();
-            });
-          });
-          
-          // Set authenticated session data
-          req.session.userId = parseInt(user.id);
-          req.session.userEmail = user.email;
-          
-          // Force session save
-          await new Promise<void>((resolve, reject) => {
-            req.session.save((err: any) => {
-              if (err) reject(err);
-              else resolve();
-            });
-          });
+      if const user = await storage.getUserByEmail(email);
+if (user && await bcrypt.compare(password, user.hashedPassword)) {
+  // CRITICAL: Session regeneration to prevent fixation attacks (2025 OWASP)
+  await new Promise<void>((resolve, reject) => {
+    req.session.regenerate((err: any) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+  // Set authenticated session data
+  req.session.userId = parseInt(user.id);
+  req.session.userEmail = user.email;
+  // Force session save with error handling
+  await new Promise<void>((resolve, reject) => {
+    req.session.save((err: any) => {
+      if (err) {
+        console.error('Session save error in login:', err);
+        reject(err);
+      } else resolve();
+    });
+  });
+  console.log('✅ [AUTH] Login successful:', { userId: req.session.userId, sessionId: req.sessionID });
+  return res.json({ success: true, userId: req.session.userId });
+}
           
           console.log('✅ [AUTH] Login successful with session regeneration:', { 
             userId: user.id, 
@@ -833,9 +835,8 @@ app.get('/api/auth/youtube/callback',
       });
       
       // Clear all cookies
-      res.clearCookie('theagencyiq.session', { path: '/', secure: true, sameSite: 'lax' });
-      res.clearCookie('aiq_backup_session', { path: '/', secure: true, sameSite: 'lax' });
-      res.clearCookie('connect.sid', { path: '/', secure: true, sameSite: 'lax' });
+      res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax', domain: process.env.COOKIE_DOMAIN || undefined });
+res.clearCookie('oauth_token', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax', domain: process.env.COOKIE_DOMAIN || undefined }); // Clear any OAuth cookies
       
       console.log('✅ [AUTH] Session invalidated for user:', userId);
       return res.status(200).json({ success: true, message: 'Session invalidated' });
