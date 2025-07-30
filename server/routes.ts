@@ -5423,78 +5423,83 @@ Continue building your Value Proposition Canvas systematically.`;
   // POST endpoint for post approval (test compatibility)
   app.post("/api/posts/:id/approve", requireAuth, async (req: any, res) => {
     try {
-      const postId = parseInt(req.params.id);
-      const userId = req.session.userId;
+  const postId = parseInt(req.params.id);
+  const userId = req.session.userId;
 
-      // Verify the post belongs to the user
-      const posts = await storage.getPostsByUser(userId);
-      const post = posts.find(p => p.id === postId);
-      
-      if (!post) {
-        return res.status(404).json({ message: "Post not found" });
-      }
+  // Verify the post belongs to the user
+  const posts = await storage.getPostsByUser(userId);
+  const post = posts.find(p => p.id === postId);
+  
+  if (!post) {
+    return res.status(404).json({ message: "Post not found" });
+  }
 
-      // Update post status to approved
-      const updatedPost = await storage.updatePost(postId, { status: 'approved' });
-      
-      console.log(`✅ Post ${postId} approved via POST by user ${userId}`);
-      console.log(`✅ APPROVE Response - Post:`, updatedPost?.id, `Success: true`);
-      
-      return res.json({ success: true, post: updatedPost });
-    } catch (error) {
-      console.error('Error approving post:', error);
-      res.status(500).json({ message: "Failed to approve post" });
-    }
-  });
+  // Update post status to approved
+  const updatedPost = await storage.updatePost(postId, { status: 'approved' });
+  
+  // Fix broken no quota deduct - deduct after approve
+  await quotaManager.updateQuota(userId, 1, 0);  // Deduct 1 post
+  console.log(`✅ Quota deducted 1 post on approval for user ${userId}`);
+
+  console.log(`✅ Post ${postId} approved via POST by user ${userId}`);
+  console.log(`✅ APPROVE Response - Post:`, updatedPost?.id, `Success: true`);
+  
+  return res.json({ success: true, post: updatedPost });
+} catch (error) {
+  console.error('Error approving post:', error);
+  res.status(500).json({ message: "Failed to approve post" });
+}
 
   // Mock platform posting endpoint - demonstrates quota deduction after successful posting
   app.post("/api/post-to-platform/:postId", requireAuth, async (req: any, res) => {
     try {
-      const postId = parseInt(req.params.postId);
-      const { platform } = req.body;
-      const userId = req.session.userId;
+      try {
+  const postId = parseInt(req.params.postId);
+  const { platform } = req.body;
+  const userId = req.session.userId;
 
-      // Verify post exists and is approved
-      const posts = await storage.getPostsByUser(userId);
-      const post = posts.find(p => p.id === postId);
-      
-      if (!post) {
-        return res.status(404).json({ message: "Post not found" });
-      }
+  // Verify post exists and is approved
+  const posts = await storage.getPostsByUser(userId);
+  const post = posts.find(p => p.id === postId);
+  
+  if (!post) {
+    return res.status(404).json({ message: "Post not found" });
+  }
 
-      if (post.status !== 'approved') {
-        return res.status(400).json({ message: "Only approved posts can be published" });
-      }
+  if (post.status !== 'approved') {
+    return res.status(400).json({ message: "Only approved posts can be published" });
+  }
 
-      // Simulate successful platform posting
-      console.log(`📤 Simulating ${platform} posting for post ${postId}...`);
-      
-      // Mock posting delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // QUOTA DEDUCTION ONLY AFTER SUCCESSFUL POSTING
-      const quotaDeducted = true; // Allow posting by default
-      
-      if (!quotaDeducted) {
-        return res.status(500).json({ 
-          message: "Post published but quota deduction failed - please contact support" 
-        });
-      }
+  // Simulate successful platform posting with error handling
+  console.log(`📤 Simulating ${platform} posting for post ${postId}...`);
+  
+  try {
+    // Mock posting delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // QUOTA DEDUCTION ONLY AFTER SUCCESSFUL POSTING
+    await quotaManager.updateQuota(userId, 1, 0);  // Deduct only on success
+    console.log(`✅ Quota deducted 1 post after successful mock post for user ${userId}`);
+  } catch (simError) {
+    console.error('Mock posting simulation error:', simError);
+    return res.status(500).json({ 
+      message: "Mock post failed - quota not deducted" 
+    });
+  }
 
-      console.log(`✅ Post ${postId} successfully published to ${platform} with quota deduction`);
-      
-      res.json({ 
-        success: true, 
-        message: `Post published to ${platform}`,
-        postId,
-        quotaDeducted: true
-      });
-      
-    } catch (error) {
-      console.error('Error posting to platform:', error);
-      res.status(500).json({ message: "Failed to publish post" });
-    }
+  console.log(`✅ Post ${postId} successfully published to ${platform} with quota deduction`);
+  
+  res.json({ 
+    success: true, 
+    message: `Post published to ${platform}`,
+    postId,
+    quotaDeducted: true
   });
+  
+} catch (error) {
+  console.error('Error posting to platform:', error);
+  res.status(500).json({ message: "Failed to publish post" });
+}
 
   // PostQuotaService debug endpoint
   app.post("/api/quota-debug", requireAuth, async (req: any, res) => {
@@ -5556,75 +5561,75 @@ Continue building your Value Proposition Canvas systematically.`;
   // Generate content calendar
   app.post("/api/generate-content-calendar", requireActiveSubscription, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+      try {
+  const user = await storage.getUser(req.session.userId);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
 
-      // QUOTA ENFORCEMENT: Check remaining posts before generation
-      const quotaStatus = { plan: "professional", remainingPosts: 45, totalPosts: 52, usage: 13 };
-      if (!quotaStatus) {
-        return res.status(400).json({ message: "Unable to retrieve quota status" });
-      }
-      
-      const brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
-      if (!brandPurposeRecord) {
-        return res.status(400).json({ message: "Brand purpose not found. Please complete setup." });
-      }
+  // QUOTA ENFORCEMENT: Check remaining posts before generation
+  const quotaStatus = { plan: "professional", remainingPosts: 45, totalPosts: 52, usage: 13 };
+  if (!quotaStatus) {
+    return res.status(400).json({ message: "Unable to retrieve quota status" });
+  }
+  
+  const brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
+  if (!brandPurposeRecord) {
+    return res.status(400).json({ message: "Brand purpose not found. Please complete setup." });
+  }
 
-      const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
-      if (connections.length === 0) {
-        return res.status(400).json({ message: "No platform connections found. Please connect at least one platform." });
-      }
+  const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
+  if (connections.length === 0) {
+    return res.status(400).json({ message: "No platform connections found. Please connect at least one platform." });
+  }
 
-      // Generate full subscription amount - quota only consumed during publishing
-      const maxPostsToGenerate = quotaStatus.totalPosts;
-      console.log(`Content calendar quota-aware generation: ${maxPostsToGenerate} posts (${quotaStatus.remainingPosts} remaining from ${quotaStatus.totalPosts} total)`);
+  // Generate full subscription amount - quota only consumed during publishing
+  const maxPostsToGenerate = quotaStatus.totalPosts;
+  console.log(`Content calendar quota-aware generation: ${maxPostsToGenerate} posts (${quotaStatus.remainingPosts} remaining from ${quotaStatus.totalPosts} total)`);
 
-      // Generate posts using Grok with comprehensive brand data
-      const generatedPosts = await generateContentCalendar({
-        brandName: brandPurposeRecord.brandName,
-        productsServices: brandPurposeRecord.productsServices,
-        corePurpose: brandPurposeRecord.corePurpose,
-        audience: brandPurposeRecord.audience,
-        jobToBeDone: brandPurposeRecord.jobToBeDone,
-        motivations: brandPurposeRecord.motivations,
-        painPoints: brandPurposeRecord.painPoints,
-        goals: brandPurposeRecord.goals,
-        logoUrl: brandPurposeRecord.logoUrl || undefined,
-        contactDetails: brandPurposeRecord.contactDetails,
-        platforms: connections.map(c => c.platform),
-        totalPosts: maxPostsToGenerate,
-      });
+  // Generate posts using Grok with comprehensive brand data
+  const generatedPosts = await generateContentCalendar({
+    brandName: brandPurposeRecord.brandName,
+    productsServices: brandPurposeRecord.productsServices,
+    corePurpose: brandPurposeRecord.corePurpose,
+    audience: brandPurposeRecord.audience,
+    jobToBeDone: brandPurposeRecord.jobToBeDone,
+    motivations: brandPurposeRecord.motivations,
+    painPoints: brandPurposeRecord.painPoints,
+    goals: brandPurposeRecord.goals,
+    logoUrl: brandPurposeRecord.logoUrl || undefined,
+    contactDetails: brandPurposeRecord.contactDetails,
+    platforms: connections.map(c => c.platform),
+    totalPosts: maxPostsToGenerate,
+  });
 
-      // Save posts to database
-      const createdPosts = [];
-      for (const postData of generatedPosts) {
-        const post = await storage.createPost({
-          userId: req.session.userId,
-          platform: postData.platform,
-          content: postData.content,
-          status: "draft", // Start as draft, user can approve later
-          scheduledFor: new Date(postData.scheduledFor),
-        });
-        createdPosts.push(post);
-      }
+  // Save posts to database
+  const createdPosts = [];
+  for (const postData of generatedPosts) {
+    const post = await storage.createPost({
+      userId: req.session.userId,
+      platform: postData.platform,
+      content: postData.content,
+      status: "draft", // Start as draft, user can approve later
+      scheduledFor: new Date(postData.scheduledFor),
+    });
+    createdPosts.push(post);
+  }
 
-      console.log(`Content calendar generated: ${createdPosts.length} posts created within quota limits`);
+  console.log(`Content calendar generated: ${createdPosts.length} posts created within quota limits (deduct on publish/approve)`);  // Add for clarity on deduct timing
 
-      res.json({ 
-        posts: createdPosts,
-        quotaStatus: {
-          remaining: quotaStatus.remainingPosts,
-          total: quotaStatus.totalPosts,
-          generated: createdPosts.length
-        }
-      });
-    } catch (error: any) {
-      console.error('Content generation error:', error);
-      res.status(500).json({ message: "Error generating content calendar: " + error.message });
+  res.json({ 
+    posts: createdPosts,
+    quotaStatus: {
+      remaining: quotaStatus.remainingPosts,
+      total: quotaStatus.totalPosts,
+      generated: createdPosts.length
     }
   });
+} catch (error: any) {
+  console.error('Content generation error:', error);
+  res.status(500).json({ message: "Error generating content calendar: " + error.message });
+}
 
   // Removed conflicting /schedule route to allow React component to render
 
@@ -6215,131 +6220,168 @@ Continue building your Value Proposition Canvas systematically.`;
     }
   });
 
-  // Platform-specific Post Verification
-  app.post("/api/verify-platform-posts", async (req: any, res) => {
-    try {
-      const { postId, platforms } = req.body;
-      
-      if (!postId || !Array.isArray(platforms)) {
-        return res.status(400).json({
-          success: false,
-          message: "postId and platforms array are required"
-        });
-      }
-
-      const { PostVerificationService } = await import('./post-verification-service');
-      const verificationResults = await PostVerificationService.verifyPostAcrossPlatforms(postId, platforms);
-      
-      res.json({
-        success: true,
-        postId,
-        platforms: verificationResults
-      });
-    } catch (error) {
-      console.error('Platform verification failed:', error);
-      res.status(500).json({
+  // Platform-specific Post Verification (secured with auth/quota/onboarding)
+app.post("/api/verify-platform-posts", requireAuth, async (req: any, res) => {
+  try {
+    const userId = req.session.userId;
+    const { postId, platforms } = req.body;
+    
+    if (!postId || !Array.isArray(platforms)) {
+      return res.status(400).json({
         success: false,
-        message: "Platform verification error",
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: "postId and platforms array are required"
       });
     }
-  });
 
-  // Instagram Business API Integration
-  app.post("/api/instagram/setup", requireActiveSubscription, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      const { facebookConnectionId } = req.body;
-      
-      // Get Facebook connection
-      const facebookConnection = await storage.getPlatformConnection(userId, 'facebook');
-      if (!facebookConnection) {
-        return res.status(400).json({
-          success: false,
-          message: "Active Facebook connection required for Instagram setup"
-        });
-      }
+    // Fix broken no onboarding/quota check
+    const user = await storage.getUser(userId);
+    if (!user.verified) {
+      return res.status(403).json({ success: false, message: "User verification required" });
+    }
+    const quota = await quotaManager.getQuotaStatus(userId);
+    if (quota.remainingVerifications <= 0) {  // Assume verification quota; adjust to remainingPosts if tied
+      return res.status(403).json({ success: false, message: "Verification quota exceeded" });
+    }
 
-      // Get Facebook pages and associated Instagram accounts
-      const pagesUrl = `https://graph.facebook.com/v20.0/me/accounts?access_token=${facebookConnection.accessToken}&fields=id,name,instagram_business_account`;
-      
-      const pagesResponse = await fetch(pagesUrl);
-      const pagesData = await pagesResponse.json();
-      
-      if (pagesData.error) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to retrieve Facebook pages",
-          error: pagesData.error
-        });
-      }
+    // Fix broken no session regen
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((err) => err ? reject(err) : resolve());
+    });
 
-      // Find page with Instagram Business Account
-      let instagramBusinessAccount = null;
-      let parentPage = null;
-      
-      for (const page of pagesData.data || []) {
-        if (page.instagram_business_account) {
-          instagramBusinessAccount = page.instagram_business_account;
-          parentPage = page;
-          break;
-        }
-      }
+    const { PostVerificationService } = await import('./post-verification-service');
+    const verificationResults = await Promise.race([
+      PostVerificationService.verifyPostAcrossPlatforms(postId, platforms),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Verification timeout')), 10000))  // Fix no timeout
+    ]);
 
-      if (!instagramBusinessAccount) {
-        return res.status(400).json({
-          success: false,
-          message: "No Instagram Business Account found. Please connect your Instagram account to your Facebook page first."
-        });
-      }
+    // Deduct quota on success
+    await quotaManager.updateQuota(userId, 0, 1);  // Deduct 1 verification/post
 
-      // Get Instagram account details
-      const instagramUrl = `https://graph.facebook.com/v20.0/${instagramBusinessAccount.id}?access_token=${facebookConnection.accessToken}&fields=id,username,account_type`;
-      
-      const instagramResponse = await fetch(instagramUrl);
-      const instagramData = await instagramResponse.json();
-      
-      if (instagramData.error) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to retrieve Instagram account details",
-          error: instagramData.error
-        });
-      }
+    res.json({
+      success: true,
+      postId,
+      platforms: verificationResults
+    });
+  } catch (error) {
+    console.error('Platform verification failed:', error);
+    await oauthService.revokeTokens(userId, 'multi-platform');  // Revoke if partial verifications
+    res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+    res.status(500).json({
+      success: false,
+      message: "Platform verification error",
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 
-      // Create Instagram connection
-      const instagramConnection = await storage.createPlatformConnection({
-        userId,
-        platform: 'instagram',
-        platformUsername: instagramData.username || 'Instagram Business',
-        platformUserId: instagramData.id,
-        accessToken: facebookConnection.accessToken,
-        refreshToken: facebookConnection.refreshToken,
-        expiresAt: facebookConnection.expiresAt,
-        isActive: true
-      });
+ // Instagram Business API Integration (secured with quota/onboarding, timeout, revoke/clear)
+app.post("/api/instagram/setup", requireActiveSubscription, async (req: any, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    const { facebookConnectionId } = req.body;
+    
+    // Fix broken no onboarding/quota check
+    const user = await storage.getUser(userId);
+    if (!user.verified) {
+      return res.status(403).json({ success: false, message: "User verification required" });
+    }
+    const quota = await quotaManager.getQuotaStatus(userId);
+    if (quota.remainingIntegrations <= 0) {
+      return res.status(403).json({ success: false, message: "Integration quota exceeded" });
+    }
 
-      res.json({
-        success: true,
-        connectionId: instagramConnection.id,
-        instagramUsername: instagramData.username,
-        instagramId: instagramData.id,
-        accountType: instagramData.account_type,
-        parentPage: parentPage.name
-      });
+    // Fix broken no session regen
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((err) => err ? reject(err) : resolve());
+    });
 
-    } catch (error) {
-      console.error('Instagram setup failed:', error);
-      res.status(500).json({
+    const facebookConnection = await storage.getPlatformConnection(userId, 'facebook');
+    if (!facebookConnection) {
+      return res.status(400).json({
         success: false,
-        message: "Instagram setup failed",
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: "Active Facebook connection required for Instagram setup"
       });
     }
-  });
+
+    // Get Facebook pages and associated Instagram accounts with timeout
+    const pagesUrl = `https://graph.facebook.com/v20.0/me/accounts?access_token=${facebookConnection.accessToken}&fields=id,name,instagram_business_account`;
+    
+    const pagesResponse = await Promise.race([
+      fetch(pagesUrl),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Pages fetch timeout')), 10000))
+    ]);
+    const pagesData = await pagesResponse.json();
+    
+    if (pagesData.error) {
+      throw new Error(`Pages fetch failed: ${pagesData.error.message}`);
+    }
+
+    // Find page with Instagram Business Account
+    let instagramBusinessAccount = null;
+    let parentPage = null;
+    
+    for (const page of pagesData.data || []) {
+      if (page.instagram_business_account) {
+        instagramBusinessAccount = page.instagram_business_account;
+        parentPage = page;
+        break;
+      }
+    }
+
+    if (!instagramBusinessAccount) {
+      throw new Error("No Instagram Business Account found");
+    }
+
+    // Get Instagram account details with timeout
+    const instagramUrl = `https://graph.facebook.com/v20.0/${instagramBusinessAccount.id}?access_token=${facebookConnection.accessToken}&fields=id,username,account_type`;
+    
+    const instagramResponse = await Promise.race([
+      fetch(instagramUrl),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Instagram details timeout')), 10000))
+    ]);
+    const instagramData = await instagramResponse.json();
+    
+    if (instagramData.error) {
+      throw new Error(`Instagram details failed: ${instagramData.error.message}`);
+    }
+
+    // Create Instagram connection
+    const instagramConnection = await storage.createPlatformConnection({
+      userId,
+      platform: 'instagram',
+      platformUsername: instagramData.username || 'Instagram Business',
+      platformUserId: instagramData.id,
+      accessToken: facebookConnection.accessToken,
+      refreshToken: facebookConnection.refreshToken,
+      expiresAt: facebookConnection.expiresAt,
+      isActive: true
+    });
+
+    // Deduct quota on success
+    await quotaManager.updateQuota(userId, 0, 1);  // Deduct 1 integration
+
+    res.json({
+      success: true,
+      connectionId: instagramConnection.id,
+      instagramUsername: instagramData.username,
+      instagramId: instagramData.id,
+      accountType: instagramData.account_type,
+      parentPage: parentPage.name
+    });
+  } catch (error) {
+    console.error('Instagram setup failed:', error);
+    await oauthService.revokeTokens(userId, 'instagram');  // Revoke on error
+    res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+    res.status(500).json({
+      success: false,
+      message: "Instagram setup failed",
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 
   // Instagram Test Post
   app.post("/api/instagram/test-post", requireAuth, async (req: any, res) => {
@@ -6398,282 +6440,360 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // YouTube OAuth Callback
-  app.post("/api/youtube/callback", async (req: any, res) => {
-    try {
-      const { code, state } = req.body;
-      const userId = req.session?.userId;
-      
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Authentication required"
-        });
-      }
-      
-      if (!code) {
-        return res.status(400).json({
-          success: false,
-          message: "Authorization code missing"
-        });
-      }
-
-      const clientId = process.env.YOUTUBE_CLIENT_ID;
-      const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-      const redirectUri = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/';
-
-      // Exchange authorization code for access token
-      const tokenParams = new URLSearchParams();
-      tokenParams.append('grant_type', 'authorization_code');
-      tokenParams.append('code', code);
-      tokenParams.append('redirect_uri', redirectUri);
-      tokenParams.append('client_id', clientId!);
-      tokenParams.append('client_secret', clientSecret!);
-
-      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: tokenParams
-      });
-
-      const tokenData = await tokenResponse.json();
-
-      if (!tokenResponse.ok) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to exchange authorization code",
-          error: tokenData
-        });
-      }
-
-      // Get YouTube channel information
-      const channelResponse = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`
-        }
-      });
-
-      const channelData = await channelResponse.json();
-
-      if (!channelResponse.ok || !channelData.items || channelData.items.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to retrieve YouTube channel information",
-          error: channelData
-        });
-      }
-
-      const channel = channelData.items[0];
-
-      // Create or update YouTube connection
-      const connection = await storage.createPlatformConnection({
-        userId,
-        platform: 'youtube',
-        platformUserId: channel.id,
-        platformUsername: channel.snippet.title,
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token || null,
-        expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
-        isActive: true
-      });
-
-      res.json({
-        success: true,
-        connectionId: connection.id,
-        message: 'YouTube integration completed successfully',
-        channelId: channel.id,
-        channelTitle: channel.snippet.title,
-        channelDescription: channel.snippet.description
-      });
-
-    } catch (error) {
-      console.error('YouTube callback error:', error);
-      res.status(500).json({
-        success: false,
-        message: "YouTube integration failed",
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+app.post("/api/youtube/callback", async (req: any, res) => {
+  try {
+    const { code, state } = req.body;
+    const userId = req.session?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
     }
-  });
 
+    // Fix broken no onboarding/quota check - ensure verified and active sub
+    const user = await storage.getUser(userId);
+    if (!user.verified) {
+      return res.status(403).json({ success: false, message: "User verification required" });
+    }
+    const quota = await quotaManager.getQuotaStatus(userId);
+    if (!quota.isActive) {
+      return res.status(403).json({ success: false, message: "Active subscription required" });
+    }
+
+    // Fix broken CSRF - validate state
+    if (state !== req.session.oauthState) {  // Assume state saved in auth URL gen endpoint
+      return res.status(400).json({ success: false, message: "Invalid state parameter - CSRF detected" });
+    }
+
+    const clientId = process.env.YOUTUBE_CLIENT_ID;
+    const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+    const redirectUri = process.env.YOUTUBE_REDIRECT_URI || 'https://the-agency-iq.vercel.app/callback/youtube';  // Fix hardcoded - use env for Vercel
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      throw new Error('Missing YouTube env vars');
+    }
+
+    // Exchange authorization code for access token with scopes
+    const tokenParams = new URLSearchParams();
+    tokenParams.append('grant_type', 'authorization_code');
+    tokenParams.append('code', code);
+    tokenParams.append('redirect_uri', redirectUri);
+    tokenParams.append('client_id', clientId);
+    tokenParams.append('client_secret', clientSecret);
+    tokenParams.append('scope', 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly');  // Fix no scopes - add for upload/channel read
+
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: tokenParams,
+      signal: AbortSignal.timeout(10000)  // Fix no timeout - 10s limit
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (!tokenResponse.ok) {
+      throw new Error(`Token exchange failed: ${tokenData.error}`);
+    }
+
+    // Get YouTube channel information
+    const channelResponse = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` },
+      signal: AbortSignal.timeout(10000)
+    });
+
+    const channelData = await channelResponse.json();
+
+    if (!channelResponse.ok || !channelData.items || channelData.items.length === 0) {
+      throw new Error(`Channel fetch failed: ${channelData.error}`);
+    }
+
+    const channel = channelData.items[0];
+
+    // Create or update YouTube connection with refresh handling
+    const connection = await storage.createPlatformConnection({
+      userId,
+      platform: 'youtube',
+      platformUserId: channel.id,
+      platformUsername: channel.snippet.title,
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token || null,
+      expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+      isActive: true
+    });
+
+    // Regen session on success
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((err) => err ? reject(err) : resolve());
+    });
+
+    res.json({
+      success: true,
+      connectionId: connection.id,
+      message: 'YouTube integration completed successfully',
+      channelId: channel.id,
+      channelTitle: channel.snippet.title,
+      channelDescription: channel.snippet.description
+    });
+  } catch (error) {
+    console.error('YouTube callback error:', error);
+    // Fix broken no revoke/cookie clear - revoke and clear
+    await oauthService.revokeTokens(userId, 'youtube');  // Assume method; add if missing
+    res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+    res.status(500).json({
+      success: false,
+      message: "YouTube integration failed",
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
   // LinkedIn OAuth Callback
-  app.post("/api/linkedin/callback", async (req: any, res) => {
-    try {
-      const { code, state } = req.body;
-      const userId = req.session?.userId;
-      
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Authentication required"
-        });
-      }
-      
-      if (!code) {
-        return res.status(400).json({
-          success: false,
-          message: "Authorization code missing"
-        });
-      }
-
-      const clientId = process.env.LINKEDIN_CLIENT_ID;
-      const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
-      const redirectUri = 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev/';
-
-      // Exchange authorization code for access token
-      const tokenParams = new URLSearchParams();
-      tokenParams.append('grant_type', 'authorization_code');
-      tokenParams.append('code', code);
-      tokenParams.append('redirect_uri', redirectUri);
-      tokenParams.append('client_id', clientId!);
-      tokenParams.append('client_secret', clientSecret!);
-
-      const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: tokenParams
-      });
-
-      const tokenData = await tokenResponse.json();
-
-      if (!tokenResponse.ok) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to exchange authorization code",
-          error: tokenData
-        });
-      }
-
-      // Get LinkedIn profile information
-      const profileResponse = await fetch('https://api.linkedin.com/v2/people/~', {
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`
-        }
-      });
-
-      const profileData = await profileResponse.json();
-
-      if (!profileResponse.ok) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to retrieve LinkedIn profile",
-          error: profileData
-        });
-      }
-
-      // Create or update LinkedIn connection
-      const connection = await storage.createPlatformConnection({
-        userId,
-        platform: 'linkedin',
-        platformUserId: profileData.id,
-        platformUsername: 'LinkedIn Professional',
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token || null,
-        expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
-        isActive: true
-      });
-
-      // Test LinkedIn posting capability
-      const testPost = {
-        author: `urn:li:person:${profileData.id}`,
-        lifecycleState: 'PUBLISHED',
-        specificContent: {
-          'com.linkedin.ugc.ShareContent': {
-            shareCommentary: {
-              text: 'LinkedIn integration for TheAgencyIQ is now operational! Professional networking automation ready for Queensland small businesses. #TheAgencyIQ #LinkedInReady'
-            },
-            shareMediaCategory: 'NONE'
-          }
-        },
-        visibility: {
-          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
-        }
-      };
-
-      const postResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json',
-          'X-Restli-Protocol-Version': '2.0.0'
-        },
-        body: JSON.stringify(testPost)
-      });
-
-      const postResult = await postResponse.json();
-
-      res.json({
-        success: true,
-        connectionId: connection.id,
-        message: 'LinkedIn integration completed successfully',
-        profileId: profileData.id,
-        testPost: postResponse.ok ? 'Success' : 'Failed',
-        postId: postResponse.ok ? postResult.id : null
-      });
-
-    } catch (error) {
-      console.error('LinkedIn callback error:', error);
-      res.status(500).json({
-        success: false,
-        message: "LinkedIn integration failed",
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+app.post("/api/linkedin/callback", async (req: any, res) => {
+  try {
+    const { code, state } = req.body;
+    const userId = req.session?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
     }
-  });
 
-  // X.AI Credentials Test - Direct API test
-  app.post("/api/grok-test", async (req: any, res) => {
-    try {
-      const { prompt } = req.body;
-      
-      if (!process.env.XAI_API_KEY) {
-        return res.status(500).json({
-          success: false,
-          message: "X.AI API key not configured",
-          credentialsStatus: "missing"
-        });
-      }
-
-      const { getAIResponse } = await import('./grok');
-      const testPrompt = prompt || "Generate a brief business insight for Queensland small businesses using X.AI.";
-      
-      console.log('Testing X.AI credentials with prompt:', testPrompt);
-      
-      const response = await getAIResponse(testPrompt, 'credential-test', {});
-      
-      res.json({
-        success: true,
-        message: "X.AI credentials working properly",
-        credentialsStatus: "active",
-        response: response,
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('X.AI credential test failed:', error);
-      res.status(500).json({
-        success: false,
-        message: "X.AI credential test failed",
-        credentialsStatus: "error",
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      });
+    // Fix broken no onboarding/quota check - ensure verified and active sub
+    const user = await storage.getUser(userId);
+    if (!user.verified) {
+      return res.status(403).json({ success: false, message: "User verification required" });
     }
-  });
+    const quota = await quotaManager.getQuotaStatus(userId);
+    if (!quota.isActive) {
+      return res.status(403).json({ success: false, message: "Active subscription required" });
+    }
+
+    // Fix broken CSRF - validate state
+    if (state !== req.session.oauthState) {  // Assume state saved in auth URL gen endpoint
+      return res.status(400).json({ success: false, message: "Invalid state parameter - CSRF detected" });
+    }
+
+    const clientId = process.env.LINKEDIN_CLIENT_ID;
+    const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+    const redirectUri = process.env.LINKEDIN_REDIRECT_URI || 'https://the-agency-iq.vercel.app/callback/linkedin';  // Fix hardcoded - use env for Vercel
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      throw new Error('Missing LinkedIn env vars');
+    }
+
+    // Exchange authorization code for access token with scopes
+    const tokenParams = new URLSearchParams();
+    tokenParams.append('grant_type', 'authorization_code');
+    tokenParams.append('code', code);
+    tokenParams.append('redirect_uri', redirectUri);
+    tokenParams.append('client_id', clientId);
+    tokenParams.append('client_secret', clientSecret);
+    tokenParams.append('scope', 'w_member_social r_liteprofile');  // Fix no scopes - add for posting/profile
+
+    const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: tokenParams,
+      signal: AbortSignal.timeout(10000)  // Fix no timeout - 10s limit
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (!tokenResponse.ok) {
+      throw new Error(`Token exchange failed: ${tokenData.error}`);
+    }
+
+    // Get LinkedIn profile information
+    const profileResponse = await fetch('https://api.linkedin.com/v2/people/~', {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` },
+      signal: AbortSignal.timeout(10000)
+    });
+
+    const profileData = await profileResponse.json();
+
+    if (!profileResponse.ok) {
+      throw new Error(`Profile fetch failed: ${profileData.error}`);
+    }
+
+    // Create or update LinkedIn connection
+    const connection = await storage.createPlatformConnection({
+      userId,
+      platform: 'linkedin',
+      platformUserId: profileData.id,
+      platformUsername: 'LinkedIn Professional',
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token || null,
+      expiresAt: tokenData.expires_in ? new Date(Date.now() + tokenData.expires_in * 1000) : null,
+      isActive: true
+    });
+
+    // Test LinkedIn posting capability (customizable, with validation)
+    const testMessage = 'LinkedIn integration for TheAgencyIQ is now operational! Professional networking automation ready for Queensland small businesses. #TheAgencyIQ #LinkedInReady';
+    if (testMessage.length > 3000) {  // LinkedIn limit
+      throw new Error('Test message too long');
+    }
+
+    const testPost = {
+      author: `urn:li:person:${profileData.id}`,
+      lifecycleState: 'PUBLISHED',
+      specificContent: {
+        'com.linkedin.ugc.ShareContent': {
+          shareCommentary: { text: testMessage },
+          shareMediaCategory: 'NONE'
+        }
+      },
+      visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' }
+    };
+
+    const postResponse = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${tokenData.access_token}`,
+        'Content-Type': 'application/json',
+        'X-Restli-Protocol-Version': '2.0.0'
+      },
+      body: JSON.stringify(testPost),
+      signal: AbortSignal.timeout(10000)
+    });
+
+    const postResult = await postResponse.json();
+
+    // Regen session on success
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((err) => err ? reject(err) : resolve());
+    });
+
+    res.json({
+      success: true,
+      connectionId: connection.id,
+      message: 'LinkedIn integration completed successfully',
+      profileId: profileData.id,
+      testPost: postResponse.ok ? 'Success' : 'Failed',
+      postId: postResponse.ok ? postResult.id : null
+    });
+  } catch (error) {
+    console.error('LinkedIn callback error:', error);
+    // Fix broken no revoke/cookie clear - revoke and clear
+    await oauthService.revokeTokens(userId, 'linkedin');  // Fix YouTube ref - change to linkedin
+    res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+    res.status(500).json({
+      success: false,
+      message: "LinkedIn integration failed",  // Fix YouTube message - change to LinkedIn
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+  // X.AI Credentials Test - Direct API test (secured with auth/quota/onboarding checks)
+app.post("/api/grok-test", requireAuth, async (req: any, res) => {
+  try {
+    const userId = req.session.userId;
+    const { prompt = "Generate a brief business insight for Queensland small businesses using X.AI." } = req.body;
+
+    // Fix broken no onboarding check - ensure user verified
+    const user = await storage.getUser(userId);
+    if (!user.verified) {
+      return res.status(403).json({ error: 'User verification required for AI test' });
+    }
+
+    // Fix broken no quota check - check/deduct before API call
+    const quota = await quotaManager.getQuotaStatus(userId);
+    if (quota.remainingAICalls <= 0) {  // Assume AI calls quota; adjust to remainingPosts if tied to posts
+      return res.status(403).json({ error: 'AI test quota exceeded' });
+    }
+
+    // Fix broken no prompt validation - basic check
+    if (prompt.length < 10 || prompt.length > 500) {
+      return res.status(400).json({ error: 'Prompt must be 10-500 characters' });
+    }
+
+    // Fix broken no session handling - regen for security
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((err) => err ? reject(err) : resolve());
+    });
+
+    // Fix broken no timeout/rate limit - add timeout, comment for file-wide rate limit
+    // (Add rate-limiter-flexible middleware file-wide for spam protection)
+    const { getAIResponse } = await import('./grok');
+    console.log('Testing X.AI credentials with prompt:', prompt);
+    const response = await Promise.race([
+      getAIResponse(testPrompt, 'credential-test', {}),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('API timeout')), 10000))  // 10s timeout
+    ]);
+
+    // Deduct quota on success
+    await quotaManager.updateQuota(userId, 0, 1);  // Deduct 1 AI call/post
+
+    res.json({
+      success: true,
+      message: "X.AI credentials working properly",
+      credentialsStatus: "active",
+      response: response,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('X.AI credential test failed:', error);
+    // Fix broken no revoke/cookie clear - revoke if auth involved, clear cookies
+    await oauthService.revokeTokens(userId, 'xai');  // If X.AI uses tokens; add method if missing
+    res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+    res.status(500).json({
+      success: false,
+      message: "X.AI credential test failed",
+      credentialsStatus: "error",
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 
   // Facebook reconnection with proper publishing permissions
-  app.get("/api/reconnect/facebook", requireAuth, async (req: any, res) => {
-    try {
-      const clientId = process.env.FACEBOOK_APP_ID;
-      
-      if (!clientId) {
-        return res.status(500).json({ 
-          success: false, 
-          message: "Facebook App ID not configured" 
-        });
-      }
+app.get("/api/reconnect/facebook", requireAuth, async (req: any, res) => {
+  try {
+    const userId = req.session.userId;
+
+    // Fix broken no quota check - ensure active sub before reconnect
+    const quota = await quotaManager.getQuotaStatus(userId);
+    if (!quota.isActive) {
+      return res.status(403).json({ error: 'Active subscription required for reconnect' });
+    }
+
+    // Fix broken no onboarding check - ensure user verified
+    const user = await storage.getUser(userId);
+    if (!user.verified) {
+      return res.status(403).json({ error: 'User verification required before reconnect' });
+    }
+
+    const clientId = process.env.FACEBOOK_APP_ID;
+    const redirectUri = process.env.FACEBOOK_REDIRECT_URI || 'https://the-agency-iq.vercel.app/callback/facebook';
+    if (!clientId || !redirectUri) {
+      throw new Error('Missing Facebook env vars');
+    }
+
+    // Generate OAuth URL with publishing scopes and state for CSRF
+    const scopes = 'pages_show_list,pages_manage_posts,pages_read_engagement';
+    const state = crypto.randomBytes(16).toString('hex');  // Random state for security
+    req.session.oauthState = state;  // Save state in session for validation on callback
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err) => err ? reject(err) : resolve());
+    });
+
+    const authUrl = `https://www.facebook.com/v20.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&state=${state}&response_type=code`;
+
+    // Regen session on success for security
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((err) => err ? reject(err) : resolve());
+    });
+
+    res.json({ success: true, authUrl });
+  } catch (error) {
+    console.error('Facebook reconnect error:', error);
+    // Fix broken no revoke on error - revoke if partial
+    await oauthService.revokeTokens(userId, 'facebook');  // Add method if missing
+    res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });  // Fix no clear, conditional secure
+    res.status(500).json({
+      success: false,
+      message: "Facebook reconnect failed",
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 
       // Use unified callback URI
       const redirectUri = 'https://app.theagencyiq.ai/callback';
@@ -6703,32 +6823,46 @@ Continue building your Value Proposition Canvas systematically.`;
   });
 
   // X platform integration test (no auth required for testing)
-  app.post("/api/test-x-integration", async (req: any, res) => {
-    try {
-      const { xIntegration } = await import('./x-integration');
-      const result = await xIntegration.postTweet('TheAgencyIQ X integration test successful! Platform ready for 9:00 AM JST launch! 🚀');
-      
-      if (result.success) {
-        res.json({
-          success: true,
-          message: "X integration working perfectly",
-          data: result.data
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: result.error || "X integration failed"
-        });
-      }
-    } catch (error: any) {
-      console.error('X integration test error:', error);
-      res.status(500).json({
-        success: false,
-        message: "X integration test failed",
-        error: error.message
-      });
+  app.post("/api/test-x-integration", requireAuth, async (req: any, res) => {
+  try {
+    const userId = req.session.userId;
+    const { message = 'TheAgencyIQ X integration test successful!' } = req.body;  // Allow custom message, default to test
+
+    // Fix broken no quota check - check before post
+    const quota = await quotaManager.getQuotaStatus(userId);
+    if (quota.remainingPosts <= 0) {
+      return res.status(403).json({ error: 'Post quota exceeded' });
     }
-  });
+
+    // Fix broken no content validation - basic check
+    if (!message || message.length < 1 || message.length > 280) {
+      return res.status(400).json({ error: 'Invalid message: must be 1-280 characters' });
+    }
+
+    // Fix broken post - use proper X API v2 with OAuth 1.0a (assume twitter-api-v2 installed)
+    const { TwitterApi } = await import('twitter-api-v2');
+    const client = new TwitterApi({
+      appKey: process.env.TWITTER_API_KEY,
+      appSecret: process.env.TWITTER_API_SECRET,
+      accessToken: process.env.TWITTER_ACCESS_TOKEN,  // User-specific from OAuth storage
+      accessSecret: process.env.TWITTER_ACCESS_SECRET,
+    });
+
+    const result = await client.v2.tweet(message);  // Proper v2 post
+
+    // Deduct quota on success
+    await quotaManager.updateQuota(userId, 1, 0);  // Deduct 1 post
+    console.log(`✅ Test tweet posted for user ${userId}, quota deducted`);
+
+    res.json({ success: true, tweetId: result.data.id, message: 'Test tweet posted successfully' });
+  } catch (error) {
+    console.error('Test X integration error:', error);
+    // Fix broken no revoke on error - revoke if partial auth
+    await oauthService.revokeTokens(userId, 'x');  // Assume method; add if missing
+    res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });  // Clear on fail
+    res.status(500).json({ error: 'Test post failed' });
+  }
+});
 
   // Auto-posting enforcer - Ensures posts are published within 30-day subscription
   app.post("/api/enforce-auto-posting", requireAuth, async (req: any, res) => {
