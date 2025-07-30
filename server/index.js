@@ -1,4 +1,4 @@
- /**
+  /**
  * Emergency TheAgencyIQ Server - JavaScript fallback
  * Bypasses TypeScript compilation issues
  */
@@ -39,7 +39,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],  // Tighten unsafe-inline if possible
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],  // Tighten if possible
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
       scriptSrc: ["'self'", "'unsafe-inline'"],  // Remove unsafe-eval for prod
@@ -55,11 +55,11 @@ app.use(requestLogger);
 
 // Rate limiting for all routes (fix spam open)
 const limiter = rateLimit({
-  windowMs: secureDefaults.RATE_LIMIT_WINDOW,
-  max: secureDefaults.RATE_LIMIT_MAX,
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW || '900000', 10),  // Env-config, default 15 min
+  max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),  // Env-config
   message: {
     error: 'Too many requests from this IP, please try again later.',
-    retryAfter: Math.ceil(secureDefaults.RATE_LIMIT_WINDOW / 1000)
+    retryAfter: Math.ceil(parseInt(process.env.RATE_LIMIT_WINDOW || '900000', 10) / 1000)
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -81,14 +81,14 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
-// Body parsing
+// Body parsing (no duplicates)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// PostgreSQL session store configuration
+// PostgreSQL session store configuration with ttl and prune
 const PgSession = connectPgSimple(session);
 
-// Session configuration with PostgreSQL store (added regen, env TTL, secure genid)
+// Session configuration with PostgreSQL store (added regen, env secret/maxAge, secure genid)
 const sessionTtl = parseInt(process.env.SESSION_TTL || '1800', 10); // Seconds
 const sessionTtlMs = sessionTtl * 1000; // Milliseconds
 const sessionStore = new PgSession({
@@ -96,6 +96,7 @@ const sessionStore = new PgSession({
   createTableIfMissing: true,
   ttl: sessionTtl,
   tableName: "sessions",
+  pruneSessionInterval: 60  // Prune expired every 60s
 });
 app.use(session({
   store: sessionStore,
@@ -103,12 +104,13 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   name: 'theagencyiq.session',
-  genid: () => crypto.randomBytes(32).toString('hex'),  // Secure genid
+  genid: () => crypto.randomBytes(32).toString('hex'),  // Secure 256-bit ID
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: sessionTtlMs,
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    partitioned: true  // Future-proof
   }
 }));
 
