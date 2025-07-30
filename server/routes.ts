@@ -2798,7 +2798,8 @@ res.clearCookie('oauth_token', { path: '/', secure: process.env.NODE_ENV === 'pr
       // Create user account with verified phone number
       const hashedPassword = await bcrypt.hash(password, 10);
       
-      const user = await storage.createUser({
+      const hashedPassword = await bcrypt.hash(password, 10); // Hash with salt rounds 10 for security
+const user = await storage.createUser({ email, hashedPassword }); // Replace password with hashedPassword; keep other fields if any
         userId: phone, // Phone number is the unique identifier  
         email: pendingPayment.email,
         password: hashedPassword,
@@ -2818,7 +2819,16 @@ res.clearCookie('oauth_token', { path: '/', secure: process.env.NODE_ENV === 'pr
       verificationCodes.delete(phone);
       delete req.session.pendingPayment;
 
-      // CRITICAL: Log the user in with proper user ID assignment
+      // Add session regeneration for security (consistent with login)
+await new Promise<void>((resolve, reject) => {
+  req.session.regenerate((err: any) => {
+    if (err) {
+      console.error('Session regen error in register:', err);
+      reject(err);
+    } else resolve();
+  });
+});
+// CRITICAL: Log the user in with proper user ID assignment
       req.session.userId = user.id;
       console.log(`User ID assigned to session: ${user.id} for ${user.email}`);
       
