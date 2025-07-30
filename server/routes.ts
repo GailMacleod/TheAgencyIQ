@@ -724,12 +724,12 @@ app.get('/api/auth/youtube/callback',
   // SURGICAL FIX 1: Authentication Routes (Fix 404s, Add Session Regeneration)
   app.post('/api/auth/login', async (req: any, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, hashedPassword } = req.body;
       console.log('🔐 [AUTH] Login attempt:', { email, sessionId: req.sessionID });
       
       // Validate credentials with bcrypt
       if const user = await storage.getUserByEmail(email);
-if (user && await bcrypt.compare(password, user.hashedPassword)) {
+if (user && await bcrypt.compare(hashedPassword, user.hashedhashedPassword)) {
   // CRITICAL: Session regeneration to prevent fixation attacks (2025 OWASP)
   await new Promise<void>((resolve, reject) => {
     req.session.regenerate((err: any) => {
@@ -783,13 +783,13 @@ if (user && await bcrypt.compare(password, user.hashedPassword)) {
   // SURGICAL FIX: Add missing signup endpoint
   app.post('/api/auth/signup', async (req: any, res) => {
     try {
-      const { email, password, phone, planId } = req.body;
+      const { email, hashedPassword, phone, planId } = req.body;
       console.log('🔐 [SIGNUP] Registration attempt:', { email, planId, sessionId: req.sessionID });
       
-      if (!email || !password) {
+      if (!email || !hashedPassword) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Email and password are required' 
+          message: 'Email and hashedPassword are required' 
         });
       }
       
@@ -1889,16 +1889,16 @@ res.clearCookie('oauth_token', { path: '/', secure: process.env.NODE_ENV === 'pr
   /*
   app.post('/api/auth/login', async (req: any, res: Response) => {
     try {
-      const { phone, password } = req.body;
+      const { phone, hashedPassword } = req.body;
       
-      if (!phone || !password) {
-        return res.status(400).json({ message: "Phone and password are required" });
+      if (!phone || !hashedPassword) {
+        return res.status(400).json({ message: "Phone and hashedPassword are required" });
       }
 
       console.log(`🔐 Login attempt for phone: ${phone}`);
 
       // Special authentication for User ID 2
-      if (phone === '+61424835189' && password === 'password123') {
+      if (phone === '+61424835189' && hashedPassword === 'hashedPassword123') {
         const user = await storage.getUser(2);
         if (user && user.phone === phone) {
           // Set session data
@@ -1943,8 +1943,8 @@ res.clearCookie('oauth_token', { path: '/', secure: process.env.NODE_ENV === 'pr
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
+      const isValidhashedPassword = await bcrypt.compare(hashedPassword, user.hashedPassword);
+      if (!isValidhashedPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
@@ -2768,10 +2768,10 @@ res.clearCookie('oauth_token', { path: '/', secure: process.env.NODE_ENV === 'pr
   // Complete phone verification and create account
   app.post("/api/complete-phone-verification", async (req, res) => {
     try {
-      const { phone, code, password } = req.body;
+      const { phone, code, hashedPassword } = req.body;
       
-      if (!phone || !code || !password) {
-        return res.status(400).json({ message: "Phone, code, and password are required" });
+      if (!phone || !code || !hashedPassword) {
+        return res.status(400).json({ message: "Phone, code, and hashedPassword are required" });
       }
 
       // Verify the SMS code
@@ -2796,13 +2796,14 @@ res.clearCookie('oauth_token', { path: '/', secure: process.env.NODE_ENV === 'pr
       }
 
       // Create user account with verified phone number
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedhashedPassword = await bcrypt.hash(hashedPassword, 10);
       
-      const hashedPassword = await bcrypt.hash(password, 10); // Hash with salt rounds 10 for security
-const user = await storage.createUser({ email, hashedPassword }); // Replace password with hashedPassword; keep other fields if any
+      const hashedhashedPassword = await bcrypt.hash(hashedPassword, 10); // Hash with salt rounds 10 for security
+const user = await storage.createUser({ email, hashedhashedPassword });
+      await new Promise<void>((resolve, reject) => { req.session.regenerate((err: any) => { if (err) { console.error('Regen error in register:', err); reject(err); } else resolve(); }); });// Replace hashedPassword with hashedhashedPassword; keep other fields if any
         userId: phone, // Phone number is the unique identifier  
         email: pendingPayment.email,
-        password: hashedPassword,
+        hashedPassword: hashedhashedPassword,
         phone: phone,
         subscriptionPlan: pendingPayment.plan,
         subscriptionStart: new Date(),
@@ -2964,7 +2965,7 @@ await new Promise<void>((resolve, reject) => {
   // Gift certificate redemption endpoint - CREATES NEW ISOLATED USER ACCOUNT
   app.post("/api/redeem-gift-certificate", async (req, res) => {
     try {
-      const { code, email, password, phone } = req.body;
+      const { code, email, hashedPassword, phone } = req.body;
       
       // Validate required fields
       if (!code || typeof code !== 'string') {
@@ -2973,8 +2974,8 @@ await new Promise<void>((resolve, reject) => {
       if (!email || typeof email !== 'string') {
         return res.status(400).json({ message: "Email is required" });
       }
-      if (!password || typeof password !== 'string') {
-        return res.status(400).json({ message: "Password is required" });
+      if (!hashedPassword || typeof hashedPassword !== 'string') {
+        return res.status(400).json({ message: "hashedPassword is required" });
       }
 
       // Get the certificate and log the viewing action
@@ -3052,7 +3053,7 @@ await new Promise<void>((resolve, reject) => {
       const newUser = await storage.createUser({
         userId,
         email,
-        password,
+        hashedPassword,
         phone: phone || null,
         subscriptionPlan: certificate.plan,
         remainingPosts: 52, // Professional plan default
@@ -3469,9 +3470,9 @@ await new Promise<void>((resolve, reject) => {
 
   app.post("/api/verify-and-signup", async (req, res) => {
     try {
-      const { email, password, phone, code } = req.body;
+      const { email, hashedPassword, phone, code } = req.body;
       
-      if (!email || !password || !phone || !code) {
+      if (!email || !hashedPassword || !phone || !code) {
         return res.status(400).json({ message: "All fields are required" });
       }
 
@@ -3487,14 +3488,14 @@ await new Promise<void>((resolve, reject) => {
         return res.status(400).json({ message: "User already exists" });
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      // Hash hashedPassword
+      const hashedhashedPassword = await bcrypt.hash(hashedPassword, 10);
 
       // Create user without active subscription - requires payment or certificate
       const user = await storage.createUser({
         userId: phone, // Phone number as UID
         email,
-        password: hashedPassword,
+        hashedPassword: hashedhashedPassword,
         phone,
         subscriptionPlan: null,
         subscriptionStart: null,
@@ -3682,16 +3683,16 @@ await new Promise<void>((resolve, reject) => {
   app.post("/api/auth/login", async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
-      const { phone, password } = req.body;
+      const { phone, hashedPassword } = req.body;
       
       console.log(`Login attempt for phone: ${phone}`);
       
-      if (!phone || !password) {
-        return res.status(400).json({ message: "Phone number and password are required" });
+      if (!phone || !hashedPassword) {
+        return res.status(400).json({ message: "Phone number and hashedPassword are required" });
       }
 
       // Test account bypass
-      if (phone === '+61412345678' && password === 'test123') {
+      if (phone === '+61412345678' && hashedPassword === 'test123') {
         req.session.userId = 999;
         
         await new Promise<void>((resolve) => {
@@ -3704,8 +3705,8 @@ await new Promise<void>((resolve, reject) => {
         return res.json({ user: { id: 999, email: 'test@test.com', phone: '+61412345678' } });
       }
 
-      // Updated authentication for phone +61424835189 with password123  
-      if (phone === '+61424835189' && password === 'password123') {
+      // Updated authentication for phone +61424835189 with hashedPassword123  
+      if (phone === '+61424835189' && hashedPassword === 'hashedPassword123') {
         // Get user data to verify phone number
         const user = await storage.getUser(2);
         if (user && user.phone === phone) {
@@ -3742,8 +3743,8 @@ await new Promise<void>((resolve, reject) => {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
+      const isValidhashedPassword = await bcrypt.compare(hashedPassword, user.hashedPassword);
+      if (!isValidhashedPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
@@ -4609,14 +4610,14 @@ await new Promise<void>((resolve, reject) => {
     next();
   });
 
-  // Simple platform connection with username/password
+  // Simple platform connection with username/hashedPassword
   app.post("/api/connect-platform-simple", requireAuth, async (req: any, res) => {
     try {
-      const { platform, username, password } = req.body;
+      const { platform, username, hashedPassword } = req.body;
       const userId = req.session.userId;
 
-      if (!platform || !username || !password) {
-        return res.status(400).json({ message: "Platform, username, and password are required" });
+      if (!platform || !username || !hashedPassword) {
+        return res.status(400).json({ message: "Platform, username, and hashedPassword are required" });
       }
 
       // Perform real OAuth token exchange using approved platform APIs
@@ -4627,19 +4628,19 @@ await new Promise<void>((resolve, reject) => {
       try {
         switch (platform) {
           case 'linkedin':
-            tokens = await authenticateLinkedIn(username, password);
+            tokens = await authenticateLinkedIn(username, hashedPassword);
             break;
           case 'facebook':
-            tokens = await authenticateFacebook(username, password);
+            tokens = await authenticateFacebook(username, hashedPassword);
             break;
           case 'instagram':
-            tokens = await authenticateInstagram(username, password);
+            tokens = await authenticateInstagram(username, hashedPassword);
             break;
           case 'x':
-            tokens = await authenticateTwitter(username, password);
+            tokens = await authenticateTwitter(username, hashedPassword);
             break;
           case 'youtube':
-            tokens = await authenticateYouTube(username, password);
+            tokens = await authenticateYouTube(username, hashedPassword);
             break;
           default:
             throw new Error(`Platform ${platform} not supported`);
@@ -5099,11 +5100,11 @@ Continue building your Value Proposition Canvas systematically.`;
   // Simple platform connection with customer credentials
   app.post("/api/connect-platform-simple", requireAuth, async (req: any, res) => {
     try {
-      const { platform, username, password } = req.body;
+      const { platform, username, hashedPassword } = req.body;
       const userId = req.session.userId;
 
-      if (!platform || !username || !password) {
-        return res.status(400).json({ message: "Platform, username, and password are required" });
+      if (!platform || !username || !hashedPassword) {
+        return res.status(400).json({ message: "Platform, username, and hashedPassword are required" });
       }
 
 
@@ -5122,19 +5123,19 @@ Continue building your Value Proposition Canvas systematically.`;
       try {
         switch (platform) {
           case 'facebook':
-            authResult = await authenticateFacebook(username, password);
+            authResult = await authenticateFacebook(username, hashedPassword);
             break;
           case 'instagram':
-            authResult = await authenticateInstagram(username, password);
+            authResult = await authenticateInstagram(username, hashedPassword);
             break;
           case 'linkedin':
-            authResult = await authenticateLinkedIn(username, password);
+            authResult = await authenticateLinkedIn(username, hashedPassword);
             break;
           case 'x':
-            authResult = await authenticateTwitter(username, password);
+            authResult = await authenticateTwitter(username, hashedPassword);
             break;
           case 'youtube':
-            authResult = await authenticateYouTube(username, password);
+            authResult = await authenticateYouTube(username, hashedPassword);
             break;
           default:
             return res.status(400).json({ message: "Unsupported platform" });
@@ -8738,7 +8739,7 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
       if (!user) {
         user = await storage.createUser({
           email: "demo@theagencyiq.ai",
-          password: "demo123",
+          hashedPassword: "demo123",
           phone: "+61400000000",
           subscriptionPlan: "professional",
           remainingPosts: 45,
@@ -9299,8 +9300,8 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
 
   // Duplicate brand purpose endpoint removed - using the one at line 2825 with requireActiveSubscription middleware
 
-  // Forgot password with email and phone verification
-  app.post("/api/forgot-password", async (req, res) => {
+  // Forgot hashedPassword with email and phone verification
+  app.post("/api/forgot-hashedPassword", async (req, res) => {
     try {
       const { email, phone } = req.body;
       
@@ -9341,23 +9342,23 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
 
       const domains = process.env.REPLIT_DOMAINS?.split(',') || [`localhost:5000`];
       const domain = domains[0];
-      const resetUrl = `https://${domain}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+      const resetUrl = `https://${domain}/reset-hashedPassword?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-      console.log(`Password reset link for ${email}: ${resetUrl}`);
+      console.log(`hashedPassword reset link for ${email}: ${resetUrl}`);
 
       // Send email via SendGrid
       try {
         const msg = {
           to: email,
           from: 'support@theagencyiq.ai',
-          subject: 'Reset Your Password - The AgencyIQ',
+          subject: 'Reset Your hashedPassword - The AgencyIQ',
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #3250fa;">Reset Your Password</h2>
+              <h2 style="color: #3250fa;">Reset Your hashedPassword</h2>
               <p>Hello,</p>
-              <p>You requested a password reset for your AgencyIQ account. Click the button below to reset your password:</p>
+              <p>You requested a hashedPassword reset for your AgencyIQ account. Click the button below to reset your hashedPassword:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${resetUrl}" style="background-color: #3250fa; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a>
+                <a href="${resetUrl}" style="background-color: #3250fa; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset hashedPassword</a>
               </div>
               <p>If the button doesn't work, copy and paste this link into your browser:</p>
               <p style="word-break: break-all; color: #666;">${resetUrl}</p>
@@ -9369,7 +9370,7 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
         };
         
         await sgMail.send(msg);
-        console.log(`Password reset email sent successfully to ${email}`);
+        console.log(`hashedPassword reset email sent successfully to ${email}`);
         
       } catch (emailError: any) {
         console.error('SendGrid email error:', emailError);
@@ -9387,7 +9388,7 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
 
       res.json({ message: "If an account exists, a reset link has been sent" });
     } catch (error: any) {
-      console.error('Forgot password error:', error);
+      console.error('Forgot hashedPassword error:', error);
       res.status(500).json({ message: "Error processing request" });
     }
   });
@@ -9418,18 +9419,18 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
     }
   });
 
-  // Reset password
-  app.post("/api/reset-password", async (req, res) => {
+  // Reset hashedPassword
+  app.post("/api/reset-hashedPassword", async (req, res) => {
     try {
-      const { token, email, password } = req.body;
+      const { token, email, hashedPassword } = req.body;
       
-      if (!token || !email || !password) {
-        return res.status(400).json({ message: "Token, email, and password are required" });
+      if (!token || !email || !hashedPassword) {
+        return res.status(400).json({ message: "Token, email, and hashedPassword are required" });
       }
 
-      // Validate password length
-      if (password.length < 8) {
-        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      // Validate hashedPassword length
+      if (hashedPassword.length < 8) {
+        return res.status(400).json({ message: "hashedPassword must be at least 8 characters" });
       }
 
       // Find and validate reset token
@@ -9449,35 +9450,35 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      // Hash new hashedPassword
+      const hashedhashedPassword = await bcrypt.hash(hashedPassword, 10);
 
-      // Update user password
-      await storage.updateUser(user.id, { password: hashedPassword });
+      // Update user hashedPassword
+      await storage.updateUser(user.id, { hashedPassword: hashedhashedPassword });
 
       // Mark reset token as used
       await storage.markVerificationCodeUsed(resetCode.id);
 
-      console.log(`Password reset successful for user: ${email}`);
-      res.json({ message: "Password reset successful" });
+      console.log(`hashedPassword reset successful for user: ${email}`);
+      res.json({ message: "hashedPassword reset successful" });
     } catch (error: any) {
-      console.error('Reset password error:', error);
-      res.status(500).json({ message: "Error resetting password" });
+      console.error('Reset hashedPassword error:', error);
+      res.status(500).json({ message: "Error resetting hashedPassword" });
     }
   });
 
   // Update profile
   app.put("/api/profile", requireAuth, async (req: any, res) => {
     try {
-      const { phone, password } = req.body;
+      const { phone, hashedPassword } = req.body;
       const updates: any = {};
       
       if (phone) {
         updates.phone = phone;
       }
       
-      if (password) {
-        updates.password = await bcrypt.hash(password, 10);
+      if (hashedPassword) {
+        updates.hashedPassword = await bcrypt.hash(hashedPassword, 10);
       }
 
       if (Object.keys(updates).length === 0) {
@@ -9907,13 +9908,13 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
     }
   });
 
-  // Simple platform connection with username/password
+  // Simple platform connection with username/hashedPassword
   app.post("/api/connect-platform", requireAuth, async (req: any, res) => {
     try {
-      const { platform, username, password } = req.body;
+      const { platform, username, hashedPassword } = req.body;
       
-      if (!platform || !username || !password) {
-        return res.status(400).json({ message: "Platform, username, and password are required" });
+      if (!platform || !username || !hashedPassword) {
+        return res.status(400).json({ message: "Platform, username, and hashedPassword are required" });
       }
 
       // Validate platform is supported
@@ -9931,14 +9932,14 @@ Connect your business accounts (Google My Business, Facebook, LinkedIn) to autom
       }
 
       // Store connection with encrypted credentials
-      const encryptedPassword = await bcrypt.hash(password, 10);
+      const encryptedhashedPassword = await bcrypt.hash(hashedPassword, 10);
       
       await storage.createPlatformConnection({
         userId: req.session.userId,
         platform: platform,
         platformUserId: username, // Using username as platform user ID for simplicity
         platformUsername: username,
-        accessToken: encryptedPassword, // Store encrypted password as access token
+        accessToken: encryptedhashedPassword, // Store encrypted hashedPassword as access token
         refreshToken: null,
         expiresAt: null,
         isActive: true
