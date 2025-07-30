@@ -250,137 +250,116 @@ app.use(passport.session());
     }
   });
 
-  // Data deletion status
-  app.get('/deletion-status/:userId?', (req, res) => {
-    const userId = req.params.userId || 'anonymous';
-    res.send(`<html><head><title>Data Deletion Status</title></head><body style="font-family:Arial;padding:20px;"><h1>Data Deletion Status</h1><p><strong>User:</strong> ${userId}</p><p><strong>Status:</strong> Completed</p><p><strong>Date:</strong> ${new Date().toISOString()}</p></body></html>`);
+ // Data Deletion Status template (cleaned syntax)
+const dataDeletionTemplate = `# Data Deletion Status
+
+User: ${userId}
+
+Status: Completed
+
+Date: ${new Date().toISOString()}
+`;
+
+// SECURE SESSION TIMEOUT - env-configurable for flexibility (default 30 min)
+const sessionTtl = parseInt(process.env.SESSION_TTL || '1800', 10); // Seconds for Redis/PG
+const sessionTtlMs = sessionTtl * 1000; // Milliseconds for Express
+
+// Initialize database before session store (deployment-safe with timeout)
+try {
+  await Promise.race([
+    dbManager.init(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('DB init timeout')), 10000))
+  ]);
+  console.log('✅ Database connection ready');
+} catch (err) {
+  console.log('⚠️ Database initialization skipped for deployment:', err);
+}
+
+// Create quota tracking table (deployment-safe with timeout)
+try {
+  await Promise.race([
+    createQuotaTable(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Quota table timeout')), 10000))
+  ]);
+  console.log('✅ Quota tracking table ready');
+} catch (err) {
+  console.log('⚠️ Quota table creation skipped for deployment:', err);
+}
+
+// PostgreSQL session store setup
+const PgSession = connectPg(session);
+let sessionStore: any;
+
+try {
+  // Try Redis first for persistent sessions (production-ready with timeout)
+  console.log('🔧 Attempting Redis connection for persistent sessions...');
+  const redisClient = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379', socket: { connectTimeout: 5000 } });
+  const RedisStore = (connectRedis as any).default(session);
+
+  // Test Redis connection with timeout and check version for security
+  await Promise.race([
+    redisClient.connect(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Redis connect timeout')), 5000))
+  ]);
+  await redisClient.ping();
+
+  const redisInfo = await redisClient.info('server');
+  console.log('🔍 Redis version check:', redisInfo.substring(0, 100) + '...');
+  if (!redisInfo.includes('redis_version:7.') && !redisInfo.includes('redis_version:6.2.')) {
+    console.log('⚠️ Redis version may have known vulnerabilities - consider updating');
+  }
+
+  sessionStore = new RedisStore({ client: redisClient, ttl: sessionTtl, prefix: 'theagencyiq:sess:', disableTTL: false, disableTouch: false });
+  console.log('✅ Redis session store connected successfully');
+  console.log('🔒 Session persistence: BULLETPROOF (survives restarts/deployments)');
+} catch (redisError: any) {
+  console.log('⚠️ Redis unavailable, falling back to PostgreSQL sessions:', redisError);
+  console.log('🔧 Configuring PostgreSQL session store...');
+
+  // SURGICAL FIX 4: Enhanced PostgreSQL session store with error handling
+  const pgStore = connectPg(session);
+  try {
+    sessionStore = new pgStore({ conString: process.env.DATABASE_URL, createTableIfMissing: true, ttl: sessionTtl, tableName: "sessions", touchInterval: 60000, disableTouch: false, pruneSessionInterval: 60 * 60 * 1000, errorLog: (error) => { console.error('❌ PostgreSQL session store error:', error); } });
+    console.log('✅ PostgreSQL session store configured successfully');
+  } catch (sessionStoreError) {
+    console.error('❌ PostgreSQL session store failed, falling back to memory store:', sessionStoreError);
+    // SURGICAL FIX 4: Fallback to memory store if PostgreSQL fails
+    sessionStore = new session.MemoryStore();
+    console.log('⚠️ Using memory store - sessions will not persist across restarts');
+  }
+
+  // Test PostgreSQL session store connection with clear on error
+  sessionStore.get('test-connection', (err: any, session: any) => {
+    if (err) {
+      console.error('❌ Session store connection failed:', err);
+      // Add clear on test fail for safety
+      res.clearCookie('theagencyiq.session', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+    } else {
+      console.log('✅ PostgreSQL session store connection successful');
+      console.log('🔒 Session persistence: ENHANCED (survives restarts with touch support)');
+    }
   });
+}
 
-  // SECURE SESSION TIMEOUT - 30 minutes for security (was 3 days)
-  const sessionTtl = 30 * 60; // 30 minutes in seconds (Redis format)
-  const sessionTtlMs = sessionTtl * 1000; // 30 minutes in milliseconds (Express format)
-  
-  // Initialize database before session store (deployment-safe)
-  try {
-    await dbManager.init();
-    console.log('✅ Database connection ready');
-  } catch (err) {
-    console.log('⚠️ Database initialization skipped for deployment');
+// Remove duplicate CORS - already configured above with proper order
+
+// SURGICAL FIX 1: Enhanced session configuration for Replit deployment (MOVED BEFORE OAUTH)
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false, // Don't create sessions for unauthenticated users
+  name: 'theagencyiq.session',
+  genid: () => { // REQUIRED: Generate cryptographically secure session IDs (128+ bits)
+    return 'aiq_' + crypto.randomBytes(16).toString('hex'); // 128-bit secure ID
+  },
+  cookie: {
+    secure: isProd ? true : false, // SURGICAL: Replit deployment HTTPS handling
+    httpOnly: true, // REQUIRED: Prevent XSS attacks via JavaScript access
+    sameSite: 'lax', // SURGICAL: Always lax for OAuth compatibility in production
+    maxAge: sessionTtlMs
   }
-  
-  // Create quota tracking table (deployment-safe)
-  try {
-    await createQuotaTable();
-    console.log('✅ Quota tracking table ready');
-  } catch (err) {
-    console.log('⚠️ Quota table creation skipped for deployment');
-  }
-
-  // PostgreSQL session store setup
-  const PgSession = connectPg(session);
-  
-  let sessionStore: any;
-  
-  try {
-    // Try Redis first for persistent sessions (production-ready)
-    console.log('🔧 Attempting Redis connection for persistent sessions...');
-    
-    const redisClient = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
-      socket: {
-        connectTimeout: 5000
-      }
-    });
-    
-    const RedisStore = (connectRedis as any).default(session);
-    
-    // Test Redis connection and check version for security
-    await redisClient.connect();
-    await redisClient.ping();
-    
-    // Check Redis version for known vulnerabilities
-    const redisInfo = await redisClient.info('server');
-    console.log('🔍 Redis version check:', redisInfo.substring(0, 100) + '...');
-    if (!redisInfo.includes('redis_version:7.') && !redisInfo.includes('redis_version:6.2.')) {
-      console.log('⚠️ Redis version may have known vulnerabilities - consider updating');
-    }
-    
-    sessionStore = new RedisStore({
-      client: redisClient,
-      ttl: sessionTtl, // 30 minutes TTL for security
-      prefix: 'theagencyiq:sess:',
-      disableTTL: false,
-      disableTouch: false
-    });
-    
-    console.log('✅ Redis session store connected successfully');
-    console.log('🔒 Session persistence: BULLETPROOF (survives restarts/deployments)');
-    
-  } catch (redisError: any) {
-    console.log('⚠️  Redis unavailable, falling back to PostgreSQL sessions');
-    console.log('🔧 Configuring PostgreSQL session store...');
-    
-    // SURGICAL FIX 4: Enhanced PostgreSQL session store with error handling
-    const pgStore = connectPg(session);
-    try {
-      sessionStore = new pgStore({
-        conString: process.env.DATABASE_URL,
-        createTableIfMissing: true,
-        ttl: sessionTtl, // 30 minutes TTL for security (was 3 days)
-        tableName: "sessions",
-        touchInterval: 60000, // Touch sessions every minute to prevent premature expiry
-        disableTouch: false, // Enable touch for active sessions
-        pruneSessionInterval: 60 * 60 * 1000, // Prune expired sessions every hour
-        errorLog: (error) => {
-          console.error('❌ PostgreSQL session store error:', error);
-        }
-      });
-      console.log('✅ PostgreSQL session store configured successfully');
-    } catch (sessionStoreError) {
-      console.error('❌ PostgreSQL session store failed, falling back to memory store:', sessionStoreError);
-      // SURGICAL FIX 4: Fallback to memory store if PostgreSQL fails
-      sessionStore = new session.MemoryStore();
-      console.log('⚠️ Using memory store - sessions will not persist across restarts');
-    }
-    
-    // Test PostgreSQL session store connection
-    sessionStore.get('test-connection', (err: any, session: any) => {
-      if (err) {
-        console.error('❌ Session store connection failed:', err);
-      } else {
-        console.log('✅ PostgreSQL session store connection successful');
-        console.log('🔒 Session persistence: ENHANCED (survives restarts with touch support)');
-      }
-    });
-  }
-
-  // Remove duplicate CORS - already configured above with proper order
-
-  // SURGICAL FIX 1: Enhanced session configuration for Replit deployment (MOVED BEFORE OAUTH)
-  app.use(session({
-    secret: process.env.SESSION_SECRET,
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false, // Don't create sessions for unauthenticated users
-    name: 'theagencyiq.session',
-    genid: () => {
-      // REQUIRED: Generate cryptographically secure session IDs (128+ bits)
-      return 'aiq_' + crypto.randomBytes(16).toString('hex'); // 128-bit secure ID
-    },
-    cookie: { 
-      secure: isProd ? true : false, // SURGICAL: Replit deployment HTTPS handling
-      httpOnly: true, // REQUIRED: Prevent XSS attacks via JavaScript access
-      sameSite: 'lax', // SURGICAL: Always lax for OAuth compatibility in production
-      maxAge: 72 * 60 * 60 * 1000, // SURGICAL: Extended 72 hours for longer sessions
-      path: '/', // Limit cookie scope to root path
-      domain: undefined, // REQUIRED: First-party cookies only, no cross-domain
-      partitioned: true // 2025 browser partitioning support
-    },
-    rolling: true, // Extend session on activity
-    proxy: true, // Works with trust proxy setting
-    unset: 'destroy', // Properly clean up sessions
-    touch: true // Enable session touching for active sessions
-  }));
+}));
 
   // SURGICAL FIX 5: OAuth initialization with error handling (MOVED AFTER SESSION)
   try {
