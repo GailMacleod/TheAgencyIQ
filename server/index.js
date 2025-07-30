@@ -198,7 +198,7 @@ app.get('/api/user-status', requireAuth, async (req, res) => {
       }
     });
 
-    console.log(`✅ User status validated for ${user.email} (ID: ${user.id}));
+    console.log(`✅ User status validated for ${user.email} (ID: ${user.id}
   } catch (error) {
     console.error('❌ User status error:', error);
     res.status(500).json({
