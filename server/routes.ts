@@ -6383,62 +6383,75 @@ app.post("/api/instagram/setup", requireActiveSubscription, async (req: any, res
   }
 });
 
-  // Instagram Test Post
-  app.post("/api/instagram/test-post", requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      const { content } = req.body;
-      
-      const instagramConnection = await storage.getPlatformConnection(userId, 'instagram');
-      if (!instagramConnection) {
-        return res.status(400).json({
-          success: false,
-          message: "Instagram connection not found"
-        });
-      }
+  // // Instagram Test Post (secured with quota/onboarding, timeout, deduct/revoke/clear)
+app.post("/api/instagram/test-post", requireAuth, async (req: any, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    const { content } = req.body;
+    
+    // Fix broken no onboarding/quota check/deduct
+    const user = await storage.getUser(userId);
+    if (!user.verified) {
+      return res.status(403).json({ success: false, message: "User verification required" });
+    }
+    const quota = await quotaManager.getQuotaStatus(userId);
+    if (quota.remainingPosts <= 0) {
+      return res.status(403).json({ success: false, message: "Post quota exceeded" });
+    }
 
-      // Create Instagram media container
-      const mediaUrl = `https://graph.facebook.com/v20.0/${instagramConnection.platformUserId}/media`;
-      const mediaParams = new URLSearchParams({
-        caption: content || 'Test post from TheAgencyIQ',
-        access_token: instagramConnection.accessToken
-      });
+    // Fix broken no session regen
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((err) => err ? reject(err) : resolve());
+    });
 
-      const mediaResponse = await fetch(mediaUrl, {
-        method: 'POST',
-        body: mediaParams
-      });
-
-      const mediaData = await mediaResponse.json();
-      
-      if (mediaData.error) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to create Instagram media",
-          error: mediaData.error
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "Instagram test successful",
-        mediaId: mediaData.id,
-        note: "Media container created (would be published in production)"
-      });
-
-    } catch (error) {
-      console.error('Instagram test post failed:', error);
-      res.status(500).json({
+    const instagramConnection = await storage.getPlatformConnection(userId, 'instagram');
+    if (!instagramConnection) {
+      return res.status(400).json({
         success: false,
-        message: "Instagram test post failed",
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: "Instagram connection not found"
       });
     }
-  });
 
+    // Create Instagram media container with timeout
+    const mediaUrl = `https://graph.facebook.com/v20.0/${instagramConnection.platformUserId}/media`;
+    const mediaParams = new URLSearchParams({
+      caption: content || 'Test post from TheAgencyIQ',
+      access_token: instagramConnection.accessToken
+    });
+
+    const mediaResponse = await Promise.race([
+      fetch(mediaUrl, { method: 'POST', body: mediaParams }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Media create timeout')), 10000))
+    ]);
+    const mediaData = await mediaResponse.json();
+    
+    if (mediaData.error) {
+      throw new Error(`Media create failed: ${mediaData.error.message}`);
+    }
+
+    // Deduct quota on success
+    await quotaManager.updateQuota(userId, 1, 0);  // Deduct 1 post
+
+    res.json({
+      success: true,
+      message: "Instagram test successful",
+      mediaId: mediaData.id,
+      note: "Media container created (would be published in production)"
+    });
+  } catch (error) {
+    console.error('Instagram test post failed:', error);
+    await oauthService.revokeTokens(userId, 'instagram');  // Revoke on error
+    res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+    res.status(500).json({
+      success: false,
+      message: "Instagram test post failed",
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
   // YouTube OAuth Callback
 app.post("/api/youtube/callback", async (req: any, res) => {
   try {
