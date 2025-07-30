@@ -39,10 +39,10 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],  // Tighten if possible
+      styleSrc: ["'self'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],  // Remove unsafe-eval for prod
+      scriptSrc: ["'self'"],
       connectSrc: ["'self'", "https:", "wss:"],
     },
   },
@@ -66,13 +66,6 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Health check with basic rate limiting
-const healthLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 requests per minute for health check
-  message: { error: 'Health check rate limit exceeded' }
-});
-
 // CORS configuration - secure in production, permissive in development
 app.use(cors({
   origin: secureDefaults.CORS_ORIGIN,
@@ -88,7 +81,7 @@ app.use(express.urlencoded({ extended: true }));
 // PostgreSQL session store configuration with ttl and prune
 const PgSession = connectPgSimple(session);
 
-// Session configuration with PostgreSQL store (added regen, env secret/maxAge, secure genid)
+// Session configuration with PostgreSQL store (added regen, env maxAge, secure genid)
 const sessionTtl = parseInt(process.env.SESSION_TTL || '1800', 10); // Seconds
 const sessionTtlMs = sessionTtl * 1000; // Milliseconds
 const sessionStore = new PgSession({
@@ -109,8 +102,7 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: sessionTtlMs,
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    partitioned: true  // Future-proof
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
   }
 }));
 
@@ -119,18 +111,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Apply quota tracking middleware to protected routes
-app.use('/api/enforce-auto-posting', async (req, res, next) => {
-  try {
-    const quotaCheck = await quotaManager.checkQuota(req.session?.userId || 2, 'facebook', 'post');
-    if (!quotaCheck.allowed) {
-      return res.status(429).json({ error: 'Quota exceeded', reason: quotaCheck.reason });
-    }
-    next();
-  } catch (err) {
-    console.error('Quota check failed:', err);
-    res.status(500).json({ error: 'Quota check failed' });
-  }
-});
+app.use('/api/enforce-auto-posting', quotaTracker.middleware());
 app.use('/api/auto-post-schedule', quotaTracker.middleware());
 app.use('/api/video/*', quotaTracker.middleware());
 app.use('/api/posts', quotaTracker.middleware());
@@ -198,13 +179,14 @@ app.get('/api/user-status', requireAuth, async (req, res) => {
       }
     });
 
-    console.log(`✅ User status validated for ${user.email} (ID: ${user.id}
+    console.log(`✅ User status validated for ${user.email} (ID: ${user.id})`);
   } catch (error) {
     console.error('❌ User status error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve user status',
       code: 'USER_STATUS_ERROR'
+    });
   }
 });
 
@@ -267,12 +249,10 @@ app.get('/api/subscription-usage', requireAuth, async (req, res) => {
   try {
     console.log(`📊 Subscription usage check for user ${req.userId}`);
 
-    // Import database and schema
     const { db } = await import('./db.js');
     const { posts } = await import('@shared/schema');
     const { eq, count } = await import('drizzle-orm');
 
-    // Count user's posts by status
     const [publishedCount] = await db
       .select({ count: count() })
       .from(posts)
@@ -321,12 +301,10 @@ app.get('/api/platform-connections', requireAuth, async (req, res) => {
   try {
     console.log(`🔗 Platform connections check for user ${req.userId}`);
 
-    // Import database and schema
     const { db } = await import('./db.js');
     const { platformConnections } = await import('@shared/schema');
     const { eq } = await import('drizzle-orm');
 
-    // Query user's platform connections from database
     const connections = await db
       .select()
       .from(platformConnections)
@@ -356,12 +334,10 @@ app.get('/api/posts', requireAuth, async (req, res) => {
   try {
     console.log(`📋 Posts query for user ${req.userId}`);
 
-    // Import database and schema
     const { db } = await import('./db.js');
     const { posts } = await import('@shared/schema');
     const { eq } = await import('drizzle-orm');
 
-    // Query user's posts from database
     const userPosts = await db
       .select()
       .from(posts)
@@ -394,12 +370,10 @@ app.get('/api/oauth-status', requireAuth, async (req, res) => {
   try {
     console.log(`🔍 OAuth status check for user ${req.userId}`);
 
-    // Import database and schema
     const { db } = await import('./db.js');
     const { platformConnections } = await import('@shared/schema');
     const { eq } = await import('drizzle-orm');
 
-    // Get user's OAuth connections with scope analysis
     const connections = await db
       .select()
       .from(platformConnections)
@@ -421,7 +395,7 @@ app.get('/api/oauth-status', requireAuth, async (req, res) => {
       recommendedNextSteps: []
     };
 
-    // Add recommendations based on current state
+    // Add recommendations
     if (oauthStatus.activeConnections === 0) {
       oauthStatus.recommendedNextSteps.push('Connect your first social media platform');
     } else if (oauthStatus.activeConnections < 3) {
@@ -445,12 +419,10 @@ app.get('/api/brand-purpose', requireAuth, async (req, res) => {
   try {
     console.log(`🎯 Brand purpose query for user ${req.userId}`);
 
-    // Import database and schema
     const { db } = await import('./db.js');
     const { brandPurposes } = await import('@shared/schema');
-    const { eq } = await import('drizzle-orm');
+    const { eq } from 'drizzle-orm';
 
-    // Query user's brand purpose from database
     const [brandPurpose] = await db
       .select()
       .from(brandPurposes)
@@ -504,8 +476,8 @@ app.post('/api/establish-session', optionalAuth, async (req, res) => {
     
     // Import database to get user data
     const { db } = await import('./db.js');
-    const { users } = await import('@shared/schema');
-    const { eq } = await import('drizzle-orm');
+    const { users } from '@shared/schema';
+    const { eq } from 'drizzle-orm';
 
     const [user] = await db
       .select()
