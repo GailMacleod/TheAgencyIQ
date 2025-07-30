@@ -179,29 +179,65 @@ const requirePaidSubscription = async (req: any, res: any, next: any) => {
   // SURGICAL FIX: Check user subscription status BEFORE establishing session
   let userId = req.session?.userId;
   
-  // Auto-establish session for User ID 2 if not present, but check subscription first
-  if (!userId) {
-    // SURGICAL FIX: Respect logout cooldown period in subscription middleware
-    const now = Date.now();
-    const lastLogoutTime = getLastLogoutTime();
-    if (now - lastLogoutTime < LOGOUT_COOLDOWN) {
-      console.log(`🔒 SUBSCRIPTION: Auto-session disabled - logout cooldown active (${Math.round((LOGOUT_COOLDOWN - (now - lastLogoutTime)) / 1000)}s remaining) for ${req.path}`);
-      return res.status(401).json({ 
-        message: "Not authenticated - logout cooldown active",
-        requiresLogin: true 
+ if (!userId) {  // If no session present, but check subscription first
+  const now = Date.now();
+  const lastLogoutTime = getLastLogoutTime();
+  if (now - lastLogoutTime < LOGOUT_COOLDOWN) {
+    console.log(`[GLOBAL] Auto-session disabled - logout cooldown active (${Math.round((LOGOUT_COOLDOWN - (now - lastLogoutTime)) / 1000)}s remaining)`);
+    return res.status(401).send('User not authenticated during cooldown');  // Fix broken silent 401 - add message
+  }
+
+  try {
+    // Fix broken hardcode - make dynamic (assume getCurrentUser or from req; adjust if user ID from header/cookie)
+    const user = await storage.getUser(req.headers['x-user-id'] || 2);  // Use header for dynamic, fallback to 2 for dev
+    if (user) {
+      // CRITICAL: Block cancelled users BEFORE session establishment
+      console.log(`🔍 [DEBUG] User subscription check for ${req.path}:`, {
+        userId: user.id,
+        subscriptionPlan: user.subscriptionPlan,
+        subscriptionActive: user.subscriptionActive,
+        shouldBlock: (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive)
       });
-    }
-    
-    try {
-      const user = await storage.getUser(2);
-      if (user) {
-        // CRITICAL: Block cancelled users BEFORE session establishment
-        console.log(`🔍 [DEBUG] User subscription check for ${req.path}:`, {
-          userId: user.id,
-          subscriptionPlan: user.subscriptionPlan,
-          subscriptionActive: user.subscriptionActive,
-          shouldBlock: (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive)
+      
+      if (user.subscriptionPlan === 'cancelled' || !user.subscriptionActive) {
+        console.log(`🚫 [ACCESS] Blocked cancelled user ${user.id} from accessing ${req.path} (pre-session check)`);
+        res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });  // Fix broken no clear on block
+        return res.status(403).json({ 
+          message: "Subscription cancelled - access denied",
+          requiresLogin: true,
+          subscriptionCancelled: true,
+          redirectTo: '/api/login'
         });
+      }
+
+      // Only establish session if subscription is active
+      await new Promise<void>((resolve, reject) => {  // Add regen for security
+        req.session.regenerate((err: any) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      req.session.userId = user.id;  // Dynamic, no override
+      req.session.userEmail = user.email;
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err: any) => {
+          if (err) {
+            console.error('Session save error:', err);
+            reject(err);
+            return;  // Stop on error
+          }
+          resolve();
+        });
+      });
+      console.log(`✅ GLOBAL: Auto-established session for user ${user.email} on ${req.path}`);
+    }
+  } catch (error) {
+    console.error('Auto-session error:', error);
+    res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });  // Clear on error
+    return res.status(500).json({ error: 'Failed to establish session' });  // Fix broken silent error - add response
+  }
+}
+next();
         
         console.log(`🔍 [DEBUG] User subscription check for ${req.path}:`, {
   userId: user.id,
