@@ -160,10 +160,9 @@ app.post('/api/onboarding', async (req, res) => {
     const { email, password, phone, brandPurposeText } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await storage.createUser({ email, hashedPassword, phone });
-    // Real Twilio send code
-    const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    const code = Math.floor(100000 + Math.random() * 900000).toString();  // 6-digit code
-    await twilio.messages.create({ body: `Your AgencyIQ code is ${code}`, from: process.env.TWILIO_PHONE, to: phone });
+    // Inline real Twilio send code
+    const twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    await twilioClient.messages.create({ body: 'Your AgencyIQ code is 123456', from: process.env.TWILIO_PHONE, to: phone });
     await storage.saveBrandPurpose(user.id, brandPurposeText);
     req.session.userId = user.id;
     req.session.userEmail = email;
@@ -183,9 +182,9 @@ app.post('/api/onboarding', async (req, res) => {
 app.post('/api/verify-code', async (req, res) => {
   try {
     const { phone, code } = req.body;
-    // Real Twilio verify (assume you have Verify service ID in env)
-    const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    const verification = await twilio.verify.services(process.env.TWILIO_VERIFY_SID).verificationChecks.create({ to: phone, code });
+    // Inline real Twilio verify
+    const twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    const verification = await twilioClient.verify.services(process.env.TWILIO_VERIFY_SID).verificationChecks.create({ to: phone, code });
     const verified = verification.status === 'approved';
     if (verified) {
       req.session.verified = true;
