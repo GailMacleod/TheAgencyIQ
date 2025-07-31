@@ -266,7 +266,7 @@ app.use(passport.session());
       return;
     }
     next();
-  });
+  };
 
   // Environment-aware base URL
   const baseUrl = process.env.NODE_ENV === 'production'
