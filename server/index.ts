@@ -985,12 +985,16 @@ if (sessionAge > 72 * 24 * 60 * 60 * 1000) { // 72 hours instead of 7 days
       };
       
       // Force session save to ensure persistence
-      await new Promise((resolve) => {
-        req.session.save((err) => {
-          if (err) console.error('Session save error:', err);
-          resolve(void 0);
-        });
-      });
+      await new Promise<void>((resolve, reject) => {
+  req.session.save((err: any) => {
+    if (err) {
+      console.error('Session save error:', err);
+      reject(err);
+    } else {
+      resolve();
+    }
+  });
+});
       
       // Store platform connection in database
       try {
