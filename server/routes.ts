@@ -464,6 +464,53 @@ app.post('/api/platform-connections/:platform/refresh', requireAuth, async (req:
   }
 });
 
+// META Data Deletion Callback
+app.post('/api/facebook-data-deletion', (req, res) => {
+  try {
+    const signedRequest = req.body.signed_request;
+    if (!signedRequest) throw new Error('Missing signed_request');
+
+    const appSecret = process.env.FACEBOOK_APP_SECRET;
+    if (!appSecret) throw new Error('Missing app secret');
+
+    const [encodedSig, payload] = signedRequest.split('.');
+    const sig = Buffer.from(encodedSig, 'base64').toString('hex');
+    const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+    const expectedSig = crypto.createHmac('sha256', appSecret).update(payload).digest('hex');
+    if (sig !== expectedSig) throw new Error('Invalid signature');
+
+    const userId = data.user_id;
+
+    // Destroy session and clear cookies
+    if (req.session) {
+      req.session.destroy(() => {});
+    }
+    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
+
+    // Reset quota and halt posts
+    quotaManager.resetQuota(userId);
+    postScheduler.haltAllForUser(userId);
+
+    // Revoke OAuth
+    oauthService.revokeTokens(userId, 'facebook');
+
+    // Delete user data
+    storage.deleteUser(userId);
+
+    // META response
+    const code = crypto.randomBytes(8).toString('hex');
+    res.json({ url: `https://the-agency-iq.vercel.app/deletion-status/${code}`, confirmation_code: code });
+  } catch (error) {
+    console.error('Deletion failed:', error);
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
+// Status for user
+app.get('/deletion-status/:code', (req, res) => {
+  res.json({ status: 'Completed', code: req.params.code });
+});
+
 // Instagram Business API Integration
 app.post("/api/instagram/setup", requireActiveSubscription, async (req: any, res) => {
   try {
