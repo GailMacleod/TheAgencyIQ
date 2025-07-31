@@ -12,11 +12,11 @@ import twilioService from './twilio-service.js';  // For verification
 import postScheduler from './post-scheduler.js';  // For halt
 import { oauthService } from './oauth-service.js';  // For revoke
 import { RollbackAPI } from './rollback-api.js';  // Assume exists for rollback
+import rateLimit from 'express-rate-limit';  // For rate limiting
 
 const app = express();
 
 // Add rate limit to all routes (fix spam)
-import rateLimit from 'express-rate-limit';
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000, // 15 min
   max: 100,
@@ -159,7 +159,7 @@ app.post("/api/quota-debug", requireAuth, async (req, res) => {
   }
 });
 
-// Rollback APIs with quota restore
+// Rollback System API Endpoints
 const rollbackAPI = new RollbackAPI();
   
 app.post("/api/rollback/create", requireAuth, async (req, res) => {
@@ -177,14 +177,14 @@ app.get("/api/rollback/status", requireAuth, async (req, res) => {
 app.post("/api/rollback/:snapshotId", requireAuth, async (req, res) => {
   await rollbackAPI.rollbackToSnapshot(req, res);
   await quotaManager.restoreQuotaFromSnapshot(req.session.userId, req.params.snapshotId);  // Add quota restore
-  console.log(`✅ Quota restored on rollback`);
+  console.log(`✅ Quota restored on rollback to snapshot ${req.params.snapshotId}`);
 });
 
 app.delete("/api/rollback/:snapshotId", requireAuth, async (req, res) => {
   await rollbackAPI.deleteSnapshot(req, res);
 });
 
-// Generate content calendar with quota check
+// Generate content calendar
 app.post("/api/generate-content-calendar", requireActiveSubscription, async (req, res) => {
   try {
     const user = await storage.getUser(req.session.userId);
@@ -199,12 +199,12 @@ app.post("/api/generate-content-calendar", requireActiveSubscription, async (req
     
     const brandPurposeRecord = await storage.getBrandPurposeByUser(req.session.userId);
     if (!brandPurposeRecord) {
-      return res.status(400).json({ message: "Brand purpose not found - please complete setup." });
+      return res.status(400).json({ message: "Brand purpose not found. Please complete setup." });
     }
 
     const connections = await storage.getPlatformConnectionsByUser(req.session.userId);
     if (connections.length === 0) {
-      return res.status(400).json({ message: "No platform connections found - please connect at least one platform." });
+      return res.status(400).json({ message: "No platform connections found. Please connect at least one platform." });
     }
 
     const maxPostsToGenerate = quotaStatus.totalPosts;
@@ -249,7 +249,6 @@ app.post("/api/generate-content-calendar", requireActiveSubscription, async (req
     });
   } catch (error: any) {
     console.error('Content generation error:', error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({ message: "Error generating content calendar: " + error.message });
   }
 });
@@ -267,7 +266,6 @@ app.get("/api/posts", requireAuth, async (req: any, res) => {
     res.json(postsArray);
   } catch (error: any) {
     console.error('Get posts error:', error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({ message: "Error fetching posts" });
   }
 });
@@ -309,7 +307,6 @@ app.post('/api/platform-connections/deactivate', requireAuth, async (req: any, r
     }
   } catch (error) {
     console.error('Emergency deactivation error:', error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({ error: 'Deactivation failed' });
   }
 });
@@ -339,92 +336,8 @@ app.post('/api/platform-connections/activate', requireAuth, async (req: any, res
     }
   } catch (error) {
     console.error('Emergency activation error:', error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({ error: 'Activation failed' });
   }
-});
-
-// Privacy Policy endpoint (for all platforms)
-app.get('/privacy-policy', (req, res) => {
-  res.send(`
-    <h1>Privacy Policy</h1>
-    <p>We value your privacy. To request data deletion, email support@agencyiq.com with your user ID. For META (Facebook/Instagram), use the in-app deletion request— we'll process it via callback with confirmation code and status URL. For LinkedIn/X/YouTube, send your request to the email above; we'll revoke tokens, destroy sessions, clear cookies, reset quota, halt posts, and delete data, providing a confirmation code and status URL.
-    </p>
-  `);
-});
-
-// Terms of Service endpoint (for all platforms)
-app.get('/terms-of-service', (req, res) => {
-  res.send(`
-    <h1>Terms of Service</h1>
-    <p>By using AgencyIQ, you agree to our terms. Data deletion requests can be made via email to support@agencyiq.com or in-app for META. We'll process deletes with full cleanup (revoke, clear, reset, halt, delete) and provide confirmation.
-    </p>
-  `);
-});
-
-// Data Deletion Callback for all platforms (META-compatible)
-app.post('/api/data-deletion/:platform', async (req, res) => {
-  try {
-    const platform = req.params.platform;
-    const signedRequest = req.body.signed_request;  // For META
-    const userId = req.session?.userId || req.body.user_id;
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Missing user_id' });
-    }
-
-    // Validate for META
-    if (platform === 'facebook' || platform === 'instagram') {
-      const appSecret = process.env.FACEBOOK_APP_SECRET;
-      if (!appSecret || !signedRequest) {
-        throw new Error('Missing signed_request or secret for META');
-      }
-      const [encodedSig, payload] = signedRequest.split('.');
-      const sig = Buffer.from(encodedSig, 'base64').toString('hex');
-      const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
-      const expectedSig = crypto.createHmac('sha256', appSecret).update(payload).digest('hex');
-      if (sig !== expectedSig) {
-        throw new Error('Invalid signature');
-      }
-    }
-
-    // Destroy session
-    if (req.session) {
-      await new Promise<void>((resolve, reject) => {
-        req.session.destroy((err) => err ? reject(err) : resolve());
-      });
-      res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
-    }
-
-    // Reset quota and halt posts
-    await quotaManager.resetQuota(userId);
-    await postScheduler.haltAllForUser(userId);
-
-    // Revoke OAuth for the platform
-    await oauthService.revokeTokens(userId, platform);
-
-    // Delete user data
-    await storage.deleteUser(userId);
-
-    // Confirmation
-    const confirmationCode = crypto.randomBytes(8).toString('hex');
-    const statusUrl = `https://the-agency-iq.vercel.app/api/deletion-status/${confirmationCode}`;
-
-    console.log(`✅ Data deletion for user ${userId} on ${platform}: success`);
-
-    res.json({
-      url: statusUrl,
-      confirmation_code: confirmationCode
-    });
-  } catch (error) {
-    console.error('Data deletion failed for ' + req.params.platform + ':', error);
-    res.status(500).json({ error: 'Deletion failed' });
-  }
-});
-
-// Status check
-app.get('/api/deletion-status/:code', (req, res) => {
-  res.json({ success: true, message: 'Deletion completed for code ' + req.params.code, timestamp: new Date().toISOString() });
 });
 
 // WORLD-CLASS PLATFORM CONNECTIONS ENDPOINT - Optimized for small business success
@@ -459,9 +372,13 @@ app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
         let validationResult = await OAuthRefreshService.validateToken(accessToken, conn.platform, conn.expiresAt);
         
         if (!validationResult.isValid && validationResult.needsRefresh) {
-          const refreshResult = await OAuthRefreshService.validateAndRefreshConnection(userId.toString(), conn.platform);
-          if (refreshResult.success) {
-            validationResult = { isValid: true, needsRefresh: false };
+          try {
+            const refreshResult = await OAuthRefreshService.validateAndRefreshConnection(userId.toString(), conn.platform);
+            if (refreshResult.success) {
+              validationResult = { isValid: true, needsRefresh: false };
+            }
+          } catch (refreshError) {
+            console.log(`Auto-refresh failed for ${conn.platform}, manual refresh needed`);
           }
         }
         
@@ -494,18 +411,24 @@ app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
       }
     }));
 
+    const sortedConnections = connectionsWithStatus.sort((a, b) => {
+      const scoreA = a.oauthStatus?.isValid ? 1 : 0;
+      const scoreB = b.oauthStatus?.isValid ? 1 : 0;
+      if (scoreA !== scoreB) return scoreB - scoreA;
+      return a.platform.localeCompare(b.platform);
+    });
+
     const processingTime = Date.now() - startTime;
     console.log(`⚡ Platform connections optimized: ${processingTime}ms total processing time`);
 
     res.json(sortedConnections);
   } catch (error: any) {
     console.error('Platform connections optimization error:', error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({ message: "Connection optimization failed", details: error.message });
   }
 });
 
-// ENHANCED: Token refresh endpoint for expired platforms
+// Token refresh endpoint for expired platforms
 app.post('/api/platform-connections/:platform/refresh', requireAuth, async (req: any, res) => {
   try {
     const userId = req.session.userId;
@@ -538,60 +461,12 @@ app.post('/api/platform-connections/:platform/refresh', requireAuth, async (req:
     
   } catch (error) {
     console.error(`Token refresh error for ${platform}:`, error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({ 
       success: false, 
       error: 'Token refresh failed',
       requiresReconnection: true 
     });
   }
-});
-
-// META Data Deletion Callback
-app.post('/api/facebook-data-deletion', (req, res) => {
-  try {
-    const signedRequest = req.body.signed_request;
-    if (!signedRequest) throw new Error('Missing signed_request');
-
-    const appSecret = process.env.FACEBOOK_APP_SECRET;
-    if (!appSecret) throw new Error('Missing app secret');
-
-    const [encodedSig, payload] = signedRequest.split('.');
-    const sig = Buffer.from(encodedSig, 'base64').toString('hex');
-    const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
-    const expectedSig = crypto.createHmac('sha256', appSecret).update(payload).digest('hex');
-    if (sig !== expectedSig) throw new Error('Invalid signature');
-
-    const userId = data.user_id;
-
-    // Destroy session and clear cookies
-    if (req.session) {
-      req.session.destroy(() => {});
-    }
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
-
-    // Reset quota and halt posts
-    quotaManager.resetQuota(userId);
-    postScheduler.haltAllForUser(userId);
-
-    // Revoke OAuth
-    oauthService.revokeTokens(userId, 'facebook');
-
-    // Delete user data
-    storage.deleteUser(userId);
-
-    // META response
-    const code = crypto.randomBytes(8).toString('hex');
-    res.json({ url: `https://the-agency-iq.vercel.app/deletion-status/${code}`, confirmation_code: code });
-  } catch (error) {
-    console.error('Deletion failed:', error);
-    res.status(500).json({ error: 'Failed' });
-  }
-});
-
-// Status for user
-app.get('/deletion-status/:code', (req, res) => {
-  res.json({ status: 'Completed', code: req.params.code });
 });
 
 // Instagram Business API Integration
@@ -677,7 +552,6 @@ app.post("/api/instagram/setup", requireActiveSubscription, async (req: any, res
 
   } catch (error) {
     console.error('Instagram setup failed:', error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({
       success: false,
       message: "Instagram setup failed",
@@ -733,7 +607,6 @@ app.post("/api/instagram/test-post", requireAuth, async (req: any, res) => {
 
   } catch (error) {
     console.error('Instagram test post failed:', error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({
       success: false,
       message: "Instagram test post failed",
@@ -822,7 +695,6 @@ app.post("/api/youtube/callback", async (req: any, res) => {
 
   } catch (error) {
     console.error('YouTube callback error:', error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({
       success: false,
       message: "YouTube integration failed",
@@ -898,13 +770,13 @@ app.post("/api/linkedin/callback", async (req: any, res) => {
       isActive: true
     });
 
-    // Test post (optional, remove if not needed)
+    // Test post
     const testPost = {
       author: `urn:li:person:${profileData.id}`,
       lifecycleState: 'PUBLISHED',
       specificContent: {
         'com.linkedin.ugc.ShareContent': {
-          shareCommentary: { text: 'LinkedIn integration test from TheAgencyIQ' },
+          shareCommentary: { text: 'LinkedIn integration for TheAgencyIQ is now operational! Professional networking automation ready for Queensland small businesses. #TheAgencyIQ #LinkedInReady' },
           shareMediaCategory: 'NONE'
         }
       },
@@ -933,7 +805,6 @@ app.post("/api/linkedin/callback", async (req: any, res) => {
     });
   } catch (error) {
     console.error('LinkedIn callback error:', error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({
       success: false,
       message: "LinkedIn integration failed",
@@ -971,7 +842,6 @@ app.post("/api/grok-test", async (req: any, res) => {
     });
   } catch (error) {
     console.error('X.AI credential test failed:', error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({
       success: false,
       message: "X.AI credential test failed",
@@ -999,7 +869,7 @@ app.get("/api/reconnect/facebook", requireAuth, async (req: any, res) => {
     const scope = 'pages_show_list,pages_manage_posts,pages_read_engagement';
     const state = Buffer.from(JSON.stringify({ 
       userId: req.session.userId,
-      reconnect: true
+      reconnect: true 
     })).toString('base64');
     
     const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${scope}&response_type=code`;
@@ -1012,7 +882,6 @@ app.get("/api/reconnect/facebook", requireAuth, async (req: any, res) => {
     
   } catch (error) {
     console.error('Facebook reconnection error:', error);
-    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({
       success: false,
       message: "Failed to generate Facebook reconnection URL"
