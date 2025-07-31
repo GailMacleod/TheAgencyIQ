@@ -889,4 +889,30 @@ app.get("/api/reconnect/facebook", requireAuth, async (req: any, res) => {
   }
 });
 
+// Inline mock quota-manager.js (copy real from Replit later)
+const quotaManager = {
+  getQuotaStatus: (userId) => ({ remainingPosts: 45, totalPosts: 52, usage: 13 }),
+  updateQuota: (userId, deduct) => console.log(`Mock deduct ${deduct} for user ${userId}`)
+};
+
+// Inline mock grok-content.js (copy real from Replit later)
+const generateContentCalendar = (config) => [{ platform: config.platforms[0], content: 'Mock post', scheduledFor: new Date() }];
+
+// Rest of your code...
+
+app.post("/api/generate-content-calendar", requireActiveSubscription, async (req: any, res) => {
+  try {
+    const userId = req.session.userId;
+    const quota = await quotaManager.getQuotaStatus(userId);
+    if (quota.remainingPosts <= 0) return res.status(403).json({ error: 'Quota exceeded' });
+    // ... (rest of code)
+    await quotaManager.updateQuota(userId, createdPosts.length);  // Deduct on success
+    res.json({ posts: createdPosts, quotaStatus });
+  } catch (error) {
+    console.error('Content generation error:', error);
+    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
+    res.status(500).json({ message: "Error generating content calendar: " + error.message });
+  }
+});
+
 export default app;
