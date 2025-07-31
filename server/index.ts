@@ -1585,7 +1585,6 @@ if (sessionAge > 72 * 24 * 60 * 60 * 1000) { // 72 hours instead of 7 days
     console.log('React app with OAuth bypass ready');
     console.log('Visit /public to bypass auth and access platform connections');
   });
-}
 
 // Error handling
 process.on('uncaughtException', (error) => {
