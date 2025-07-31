@@ -24,16 +24,19 @@ app.use(rateLimit({
 }));
 
 // Add onboarding (fix missing)
-app.post("/api/onboarding", async (req, res) => {
+app.post('/api/onboarding', async (req, res) => {
   try {
     const { email, password, phone, brandPurposeText } = req.body;
+    const quota = await quotaManager.getQuotaStatus(req.session.userId);
+    if (!quota.isActive) return res.status(403).json({ error: 'Active subscription required' });
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await storage.createUser({ email, hashedPassword, phone });
-    await twilioService.sendVerificationCode(phone);
+    // Real Twilio send code
+    const twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    await twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID).verifications.create({ to: phone, channel: 'sms' });
     await storage.saveBrandPurpose(user.id, brandPurposeText);
     req.session.userId = user.id;
     req.session.userEmail = email;
-    req.session.verified = false;
     await new Promise((resolve, reject) => {
       req.session.regenerate((err) => err ? reject(err) : resolve());
     });
@@ -42,14 +45,18 @@ app.post("/api/onboarding", async (req, res) => {
     });
     res.json({ success: true, userId: user.id });
   } catch (error) {
+    console.error('Onboarding failed:', error);
+    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({ error: 'Onboarding failed' });
   }
 });
-
-app.post("/api/verify-code", async (req, res) => {
+app.post('/api/verify-code', async (req, res) => {
   try {
     const { phone, code } = req.body;
-    const verified = await twilioService.verifyCode(phone, code);
+    // Real Twilio verify
+    const twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    const verification = await twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID).verificationChecks.create({ to: phone, code });
+    const verified = verification.status === 'approved';
     if (verified) {
       req.session.verified = true;
       await new Promise((resolve, reject) => {
@@ -60,6 +67,8 @@ app.post("/api/verify-code", async (req, res) => {
       res.status(400).json({ error: 'Invalid code' });
     }
   } catch (error) {
+    console.error('Verify failed:', error);
+    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({ error: 'Verify failed' });
   }
 });
