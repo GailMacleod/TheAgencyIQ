@@ -203,8 +203,8 @@ app.use(passport.session());
 
   // Environment-aware base URL
   const baseUrl = process.env.NODE_ENV === 'production'
-    ? 'https://app.theagencyiq.ai'
-    : 'https://4fc77172-459a-4da7-8c33-5014abb1b73e-00-dqhtnud4ismj.worf.replit.dev';
+    ? 'https://the-agency-iq.vercel.app'
+    : 'the-agency-iq-git-main-gail-macleods-projects.vercel.app';
 
   console.log('🌍 Server Environment:', {
     NODE_ENV: process.env.NODE_ENV,
