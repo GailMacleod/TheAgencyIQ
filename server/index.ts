@@ -158,6 +158,10 @@ app.use((req, res, next) => {
 app.post('/api/onboarding', async (req, res) => {
   try {
     const { email, password, phone, brandPurposeText } = req.body;
+    const quota = await quotaManager.getQuotaStatus(req.session.userId);
+    if (!quota.isActive) {
+      return res.status(403).json({ error: 'Active subscription required for onboarding' });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await storage.createUser({ email, hashedPassword, phone });
     await twilioService.sendVerificationCode(phone);
@@ -172,6 +176,8 @@ app.post('/api/onboarding', async (req, res) => {
     });
     res.json({ success: true, userId: user.id });
   } catch (error) {
+    console.error('Onboarding failed:', error);
+    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({ error: 'Onboarding failed' });
   }
 });
@@ -189,6 +195,8 @@ app.post('/api/verify-code', async (req, res) => {
       res.status(400).json({ error: 'Invalid code' });
     }
   } catch (error) {
+    console.error('Verify failed:', error);
+    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({ error: 'Verify failed' });
   }
 });
@@ -336,16 +344,21 @@ try {
 
 // Create quota tracking table (deployment-safe with timeout)
 try {
-  await new Promise<void>((resolve, reject) => {  // Fix unexpected ) - add reject for error
-  req.session.save((err: any) => {
-    if (err) {
-      console.error('Session save error:', err);
-      reject(err);
-      return;
-    }
-    resolve();
+  const quotaStatus = await quotaTracker.getUserQuotaStatus(req.session?.userId || 2);
+  res.json({
+    success: true,
+    quotaStatus,
+    timestamp: new Date().toISOString()
   });
-});
+} catch (error) {
+  console.error('❌ Quota status error:', error);
+  res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+  res.status(500).json({
+    success: false,
+    message: 'Quota status failed - check routes.ts for real endpoint',
+    error: error.message
+  });
+}
 
 // PostgreSQL session store setup
 const PgSession = connectPg(session);
