@@ -69,6 +69,26 @@ async function startServer() {
   app.set('trust proxy', 1);
   console.log('🔧 Trust proxy enabled for Replit deployment');
 
+  // Add regen middleware
+app.use((req, res, next) => {
+  if (req.session && req.session.userId) {
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error('Session regen failed:', err);
+        req.session.destroy(() => {
+          res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+          return res.status(500).json({ error: 'Session error' });
+        });
+        return;
+      }
+      req.session.userId = req.session.userId;  // Restore
+      next();
+    });
+  } else {
+    next();
+  }
+});
+
   // Security headers with Helmet
   app.use(helmet({
     contentSecurityPolicy: {
@@ -133,6 +153,45 @@ async function startServer() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cookie', 'Set-Cookie'],
   }));
+
+  // Add onboarding with hash, verify, session
+app.post('/api/onboarding', async (req, res) => {
+  try {
+    const { email, password, phone, brandPurposeText } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await storage.createUser({ email, hashedPassword, phone });
+    await twilioService.sendVerificationCode(phone);
+    await storage.saveBrandPurpose(user.id, brandPurposeText);
+    req.session.userId = user.id;
+    req.session.userEmail = email;
+    await new Promise((resolve, reject) => {
+      req.session.regenerate((err) => err ? reject(err) : resolve());
+    });
+    await new Promise((resolve, reject) => {
+      req.session.save((err) => err ? reject(err) : resolve());
+    });
+    res.json({ success: true, userId: user.id });
+  } catch (error) {
+    res.status(500).json({ error: 'Onboarding failed' });
+  }
+});
+app.post('/api/verify-code', async (req, res) => {
+  try {
+    const { phone, code } = req.body;
+    const verified = await twilioService.verifyCode(phone, code);
+    if (verified) {
+      req.session.verified = true;
+      await new Promise((resolve, reject) => {
+        req.session.save((err) => err ? reject(err) : resolve());
+      });
+      res.json({ success: true });
+    } else {
+      res.status(400).json({ error: 'Invalid code' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Verify failed' });
+  }
+});
 
   // Essential middleware - after CORS, before session
  app.use(cookieParser());
