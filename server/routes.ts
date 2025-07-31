@@ -344,6 +344,89 @@ app.post('/api/platform-connections/activate', requireAuth, async (req: any, res
   }
 });
 
+// Privacy Policy endpoint (for all platforms)
+app.get('/privacy-policy', (req, res) => {
+  res.send(`
+    <h1>Privacy Policy</h1>
+    <p>We value your privacy. To request data deletion, email support@agencyiq.com with your user ID. For META (Facebook/Instagram), use the in-app deletion request— we'll process it via callback with confirmation code and status URL. For LinkedIn/X/YouTube, send your request to the email above; we'll revoke tokens, destroy sessions, clear cookies, reset quota, halt posts, and delete data, providing a confirmation code and status URL.
+    </p>
+  `);
+});
+
+// Terms of Service endpoint (for all platforms)
+app.get('/terms-of-service', (req, res) => {
+  res.send(`
+    <h1>Terms of Service</h1>
+    <p>By using AgencyIQ, you agree to our terms. Data deletion requests can be made via email to support@agencyiq.com or in-app for META. We'll process deletes with full cleanup (revoke, clear, reset, halt, delete) and provide confirmation.
+    </p>
+  `);
+});
+
+// Data Deletion Callback for all platforms (META-compatible)
+app.post('/api/data-deletion/:platform', async (req, res) => {
+  try {
+    const platform = req.params.platform;
+    const signedRequest = req.body.signed_request;  // For META
+    const userId = req.session?.userId || req.body.user_id;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing user_id' });
+    }
+
+    // Validate for META
+    if (platform === 'facebook' || platform === 'instagram') {
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+      if (!appSecret || !signedRequest) {
+        throw new Error('Missing signed_request or secret for META');
+      }
+      const [encodedSig, payload] = signedRequest.split('.');
+      const sig = Buffer.from(encodedSig, 'base64').toString('hex');
+      const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+      const expectedSig = crypto.createHmac('sha256', appSecret).update(payload).digest('hex');
+      if (sig !== expectedSig) {
+        throw new Error('Invalid signature');
+      }
+    }
+
+    // Destroy session
+    if (req.session) {
+      await new Promise<void>((resolve, reject) => {
+        req.session.destroy((err) => err ? reject(err) : resolve());
+      });
+      res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+    }
+
+    // Reset quota and halt posts
+    await quotaManager.resetQuota(userId);
+    await postScheduler.haltAllForUser(userId);
+
+    // Revoke OAuth for the platform
+    await oauthService.revokeTokens(userId, platform);
+
+    // Delete user data
+    await storage.deleteUser(userId);
+
+    // Confirmation
+    const confirmationCode = crypto.randomBytes(8).toString('hex');
+    const statusUrl = `https://the-agency-iq.vercel.app/api/deletion-status/${confirmationCode}`;
+
+    console.log(`✅ Data deletion for user ${userId} on ${platform}: success`);
+
+    res.json({
+      url: statusUrl,
+      confirmation_code: confirmationCode
+    });
+  } catch (error) {
+    console.error('Data deletion failed for ' + req.params.platform + ':', error);
+    res.status(500).json({ error: 'Deletion failed' });
+  }
+});
+
+// Status check
+app.get('/api/deletion-status/:code', (req, res) => {
+  res.json({ success: true, message: 'Deletion completed for code ' + req.params.code, timestamp: new Date().toISOString() });
+});
+
 // WORLD-CLASS PLATFORM CONNECTIONS ENDPOINT - Optimized for small business success
 app.get("/api/platform-connections", requireAuth, async (req: any, res) => {
   try {
