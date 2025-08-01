@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { users, platformConnections } from '@shared/schema';
+import { users, platformConnections } from '@shared/schema';  // Ensure schema.ts exports users
 import { eq } from 'drizzle-orm';
 
 /**
