@@ -24,16 +24,30 @@ app.use(rateLimit({
 }));
 
 // Add onboarding (fix missing)
+
+import { parsePhoneNumber } from 'libphonenumber-js'; // Move import to top
+
+// Add onboarding (fix missing)
 app.post('/api/onboarding', async (req, res) => {
   try {
     const { email, password, phone, brandPurposeText } = req.body;
     const quota = await quotaManager.getQuotaStatus(req.session.userId);
     if (!quota.isActive) return res.status(403).json({ error: 'Active subscription required' });
+
+    // Validate phone number
+    const phoneNumber = parsePhoneNumber(phone, 'AU'); // Adjust country code as needed
+    if (!phoneNumber?.isValid()) throw new Error('Invalid phone number');
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await storage.createUser({ email, hashedPassword, phone });
-    // Real Twilio send code
+
+    // Real Twilio send code with timeout
     const twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    await twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID).verifications.create({ to: phone, channel: 'sms' });
+    await Promise.race([
+      twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID).verifications.create({ to: phone, channel: 'sms' }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+    ]);
+
     await storage.saveBrandPurpose(user.id, brandPurposeText);
     req.session.userId = user.id;
     req.session.userEmail = email;
@@ -43,19 +57,26 @@ app.post('/api/onboarding', async (req, res) => {
     await new Promise((resolve, reject) => {
       req.session.save((err) => err ? reject(err) : resolve());
     });
+
     res.json({ success: true, userId: user.id });
   } catch (error) {
     console.error('Onboarding failed:', error);
     res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
-    res.status(500).json({ error: 'Onboarding failed' });
+    res.status(500).json({ error: error.message || 'Onboarding failed' });
   }
 });
+
 app.post('/api/verify-code', async (req, res) => {
   try {
     const { phone, code } = req.body;
-    // Real Twilio verify
+
+    // Real Twilio verify with timeout
     const twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    const verification = await twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID).verificationChecks.create({ to: phone, code });
+    const verification = await Promise.race([
+      twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID).verificationChecks.create({ to: phone, code }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+    ]);
+
     const verified = verification.status === 'approved';
     if (verified) {
       req.session.verified = true;
@@ -69,10 +90,9 @@ app.post('/api/verify-code', async (req, res) => {
   } catch (error) {
     console.error('Verify failed:', error);
     res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
-    res.status(500).json({ error: 'Verify failed' });
+    res.status(500).json({ error: error.message || 'Verify failed' });
   }
 });
-
 // Post approval with deduct
 app.post("/api/posts/:id/approve", requireAuth, requireActiveSubscription, async (req, res) => {
   try {
