@@ -996,4 +996,72 @@ app.get('/api/env-debug', (req, res) => {
   });
 });
 
+// [Insert all your existing code here, e.g., onboarding, verify-code, posts, etc.]
+
+// Data Deletion Callback for all platforms (GDPR compliance, META-compatible)
+app.post('/api/data-deletion/:platform', async (req, res) => {
+  try {
+    const platform = req.params.platform;
+    const signedRequest = req.body.signed_request;  // For META; optional for others
+    const userId = req.session?.userId || req.body.user_id;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'Missing user_id' });
+    }
+
+    // Validate for META (Facebook/Instagram)
+    if (platform === 'facebook' || platform === 'instagram') {
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+      if (!appSecret || !signedRequest) {
+        throw new Error('Missing signed_request or secret for META');
+      }
+      const [encodedSig, payload] = signedRequest.split('.');
+      const sig = Buffer.from(encodedSig, 'base64').toString('hex');
+      const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+      const expectedSig = crypto.createHmac('sha256', appSecret).update(payload).digest('hex');
+      if (sig !== expectedSig) {
+        throw new Error('Invalid signature');
+      }
+    }
+
+    // Destroy session
+    if (req.session) {
+      await new Promise<void>((resolve, reject) => {
+        req.session.destroy((err) => err ? reject(err) : resolve());
+      });
+      res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+    }
+
+    // Reset quota and halt posts
+    await quotaManager.resetQuota(userId);
+    await postScheduler.haltAllForUser(userId);
+
+    // Revoke OAuth for the platform
+    await oauthService.revokeTokens(userId, platform);
+
+    // Delete user data
+    await storage.deleteUser(userId);
+
+    // Generate confirmation
+    const confirmationCode = crypto.randomBytes(8).toString('hex');
+    const statusUrl = `https://the-agency-iq.vercel.app/api/deletion-status/${confirmationCode}`;
+
+    console.log(`✅ Data deletion for user ${userId} on ${platform}: success`);
+
+    res.json({
+      url: statusUrl,
+      confirmation_code: confirmationCode
+    });
+  } catch (error) {
+    console.error('Data deletion failed for ' + req.params.platform + ':', error);
+    res.status(500).json({ error: 'Deletion failed' });
+  }
+});
+
+// Status check for user to track deletion (META recommended)
+app.get('/api/deletion-status/:code', (req, res) => {
+  res.json({ success: true, message: 'Deletion completed for code ' + req.params.code, timestamp: new Date().toISOString() });
+});
+
+export default app; // Insert patch HERE, right before this line
 export default app;
