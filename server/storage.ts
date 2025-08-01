@@ -1,5 +1,4 @@
-import {
-  import { users, platformConnections, postLedger, videoUsage, posts, enhancedOauthTokens, quotaUsage, notificationLogs, enhancedPostLogs, brandPurpose, verificationCodes, giftCertificates, giftCertificateActionLog, subscriptionAnalytics, insertUserSchema, insertPostSchema, insertPlatformConnectionSchema, insertBrandPurposeSchema, insertVerificationCodeSchema, insertGiftCertificateSchema, insertGiftCertificateActionLogSchema, insertSubscriptionAnalyticsSchema, insertPostScheduleSchema, insertPostLedgerSchema, oauthTokens, postLogs, insertPostLogSchema } from "shared/schema.ts";  // Cleaned duplicate platformConnections
+import { users, platformConnections, postLedger, videoUsage, posts, enhancedOauthTokens, quotaUsage, notificationLogs, enhancedPostLogs, brandPurpose, verificationCodes, giftCertificates, giftCertificateActionLog, subscriptionAnalytics, insertUserSchema, insertPostSchema, insertPlatformConnectionSchema, insertBrandPurposeSchema, insertVerificationCodeSchema, insertGiftCertificateSchema, insertGiftCertificateActionLogSchema, insertSubscriptionAnalyticsSchema, insertPostScheduleSchema, insertPostLedgerSchema, oauthTokens, postLogs, insertPostLogSchema } from "shared/schema.ts"; // Cleaned duplicate platformConnections
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
