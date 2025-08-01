@@ -970,4 +970,10 @@ app.get('/deletion-status/:code', (req, res) => {
   res.json({ status: 'Completed', code: req.params.code });
 });
 
+app.get('/api/env-debug', (req, res) => {
+  res.json({
+    keys: Object.keys(process.env).filter(key => key.startsWith('GOOGLE_') || key.startsWith('TWILIO_') || key.startsWith('FACEBOOK_'))
+  });
+});
+
 export default app;
