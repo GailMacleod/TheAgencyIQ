@@ -1062,6 +1062,4 @@ app.post('/api/data-deletion/:platform', async (req, res) => {
 app.get('/api/deletion-status/:code', (req, res) => {
   res.json({ success: true, message: 'Deletion completed for code ' + req.params.code, timestamp: new Date().toISOString() });
 });
-
-export default app; // Insert patch HERE, right before this line
 export default app;
