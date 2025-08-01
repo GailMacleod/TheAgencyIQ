@@ -999,6 +999,7 @@ app.get('/api/env-debug', (req, res) => {
 // [Insert all your existing code here, e.g., onboarding, verify-code, posts, etc.]
 
 // Data Deletion Callback for all platforms (GDPR compliance, META-compatible)
+// Data Deletion Callback for all platforms (GDPR compliance, META-compatible)
 app.post('/api/data-deletion/:platform', async (req, res) => {
   try {
     const platform = req.params.platform;
@@ -1062,4 +1063,5 @@ app.post('/api/data-deletion/:platform', async (req, res) => {
 app.get('/api/deletion-status/:code', (req, res) => {
   res.json({ success: true, message: 'Deletion completed for code ' + req.params.code, timestamp: new Date().toISOString() });
 });
+
 export default app;
