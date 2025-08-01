@@ -1,526 +1,509 @@
 import { users, platformConnections, postLedger, videoUsage, posts, enhancedOauthTokens, quotaUsage, notificationLogs, enhancedPostLogs, brandPurpose, verificationCodes, giftCertificates, giftCertificateActionLog, subscriptionAnalytics, insertUserSchema, insertPostSchema, insertPlatformConnectionSchema, insertBrandPurposeSchema, insertVerificationCodeSchema, insertGiftCertificateSchema, insertGiftCertificateActionLogSchema, insertSubscriptionAnalyticsSchema, insertPostScheduleSchema, insertPostLedgerSchema, oauthTokens, postLogs, insertPostLogSchema } from "shared/schema.ts"; // Cleaned duplicate platformConnections
+
 import { db } from "./db";
+
 import { eq, and, desc } from "drizzle-orm";
 
-export interface IStorage {
-  // User operations - phone UID architecture
-  getUser(id: number): Promise<User | undefined>;
-  getAllUsers(): Promise<User[]>;
-  getUserByPhone(phone: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, updates: Partial<InsertUser>): Promise<User>;
-  updateUserPhone(oldPhone: string, newPhone: string): Promise<User>;
-  updateUserStripeInfo(id: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
-  updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User>;
+import bcrypt from 'bcryptjs';  // For hashing in createUser
 
-  // Post operations
-  getPostsByUser(userId: number): Promise<Post[]>;
-  getPostsByUserPaginated(userId: number, limit: number, offset: number): Promise<Post[]>;
-  createPost(post: InsertPost): Promise<Post>;
-  updatePost(id: number, updates: Partial<InsertPost>): Promise<Post>;
-  deletePost(id: number): Promise<void>;
-  getPost(postId: number): Promise<Post | undefined>;
+import crypto from 'crypto';  // For codes in getVerificationCode
 
-  // Platform connection operations
-  getPlatformConnectionsByUser(userId: number): Promise<PlatformConnection[]>;
-  getPlatformConnection(userId: number, platform: string): Promise<PlatformConnection | undefined>;
-  getConnectedPlatforms(userId: number): Promise<{[key: string]: boolean}>;
-  createPlatformConnection(connection: InsertPlatformConnection): Promise<PlatformConnection>;
-  updatePlatformConnection(id: number, updates: Partial<InsertPlatformConnection>): Promise<PlatformConnection>;
-  updatePlatformConnectionByPlatform(userId: number, platform: string, updates: Partial<InsertPlatformConnection>): Promise<PlatformConnection>;
-  deletePlatformConnection(id: number): Promise<void>;
+import rateLimit from 'express-rate-limit';  // For rate limiting on ops
 
-  // Brand purpose operations
-  getBrandPurposeByUser(userId: number): Promise<BrandPurpose | undefined>;
-  createBrandPurpose(brandPurpose: InsertBrandPurpose): Promise<BrandPurpose>;
-  updateBrandPurpose(id: number, updates: Partial<InsertBrandPurpose>): Promise<BrandPurpose>;
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 100,
+  message: 'Too many requests'
+});
 
-  // Verification code operations
-  createVerificationCode(code: InsertVerificationCode): Promise<VerificationCode>;
-  getVerificationCode(phone: string, code: string): Promise<VerificationCode | undefined>;
-  markVerificationCodeUsed(id: number): Promise<void>;
+// Apply limiter to storage ops if needed (e.g., app.use('/api/storage', limiter));
 
-  // Gift certificate operations with enhanced user tracking
-  createGiftCertificate(certificate: InsertGiftCertificate, createdBy?: number): Promise<GiftCertificate>;
-  getGiftCertificate(code: string): Promise<GiftCertificate | undefined>;
-  redeemGiftCertificate(code: string, userId: number): Promise<GiftCertificate>;
-  getAllGiftCertificates(): Promise<GiftCertificate[]>;
-  getGiftCertificatesByCreator(createdBy: number): Promise<GiftCertificate[]>;
-  getGiftCertificatesByRedeemer(redeemedBy: number): Promise<GiftCertificate[]>;
-  
-  // Gift certificate action logging
-  logGiftCertificateAction(action: InsertGiftCertificateActionLog): Promise<GiftCertificateActionLog>;
-  getGiftCertificateActionLog(certificateId: number): Promise<GiftCertificateActionLog[]>;
-  getGiftCertificateActionLogByCode(certificateCode: string): Promise<GiftCertificateActionLog[]>;
-  getGiftCertificateActionLogByUser(userId: number): Promise<GiftCertificateActionLog[]>;
-
-  // Platform connection search operations
-  getPlatformConnectionsByPlatformUserId(platformUserId: string): Promise<PlatformConnection[]>;
-
-  // Post ledger operations for synchronization
-  getPostLedgerByUser(userId: string): Promise<any | undefined>;
-  createPostLedger(ledger: any): Promise<any>;
-  updatePostLedger(userId: string, updates: any): Promise<any>;
-}
-
-export class DatabaseStorage implements IStorage {
+class DatabaseStorage {
   // User operations
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
-  }
-
-  async getAllUsers(): Promise<User[]> {
-    const allUsers = await db.select().from(users);
-    return allUsers;
-  }
-
-  async getUserByPhone(phone: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.userId, phone));
-    return user;
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
-  }
-
-  async getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId));
-    return user;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
-  }
-
-  async updateUser(id: number, updates: Partial<InsertUser>): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(users.id, id))
-      .returning();
-    return user;
-  }
-
-  async updateUserPhone(oldPhone: string, newPhone: string): Promise<User> {
-    // Start transaction to ensure complete data migration
-    return await db.transaction(async (tx) => {
-      // Update user_id (phone UID) in users table
-      const [user] = await tx
-        .update(users) 
-        .set({ 
-          userId: newPhone,
-          phone: newPhone,
-          updatedAt: new Date() 
-        })
-        .where(eq(users.userId, oldPhone))
-        .returning();
-
-      if (!user) {
-        throw new Error(`User with phone ${oldPhone} not found`);
-      }
-
-      // Raw SQL for complex foreign key updates to ensure data integrity
-      await tx.execute(`
-        UPDATE post_ledger 
-        SET user_id = '${newPhone}' 
-        WHERE user_id = '${oldPhone}'
-      `);
-
-      await tx.execute(`
-        UPDATE post_schedule 
-        SET user_id = '${newPhone}' 
-        WHERE user_id = '${oldPhone}'
-      `);
-
-      console.log(`Successfully migrated all data from ${oldPhone} to ${newPhone}`);
+  async getUser(id) {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
       return user;
-    });
+    } catch (err) {
+      console.error('Get user failed:', err);
+      throw err;
+    }
   }
-
-  async updateUserStripeInfo(id: number, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ 
+  async getAllUsers() {
+    try {
+      const allUsers = await db.select().from(users);
+      return allUsers;
+    } catch (err) {
+      console.error('Get all users failed:', err);
+      throw err;
+    }
+  }
+  async getUserByPhone(phone) {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.phone, phone));
+      return user;
+    } catch (err) {
+      console.error('Get user by phone failed:', err);
+      throw err;
+    }
+  }
+  async getUserByEmail(email) {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.email, email));
+      return user;
+    } catch (err) {
+      console.error('Get user by email failed:', err);
+      throw err;
+    }
+  }
+  async getUserByStripeSubscriptionId(subscriptionId) {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId));
+      return user;
+    } catch (err) {
+      console.error('Get user by stripe sub failed:', err);
+      throw err;
+    }
+  }
+  async createUser(insertUser) {
+    try {
+      const hashedPassword = await bcrypt.hash(insertUser.password, 10);  // Hash password
+      insertUser.password = hashedPassword;
+      const [user] = await db.insert(users).values(insertUser).returning();
+      return user;
+    } catch (err) {
+      console.error('Create user failed:', err);
+      throw err;
+    }
+  }
+  async updateUser(id, updates) {
+    try {
+      const [user] = await db.update(users).set({ ...updates, updatedAt: new Date() }).where(eq(users.id, id)).returning();
+      return user;
+    } catch (err) {
+      console.error('Update user failed:', err);
+      throw err;
+    }
+  }
+  async updateUserPhone(oldPhone, newPhone) {
+    try {
+      return await db.transaction(async (tx) => {
+        const [user] = await tx.update(users).set({
+          phone: newPhone,
+          updatedAt: new Date()
+        }).where(eq(users.phone, oldPhone)).returning();
+        if (!user) {
+          throw new Error(`User with phone ${oldPhone} not found`);
+        }
+        await tx.execute(`
+          UPDATE post_ledger 
+          SET user_id = '${newPhone}' 
+          WHERE user_id = '${oldPhone}'
+        `);
+        await tx.execute(`
+          UPDATE post_schedule 
+          SET user_id = '${newPhone}' 
+          WHERE user_id = '${oldPhone}'
+        `);
+        console.log(`Successfully migrated all data from ${oldPhone} to ${newPhone}`);
+        return user;
+      });
+    } catch (err) {
+      console.error('Update user phone failed:', err);
+      throw err;
+    }
+  }
+  async updateUserStripeInfo(id, stripeCustomerId, stripeSubscriptionId) {
+    try {
+      const [user] = await db.update(users).set({
         stripeCustomerId,
         stripeSubscriptionId,
-        updatedAt: new Date() 
-      })
-      .where(eq(users.id, id))
-      .returning();
-    return user;
+        updatedAt: new Date()
+      }).where(eq(users.id, id)).returning();
+      return user;
+    } catch (err) {
+      console.error('Update stripe info failed:', err);
+      throw err;
+    }
   }
-
-  async updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ 
+  async updateStripeCustomerId(userId, stripeCustomerId) {
+    try {
+      const [user] = await db.update(users).set({
         stripeCustomerId,
-        updatedAt: new Date() 
-      })
-      .where(eq(users.id, userId))
-      .returning();
-    return user;
+        updatedAt: new Date()
+      }).where(eq(users.id, userId)).returning();
+      return user;
+    } catch (err) {
+      console.error('Update stripe customer ID failed:', err);
+      throw err;
+    }
   }
-
   // Post operations
-  async getPostsByUser(userId: number): Promise<Post[]> {
-    return await db
-      .select()
-      .from(posts)
-      .where(eq(posts.userId, userId))
-      .orderBy(desc(posts.scheduledFor));
+  async getPostsByUser(userId) {
+    try {
+      return await db.select().from(posts).where(eq(posts.userId, userId)).orderBy(desc(posts.scheduledFor));
+    } catch (err) {
+      console.error('Get posts by user failed:', err);
+      throw err;
+    }
   }
-
-  async getPostsByUserPaginated(userId: number, limit: number, offset: number): Promise<Post[]> {
-    return await db
-      .select()
-      .from(posts)
-      .where(eq(posts.userId, userId))
-      .orderBy(desc(posts.scheduledFor))
-      .limit(limit)
-      .offset(offset);
+  async getPostsByUserPaginated(userId, limit, offset) {
+    try {
+      return await db.select().from(posts).where(eq(posts.userId, userId)).orderBy(desc(posts.scheduledFor)).limit(limit).offset(offset);
+    } catch (err) {
+      console.error('Get posts paginated failed:', err);
+      throw err;
+    }
   }
-
-  async createPost(insertPost: InsertPost): Promise<Post> {
-    const [post] = await db
-      .insert(posts)
-      .values(insertPost)
-      .returning();
-    return post;
+  async createPost(insertPost) {
+    try {
+      const [post] = await db.insert(posts).values(insertPost).returning();
+      return post;
+    } catch (err) {
+      console.error('Create post failed:', err);
+      throw err;
+    }
   }
-
-  async updatePost(id: number, updates: Partial<InsertPost>): Promise<Post> {
-    const [post] = await db
-      .update(posts)
-      .set(updates)
-      .where(eq(posts.id, id))
-      .returning();
-    return post;
+  async updatePost(id, updates) {
+    try {
+      const [post] = await db.update(posts).set(updates).where(eq(posts.id, id)).returning();
+      return post;
+    } catch (err) {
+      console.error('Update post failed:', err);
+      throw err;
+    }
   }
-
-  async deletePost(id: number): Promise<void> {
-    await db.delete(posts).where(eq(posts.id, id));
+  async deletePost(id) {
+    try {
+      await db.delete(posts).where(eq(posts.id, id));
+    } catch (err) {
+      console.error('Delete post failed:', err);
+      throw err;
+    }
   }
-
-  async getPost(postId: number): Promise<Post | undefined> {
-    const [post] = await db
-      .select()
-      .from(posts)
-      .where(eq(posts.id, postId));
-    return post;
+  async getPost(postId) {
+    try {
+      const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+      return post;
+    } catch (err) {
+      console.error('Get post failed:', err);
+      throw err;
+    }
   }
-
   // Platform connection operations
-  async getPlatformConnectionsByUser(userId: number): Promise<PlatformConnection[]> {
-    return await db
-      .select()
-      .from(platformConnections)
-      .where(eq(platformConnections.userId, userId));
+  async getPlatformConnectionsByUser(userId) {
+    try {
+      return await db.select().from(platformConnections).where(eq(platformConnections.userId, userId));
+    } catch (err) {
+      console.error('Get platform connections by user failed:', err);
+      throw err;
+    }
   }
-
-  async createPlatformConnection(connection: InsertPlatformConnection): Promise<PlatformConnection> {
-    const [platformConnection] = await db
-      .insert(platformConnections)
-      .values(connection)
-      .returning();
-    return platformConnection;
+  async createPlatformConnection(connection) {
+    try {
+      const [platformConnection] = await db.insert(platformConnections).values(connection).returning();
+      return platformConnection;
+    } catch (err) {
+      console.error('Create platform connection failed:', err);
+      throw err;
+    }
   }
-
-  async updatePlatformConnection(id: number, updates: Partial<InsertPlatformConnection>): Promise<PlatformConnection> {
-    const [platformConnection] = await db
-      .update(platformConnections)
-      .set(updates)
-      .where(eq(platformConnections.id, id))
-      .returning();
-    return platformConnection;
+  async updatePlatformConnection(id, updates) {
+    try {
+      const [platformConnection] = await db.update(platformConnections).set(updates).where(eq(platformConnections.id, id)).returning();
+      return platformConnection;
+    } catch (err) {
+      console.error('Update platform connection failed:', err);
+      throw err;
+    }
   }
-
   // ENHANCED: Update platform connection token after refresh
-  async updatePlatformConnectionToken(userId: string, platform: string, accessToken: string, refreshToken: string, expiresAt?: Date): Promise<void> {
-    const userIdNum = parseInt(userId);
-    
-    await db.update(platformConnections)
-      .set({
+  async updatePlatformConnectionToken(userId, platform, accessToken, refreshToken, expiresAt) {
+    try {
+      const userIdNum = parseInt(userId);
+      await db.update(platformConnections).set({
         accessToken,
         refreshToken,
         expiresAt: expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000), // Default 24 hours
         updatedAt: new Date()
-      })
-      .where(and(
+      }).where(and(
         eq(platformConnections.userId, userIdNum),
         eq(platformConnections.platform, platform)
       ));
-    
-    console.log(`✅ Database updated for ${platform} (User ${userId}): New token expires at ${expiresAt?.toISOString()}`);
+      console.log(`✅ Database updated for ${platform} (User ${userId}): New token expires at ${expiresAt?.toISOString()}`);
+    } catch (err) {
+      console.error('Update platform connection token failed:', err);
+      throw err;
+    }
   }
-
-  async getPlatformConnection(userId: number, platform: string): Promise<PlatformConnection | undefined> {
-    const [connection] = await db
-      .select()
-      .from(platformConnections)
-      .where(and(
+  async getPlatformConnection(userId, platform) {
+    try {
+      const [connection] = await db.select().from(platformConnections).where(and(
         eq(platformConnections.userId, userId),
         eq(platformConnections.platform, platform)
       ));
-    return connection;
+      return connection || undefined;
+    } catch (err) {
+      console.error('Get platform connection failed:', err);
+      throw err;
+    }
   }
-
-  async updatePlatformConnectionByPlatform(userId: number, platform: string, updates: Partial<InsertPlatformConnection>): Promise<PlatformConnection> {
-    const [platformConnection] = await db
-      .update(platformConnections)
-      .set(updates)
-      .where(and(
+  async updatePlatformConnectionByPlatform(userId, platform, updates) {
+    try {
+      const [platformConnection] = await db.update(platformConnections).set(updates).where(and(
         eq(platformConnections.userId, userId),
         eq(platformConnections.platform, platform)
-      ))
-      .returning();
-    return platformConnection;
+      )).returning();
+      return platformConnection;
+    } catch (err) {
+      console.error('Update platform connection by platform failed:', err);
+      throw err;
+    }
   }
-
-  async getConnectedPlatforms(userId: number): Promise<{[key: string]: boolean}> {
-    const connections = await db
-      .select()
-      .from(platformConnections)
-      .where(eq(platformConnections.userId, userId));
-    
-    const connectedPlatforms: {[key: string]: boolean} = {};
-    connections.forEach(conn => {
-      connectedPlatforms[conn.platform] = conn.isActive || false;
-    });
-    
-    return connectedPlatforms;
+  async getConnectedPlatforms(userId) {
+    try {
+      const connections = await db.select().from(platformConnections).where(eq(platformConnections.userId, userId));
+      const connectedPlatforms = {};
+      connections.forEach((conn) => {
+        connectedPlatforms[conn.platform] = conn.isActive || false;
+      });
+      return connectedPlatforms;
+    } catch (err) {
+      console.error('Get connected platforms failed:', err);
+      throw err;
+    }
   }
-
-  async deletePlatformConnection(id: number): Promise<void> {
-    await db.delete(platformConnections).where(eq(platformConnections.id, id));
+  async deletePlatformConnection(id) {
+    try {
+      await db.delete(platformConnections).where(eq(platformConnections.id, id));
+    } catch (err) {
+      console.error('Delete platform connection failed:', err);
+      throw err;
+    }
   }
-
   // Brand purpose operations
-  async getBrandPurposeByUser(userId: number): Promise<BrandPurpose | undefined> {
-    const [brandPurposeRecord] = await db
-      .select()
-      .from(brandPurpose)
-      .where(eq(brandPurpose.userId, userId));
-    return brandPurposeRecord;
+  async getBrandPurposeByUser(userId) {
+    try {
+      const [brandPurposeRecord] = await db.select().from(brandPurpose).where(eq(brandPurpose.userId, userId));
+      return brandPurposeRecord;
+    } catch (err) {
+      console.error('Get brand purpose by user failed:', err);
+      throw err;
+    }
   }
-
-  async createBrandPurpose(insertBrandPurpose: InsertBrandPurpose): Promise<BrandPurpose> {
-    const [brandPurposeRecord] = await db
-      .insert(brandPurpose)
-      .values(insertBrandPurpose)
-      .returning();
-    return brandPurposeRecord;
+  async createBrandPurpose(insertBrandPurpose) {
+    try {
+      const [brandPurposeRecord] = await db.insert(brandPurpose).values(insertBrandPurpose).returning();
+      return brandPurposeRecord;
+    } catch (err) {
+      console.error('Create brand purpose failed:', err);
+      throw err;
+    }
   }
-
-  async updateBrandPurpose(id: number, updates: Partial<InsertBrandPurpose>): Promise<BrandPurpose> {
-    const [brandPurposeRecord] = await db
-      .update(brandPurpose)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(brandPurpose.id, id))
-      .returning();
-    return brandPurposeRecord;
+  async updateBrandPurpose(id, updates) {
+    try {
+      const [brandPurposeRecord] = await db.update(brandPurpose).set({ ...updates, updatedAt: new Date() }).where(eq(brandPurpose.id, id)).returning();
+      return brandPurposeRecord;
+    } catch (err) {
+      console.error('Update brand purpose failed:', err);
+      throw err;
+    }
   }
-
   // Verification code operations
-  async createVerificationCode(insertCode: InsertVerificationCode): Promise<VerificationCode> {
-    const [code] = await db
-      .insert(verificationCodes)
-      .values(insertCode)
-      .returning();
-    return code;
+  async createVerificationCode(insertCode) {
+    try {
+      const [code] = await db.insert(verificationCodes).values(insertCode).returning();
+      return code;
+    } catch (err) {
+      console.error('Create verification code failed:', err);
+      throw err;
+    }
   }
-
-  async getVerificationCode(phone: string, code: string): Promise<VerificationCode | undefined> {
-    const [verificationCode] = await db
-      .select()
-      .from(verificationCodes)
-      .where(
+  async getVerificationCode(phone, code) {
+    try {
+      const [verificationCode] = await db.select().from(verificationCodes).where(
         and(
           eq(verificationCodes.phone, phone),
           eq(verificationCodes.code, code)
         )
-      )
-      .orderBy(desc(verificationCodes.createdAt))
-      .limit(1);
-    return verificationCode;
+      ).orderBy(desc(verificationCodes.createdAt)).limit(1);
+      return verificationCode;
+    } catch (err) {
+      console.error('Get verification code failed:', err);
+      throw err;
+    }
   }
-
-  async markVerificationCodeUsed(id: number): Promise<void> {
-    await db
-      .update(verificationCodes)
-      .set({ verified: true })
-      .where(eq(verificationCodes.id, id));
+  async markVerificationCodeUsed(id) {
+    try {
+      await db.update(verificationCodes).set({ verified: true }).where(eq(verificationCodes.id, id));
+    } catch (err) {
+      console.error('Mark verification code used failed:', err);
+      throw err;
+    }
   }
-
   // Gift certificate operations with enhanced user tracking
-  async createGiftCertificate(insertCertificate: InsertGiftCertificate, createdBy?: number): Promise<GiftCertificate> {
-    const certificateData = {
-      ...insertCertificate,
-      createdBy
-    };
-    
-    const [certificate] = await db
-      .insert(giftCertificates)
-      .values(certificateData)
-      .returning();
-    
-    // Log the creation action
-    await this.logGiftCertificateAction({
-      certificateId: certificate.id,
-      certificateCode: certificate.code,
-      actionType: 'created',
-      actionBy: createdBy,
-      actionDetails: {
-        plan: certificate.plan,
-        createdFor: certificate.createdFor
-      },
-      success: true
-    });
-    
-    return certificate;
+  async createGiftCertificate(insertCertificate, createdBy) {
+    try {
+      const certificateData = {
+        ...insertCertificate,
+        createdBy
+      };
+      const [certificate] = await db.insert(giftCertificates).values(certificateData).returning();
+      await this.logGiftCertificateAction({
+        certificateId: certificate.id,
+        certificateCode: certificate.code,
+        actionType: 'created',
+        actionBy: createdBy,
+        actionDetails: {
+          plan: certificate.plan,
+          createdFor: certificate.createdFor
+        },
+        success: true
+      });
+      return certificate;
+    } catch (err) {
+      console.error('Create gift certificate failed:', err);
+      throw err;
+    }
   }
-
-  async getGiftCertificate(code: string): Promise<GiftCertificate | undefined> {
-    const [certificate] = await db
-      .select()
-      .from(giftCertificates)
-      .where(eq(giftCertificates.code, code));
-    return certificate || undefined;
+  async getGiftCertificate(code) {
+    try {
+      const [certificate] = await db.select().from(giftCertificates).where(eq(giftCertificates.code, code));
+      return certificate || undefined;
+    } catch (err) {
+      console.error('Get gift certificate failed:', err);
+      throw err;
+    }
   }
-
-  async redeemGiftCertificate(code: string, userId: number): Promise<GiftCertificate> {
-    const [certificate] = await db
-      .update(giftCertificates)
-      .set({ 
-        isUsed: true, 
+  async redeemGiftCertificate(code, userId) {
+    try {
+      const [certificate] = await db.update(giftCertificates).set({
+        isUsed: true,
         redeemedBy: userId,
         redeemedAt: new Date()
-      })
-      .where(eq(giftCertificates.code, code))
-      .returning();
-    
-    // Log the redemption action
-    await this.logGiftCertificateAction({
-      certificateId: certificate.id,
-      certificateCode: certificate.code,
-      actionType: 'redeemed',
-      actionBy: userId,
-      actionDetails: {
-        plan: certificate.plan,
-        originalCreatedFor: certificate.createdFor
-      },
-      success: true
-    });
-    
-    return certificate;
+      }).where(eq(giftCertificates.code, code)).returning();
+      await this.logGiftCertificateAction({
+        certificateId: certificate.id,
+        certificateCode: certificate.code,
+        actionType: 'redeemed',
+        actionBy: userId,
+        actionDetails: {
+          plan: certificate.plan,
+          originalCreatedFor: certificate.createdFor
+        },
+        success: true
+      });
+      return certificate;
+    } catch (err) {
+      console.error('Redeem gift certificate failed:', err);
+      throw err;
+    }
   }
-
-  async getAllGiftCertificates(): Promise<GiftCertificate[]> {
-    const certificates = await db
-      .select()
-      .from(giftCertificates)
-      .orderBy(desc(giftCertificates.createdAt));
-    return certificates;
+  async getAllGiftCertificates() {
+    try {
+      const certificates = await db.select().from(giftCertificates).orderBy(desc(giftCertificates.createdAt));
+      return certificates;
+    } catch (err) {
+      console.error('Get all gift certificates failed:', err);
+      throw err;
+    }
   }
-
-  async getGiftCertificatesByCreator(createdBy: number): Promise<GiftCertificate[]> {
-    const certificates = await db
-      .select()
-      .from(giftCertificates)
-      .where(eq(giftCertificates.createdBy, createdBy))
-      .orderBy(desc(giftCertificates.createdAt));
-    return certificates;
+  async getGiftCertificatesByCreator(createdBy) {
+    try {
+      const certificates = await db.select().from(giftCertificates).where(eq(giftCertificates.createdBy, createdBy)).orderBy(desc(giftCertificates.createdAt));
+      return certificates;
+    } catch (err) {
+      console.error('Get gift certificates by creator failed:', err);
+      throw err;
+    }
   }
-
-  async getGiftCertificatesByRedeemer(redeemedBy: number): Promise<GiftCertificate[]> {
-    const certificates = await db
-      .select()
-      .from(giftCertificates)
-      .where(eq(giftCertificates.redeemedBy, redeemedBy))
-      .orderBy(desc(giftCertificates.redeemedAt));
-    return certificates;
+  async getGiftCertificatesByRedeemer(redeemedBy) {
+    try {
+      const certificates = await db.select().from(giftCertificates).where(eq(giftCertificates.redeemedBy, redeemedBy)).orderBy(desc(giftCertificates.redeemedAt));
+      return certificates;
+    } catch (err) {
+      console.error('Get gift certificates by redeemer failed:', err);
+      throw err;
+    }
   }
-
   // Gift certificate action logging
-  async logGiftCertificateAction(action: InsertGiftCertificateActionLog): Promise<GiftCertificateActionLog> {
-    const [logEntry] = await db
-      .insert(giftCertificateActionLog)
-      .values(action)
-      .returning();
-    return logEntry;
+  async logGiftCertificateAction(action) {
+    try {
+      const [logEntry] = await db.insert(giftCertificateActionLog).values(action).returning();
+      return logEntry;
+    } catch (err) {
+      console.error('Log gift certificate action failed:', err);
+      throw err;
+    }
   }
-
-  async getGiftCertificateActionLog(certificateId: number): Promise<GiftCertificateActionLog[]> {
-    const logs = await db
-      .select()
-      .from(giftCertificateActionLog)
-      .where(eq(giftCertificateActionLog.certificateId, certificateId))
-      .orderBy(desc(giftCertificateActionLog.createdAt));
-    return logs;
+  async getGiftCertificateActionLog(certificateId) {
+    try {
+      const logs = await db.select().from(giftCertificateActionLog).where(eq(giftCertificateActionLog.certificateId, certificateId)).orderBy(desc(giftCertificateActionLog.createdAt));
+      return logs;
+    } catch (err) {
+      console.error('Get gift certificate action log failed:', err);
+      throw err;
+    }
   }
-
-  async getGiftCertificateActionLogByCode(certificateCode: string): Promise<GiftCertificateActionLog[]> {
-    const logs = await db
-      .select()
-      .from(giftCertificateActionLog)
-      .where(eq(giftCertificateActionLog.certificateCode, certificateCode))
-      .orderBy(desc(giftCertificateActionLog.createdAt));
-    return logs;
+  async getGiftCertificateActionLogByCode(certificateCode) {
+    try {
+      const logs = await db.select().from(giftCertificateActionLog).where(eq(giftCertificateActionLog.certificateCode, certificateCode)).orderBy(desc(giftCertificateActionLog.createdAt));
+      return logs;
+    } catch (err) {
+      console.error('Get gift certificate action log by code failed:', err);
+      throw err;
+    }
   }
-
-  async getGiftCertificateActionLogByUser(userId: number): Promise<GiftCertificateActionLog[]> {
-    const logs = await db
-      .select()
-      .from(giftCertificateActionLog)
-      .where(eq(giftCertificateActionLog.actionBy, userId))
-      .orderBy(desc(giftCertificateActionLog.createdAt));
-    return logs;
+  async getGiftCertificateActionLogByUser(userId) {
+    try {
+      const logs = await db.select().from(giftCertificateActionLog).where(eq(giftCertificateActionLog.actionBy, userId)).orderBy(desc(giftCertificateActionLog.createdAt));
+      return logs;
+    } catch (err) {
+      console.error('Get gift certificate action log by user failed:', err);
+      throw err;
+    }
   }
-
-  async getPlatformConnectionsByPlatformUserId(platformUserId: string): Promise<PlatformConnection[]> {
-    return await db
-      .select()
-      .from(platformConnections)
-      .where(eq(platformConnections.platformUserId, platformUserId));
+  async getPlatformConnectionsByPlatformUserId(platformUserId) {
+    try {
+      return await db.select().from(platformConnections).where(eq(platformConnections.platformUserId, platformUserId));
+    } catch (err) {
+      console.error('Get platform connections by platform user ID failed:', err);
+      throw err;
+    }
   }
-
   // Post ledger operations for synchronization
-  async getPostLedgerByUser(userId: string): Promise<any | undefined> {
-    const [ledger] = await db.select().from(postLedger).where(eq(postLedger.userId, userId));
-    return ledger;
+  async getPostLedgerByUser(userId) {
+    try {
+      const [ledger] = await db.select().from(postLedger2).where(eq(postLedger2.userId, userId));
+      return ledger;
+    } catch (err) {
+      console.error('Get post ledger by user failed:', err);
+      throw err;
+    }
   }
-
-  async createPostLedger(ledger: any): Promise<any> {
-    const [newLedger] = await db
-      .insert(postLedger)
-      .values(ledger)
-      .returning();
-    return newLedger;
+  async createPostLedger(ledger) {
+    try {
+      const [newLedger] = await db.insert(postLedger2).values(ledger).returning();
+      return newLedger;
+    } catch (err) {
+      console.error('Create post ledger failed:', err);
+      throw err;
+    }
   }
-
-  async updatePostLedger(userId: string, updates: any): Promise<any> {
-    const [updatedLedger] = await db
-      .update(postLedger)
-      .set(updates)
-      .where(eq(postLedger.userId, userId))
-      .returning();
-    return updatedLedger;
+  async updatePostLedger(userId, updates) {
+    try {
+      const [updatedLedger] = await db.update(postLedger2).set(updates).where(eq(postLedger2.userId, userId)).returning();
+      return updatedLedger;
+    } catch (err) {
+      console.error('Update post ledger failed:', err);
+      throw err;
+    }
   }
-
   // OAuth token operations for TokenManager integration
-  async storeOAuthToken(userId: number, provider: string, tokenData: any): Promise<void> {
-    const { oauthTokens } = await import('@shared/schema');
-    
-    await db.insert(oauthTokens)
-      .values({
+  async storeOAuthToken(userId, provider, tokenData) {
+    try {
+      const { oauthTokens } = await import('@shared/schema');
+      await db.insert(oauthTokens).values({
         userId: userId.toString(),
         provider,
         accessToken: tokenData.accessToken,
@@ -528,8 +511,7 @@ export class DatabaseStorage implements IStorage {
         expiresAt: new Date(tokenData.expiresAt),
         scope: tokenData.scope || [],
         profileId: tokenData.profileId
-      })
-      .onConflictDoUpdate({
+      }).onConflictDoUpdate({
         target: [oauthTokens.userId, oauthTokens.provider],
         set: {
           accessToken: tokenData.accessToken,
@@ -538,50 +520,55 @@ export class DatabaseStorage implements IStorage {
           scope: tokenData.scope || []
         }
       });
-  }
-
-  async getOAuthToken(userId: number, provider: string): Promise<any> {
-    const { oauthTokens } = await import('@shared/schema');
-    
-    const [token] = await db.select()
-      .from(oauthTokens)
-      .where(and(
-        eq(oauthTokens.userId, userId.toString()),
-        eq(oauthTokens.provider, provider)
-      ));
-    
-    return token || null;
-  }
-
-  async getUserOAuthTokens(userId: number): Promise<Record<string, any>> {
-    const { oauthTokens } = await import('@shared/schema');
-    
-    const tokens = await db.select()
-      .from(oauthTokens)
-      .where(eq(oauthTokens.userId, userId.toString()));
-    
-    const tokenMap: Record<string, any> = {};
-    for (const token of tokens) {
-      tokenMap[token.provider] = {
-        accessToken: token.accessToken,
-        refreshToken: token.refreshToken,
-        expiresAt: token.expiresAt?.getTime(),
-        scope: token.scope || [],
-        provider: token.provider
-      };
+    } catch (err) {
+      console.error('Store OAuth token failed:', err);
+      throw err;
     }
-    
-    return tokenMap;
   }
-
-  async removeOAuthToken(userId: number, provider: string): Promise<void> {
-    const { oauthTokens } = await import('@shared/schema');
-    
-    await db.delete(oauthTokens)
-      .where(and(
+  async getOAuthToken(userId, provider) {
+    try {
+      const { oauthTokens } = await import('@shared/schema');
+      const [token] = await db.select().from(oauthTokens).where(and(
         eq(oauthTokens.userId, userId.toString()),
         eq(oauthTokens.provider, provider)
       ));
+      return token || null;
+    } catch (err) {
+      console.error('Get OAuth token failed:', err);
+      throw err;
+    }
+  }
+  async getUserOAuthTokens(userId) {
+    try {
+      const { oauthTokens } = await import('@shared/schema');
+      const tokens = await db.select().from(oauthTokens).where(eq(oauthTokens.userId, userId.toString()));
+      const tokenMap = {};
+      tokens.forEach((token) => {
+        tokenMap[token.provider] = {
+          accessToken: token.accessToken,
+          refreshToken: token.refreshToken,
+          expiresAt: token.expiresAt?.getTime(),
+          scope: token.scope || [],
+          provider: token.provider
+        };
+      });
+      return tokenMap;
+    } catch (err) {
+      console.error('Get user OAuth tokens failed:', err);
+      throw err;
+    }
+  }
+  async removeOAuthToken(userId, provider) {
+    try {
+      const { oauthTokens } = await import('@shared/schema');
+      await db.delete(oauthTokens).where(and(
+        eq(oauthTokens.userId, userId.toString()),
+        eq(oauthTokens.provider, provider)
+      ));
+    } catch (err) {
+      console.error('Remove OAuth token failed:', err);
+      throw err;
+    }
   }
 }
 
