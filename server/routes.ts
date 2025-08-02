@@ -24,30 +24,14 @@ app.use(rateLimit({
 }));
 
 // Add onboarding (fix missing)
-
-import { parsePhoneNumber } from 'libphonenumber-js'; // Move import to top
-
-// Add onboarding (fix missing)
 app.post('/api/onboarding', async (req, res) => {
   try {
     const { email, password, phone, brandPurposeText } = req.body;
     const quota = await quotaManager.getQuotaStatus(req.session.userId);
     if (!quota.isActive) return res.status(403).json({ error: 'Active subscription required' });
-
-    // Validate phone number
-    const phoneNumber = parsePhoneNumber(phone, 'AU'); // Adjust country code as needed
-    if (!phoneNumber?.isValid()) throw new Error('Invalid phone number');
-
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await storage.createUser({ email, hashedPassword, phone });
-
-    // Real Twilio send code with timeout
-    const twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    await Promise.race([
-      twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID).verifications.create({ to: phone, channel: 'sms' }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
-    ]);
-
+    await twilioService.sendVerificationCode(phone);
     await storage.saveBrandPurpose(user.id, brandPurposeText);
     req.session.userId = user.id;
     req.session.userEmail = email;
@@ -57,27 +41,17 @@ app.post('/api/onboarding', async (req, res) => {
     await new Promise((resolve, reject) => {
       req.session.save((err) => err ? reject(err) : resolve());
     });
-
     res.json({ success: true, userId: user.id });
   } catch (error) {
     console.error('Onboarding failed:', error);
     res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
-    res.status(500).json({ error: error.message || 'Onboarding failed' });
+    res.status(500).json({ error: 'Onboarding failed' });
   }
 });
-
 app.post('/api/verify-code', async (req, res) => {
   try {
     const { phone, code } = req.body;
-
-    // Real Twilio verify with timeout
-    const twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    const verification = await Promise.race([
-      twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SID).verificationChecks.create({ to: phone, code }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
-    ]);
-
-    const verified = verification.status === 'approved';
+    const verified = await twilioService.verifyCode(phone, code);
     if (verified) {
       req.session.verified = true;
       await new Promise((resolve, reject) => {
@@ -90,9 +64,10 @@ app.post('/api/verify-code', async (req, res) => {
   } catch (error) {
     console.error('Verify failed:', error);
     res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
-    res.status(500).json({ error: error.message || 'Verify failed' });
+    res.status(500).json({ error: 'Verify failed' });
   }
 });
+
 // Post approval with deduct
 app.post("/api/posts/:id/approve", requireAuth, requireActiveSubscription, async (req, res) => {
   try {
@@ -319,7 +294,7 @@ app.post('/api/platform-connections/deactivate', requireAuth, async (req: any, r
     
     console.log(`🔧 Emergency deactivation request for platform ${platform}, connection ID ${connectionId}`);
     
-    const { platformConnections } = await import('../shared/schema');
+    const { platformConnections } from '@shared/schema';
     const updated = await db.update(platformConnections)
       .set({ isActive: false })
       .where(and(
@@ -348,7 +323,7 @@ app.post('/api/platform-connections/activate', requireAuth, async (req: any, res
     
     console.log(`🔧 Emergency activation request for platform ${platform}, connection ID ${connectionId}`);
     
-    const { platformConnections } = await import('../shared/schema');
+    const { platformConnections } from '@shared/schema';
     const updated = await db.update(platformConnections)
       .set({ isActive: true })
       .where(and(
@@ -855,7 +830,7 @@ app.post("/api/grok-test", async (req: any, res) => {
       });
     }
 
-    const { getAIResponse } = await import('./grok');
+    const { getAIResponse } from './grok';
     const testPrompt = prompt || "Generate a brief business insight for Queensland small businesses using X.AI.";
     
     console.log('Testing X.AI credentials with prompt:', testPrompt);
@@ -919,149 +894,243 @@ app.get("/api/reconnect/facebook", requireAuth, async (req: any, res) => {
 });
 
 // Inline mock quota-manager.js (copy real from Replit later)
+
 const quotaManager = {
+
   getQuotaStatus: (userId) => ({ remainingPosts: 45, totalPosts: 52, usage: 13 }),
+
   updateQuota: (userId, deduct) => console.log(`Mock deduct ${deduct} for user ${userId}`)
+
 };
 
 // Inline mock grok-content.js (copy real from Replit later)
+
 const generateContentCalendar = (config) => [{ platform: config.platforms[0], content: 'Mock post', scheduledFor: new Date() }];
 
 // Rest of your code...
 
 app.post("/api/generate-content-calendar", requireActiveSubscription, async (req: any, res) => {
+
   try {
+
     const userId = req.session.userId;
+
     const quota = await quotaManager.getQuotaStatus(userId);
+
     if (quota.remainingPosts <= 0) return res.status(403).json({ error: 'Quota exceeded' });
+
     // ... (rest of code)
-    await quotaManager.updateQuota(userId, createdPosts.length);  // Deduct on success
+
+    await quotaManager.updateQuota(userId, createdPosts.length); // Deduct on success
+
     res.json({ posts: createdPosts, quotaStatus });
+
   } catch (error) {
+
     console.error('Content generation error:', error);
+
     res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
+
     res.status(500).json({ message: "Error generating content calendar: " + error.message });
+
   }
+
 });
 
 app.post('/api/facebook-data-deletion', (req, res) => {
+
   try {
+
     const signedRequest = req.body.signed_request;
+
     if (!signedRequest) throw new Error('Missing signed_request');
 
     const appSecret = process.env.FACEBOOK_APP_SECRET;
+
     if (!appSecret) throw new Error('Missing app secret');
 
     const [encodedSig, payload] = signedRequest.split('.');
+
     const sig = Buffer.from(encodedSig, 'base64').toString('hex');
+
     const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+
     const expectedSig = crypto.createHmac('sha256', appSecret).update(payload).digest('hex');
+
     if (sig !== expectedSig) throw new Error('Invalid signature');
 
     const userId = data.user_id;
 
     // Destroy session and clear cookies
+
     if (req.session) {
+
       req.session.destroy(() => {});
+
     }
+
     res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
 
     // Reset quota and halt posts
+
     quotaManager.resetQuota(userId);
+
     postScheduler.haltAllForUser(userId);
 
     // Revoke OAuth
+
     oauthService.revokeTokens(userId, 'facebook');
 
     // Delete user data
+
     storage.deleteUser(userId);
 
     // META response
+
     const code = crypto.randomBytes(8).toString('hex');
+
     res.json({ url: `https://the-agency-iq.vercel.app/deletion-status/${code}`, confirmation_code: code });
+
   } catch (error) {
+
     console.error('Deletion failed:', error);
+
     res.status(500).json({ error: 'Failed' });
+
   }
+
 });
 
 // Status for user
+
 app.get('/deletion-status/:code', (req, res) => {
+
   res.json({ status: 'Completed', code: req.params.code });
+
 });
 
+export default app;
+
 app.get('/api/env-debug', (req, res) => {
+
   res.json({
+
     keys: Object.keys(process.env).filter(key => key.startsWith('GOOGLE_') || key.startsWith('TWILIO_') || key.startsWith('FACEBOOK_'))
+
   });
+
 });
 
 // [Insert all your existing code here, e.g., onboarding, verify-code, posts, etc.]
 
 // Data Deletion Callback for all platforms (GDPR compliance, META-compatible)
+
 // Data Deletion Callback for all platforms (GDPR compliance, META-compatible)
+
 app.post('/api/data-deletion/:platform', async (req, res) => {
+
   try {
+
     const platform = req.params.platform;
-    const signedRequest = req.body.signed_request;  // For META; optional for others
+
+    const signedRequest = req.body.signed_request; // For META; optional for others
+
     const userId = req.session?.userId || req.body.user_id;
 
     if (!userId) {
+
       return res.status(400).json({ error: 'Missing user_id' });
+
     }
 
     // Validate for META (Facebook/Instagram)
+
     if (platform === 'facebook' || platform === 'instagram') {
+
       const appSecret = process.env.FACEBOOK_APP_SECRET;
+
       if (!appSecret || !signedRequest) {
+
         throw new Error('Missing signed_request or secret for META');
+
       }
+
       const [encodedSig, payload] = signedRequest.split('.');
+
       const sig = Buffer.from(encodedSig, 'base64').toString('hex');
+
       const data = JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+
       const expectedSig = crypto.createHmac('sha256', appSecret).update(payload).digest('hex');
+
       if (sig !== expectedSig) {
+
         throw new Error('Invalid signature');
+
       }
+
     }
 
     // Destroy session
+
     if (req.session) {
+
       await new Promise<void>((resolve, reject) => {
+
         req.session.destroy((err) => err ? reject(err) : resolve());
+
       });
+
       res.clearCookie('connect.sid', { path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' });
+
     }
 
     // Reset quota and halt posts
+
     await quotaManager.resetQuota(userId);
+
     await postScheduler.haltAllForUser(userId);
 
     // Revoke OAuth for the platform
+
     await oauthService.revokeTokens(userId, platform);
 
     // Delete user data
+
     await storage.deleteUser(userId);
 
     // Generate confirmation
+
     const confirmationCode = crypto.randomBytes(8).toString('hex');
+
     const statusUrl = `https://the-agency-iq.vercel.app/api/deletion-status/${confirmationCode}`;
 
     console.log(`✅ Data deletion for user ${userId} on ${platform}: success`);
 
     res.json({
+
       url: statusUrl,
+
       confirmation_code: confirmationCode
+
     });
+
   } catch (error) {
+
     console.error('Data deletion failed for ' + req.params.platform + ':', error);
+
     res.status(500).json({ error: 'Deletion failed' });
+
   }
+
 });
 
 // Status check for user to track deletion (META recommended)
+
 app.get('/api/deletion-status/:code', (req, res) => {
+
   res.json({ success: true, message: 'Deletion completed for code ' + req.params.code, timestamp: new Date().toISOString() });
+
 });
 
-export default app;
+export default app; = give me the whole new file
