@@ -1,3 +1,5 @@
+TEST FOR BRANCH
+
 Surgical Fix Prompt for Replit AI/Support
 "Fix deployment authentication issues in a Replit-hosted Node.js/Express app (AgencyIQ for social media automation) where dev works 100% but prod fails sign-in (session expired ABSOLUTE_TIMEOUT_EXCEEDED, redirect to /api/login). Report details: Session cookie secure:true requires HTTPS but deployment may not handle it; env vars like SESSION_SECRET/DATABASE_URL mismatch in prod; CORS origins hardcoded to dev URL causing fails on app.theagencyiq.ai; PG session store connect-pg-simple not initializing in prod; OAuth Passport strats conflicting on load; NODE_ENV=production detection insufficient; dev auto-establish logic inappropriate for prod.
 

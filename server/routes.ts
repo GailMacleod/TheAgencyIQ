@@ -294,7 +294,7 @@ app.post('/api/platform-connections/deactivate', requireAuth, async (req: any, r
     
     console.log(`🔧 Emergency deactivation request for platform ${platform}, connection ID ${connectionId}`);
     
-    const { platformConnections } from '@shared/schema';
+    'import { platfrom_connections } from './shared-schema';'
     const updated = await db.update(platformConnections)
       .set({ isActive: false })
       .where(and(
