@@ -8,13 +8,26 @@ import { PlatformHealthMonitor } from './platform-health-monitor.js';  // Assume
 import { OAuthRefreshService } from './oauth-refresh-service.js';  // Assume exists for refresh
 import bcrypt from 'bcryptjs';  // For hashing
 import crypto from 'crypto';  // For codes
-import twilioService from './twilio-service.js';  // For verification
-import postScheduler from './post-scheduler.js';  // For halt
-import { oauthService } from './oauth-service.js';  // For revoke
+import twilioService from './twilio-service.js';  // Real impl
+import postScheduler from './post-scheduler.js';  // Real impl
+import { oauthService } from './oauth-service.js';  // Real impl
 import { RollbackAPI } from './rollback-api.js';  // Assume exists for rollback
 import rateLimit from 'express-rate-limit';  // For rate limiting
+import { Schema } from 'zod';
+import { platformConnections } from './platform-schema.ts';  // Real impl
+import { eq, and } from 'drizzle-orm';
+import { getAIResponse } from './grok';  // Moved to top
+import fetch from 'node-fetch';  // For revoke
 
 const app = express();
+
+// Session middleware with expiration
+app.use(express.session({
+  secret: process.env.SESSION_SECRET || 'default_secret',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 1 day expiration
+}));
 
 // Add rate limit to all routes (fix spam)
 app.use(rateLimit({
@@ -27,8 +40,8 @@ app.use(rateLimit({
 app.post('/api/onboarding', async (req, res) => {
   try {
     const { email, password, phone, brandPurposeText } = req.body;
-    const quota = await quotaManager.getQuotaStatus(req.session.userId);
-    if (!quota.isActive) return res.status(403).json({ error: 'Active subscription required' });
+    const existing = await storage.getUserByEmail(email); // Add uniqueness check
+    if (existing) return res.status(400).json({ error: 'Email already in use' });
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await storage.createUser({ email, hashedPassword, phone });
     await twilioService.sendVerificationCode(phone);
@@ -85,8 +98,7 @@ app.post("/api/posts/:id/approve", requireAuth, requireActiveSubscription, async
     
     // Deduct quota on approve
     await quotaManager.updateQuota(userId, 1, 0);
-    console.log(`✅ Quota deducted 1 post on approval for user ${userId}`);
-
+    console.log(`✅ Quota deducted 1 post on approval for user ${userId}`); // Added semicolon
     console.log(`✅ Post ${postId} approved via POST by user ${userId}`);
     console.log(`✅ APPROVE Response - Post:`, updatedPost?.id, `Success: true`);
     
@@ -294,23 +306,23 @@ app.post('/api/platform-connections/deactivate', requireAuth, async (req: any, r
     
     console.log(`🔧 Emergency deactivation request for platform ${platform}, connection ID ${connectionId}`);
     
-    'import { platfrom_connections } from './shared-schema';'
-    const updated = await db.update(platformConnections)
+    const updated = await db
+      .update(platformConnections)
       .set({ isActive: false })
-      .where(and(
-        eq(platformConnections.id, connectionId),
-        eq(platformConnections.userId, userId)
-      ))
-      .returning();
-    
+      .where(eq(platformConnections.id, connectionId))
+      .where(eq(platformConnections.userId, userId))
+      .returning('*');
+
     if (updated.length > 0) {
-      console.log(`✅ Deactivated connection ${connectionId} for platform ${platform}`);
-      res.json({ success: true, deactivated: updated[0] });
+      // Revoke OAuth token for compliance
+      await oauthService.revokeTokens(userId, platform);
+      res.status(200).json({ success: true, deactivated: updated[0] });
     } else {
       res.status(404).json({ error: 'Connection not found' });
     }
   } catch (error) {
-    console.error('Emergency deactivation error:', error);
+    console.error('Deactivation failed:', error);
+    res.clearCookie('connect.sid', { path: '/', secure: true, httpOnly: true, sameSite: 'lax' });
     res.status(500).json({ error: 'Deactivation failed' });
   }
 });
@@ -323,7 +335,6 @@ app.post('/api/platform-connections/activate', requireAuth, async (req: any, res
     
     console.log(`🔧 Emergency activation request for platform ${platform}, connection ID ${connectionId}`);
     
-    const { platformConnections } from '@shared/schema';
     const updated = await db.update(platformConnections)
       .set({ isActive: true })
       .where(and(
@@ -830,7 +841,6 @@ app.post("/api/grok-test", async (req: any, res) => {
       });
     }
 
-    const { getAIResponse } from './grok';
     const testPrompt = prompt || "Generate a brief business insight for Queensland small businesses using X.AI.";
     
     console.log('Testing X.AI credentials with prompt:', testPrompt);
@@ -1009,8 +1019,6 @@ app.get('/deletion-status/:code', (req, res) => {
 
 });
 
-export default app;
-
 app.get('/api/env-debug', (req, res) => {
 
   res.json({
@@ -1020,8 +1028,6 @@ app.get('/api/env-debug', (req, res) => {
   });
 
 });
-
-// [Insert all your existing code here, e.g., onboarding, verify-code, posts, etc.]
 
 // Data Deletion Callback for all platforms (GDPR compliance, META-compatible)
 
@@ -1133,4 +1139,4 @@ app.get('/api/deletion-status/:code', (req, res) => {
 
 });
 
-export default app; = give me the whole new file
+export default app;
